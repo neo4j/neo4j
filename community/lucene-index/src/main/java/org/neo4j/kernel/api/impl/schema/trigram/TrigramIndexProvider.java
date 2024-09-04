@@ -27,9 +27,9 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -49,7 +49,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
 public class TrigramIndexProvider extends AbstractTextIndexProvider {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "2.0");
     public static final IndexCapability CAPABILITY = TextIndexCapability.trigram();
 
     private final FileSystemAbstraction fileSystem;
@@ -64,7 +63,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         super(
                 KernelVersion.VERSION_TRIGRAM_INDEX_INTRODUCED,
                 IndexType.TEXT,
-                DESCRIPTOR,
+                AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR,
                 fileSystem,
                 directoryFactory,
                 directoryStructureFactory,

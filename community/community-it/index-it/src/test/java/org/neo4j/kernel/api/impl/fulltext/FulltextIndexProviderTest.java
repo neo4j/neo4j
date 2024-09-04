@@ -41,7 +41,6 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asN
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Path;
@@ -87,6 +86,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -242,7 +242,7 @@ class FulltextIndexProviderTest {
                     EntityType.RELATIONSHIP,
                     new int[] {labelIdHej, labelIdHa, labelIdHe},
                     new int[] {propIdHej, propIdHa, propIdHe, propIdHo});
-            IndexPrototype prototype = IndexPrototype.forSchema(schema, DESCRIPTOR)
+            IndexPrototype prototype = IndexPrototype.forSchema(schema, AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR)
                     .withIndexType(FULLTEXT)
                     .withName("fulltext");
             indexReference = transaction.schemaWrite().indexCreate(prototype);
@@ -274,7 +274,7 @@ class FulltextIndexProviderTest {
                     EntityType.RELATIONSHIP,
                     new int[] {labelIdHej, labelIdHa, labelIdHe},
                     new int[] {propIdHej, propIdHa, propIdHe, propIdHo});
-            IndexPrototype prototype = IndexPrototype.forSchema(schema, DESCRIPTOR)
+            IndexPrototype prototype = IndexPrototype.forSchema(schema, AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR)
                     .withIndexType(FULLTEXT)
                     .withName("fulltext");
             indexReference = transaction.schemaWrite().indexCreate(prototype);
@@ -854,7 +854,7 @@ class FulltextIndexProviderTest {
             SchemaDescriptor schema = SchemaDescriptors.fulltext(entityType, entityTokens, propertyIds);
             IndexConfig config = IndexConfig.with(FulltextIndexSettingsKeys.ANALYZER, Values.stringValue(analyzer))
                     .withIfAbsent(FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.of(eventuallyConsistent));
-            IndexPrototype prototype = IndexPrototype.forSchema(schema, DESCRIPTOR)
+            IndexPrototype prototype = IndexPrototype.forSchema(schema, AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR)
                     .withIndexType(IndexType.FULLTEXT)
                     .withName(NAME)
                     .withIndexConfig(config);

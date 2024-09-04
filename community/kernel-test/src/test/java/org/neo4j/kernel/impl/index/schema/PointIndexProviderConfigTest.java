@@ -30,10 +30,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
@@ -55,7 +55,7 @@ class PointIndexProviderConfigTest {
                 new PointIndexProvider(context, IndexDirectoryStructure.NONE, null, Config.defaults());
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptors.forLabel(1, 1);
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema(
-                        incompleteSchema, IndexProviderDescriptor.UNDECIDED)
+                        incompleteSchema, AllIndexProviderDescriptors.UNDECIDED)
                 .withName("index")
                 .materialise(1);
 
@@ -91,7 +91,7 @@ class PointIndexProviderConfigTest {
         IndexConfig existingIndexConfig = IndexConfig.with(existingSettings);
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptors.forLabel(1, 1);
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema(
-                        incompleteSchema, IndexProviderDescriptor.UNDECIDED)
+                        incompleteSchema, AllIndexProviderDescriptors.UNDECIDED)
                 .withName("index")
                 .materialise(1)
                 .withIndexConfig(existingIndexConfig);

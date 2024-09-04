@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 
 public class TrigramIndexCreationTest extends TextIndexCreationTest {
 
     @Override
     protected IndexProviderDescriptor getIndexProviderDescriptor() {
-        return TrigramIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR;
     }
 }

@@ -42,6 +42,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.index.SetInitialStateInNativeIndex;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -78,8 +79,8 @@ public class IndexCleanupIT {
 
     private static Stream<Arguments> indexProviders() {
         return Stream.of(
-                Arguments.of(RangeIndexProvider.DESCRIPTOR, IndexType.RANGE),
-                Arguments.of(PointIndexProvider.DESCRIPTOR, IndexType.POINT));
+                Arguments.of(AllIndexProviderDescriptors.RANGE_DESCRIPTOR, IndexType.RANGE),
+                Arguments.of(AllIndexProviderDescriptors.POINT_DESCRIPTOR, IndexType.POINT));
     }
 
     @ParameterizedTest

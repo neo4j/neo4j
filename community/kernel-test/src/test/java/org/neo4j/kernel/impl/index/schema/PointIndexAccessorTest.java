@@ -42,6 +42,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -64,7 +65,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     private static final StandardConfiguration CONFIGURATION = new StandardConfiguration();
     private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema(forLabel(42, 666))
             .withIndexType(IndexType.POINT)
-            .withIndexProvider(PointIndexProvider.DESCRIPTOR)
+            .withIndexProvider(AllIndexProviderDescriptors.POINT_DESCRIPTOR)
             .withName("index")
             .materialise(0);
 

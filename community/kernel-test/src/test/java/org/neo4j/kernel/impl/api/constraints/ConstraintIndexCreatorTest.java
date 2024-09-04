@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -69,7 +70,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.AssertableLogProvider;
@@ -82,7 +82,7 @@ class ConstraintIndexCreatorTest {
     private static final int LABEL_ID = 123;
     private static final long INDEX_ID = 0L;
 
-    private final IndexProviderDescriptor providerDescriptor = RangeIndexProvider.DESCRIPTOR;
+    private final IndexProviderDescriptor providerDescriptor = AllIndexProviderDescriptors.RANGE_DESCRIPTOR;
     private final LabelSchemaDescriptor schema = forLabel(LABEL_ID, PROPERTY_KEY_ID);
     private final UniquenessConstraintDescriptor constraint =
             ConstraintDescriptorFactory.uniqueForSchema(schema).withName("constraint");

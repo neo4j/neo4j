@@ -20,10 +20,7 @@
 package org.neo4j.kernel.internal;
 
 import java.nio.file.Path;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 
 /**
  * A filter which only matches lucene index files.
@@ -43,10 +40,10 @@ public class LuceneIndexFileFilter extends IndexFileFilter {
         }
 
         final var provider = provider(path);
-        return provider.equals(TextIndexProvider.DESCRIPTOR.name())
-                || provider.equals(TrigramIndexProvider.DESCRIPTOR.name())
-                || provider.equals(FulltextIndexProviderFactory.DESCRIPTOR.name())
-                || provider.equals(VectorIndexVersion.V1_0.descriptor().name())
-                || provider.equals(VectorIndexVersion.V2_0.descriptor().name());
+        return provider.equals(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR.name())
+                || provider.equals(AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR.name())
+                || provider.equals(AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR.name())
+                || provider.equals(AllIndexProviderDescriptors.VECTOR_V1_DESCRIPTOR.name())
+                || provider.equals(AllIndexProviderDescriptors.VECTOR_V2_DESCRIPTOR.name());
     }
 }

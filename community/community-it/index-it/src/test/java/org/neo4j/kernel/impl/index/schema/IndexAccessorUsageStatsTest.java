@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -60,8 +61,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUsageStats;
@@ -263,21 +262,21 @@ public class IndexAccessorUsageStatsTest {
 
     private static Stream<Arguments> propertyIndexAccessors() {
         return Stream.of(
-                Arguments.of(RangeIndexProvider.DESCRIPTOR, allEntries()),
-                Arguments.of(PointIndexProvider.DESCRIPTOR, allEntries()),
+                Arguments.of(AllIndexProviderDescriptors.RANGE_DESCRIPTOR, allEntries()),
+                Arguments.of(AllIndexProviderDescriptors.POINT_DESCRIPTOR, allEntries()),
                 Arguments.of(
-                        PointIndexProvider.DESCRIPTOR,
+                        AllIndexProviderDescriptors.POINT_DESCRIPTOR,
                         PropertyIndexQuery.boundingBox(
                                 0,
                                 Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 2),
                                 Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 4, 5))),
-                Arguments.of(TextIndexProvider.DESCRIPTOR, allEntries()),
-                Arguments.of(TrigramIndexProvider.DESCRIPTOR, allEntries()),
-                Arguments.of(FulltextIndexProviderFactory.DESCRIPTOR, PropertyIndexQuery.fulltextSearch("*")));
+                Arguments.of(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR, allEntries()),
+                Arguments.of(AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR, allEntries()),
+                Arguments.of(AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR, PropertyIndexQuery.fulltextSearch("*")));
     }
 
     private static Stream<IndexProviderDescriptor> tokenIndexAccessors() {
-        return Stream.of(TokenIndexProvider.DESCRIPTOR);
+        return Stream.of(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
     }
 
     private IndexAccessor createIndexAccessor(IndexProviderDescriptor providerDescriptor) throws IOException {

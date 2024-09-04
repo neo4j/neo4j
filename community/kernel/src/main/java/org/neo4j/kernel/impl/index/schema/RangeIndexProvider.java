@@ -28,10 +28,10 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
@@ -106,7 +106,6 @@ import org.neo4j.values.storable.ValueCategory;
  * As of writing this, there is no such filtering implementation.
  */
 public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayout> {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("range", "1.0");
     public static final IndexCapability CAPABILITY = new RangeIndexCapability();
 
     public RangeIndexProvider(
@@ -114,7 +113,12 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
             IndexDirectoryStructure.Factory directoryStructureFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config) {
-        super(databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector, config);
+        super(
+                databaseIndexContext,
+                AllIndexProviderDescriptors.RANGE_DESCRIPTOR,
+                directoryStructureFactory,
+                recoveryCleanupWorkCollector,
+                config);
     }
 
     @Override

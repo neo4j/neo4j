@@ -73,6 +73,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -95,7 +96,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.LockTracer;
@@ -576,7 +576,7 @@ public class PlainOperationsTest extends OperationsTest {
         // given
         IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                 .withName("constraint name")
-                .withIndexProvider(RangeIndexProvider.DESCRIPTOR);
+                .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
         IndexDescriptor constraintIndex = prototype.materialise(42);
         when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), eq(prototype), any()))
                 .thenReturn(constraintIndex);
@@ -1131,7 +1131,7 @@ public class PlainOperationsTest extends OperationsTest {
         // given
         IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                 .withName("constraint name")
-                .withIndexProvider(RangeIndexProvider.DESCRIPTOR)
+                .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                 .withIndexType(IndexType.FULLTEXT);
         IndexDescriptor constraintIndex = prototype.materialise(42);
         when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), eq(prototype), any()))
@@ -1156,7 +1156,7 @@ public class PlainOperationsTest extends OperationsTest {
                 SchemaDescriptors.fulltext(NODE, this.schema.getEntityTokenIds(), this.schema.getPropertyIds());
         IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                 .withName("constraint name")
-                .withIndexProvider(RangeIndexProvider.DESCRIPTOR);
+                .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
         IndexDescriptor constraintIndex = prototype.materialise(42);
         when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), eq(prototype), any()))
                 .thenReturn(constraintIndex);
@@ -1177,7 +1177,7 @@ public class PlainOperationsTest extends OperationsTest {
         SchemaDescriptor schema = SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
         IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                 .withName("constraint name")
-                .withIndexProvider(RangeIndexProvider.DESCRIPTOR);
+                .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
         IndexDescriptor constraintIndex = prototype.materialise(42);
         when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), eq(prototype), any()))
                 .thenReturn(constraintIndex);
@@ -1199,7 +1199,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(tokenHolders.propertyKeyTokens().getTokenById(anyInt())).thenReturn(new NamedToken("prop", 456));
         IndexPrototype prototype = IndexPrototype.forSchema(schema)
                 .withName("constraint name")
-                .withIndexProvider(RangeIndexProvider.DESCRIPTOR);
+                .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
         IndexDescriptor constraintIndex = prototype.materialise(42);
         when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), eq(prototype), any()))
                 .thenReturn(constraintIndex);

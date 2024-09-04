@@ -47,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -64,7 +65,8 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class LuceneIndexProviderTest {
-    private static final IndexDescriptor descriptor = forSchema(forLabel(1, 1), TextIndexProvider.DESCRIPTOR)
+    private static final IndexDescriptor descriptor = forSchema(
+                    forLabel(1, 1), AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
             .withName("index_1")
             .materialise(1);
 

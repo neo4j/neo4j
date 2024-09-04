@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 
 class TrigramTextIndexPopulatingUpdaterIT extends TextIndexPopulatingUpdaterIT {
     @Override
     protected IndexProviderDescriptor getIndexProviderDescriptor() {
-        return TrigramIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR;
     }
 }

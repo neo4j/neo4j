@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -164,7 +165,7 @@ public class IndexCreateIT extends KernelIntegrationTest {
 
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
         SchemaDescriptor descriptor = entityType.createSchemaDescriptor(entityTokenId, propId);
-        String provider = RangeIndexProvider.DESCRIPTOR.name();
+        String provider = AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name();
         String indexName = "index-0";
         creator.create(schemaWrite, descriptor, provider, indexName);
         IndexDescriptor index = transaction.kernelTransaction().schemaRead().indexGetForName(indexName);

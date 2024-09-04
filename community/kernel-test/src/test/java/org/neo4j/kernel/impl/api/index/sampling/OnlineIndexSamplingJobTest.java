@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -55,7 +55,7 @@ class OnlineIndexSamplingJobTest {
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock(IndexProxy.class);
     private final IndexStatisticsStore indexStatisticsStore = mock(IndexStatisticsStore.class);
-    private final IndexDescriptor indexDescriptor = forSchema(forLabel(1, 2), IndexProviderDescriptor.UNDECIDED)
+    private final IndexDescriptor indexDescriptor = forSchema(forLabel(1, 2), AllIndexProviderDescriptors.UNDECIDED)
             .withName("index")
             .materialise(indexId);
     private final ValueIndexReader indexReader = mock(ValueIndexReader.class);

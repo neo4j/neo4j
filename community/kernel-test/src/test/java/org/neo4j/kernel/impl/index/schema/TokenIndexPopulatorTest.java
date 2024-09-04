@@ -41,6 +41,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.Test;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
@@ -56,7 +57,9 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
 
     @Override
     IndexDescriptor indexDescriptor() {
-        return forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
+        return forSchema(
+                        SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+                        AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
     }

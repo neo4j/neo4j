@@ -31,6 +31,7 @@ import org.apache.lucene.document.StringField;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -56,7 +57,7 @@ class TextIndexTest {
     private final IndexDescriptor descriptor = IndexPrototype.forSchema(forLabel(3, 5))
             .withName("a")
             .withIndexType(IndexType.TEXT)
-            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
+            .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
             .materialise(1);
 
     @AfterEach

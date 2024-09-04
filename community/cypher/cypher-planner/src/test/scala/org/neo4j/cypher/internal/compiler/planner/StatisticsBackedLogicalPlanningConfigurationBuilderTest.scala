@@ -33,13 +33,10 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.AllIndexProviderDescriptors
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
-import org.neo4j.kernel.impl.index.schema.PointIndexProvider
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.scalatest.LoneElement
 
 import java.util.Locale
@@ -54,17 +51,18 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
 
   private def indexCapability(indexProviderDescriptor: IndexProviderDescriptor): IndexCapability =
     indexProviderDescriptor match {
-      case TextIndexProvider.DESCRIPTOR    => IndexCapabilities.text_1_0
-      case TrigramIndexProvider.DESCRIPTOR => IndexCapabilities.text_2_0
-      case RangeIndexProvider.DESCRIPTOR   => IndexCapabilities.range
-      case PointIndexProvider.DESCRIPTOR   => IndexCapabilities.point
+      case AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR => IndexCapabilities.text_1_0
+      case AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR => IndexCapabilities.text_2_0
+      case AllIndexProviderDescriptors.RANGE_DESCRIPTOR   => IndexCapabilities.range
+      case AllIndexProviderDescriptors.POINT_DESCRIPTOR   => IndexCapabilities.point
       case _ => throw new IllegalArgumentException(s"Unexpected descriptor: $indexProviderDescriptor")
     }
 
   private def indexProviders(indexType: IndexType): Seq[IndexProviderDescriptor] = indexType match {
-    case IndexType.TEXT  => Seq(TextIndexProvider.DESCRIPTOR, TrigramIndexProvider.DESCRIPTOR)
-    case IndexType.RANGE => Seq(RangeIndexProvider.DESCRIPTOR)
-    case IndexType.POINT => Seq(PointIndexProvider.DESCRIPTOR)
+    case IndexType.TEXT =>
+      Seq(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR, AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR)
+    case IndexType.RANGE => Seq(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
+    case IndexType.POINT => Seq(AllIndexProviderDescriptors.POINT_DESCRIPTOR)
     case _               => throw new IllegalArgumentException(s"Unexpected index type: $indexType")
   }
 
@@ -140,7 +138,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
          |      "properties":["name"],
          |      "labels":["Person"],
          |      "indexType":"${IndexType.RANGE.name}",
-         |      "indexProvider":"${RangeIndexProvider.DESCRIPTOR.name()}",
+         |      "indexProvider":"${AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name()}",
          |      "estimatedUniqueSize": 1
          |    }
          |  ],
@@ -196,7 +194,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
          |      "properties":["name", "surname"],
          |      "labels":["Person"],
          |      "indexType":"${IndexType.RANGE.name}",
-         |      "indexProvider":"${RangeIndexProvider.DESCRIPTOR.name()}",
+         |      "indexProvider":"${AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name()}",
          |      "estimatedUniqueSize": 1
          |    }
          |  ],
@@ -262,7 +260,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
          |      "properties":["since"],
          |      "relationshipTypes":["KNOWS"],
          |      "indexType":"${IndexType.RANGE.name}",
-         |      "indexProvider":"${RangeIndexProvider.DESCRIPTOR.name()}",
+         |      "indexProvider":"${AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name()}",
          |      "estimatedUniqueSize": 1
          |    }
          |  ],

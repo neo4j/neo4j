@@ -38,7 +38,8 @@ public class IndexPrototype implements IndexRef<IndexPrototype> {
     private final IndexConfig indexConfig;
 
     public static IndexPrototype forSchema(SchemaDescriptor schema) {
-        return new IndexPrototype(schema, false, IndexProviderDescriptor.UNDECIDED, null, RANGE, IndexConfig.empty());
+        return new IndexPrototype(
+                schema, false, AllIndexProviderDescriptors.UNDECIDED, null, RANGE, IndexConfig.empty());
     }
 
     public static IndexPrototype forSchema(SchemaDescriptor schema, IndexProviderDescriptor indexProvider) {
@@ -46,7 +47,8 @@ public class IndexPrototype implements IndexRef<IndexPrototype> {
     }
 
     public static IndexPrototype uniqueForSchema(SchemaDescriptor schema) {
-        return new IndexPrototype(schema, true, IndexProviderDescriptor.UNDECIDED, null, RANGE, IndexConfig.empty());
+        return new IndexPrototype(
+                schema, true, AllIndexProviderDescriptors.UNDECIDED, null, RANGE, IndexConfig.empty());
     }
 
     public static IndexPrototype uniqueForSchema(SchemaDescriptor schema, IndexProviderDescriptor indexProvider) {

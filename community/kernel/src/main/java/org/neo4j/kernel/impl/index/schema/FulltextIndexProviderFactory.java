@@ -27,6 +27,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -42,8 +43,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
 public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<FulltextIndexProvider> {
-    private static final String KEY = "fulltext";
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor(KEY, "1.0");
 
     @Override
     protected Class<?> loggingClass() {
@@ -52,7 +51,7 @@ public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<F
 
     @Override
     public IndexProviderDescriptor descriptor() {
-        return DESCRIPTOR;
+        return AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR;
     }
 
     @Override
@@ -75,7 +74,7 @@ public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<F
         IndexDirectoryStructure.Factory directoryStructureFactory =
                 subProviderDirectoryStructure(databaseLayout.databaseDirectory());
         return new FulltextIndexProvider(
-                DESCRIPTOR,
+                AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR,
                 directoryStructureFactory,
                 fs,
                 config,

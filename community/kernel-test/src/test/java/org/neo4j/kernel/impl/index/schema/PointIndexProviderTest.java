@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -84,7 +85,7 @@ class PointIndexProviderTest extends IndexProviderTests {
 
     @Override
     IndexPrototype validPrototype() {
-        return forSchema(forLabel(labelId, propId), PointIndexProvider.DESCRIPTOR)
+        return forSchema(forLabel(labelId, propId), AllIndexProviderDescriptors.POINT_DESCRIPTOR)
                 .withIndexType(IndexType.POINT)
                 .withName("index");
     }

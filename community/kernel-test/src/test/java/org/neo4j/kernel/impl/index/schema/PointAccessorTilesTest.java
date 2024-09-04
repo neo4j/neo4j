@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
-import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.DESCRIPTOR;
 
 import org.eclipse.collections.impl.factory.Sets;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -42,7 +42,7 @@ class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey> {
     @Override
     NativeIndexAccessor<PointKey> createAccessor() {
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider(directory.homePath())
-                .forProvider(DESCRIPTOR);
+                .forProvider(AllIndexProviderDescriptors.POINT_DESCRIPTOR);
         IndexFiles indexFiles = new IndexFiles(fs, directoryStructure, descriptor.getId());
         PointLayout layout = new PointLayout(indexSettings);
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();

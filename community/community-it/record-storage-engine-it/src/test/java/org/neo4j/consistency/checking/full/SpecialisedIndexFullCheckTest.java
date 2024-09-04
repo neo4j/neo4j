@@ -65,6 +65,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -74,8 +75,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -465,14 +464,14 @@ class SpecialisedIndexFullCheckTest {
     @Nested
     class TextIndex extends TextIndexBase {
         TextIndex() {
-            super(TextIndexProvider.DESCRIPTOR);
+            super(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR);
         }
     }
 
     @Nested
     class TrigramTextIndex extends TextIndexBase {
         TrigramTextIndex() {
-            super(TrigramIndexProvider.DESCRIPTOR);
+            super(AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR);
         }
     }
 

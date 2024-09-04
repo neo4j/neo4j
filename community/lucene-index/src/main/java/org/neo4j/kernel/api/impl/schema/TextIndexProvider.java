@@ -27,9 +27,9 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,7 +47,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
 public class TextIndexProvider extends AbstractTextIndexProvider {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "1.0");
     public static final IndexCapability CAPABILITY = TextIndexCapability.text();
 
     private final FileSystemAbstraction fileSystem;
@@ -62,7 +61,7 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
         super(
                 KernelVersion.VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED,
                 IndexType.TEXT,
-                DESCRIPTOR,
+                AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR,
                 fileSystem,
                 directoryFactory,
                 directoryStructureFactory,

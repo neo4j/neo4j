@@ -24,9 +24,8 @@ import org.neo4j.gqlstatus.GqlStatusInfo;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.gqlstatus.SimpleMessageFormat;
 import org.neo4j.graphdb.InputPosition;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 
 /**
  * This bundles a specific description with a (potentially) more generic NotificationCode.
@@ -129,9 +128,9 @@ public enum NotificationCodeWithDescription {
     DEPRECATED_TEXT_INDEX_PROVIDER(
             Status.Statement.FeatureDeprecationWarning,
             GqlStatusInfoCodes.STATUS_01N01,
-            "The `" + TextIndexProvider.DESCRIPTOR.name()
+            "The `" + AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR.name()
                     + "` provider for text indexes is deprecated and will be removed in a future version. "
-                    + "Please use `" + TrigramIndexProvider.DESCRIPTOR.name() + "` instead."),
+                    + "Please use `" + AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR.name() + "` instead."),
 
     DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE(
             Status.Statement.FeatureDeprecationWarning,
@@ -458,7 +457,7 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation deprecatedTextIndexProvider(InputPosition position) {
         return DEPRECATED_TEXT_INDEX_PROVIDER.notificationWithParameters(position, new String[] {}, new String[] {
-            TextIndexProvider.DESCRIPTOR.name(), TrigramIndexProvider.DESCRIPTOR.name()
+            AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR.name(), AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR.name()
         });
     }
 

@@ -42,8 +42,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.RandomSupport;
@@ -151,7 +151,7 @@ public class IndexFailureOnStartupTest {
                 .getOpenOptions();
         controller.restartDbms(db.databaseName(), builder -> {
             try {
-                new SabotageNativeIndex(random.random(), RangeIndexProvider.DESCRIPTOR)
+                new SabotageNativeIndex(random.random(), AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                         .run(fs, db.databaseLayout(), openOptions);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -161,7 +161,7 @@ public class IndexFailureOnStartupTest {
     }
 
     private Path archiveFile() throws IOException {
-        Path indexDir = nativeIndexDirectoryStructure(db.databaseLayout(), RangeIndexProvider.DESCRIPTOR)
+        Path indexDir = nativeIndexDirectoryStructure(db.databaseLayout(), AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                 .rootDirectory();
         Path[] files;
         try (Stream<Path> list = Files.list(indexDir)) {

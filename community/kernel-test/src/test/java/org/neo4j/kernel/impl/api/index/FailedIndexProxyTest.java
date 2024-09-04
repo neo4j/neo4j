@@ -29,7 +29,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
@@ -47,7 +47,7 @@ class FailedIndexProxyTest {
         // given
         String userDescription = "description";
         IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy(
-                forSchema(forLabel(1, 2), IndexProviderDescriptor.UNDECIDED)
+                forSchema(forLabel(1, 2), AllIndexProviderDescriptors.UNDECIDED)
                         .withName(userDescription)
                         .materialise(1),
                 indexStatisticsStore,
@@ -71,7 +71,7 @@ class FailedIndexProxyTest {
 
         // when
         IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy(
-                forSchema(forLabel(0, 0), IndexProviderDescriptor.UNDECIDED)
+                forSchema(forLabel(0, 0), AllIndexProviderDescriptors.UNDECIDED)
                         .withName("foo")
                         .materialise(1),
                 indexStatisticsStore,

@@ -26,8 +26,8 @@ import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.internal.schema.AllIndexProviderDescriptors
 import org.neo4j.kernel.impl.api.index.IndexingService
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -237,7 +237,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
       "entityType" -> "RELATIONSHIP",
       "labelsOrTypes" -> List(relType),
       "properties" -> List(prop),
-      "indexProvider" -> RangeIndexProvider.DESCRIPTOR.name(),
+      "indexProvider" -> AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name(),
       "owningConstraint" -> null,
       "lastRead" -> null,
       "readCount" -> 0L.asInstanceOf[AnyRef]

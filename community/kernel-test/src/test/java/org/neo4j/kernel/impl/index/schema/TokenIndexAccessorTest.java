@@ -62,6 +62,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -96,7 +97,9 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
 
     @Override
     IndexDescriptor indexDescriptor() {
-        return forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
+        return forSchema(
+                        SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+                        AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
     }

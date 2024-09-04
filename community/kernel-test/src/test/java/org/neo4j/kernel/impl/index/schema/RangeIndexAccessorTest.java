@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
@@ -54,7 +55,7 @@ import org.neo4j.values.storable.Values;
 class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
     private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema(forLabel(42, 666))
             .withIndexType(IndexType.RANGE)
-            .withIndexProvider(RangeIndexProvider.DESCRIPTOR)
+            .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
             .withName("index")
             .materialise(0);
     private static final ValueType[] SUPPORTED_TYPES = ValueType.values();

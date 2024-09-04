@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -65,8 +66,6 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -208,7 +207,7 @@ class IndexIT extends KernelIntegrationTest {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         ConstraintIndexCreator creator = new ConstraintIndexCreator(() -> kernel, indexingService, logProvider);
 
-        IndexProviderDescriptor provider = RangeIndexProvider.DESCRIPTOR;
+        IndexProviderDescriptor provider = AllIndexProviderDescriptors.RANGE_DESCRIPTOR;
         IndexPrototype prototype =
                 uniqueForSchema(schema).withName("constraint name").withIndexProvider(provider);
         IndexDescriptor constraintIndex = creator.createConstraintIndex(prototype);
@@ -383,7 +382,7 @@ class IndexIT extends KernelIntegrationTest {
         long initialIndexCount = Iterators.count(transaction.schemaRead().indexesGetAll());
         SchemaDescriptor schema =
                 SchemaDescriptors.fulltext(EntityType.NODE, new int[] {labelId, labelId2}, new int[] {propertyKeyId});
-        IndexPrototype prototype = IndexPrototype.forSchema(schema, FulltextIndexProviderFactory.DESCRIPTOR)
+        IndexPrototype prototype = IndexPrototype.forSchema(schema, AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR)
                 .withIndexType(IndexType.FULLTEXT)
                 .withName("multi token index");
         transaction.schemaWrite().indexCreate(prototype);
@@ -462,7 +461,7 @@ class IndexIT extends KernelIntegrationTest {
         long initialIndexCount = Iterators.count(transaction.schemaRead().indexesGetAll());
         SchemaDescriptor schema = SchemaDescriptors.fulltext(
                 EntityType.RELATIONSHIP, new int[] {relType, relType2}, new int[] {propertyKeyId, propertyKeyId2});
-        IndexPrototype prototype = IndexPrototype.forSchema(schema, FulltextIndexProviderFactory.DESCRIPTOR)
+        IndexPrototype prototype = IndexPrototype.forSchema(schema, AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR)
                 .withIndexType(IndexType.FULLTEXT)
                 .withName("index name");
         transaction.schemaWrite().indexCreate(prototype);

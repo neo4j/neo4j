@@ -26,6 +26,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -47,7 +48,7 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
 
     @Override
     public IndexProviderDescriptor descriptor() {
-        return PointIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.POINT_DESCRIPTOR;
     }
 
     @Override

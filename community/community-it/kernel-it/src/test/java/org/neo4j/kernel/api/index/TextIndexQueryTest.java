@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -62,7 +63,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
@@ -310,7 +310,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
     }
 
     protected IndexProviderDescriptor getIndexProviderDescriptor() {
-        return TextIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR;
     }
 
     private long indexedNodes(PropertyIndexQuery... query) throws Exception {

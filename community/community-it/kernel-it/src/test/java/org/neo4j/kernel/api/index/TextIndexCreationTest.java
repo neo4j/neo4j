@@ -30,6 +30,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -37,7 +38,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -66,7 +66,7 @@ public class TextIndexCreationTest {
      * To be overridden ny subclass
      */
     protected IndexProviderDescriptor getIndexProviderDescriptor() {
-        return TextIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR;
     }
 
     @BeforeEach

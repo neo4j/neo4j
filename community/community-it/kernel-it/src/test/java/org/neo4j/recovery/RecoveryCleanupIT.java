@@ -45,8 +45,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -162,7 +162,7 @@ class RecoveryCleanupIT {
         managementService.shutdown();
 
         // then
-        String providerString = RangeIndexProvider.DESCRIPTOR.name();
+        String providerString = AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name();
         assertThat(logProvider)
                 .containsMessageWithAll(indexRecoveryLogMatcher("Schema index cleanup job registered", providerString))
                 .containsMessageWithAll(indexRecoveryLogMatcher("Schema index cleanup job started", providerString))

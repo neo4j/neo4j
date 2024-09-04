@@ -50,6 +50,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.SimpleTokenCreator;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -792,7 +793,7 @@ class SchemaStore44MigratorTest {
                 false,
                 name,
                 indexType,
-                IndexProviderDescriptor.UNDECIDED,
+                AllIndexProviderDescriptors.UNDECIDED,
                 IndexConfig.empty(),
                 null);
     }
@@ -806,7 +807,7 @@ class SchemaStore44MigratorTest {
                 true,
                 name,
                 indexType,
-                IndexProviderDescriptor.UNDECIDED,
+                AllIndexProviderDescriptors.UNDECIDED,
                 IndexConfig.empty(),
                 constraintId);
     }

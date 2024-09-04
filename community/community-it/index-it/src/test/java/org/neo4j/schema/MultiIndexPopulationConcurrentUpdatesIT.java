@@ -62,6 +62,7 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -77,8 +78,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -92,7 +91,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.DatabaseIndexStats;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
@@ -168,9 +166,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
 
     private static Stream<Arguments> parameters() {
         return Stream.of(
-                Arguments.of(RangeIndexProvider.DESCRIPTOR, IndexType.RANGE),
-                Arguments.of(TextIndexProvider.DESCRIPTOR, IndexType.TEXT),
-                Arguments.of(TrigramIndexProvider.DESCRIPTOR, IndexType.TEXT));
+                Arguments.of(AllIndexProviderDescriptors.RANGE_DESCRIPTOR, IndexType.RANGE),
+                Arguments.of(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR, IndexType.TEXT),
+                Arguments.of(AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR, IndexType.TEXT));
     }
 
     @ParameterizedTest

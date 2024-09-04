@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests.index
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.internal.schema.AllIndexProviderDescriptors
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
@@ -56,13 +57,23 @@ trait PropertyIndexTestSupport[CONTEXT <: RuntimeContext] {
 
   private val indexToTest: Seq[IndexInTest] = Seq[IndexInTest](
     IndexInTest(
-      RangeIndexProvider.DESCRIPTOR,
+      AllIndexProviderDescriptors.RANGE_DESCRIPTOR,
       RangeIndexProvider.CAPABILITY,
       IndexType.RANGE,
       supportedPropertyTypes()
     ),
-    IndexInTest(TextIndexProvider.DESCRIPTOR, TextIndexProvider.CAPABILITY, IndexType.TEXT, supportedPropertyTypes()),
-    IndexInTest(PointIndexProvider.DESCRIPTOR, PointIndexProvider.CAPABILITY, IndexType.POINT, supportedPropertyTypes())
+    IndexInTest(
+      AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR,
+      TextIndexProvider.CAPABILITY,
+      IndexType.TEXT,
+      supportedPropertyTypes()
+    ),
+    IndexInTest(
+      AllIndexProviderDescriptors.POINT_DESCRIPTOR,
+      PointIndexProvider.CAPABILITY,
+      IndexType.POINT,
+      supportedPropertyTypes()
+    )
   )
 
   def supportedPropertyTypes(): Seq[ValueType] = defaultSupportedTypes

@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.impl.schema;
 
 import static org.neo4j.internal.schema.IndexType.TEXT;
 
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.test.RandomSupport;
 
@@ -46,7 +46,7 @@ public class TrigramIndexStringLengthIndexValidationIT extends StringLengthIndex
 
     @Override
     protected IndexProviderDescriptor getIndexProvider() {
-        return TrigramIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR;
     }
 
     @Override

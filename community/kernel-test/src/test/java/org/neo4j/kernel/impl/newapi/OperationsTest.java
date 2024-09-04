@@ -72,6 +72,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -95,8 +96,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -215,10 +214,10 @@ abstract class OperationsTest {
         creationContext = mock(CommandCreationContext.class);
 
         IndexProvider fulltextProvider = mock(IndexProvider.class);
-        when(fulltextProvider.getProviderDescriptor()).thenReturn(FulltextIndexProviderFactory.DESCRIPTOR);
+        when(fulltextProvider.getProviderDescriptor()).thenReturn(AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR);
         when(fulltextProvider.getMinimumRequiredVersion()).thenReturn(KernelVersion.EARLIEST);
         IndexProvider rangeProvider = mock(IndexProvider.class);
-        when(rangeProvider.getProviderDescriptor()).thenReturn(RangeIndexProvider.DESCRIPTOR);
+        when(rangeProvider.getProviderDescriptor()).thenReturn(AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
         when(rangeProvider.getMinimumRequiredVersion())
                 .thenReturn(KernelVersion.VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED);
         IndexProvider provider = mock(IndexProvider.class);

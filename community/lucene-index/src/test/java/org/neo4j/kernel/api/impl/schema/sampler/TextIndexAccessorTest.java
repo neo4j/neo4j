@@ -65,6 +65,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -107,7 +108,7 @@ public class TextIndexAccessorTest {
     private static final IndexDescriptor GENERAL_INDEX = IndexPrototype.forSchema(forLabel(0, PROP_ID))
             .withName("a")
             .withIndexType(IndexType.TEXT)
-            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
+            .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
             .materialise(0)
             .withIndexCapability(TextIndexProvider.CAPABILITY);
     private static final Config CONFIG = Config.defaults();

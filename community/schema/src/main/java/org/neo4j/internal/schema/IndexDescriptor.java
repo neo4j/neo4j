@@ -103,7 +103,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         this.name = ReservedSchemaRuleNames.NO_INDEX.getReservedName();
         this.schema = SchemaDescriptors.noSchema();
         this.isUnique = false;
-        this.indexProvider = IndexProviderDescriptor.UNDECIDED;
+        this.indexProvider = AllIndexProviderDescriptors.UNDECIDED;
         this.owningConstraintId = null;
         this.capability = IndexCapability.NO_CAPABILITY;
         this.indexType = IndexType.RANGE;

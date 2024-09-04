@@ -27,6 +27,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,7 +47,8 @@ class LuceneMinimalIndexAccessorTest {
 
     @Test
     void shouldSnapshotFailureFileOnFailedIndex() throws IOException {
-        var indexDescriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2), TextIndexProvider.DESCRIPTOR)
+        var indexDescriptor = IndexPrototype.forSchema(
+                        SchemaDescriptors.forLabel(1, 2), AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
                 .withName("failure")
                 .materialise(5);
         var storage = new PartitionedIndexStorage(PERSISTENT, fs, directory.directory("root"));
@@ -68,7 +70,8 @@ class LuceneMinimalIndexAccessorTest {
 
     @Test
     void shouldSnapshotIndexFileOnOnline() throws IOException {
-        var indexDescriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2), TextIndexProvider.DESCRIPTOR)
+        var indexDescriptor = IndexPrototype.forSchema(
+                        SchemaDescriptors.forLabel(1, 2), AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
                 .withName("failure")
                 .materialise(5);
         var storage = new PartitionedIndexStorage(PERSISTENT, fs, directory.directory("root"));

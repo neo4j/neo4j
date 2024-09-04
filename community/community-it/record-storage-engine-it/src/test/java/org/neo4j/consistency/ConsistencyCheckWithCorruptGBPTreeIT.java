@@ -68,6 +68,7 @@ import org.neo4j.index.internal.gbptree.InspectingVisitor;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.counts.CountsLayout;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -81,9 +82,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -840,7 +839,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
 
     private Path[] schemaIndexFiles() throws IOException {
         final Path databaseDir = databaseLayout.databaseDirectory();
-        return schemaIndexFiles(fs, databaseDir, RangeIndexProvider.DESCRIPTOR);
+        return schemaIndexFiles(fs, databaseDir, AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
     }
 
     private static Path[] schemaIndexFiles(
@@ -943,7 +942,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                     .forEach(idx -> {
                         IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider(
                                         databaseLayout.databaseDirectory())
-                                .forProvider(TokenIndexProvider.DESCRIPTOR);
+                                .forProvider(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
                         long id =
                                 ((IndexDefinitionImpl) idx).getIndexReference().getId();
                         IndexFiles indexFiles = new IndexFiles(fs, indexDirectoryStructure, id);

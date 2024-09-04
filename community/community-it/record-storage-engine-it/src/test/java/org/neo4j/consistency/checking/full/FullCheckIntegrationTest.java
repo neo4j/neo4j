@@ -122,6 +122,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageIndexingBehaviour;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -143,8 +144,6 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -152,7 +151,6 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -201,7 +199,7 @@ import org.neo4j.values.storable.Values;
 
 @EphemeralTestDirectoryExtension
 public class FullCheckIntegrationTest {
-    private static final IndexProviderDescriptor DESCRIPTOR = RangeIndexProvider.DESCRIPTOR;
+    private static final IndexProviderDescriptor DESCRIPTOR = AllIndexProviderDescriptors.RANGE_DESCRIPTOR;
     protected static final String PROP1 = "key1";
     protected static final String PROP2 = "key2";
     protected static final Object VALUE1 = "value1";
@@ -2038,8 +2036,18 @@ public class FullCheckIntegrationTest {
         // Given
         int entityTokenId = createEntityToken(entityType);
         int propertyKeyId = createPropertyKey();
-        createIndexRule(entityType, IndexType.TEXT, TextIndexProvider.DESCRIPTOR, entityTokenId, propertyKeyId);
-        createIndexRule(entityType, IndexType.TEXT, TrigramIndexProvider.DESCRIPTOR, entityTokenId, propertyKeyId);
+        createIndexRule(
+                entityType,
+                IndexType.TEXT,
+                AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR,
+                entityTokenId,
+                propertyKeyId);
+        createIndexRule(
+                entityType,
+                IndexType.TEXT,
+                AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR,
+                entityTokenId,
+                propertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();

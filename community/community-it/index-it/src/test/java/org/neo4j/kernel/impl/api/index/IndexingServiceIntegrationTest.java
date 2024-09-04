@@ -53,6 +53,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -65,7 +66,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -354,7 +354,7 @@ public class IndexingServiceIntegrationTest {
             final int propertyKeyId = ktx.tokenRead().propertyKey(PROPERTY_NAME);
 
             final IndexPrototype uniqueIndex = uniqueForSchema(forLabel(labelId, propertyKeyId))
-                    .withIndexProvider(RangeIndexProvider.DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .withName("constraint");
             index = ktx.indexUniqueCreate(uniqueIndex);
             tx.commit();

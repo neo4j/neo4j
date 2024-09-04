@@ -100,6 +100,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.EndpointType;
@@ -1757,7 +1758,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private IndexPrototype ensureIndexPrototypeHasIndexProvider(IndexPrototype prototype) {
-        return prototype.getIndexProvider() == IndexProviderDescriptor.UNDECIDED
+        return prototype.getIndexProvider() == AllIndexProviderDescriptors.UNDECIDED
                 ? prototype.withIndexProvider(
                         switch (prototype.getIndexType()) {
                             case LOOKUP -> indexProviders.getTokenIndexProvider();

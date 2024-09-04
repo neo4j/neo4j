@@ -20,9 +20,7 @@
 package org.neo4j.kernel.internal;
 
 import java.nio.file.Path;
-import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 
 /**
  * A filter which only matches native index files.
@@ -42,8 +40,8 @@ public class NativeIndexFileFilter extends IndexFileFilter {
         }
 
         final var provider = provider(path);
-        return provider.equals(TokenIndexProvider.DESCRIPTOR.name())
-                || provider.equals(RangeIndexProvider.DESCRIPTOR.name())
-                || provider.equals(PointIndexProvider.DESCRIPTOR.name());
+        return provider.equals(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR.name())
+                || provider.equals(AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name())
+                || provider.equals(AllIndexProviderDescriptors.POINT_DESCRIPTOR.name());
     }
 }

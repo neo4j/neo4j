@@ -26,6 +26,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -46,7 +47,7 @@ class TextIndexBuilderTest {
     private final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 0))
             .withName("a")
             .withIndexType(IndexType.TEXT)
-            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
+            .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
             .materialise(0);
 
     @Test

@@ -37,6 +37,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -80,7 +81,7 @@ class TextIndexPopulatorTest {
         IndexDescriptor descriptor = IndexPrototype.forSchema(labelSchemaDescriptor.schema())
                 .withName("index")
                 .withIndexType(IndexType.TEXT)
-                .withIndexProvider(TextIndexProvider.DESCRIPTOR)
+                .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
                 .materialise(13)
                 .withIndexCapability(TextIndexProvider.CAPABILITY);
         index = TextIndexBuilder.create(descriptor, writable(), Config.defaults())

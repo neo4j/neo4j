@@ -33,15 +33,9 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.internal.IndexFileFilter;
 import org.neo4j.kernel.internal.LuceneIndexFileFilter;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
@@ -52,15 +46,17 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 class IndexFileFilterTest {
-    private static final List<IndexProviderDescriptor> NATIVE =
-            List.of(TokenIndexProvider.DESCRIPTOR, RangeIndexProvider.DESCRIPTOR, PointIndexProvider.DESCRIPTOR);
+    private static final List<IndexProviderDescriptor> NATIVE = List.of(
+            AllIndexProviderDescriptors.TOKEN_DESCRIPTOR,
+            AllIndexProviderDescriptors.RANGE_DESCRIPTOR,
+            AllIndexProviderDescriptors.POINT_DESCRIPTOR);
 
     private static final List<IndexProviderDescriptor> LUCENE = List.of(
-            TextIndexProvider.DESCRIPTOR,
-            TrigramIndexProvider.DESCRIPTOR,
-            FulltextIndexProviderFactory.DESCRIPTOR,
-            VectorIndexVersion.V1_0.descriptor(),
-            VectorIndexVersion.V2_0.descriptor());
+            AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR,
+            AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR,
+            AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR,
+            AllIndexProviderDescriptors.VECTOR_V1_DESCRIPTOR,
+            AllIndexProviderDescriptors.VECTOR_V2_DESCRIPTOR);
 
     @TestDirectoryExtension
     @ExtendWith(RandomExtension.class)

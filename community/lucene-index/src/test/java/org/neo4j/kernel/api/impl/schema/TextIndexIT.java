@@ -43,6 +43,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -73,7 +74,7 @@ class TextIndexIT {
     private final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 0))
             .withName("a")
             .withIndexType(IndexType.TEXT)
-            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
+            .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
             .materialise(1);
     private final Config config = Config.newBuilder()
             .set(GraphDatabaseInternalSettings.lucene_max_partition_size, 10)

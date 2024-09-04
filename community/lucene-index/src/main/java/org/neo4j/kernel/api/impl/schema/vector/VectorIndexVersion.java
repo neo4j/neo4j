@@ -37,6 +37,7 @@ import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.tuple.Tuples;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.IndexSettingValidators.IntegerValidator;
@@ -55,7 +56,14 @@ import org.neo4j.values.storable.NumberArray;
 import org.neo4j.values.storable.Value;
 
 public enum VectorIndexVersion {
-    UNKNOWN(null, KernelVersion.EARLIEST, 0, 0, 0, Sets.immutable.empty(), BooleanSets.immutable.empty()) {
+    UNKNOWN(
+            AllIndexProviderDescriptors.UNDECIDED,
+            KernelVersion.EARLIEST,
+            0,
+            0,
+            0,
+            Sets.immutable.empty(),
+            BooleanSets.immutable.empty()) {
         @Override
         protected RichIterable<Pair<KernelVersion, VectorIndexSettingsValidator>> configureValidators() {
             return Lists.mutable.of(Tuples.pair(
@@ -73,7 +81,7 @@ public enum VectorIndexVersion {
     },
 
     V1_0(
-            "1.0",
+            AllIndexProviderDescriptors.VECTOR_V1_DESCRIPTOR,
             KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
             2048,
             512,
@@ -113,7 +121,7 @@ public enum VectorIndexVersion {
     },
 
     V2_0(
-            "2.0",
+            AllIndexProviderDescriptors.VECTOR_V2_DESCRIPTOR,
             KernelVersion.VERSION_VECTOR_2_INTRODUCED,
             4096,
             512,
@@ -178,8 +186,6 @@ public enum VectorIndexVersion {
         return UNKNOWN;
     }
 
-    private static final String DESCRIPTOR_KEY = "vector";
-
     private final KernelVersion minimumRequiredKernelVersion;
     private final IndexProviderDescriptor descriptor;
     private final int maxDimensions;
@@ -191,7 +197,7 @@ public enum VectorIndexVersion {
     private final VectorIndexSettingsValidator latestIndexSettingValidator;
 
     VectorIndexVersion(
-            String version,
+            IndexProviderDescriptor providerDescriptor,
             KernelVersion minimumRequiredKernelVersion,
             int maxDimensions,
             int maxHnswM,
@@ -199,9 +205,7 @@ public enum VectorIndexVersion {
             SetIterable<VectorSimilarityFunction> supportedSimilarityFunctions,
             BooleanSet supportedQuantizationEnableds) {
         this.minimumRequiredKernelVersion = minimumRequiredKernelVersion;
-        this.descriptor = version != null
-                ? new IndexProviderDescriptor(DESCRIPTOR_KEY, version)
-                : IndexProviderDescriptor.UNDECIDED;
+        this.descriptor = providerDescriptor;
 
         this.maxDimensions = maxDimensions;
         this.similarityFunctions = supportedSimilarityFunctions.toImmutableMap(

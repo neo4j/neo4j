@@ -37,6 +37,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -64,7 +65,7 @@ class TextIndexPopulationIT {
     private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(0, 0))
             .withName("a")
             .withIndexType(IndexType.TEXT)
-            .withIndexProvider(TextIndexProvider.DESCRIPTOR)
+            .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
             .materialise(1)
             .withIndexCapability(TextIndexProvider.CAPABILITY);
     private final Config config = Config.newBuilder()

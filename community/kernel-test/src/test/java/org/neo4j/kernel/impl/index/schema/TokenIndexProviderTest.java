@@ -25,6 +25,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 import java.util.List;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -75,7 +76,9 @@ public class TokenIndexProviderTest extends IndexProviderTests {
 
     @Override
     IndexPrototype validPrototype() {
-        return forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
+        return forSchema(
+                        SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+                        AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                 .withIndexType(IndexType.LOOKUP)
                 .withName("index");
     }
@@ -83,16 +86,20 @@ public class TokenIndexProviderTest extends IndexProviderTests {
     @Override
     List<IndexPrototype> invalidPrototypes() {
         return List.of(
-                forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
+                forSchema(
+                                SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+                                AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                         .withIndexType(IndexType.RANGE)
                         .withName("unsupported"),
-                forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, RangeIndexProvider.DESCRIPTOR)
+                forSchema(
+                                SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+                                AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                         .withIndexType(IndexType.LOOKUP)
                         .withName("unsupported"),
-                forSchema(forLabel(labelId, propId), TokenIndexProvider.DESCRIPTOR)
+                forSchema(forLabel(labelId, propId), AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                         .withIndexType(IndexType.LOOKUP)
                         .withName("unsupported"),
-                uniqueForSchema(forLabel(labelId, propId), TokenIndexProvider.DESCRIPTOR)
+                uniqueForSchema(forLabel(labelId, propId), AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                         .withIndexType(IndexType.LOOKUP)
                         .withName("unsupported"));
     }

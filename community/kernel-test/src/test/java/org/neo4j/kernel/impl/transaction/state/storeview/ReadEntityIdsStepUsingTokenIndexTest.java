@@ -41,6 +41,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -58,7 +59,6 @@ import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -196,8 +196,8 @@ class ReadEntityIdsStepUsingTokenIndexTest {
     }
 
     private TokenIndexAccessor indexAccessor() {
-        IndexDirectoryStructure indexDirectoryStructure =
-                directoriesByProvider(databaseLayout.databaseDirectory()).forProvider(TokenIndexProvider.DESCRIPTOR);
+        IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider(databaseLayout.databaseDirectory())
+                .forProvider(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
         IndexFiles indexFiles =
                 new IndexFiles(testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId());
         return new TokenIndexAccessor(

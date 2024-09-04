@@ -28,7 +28,6 @@ import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_
 import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
-import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -48,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -91,7 +91,8 @@ class DynamicIndexStoreViewTest {
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
         StubTokenIndexReader tokenReader = new StubTokenIndexReader();
-        IndexDescriptor descriptor = forSchema(ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, DESCRIPTOR)
+        IndexDescriptor descriptor = forSchema(
+                        ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
         when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);
@@ -134,7 +135,8 @@ class DynamicIndexStoreViewTest {
         StorageEngine storageEngine = mockedStorageEngine(cursors, false);
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
-        IndexDescriptor descriptor = forSchema(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, DESCRIPTOR)
+        IndexDescriptor descriptor = forSchema(
+                        ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
         when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);
@@ -273,7 +275,8 @@ class DynamicIndexStoreViewTest {
         StorageEngine storageEngine = mockedStorageEngine(cursors, true);
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
-        IndexDescriptor descriptor = forSchema(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, DESCRIPTOR)
+        IndexDescriptor descriptor = forSchema(
+                        ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
         when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);

@@ -31,8 +31,7 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N51
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N60
 import org.neo4j.gqlstatus.NotificationClassification
 import org.neo4j.graphdb.SeverityLevel
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
+import org.neo4j.internal.schema.AllIndexProviderDescriptors
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionField
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithReplacement
@@ -496,7 +495,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test("deprecate explicit use of old text index provider") {
-    val deprecatedProvider = TextIndexProvider.DESCRIPTOR.name()
+    val deprecatedProvider = AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR.name()
     val deprecatedProviderQueries = Seq(
       s"CREATE TEXT INDEX FOR (n:Label) ON (n.prop) OPTIONS {indexProvider : '$deprecatedProvider'}",
       s"CREATE TEXT INDEX FOR ()-[r:TYPE]-() ON (r.prop) OPTIONS {indexProvider : '$deprecatedProvider'}"
@@ -516,7 +515,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       )
     )
 
-    val validProvider = TrigramIndexProvider.DESCRIPTOR.name()
+    val validProvider = AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR.name()
     val validProviderQueries = Seq(
       s"CREATE TEXT INDEX FOR (n:Label) ON (n.prop) OPTIONS {indexProvider : '$validProvider'}",
       s"CREATE TEXT INDEX FOR ()-[r:TYPE]-() ON (r.prop) OPTIONS {indexProvider : '$validProvider'}"

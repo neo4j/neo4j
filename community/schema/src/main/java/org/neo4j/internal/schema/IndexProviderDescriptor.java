@@ -22,11 +22,6 @@ package org.neo4j.internal.schema;
 import java.util.Objects;
 
 public class IndexProviderDescriptor {
-    /**
-     * Indicate that {@link IndexProviderDescriptor} has not yet been decided.
-     * Specifically before transaction that create a new index has committed.
-     */
-    public static final IndexProviderDescriptor UNDECIDED = new IndexProviderDescriptor("Undecided", "0");
 
     private final String key;
     private final String version;

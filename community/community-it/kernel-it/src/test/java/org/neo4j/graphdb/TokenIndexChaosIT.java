@@ -39,11 +39,11 @@ import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsController;
@@ -213,7 +213,7 @@ public class TokenIndexChaosIT {
                     .map(idx -> {
                         IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider(
                                         db.databaseLayout().databaseDirectory())
-                                .forProvider(TokenIndexProvider.DESCRIPTOR);
+                                .forProvider(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
                         long id =
                                 ((IndexDefinitionImpl) idx).getIndexReference().getId();
                         IndexFiles indexFiles = new IndexFiles(fs, indexDirectoryStructure, id);

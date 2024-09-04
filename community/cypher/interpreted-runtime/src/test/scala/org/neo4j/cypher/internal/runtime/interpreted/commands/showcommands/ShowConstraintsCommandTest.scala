@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.internal.schema.AllIndexProviderDescriptors
 import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
@@ -48,7 +49,6 @@ import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.internal.schema.constraints.SchemaValueType
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
@@ -79,29 +79,29 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
 
   private val optionsMap = VirtualValues.map(
     Array("indexProvider", "indexConfig"),
-    Array(Values.stringValue(RangeIndexProvider.DESCRIPTOR.name()), VirtualValues.EMPTY_MAP)
+    Array(Values.stringValue(AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name()), VirtualValues.EMPTY_MAP)
   )
 
   private val nodeUniquenessIndexDescriptor =
-    IndexPrototype.uniqueForSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR)
+    IndexPrototype.uniqueForSchema(labelDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
       .withName("constraint0")
       .materialise(0)
       .withOwningConstraintId(1)
 
   private val relUniquenessIndexDescriptor =
-    IndexPrototype.uniqueForSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR)
+    IndexPrototype.uniqueForSchema(relTypeDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
       .withName("constraint2")
       .materialise(3)
       .withOwningConstraintId(4)
 
   private val nodeKeyIndexDescriptor =
-    IndexPrototype.uniqueForSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR)
+    IndexPrototype.uniqueForSchema(labelDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
       .withName("constraint3")
       .materialise(5)
       .withOwningConstraintId(6)
 
   private val relKeyIndexDescriptor =
-    IndexPrototype.uniqueForSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR)
+    IndexPrototype.uniqueForSchema(relTypeDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
       .withName("constraint4")
       .materialise(7)
       .withOwningConstraintId(8)

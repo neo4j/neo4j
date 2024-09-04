@@ -43,6 +43,7 @@ import org.mockito.ArgumentCaptor;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -54,7 +55,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -87,7 +87,8 @@ class TokenIndexPopulationTest {
     @BeforeEach
     void beforeEach() {
         tokenIndex = IndexPrototype.forSchema(
-                        SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
+                        SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+                        AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                 .withName("label_index")
                 .withIndexType(IndexType.LOOKUP)
                 .materialise(123);

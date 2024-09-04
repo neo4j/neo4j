@@ -50,6 +50,7 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
 import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.helpers.NameUtil
+import org.neo4j.internal.schema.AllIndexProviderDescriptors
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
@@ -58,14 +59,8 @@ import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.UrlOrEmail
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.kernel.api.index.IndexUsageStats
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
-import org.neo4j.kernel.impl.index.schema.PointIndexProvider
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValueWriter.EntityMode
 import org.neo4j.values.storable.TextValue
@@ -104,14 +99,14 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
 
   private val nodeIndexInfo = IndexInfo(IndexStatus("ONLINE", "", 100.0, None), List(label), List(prop))
   private val relIndexInfo = IndexInfo(IndexStatus("ONLINE", "", 100.0, None), List(relType), List(prop))
-  private val rangeProvider = RangeIndexProvider.DESCRIPTOR.name()
-  private val lookupProvider = TokenIndexProvider.DESCRIPTOR.name()
-  private val pointProvider = PointIndexProvider.DESCRIPTOR.name()
-  private val textV2Provider = TrigramIndexProvider.DESCRIPTOR.name()
-  private val textV1Provider = TextIndexProvider.DESCRIPTOR.name()
-  private val fulltextProvider = FulltextIndexProviderFactory.DESCRIPTOR.name()
-  private val vectorV1Provider = VectorIndexVersion.V1_0.descriptor().name()
-  private val vectorV2Provider = VectorIndexVersion.V2_0.descriptor().name()
+  private val rangeProvider = AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name()
+  private val lookupProvider = AllIndexProviderDescriptors.TOKEN_DESCRIPTOR.name()
+  private val pointProvider = AllIndexProviderDescriptors.POINT_DESCRIPTOR.name()
+  private val textV2Provider = AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR.name()
+  private val textV1Provider = AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR.name()
+  private val fulltextProvider = AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR.name()
+  private val vectorV1Provider = AllIndexProviderDescriptors.VECTOR_V1_DESCRIPTOR.name()
+  private val vectorV2Provider = AllIndexProviderDescriptors.VECTOR_V2_DESCRIPTOR.name()
 
   private val cartesianMin = SPATIAL_CARTESIAN_MIN.getSettingName
   private val cartesianMax = SPATIAL_CARTESIAN_MAX.getSettingName
@@ -222,13 +217,20 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   }
 
   private val rangeNodeIndexDescriptor =
-    IndexPrototype.forSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index00").materialise(0)
+    IndexPrototype.forSchema(labelDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
+      .withName("index00")
+      .materialise(0)
 
   private val rangeRelIndexDescriptor =
-    IndexPrototype.forSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index01").materialise(1)
+    IndexPrototype.forSchema(relTypeDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
+      .withName("index01")
+      .materialise(1)
 
   private val lookupNodeIndexDescriptor =
-    IndexPrototype.forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
+    IndexPrototype.forSchema(
+      SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+      AllIndexProviderDescriptors.TOKEN_DESCRIPTOR
+    )
       .withIndexType(IndexType.LOOKUP)
       .withName("index02")
       .materialise(2)
@@ -236,14 +238,14 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val lookupRelIndexDescriptor =
     IndexPrototype.forSchema(
       SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR,
-      TokenIndexProvider.DESCRIPTOR
+      AllIndexProviderDescriptors.TOKEN_DESCRIPTOR
     )
       .withIndexType(IndexType.LOOKUP)
       .withName("index03")
       .materialise(3)
 
   private val pointNodeIndexDescriptor =
-    IndexPrototype.forSchema(labelDescriptor, PointIndexProvider.DESCRIPTOR)
+    IndexPrototype.forSchema(labelDescriptor, AllIndexProviderDescriptors.POINT_DESCRIPTOR)
       .withIndexType(IndexType.POINT)
       .withName("index04")
       .withIndexConfig(
@@ -259,7 +261,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       .materialise(4)
 
   private val pointRelIndexDescriptor =
-    IndexPrototype.forSchema(relTypeDescriptor, PointIndexProvider.DESCRIPTOR)
+    IndexPrototype.forSchema(relTypeDescriptor, AllIndexProviderDescriptors.POINT_DESCRIPTOR)
       .withIndexType(IndexType.POINT)
       .withName("index05")
       .withIndexConfig(
@@ -275,13 +277,13 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       .materialise(5)
 
   private val textNodeIndexDescriptor =
-    IndexPrototype.forSchema(labelDescriptor, TrigramIndexProvider.DESCRIPTOR)
+    IndexPrototype.forSchema(labelDescriptor, AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR)
       .withIndexType(IndexType.TEXT)
       .withName("index06")
       .materialise(6)
 
   private val textRelIndexDescriptor =
-    IndexPrototype.forSchema(relTypeDescriptor, TextIndexProvider.DESCRIPTOR)
+    IndexPrototype.forSchema(relTypeDescriptor, AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
       .withIndexType(IndexType.TEXT)
       .withName("index07")
       .materialise(7)
@@ -289,7 +291,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val fulltextNodeIndexDescriptor =
     IndexPrototype.forSchema(
       SchemaDescriptors.fulltext(EntityType.NODE, Array(0), Array(0)),
-      FulltextIndexProviderFactory.DESCRIPTOR
+      AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR
     )
       .withIndexType(IndexType.FULLTEXT)
       .withName("index08")
@@ -302,7 +304,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val fulltextRelIndexDescriptor =
     IndexPrototype.forSchema(
       SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, Array(0), Array(0)),
-      FulltextIndexProviderFactory.DESCRIPTOR
+      AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR
     )
       .withIndexType(IndexType.FULLTEXT)
       .withName("index09")
@@ -562,13 +564,13 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   test("show indexes should show indexes backing constraints") {
     // Index and constraint descriptors
     val nodeIndexDescriptor =
-      IndexPrototype.uniqueForSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR)
+      IndexPrototype.uniqueForSchema(labelDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
         .withName("index00")
         .materialise(0)
         .withOwningConstraintId(1)
 
     val relIndexDescriptor =
-      IndexPrototype.uniqueForSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR)
+      IndexPrototype.uniqueForSchema(relTypeDescriptor, AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
         .withName("index01")
         .materialise(2)
         .withOwningConstraintId(3)

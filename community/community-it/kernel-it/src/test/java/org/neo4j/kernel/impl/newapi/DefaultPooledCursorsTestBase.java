@@ -25,7 +25,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
@@ -50,6 +49,7 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -300,7 +300,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         try (KernelTransaction tx = beginTransaction()) {
             SchemaDescriptor schema =
                     SchemaDescriptors.fulltext(EntityType.RELATIONSHIP, array(connection), array(name));
-            IndexPrototype prototype = IndexPrototype.forSchema(schema, DESCRIPTOR)
+            IndexPrototype prototype = IndexPrototype.forSchema(schema, AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR)
                     .withName(indexName)
                     .withIndexType(IndexType.FULLTEXT);
             index = tx.schemaWrite().indexCreate(prototype);

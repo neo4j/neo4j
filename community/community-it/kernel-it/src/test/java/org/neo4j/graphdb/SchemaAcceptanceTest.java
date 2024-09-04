@@ -71,6 +71,7 @@ import org.neo4j.index.internal.gbptree.DynamicSizeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -87,7 +88,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
@@ -1386,7 +1386,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
 
             IndexProviderDescriptor provider =
                     ((IndexDefinitionImpl) definition).getIndexReference().getIndexProvider();
-            assertThat(FulltextIndexProviderFactory.DESCRIPTOR).isEqualTo(provider);
+            assertThat(AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR).isEqualTo(provider);
             tx.commit();
         }
     }

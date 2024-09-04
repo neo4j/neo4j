@@ -40,6 +40,7 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -231,7 +232,7 @@ class TextIndexPopulatingUpdaterIT {
     }
 
     protected IndexProviderDescriptor getIndexProviderDescriptor() {
-        return TextIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR;
     }
 
     private TextIndexProvider createIndexProvider() {

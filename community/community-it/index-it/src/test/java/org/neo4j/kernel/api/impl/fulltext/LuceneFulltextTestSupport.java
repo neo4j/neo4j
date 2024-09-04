@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
@@ -98,7 +98,7 @@ public class LuceneFulltextTestSupport {
     }
 
     private FulltextIndexProvider getAdapter() {
-        return (FulltextIndexProvider) indexProviderMap.lookup(FulltextIndexProviderFactory.DESCRIPTOR);
+        return (FulltextIndexProvider) indexProviderMap.lookup(AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR);
     }
 
     static long createNodeIndexableByPropertyValue(Transaction tx, Label label, Object propertyValue) {

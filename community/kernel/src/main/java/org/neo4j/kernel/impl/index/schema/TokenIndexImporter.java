@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.batchimport.api.IndexImporter;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -118,7 +119,7 @@ public class TokenIndexImporter implements IndexImporter {
                 .build();
         IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider(
                         layout.databaseDirectory())
-                .forProvider(TokenIndexProvider.DESCRIPTOR);
+                .forProvider(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
         IndexFiles indexFiles = TokenIndexProvider.indexFiles(index, fs, indexDirectoryStructure);
         return new TokenIndexAccessor(context, indexFiles, index, immediate(), openOptions, false, indexingBehaviour);
     }

@@ -24,15 +24,15 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.impl.newapi.KernelRead;
 
 public class TrigramIndexQueryTest extends TextIndexQueryTest {
 
     @Override
     protected IndexProviderDescriptor getIndexProviderDescriptor() {
-        return TrigramIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR;
     }
 
     @Test

@@ -47,13 +47,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -400,7 +400,7 @@ class AllNodesInStoreExistInLabelIndexTest {
                     .map(idx -> {
                         IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider(
                                         db.databaseLayout().databaseDirectory())
-                                .forProvider(TokenIndexProvider.DESCRIPTOR);
+                                .forProvider(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR);
                         long idxId =
                                 ((IndexDefinitionImpl) idx).getIndexReference().getId();
                         IndexFiles indexFiles = new IndexFiles(fs, indexDirectoryStructure, idxId);

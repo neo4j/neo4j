@@ -26,7 +26,6 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -46,6 +45,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Commands;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -128,7 +128,8 @@ class IndexWorkSyncTransactionApplicationStressIT {
         try (var storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             storageEngine.apply(
                     tx(
-                            singletonList(Commands.createIndexRule(DESCRIPTOR, 1, descriptor)),
+                            singletonList(Commands.createIndexRule(
+                                    AllIndexProviderDescriptors.RANGE_DESCRIPTOR, 1, descriptor)),
                             storageCursors,
                             commitmentFactory,
                             transactionIdGenerator),

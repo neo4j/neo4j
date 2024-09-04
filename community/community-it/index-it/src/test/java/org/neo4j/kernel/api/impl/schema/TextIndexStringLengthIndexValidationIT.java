@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import static org.neo4j.internal.schema.IndexType.TEXT;
 
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
@@ -44,7 +45,7 @@ public class TextIndexStringLengthIndexValidationIT extends StringLengthIndexVal
 
     @Override
     protected IndexProviderDescriptor getIndexProvider() {
-        return TextIndexProvider.DESCRIPTOR;
+        return AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR;
     }
 
     @Override

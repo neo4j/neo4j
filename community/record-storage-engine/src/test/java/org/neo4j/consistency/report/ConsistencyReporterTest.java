@@ -45,9 +45,9 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
@@ -187,7 +187,7 @@ class ConsistencyReporterTest {
                 return new CountsEntry(nodeKey(7), 42);
             }
             if (type == IndexDescriptor.class) {
-                return IndexPrototype.forSchema(forLabel(2, 3), IndexProviderDescriptor.UNDECIDED)
+                return IndexPrototype.forSchema(forLabel(2, 3), AllIndexProviderDescriptors.UNDECIDED)
                         .withName("index")
                         .materialise(1);
             }

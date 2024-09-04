@@ -31,11 +31,11 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
@@ -63,7 +63,6 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 public class TokenIndexProvider extends IndexProvider {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("token-lookup", "1.0");
     private final DatabaseIndexContext databaseIndexContext;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final Monitor monitor;
@@ -74,7 +73,10 @@ public class TokenIndexProvider extends IndexProvider {
             IndexDirectoryStructure.Factory directoryStructureFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout) {
-        super(KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED, DESCRIPTOR, directoryStructureFactory);
+        super(
+                KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED,
+                AllIndexProviderDescriptors.TOKEN_DESCRIPTOR,
+                directoryStructureFactory);
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.monitor =
@@ -196,7 +198,7 @@ public class TokenIndexProvider extends IndexProvider {
                     + " index schema is not an any-token index schema, which it is required to be for the '"
                     + getProviderDescriptor().name() + "' index provider to be able to create an index.");
         }
-        if (!prototype.getIndexProvider().equals(DESCRIPTOR)) {
+        if (!prototype.getIndexProvider().equals(AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)) {
             throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
                     + "' index provider does not support " + prototype.getIndexProvider() + " indexes: " + prototype);
         }

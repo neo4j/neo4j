@@ -27,7 +27,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
-import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.Arrays;
@@ -45,6 +44,7 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistenc
 import org.neo4j.consistency.report.ConsistencyReport.SchemaConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -57,7 +57,6 @@ import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -106,11 +105,11 @@ class SchemaCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             IndexDescriptor index1 = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             IndexDescriptor index2 = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME2)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(
                     index1, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
@@ -132,7 +131,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(
                     index, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
@@ -151,7 +150,8 @@ class SchemaCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema(
-                            SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
+                            SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
+                            AllIndexProviderDescriptors.TOKEN_DESCRIPTOR)
                     .withName(NAME)
                     .withIndexType(IndexType.LOOKUP)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
@@ -173,7 +173,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(UNUSED, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(
                     index, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
@@ -193,7 +193,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forRelType(UNUSED, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(
                     index, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
@@ -213,7 +213,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forRelType(relationshipType1, UNUSED))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(
                     index, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
@@ -233,7 +233,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext))
                     .withOwningConstraintId(UNUSED);
             schemaStorage.writeSchemaRule(
@@ -280,7 +280,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(
                     index, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
@@ -314,7 +314,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
@@ -347,7 +347,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
@@ -381,7 +381,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withIndexType(IndexType.TEXT)
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             IndexType.RANGE, label1, propertyKey1)
@@ -414,11 +414,11 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             IndexDescriptor index2 = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label2, propertyKey2))
                     .withName(NAME2)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
@@ -454,7 +454,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint1 = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
@@ -609,7 +609,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
-                    .withIndexProvider(DESCRIPTOR)
+                    .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR)
                     .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
