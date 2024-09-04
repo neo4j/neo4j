@@ -18,6 +18,7 @@ To help us understand your issue, please specify important details, primarily:
 
 - Neo4j version: X.Y.Z
 - Operating system: (for example Windows 95/Ubuntu 16.04)
+- Installation method: (for example Neo4j Desktop, tar/zip/deb/rpm package, apt/yum repository, docker, compiled source)
 - API/Driver: (for example Cypher/Java API/Python driver vX.Y.Z)
 - **Steps to reproduce**
 - Expected behavior
@@ -31,6 +32,7 @@ I discovered that when I mount `data/` to a volume on my host, and then stop the
 
 **Neo4j Version:** 3.0M03
 **Operating System:** Ubuntu 15.10
+**Installation Method:** Docker
 **API:** Docker
 
 ### Steps to reproduce
