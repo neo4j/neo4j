@@ -37,13 +37,14 @@ import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.OpenTransactionMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.util.HighestAppendBatch;
 
 public class SimpleMetaDataProvider implements MetadataProvider {
     private final SimpleTransactionIdStore transactionIdStore;
     private final SimpleLogVersionRepository logVersionRepository;
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
     private final AtomicLong appendIndex = new AtomicLong();
-    private volatile AppendBatchInfo appendBatchInfo = EMPTY_APPEND_BATCH_INFO;
+    private final HighestAppendBatch appendBatchInfo = new HighestAppendBatch(EMPTY_APPEND_BATCH_INFO);
 
     public SimpleMetaDataProvider() {
         transactionIdStore = new SimpleTransactionIdStore();
@@ -162,7 +163,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
                 logVersion,
                 appendIndex);
         this.appendIndex.set(appendIndex);
-        this.appendBatchInfo = new AppendBatchInfo(appendIndex, LogPosition.UNSPECIFIED);
+        this.appendBatchInfo.set(appendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -227,12 +228,12 @@ public class SimpleMetaDataProvider implements MetadataProvider {
             boolean lastBatch,
             LogPosition logPositionBefore,
             LogPosition logPositionAfter) {
-        this.appendBatchInfo = new AppendBatchInfo(appendIndex, logPositionAfter);
+        appendBatchInfo.offer(appendIndex, logPositionAfter);
     }
 
     @Override
     public AppendBatchInfo getLastCommittedBatch() {
-        return appendBatchInfo;
+        return appendBatchInfo.get();
     }
 
     @Override

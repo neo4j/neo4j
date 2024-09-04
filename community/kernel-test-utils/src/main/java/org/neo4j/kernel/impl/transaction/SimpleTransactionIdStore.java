@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.EMPTY_APPEND_BATCH_INFO;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
@@ -34,6 +35,7 @@ import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.OpenTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.util.HighestAppendBatch;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence.Meta;
@@ -48,7 +50,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     private final OutOfOrderSequence lastClosedBatch =
             new ArrayQueueOutOfOrderSequence(-1, 100, OutOfOrderSequence.EMPTY_META);
     private final AtomicReference<TransactionId> committedTransactionId = new AtomicReference<>(BASE_TRANSACTION_ID);
-    private volatile AppendBatchInfo appendBatchInfo;
+    private final HighestAppendBatch appendBatchInfo = new HighestAppendBatch(EMPTY_APPEND_BATCH_INFO);
 
     public SimpleTransactionIdStore() {
         this(
@@ -158,7 +160,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
                 transactionAppendIndex);
         lastClosedBatch.set(appendIndex, meta);
         closedTransactionId.set(transactionId, meta);
-        appendBatchInfo = new AppendBatchInfo(transactionAppendIndex, LogPosition.UNSPECIFIED);
+        appendBatchInfo.set(appendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -233,12 +235,12 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
             boolean lastBatch,
             LogPosition logPositionBefore,
             LogPosition logPositionAfter) {
-        appendBatchInfo = new AppendBatchInfo(appendIndex, logPositionAfter);
+        appendBatchInfo.offer(appendIndex, logPositionAfter);
     }
 
     @Override
     public AppendBatchInfo getLastCommittedBatch() {
-        return appendBatchInfo;
+        return appendBatchInfo.get();
     }
 
     @Override

@@ -19,15 +19,18 @@
  */
 package org.neo4j.graphdb;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.test.Race;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -85,5 +88,26 @@ public class DatabaseAppendIndexIT {
         assertEquals(
                 metadataProvider.getLastClosedTransactionId(),
                 checkpointInfo.transactionId().id());
+    }
+
+    @RepeatedTest(10)
+    void lastCommittedBatchCorrectAfterConcurrentTransactions() throws Throwable {
+        Race race = new Race();
+        race.addContestants(100, () -> {
+            try (Transaction tx = databaseAPI.beginTx()) {
+                tx.createNode();
+                tx.commit();
+            }
+        });
+        race.go();
+
+        long appendIndexClosed = metadataProvider.getLastClosedBatch().appendIndex();
+        long appendIndexCommitted = metadataProvider.getLastCommittedBatch().appendIndex();
+
+        assertThat(appendIndexClosed)
+                .as(
+                        "Expecting last closed batch index: %s to be equal to last committed batch append index: %s",
+                        appendIndexClosed, appendIndexCommitted)
+                .isEqualTo(appendIndexCommitted);
     }
 }

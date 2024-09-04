@@ -66,6 +66,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.util.ChunkedTransactionRegistry;
+import org.neo4j.storageengine.util.HighestAppendBatch;
 import org.neo4j.storageengine.util.HighestTransactionId;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -125,7 +126,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
 
     private volatile boolean closed;
     private final AtomicLong appendIndex;
-    private volatile AppendBatchInfo lastCommittedBatch;
+    private final HighestAppendBatch lastCommittedBatch;
     private final ChunkedTransactionRegistry chunkedTransactionRegistry = new ChunkedTransactionRegistry();
 
     MetaDataStore(
@@ -166,8 +167,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
         highestClosedTransaction = new HighestTransactionId(lastCommittedTx);
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
-        lastCommittedBatch = logTailMetadata.lastBatch();
-        appendIndex = new AtomicLong(lastCommittedBatch.appendIndex());
+        AppendBatchInfo lastBatch = logTailMetadata.lastBatch();
+        lastCommittedBatch = new HighestAppendBatch(lastBatch);
+        appendIndex = new AtomicLong(lastBatch.appendIndex());
         var initialMeta = new Meta(
                 logPosition.getLogVersion(),
                 logPosition.getByteOffset(),
@@ -177,7 +179,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 lastCommittedTx.consensusIndex(),
                 lastCommittedTx.appendIndex());
         lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.id(), 128, initialMeta);
-        lastClosedBatch = new ArrayQueueOutOfOrderSequence(lastCommittedBatch.appendIndex(), 128, initialMeta);
+        lastClosedBatch = new ArrayQueueOutOfOrderSequence(lastBatch.appendIndex(), 128, initialMeta);
     }
 
     private static ImmutableSet<OpenOption> buildOptions(ImmutableSet<OpenOption> openOptions) {
@@ -253,7 +255,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         highestCommittedTransaction.set(
                 transactionId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
         this.appendIndex.set(appendIndex);
-        this.lastCommittedBatch = new AppendBatchInfo(appendIndex, LogPosition.UNSPECIFIED);
+        this.lastCommittedBatch.set(appendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -438,7 +440,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             boolean lastBatch,
             LogPosition logPositionBefore,
             LogPosition logPositionAfter) {
-        this.lastCommittedBatch = new AppendBatchInfo(appendIndex, logPositionAfter);
+        this.lastCommittedBatch.offer(appendIndex, logPositionAfter);
 
         // this is the first and last batch, no need to register in progress transaction
         if (firstBatch && lastBatch) {
@@ -451,7 +453,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
 
     @Override
     public AppendBatchInfo getLastCommittedBatch() {
-        return lastCommittedBatch;
+        return lastCommittedBatch.get();
     }
 
     @Override
