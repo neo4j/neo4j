@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
+import org.neo4j.cypher.internal.CypherVersion;
+
 public final class Evaluator {
     private Evaluator() {
         throw new UnsupportedOperationException("Do not instantiate");
     }
 
-    public static ExpressionEvaluator expressionEvaluator() {
-        return new SimpleExpressionEvaluator();
+    public static ExpressionEvaluator expressionEvaluator(CypherVersion cypherVersion) {
+        return new SimpleExpressionEvaluator(cypherVersion);
     }
 }

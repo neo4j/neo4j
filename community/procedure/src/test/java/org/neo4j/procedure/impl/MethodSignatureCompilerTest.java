@@ -67,7 +67,7 @@ class MethodSignatureCompilerTest {
     void shouldMapSimpleRecordWithString() throws Throwable {
         // When
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod("echo", String.class);
-        List<FieldSignature> signature = new MethodSignatureCompiler(new TypeCheckers()).signatureFor(echo);
+        List<FieldSignature> signature = new MethodSignatureCompiler(new Cypher5TypeCheckers()).signatureFor(echo);
 
         // THen
         assertThat(signature).containsExactly(FieldSignature.inputField("name", Neo4jTypes.NTString));
@@ -78,8 +78,9 @@ class MethodSignatureCompilerTest {
         // Given
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod("echoWithInvalidType", UnmappableRecord.class);
 
-        ProcedureException exception = assertThrows(
-                ProcedureException.class, () -> new MethodSignatureCompiler(new TypeCheckers()).signatureFor(echo));
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> new MethodSignatureCompiler(new Cypher5TypeCheckers())
+                        .signatureFor(echo));
         assertThat(exception.getMessage())
                 .startsWith(String.format("Argument `name` at position 0 in `echoWithInvalidType` with%n"
                         + "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map "
@@ -94,8 +95,9 @@ class MethodSignatureCompilerTest {
         Method echo =
                 ClassWithProcedureWithSimpleArgs.class.getMethod("echoWithoutAnnotations", String.class, String.class);
 
-        ProcedureException exception = assertThrows(
-                ProcedureException.class, () -> new MethodSignatureCompiler(new TypeCheckers()).signatureFor(echo));
+        ProcedureException exception =
+                assertThrows(ProcedureException.class, () -> new MethodSignatureCompiler(new Cypher5TypeCheckers())
+                        .signatureFor(echo));
         assertThat(exception.getMessage())
                 .isEqualTo(String.format(
                         "Argument at position 1 in method `echoWithoutAnnotations` is missing an `@Name` annotation.%n"

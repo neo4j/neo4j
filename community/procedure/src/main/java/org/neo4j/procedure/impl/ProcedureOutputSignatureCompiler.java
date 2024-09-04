@@ -47,11 +47,11 @@ class ProcedureOutputSignatureCompiler {
             "Procedures must return a Stream of records, where a record is a concrete class%n"
                     + "that you define and not a %s.";
 
-    ProcedureOutputSignatureCompiler(TypeCheckers typeCheckers) {
+    ProcedureOutputSignatureCompiler(Cypher5TypeCheckers typeCheckers) {
         this.typeCheckers = typeCheckers;
     }
 
-    private final TypeCheckers typeCheckers;
+    private final Cypher5TypeCheckers typeCheckers;
 
     /**
      * Determines the output fields of a given method.
@@ -104,7 +104,7 @@ class ProcedureOutputSignatureCompiler {
             }
 
             try {
-                TypeCheckers.TypeChecker checker = typeCheckers.checkerFor(field.getGenericType());
+                Cypher5TypeCheckers.TypeChecker checker = typeCheckers.checkerFor(field.getGenericType());
                 if (field.isAnnotationPresent(Description.class)) {
                     String description = field.getAnnotation(Description.class).value();
                     signature[i] = FieldSignature.outputField(

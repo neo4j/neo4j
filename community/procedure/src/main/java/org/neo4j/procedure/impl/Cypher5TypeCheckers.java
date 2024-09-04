@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.neo4j.cypher.internal.CypherVersion;
 import org.neo4j.cypher.internal.evaluator.Evaluator;
 import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -82,8 +83,10 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class TypeCheckers {
-    private static final ExpressionEvaluator EVALUATOR = Evaluator.expressionEvaluator();
+// Type checkers only supports cypher 5 for now.
+// Will probably also need cypher 6 support at some point in the future when new types are introduced in 6 only.
+public class Cypher5TypeCheckers {
+    private static final ExpressionEvaluator CYPHER_5_EVALUATOR = Evaluator.expressionEvaluator(CypherVersion.Cypher5);
 
     private static final Function<String, DefaultParameterValue> PARSE_STRING = DefaultParameterValue::ntString;
     private static final Function<String, DefaultParameterValue> PARSE_INTEGER = s -> ntInteger(parseLong(s));
@@ -91,9 +94,9 @@ public class TypeCheckers {
     private static final Function<String, DefaultParameterValue> PARSE_NUMBER =
             new CompositeConverter(NTNumber, PARSE_INTEGER, PARSE_FLOAT);
     private static final Function<String, DefaultParameterValue> PARSE_BOOLEAN = s -> ntBoolean(parseBooleanOrFail(s));
-    private static final MapConverter PARSE_MAP = new MapConverter(EVALUATOR);
-    private static final ListConverter PARSE_LIST = new ListConverter(Object.class, NTAny, EVALUATOR);
-    private static final ByteArrayConverter PARSE_BYTE_ARRAY = new ByteArrayConverter(EVALUATOR);
+    private static final MapConverter PARSE_MAP = new MapConverter(CYPHER_5_EVALUATOR);
+    private static final ListConverter PARSE_LIST = new ListConverter(Object.class, NTAny, CYPHER_5_EVALUATOR);
+    private static final ByteArrayConverter PARSE_BYTE_ARRAY = new ByteArrayConverter(CYPHER_5_EVALUATOR);
 
     private static final CompositeConverter PARSE_ANY = new CompositeConverter(
             NTAny,
@@ -115,7 +118,7 @@ public class TypeCheckers {
 
     private final Map<Type, DefaultValueConverter> javaToNeo = new HashMap<>();
 
-    public TypeCheckers() {
+    public Cypher5TypeCheckers() {
         super();
         registerScalarsAndCollections();
     }
@@ -231,7 +234,8 @@ public class TypeCheckers {
     }
 
     private static DefaultValueConverter toList(DefaultValueConverter inner, Type type) {
-        return new DefaultValueConverter(NTList(inner.type()), new ListConverter(type, inner.type(), EVALUATOR));
+        return new DefaultValueConverter(
+                NTList(inner.type()), new ListConverter(type, inner.type(), CYPHER_5_EVALUATOR));
     }
 
     private ProcedureException javaToNeoMappingError(Type cls) {

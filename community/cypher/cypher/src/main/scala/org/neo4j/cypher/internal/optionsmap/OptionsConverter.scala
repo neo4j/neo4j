@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
-import org.neo4j.cypher.internal.evaluator.Evaluator
-import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator
+import org.neo4j.cypher.internal.evaluator.Evaluator.expressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.values.AnyValue
@@ -37,13 +37,16 @@ import java.util.Locale
 
 trait OptionsConverter[T] {
 
-  val evaluator: ExpressionEvaluator = Evaluator.expressionEvaluator()
-
-  def evaluate(expression: Expression, params: MapValue): AnyValue = {
-    evaluator.evaluate(expression, params)
+  private def evaluate(version: CypherVersion, expression: Expression, params: MapValue): AnyValue = {
+    expressionEvaluator(version).evaluate(expression, params)
   }
 
-  def convert(options: Options, params: MapValue, config: Option[Config] = None): Option[T] = options match {
+  def convert(
+    version: CypherVersion,
+    options: Options,
+    params: MapValue,
+    config: Option[Config] = None
+  ): Option[T] = options match {
     case NoOptions if hasMandatoryOptions =>
       // If there are mandatory options we should call convert with empty options to throw expected errors
       Some(convert(VirtualValues.EMPTY_MAP, config))
@@ -51,7 +54,7 @@ trait OptionsConverter[T] {
     case OptionsMap(map) => Some(convert(
         VirtualValues.map(
           map.keys.map(_.toLowerCase(Locale.ROOT)).toArray,
-          map.view.mapValues(evaluate(_, params)).values.toArray
+          map.view.mapValues(evaluate(version, _, params)).values.toArray
         ),
         config
       ))

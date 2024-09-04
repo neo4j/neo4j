@@ -41,14 +41,18 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.cypher.internal.CypherVersion;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
 class ListConverterTest {
-    @Test
-    void shouldHandleNullString() {
+
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleNullString(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator(version));
         String listString = "null";
 
         // When
@@ -58,10 +62,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(null, NTString));
     }
 
-    @Test
-    void shouldHandleEmptyList() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleEmptyList(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator(version));
         String listString = "[]";
 
         // When
@@ -71,10 +76,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(emptyList(), NTString));
     }
 
-    @Test
-    void shouldHandleEmptyListWithSpaces() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleEmptyListWithSpaces(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator(version));
         String listString = " [  ]   ";
 
         // When
@@ -84,10 +90,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(emptyList(), NTString));
     }
 
-    @Test
-    void shouldHandleSingleQuotedValue() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleSingleQuotedValue(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator(version));
         String listString = "['foo', 'bar']";
 
         // When
@@ -97,10 +104,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(asList("foo", "bar"), NTString));
     }
 
-    @Test
-    void shouldHandleDoubleQuotedValue() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleDoubleQuotedValue(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator());
+        ListConverter converter = new ListConverter(String.class, NTString, expressionEvaluator(version));
         String listString = "[\"foo\", \"bar\"]";
 
         // When
@@ -110,10 +118,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(asList("foo", "bar"), NTString));
     }
 
-    @Test
-    void shouldHandleIntegerValue() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleIntegerValue(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(Long.class, NTInteger, expressionEvaluator());
+        ListConverter converter = new ListConverter(Long.class, NTInteger, expressionEvaluator(version));
         String listString = "[1337, 42]";
 
         // When
@@ -123,10 +132,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(asList(1337L, 42L), NTInteger));
     }
 
-    @Test
-    void shouldHandleFloatValue() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleFloatValue(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(Double.class, NTFloat, expressionEvaluator());
+        ListConverter converter = new ListConverter(Double.class, NTFloat, expressionEvaluator(version));
         String listSting = "[2.718281828, 3.14]";
 
         // When
@@ -136,10 +146,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(asList(2.718281828, 3.14), NTFloat));
     }
 
-    @Test
-    void shouldHandleNullValue() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleNullValue(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(Double.class, NTFloat, expressionEvaluator());
+        ListConverter converter = new ListConverter(Double.class, NTFloat, expressionEvaluator(version));
         String listString = "[null]";
 
         // When
@@ -149,10 +160,11 @@ class ListConverterTest {
         assertThat(converted).isEqualTo(ntList(singletonList(null), NTFloat));
     }
 
-    @Test
-    void shouldHandleBooleanValues() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleBooleanValues(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(Boolean.class, NTBoolean, expressionEvaluator());
+        ListConverter converter = new ListConverter(Boolean.class, NTBoolean, expressionEvaluator(version));
         String mapString = "[false, true]";
 
         // When
@@ -163,12 +175,13 @@ class ListConverterTest {
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    void shouldHandleNestedLists() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleNestedLists(CypherVersion version) {
         // Given
         ParameterizedType type = mock(ParameterizedType.class);
         when(type.getActualTypeArguments()).thenReturn(new Type[] {Object.class});
-        ListConverter converter = new ListConverter(type, NTList(NTAny), expressionEvaluator());
+        ListConverter converter = new ListConverter(type, NTList(NTAny), expressionEvaluator(version));
         String mapString = "[42, [42, 1337]]";
 
         // When
@@ -180,10 +193,11 @@ class ListConverterTest {
         assertThat(list.get(1)).isEqualTo(asList(42L, 1337L));
     }
 
-    @Test
-    void shouldFailOnInvalidMixedTypes() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldFailOnInvalidMixedTypes(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(Long.class, NTInteger, expressionEvaluator());
+        ListConverter converter = new ListConverter(Long.class, NTInteger, expressionEvaluator(version));
         String listString = "[1337, 'forty-two']";
 
         IllegalArgumentException exception =
@@ -191,10 +205,11 @@ class ListConverterTest {
         assertThat(exception.getMessage()).isEqualTo("Expects a list of Long but got a list of String");
     }
 
-    @Test
-    void shouldPassOnValidMixedTypes() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldPassOnValidMixedTypes(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(Object.class, NTAny, expressionEvaluator());
+        ListConverter converter = new ListConverter(Object.class, NTAny, expressionEvaluator(version));
         String listString = "[1337, 'forty-two']";
 
         // When
@@ -205,10 +220,11 @@ class ListConverterTest {
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    void shouldHandleListsOfMaps() {
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleListsOfMaps(CypherVersion version) {
         // Given
-        ListConverter converter = new ListConverter(Map.class, NTMap, expressionEvaluator());
+        ListConverter converter = new ListConverter(Map.class, NTMap, expressionEvaluator(version));
         String mapString = "[{k1: 42}, {k1: 1337}]";
 
         // When

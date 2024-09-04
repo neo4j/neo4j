@@ -19,45 +19,41 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
-import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.cypher.internal.evaluator.Evaluator.expressionEvaluator;
 
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.neo4j.internal.helpers.collection.MapUtil;
+import java.util.Map;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.cypher.internal.CypherVersion;
 
 class SimpleExpressionEvaluatorTest {
-    @Test
-    void shouldConvertToSpecificType() throws EvaluationException {
-        // Given
-        ExpressionEvaluator evaluator = Evaluator.expressionEvaluator();
 
-        // When
-        List<?> list = evaluator.evaluate("[1, 2, 3]", List.class);
+    private final ExpressionEvaluator evaluator = expressionEvaluator(CypherVersion.Default);
 
-        // Then
-        assertEquals(asList(1L, 2L, 3L), list);
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldConvertToSpecificType(CypherVersion version) throws EvaluationException {
+        assertThat(evaluate(version, "[1, 2, 3]", List.class)).isEqualTo(List.of(1L, 2L, 3L));
     }
 
-    @Test
-    void shouldConvertToObject() throws EvaluationException {
-        // Given
-        ExpressionEvaluator evaluator = Evaluator.expressionEvaluator();
-
-        // When
-        Object object = evaluator.evaluate("{prop: 42}", Object.class);
-
-        // Then
-        assertEquals(MapUtil.map("prop", 42L), object);
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldConvertToObject(CypherVersion version) throws EvaluationException {
+        assertThat(evaluate(version, "{prop: 42}", Object.class)).isEqualTo(Map.of("prop", 42L));
     }
 
-    @Test
-    void shouldThrowIfWrongType() {
-        // Given
-        ExpressionEvaluator evaluator = Evaluator.expressionEvaluator();
-
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldThrowIfWrongType(CypherVersion version) {
         // Expect
-        assertThrows(EvaluationException.class, () -> evaluator.evaluate("{prop: 42}", List.class));
+        assertThatThrownBy(() -> evaluator.evaluate("{prop: 42}", List.class))
+                .isExactlyInstanceOf(EvaluationException.class);
+    }
+
+    private Object evaluate(CypherVersion version, String expression, Class<?> cls) throws EvaluationException {
+        return expressionEvaluator(version).evaluate(expression, cls);
     }
 }

@@ -71,8 +71,8 @@ public class ResourceInjectionTest {
         allComponents.register(MyAwesomeAPI.class, ctx -> new MyAwesomeAPI());
         allComponents.register(MyUnsafeAPI.class, ctx -> new MyUnsafeAPI());
 
-        compiler =
-                new ProcedureCompiler(new TypeCheckers(), safeComponents, allComponents, log, ProcedureConfig.DEFAULT);
+        compiler = new ProcedureCompiler(
+                new Cypher5TypeCheckers(), safeComponents, allComponents, log, ProcedureConfig.DEFAULT);
     }
 
     @Test

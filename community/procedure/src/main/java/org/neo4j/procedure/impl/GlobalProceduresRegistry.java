@@ -56,7 +56,7 @@ import org.neo4j.util.VisibleForTesting;
  * invoking procedures.
  */
 public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures {
-    private final TypeCheckers typeCheckers;
+    private final Cypher5TypeCheckers typeCheckers;
     private ProcedureRegistry registry = new ProcedureRegistry(); // Synchronized by updater
     private final ComponentRegistry safeComponents = new ComponentRegistry(); // Synchronized by updater
     private final ComponentRegistry allComponents = new ComponentRegistry(); // Synchronized by updater
@@ -84,7 +84,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
             ProcedureConfig config) {
         this.builtin = builtin;
         this.proceduresDirectory = proceduresDirectory;
-        this.typeCheckers = new TypeCheckers();
+        this.typeCheckers = new Cypher5TypeCheckers();
         this.compiler = new ProcedureCompiler(typeCheckers, safeComponents, allComponents, log, config);
 
         // We must not allow external sources to register procedures in the reserved namespaces.
@@ -178,7 +178,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerType(Class<?> javaClass, Neo4jTypes.AnyType type) {
-        typeCheckers.registerType(javaClass, new TypeCheckers.DefaultValueConverter(type));
+        typeCheckers.registerType(javaClass, new Cypher5TypeCheckers.DefaultValueConverter(type));
     }
 
     /**
@@ -354,7 +354,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
          */
         @Override
         public void registerType(Class<?> javaClass, Neo4jTypes.AnyType type) {
-            typeCheckers.registerType(javaClass, new TypeCheckers.DefaultValueConverter(type));
+            typeCheckers.registerType(javaClass, new Cypher5TypeCheckers.DefaultValueConverter(type));
         }
 
         /**

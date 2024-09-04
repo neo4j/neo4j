@@ -872,7 +872,7 @@ public class ProcedureCompilationTest {
         methodHashMap.put(DurationValue.class, method("testMethod", DurationValue.class));
 
         // safety check, make sure we are testing all types
-        Set<Type> types = new TypeCheckers().allTypes();
+        Set<Type> types = new Cypher5TypeCheckers().allTypes();
         for (Type type : types) {
             assertTrue(methodHashMap.containsKey(type), type + " is not being tested!");
         }

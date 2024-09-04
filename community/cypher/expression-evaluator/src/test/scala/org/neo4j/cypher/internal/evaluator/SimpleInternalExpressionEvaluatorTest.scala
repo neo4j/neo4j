@@ -19,7 +19,12 @@
  */
 package org.neo4j.cypher.internal.evaluator
 
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
 import org.neo4j.values.storable.Values
@@ -37,38 +42,32 @@ import java.lang.Math.sin
 
 class SimpleInternalExpressionEvaluatorTest extends AnyFunSuiteLike with Matchers {
 
-  test("parse literals") {
-    val evaluator = new SimpleInternalExpressionEvaluator
+  val evaluator = new SimpleInternalExpressionEvaluator
 
-    evaluator.evaluate("'hello'") should equal(stringValue("hello"))
-    evaluator.evaluate("42") should equal(intValue(42))
-    evaluator.evaluate("false") should equal(Values.FALSE)
-    evaluator.evaluate("[1,'foo', true]") should equal(list(intValue(1), stringValue("foo"), Values.TRUE))
-    evaluator.evaluate("{prop1: 42}") should equal(map(Array("prop1"), Array(intValue(42))))
+  test("parse literals") {
+    evaluate("'hello'") should equal(stringValue("hello"))
+    evaluate("42") should equal(intValue(42))
+    evaluate("false") should equal(Values.FALSE)
+    evaluate("[1,'foo', true]") should equal(list(intValue(1), stringValue("foo"), Values.TRUE))
+    evaluate("{prop1: 42}") should equal(map(Array("prop1"), Array(intValue(42))))
   }
 
   test("list comprehensions") {
-    val evaluator = new SimpleInternalExpressionEvaluator
-
-    evaluator.evaluate("[x IN range(0,10) WHERE x % 2 = 0 | x^3]") should equal(
+    evaluate("[x IN range(0,10) WHERE x % 2 = 0 | x^3]") should equal(
       list(intValue(0), intValue(8), intValue(64), intValue(216), intValue(512), intValue(1000))
     )
   }
 
   test("functions") {
-    val evaluator = new SimpleInternalExpressionEvaluator
-
-    evaluator.evaluate("point({ latitude: 12, longitude: 56, height: 1000 })") should
+    evaluate("point({ latitude: 12, longitude: 56, height: 1000 })") should
       equal(pointValue(WGS_84_3D, 56, 12, 1000))
-    evaluator.evaluate("sin(pi())") should equal(Values.doubleValue(sin(PI)))
+    evaluate("sin(pi())") should equal(Values.doubleValue(sin(PI)))
   }
 
   test("params") {
-    val evaluator = new SimpleInternalExpressionEvaluator
-
     evaluator
       .evaluate(
-        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("$p + 1"),
+        expression = parse("$p + 1"),
         params = VirtualValues.map(Array("p"), Array(Values.of(2)))
       )
       .shouldEqual(Values.of(3))
@@ -79,7 +78,7 @@ class SimpleInternalExpressionEvaluatorTest extends AnyFunSuiteLike with Matcher
 
     evaluator
       .evaluate(
-        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("sin(pi()*$p/180) + cos(pi()*$q/180)"),
+        expression = parse("sin(pi()*$p/180) + cos(pi()*$q/180)"),
         params = VirtualValues.map(Array("p", "q"), Array(Values.of(90), Values.of(0)))
       )
       .shouldEqual(Values.of(2))
@@ -90,7 +89,7 @@ class SimpleInternalExpressionEvaluatorTest extends AnyFunSuiteLike with Matcher
 
     evaluator
       .evaluate(
-        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("v + 1"),
+        expression = parse("v + 1"),
         context = CypherRow.from("v" -> Values.of(3))
       )
       .shouldEqual(Values.of(4))
@@ -101,11 +100,19 @@ class SimpleInternalExpressionEvaluatorTest extends AnyFunSuiteLike with Matcher
 
     evaluator
       .evaluate(
-        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse(
+        expression = parse(
           "point({ latitude: p.y, longitude: p.x, height: 1000 })"
         ),
         context = CypherRow.from("p" -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 56, 12))
       )
       .shouldEqual(pointValue(WGS_84_3D, 56, 12, 1000))
   }
+
+  private def parse(cypher: String): Expression =
+    AstParserFactory
+      .apply(CypherVersion.Default)
+      .apply(cypher, Neo4jCypherExceptionFactory(cypher, None), None)
+      .expression()
+
+  private def evaluate(cypher: String): AnyValue = evaluator.evaluate(parse(cypher))
 }

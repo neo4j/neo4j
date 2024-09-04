@@ -80,7 +80,7 @@ public class UserFunctionTest {
     void setUp() {
         components = new ComponentRegistry();
         procedureCompiler = new ProcedureCompiler(
-                new TypeCheckers(), components, components, NullLog.getInstance(), ProcedureConfig.DEFAULT);
+                new Cypher5TypeCheckers(), components, components, NullLog.getInstance(), ProcedureConfig.DEFAULT);
     }
 
     @Test
@@ -243,7 +243,7 @@ public class UserFunctionTest {
     void shouldLoadWhiteListedFunction() throws Throwable {
         // Given
         procedureCompiler = new ProcedureCompiler(
-                new TypeCheckers(),
+                new Cypher5TypeCheckers(),
                 components,
                 new ComponentRegistry(),
                 NullLog.getInstance(),
@@ -263,7 +263,7 @@ public class UserFunctionTest {
         // Given
         InternalLog log = spy(InternalLog.class);
         procedureCompiler = new ProcedureCompiler(
-                new TypeCheckers(),
+                new Cypher5TypeCheckers(),
                 components,
                 new ComponentRegistry(),
                 log,
@@ -281,7 +281,7 @@ public class UserFunctionTest {
         // Given
         InternalLog log = spy(InternalLog.class);
         procedureCompiler = new ProcedureCompiler(
-                new TypeCheckers(),
+                new Cypher5TypeCheckers(),
                 components,
                 new ComponentRegistry(),
                 log,
@@ -299,7 +299,7 @@ public class UserFunctionTest {
         // Given
         InternalLog log = mock(InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler(
-                new TypeCheckers(), components, new ComponentRegistry(), log, ProcedureConfig.DEFAULT);
+                new Cypher5TypeCheckers(), components, new ComponentRegistry(), log, ProcedureConfig.DEFAULT);
 
         // When
         List<CallableUserFunction> funcs = procedureCompiler.compileFunction(FunctionWithDeprecation.class, false);

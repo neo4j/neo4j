@@ -34,16 +34,16 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Sensitive;
-import org.neo4j.procedure.impl.TypeCheckers.DefaultValueConverter;
+import org.neo4j.procedure.impl.Cypher5TypeCheckers.DefaultValueConverter;
 
 /**
  * Given a java method, figures out a valid {@link ProcedureSignature} field signature.
  * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
  */
 class MethodSignatureCompiler {
-    private final TypeCheckers typeCheckers;
+    private final Cypher5TypeCheckers typeCheckers;
 
-    MethodSignatureCompiler(TypeCheckers typeCheckers) {
+    MethodSignatureCompiler(Cypher5TypeCheckers typeCheckers) {
         this.typeCheckers = typeCheckers;
     }
 

@@ -753,8 +753,8 @@ public class ProcedureJarLoaderTest {
     private static ProcedureJarLoader makeJarLoader(Config config, InternalLogProvider logProvider) {
         final var cfg = new ProcedureConfig(config, true);
         final InternalLog log = logProvider.getLog(ProcedureJarLoader.class);
-        final var compiler =
-                new ProcedureCompiler(new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, cfg);
+        final var compiler = new ProcedureCompiler(
+                new Cypher5TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, cfg);
         return new ProcedureJarLoader(compiler, log, cfg.procedureReloadEnabled());
     }
 }

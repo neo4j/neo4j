@@ -46,7 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
-class TypeCheckersTest {
+class Cypher5TypeCheckersTest {
     private static Stream<Arguments> parameters() {
         return Stream.of(
                 of(Object.class, NTAny),
@@ -162,14 +162,14 @@ class TypeCheckersTest {
     @ParameterizedTest(name = "{0} to {1}")
     @MethodSource("parameters")
     void shouldDetectCorrectTypeAndMap(Type javaClass, Neo4jTypes.AnyType expected) throws Throwable {
-        var actual = new TypeCheckers().checkerFor(javaClass).type();
+        var actual = new Cypher5TypeCheckers().checkerFor(javaClass).type();
         assertEquals(expected, actual);
     }
 
     @ParameterizedTest(name = "{1} as {0} -> {2}")
     @MethodSource("defaultValues")
     void shouldConvertDefaultValue(Type javaClass, String defaultValue, Object expected) throws Throwable {
-        var maybeParsedValue = new TypeCheckers().converterFor(javaClass).defaultValue(defaultValue);
+        var maybeParsedValue = new Cypher5TypeCheckers().converterFor(javaClass).defaultValue(defaultValue);
         assertTrue(maybeParsedValue.isPresent());
         assertEquals(expected, maybeParsedValue.get());
     }
@@ -177,7 +177,7 @@ class TypeCheckersTest {
     @ParameterizedTest(name = "{1} as {0} -> {2}")
     @MethodSource("defaultValuesNegative")
     void shouldFailToConvertInvalidDefaultValue(Type javaClass, String defaultValue) throws Throwable {
-        var converter = new TypeCheckers().converterFor(javaClass);
+        var converter = new Cypher5TypeCheckers().converterFor(javaClass);
         var exception = assertThrows(ProcedureException.class, () -> converter.defaultValue(defaultValue));
 
         var expectedMessage =

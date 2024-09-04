@@ -210,7 +210,7 @@ public class ProcedureWithArgumentsTest {
 
     private List<CallableProcedure> compile(Class<?> clazz) throws KernelException {
         return new ProcedureCompiler(
-                        new TypeCheckers(),
+                        new Cypher5TypeCheckers(),
                         new ComponentRegistry(),
                         new ComponentRegistry(),
                         NullLog.getInstance(),

@@ -19,250 +19,146 @@
  */
 package org.neo4j.procedure.impl;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.cypher.internal.evaluator.Evaluator.expressionEvaluator;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
 
+import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
-import org.neo4j.cypher.internal.evaluator.Evaluator;
+import org.assertj.core.api.ObjectAssert;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.cypher.internal.CypherVersion;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
 class MapConverterTest {
-    private final MapConverter converter = new MapConverter(Evaluator.expressionEvaluator());
 
-    @Test
-    void shouldHandleNullString() {
-        // Given
-        String mapString = "null";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(null));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleNullString(CypherVersion version) {
+        assertConvert(version, "null").isEqualTo(ntMap(null));
     }
 
-    @Test
-    void shouldHandleEmptyMap() {
-        // Given
-        String mapString = "{}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(emptyMap()));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleEmptyMap(CypherVersion version) {
+        assertConvert(version, "{}").isEqualTo(ntMap(emptyMap()));
     }
 
-    @Test
-    void shouldHandleEmptyMapWithSpaces() {
-        // Given
-        String mapString = " {  }  ";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(emptyMap()));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleEmptyMapWithSpaces(CypherVersion version) {
+        assertConvert(version, " {  }  ").isEqualTo(ntMap(emptyMap()));
     }
 
-    @Test
-    void shouldHandleSingleQuotedValue() {
-        // Given
-        String mapString = "{key: 'value'}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", "value")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleSingleQuotedValue(CypherVersion version) {
+        assertConvert(version, "{key: 'value'}").isEqualTo(ntMap(map("key", "value")));
     }
 
-    @Test
-    void shouldHandleEscapedSingleQuotedInValue2() {
-        // Given
-        String mapString = "{key: \"va\'lue\"}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", "va\'lue")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleEscapedSingleQuotedInValue2(CypherVersion version) {
+        assertConvert(version, "{key: \"va\'lue\"}").isEqualTo(ntMap(map("key", "va\'lue")));
     }
 
-    @Test
-    void shouldHandleEscapedDoubleQuotedInValue1() {
-        // Given
-        String mapString = "{key: \"va\\\"lue\"}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", "va\"lue")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleEscapedDoubleQuotedInValue1(CypherVersion version) {
+        assertConvert(version, "{key: \"va\\\"lue\"}").isEqualTo(ntMap(map("key", "va\"lue")));
     }
 
-    @Test
-    void shouldHandleEscapedDoubleQuotedInValue2() {
-        // Given
-        String mapString = "{key: 'va\"lue'}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", "va\"lue")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleEscapedDoubleQuotedInValue2(CypherVersion version) {
+        assertConvert(version, "{key: 'va\"lue'}").isEqualTo(ntMap(map("key", "va\"lue")));
     }
 
-    @Test
-    void shouldHandleDoubleQuotedValue() {
-        // Given
-        String mapString = "{key: \"value\"}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", "value")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleDoubleQuotedValue(CypherVersion version) {
+        assertConvert(version, "{key: \"value\"}").isEqualTo(ntMap(map("key", "value")));
     }
 
-    @Test
-    void shouldHandleKeyWithEscapedSingleQuote() {
-        // Given
-        String mapString = "{`k\'ey`: \"value\"}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("k\'ey", "value")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleKeyWithEscapedSingleQuote(CypherVersion version) {
+        assertConvert(version, "{`k\'ey`: \"value\"}").isEqualTo(ntMap(map("k\'ey", "value")));
     }
 
-    @Test
-    void shouldHandleKeyWithEscapedDoubleQuote() {
-        // Given
-        String mapString = "{`k\"ey`: \"value\"}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("k\"ey", "value")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleKeyWithEscapedDoubleQuote(CypherVersion version) {
+        assertConvert(version, "{`k\"ey`: \"value\"}").isEqualTo(ntMap(map("k\"ey", "value")));
     }
 
-    @Test
-    void shouldHandleIntegerValue() {
-        // Given
-        String mapString = "{key: 1337}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", 1337L)));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleIntegerValue(CypherVersion version) {
+        assertConvert(version, "{key: 1337}").isEqualTo(ntMap(map("key", 1337L)));
     }
 
-    @Test
-    void shouldHandleFloatValue() {
-        // Given
-        String mapString = "{key: 2.718281828}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", 2.718281828)));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleFloatValue(CypherVersion version) {
+        assertConvert(version, "{key: 2.718281828}").isEqualTo(ntMap(map("key", 2.718281828)));
     }
 
-    @Test
-    void shouldHandleNullValue() {
-        // Given
-        String mapString = "{key: null}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", null)));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleNullValue(CypherVersion version) {
+        assertConvert(version, "{key: null}").isEqualTo(ntMap(map("key", null)));
     }
 
-    @Test
-    void shouldHandleFalseValue() {
-        // Given
-        String mapString = "{key: false}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", false)));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleFalseValue(CypherVersion version) {
+        assertConvert(version, "{key: false}").isEqualTo(ntMap(map("key", false)));
     }
 
-    @Test
-    void shouldHandleTrueValue() {
-        // Given
-        String mapString = "{key: true}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("key", true)));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleTrueValue(CypherVersion version) {
+        assertConvert(version, "{key: true}").isEqualTo(ntMap(map("key", true)));
     }
 
-    @Test
-    void shouldHandleMultipleKeys() {
-        // Given
-        String mapString = "{k1: 2.718281828, k2: 'e'}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        assertThat(converted).isEqualTo(ntMap(map("k1", 2.718281828, "k2", "e")));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleMultipleKeys(CypherVersion version) {
+        assertConvert(version, "{k1: 2.718281828, k2: 'e'}").isEqualTo(ntMap(map("k1", 2.718281828, "k2", "e")));
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    void shouldHandleNestedMaps() {
-        // Given
-        String mapString = "{k1: 1337, k2: { k1 : 1337, k2: {k1: 1337}}}";
-
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
-
-        // Then
-        Map<String, Object> map1 = (Map<String, Object>) converted.value();
-        Map<String, Object> map2 = (Map<String, Object>) map1.get("k2");
-        Map<String, Object> map3 = (Map<String, Object>) map2.get("k2");
-        assertThat(map1.get("k1")).isEqualTo(1337L);
-        assertThat(map2.get("k1")).isEqualTo(1337L);
-        assertThat(map3.get("k1")).isEqualTo(1337L);
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleNestedMaps(CypherVersion version) {
+        assertConvert(version, "{k1: 1337, k2: { k1 : 1337, k2: {k1: 1337}}}")
+                .isEqualTo(ntMap(Map.of("k1", 1337L, "k2", Map.of("k1", 1337L, "k2", Map.of("k1", 1337L)))));
     }
 
-    @Test
-    void shouldFailOnMalformedMap() {
-        // Given
-        String mapString = "{k1: 2.718281828, k2: 'e'}}";
-
-        assertThrows(IllegalArgumentException.class, () -> converter.apply(mapString));
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldFailOnMalformedMap(CypherVersion version) {
+        assertThatThrownBy(() -> convert(version, "{k1: 2.718281828, k2: 'e'}}"))
+                .isExactlyInstanceOf(IllegalArgumentException.class);
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    void shouldHandleMapsWithLists() {
-        // Given
-        String mapString = "{k1: [1337, 42]}";
+    @ParameterizedTest
+    @EnumSource(CypherVersion.class)
+    void shouldHandleMapsWithLists(CypherVersion version) {
+        assertConvert(version, "{k1: [1337, 42]}").isEqualTo(ntMap(Map.of("k1", List.of(1337L, 42L))));
+    }
 
-        // When
-        DefaultParameterValue converted = converter.apply(mapString);
+    private DefaultParameterValue convert(CypherVersion version, String value) {
+        return new MapConverter(expressionEvaluator(version)).apply(value);
+    }
 
-        // Then
-        Map<String, Object> map1 = (Map<String, Object>) converted.value();
-        assertThat(map1.get("k1")).isEqualTo(asList(1337L, 42L));
+    private ObjectAssert<DefaultParameterValue> assertConvert(CypherVersion version, String value) {
+        return assertThat(convert(version, value));
     }
 }

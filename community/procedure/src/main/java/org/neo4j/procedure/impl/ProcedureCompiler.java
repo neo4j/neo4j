@@ -75,13 +75,13 @@ class ProcedureCompiler {
     private final FieldInjections safeFieldInjections;
     private final FieldInjections allFieldInjections;
     private final InternalLog log;
-    private final TypeCheckers typeCheckers;
+    private final Cypher5TypeCheckers typeCheckers;
     private final ProcedureConfig config;
     private final NamingRestrictions functionRestrictions;
     private final NamingRestrictions procedureRestrictions;
 
     ProcedureCompiler(
-            TypeCheckers typeCheckers,
+            Cypher5TypeCheckers typeCheckers,
             ComponentRegistry safeComponents,
             ComponentRegistry allComponents,
             InternalLog log,
@@ -104,7 +104,7 @@ class ProcedureCompiler {
             FieldInjections safeFieldInjections,
             FieldInjections allFieldInjections,
             InternalLog log,
-            TypeCheckers typeCheckers,
+            Cypher5TypeCheckers typeCheckers,
             ProcedureConfig config,
             NamingRestrictions functionRestrictions,
             NamingRestrictions procedureRestrictions) {
@@ -387,7 +387,7 @@ class ProcedureCompiler {
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor(method);
         Class<?> returnType = method.getReturnType();
-        TypeCheckers.TypeChecker typeChecker = typeCheckers.checkerFor(returnType);
+        Cypher5TypeCheckers.TypeChecker typeChecker = typeCheckers.checkerFor(returnType);
         String description = description(method);
         UserFunction function = method.getAnnotation(UserFunction.class);
         boolean internal = method.isAnnotationPresent(Internal.class);
@@ -515,7 +515,7 @@ class ProcedureCompiler {
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor(update);
         Class<?> returnType = result.getReturnType();
-        TypeCheckers.TypeChecker valueConverter = typeCheckers.checkerFor(returnType);
+        Cypher5TypeCheckers.TypeChecker valueConverter = typeCheckers.checkerFor(returnType);
         String description = description(create);
         UserAggregationFunction function = create.getAnnotation(UserAggregationFunction.class);
         boolean isDeprecated = create.isAnnotationPresent(Deprecated.class);

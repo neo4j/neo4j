@@ -19,17 +19,26 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
+import org.neo4j.cypher.internal.CypherVersion;
 import org.neo4j.cypher.internal.expressions.Expression;
+import org.neo4j.cypher.internal.parser.AstParserFactory$;
 import org.neo4j.cypher.internal.runtime.CypherRow;
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
+import scala.Option;
 
 class SimpleExpressionEvaluator implements ExpressionEvaluator {
+    private final CypherVersion cypherVersion;
     private final InternalExpressionEvaluator evaluator = new SimpleInternalExpressionEvaluator();
+
+    SimpleExpressionEvaluator(CypherVersion cypherVersion) {
+        this.cypherVersion = cypherVersion;
+    }
 
     @Override
     public <T> T evaluate(String expression, Class<T> type) throws EvaluationException {
@@ -39,8 +48,7 @@ class SimpleExpressionEvaluator implements ExpressionEvaluator {
         if (type == null) {
             throw new EvaluationException("Cannot evaluate to type null");
         }
-
-        return cast(map(evaluator.evaluate(expression)), type);
+        return cast(map(parseAndEvaluate(expression)), type);
     }
 
     @Override
@@ -68,6 +76,18 @@ class SimpleExpressionEvaluator implements ExpressionEvaluator {
             return value.map(MAPPER);
         } catch (EvaluationRuntimeException e) {
             throw new EvaluationException(e.getMessage(), e);
+        }
+    }
+
+    private AnyValue parseAndEvaluate(String expression) throws EvaluationException {
+        try {
+            final var parsed = AstParserFactory$.MODULE$
+                    .apply(cypherVersion)
+                    .apply(expression, new Neo4jCypherExceptionFactory(expression, Option.empty()), Option.empty())
+                    .expression();
+            return evaluator.evaluate(parsed, MapValue.EMPTY, CypherRow.empty());
+        } catch (Exception e) {
+            throw new EvaluationException("Failed to evaluate expression %s".formatted(expression), e);
         }
     }
 

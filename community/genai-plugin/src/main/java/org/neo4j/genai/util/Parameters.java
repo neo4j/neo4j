@@ -38,7 +38,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.impl.lazy.LazyIterableAdapter;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.procedure.impl.TypeCheckers;
+import org.neo4j.procedure.impl.Cypher5TypeCheckers;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
@@ -53,7 +53,7 @@ public final class Parameters {
     private static final ValueMapper<Object> MAPPER = new ParameterValueMapper();
 
     public static class Parameter {
-        private static final TypeCheckers TYPE_CHECKERS = new TypeCheckers();
+        private static final Cypher5TypeCheckers TYPE_CHECKERS = new Cypher5TypeCheckers();
 
         private final ParameterType type;
         private final Field field;

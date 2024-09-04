@@ -80,7 +80,7 @@ public class ProcedureTest {
     void setUp() {
         components = new ComponentRegistry();
         procedureCompiler = new ProcedureCompiler(
-                new TypeCheckers(), components, components, NullLog.getInstance(), ProcedureConfig.DEFAULT);
+                new Cypher5TypeCheckers(), components, components, NullLog.getInstance(), ProcedureConfig.DEFAULT);
     }
 
     @Test
@@ -285,7 +285,7 @@ public class ProcedureTest {
         // Given
         InternalLog log = mock(InternalLog.class);
         ProcedureCompiler procedureCompiler =
-                new ProcedureCompiler(new TypeCheckers(), components, components, log, ProcedureConfig.DEFAULT);
+                new ProcedureCompiler(new Cypher5TypeCheckers(), components, components, log, ProcedureConfig.DEFAULT);
 
         // When
         List<CallableProcedure> procs = procedureCompiler.compileProcedure(ProcedureWithDeprecation.class, true);
@@ -319,7 +319,7 @@ public class ProcedureTest {
 
         InternalLog log = mock(InternalLog.class);
         ProcedureCompiler procedureCompiler =
-                new ProcedureCompiler(new TypeCheckers(), components, components, log, config);
+                new ProcedureCompiler(new Cypher5TypeCheckers(), components, components, log, config);
 
         // When
         CallableProcedure proc = procedureCompiler
@@ -341,7 +341,7 @@ public class ProcedureTest {
 
         InternalLog log = mock(InternalLog.class);
         ProcedureCompiler procedureCompiler =
-                new ProcedureCompiler(new TypeCheckers(), components, components, log, config);
+                new ProcedureCompiler(new Cypher5TypeCheckers(), components, components, log, config);
 
         // When
         List<CallableProcedure> proc = procedureCompiler.compileProcedure(SingleReadOnlyProcedure.class, false);
@@ -358,7 +358,7 @@ public class ProcedureTest {
         ProcedureConfig config = new ProcedureConfig(Config.defaults(procedure_allowlist, List.of("empty")));
         InternalLog log = mock(InternalLog.class);
         ProcedureCompiler procedureCompiler =
-                new ProcedureCompiler(new TypeCheckers(), components, components, log, config);
+                new ProcedureCompiler(new Cypher5TypeCheckers(), components, components, log, config);
 
         // When
         CallableProcedure proc = procedureCompiler
@@ -376,7 +376,7 @@ public class ProcedureTest {
         ProcedureConfig config = new ProcedureConfig(Config.defaults(procedure_allowlist, List.of("")));
         InternalLog log = mock(InternalLog.class);
         ProcedureCompiler procedureCompiler =
-                new ProcedureCompiler(new TypeCheckers(), components, components, log, config);
+                new ProcedureCompiler(new Cypher5TypeCheckers(), components, components, log, config);
 
         // When
         List<CallableProcedure> proc = procedureCompiler.compileProcedure(SingleReadOnlyProcedure.class, false);

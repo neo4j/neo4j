@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.procs
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings.seed_with_metadata_timeout
 import org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.Options
@@ -60,6 +61,7 @@ import scala.math.min
  * Intended to simplify migrating a database and its corresponding privileges from one DBMS to another.
  */
 case class ApplyMetadataScriptIfSuppliedPlan(
+  cypherVersion: CypherVersion,
   outerExecutionEngine: ExecutionEngine,
   options: Options,
   config: Config,
@@ -78,7 +80,7 @@ case class ApplyMetadataScriptIfSuppliedPlan(
   ): RuntimeResult = {
     // Since we don't have access to the options before runtime, we always plan an ApplyMetadataScriptIfSuppliedPlan,
     // then decide at this point if it should do anything or be a no-op
-    val ops: Option[CreateDatabaseOptions] = CreateDatabaseOptionsConverter.convert(options, params, Some(config))
+    val ops = CreateDatabaseOptionsConverter.convert(cypherVersion, options, params, Some(config))
     if (ops.flatMap(_.existingMetadata).contains(ExistingMetadataOption.VALID_VALUE)) {
       applyMetadataScript(ops.get, ctx, params, subscriber, previousNotifications, executionMode, prePopulateResults)
     } else {

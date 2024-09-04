@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CON
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.NULL_CURSOR_FACTORY
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -41,7 +40,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
@@ -64,12 +62,6 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
-
-  override def evaluate(expression: String): AnyValue =
-    errorContext(expression) {
-      val parsedExpression = SimpleInternalExpressionEvaluator.ExpressionParser.parse(expression)
-      doEvaluate(parsedExpression, MapValue.EMPTY, CypherRow.empty)
-    }
 
   override def evaluate(
     expression: Expression,
@@ -152,12 +144,6 @@ object SimpleInternalExpressionEvaluator {
         CypherRuntimeConfiguration.defaultConfiguration
       )
     )
-
-  object ExpressionParser {
-
-    def parse(text: String): Expression =
-      new Cypher5AstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
-  }
 
   private val NULL_CURSOR_FACTORY = new CursorFactory {
     override def allocateNodeCursor(cursorContext: CursorContext, memoryTracker: MemoryTracker): NodeCursor = null
