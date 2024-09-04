@@ -39,6 +39,7 @@ public abstract class IntegralRangeListValue extends ListValue {
         private final int start;
         private final int end;
         private final int step;
+        private int length = -1;
 
         IntRangeListValue(int start, int end, int step) {
             this.start = start;
@@ -53,8 +54,11 @@ public abstract class IntegralRangeListValue extends ListValue {
 
         @Override
         public int intSize() {
-            int l = (end - start) / step + 1;
-            return Math.max(l, 0);
+            if (length == -1) {
+                int l = (end - start) / step + 1;
+                length = Math.max(l, 0);
+            }
+            return length;
         }
 
         @Override
