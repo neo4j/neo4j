@@ -23,8 +23,10 @@ import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.neo4j.internal.helpers.VarHandleUtils.consumeLong;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,18 +54,10 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T> {
     private volatile Thread receiverThread;
     private final StampedLock stripingLock;
 
-    private static final VarHandle COMPLETED_PROCESSORS;
-    private static final VarHandle PROCESSING_TIME;
-
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            COMPLETED_PROCESSORS = l.findVarHandle(ForkedProcessorStep.Unit.class, "completedProcessors", int.class);
-            PROCESSING_TIME = l.findVarHandle(ForkedProcessorStep.Unit.class, "processingTime", long.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle COMPLETED_PROCESSORS =
+            getVarHandle(lookup(), ForkedProcessorStep.Unit.class, "completedProcessors");
+    private static final VarHandle PROCESSING_TIME =
+            getVarHandle(lookup(), ForkedProcessorStep.Unit.class, "processingTime");
 
     protected ForkedProcessorStep(
             StageControl control, String name, Configuration config, StatsProvider... statsProviders) {
@@ -201,7 +195,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T> {
         }
 
         void processorDone(long time) {
-            PROCESSING_TIME.getAndAdd(this, time);
+            consumeLong((long) PROCESSING_TIME.getAndAdd(this, time));
             int prevCompletedProcessors = (int) COMPLETED_PROCESSORS.getAndAdd(this, 1);
             assert prevCompletedProcessors < processors
                     : prevCompletedProcessors + " vs " + processors + " for " + ticket;

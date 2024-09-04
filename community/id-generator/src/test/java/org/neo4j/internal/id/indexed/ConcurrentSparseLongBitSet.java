@@ -20,9 +20,12 @@
 package org.neo4j.internal.id.indexed;
 
 import static java.lang.Integer.max;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.neo4j.internal.helpers.VarHandleUtils.arrayElementVarHandle;
+import static org.neo4j.internal.helpers.VarHandleUtils.consumeLong;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -113,7 +116,7 @@ class ConcurrentSparseLongBitSet {
          */
         private final long[] bits;
 
-        private static final VarHandle BITS_ARRAY;
+        private static final VarHandle BITS_ARRAY = arrayElementVarHandle(long[].class);
 
         private final int longs;
 
@@ -123,23 +126,12 @@ class ConcurrentSparseLongBitSet {
         @SuppressWarnings("unused") // accessed via VarHandle
         private int status;
 
-        private static final VarHandle STATUS;
+        private static final VarHandle STATUS = getVarHandle(lookup(), "status");
 
         @SuppressWarnings("unused") // accessed via VarHandle
         private long lockStamp;
 
-        private static final VarHandle LOCK_STAMP;
-
-        static {
-            try {
-                MethodHandles.Lookup l = MethodHandles.lookup();
-                STATUS = l.findVarHandle(Range.class, "status", int.class);
-                LOCK_STAMP = l.findVarHandle(Range.class, "lockStamp", long.class);
-                BITS_ARRAY = MethodHandles.arrayElementVarHandle(long[].class);
-            } catch (ReflectiveOperationException e) {
-                throw new ExceptionInInitializerError(e);
-            }
-        }
+        private static final VarHandle LOCK_STAMP = getVarHandle(lookup(), "lockStamp");
 
         private Range(int longs) {
             this.longs = longs;
@@ -154,7 +146,7 @@ class ConcurrentSparseLongBitSet {
         private boolean lock() {
             boolean locked = STATUS.compareAndSet(this, STATUS_UNLOCKED, STATUS_LOCKED);
             if (locked) {
-                LOCK_STAMP.getAndAdd(this, 1L);
+                consumeLong((long) LOCK_STAMP.getAndAdd(this, 1L));
             }
             return locked;
         }

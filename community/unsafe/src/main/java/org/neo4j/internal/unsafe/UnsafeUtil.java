@@ -22,6 +22,7 @@ package org.neo4j.internal.unsafe;
 import static java.lang.Long.compareUnsigned;
 import static java.lang.String.format;
 import static java.lang.invoke.MethodType.methodType;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 import static org.neo4j.util.FeatureToggles.flag;
 
 import com.sun.jna.Native;
@@ -109,12 +110,12 @@ public final class UnsafeUtil {
         try {
 
             var bufferLookup = MethodHandles.privateLookupIn(Buffer.class, MethodHandles.lookup());
-            bbMark = bufferLookup.findVarHandle(Buffer.class, "mark", int.class);
-            bbPosition = bufferLookup.findVarHandle(Buffer.class, "position", int.class);
-            bbLimit = bufferLookup.findVarHandle(Buffer.class, "limit", int.class);
+            bbMark = getVarHandle(bufferLookup, Buffer.class, "mark", int.class);
+            bbPosition = getVarHandle(bufferLookup, Buffer.class, "position", int.class);
+            bbLimit = getVarHandle(bufferLookup, Buffer.class, "limit", int.class);
             // so if we are in java 21 we will fake capacity reset with another call to limit
-            bbCapacity = java21 ? bbLimit : bufferLookup.findVarHandle(Buffer.class, "capacity", int.class);
-            bbAddress = bufferLookup.findVarHandle(Buffer.class, "address", long.class);
+            bbCapacity = java21 ? bbLimit : getVarHandle(bufferLookup, Buffer.class, "capacity", int.class);
+            bbAddress = getVarHandle(bufferLookup, Buffer.class, "address", long.class);
 
             dbbClass = Class.forName("java.nio.DirectByteBuffer");
             if (java21) {
@@ -670,7 +671,7 @@ public final class UnsafeUtil {
         free(addr, bytes, memoryTracker);
     }
 
-    private static void nerfBuffer(ByteBuffer byteBuffer) {
+    private static void nerfBuffer(Buffer byteBuffer) {
         assertUnsafeByteBufferAccess();
         BYTE_BUFFER_MARK.set(byteBuffer, NERFED_BUFFER_MARK);
         BYTE_BUFFER_POSITION.set(byteBuffer, 0);
@@ -703,15 +704,17 @@ public final class UnsafeUtil {
     /**
      * Initialize (simulate calling the constructor of) the given DirectByteBuffer.
      */
+    @SuppressWarnings("UnnecessaryLocalVariable")
     public static void initDirectByteBuffer(ByteBuffer dbb, long addr, int cap) {
         assertUnsafeByteBufferAccess();
         checkAccess(addr, cap);
         dbb.order(ByteOrder.LITTLE_ENDIAN);
-        BYTE_BUFFER_MARK.set(dbb, -1);
-        BYTE_BUFFER_POSITION.set(dbb, 0);
-        BYTE_BUFFER_LIMIT.set(dbb, cap);
-        BYTE_BUFFER_CAPACITY.set(dbb, cap);
-        BYTE_BUFFER_ADDRESS.set(dbb, addr);
+        Buffer bb = dbb;
+        BYTE_BUFFER_MARK.set(bb, -1);
+        BYTE_BUFFER_POSITION.set(bb, 0);
+        BYTE_BUFFER_LIMIT.set(bb, cap);
+        BYTE_BUFFER_CAPACITY.set(bb, cap);
+        BYTE_BUFFER_ADDRESS.set(bb, addr);
     }
 
     /**
@@ -722,7 +725,7 @@ public final class UnsafeUtil {
      * @param dbb The direct byte buffer to read the address field from.
      * @return The native memory address in the given direct byte buffer.
      */
-    public static long getDirectByteBufferAddress(ByteBuffer dbb) {
+    public static long getDirectByteBufferAddress(Buffer dbb) {
         assertUnsafeByteBufferAccess();
         return (long) BYTE_BUFFER_ADDRESS.get(dbb);
     }
@@ -747,7 +750,7 @@ public final class UnsafeUtil {
         freeByteBuffer(byteBuffer, memoryTracker);
     }
 
-    private static void freeHeapByteBuffer(ByteBuffer byteBuffer, MemoryTracker memoryTracker) {
+    private static void freeHeapByteBuffer(Buffer byteBuffer, MemoryTracker memoryTracker) {
         if ((int) BYTE_BUFFER_MARK.get(byteBuffer) == NERFED_BUFFER_MARK) {
             return;
         }

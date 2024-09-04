@@ -19,15 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Arrays.fill;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.helpers.VarHandleUtils.arrayElementVarHandle;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 import static org.neo4j.util.FeatureToggles.getLong;
 
 import java.io.Flushable;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
@@ -91,7 +93,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
     // a time, and we ensure this mutual exclusion using the monitor lock on this MuninnPagedFile object.
-    static final VarHandle TRANSLATION_TABLE_ARRAY;
+    static final VarHandle TRANSLATION_TABLE_ARRAY = arrayElementVarHandle(int[].class);
     volatile int[][] translationTable;
 
     final PageSwapper swapper;
@@ -112,7 +114,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     @SuppressWarnings("unused") // accessed with VarHandle
     private volatile long highestEvictedTransactionId;
 
-    private static final VarHandle HIGHEST_EVICTED_TRANSACTION_ID;
+    private static final VarHandle HIGHEST_EVICTED_TRANSACTION_ID =
+            getVarHandle(lookup(), "highestEvictedTransactionId");
 
     /**
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
@@ -129,19 +132,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     @SuppressWarnings("unused") // accessed with VarHandle
     private volatile long headerState;
 
-    private static final VarHandle HEADER_STATE;
-
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            HEADER_STATE = l.findVarHandle(MuninnPagedFile.class, "headerState", long.class);
-            HIGHEST_EVICTED_TRANSACTION_ID =
-                    l.findVarHandle(MuninnPagedFile.class, "highestEvictedTransactionId", long.class);
-            TRANSLATION_TABLE_ARRAY = MethodHandles.arrayElementVarHandle(int[].class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle HEADER_STATE = getVarHandle(lookup(), "headerState");
 
     /**
      * Create muninn page file

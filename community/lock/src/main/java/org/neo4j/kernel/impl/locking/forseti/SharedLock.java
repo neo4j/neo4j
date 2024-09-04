@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import java.lang.invoke.MethodHandles;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.neo4j.internal.helpers.VarHandleUtils.consumeInt;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
+
 import java.lang.invoke.VarHandle;
 import java.util.HashSet;
 import java.util.Set;
@@ -44,15 +47,7 @@ class SharedLock implements ForsetiLockManager.Lock {
     @SuppressWarnings("FieldMayBeFinal")
     private volatile int refCount = 1;
 
-    private static final VarHandle REF_COUNT;
-
-    static {
-        try {
-            REF_COUNT = MethodHandles.lookup().findVarHandle(SharedLock.class, "refCount", int.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle REF_COUNT = getVarHandle(lookup(), "refCount");
 
     private final ConcurrentHashMap.KeySetView<ForsetiClient, Boolean> clientsHoldingThisLock =
             ConcurrentHashMap.newKeySet();
@@ -110,7 +105,7 @@ class SharedLock implements ForsetiLockManager.Lock {
     }
 
     void releaseUpdateLock() {
-        REF_COUNT.getAndBitwiseAnd(this, ~UPDATE_LOCK_FLAG);
+        consumeInt((int) REF_COUNT.getAndBitwiseAnd(this, ~UPDATE_LOCK_FLAG));
     }
 
     int numberOfHolders() {

@@ -22,9 +22,10 @@ package org.neo4j.index.internal.gbptree;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
@@ -86,15 +87,7 @@ class LongSpinLatch {
     @SuppressWarnings("FieldMayBeFinal") // Accessed through VarHandle
     private volatile long lockBits;
 
-    private static final VarHandle LOCK_BITS;
-
-    static {
-        try {
-            LOCK_BITS = MethodHandles.lookup().findVarHandle(LongSpinLatch.class, "lockBits", long.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle LOCK_BITS = getVarHandle(lookup(), "lockBits");
 
     /**
      * Instantiates a latch which can be acquired, with one or more acquisitions, released, acquired again until finally

@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_CHAIN_FOLLOW;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
@@ -31,7 +33,6 @@ import static org.neo4j.io.pagecache.impl.muninn.PageList.validatePageRefAndSetF
 import static org.neo4j.util.FeatureToggles.flag;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -115,16 +116,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     // offending code.
     private Object cursorException;
 
-    private static final VarHandle CURRENT_PAGE_ID;
-
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            CURRENT_PAGE_ID = l.findVarHandle(MuninnPageCursor.class, "currentPageId", long.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle CURRENT_PAGE_ID = getVarHandle(lookup(), "currentPageId");
 
     MuninnPageCursor(
             MuninnPagedFile pagedFile, int pf_flags, long victimPage, CursorContext cursorContext, long pageId) {

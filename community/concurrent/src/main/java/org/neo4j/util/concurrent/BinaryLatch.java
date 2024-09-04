@@ -19,7 +19,9 @@
  */
 package org.neo4j.util.concurrent;
 
-import java.lang.invoke.MethodHandles;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
+
 import java.lang.invoke.VarHandle;
 import java.util.concurrent.locks.LockSupport;
 
@@ -52,16 +54,7 @@ public class BinaryLatch {
     @SuppressWarnings("unused") // accessed via VarHandle
     private Node stack;
 
-    private static final VarHandle STACK;
-
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            STACK = l.findVarHandle(BinaryLatch.class, "stack", Node.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle STACK = getVarHandle(lookup(), "stack");
 
     /**
      * Release the latch, thereby unblocking all current and future calls to {@link #await()}.
@@ -99,7 +92,7 @@ public class BinaryLatch {
             // The latch hasn't obviously already been released, so we want to add a waiter to the stack. Trouble is,
             // we might race with release here, so we need to re-check for release after we've modified the stack.
             Waiter waiter = new Waiter();
-            state = (Node) STACK.getAndSet(this, waiter);
+            state = (Node) STACK.getAndSet(this, (Node) waiter);
             if (state == released) {
                 // If we get 'released' back from the swap, then we raced with release, and it is our job to put the
                 // released sentinel back. Doing so can, however, return more waiters that have added themselves in

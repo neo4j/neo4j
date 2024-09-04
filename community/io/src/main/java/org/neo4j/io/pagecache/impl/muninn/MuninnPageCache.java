@@ -20,8 +20,10 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import static java.lang.String.format;
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.impl.muninn.PageList.getPageHorizon;
 import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
@@ -32,7 +34,6 @@ import static org.neo4j.util.Preconditions.requireNonNegative;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -187,7 +188,7 @@ public class MuninnPageCache implements PageCache {
     @SuppressWarnings("unused") // accessed via VarHandle.
     private volatile Object freelist;
 
-    private static final VarHandle FREE_LIST;
+    private static final VarHandle FREE_LIST = getVarHandle(lookup(), "freelist");
 
     private final ConcurrentHashMap<String, MuninnPagedFile> mappedFiles;
 
@@ -210,15 +211,6 @@ public class MuninnPageCache implements PageCache {
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
-
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            FREE_LIST = l.findVarHandle(MuninnPageCache.class, "freelist", Object.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
 
     /**
      * Compute the amount of memory needed for a page cache with the given number of 8 KiB pages.

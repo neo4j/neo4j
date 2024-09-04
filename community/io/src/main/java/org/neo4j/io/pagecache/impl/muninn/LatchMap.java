@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.neo4j.internal.helpers.VarHandleUtils.arrayElementVarHandle;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -54,7 +54,7 @@ final class LatchMap {
             FeatureToggles.getInteger(LatchMap.class, "faultLockStriping", DEFAULT_FAULT_LOCK_STRIPING);
 
     private final Latch[] latches;
-    private static final VarHandle LATCHES_ARRAY = MethodHandles.arrayElementVarHandle(Latch[].class);
+    private static final VarHandle LATCHES_ARRAY = arrayElementVarHandle(Latch[].class);
     private final long faultLockMask;
 
     LatchMap(int size) {
@@ -64,7 +64,7 @@ final class LatchMap {
     }
 
     private void releaseLatch(int index) {
-        LATCHES_ARRAY.setVolatile(latches, index, (BinaryLatch) null);
+        LATCHES_ARRAY.setVolatile(latches, index, (Latch) null);
     }
 
     private boolean tryInsertLatch(int index, Latch latch) {

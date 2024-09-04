@@ -21,18 +21,19 @@ package org.neo4j.kernel.impl.api;
 
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.time.Clock;
 import java.util.Collection;
@@ -195,17 +196,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
     private static final String TRANSACTION_TAG = "transaction";
-    private static final VarHandle CURSOR_CONTEXT_HANDLE;
-
-    static {
-        try {
-            CURSOR_CONTEXT_HANDLE = MethodHandles.lookup()
-                    .in(KernelTransactionImplementation.class)
-                    .findVarHandle(KernelTransactionImplementation.class, "cursorContext", CursorContext.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle CURSOR_CONTEXT_HANDLE = getVarHandle(lookup(), "cursorContext");
 
     private final CollectionsFactory collectionsFactory;
 

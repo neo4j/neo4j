@@ -19,13 +19,14 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import static java.lang.invoke.MethodHandles.lookup;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
 import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 
 import com.sun.nio.file.ExtendedOpenOption;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -81,16 +82,7 @@ public class SingleFilePageSwapper implements PageSwapper {
     @SuppressWarnings("unused") // accessed via VarHandle
     private volatile long fileSize;
 
-    private static final VarHandle FILE_SIZE;
-
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            FILE_SIZE = l.findVarHandle(SingleFilePageSwapper.class, "fileSize", long.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle FILE_SIZE = getVarHandle(lookup(), "fileSize");
 
     SingleFilePageSwapper(
             Path path,
