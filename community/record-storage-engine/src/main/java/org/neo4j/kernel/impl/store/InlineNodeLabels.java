@@ -186,11 +186,6 @@ public class InlineNodeLabels implements NodeLabels {
     }
 
     @Override
-    public boolean isInlined() {
-        return true;
-    }
-
-    @Override
     public String toString() {
         return format("Inline(0x%x:%s)", node.getLabelField(), Arrays.toString(parseInlined(node.getLabelField())));
     }

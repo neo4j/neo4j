@@ -51,6 +51,4 @@ public interface NodeLabels {
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker);
-
-    boolean isInlined();
 }

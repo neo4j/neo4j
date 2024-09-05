@@ -215,11 +215,6 @@ public class DynamicNodeLabels implements NodeLabels {
     }
 
     @Override
-    public boolean isInlined() {
-        return false;
-    }
-
-    @Override
     public String toString() {
         if (node.isLight()) {
             return format("Dynamic(id:%d)", firstDynamicLabelRecordId(node.getLabelField()));
