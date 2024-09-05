@@ -288,4 +288,19 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("i").withRows(singleColumn(Int.MaxValue + 1L to Int.MaxValue + 7L))
   }
+
+  test("unwind where the expression depends on memory tracking") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .filter("true")
+      .unwind("[1 IN $list] AS i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, Map("list" -> Array(1, 2, 3)))
+
+    // then
+    runtimeResult should beColumns("i").withSingleRow(true)
+  }
 }
