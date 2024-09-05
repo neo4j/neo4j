@@ -1,9 +1,30 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [https://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.neo4j.values.virtual;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
+import java.util.Collections;
+import java.util.Iterator;
 import org.neo4j.exceptions.ArithmeticException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -77,6 +98,30 @@ public abstract class IntegralRangeListValue extends ListValue {
         }
 
         @Override
+        public Iterator<AnyValue> iterator() {
+            int size = intSize();
+            if (size == 0) {
+                return Collections.emptyIterator();
+            } else {
+                return new Iterator<>() {
+                    private int index = 0;
+
+                    @Override
+                    public boolean hasNext() {
+                        return index < size;
+                    }
+
+                    @Override
+                    public AnyValue next() {
+                        var result = Values.longValue(start + index * step);
+                        index++;
+                        return result;
+                    }
+                };
+            }
+        }
+
+        @Override
         protected int computeHashToMemoize() {
             int hashCode = 1;
             int current = start;
@@ -138,6 +183,30 @@ public abstract class IntegralRangeListValue extends ListValue {
                         // TODO: STATUS_22003
                         throw new ArithmeticException("numeric value out of range", e);
                     }
+                }
+            }
+
+            @Override
+            public Iterator<AnyValue> iterator() {
+                long size = actualSize();
+                if (size == 0L) {
+                    return Collections.emptyIterator();
+                } else {
+                    return new Iterator<>() {
+                        private long index = 0;
+
+                        @Override
+                        public boolean hasNext() {
+                            return index < size;
+                        }
+
+                        @Override
+                        public AnyValue next() {
+                            var result = Values.longValue(start + index * step);
+                            index++;
+                            return result;
+                        }
+                    };
                 }
             }
 

@@ -20,6 +20,7 @@
 package org.neo4j.values.virtual;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
@@ -43,8 +44,7 @@ class IntegralRangeListValueTest {
                 longValue(10L),
                 longValue(11L));
 
-        assertEquals(range, expected);
-        assertEquals(range.hashCode(), expected.hashCode());
+        assertSame(range, expected);
     }
 
     @Test
@@ -53,8 +53,7 @@ class IntegralRangeListValueTest {
 
         ListValue expected = list(longValue(5L), longValue(8L), longValue(11L));
 
-        assertEquals(range, expected);
-        assertEquals(range.hashCode(), expected.hashCode());
+        assertSame(range, expected);
     }
 
     @Test
@@ -63,8 +62,7 @@ class IntegralRangeListValueTest {
 
         ListValue expected = list(longValue(11L), longValue(8L), longValue(5L));
 
-        assertEquals(range, expected);
-        assertEquals(range.hashCode(), expected.hashCode());
+        assertSame(range, expected);
     }
 
     @Test
@@ -73,8 +71,7 @@ class IntegralRangeListValueTest {
 
         ListValue expected = EMPTY_LIST;
 
-        assertEquals(range, expected);
-        assertEquals(range.hashCode(), expected.hashCode());
+        assertSame(range, expected);
     }
 
     @Test
@@ -83,8 +80,7 @@ class IntegralRangeListValueTest {
 
         ListValue expected = EMPTY_LIST;
 
-        assertEquals(range, expected);
-        assertEquals(range.hashCode(), expected.hashCode());
+        assertSame(range, expected);
     }
 
     @Test
@@ -94,5 +90,11 @@ class IntegralRangeListValueTest {
         ArrayValue expected = Values.longArray(new long[] {5, 7, 9, 11});
 
         assertEquals(expected, range.toStorableArray());
+    }
+
+    private void assertSame(ListValue list, ListValue expected) {
+        assertEquals(list, expected);
+        assertEquals(list.hashCode(), expected.hashCode());
+        assertIterableEquals(list, expected);
     }
 }

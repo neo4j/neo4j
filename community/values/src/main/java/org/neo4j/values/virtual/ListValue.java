@@ -33,6 +33,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -41,6 +42,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.github.jamm.Unmetered;
 import org.neo4j.exceptions.ArithmeticException;
 import org.neo4j.exceptions.CypherTypeException;
@@ -113,6 +115,16 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public int intSize() {
+            return array.intSize();
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator() {
+            return array.iterator();
+        }
+
+        @Override
         public ValueRepresentation itemValueRepresentation() {
             return isEmpty() ? ValueRepresentation.ANYTHING : head().valueRepresentation();
         }
@@ -155,7 +167,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public long actualSize() {
+            return intSize();
+        }
+
+        @Override
+        public int intSize() {
             return list.size();
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator() {
+            return Iterators.map(Function.identity(), list.iterator());
         }
 
         @Override
@@ -203,6 +225,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public IterationPreference iterationPreference() {
             return RANDOM_ACCESS;
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator() {
+            return Iterators.iterator(values);
         }
 
         @Override
@@ -381,7 +408,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public Iterator<AnyValue> iterator() {
             return switch (inner.iterationPreference()) {
-                case RANDOM_ACCESS -> super.iterator();
+                case RANDOM_ACCESS -> new RandomAccessIterator(this);
                 case ITERATION -> new ListSliceIterator();
             };
         }
@@ -438,6 +465,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public Iterator<AnyValue> iterator() {
+            // NOTE: this is dangerous since the underlying may not prefer random access
+            return new RandomAccessIterator(this);
+        }
+
+        @Override
         public long actualSize() {
             return inner.actualSize();
         }
@@ -491,8 +524,27 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public Iterator<AnyValue> iterator() {
-            var iterators = Arrays.stream(lists).map(l -> l.iterator()).iterator();
-            return Iterators.concat(iterators);
+            if (lists.length == 0) {
+                return Collections.emptyIterator();
+            } else {
+                return new PrefetchingIterator<AnyValue>() {
+                    private int index = 1;
+                    private Iterator<AnyValue> inner = lists[0].iterator();
+
+                    @Override
+                    protected AnyValue fetchNextOrNull() {
+                        while (true) {
+                            if (inner.hasNext()) {
+                                return inner.next();
+                            } else if (index < lists.length) {
+                                inner = lists[index++].iterator();
+                            } else {
+                                return null;
+                            }
+                        }
+                    }
+                };
+            }
         }
 
         @Override
@@ -647,7 +699,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public Iterator<AnyValue> iterator() {
             return switch (base.iterationPreference()) {
-                case RANDOM_ACCESS -> super.iterator();
+                case RANDOM_ACCESS -> new RandomAccessIterator(this);
                 case ITERATION -> Iterators.appendTo(base.iterator(), appended);
             };
         }
@@ -754,7 +806,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public Iterator<AnyValue> iterator() {
             return switch (base.iterationPreference()) {
-                case RANDOM_ACCESS -> super.iterator();
+                case RANDOM_ACCESS -> new RandomAccessIterator(this);
                 case ITERATION -> Iterators.prependTo(base.iterator(), prepended);
             };
         }
@@ -840,17 +892,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return value(size - 1);
     }
 
-    @Override
-    public Iterator<AnyValue> iterator() {
-        return new ListValueIterator();
-    }
-
-    private class ListValueIterator implements Iterator<AnyValue> {
+    private static class RandomAccessIterator implements Iterator<AnyValue> {
+        private final ListValue listValue;
         private long count;
+
+        private RandomAccessIterator(ListValue listValue) {
+            this.listValue = listValue;
+        }
 
         @Override
         public boolean hasNext() {
-            return count < actualSize();
+            return count < listValue.actualSize();
         }
 
         @Override
@@ -858,7 +910,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            return value(count++);
+            return listValue.value(count++);
         }
     }
 
