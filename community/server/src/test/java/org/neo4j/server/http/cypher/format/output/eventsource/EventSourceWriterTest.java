@@ -28,8 +28,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
-import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Test;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.jolt.v1.JoltV1Codec;
@@ -91,7 +91,7 @@ class EventSourceWriterTest {
             Map<String, Object> data)
             throws IOException, JsonParseException {
 
-        RecordEvent recordEvent = new RecordEvent(Lists.newArrayList(data.keySet()), data::get);
+        RecordEvent recordEvent = new RecordEvent(new ArrayList<>(data.keySet()), data::get);
 
         resultDataContentWriter.write(json, recordEvent);
         json.flush();
