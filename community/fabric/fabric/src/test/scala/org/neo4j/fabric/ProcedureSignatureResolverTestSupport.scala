@@ -19,7 +19,6 @@
  */
 package org.neo4j.fabric
 
-import org.neo4j.collection.RawIterator
 import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.compiler.helpers.ProcedureLookup
