@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.ddl
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
+import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
@@ -231,5 +232,17 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       DestroyData,
       NoWait
     )(pos))
+  }
+
+  test("DROP COMPOSITE DATABASE foo DUMP DATA") {
+    parsesTo[Statements](
+      DropDatabase(literalFoo, ifExists = false, composite = true, DumpData, NoWait)(pos)
+    )
+  }
+
+  test("DROP COMPOSITE DATABASE foo DESTROY DATA") {
+    parsesTo[Statements](
+      DropDatabase(literalFoo, ifExists = false, composite = true, DestroyData, NoWait)(pos)
+    )
   }
 }

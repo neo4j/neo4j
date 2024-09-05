@@ -118,7 +118,6 @@ public class GqlStatusInfoCodesTest {
     void verifyMessageEndsWithFullStop() {
         Set<GqlStatusInfoCodes> whitelist = new HashSet<>();
         whitelist.add(GqlStatusInfoCodes.STATUS_01N00);
-        whitelist.add(GqlStatusInfoCodes.STATUS_42N06);
         whitelist.add(GqlStatusInfoCodes.STATUS_42I45);
         whitelist.add(GqlStatusInfoCodes.STATUS_42N72);
         whitelist.add(GqlStatusInfoCodes.STATUS_42N89);
@@ -213,8 +212,8 @@ public class GqlStatusInfoCodesTest {
         byte[] gqlHash = DigestUtils.sha256(gqlBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -90, 92, -88, 67, 55, 21, 45, -29, -34, -103, -38, -88, 35, 19, 93, -42, 125, 16, -16, 3, 93, 1, -27, -76,
-            54, -57, 13, 70, 20, -48, -37, 2
+            -54, -20, -23, -87, 125, 88, -54, 69, 9, 114, 109, 54, -91, -99, 79, -34, -69, -23, -89, -87, 109, 65, 80,
+            -10, 54, 31, -59, 5, -123, -112, 117, 70
         };
 
         if (!Arrays.equals(gqlHash, expectedHash)) {

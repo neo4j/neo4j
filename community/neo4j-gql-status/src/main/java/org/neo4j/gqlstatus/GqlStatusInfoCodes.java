@@ -2056,8 +2056,8 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
     STATUS_42N06(
             new GqlStatus("42N06"),
             """
-                    %s is not supported on composite databases. %s""",
-            new GqlMessageParams[] {GqlMessageParams.action, GqlMessageParams.workaround},
+                    `%s` is not supported on composite databases.""",
+            new GqlMessageParams[] {GqlMessageParams.action},
             Condition.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION,
             "unsupported action on composite database"),
     STATUS_42N07(
