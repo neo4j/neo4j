@@ -176,7 +176,7 @@
     <picocli.version>4.7.6</picocli.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
-    <antlr.version>4.13.2</antlr.version>
+    <antlr.version>4.13.2</antlr.version> <!-- You MUST re-generate the parsers after changing this value! -->
     <error_prone.version>2.29.2</error_prone.version>
     <teavm.version>0.10.1</teavm.version>
     <javapoet.version>1.13.0</javapoet.version>

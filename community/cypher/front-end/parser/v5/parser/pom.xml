@@ -35,6 +35,54 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>${antlr.version}</version>
+                <executions>
+                    <execution>
+                        <id>antlr</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <options>
+                        <contextSuperClass>org.neo4j.cypher.internal.parser.AstRuleCtx</contextSuperClass>
+                    </options>
+                    <listener>false</listener> <!-- We have our own optimised listener -->
+                    <visitor>false</visitor>
+                    <outputDirectory>${basedir}/src/main/java/</outputDirectory>
+                    <treatWarningsAsErrors>true</treatWarningsAsErrors>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>check-licenses</id>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <configuration>
+                    <java>
+                        <excludes>
+                            <!-- These files causes stack overflow -->
+                            <exclude>src/main/java/org/neo4j/cypher/internal/parser/v5/*.java</exclude>
+                        </excludes>
+                    </java>
+                </configuration>
+            </plugin>
+            <plugin>
                 <!-- disable scala-maven-plugin, because we have no scala -->
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
@@ -72,59 +120,88 @@
     </build>
 
     <profiles>
-        <!-- Profile to generate the lexer and parser, update license headers and format the code with spotless -->
+        <!-- Profile to ignore check for changes to generated parser. -->
         <profile>
-            <id>generate-antlr</id>
+            <id>check-generated-antlr</id>
             <activation>
                 <property>
-                    <name>generate.antlr</name>
+                    <name>!generate.antlr</name>
                 </property>
             </activation>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.antlr</groupId>
-                        <artifactId>antlr4-maven-plugin</artifactId>
-                        <version>${antlr.version}</version>
+                        <inherited>false</inherited>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>antlr</id>
+                                <!-- Copy the old generated parser files to target, see next step. -->
+                                <id>copy-generated-antlr</id>
+                                <phase>initialize</phase>
                                 <goals>
-                                    <goal>antlr4</goal>
+                                    <goal>run</goal>
                                 </goals>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${basedir}/target/old-generated-antlr"/>
+                                        <copy todir="${basedir}/target/old-generated-antlr">
+                                            <fileset dir="${basedir}/src/main/java" includes="**/*.java"/>
+                                        </copy>
+                                    </target>
+                                </configuration>
                             </execution>
-                        </executions>
-                        <configuration>
-                            <options><contextSuperClass>org.neo4j.cypher.internal.parser.AstRuleCtx</contextSuperClass></options>
-                            <listener>false</listener> <!-- We have our own optimised listener -->
-                            <visitor>false</visitor>
-                            <outputDirectory>${basedir}/src/main/java/</outputDirectory>
-                            <treatWarningsAsErrors>true</treatWarningsAsErrors>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>com.mycila</groupId>
-                        <artifactId>license-maven-plugin</artifactId>
-                        <executions>
                             <execution>
-                                <id>check-licenses</id>
+                                <!-- Fail build if generated antlr parser files have changed.
+                                     To prevent changes to grammar or antlr version without re-generating and checking in the generated files.
+                                     Needed because we check in the generated parser in VCS. -->
+                                <id>check-generated-antlr</id>
+                                <phase>verify</phase>
                                 <goals>
-                                    <goal>format</goal>
+                                    <goal>run</goal>
                                 </goals>
-                                <phase>process-sources</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>com.diffplug.spotless</groupId>
-                        <artifactId>spotless-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>format-code</id>
-                                <goals>
-                                    <goal>apply</goal>
-                                </goals>
-                                <phase>process-sources</phase>
+                                <configuration>
+                                    <target>
+                                        <property name="parser-old-path" value="${basedir}/target/old-generated-antlr/org/neo4j/cypher/internal/parser/v5/Cypher5Parser.java"/>
+                                        <property name="parser-new-path" value="${basedir}/src/main/java/org/neo4j/cypher/internal/parser/v5/Cypher5Parser.java"/>
+                                        <property name="lexer-old-path" value="${basedir}/target/old-generated-antlr/org/neo4j/cypher/internal/parser/v5/Cypher5Lexer.java"/>
+                                        <property name="lexer-new-path" value="${basedir}/src/main/java/org/neo4j/cypher/internal/parser/v5/Cypher5Lexer.java"/>
+
+                                        <!-- Uncomment to debug failures
+
+                                        <exec executable="diff">
+                                            <arg value="-s" />
+                                            <arg value="${parser-old-path}" />
+                                            <arg value="${parser-new-path}" />
+                                            <redirector output="parser-diff.txt"/>
+                                        </exec>
+                                        <loadfile property="parser-diff" srcFile="parser-diff.txt" />
+                                        <echo>diff -s ${parser-old-path} ${parser-new-path}</echo>
+                                        <echo>${parser-diff}</echo>
+
+                                        <exec executable="diff">
+                                            <arg value="-s" />
+                                            <arg value="${lexer-old-path}" />
+                                            <arg value="${lexer-new-path}" />
+                                            <redirector output="lexer-diff.txt"/>
+                                        </exec>
+                                        <loadfile property="lexer-diff" srcFile="lexer-diff.txt" />
+                                        <echo>diff -s ${lexer-old-path} ${lexer-new-path}</echo>
+                                        <echo>${lexer-diff}</echo>
+                                        -->
+
+                                        <fail message="Generated parser files have changed, please re-generate the parser (build with -Dgenerate.antlr) and commit changes to git.">
+                                            <condition>
+                                                <not>
+                                                    <and>
+                                                        <filesmatch textfile="true" file1="${parser-old-path}" file2="${parser-new-path}" />
+                                                        <filesmatch textfile="true" file1="${lexer-old-path}" file2="${lexer-new-path}" />
+                                                    </and>
+                                                </not>
+                                            </condition>
+                                        </fail>
+                                    </target>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
