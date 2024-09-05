@@ -165,11 +165,7 @@ class IndexRecoveryIT {
 
             // And Given
             killFuture = killDbInSeparateThread();
-            int iterations = 0;
-            do {
-                rotateLogsAndCheckPoint();
-                Thread.sleep(10);
-            } while (iterations++ < 100 && !killFuture.isDone());
+            rotateLogsAndCheckPoint();
         } finally {
             populationSemaphore.release();
         }
@@ -499,15 +495,21 @@ class IndexRecoveryIT {
     }
 
     private void rotateLogsAndCheckPoint() throws IOException {
-        synchronized (lock) {
-            db.getDependencyResolver()
-                    .resolveDependency(LogFiles.class)
-                    .getLogFile()
-                    .getLogRotation()
-                    .rotateLogFile(LogAppendEvent.NULL);
-            db.getDependencyResolver()
-                    .resolveDependency(CheckPointer.class)
-                    .forceCheckPoint(new SimpleTriggerInfo("test"));
+        try {
+            synchronized (lock) {
+                db.getDependencyResolver()
+                        .resolveDependency(LogFiles.class)
+                        .getLogFile()
+                        .getLogRotation()
+                        .rotateLogFile(LogAppendEvent.NULL);
+                db.getDependencyResolver()
+                        .resolveDependency(CheckPointer.class)
+                        .forceCheckPoint(new SimpleTriggerInfo("test"));
+            }
+        } catch (Exception e) {
+            if (db.isAvailable()) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
