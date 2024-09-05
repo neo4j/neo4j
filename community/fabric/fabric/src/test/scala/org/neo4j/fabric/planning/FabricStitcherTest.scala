@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.planning
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -55,6 +56,7 @@ class FabricStitcherTest
       FabricStitcher(
         dummyQuery,
         compositeContext = false,
+        CypherVersion.Cypher5,
         dummyPipeline,
         new UseHelper(Catalog.empty, defaultGraphName)
       )
@@ -269,6 +271,7 @@ class FabricStitcherTest
       FabricStitcher(
         dummyQuery,
         compositeContext = true,
+        CypherVersion.Cypher5,
         dummyPipeline,
         new UseHelper(catalog, defaultGraphName)
       )

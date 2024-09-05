@@ -20,6 +20,7 @@
 package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -63,6 +64,7 @@ import org.neo4j.fabric.util.Rewritten.RewritingOps
 case class FabricStitcher(
   queryString: String,
   compositeContext: Boolean,
+  cypherVersion: CypherVersion,
   pipeline: FabricFrontEnd#Pipeline,
   useHelper: UseHelper
 ) {
@@ -389,11 +391,12 @@ case class FabricStitcher(
           val rhs = stitchChain(union.rhs, outermost, outerUse)
           val uses = lhs.useAppearances ++ rhs.useAppearances :+ UnionUse(lhs.lastUse, rhs.lastUse)
           val rhsQuery = SingleQuery(rhs.clauses)(union.rhs.pos)
+          val differentReturnOderAllowed = cypherVersion == CypherVersion.Cypher5
           val result =
             if (union.distinct) {
-              UnionDistinct(lhs.query, rhsQuery, differentReturnOrderAllowed = true)(union.pos)
+              UnionDistinct(lhs.query, rhsQuery, differentReturnOderAllowed)(union.pos)
             } else {
-              UnionAll(lhs.query, rhsQuery, differentReturnOrderAllowed = true)(union.pos)
+              UnionAll(lhs.query, rhsQuery, differentReturnOderAllowed)(union.pos)
             }
           StitchResult(result, rhs.lastUse, uses)
       }
