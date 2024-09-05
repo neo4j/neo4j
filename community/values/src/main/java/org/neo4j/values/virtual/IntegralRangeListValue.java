@@ -47,6 +47,10 @@ public abstract class IntegralRangeListValue extends ListValue {
             this.step = step;
         }
 
+        public String toString() {
+            return "Range(" + start + "..." + end + ", step = " + step + ")";
+        }
+
         @Override
         public long actualSize() {
             return intSize();
