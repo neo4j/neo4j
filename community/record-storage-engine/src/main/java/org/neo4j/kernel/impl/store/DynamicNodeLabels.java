@@ -253,17 +253,6 @@ public class DynamicNodeLabels implements NodeLabels {
         return LabelIdArray.stripNodeId(storedLongs);
     }
 
-    public static long getDynamicLabelsArrayOwner(
-            Iterable<DynamicRecord> records,
-            DynamicArrayStore dynamicLabelStore,
-            StoreCursors storeCursors,
-            MemoryTracker memoryTracker) {
-        long[] storedLongs = (long[]) dynamicLabelStore
-                .getArrayFor(records, storeCursors, memoryTracker)
-                .asObject();
-        return storedLongs[0];
-    }
-
     private static int[] parseHeavyRecords(Iterable<DynamicRecord> records) {
         var heavyRecordData = readFullByteArrayFromHeavyRecords(records, ARRAY);
         long[] storedLongs =

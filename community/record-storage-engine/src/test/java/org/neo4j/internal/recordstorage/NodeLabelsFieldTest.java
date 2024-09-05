@@ -61,6 +61,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
 import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
+import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -285,8 +286,7 @@ class NodeLabelsFieldTest {
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
 
         // WHEN
-        long owner = DynamicNodeLabels.getDynamicLabelsArrayOwner(
-                initialRecords, nodeStore.getDynamicLabelStore(), StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
+        long owner = getDynamicLabelsArrayOwner(initialRecords, nodeStore.getDynamicLabelStore());
 
         // THEN
         assertEquals(nodeId, owner);
@@ -336,11 +336,7 @@ class NodeLabelsFieldTest {
                         INSTANCE));
 
         // WHEN
-        long owner = DynamicNodeLabels.getDynamicLabelsArrayOwner(
-                changedDynamicRecords,
-                nodeStore.getDynamicLabelStore(),
-                StoreCursors.NULL,
-                EmptyMemoryTracker.INSTANCE);
+        long owner = getDynamicLabelsArrayOwner(changedDynamicRecords, nodeStore.getDynamicLabelStore());
 
         // THEN
         assertEquals(nodeId, owner);
@@ -652,10 +648,18 @@ class NodeLabelsFieldTest {
     }
 
     private static LongSet idsOf(Set<DynamicRecord> records) {
-        MutableLongSet ids = LongSets.mutable.empty();
+        MutableLongSet ids = LongSets.mutable.withInitialCapacity(records.size());
         for (DynamicRecord record : records) {
             ids.add(record.getId());
         }
         return ids;
+    }
+
+    public static long getDynamicLabelsArrayOwner(
+            Iterable<DynamicRecord> records, DynamicArrayStore dynamicLabelStore) {
+        long[] storedLongs = (long[]) dynamicLabelStore
+                .getArrayFor(records, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE)
+                .asObject();
+        return storedLongs[0];
     }
 }
