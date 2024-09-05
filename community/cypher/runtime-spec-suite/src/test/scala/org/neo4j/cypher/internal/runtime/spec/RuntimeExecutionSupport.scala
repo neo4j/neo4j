@@ -205,7 +205,8 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   def executeAndContextNonRecording(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    input: InputValues
+    input: InputValues,
+    parameters: Map[String, Any] = Map.empty
   ): (NonRecordingRuntimeResult, CONTEXT)
 
   /**

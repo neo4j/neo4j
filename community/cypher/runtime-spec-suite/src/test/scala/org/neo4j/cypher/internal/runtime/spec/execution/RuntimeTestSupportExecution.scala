@@ -172,9 +172,10 @@ trait RuntimeTestSupportExecution[CONTEXT <: RuntimeContext] extends RuntimeExec
   override def executeAndContextNonRecording(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    input: InputValues
+    input: InputValues,
+    parameters: Map[String, Any] = Map.empty
   ): (NonRecordingRuntimeResult, CONTEXT) =
-    runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input)
+    runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input, parameters)
 
   override def executeAndExplain(
     logicalQuery: LogicalQuery,

@@ -349,8 +349,13 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     }
   }
 
-  def countRows(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], input: InputValues = NO_INPUT): Long = {
-    val (result, _) = runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input)
+  def countRows(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues = NO_INPUT,
+    params: Map[String, Any] = Map.empty
+  ): Long = {
+    val (result, _) = runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input, params)
     result.awaitAll()
   }
 

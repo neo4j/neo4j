@@ -654,7 +654,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   override def executeAndContextNonRecording(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    input: InputValues
+    input: InputValues,
+    parameters: Map[String, Any]
   ): (NonRecordingRuntimeResult, CONTEXT) = {
     val subscriber = newNonRecordingQuerySubscriber
     val (result, context) = runLogical(
@@ -664,7 +665,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       (context, result) => (result, context),
       subscriber,
       profile = false,
-      prePopulateResults = true
+      prePopulateResults = true,
+      parameters = parameters
     )
     (newNonRecordingRuntimeResult(result, subscriber), context)
   }
