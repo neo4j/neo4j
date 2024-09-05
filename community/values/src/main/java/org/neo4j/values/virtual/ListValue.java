@@ -207,6 +207,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public long actualSize() {
+            return intSize();
+        }
+
+        @Override
+        public int intSize() {
             return values.length;
         }
 
@@ -482,6 +487,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public IterationPreference iterationPreference() {
             return ITERATION;
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator() {
+            var iterators = Arrays.stream(lists).map(l -> l.iterator()).iterator();
+            return Iterators.concat(iterators);
         }
 
         @Override
