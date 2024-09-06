@@ -34,23 +34,7 @@ object ExpressionVariable {
     }
 }
 
-abstract class ExpressionVariable(name: String) extends RuntimeVariable(name) {
-  def offset: Int
+case class ExpressionVariable(offset: Int, override val name: String)
+    extends RuntimeVariable(name) {
   override def asCanonicalStringVal: String = name
 }
-
-/**
- * Variable which only lives for the duration of an expression evaluation.
- *
- * @param offset offset of the variable at runtime in the expression variable space
- * @param name name of the variable (used for debuging only at this point)
- */
-case class TemporaryExpressionVariable(offset: Int, override val name: String) extends ExpressionVariable(name)
-
-/**
- * Variable which lives for the duration of the query.
- *
- * @param offset offset of the variable at runtime in the expression variable space
- * @param name name of the variable (used for debuging only at this point)
- */
-case class ConstantExpressionVariable(offset: Int, override val name: String) extends ExpressionVariable(name)

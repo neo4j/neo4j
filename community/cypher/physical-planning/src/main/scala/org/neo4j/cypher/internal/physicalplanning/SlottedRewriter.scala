@@ -100,9 +100,9 @@ import org.neo4j.cypher.internal.physicalplanning.ast.RelationshipPropertyExists
 import org.neo4j.cypher.internal.physicalplanning.ast.RelationshipPropertyLate
 import org.neo4j.cypher.internal.physicalplanning.ast.RelationshipTypeFromSlot
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeProperty
 import org.neo4j.cypher.internal.runtime.ast.RuntimeVariable
-import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.VariableRef
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterStopper
@@ -759,7 +759,7 @@ object SlottedRewriter {
               s"Did not find `$k` in the slot configuration of ${thisPlan.getClass.getSimpleName} (${thisPlan.id})"
             )
         }
-      case ev: TemporaryExpressionVariable => ev
+      case ev: ExpressionVariable => ev
       case _ =>
         throw new CantCompileQueryException(
           s"Don't know how to rewrite variable $v in ${thisPlan.getClass.getSimpleName} (${thisPlan.id})"

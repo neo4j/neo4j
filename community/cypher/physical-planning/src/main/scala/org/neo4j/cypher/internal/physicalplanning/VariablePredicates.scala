@@ -20,17 +20,10 @@
 package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
-import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
-import org.neo4j.exceptions.InternalException
+import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 
 object VariablePredicates {
 
   def expressionSlotForPredicate(predicate: VariablePredicate): Int =
-    predicate match {
-      case VariablePredicate(TemporaryExpressionVariable(offset, _), _) => offset
-      case VariablePredicate(v, _) =>
-        throw new InternalException(
-          s"Failure during physical planning: the expression slot of variable $v has not been allocated."
-        )
-    }
+    ExpressionVariable.cast(predicate.variable).offset
 }

@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
-import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
+import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
@@ -266,8 +266,11 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
   implicit private def relToId(rel: Relationship): Long = rel.getId
   implicit private def stateToId(state: NFAStateWrapper): Int = state.state.id
 
-  private def alwaysTrue = Some(VariablePredicate(TemporaryExpressionVariable(0, "tmp"), True()(InputPosition.NONE)))
-  private def alwaysFalse = Some(VariablePredicate(TemporaryExpressionVariable(0, "tmp"), False()(InputPosition.NONE)))
+  private def alwaysTrue =
+    Some(VariablePredicate(ExpressionVariable(0, "tmp"), True()(InputPosition.NONE)))
+
+  private def alwaysFalse =
+    Some(VariablePredicate(ExpressionVariable(0, "tmp"), False()(InputPosition.NONE)))
 
   private def run(start: Node, nfa: NFABuilderWrapper): ProductGraph = {
     withTx { tx =>

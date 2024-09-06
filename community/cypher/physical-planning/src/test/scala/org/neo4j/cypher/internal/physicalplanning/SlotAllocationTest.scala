@@ -74,7 +74,6 @@ import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy.breakFo
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.SlotMetaData
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
-import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -1664,7 +1663,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations(foreach.id) shouldBe theSameInstanceAs(lhsSlots)
   }
 
-  def exprVar(offset: Int, name: String): ExpressionVariable = TemporaryExpressionVariable(offset, name)
+  def exprVar(offset: Int, name: String): ExpressionVariable = ExpressionVariable(offset, name)
 
   private def allocateSlots(
     lp: LogicalPlan,
