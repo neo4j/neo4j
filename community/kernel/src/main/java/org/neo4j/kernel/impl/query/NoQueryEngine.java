@@ -58,11 +58,6 @@ enum NoQueryEngine implements QueryExecutionEngine {
     }
 
     @Override
-    public long clearPreParserCache() {
-        throw noQueryEngine();
-    }
-
-    @Override
     public long clearExecutableQueryCache() {
         throw noQueryEngine();
     }

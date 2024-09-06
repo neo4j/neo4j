@@ -157,9 +157,6 @@ case class FeatureDatabaseManagementService(
     maybeFabricExecutor.map(fe => fe.clearQueryCachesForDatabase(dbName))
 
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
-
-  def clearPreParserCache(): Unit = executionEngine.clearPreParserCache()
-
   def clearExecutableQueryCache(): Unit = executionEngine.clearExecutableQueryCache()
 
   def clearCompilerCaches(): Unit = executionEngine.clearCompilerCache()

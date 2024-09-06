@@ -209,6 +209,7 @@ case class CypherPlanner(
    * @return the number of entries that were cleared
    */
   def clearCaches(): Long = {
+    planner.clearParserCache()
     Math.max(caches.astCache.clear(), caches.logicalPlanCache.clear())
   }
 

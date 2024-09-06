@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherVersion
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserUtil
+import org.neo4j.cypher.internal.parser.v6.Cypher6ParserUtil
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -94,6 +96,16 @@ class CypherParsing(
       ),
       resolver = resolver
     ).transform(startState, context)
+  }
+
+  /*
+   * The DFA cache is an internal ANTLR cache, of which it exist one instance per Cypher version.
+   * This cache grow significantly when parsing a lot of queries covering large part of the language,
+   * in worst case leading to OOM of the Java heap.
+   */
+  def clearDFACaches(): Unit = {
+    Cypher5ParserUtil.clearDFACache()
+    Cypher6ParserUtil.clearDFACache()
   }
 }
 

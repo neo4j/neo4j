@@ -78,6 +78,10 @@ case class CypherPlanner[Context <: PlannerContext](
 
   private val parsing = new CypherParsing(monitors, parsingConfig, internalSyntaxUsageStats)
 
+  def clearParserCache(): Unit = {
+    parsing.clearDFACaches()
+  }
+
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: PlannerContext): LogicalPlanState = {

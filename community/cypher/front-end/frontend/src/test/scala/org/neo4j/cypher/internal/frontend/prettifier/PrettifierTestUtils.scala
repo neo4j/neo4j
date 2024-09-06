@@ -22,6 +22,9 @@ import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.parser.AstParserFactory
+import org.neo4j.cypher.internal.parser.ast.AstParser
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserUtil
+import org.neo4j.cypher.internal.parser.v6.Cypher6ParserUtil
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -33,6 +36,7 @@ trait PrettifierTestUtils extends Matchers {
   private val defaultHeight: Int = 1000
   private val defaultIndent: Int = 4
   private val defaultPadding: Int = 1
+  private var queriesSinceClearCache: Int = 0
 
   def prettifier: Prettifier
 
@@ -143,20 +147,32 @@ trait PrettifierTestUtils extends Matchers {
     original: String,
     notAvailableInCypher5: Boolean,
     onlyAvailableInCypher5: Boolean
-  ): Seq[Statement] =
+  ): Seq[Statement] = {
+    queriesSinceClearCache = queriesSinceClearCache + 1
     if (notAvailableInCypher5) {
       CypherVersion.values().toSeq.diff(Seq(CypherVersion.Cypher5))
-        .map(v => AstParserFactory(v)(original, OpenCypherExceptionFactory(None), None).singleStatement())
+        .map(v => parseAndClearCache(v, original))
     } else if (onlyAvailableInCypher5) {
       val javaCcStatement = JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
-      val antlrStatement =
-        AstParserFactory(CypherVersion.Cypher5)(original, OpenCypherExceptionFactory(None), None).singleStatement()
-
+      val antlrStatement = parseAndClearCache(CypherVersion.Cypher5, original)
       Seq(antlrStatement, javaCcStatement)
     } else {
       val javaCcStatement = JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
-      val statements = CypherVersion.values()
-        .map(v => AstParserFactory(v)(original, OpenCypherExceptionFactory(None), None).singleStatement())
+      val statements = CypherVersion.values().map(v => parseAndClearCache(v, original))
       statements :+ javaCcStatement
     }
+  }
+
+  private def parseAndClearCache(cypherVersion: CypherVersion, query: String): Statement = {
+    val parser: AstParser = AstParserFactory(cypherVersion)(query, OpenCypherExceptionFactory(None), None)
+    val statement = parser.singleStatement()
+
+    // Clear the parser DFA cache occasionally to not go OOM but not too often as it makes the test slower
+    if (queriesSinceClearCache == 50) {
+      Cypher5ParserUtil.clearDFACache()
+      Cypher6ParserUtil.clearDFACache()
+      queriesSinceClearCache = 0
+    }
+    statement
+  }
 }
