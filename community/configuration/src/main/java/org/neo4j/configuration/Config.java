@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.strict_config_validation_allow_duplicates;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.internal.helpers.ProcessUtils.executeCommandWithOutput;
 
@@ -128,7 +129,7 @@ public class Config implements Configuration {
         private final InternalLog log = new BufferingLog();
         private boolean expandCommands;
         private Charset fileCharset = StandardCharsets.ISO_8859_1;
-        private String strictWarningMessage;
+        private String strictDuplicateDeclarationWarningMessage;
 
         private static <T> boolean allowedToOverrideValues(String setting, T value, Map<String, T> settingValues) {
             if (allowedMultipleDeclarations(setting)) {
@@ -299,7 +300,8 @@ public class Config implements Configuration {
                                     boolean forceDuplicateOverride = false;
                                     if (!duplicateDetection.add(setting)) {
                                         if (!allowedMultipleDeclarations(setting)) {
-                                            strictWarningMessage = setting + " declared multiple times.";
+                                            strictDuplicateDeclarationWarningMessage =
+                                                    setting + " declared multiple times.";
                                         }
                                     } else {
                                         if (allowedMultipleDeclarations(setting)) {
@@ -363,7 +365,7 @@ public class Config implements Configuration {
                     fromConfig,
                     log,
                     expandCommands,
-                    strictWarningMessage);
+                    strictDuplicateDeclarationWarningMessage);
         }
 
         // Public so APOC can use this for its command expansion
@@ -586,7 +588,7 @@ public class Config implements Configuration {
             Config fromConfig,
             InternalLog log,
             boolean expandCommands,
-            String strictWarningMessage) {
+            String strictDuplicateDeclarationWarningMessage) {
         this.log = log;
         this.expandCommands = expandCommands;
 
@@ -636,8 +638,23 @@ public class Config implements Configuration {
             strict = get(strict_config_validation);
         }
 
-        if (strict && StringUtils.isNotEmpty(strictWarningMessage)) {
-            throw new IllegalArgumentException(strictWarningMessage);
+        boolean allowDuplicates = strict_config_validation_allow_duplicates.defaultValue();
+        if (strict) {
+            if (keys.remove(strict_config_validation_allow_duplicates.name())) {
+                evaluateSetting(
+                        strict_config_validation_allow_duplicates,
+                        settingValueStrings,
+                        settingValueObjects,
+                        fromConfig,
+                        overriddenDefaultStrings,
+                        overriddenDefaultObjects,
+                        strict);
+                allowDuplicates = get(strict_config_validation_allow_duplicates);
+            }
+        }
+
+        if (strict && !allowDuplicates && StringUtils.isNotEmpty(strictDuplicateDeclarationWarningMessage)) {
+            throw new IllegalArgumentException(strictDuplicateDeclarationWarningMessage);
         }
 
         if (keys.remove(config_command_evaluation_timeout.name())) {

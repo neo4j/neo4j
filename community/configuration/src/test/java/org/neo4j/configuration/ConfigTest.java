@@ -75,6 +75,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -1009,6 +1010,36 @@ class ConfigTest {
 
         builder.set(GraphDatabaseSettings.strict_config_validation, false);
         assertDoesNotThrow(builder::build);
+    }
+
+    @Test
+    void testStrictValidationForGarbageAllowDuplicates() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, Collections.singletonList("some_unrecognized_garbage=true"));
+
+        Config.Builder builder = Config.newBuilder().fromFile(confFile);
+        builder.set(GraphDatabaseSettings.strict_config_validation, true);
+        builder.set(GraphDatabaseInternalSettings.strict_config_validation_allow_duplicates, true);
+        assertThrows(IllegalArgumentException.class, builder::build);
+    }
+
+    @Test
+    void testStrictValidationForDuplicatesAllowDuplicates() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(
+                confFile,
+                List.of(
+                        GraphDatabaseSettings.initial_default_database.name() + "=foo",
+                        GraphDatabaseSettings.initial_default_database.name() + "=bar"));
+        Config.Builder builder = Config.newBuilder().fromFile(confFile);
+        builder.set(GraphDatabaseSettings.strict_config_validation, true);
+        builder.set(GraphDatabaseInternalSettings.strict_config_validation_allow_duplicates, true);
+        MutableObject<Config> conf = new MutableObject<>();
+        assertDoesNotThrow(() -> conf.setValue(builder.build()));
+
+        var logProvider = new AssertableLogProvider();
+        conf.getValue().setLogger(logProvider.getLog(Config.class));
+        assertThat(logProvider).containsMessages("setting is overridden");
     }
 
     @Test
