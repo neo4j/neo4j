@@ -24,17 +24,14 @@ import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EXTERNAL_ID;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CHUNK_ID;
 
-import java.io.IOException;
 import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.Commitment;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -188,28 +185,9 @@ public class CompleteTransaction implements StorageEngineTransaction {
                 + " {started "
                 + date(tr.getTimeStarted()) + ", committed "
                 + date(tr.getTimeCommitted()) + ", with "
-                + countCommands() + " commands in this transaction" + ", lease "
+                + commandBatch.commandCount() + " commands in this transaction" + ", lease "
                 + tr.getLeaseId() + ", latest committed transaction id when started was "
                 + tr.getLatestCommittedTxWhenStarted() + ", consensusIndex: "
                 + tr.consensusIndex() + "}";
-    }
-
-    private String countCommands() {
-        class Counter implements Visitor<StorageCommand, IOException> {
-            private int count;
-
-            @Override
-            public boolean visit(StorageCommand element) {
-                count++;
-                return false;
-            }
-        }
-        try {
-            Counter counter = new Counter();
-            commandBatch.accept(counter);
-            return String.valueOf(counter.count);
-        } catch (Throwable e) {
-            return "(unable to count: " + e.getMessage() + ")";
-        }
     }
 }
