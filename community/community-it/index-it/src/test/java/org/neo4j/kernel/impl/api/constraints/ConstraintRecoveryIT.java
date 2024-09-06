@@ -163,6 +163,41 @@ class ConstraintRecoveryIT
             assertEquals( KEY, single( orphanedConstraintIndex.getPropertyKeys() ) );
         }
 
+        // Assert that the orphaned index do not interfere with the addition of labels:
+        try ( Transaction tx = db.beginTx() )
+        {
+            // Create a node with a label and then try to add the property:
+            tx.createNode( LABEL ).setProperty( KEY, "true" );
+
+            // Create the node, add the property and then try to add the label:
+            var nodeWithLabelLater = tx.createNode();
+            nodeWithLabelLater.setProperty( KEY, "true" );
+            nodeWithLabelLater.addLabel( LABEL );
+
+            tx.commit();
+        }
+
+        // Assert that the orphaned index do not interfere with the removal of labels:
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( 4, Iterables.count( tx.getAllNodes(), n -> n.hasLabel( LABEL ) ) );
+
+            try ( var allNodesIterator = tx.getAllNodes().iterator() )
+            {
+                assertTrue( allNodesIterator.hasNext() );
+                var node = allNodesIterator.next();
+                node.removeLabel( LABEL );
+            }
+
+            tx.commit();
+        }
+
+        // Assert that we have removed the label from the node.
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( 3, Iterables.count( tx.getAllNodes(), n -> n.hasLabel( LABEL ) ) );
+        }
+
         secondManagementService.shutdown();
     }
 

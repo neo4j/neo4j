@@ -408,24 +408,36 @@ public class Operations implements Write, SchemaWrite
             //with the same label and property combination.
             if ( existingPropertyKeyIds.length > 0 )
             {
-                Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( new long[]{nodeLabel}, existingPropertyKeyIds, NODE );
-                for ( IndexDescriptor index : indexes )
+                IntSet existingPropertyKeyIdsSet = IntSets.immutable.of( existingPropertyKeyIds );
+                Iterator<ConstraintDescriptor> constraintsForLabel = storageReader.constraintsGetForLabel( nodeLabel );
+                while ( constraintsForLabel.hasNext() )
                 {
-                    if ( index.isUnique() )
+                    ConstraintDescriptor constraint = constraintsForLabel.next();
+                    if ( !constraint.type().enforcesUniqueness() || !constraint.isIndexBackedConstraint() )
                     {
-                        PropertyIndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( index.schema(),
-                                                                                                   StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
-                        if ( propertyValues != null )
-                        {
-                            validateNoExistingNodeWithExactValues( (UniquenessConstraintDescriptor) storageReader.constraintGetForName( index.getName() ),
-                                                                   index,
-                                                                   propertyValues,
-                                                                   node );
-                        }
+                        // We only care about uniqueness constraints here, which are backed by indexes.
+                        continue;
+                    }
+                    if ( !existingPropertyKeyIdsSet.containsAll( constraint.schema().getPropertyIds() ) )
+                    {
+                        // This constraint enforces properties that this node does not have.
+                        continue;
+                    }
+
+                    IndexDescriptor indexDescriptor = storageReader.indexGetForName( constraint.getName() );
+                    PropertyIndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues(
+                            indexDescriptor.schema(), StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
+                    if ( propertyValues != null )
+                    {
+                        validateNoExistingNodeWithExactValues(
+                                constraint.asIndexBackedConstraint(),
+                                indexDescriptor,
+                                propertyValues,
+                                node );
                     }
                 }
 
-                return indexes;
+                return storageReader.valueIndexesGetRelated( new long[]{ nodeLabel }, existingPropertyKeyIds, NODE );
             }
         }
 
