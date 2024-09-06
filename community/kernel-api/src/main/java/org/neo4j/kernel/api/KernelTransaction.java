@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -201,6 +202,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      * @return statistics about the execution
      */
     ExecutionStatistics executionStatistics();
+
+    /**
+     * @return cost characteristics of the underlying storage engine.
+     */
+    StorageEngineCostCharacteristics storageEngineCostCharacteristics();
 
     /**
      * Closes this transaction, roll back any changes if {@link #commit()} was not called.

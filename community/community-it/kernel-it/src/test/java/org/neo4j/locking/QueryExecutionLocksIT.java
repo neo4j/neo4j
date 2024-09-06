@@ -96,6 +96,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -833,6 +834,11 @@ class QueryExecutionLocksIT {
         @Override
         public ExecutionStatistics executionStatistics() {
             return internal.executionStatistics();
+        }
+
+        @Override
+        public StorageEngineCostCharacteristics storageEngineCostCharacteristics() {
+            return internal.storageEngineCostCharacteristics();
         }
 
         @Override

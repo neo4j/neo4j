@@ -61,6 +61,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class ExecutionContextProcedureKernelTransaction implements KernelTransaction, TxStateHolder {
@@ -148,6 +149,11 @@ public class ExecutionContextProcedureKernelTransaction implements KernelTransac
     @Override
     public ExecutionStatistics executionStatistics() {
         throw failure("executionStatistics");
+    }
+
+    @Override
+    public StorageEngineCostCharacteristics storageEngineCostCharacteristics() {
+        return ktx.storageEngineCostCharacteristics();
     }
 
     @Override

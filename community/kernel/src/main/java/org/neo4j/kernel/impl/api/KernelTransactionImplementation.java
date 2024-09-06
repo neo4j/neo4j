@@ -168,6 +168,7 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -1313,6 +1314,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public ExecutionStatistics executionStatistics() {
         return this;
+    }
+
+    @Override
+    public StorageEngineCostCharacteristics storageEngineCostCharacteristics() {
+        return storageEngine.costCharacteristics();
     }
 
     public LockTracer lockTracer() {
