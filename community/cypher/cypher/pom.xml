@@ -142,13 +142,6 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <scope>test</scope>
-            <version>0.10.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- neo4j-cypher -->
@@ -156,6 +149,12 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-ast-factory</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -26,6 +26,7 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Lang
   Apache Commons Text
   Apache Log4j API
   Apache Log4j Core
