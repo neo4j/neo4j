@@ -49,6 +49,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
+import static org.neo4j.kernel.api.security.AnonymousContext.full;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess.EMPTY_ROLLBACK_PROCESS;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
@@ -659,6 +660,21 @@ class KernelTransactionsTest {
 
         // then
         assertThat(memoryPools.getDatabasePools().size()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldReturnLongMaxAsOldestTxWhenEmpty() throws Throwable {
+        KernelTransactions ktxs = newKernelTransactions();
+        assertThat(ktxs.getNumberOfActiveTransactions()).isEqualTo(0);
+        assertThat(ktxs.startTimeOfOldestExecutingTransaction()).isEqualTo(Long.MAX_VALUE);
+        try (KernelTransaction ktx = ktxs.newInstance(EXPLICIT, full(), EMBEDDED_CONNECTION, NO_TIMEOUT)) {
+            assertThat(ktxs.getNumberOfActiveTransactions()).isEqualTo(1);
+            assertThat(ktxs.startTimeOfOldestExecutingTransaction()).isNotEqualTo(Long.MAX_VALUE);
+
+            ktx.dataWrite().nodeCreate(); // Make it a write TX
+            ktx.commit(KernelTransaction.KernelTransactionMonitor.withBeforeApply(() ->
+                    assertThat(ktxs.startTimeOfOldestExecutingTransaction()).isNotEqualTo(Long.MAX_VALUE)));
+        }
     }
 
     private static void stopKernelTransactions(KernelTransactions kernelTransactions) {

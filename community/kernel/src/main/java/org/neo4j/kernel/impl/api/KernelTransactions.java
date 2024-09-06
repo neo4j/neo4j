@@ -371,10 +371,10 @@ public class KernelTransactions extends LifecycleAdapter
         return oldestTransactionSequenceNumber;
     }
 
-    public long startTimeOfOldestActiveTransaction() {
+    public long startTimeOfOldestExecutingTransaction() {
         long startTime = Long.MAX_VALUE;
         for (KernelTransactionImplementation transaction : allTransactions) {
-            if (transaction.isOpen() && !transaction.isTerminated()) {
+            if (transaction.isOpen() || transaction.isClosing()) {
                 startTime = Math.min(startTime, transaction.startTime());
             }
         }

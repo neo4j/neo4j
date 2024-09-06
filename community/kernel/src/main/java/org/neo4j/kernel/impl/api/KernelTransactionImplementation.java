@@ -514,7 +514,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 kernelVersionProvider,
                 cursorContext,
                 transactionalCursors,
-                kernelTransactions::startTimeOfOldestActiveTransaction,
+                kernelTransactions::startTimeOfOldestExecutingTransaction,
                 lockClient,
                 currentStatement::lockTracer);
         this.currentStatement.initialize(lockClient, cursorContext, startTimeMillis);

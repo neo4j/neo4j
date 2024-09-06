@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static java.lang.Math.toIntExact;
 
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -87,7 +88,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             KernelVersionProvider kernelVersionProvider,
             CursorContext cursorContext,
             StoreCursors storeCursors,
-            Supplier<Long> startTimeOfOldestActiveTransaction,
+            LongSupplier startTimeOfOldestExecutingTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer) {
         this.kernelVersionProvider = kernelVersionProvider;

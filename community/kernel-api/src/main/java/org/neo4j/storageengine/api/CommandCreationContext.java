@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -33,7 +34,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  */
 public interface CommandCreationContext
         extends KernelVersionProvider, NodeIdAllocator, RelationshipIdAllocator, AutoCloseable {
-    Supplier<Long> NO_STARTTIME_OF_OLDEST_TRANSACTION = () -> 0L;
+    LongSupplier NO_STARTTIME_OF_OLDEST_TRANSACTION = () -> 0L;
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -99,7 +100,7 @@ public interface CommandCreationContext
      * @param kernelVersionProvider provider of the kernel version for which the commands should be created
      * @param cursorContext transaction cursor context
      * @param storeCursors store cursors
-     * @param startTimeOfOldestActiveTransaction supplier to retrieve timestamp of oldest currently active transaction
+     * @param startTimeOfOldestExecutingTransaction supplier to retrieve timestamp of oldest currently active transaction
      * @param locks access to locks that might be needed in implementation
      * @param lockTracer Lock tracer to use if locks are taken
      */
@@ -107,7 +108,7 @@ public interface CommandCreationContext
             KernelVersionProvider kernelVersionProvider,
             CursorContext cursorContext,
             StoreCursors storeCursors,
-            Supplier<Long> startTimeOfOldestActiveTransaction,
+            LongSupplier startTimeOfOldestExecutingTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer);
 
