@@ -746,10 +746,6 @@ public class IndexedIdGenerator implements IdGenerator {
         }
 
         started = true;
-
-        // After potentially recovery has been run and everything is prepared to get going let's call maintenance,
-        // which will fill the ID buffers right away before any request comes to the db.
-        maintenance(cursorContext);
     }
 
     @Override

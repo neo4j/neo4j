@@ -981,8 +981,8 @@ class IndexedIdGeneratorTest {
 
             // 2 state pages involved into checkpoint (twice) + one more pin/hit/unpin on maintenance + range marker
             // writer
-            assertThat(cursorTracer.pins()).isEqualTo(4);
-            assertThat(cursorTracer.unpins()).isEqualTo(4);
+            assertThat(cursorTracer.pins()).isEqualTo(1);
+            assertThat(cursorTracer.unpins()).isEqualTo(1);
         }
     }
 
@@ -1003,8 +1003,8 @@ class IndexedIdGeneratorTest {
                 idGenerator.start(NO_FREE_IDS, cursorContext);
 
                 // pin/hit/unpin on maintenance
-                assertThat(cursorTracer.pins()).isOne();
-                assertThat(cursorTracer.unpins()).isOne();
+                assertThat(cursorTracer.pins()).isZero();
+                assertThat(cursorTracer.unpins()).isZero();
             }
         }
     }
