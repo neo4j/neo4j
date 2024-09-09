@@ -357,7 +357,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x: CaseExpression =>
         val possibleTypes = unionOfTypes(x.possibleExpressions)
-        SemanticExpressionCheck.check(ctx, x.expression) chain
+        SemanticExpressionCheck.check(ctx, x.candidate) chain
+          SemanticCheck.fromState { state =>
+            val exprTypeSpec = x.candidate.fold(TypeSpec.all)(types(_)(state))
+            x.candidateVarName.foldSemanticCheck(declareVariable(_, exprTypeSpec))
+          } chain
           check(ctx, x.alternatives.flatMap { a => Seq(a._1, a._2) }) chain
           check(ctx, x.default) chain
           expectType(CTBoolean.covariant, x.alternatives.map(_._1)) chain

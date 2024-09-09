@@ -1632,8 +1632,10 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       alternatives(i) = whens.get(i) -> thens.get(i)
       i += 1
     }
-    CaseExpression(Option(e), alternatives.toIndexedSeq, Option(elze))(p)
+    CaseExpression(Option(e), None, alternatives.toIndexedSeq, Option(elze))(p)
   }
+
+  override def casePlaceholder(): Expression = CaseExpression.Placeholder
 
   override def inputPosition(offset: Int, line: Int, column: Int): InputPosition = InputPosition(offset, line, column)
 

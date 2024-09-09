@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMa
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.nullIfFunctionRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.replaceExtendedCasePlaceholders
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShortestPathWithFixedLengthRelationship
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShowQuery
 import org.neo4j.cypher.internal.rewriting.rewriters.timestampRewriter
@@ -54,14 +55,15 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
         mergeInPredicates,
         timestampRewriter,
         rewriteShortestPathWithFixedLengthRelationship,
-        nullIfFunctionRewriter
+        nullIfFunctionRewriter,
+        replaceExtendedCasePlaceholders
       )
     )
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
     val rewriters = orderedSteps.map { step =>
-      val rewriter = step.getRewriter(context.cypherExceptionFactory)
+      val rewriter = step.getRewriter(context.cypherExceptionFactory, from.anonymousVariableNameGenerator)
       RewriterStep.validatingRewriter(rewriter, step, context.cancellationChecker)
     }
 

@@ -1125,13 +1125,24 @@ trait AstConstructionTestSupport {
 
   def caseExpression(
     expression: Option[Expression],
+    varName: Option[Variable],
     default: Option[Expression],
     alternatives: (Expression, Expression)*
-  ): CaseExpression = CaseExpression(expression, alternatives.toIndexedSeq, default)(pos)
+  ): CaseExpression = CaseExpression(expression, varName, alternatives.toIndexedSeq, default)(pos)
+
+  def caseExpression(
+    expression: Option[Expression],
+    default: Option[Expression],
+    alternatives: (Expression, Expression)*
+  ): CaseExpression = CaseExpression(expression, None, alternatives.toIndexedSeq, default)(pos)
+
+  def caseExpression(
+    candidate: Expression
+  ): CaseExpression = CaseExpression(Some(candidate), List.empty, None)(pos)
 
   def caseExpression(
     alternatives: (Expression, Expression)*
-  ): CaseExpression = CaseExpression(None, alternatives.toIndexedSeq, None)(pos)
+  ): CaseExpression = CaseExpression(None, None, alternatives.toIndexedSeq, None)(pos)
 
   def simpleExistsExpression(
     pattern: Pattern.ForMatch,

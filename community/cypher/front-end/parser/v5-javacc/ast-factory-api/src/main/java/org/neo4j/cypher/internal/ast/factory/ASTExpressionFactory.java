@@ -226,6 +226,8 @@ public interface ASTExpressionFactory<
 
     EXPRESSION caseExpression(POS p, EXPRESSION e, List<EXPRESSION> whens, List<EXPRESSION> thens, EXPRESSION elze);
 
+    EXPRESSION casePlaceholder();
+
     POS inputPosition(int offset, int line, int column);
 
     ENTITY_TYPE nodeType();

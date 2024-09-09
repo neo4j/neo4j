@@ -537,7 +537,8 @@ trait ExpressionBuilder extends Cypher5ParserListener {
     ctx: Cypher5Parser.CaseExpressionContext
   ): Unit = {
     ctx.ast = CaseExpression(
-      expression = None,
+      candidate = None,
+      candidateVarName = None,
       alternatives = astSeq(ctx.caseAlternative()),
       default = astOpt(ctx.expression())
     )(pos(ctx))
@@ -550,21 +551,21 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   final override def exitExtendedCaseExpression(ctx: Cypher5Parser.ExtendedCaseExpressionContext): Unit = {
     val caseExp = astChild[Expression](ctx, 1)
     ctx.ast = CaseExpression(
-      expression = Some(caseExp),
-      alternatives = extendedCaseAlts(caseExp, ctx.extendedCaseAlternative()),
+      candidate = Some(caseExp),
+      candidateVarName = None,
+      alternatives = extendedCaseAlts(ctx.extendedCaseAlternative()),
       default = astOpt(ctx.elseExp)
     )(pos(ctx))
   }
 
   private def extendedCaseAlts(
-    lhs: Expression,
     ctxs: java.util.List[Cypher5Parser.ExtendedCaseAlternativeContext]
   ): ArraySeq[(Expression, Expression)] = {
     val size = ctxs.size()
     val resultBuffer = new ArrayBuffer[(Expression, Expression)](size)
     var i = 0
     while (i < size) {
-      extendedCaseAlt(resultBuffer, lhs, ctxs.get(i))
+      extendedCaseAlt(resultBuffer, ctxs.get(i))
       i += 1
     }
     ArraySeq.unsafeWrapArray(resultBuffer.toArray)
@@ -572,7 +573,6 @@ trait ExpressionBuilder extends Cypher5ParserListener {
 
   private def extendedCaseAlt(
     buffer: ArrayBuffer[(Expression, Expression)],
-    lhs: Expression,
     ctx: Cypher5Parser.ExtendedCaseAlternativeContext
   ): Unit = {
     val size = ctx.children.size()
@@ -583,17 +583,22 @@ trait ExpressionBuilder extends Cypher5ParserListener {
         case whenCtx: Cypher5Parser.ExtendedWhenContext =>
           val newWhen = whenCtx match {
             case _: Cypher5Parser.WhenEqualsContext =>
-              Equals(lhs, astChild(whenCtx, 0))(pos(nodeChild(ctx, i - 1)))
+              Equals(CaseExpression.Placeholder, astChild(whenCtx, 0))(pos(nodeChild(ctx, i - 1)))
             case _: Cypher5Parser.WhenComparatorContext =>
-              binaryPredicate(lhs, nodeChild(whenCtx, 0), ctxChild(whenCtx, 1))
+              binaryPredicate(CaseExpression.Placeholder, nodeChild(whenCtx, 0), ctxChild(whenCtx, 1))
             case _: Cypher5Parser.WhenStringOrListContext =>
-              stringAndListComparisonExpression(lhs, whenCtx)
+              stringAndListComparisonExpression(CaseExpression.Placeholder, whenCtx)
             case _: Cypher5Parser.WhenNullContext =>
-              nullComparisonExpression(lhs, whenCtx)
+              nullComparisonExpression(CaseExpression.Placeholder, whenCtx)
             case _: Cypher5Parser.WhenTypeContext =>
-              typeComparisonExpression(lhs, whenCtx)
+              typeComparisonExpression(CaseExpression.Placeholder, whenCtx)
             case formCtx: Cypher5Parser.WhenFormContext =>
-              normalFormComparisonExpression(lhs, formCtx.normalForm(), formCtx.NOT() != null, pos(formCtx))
+              normalFormComparisonExpression(
+                CaseExpression.Placeholder,
+                formCtx.normalForm(),
+                formCtx.NOT() != null,
+                pos(formCtx)
+              )
             case _ => throw new IllegalStateException(s"Unexpected context $whenCtx")
           }
           buffer.addOne(newWhen -> thenExp)

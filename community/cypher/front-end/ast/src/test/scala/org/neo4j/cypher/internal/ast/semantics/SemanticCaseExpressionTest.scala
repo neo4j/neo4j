@@ -30,7 +30,8 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
 
   test("Simple: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
-      expression = Some(literal("")),
+      candidate = Some(literal("")),
+      candidateVarName = None,
       alternatives = IndexedSeq(
         (
           equals(literal(""), literal("")),
@@ -52,6 +53,7 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
   test("Generic: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
       None,
+      None,
       IndexedSeq(
         (
           DummyExpression(CTBoolean),
@@ -72,6 +74,7 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
 
   test("Generic: should type check predicates") {
     val caseExpression = CaseExpression(
+      None,
       None,
       IndexedSeq(
         (

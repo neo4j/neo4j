@@ -64,7 +64,7 @@ case class RussianRoulette(
     )(pos)
     val bang = Divide(SignedDecimalIntegerLiteral("1")(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)
     CaseExpression(
-      expression = None,
+      candidate = None,
       alternatives = /* bang */ List(isBulletInChamber -> bang),
       default = /* click */ Some(True()(pos))
     )(pos)

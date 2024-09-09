@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.functions.Timestamp
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -33,7 +34,10 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object timestampRewriter extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set(!FunctionInvocationsResolved)
 

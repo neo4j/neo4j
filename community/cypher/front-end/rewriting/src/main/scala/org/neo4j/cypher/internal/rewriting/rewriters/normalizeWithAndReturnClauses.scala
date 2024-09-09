@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -285,7 +286,10 @@ case class normalizeWithAndReturnClauses(
 
 case object normalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = {
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = {
     normalizeWithAndReturnClauses(cypherExceptionFactory)
   }
 
