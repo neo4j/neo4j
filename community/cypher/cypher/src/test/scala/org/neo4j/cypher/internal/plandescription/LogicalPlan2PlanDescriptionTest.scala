@@ -4273,8 +4273,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = AllConstraints,
           List.empty,
           List.empty,
-          yieldAll = false,
-          returnCypher5Values = false
+          yieldAll = false
         ),
         1.0
       ),
@@ -4287,8 +4286,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = UniqueConstraints.cypher6,
           List.empty,
           List.empty,
-          yieldAll = true,
-          returnCypher5Values = false
+          yieldAll = true
         ),
         1.0
       ),
@@ -4307,8 +4305,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = NodeUniqueConstraints.cypher5,
           List.empty,
           List.empty,
-          yieldAll = true,
-          returnCypher5Values = true
+          yieldAll = true
         ),
         1.0
       ),
@@ -4327,8 +4324,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = RelUniqueConstraints.cypher6,
           List.empty,
           List.empty,
-          yieldAll = true,
-          returnCypher5Values = false
+          yieldAll = true
         ),
         1.0
       ),
@@ -4347,8 +4343,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = KeyConstraints,
           List.empty,
           List.empty,
-          yieldAll = false,
-          returnCypher5Values = false
+          yieldAll = false
         ),
         1.0
       ),
@@ -4361,8 +4356,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = NodeKeyConstraints,
           List.empty,
           List.empty,
-          yieldAll = false,
-          returnCypher5Values = false
+          yieldAll = false
         ),
         1.0
       ),
@@ -4375,8 +4369,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = RelKeyConstraints,
           List.empty,
           List.empty,
-          yieldAll = false,
-          returnCypher5Values = false
+          yieldAll = false
         ),
         1.0
       ),
@@ -4395,8 +4388,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = ExistsConstraints.cypher5,
           List.empty,
           List.empty,
-          yieldAll = true,
-          returnCypher5Values = true
+          yieldAll = true
         ),
         1.0
       ),
@@ -4409,8 +4401,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = NodeExistsConstraints.cypher6,
           List.empty,
           List.empty,
-          yieldAll = false,
-          returnCypher5Values = false
+          yieldAll = false
         ),
         1.0
       ),
@@ -4429,8 +4420,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = RelExistsConstraints.cypher5,
           List.empty,
           List.empty,
-          yieldAll = true,
-          returnCypher5Values = true
+          yieldAll = true
         ),
         1.0
       ),
@@ -4449,8 +4439,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = PropTypeConstraints,
           List.empty,
           List.empty,
-          yieldAll = false,
-          returnCypher5Values = false
+          yieldAll = false
         ),
         1.0
       ),
@@ -4469,8 +4458,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = NodePropTypeConstraints,
           List.empty,
           List.empty,
-          yieldAll = true,
-          returnCypher5Values = true
+          yieldAll = true
         ),
         1.0
       ),
@@ -4493,8 +4481,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             CommandResultItem("yyy", varFor("zzz"))(pos),
             CommandResultItem("vvv", varFor("vvv"))(pos)
           ),
-          yieldAll = false,
-          returnCypher5Values = false
+          yieldAll = false
         ),
         1.0
       ),

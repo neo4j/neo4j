@@ -1667,7 +1667,6 @@ class AstGenerator(
     yields <- _eitherYieldOrWhere
     yieldAll <- boolean
   } yield {
-    val returnCypher5Values = whenAstDifferUseCypherVersion.equals(CypherVersion.Cypher5)
     val showClauses = yields match {
       case Some(Right(w)) =>
         Seq(
@@ -1675,21 +1674,20 @@ class AstGenerator(
             constraintType,
             Some(w),
             List.empty,
-            yieldAll = false,
-            returnCypher5Values
+            yieldAll = false
           )(pos)
         )
       case Some(Left((y, Some(r)))) =>
         val (w, yi) = turnYieldToWith(y)
         Seq(
-          ShowConstraintsClause(constraintType, None, yi, yieldAll = false, returnCypher5Values)(pos),
+          ShowConstraintsClause(constraintType, None, yi, yieldAll = false)(pos),
           w,
           r
         )
       case Some(Left((y, None))) =>
         val (w, yi) = turnYieldToWith(y)
         Seq(
-          ShowConstraintsClause(constraintType, None, yi, yieldAll = false, returnCypher5Values)(pos),
+          ShowConstraintsClause(constraintType, None, yi, yieldAll = false)(pos),
           w
         )
       case _ if yieldAll =>
@@ -1698,8 +1696,7 @@ class AstGenerator(
             constraintType,
             None,
             List.empty,
-            yieldAll = true,
-            returnCypher5Values
+            yieldAll = true
           )(pos),
           getFullWithStarFromYield
         )
@@ -1709,8 +1706,7 @@ class AstGenerator(
             constraintType,
             None,
             List.empty,
-            yieldAll = false,
-            returnCypher5Values
+            yieldAll = false
           )(pos)
         )
     }
@@ -1890,8 +1886,7 @@ class AstGenerator(
           constraintType,
           None,
           item,
-          all,
-          returnCypher5Values = whenAstDifferUseCypherVersion.equals(CypherVersion.Cypher5)
+          all
         )(pos),
       (item: List[CommandResultItem], all: Boolean) =>
         ShowIndexesClause(indexType, None, item, all)(pos)

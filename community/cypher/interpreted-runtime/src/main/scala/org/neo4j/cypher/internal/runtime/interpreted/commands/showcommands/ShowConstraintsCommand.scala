@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExistsConstraints
@@ -78,8 +79,9 @@ case class ShowConstraintsCommand(
   constraintType: ShowConstraintType,
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
-  returnCypher5Values: Boolean
+  cypherVersion: CypherVersion
 ) extends Command(columns, yieldColumns) {
+  private val returnCypher5Values: Boolean = cypherVersion == CypherVersion.Cypher5
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query

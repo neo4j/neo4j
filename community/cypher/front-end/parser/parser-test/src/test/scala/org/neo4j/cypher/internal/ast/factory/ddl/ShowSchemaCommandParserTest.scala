@@ -889,13 +889,12 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
             assertAstVersionBased(
-              (constraintType, returnCypher5Values) =>
+              constraintType =>
                 singleQuery(ShowConstraintsClause(
                   constraintType,
                   None,
                   List.empty,
-                  yieldAll = false,
-                  returnCypher5Values
+                  yieldAll = false
                 )(defaultPos)),
               constraintType,
               cypher5ConstraintType,
@@ -905,15 +904,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
           test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
             assertAstVersionBased(
-              (constraintType, returnCypher5Values) =>
+              constraintType =>
                 singleQuery(
                   use(List("db")),
                   ShowConstraintsClause(
                     constraintType,
                     None,
                     List.empty,
-                    yieldAll = false,
-                    returnCypher5Values
+                    yieldAll = false
                   )(pos)
                 ),
               constraintType,
@@ -942,8 +940,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
                   constraintType,
                   None,
                   List.empty,
-                  yieldAll = false,
-                  returnCypher5Values = false
+                  yieldAll = false
                 )(defaultPos))))
             }
           }
@@ -966,8 +963,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
                     constraintType,
                     None,
                     List.empty,
-                    yieldAll = false,
-                    returnCypher5Values = false
+                    yieldAll = false
                   )(pos)
                 )))
             }
@@ -978,29 +974,26 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   // Show constraints filtering
 
   test("SHOW CONSTRAINT WHERE entityType = 'RELATIONSHIP'") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(ShowConstraintsClause(
-          AllConstraints,
-          Some(where(equals(varFor("entityType"), literalString("RELATIONSHIP")))),
-          List.empty,
-          yieldAll = false,
-          returnCypher5Values
-        )(pos)),
+    assertAst(
+      singleQuery(ShowConstraintsClause(
+        AllConstraints,
+        Some(where(equals(varFor("entityType"), literalString("RELATIONSHIP")))),
+        List.empty,
+        yieldAll = false
+      )(pos)),
       comparePosition = false
     )
   }
 
   test("SHOW REL PROPERTY EXISTENCE CONSTRAINTS YIELD labelsOrTypes") {
     assertAstVersionBased(
-      (constraintType, returnCypher5Values) =>
+      constraintType =>
         singleQuery(
           ShowConstraintsClause(
             constraintType,
             None,
             List(commandResultItem("labelsOrTypes")),
-            yieldAll = false,
-            returnCypher5Values
+            yieldAll = false
           )(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("labelsOrTypes")))
         ),
@@ -1012,14 +1005,13 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW UNIQUE CONSTRAINTS YIELD *") {
     assertAstVersionBased(
-      (constraintType, returnCypher5Values) =>
+      constraintType =>
         singleQuery(
           ShowConstraintsClause(
             constraintType,
             None,
             List.empty,
-            yieldAll = true,
-            returnCypher5Values
+            yieldAll = true
           )(pos),
           withFromYield(returnAllItems)
         ),
@@ -1030,43 +1022,39 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW CONSTRAINTS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List.empty,
-            yieldAll = true,
-            returnCypher5Values
-          )(pos),
-          withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
-        ),
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+      ),
       comparePosition = false
     )
   }
 
   test("USE db SHOW NODE KEY CONSTRAINTS YIELD name, properties AS pp WHERE size(pp) > 1 RETURN name") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          use(List("db")),
-          ShowConstraintsClause(
-            NodeKeyConstraints,
-            None,
-            List(
-              commandResultItem("name"),
-              commandResultItem("properties", Some("pp"))
-            ),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
-            where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))
+    assertAst(
+      singleQuery(
+        use(List("db")),
+        ShowConstraintsClause(
+          NodeKeyConstraints,
+          None,
+          List(
+            commandResultItem("name"),
+            commandResultItem("properties", Some("pp"))
           ),
-          return_(variableReturnItem("name"))
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
+          where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))
         ),
+        return_(variableReturnItem("name"))
+      ),
       comparePosition = false
     )
   }
@@ -1074,36 +1062,34 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test(
     "USE db SHOW CONSTRAINTS YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
   ) {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          use(List("db")),
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(
-              commandResultItem("name"),
-              commandResultItem("populationPercent", Some("pp"))
-            ),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
-            Some(orderBy(sortItem(varFor("pp")))),
-            Some(skip(2)),
-            Some(limit(5)),
-            Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
+    assertAst(
+      singleQuery(
+        use(List("db")),
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(
+            commandResultItem("name"),
+            commandResultItem("populationPercent", Some("pp"))
           ),
-          return_(variableReturnItem("name"))
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
+          Some(orderBy(sortItem(varFor("pp")))),
+          Some(skip(2)),
+          Some(limit(5)),
+          Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
         ),
+        return_(variableReturnItem("name"))
+      ),
       comparePosition = false
     )
   }
 
   test("SHOW EXISTENCE CONSTRAINTS YIELD name AS CONSTRAINT, type AS OUTPUT") {
     assertAstVersionBased(
-      (constraintType, returnCypher5Values) =>
+      constraintType =>
         singleQuery(
           ShowConstraintsClause(
             constraintType,
@@ -1112,8 +1098,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
               commandResultItem("name", Some("CONSTRAINT")),
               commandResultItem("type", Some("OUTPUT"))
             ),
-            yieldAll = false,
-            returnCypher5Values
+            yieldAll = false
           )(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("CONSTRAINT", "OUTPUT")))
         ),
@@ -1125,13 +1110,12 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW NODE EXIST CONSTRAINTS WHERE name = 'GRANT'") {
     assertAstVersionBased(
-      (constraintType, returnCypher5Values) =>
+      constraintType =>
         singleQuery(ShowConstraintsClause(
           constraintType,
           Some(where(equals(varFor("name"), literalString("GRANT")))),
           List.empty,
-          yieldAll = false,
-          returnCypher5Values
+          yieldAll = false
         )(pos)),
       NodeExistsConstraints.cypher6,
       NodeExistsConstraints.cypher5,
@@ -1140,227 +1124,197 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW CONSTRAINTS YIELD a ORDER BY a WHERE a = 1") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a")),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("a")),
-            Some(orderBy(sortItem(varFor("a")))),
-            where = Some(where(equals(varFor("a"), literalInt(1))))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a")),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("a")),
+          Some(orderBy(sortItem(varFor("a")))),
+          where = Some(where(equals(varFor("a"), literalInt(1))))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a AS b ORDER BY b WHERE b = 1") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a", Some("b"))),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("b")),
-            Some(orderBy(sortItem(varFor("b")))),
-            where = Some(where(equals(varFor("b"), literalInt(1))))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a", Some("b"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("b")),
+          Some(orderBy(sortItem(varFor("b")))),
+          where = Some(where(equals(varFor("b"), literalInt(1))))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a AS b ORDER BY a WHERE a = 1") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a", Some("b"))),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("b")),
-            Some(orderBy(sortItem(varFor("b")))),
-            where = Some(where(equals(varFor("b"), literalInt(1))))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a", Some("b"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("b")),
+          Some(orderBy(sortItem(varFor("b")))),
+          where = Some(where(equals(varFor("b"), literalInt(1))))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a")),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("a")),
-            Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
-            where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a")),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("a")),
+          Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+          where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a")),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("a")),
-            Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
-            where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a")),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("a")),
+          Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
+          where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a", Some("b"))),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("b")),
-            Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
-            where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a", Some("b"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("b")),
+          Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
+          where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a", Some("b"))),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("b")),
-            Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
-            where = Some(where(notEquals(
-              simpleCollectExpression(patternForMatch(nodePat(Some("b"))), None, return_(returnItem(varFor("b"), "a"))),
-              listOf()
-            )))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a", Some("b"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("b")),
+          Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
+          where = Some(where(notEquals(
+            simpleCollectExpression(patternForMatch(nodePat(Some("b"))), None, return_(returnItem(varFor("b"), "a"))),
+            listOf()
+          )))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a", Some("b"))),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("b")),
-            Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
-            where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a", Some("b"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("b")),
+          Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
+          where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(commandResultItem("a", Some("b"))),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("b")),
-            Some(orderBy(sortItem(add(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
-            where = Some(where(or(
-              varFor("b"),
-              AllIterablePredicate(
-                varFor("x"),
-                listOfInt(1, 2),
-                Some(isTyped(varFor("x"), IntegerType(isNullable = true)(pos)))
-              )(pos)
-            )))
-          )
-        ),
-      comparePosition = true
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(commandResultItem("a", Some("b"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("b")),
+          Some(orderBy(sortItem(add(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
+          where = Some(where(or(
+            varFor("b"),
+            AllIterablePredicate(
+              varFor("x"),
+              listOfInt(1, 2),
+              Some(isTyped(varFor("x"), IntegerType(isNullable = true)(pos)))
+            )(pos)
+          )))
+        )
+      )
     )
   }
 
   test("SHOW CONSTRAINTS YIELD name as options, properties as name where size(name) > 0 RETURN options as name") {
-    assertAstVersionBased(
-      returnCypher5Values =>
-        singleQuery(
-          ShowConstraintsClause(
-            AllConstraints,
-            None,
-            List(
-              commandResultItem("name", Some("options")),
-              commandResultItem("properties", Some("name"))
-            ),
-            yieldAll = false,
-            returnCypher5Values
-          )(pos),
-          withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("options", "name")),
-            where = Some(where(
-              greaterThan(size(varFor("name")), literalInt(0))
-            ))
+    assertAst(
+      singleQuery(
+        ShowConstraintsClause(
+          AllConstraints,
+          None,
+          List(
+            commandResultItem("name", Some("options")),
+            commandResultItem("properties", Some("name"))
           ),
-          return_(aliasedReturnItem("options", "name"))
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("options", "name")),
+          where = Some(where(
+            greaterThan(size(varFor("name")), literalInt(0))
+          ))
         ),
-      comparePosition = true
+        return_(aliasedReturnItem("options", "name"))
+      )
     )
   }
 
@@ -1967,32 +1921,20 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   // Help methods
 
   private def assertAstVersionBased(
-    expected: (ShowConstraintType, Boolean) => Statements,
+    expected: ShowConstraintType => Statements,
     constraintType: ShowConstraintType,
     constraintTypeCypher5: ShowConstraintType,
     comparePosition: Boolean
   ) =
     if (comparePosition)
       parsesIn[Statements] {
-        case Cypher5 | Cypher5JavaCc => _.toAstPositioned(expected(constraintTypeCypher5, true))
-        case _                       => _.toAstPositioned(expected(constraintType, false))
+        case Cypher5 | Cypher5JavaCc => _.toAstPositioned(expected(constraintTypeCypher5))
+        case _                       => _.toAstPositioned(expected(constraintType))
       }
     else
       parsesIn[Statements] {
-        case Cypher5 | Cypher5JavaCc => _.toAst(expected(constraintTypeCypher5, true))
-        case _                       => _.toAst(expected(constraintType, false))
-      }
-
-  private def assertAstVersionBased(expected: Boolean => Statements, comparePosition: Boolean) =
-    if (comparePosition)
-      parsesIn[Statements] {
-        case Cypher5 | Cypher5JavaCc => _.toAstPositioned(expected(true))
-        case _                       => _.toAstPositioned(expected(false))
-      }
-    else
-      parsesIn[Statements] {
-        case Cypher5 | Cypher5JavaCc => _.toAst(expected(true))
-        case _                       => _.toAst(expected(false))
+        case Cypher5 | Cypher5JavaCc => _.toAst(expected(constraintTypeCypher5))
+        case _                       => _.toAst(expected(constraintType))
       }
 
   private def assertFailsOnBriefVerbosePreviouslyAllowed(command: String, keyword: String) = {

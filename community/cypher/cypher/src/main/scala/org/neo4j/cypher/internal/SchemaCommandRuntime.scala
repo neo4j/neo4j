@@ -330,9 +330,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               case EntityType.RELATIONSHIP => "range relationship property index"
             }
             val provider =
-              CreateRangeIndexOptionsConverter(schemaType, ctx).convert(context.cypherVersion, options, params).flatMap(
-                _.provider
-              )
+              CreateRangeIndexOptionsConverter(schemaType, ctx)
+                .convert(context.cypherVersion, options, params)
+                .flatMap(_.provider)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addRangeIndexRule(entityId, entityType, propertyKeyIds, indexName, provider)
             SuccessResult()

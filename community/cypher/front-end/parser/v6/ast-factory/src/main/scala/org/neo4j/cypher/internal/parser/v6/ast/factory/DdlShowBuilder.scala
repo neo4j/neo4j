@@ -558,8 +558,7 @@ object DdlShowBuilder {
           constraintType,
           where,
           yieldedItems,
-          yieldAll,
-          returnCypher5Values = false
+          yieldAll
         )(position)
       )
     }

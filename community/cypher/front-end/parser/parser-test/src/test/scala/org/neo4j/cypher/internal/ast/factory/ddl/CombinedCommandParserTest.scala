@@ -90,7 +90,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     yieldAll: Boolean,
     yieldItems: List[ast.CommandResultItem]
   ): InputPosition => ast.CommandClause =
-    ast.ShowConstraintsClause(constraintType, where.map(_._1), yieldItems, yieldAll, returnCypher5Values = false)
+    ast.ShowConstraintsClause(constraintType, where.map(_._1), yieldItems, yieldAll)
 
   private def showIndex(
     indexType: ast.ShowIndexType,
@@ -519,19 +519,18 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     case scc: ast.ShowConstraintsClause =>
       scc.constraintType match {
         case _: ast.UniqueConstraints =>
-          scc.copy(constraintType = ast.UniqueConstraints.cypher5, returnCypher5Values = true)(scc.position)
+          scc.copy(constraintType = ast.UniqueConstraints.cypher5)(scc.position)
         case _: ast.NodeUniqueConstraints =>
-          scc.copy(constraintType = ast.NodeUniqueConstraints.cypher5, returnCypher5Values = true)(scc.position)
+          scc.copy(constraintType = ast.NodeUniqueConstraints.cypher5)(scc.position)
         case _: ast.RelUniqueConstraints =>
-          scc.copy(constraintType = ast.RelUniqueConstraints.cypher5, returnCypher5Values = true)(scc.position)
+          scc.copy(constraintType = ast.RelUniqueConstraints.cypher5)(scc.position)
         case _: ast.ExistsConstraints =>
-          scc.copy(constraintType = ast.ExistsConstraints.cypher5, returnCypher5Values = true)(scc.position)
+          scc.copy(constraintType = ast.ExistsConstraints.cypher5)(scc.position)
         case _: ast.NodeExistsConstraints =>
-          scc.copy(constraintType = ast.NodeExistsConstraints.cypher5, returnCypher5Values = true)(scc.position)
+          scc.copy(constraintType = ast.NodeExistsConstraints.cypher5)(scc.position)
         case _: ast.RelExistsConstraints =>
-          scc.copy(constraintType = ast.RelExistsConstraints.cypher5, returnCypher5Values = true)(scc.position)
-        case _ =>
-          scc.copy(returnCypher5Values = true)(scc.position)
+          scc.copy(constraintType = ast.RelExistsConstraints.cypher5)(scc.position)
+        case _ => scc
       }
     case other => other
   }
