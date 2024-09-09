@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 
 class GraphDatabaseFacadeTest {
     private GraphDatabaseFacade graphDatabaseFacade;
@@ -59,7 +60,12 @@ class GraphDatabaseFacadeTest {
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
 
         graphDatabaseFacade = new GraphDatabaseFacade(
-                database, config, DbmsInfo.COMMUNITY, HostedOnMode.SINGLE, mock(DatabaseAvailabilityGuard.class));
+                database,
+                config,
+                DbmsInfo.COMMUNITY,
+                HostedOnMode.SINGLE,
+                TransactionalContext.DatabaseMode.SINGLE,
+                mock(DatabaseAvailabilityGuard.class));
     }
 
     @Test

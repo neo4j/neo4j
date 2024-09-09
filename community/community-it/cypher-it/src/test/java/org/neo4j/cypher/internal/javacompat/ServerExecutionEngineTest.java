@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.javacompat;
 
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER;
+import static org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode.SINGLE;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -56,7 +57,7 @@ class ServerExecutionEngineTest {
     void shouldCloseResourcesInCancel() throws Exception {
         // GIVEN
         TransactionalContextFactory contextFactory =
-                Neo4jTransactionalContextFactory.create(() -> queryService, transactionFactory);
+                Neo4jTransactionalContextFactory.create(() -> queryService, transactionFactory, SINGLE);
         // We need two node vars to have one non-pooled cursor
         String query = "MATCH (n), (m) WHERE true RETURN n, m, n.name, m.name";
 

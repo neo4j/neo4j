@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
+import static org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode.SINGLE;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.util.Arrays;
@@ -166,7 +167,7 @@ class Neo4jTransactionalContextIT {
     }
 
     private TransactionalContext createTransactionContext(InternalTransaction transaction) {
-        return Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
+        return Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory, SINGLE)
                 .newContext(transaction, "no query", EMPTY_MAP, QueryExecutionConfiguration.DEFAULT_CONFIG);
     }
 
@@ -228,7 +229,7 @@ class Neo4jTransactionalContextIT {
         // Given
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
-        var outerCtx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
+        var outerCtx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory, SINGLE)
                 .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
         var executingQuery = outerCtx.executingQuery();
 
@@ -850,7 +851,7 @@ class Neo4jTransactionalContextIT {
         // Given
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
-        var ctx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
+        var ctx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory, SINGLE)
                 .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
@@ -886,7 +887,7 @@ class Neo4jTransactionalContextIT {
         // Given
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
-        var ctx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
+        var ctx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory, SINGLE)
                 .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // We need to be done with parsing and provide an obfuscator to see the query text in the procedure

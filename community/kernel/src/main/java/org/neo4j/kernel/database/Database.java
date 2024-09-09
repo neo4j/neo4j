@@ -27,6 +27,8 @@ import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.id.BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
+import static org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode.SHARDED;
+import static org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode.SINGLE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
@@ -304,7 +306,10 @@ public class Database extends AbstractDatabase {
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.storageEngineFactorySupplier = context.getStorageEngineFactorySupplier();
 
-        this.databaseFacade = new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, mode, databaseAvailabilityGuard);
+        this.spdKernelTransactionDecorator = context.getSpdKernelTransactionDecorator();
+        var databaseMode = spdKernelTransactionDecorator != null ? SHARDED : SINGLE;
+        this.databaseFacade =
+                new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, mode, databaseMode, databaseAvailabilityGuard);
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory(databaseConfig, databaseFacade);
         this.tracers = context.getTracers();
         this.fileLockerService = context.getFileLockerService();
@@ -313,7 +318,6 @@ public class Database extends AbstractDatabase {
         this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase(namedDatabaseId);
         this.externalIdReuseConditionProvider = context.externalIdReuseConditionProvider();
         this.commandCommitListeners = context.getCommandCommitListeners();
-        this.spdKernelTransactionDecorator = context.getSpdKernelTransactionDecorator();
     }
 
     /**

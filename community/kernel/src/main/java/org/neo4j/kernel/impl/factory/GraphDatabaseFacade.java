@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionExceptionMapper;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -63,6 +64,7 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
             Config config,
             DbmsInfo dbmsInfo,
             HostedOnMode mode,
+            TransactionalContext.DatabaseMode databaseMode,
             DatabaseAvailabilityGuard availabilityGuard) {
         super(config);
         this.database = requireNonNull(database);
@@ -71,7 +73,8 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
         this.mode = requireNonNull(mode);
         this.contextFactory = Neo4jTransactionalContextFactory.create(
                 () -> getDependencyResolver().resolveDependency(GraphDatabaseQueryService.class),
-                new FacadeKernelTransactionFactory(config, this));
+                new FacadeKernelTransactionFactory(config, this),
+                databaseMode);
     }
 
     @Override
