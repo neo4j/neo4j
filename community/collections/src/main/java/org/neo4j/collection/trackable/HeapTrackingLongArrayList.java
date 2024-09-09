@@ -145,7 +145,10 @@ public class HeapTrackingLongArrayList implements Resource {
     }
 
     public boolean addAll(long... longs) {
-        int numNew = longs.length;
+        return addAll0(longs, longs.length);
+    }
+
+    private boolean addAll0(long[] longs, int numNew) {
         if (numNew == 0) {
             return false;
         }
@@ -157,6 +160,10 @@ public class HeapTrackingLongArrayList implements Resource {
         System.arraycopy(longs, 0, elementData, s, numNew);
         size = s + numNew;
         return true;
+    }
+
+    public void addAll(HeapTrackingLongArrayList other) {
+        addAll0(other.elementData, other.size);
     }
     /**
      * Grow and report size change to tracker
