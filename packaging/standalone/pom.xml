@@ -77,11 +77,11 @@
             </plugin>
         </plugins>
     </build>
-
     <dependencies>
         <dependency>
+            <!-- Cypher shell needs to be packaged before the server, so it can be included in the tarball  -->
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-import-tool</artifactId>
+            <artifactId>cypher-shell</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

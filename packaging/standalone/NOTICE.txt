@@ -44,28 +44,8 @@ Apache Software License, Version 2.0
   @firebase/storage-types
   @firebase/util
   @firebase/webchannel-wrapper
-  Apache Commons Codec
-  Apache Commons Compress
-  Apache Commons Configuration
-  Apache Commons IO
   Apache Commons Lang
-  Apache Commons Logging
   Apache Commons Text
-  Apache Log4j API
-  Apache Log4j Core
-  Apache Log4j Layout for JSON template
-  Apache Lucene (module: backward-codecs)
-  Apache Lucene (module: common)
-  Apache Lucene (module: core)
-  Apache Lucene (module: queryparser)
-  Apache Shiro :: Cache
-  Apache Shiro :: Configuration :: Core
-  Apache Shiro :: Core
-  Apache Shiro :: Cryptography :: Ciphers
-  Apache Shiro :: Cryptography :: Core
-  Apache Shiro :: Cryptography :: Hashing
-  Apache Shiro :: Event
-  Apache Shiro :: Lang
   ascli
   aws-sign2
   bytebuffer
@@ -76,39 +56,32 @@ Apache Software License, Version 2.0
   firebase
   forever-agent
   grpc
-  IPAddress
   Jackson-annotations
   Jackson-core
   jackson-databind
-  Java Concurrency Tools Core Library
+  jansi
   Java Native Access
-  Jettison
-  jPowerShell
-  jProcesses
   long
-  magnolia
+  Neo4j Java Driver
   neo4j-driver
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
   oauth-sign
-  picocli
   protobufjs
   request
   rxjs
-  Scala Reflect
-  scala-collection-contrib
   tslib
   tunnel-agent
-  WMI4Java
-
-BSD - Scala License
-  Scala Library
 
 BSD License
   ANTLR 4 Runtime
   antlr4
-  asm
-  asm-analysis
-  asm-tree
-  asm-util
   bcrypt-pbkdf
   boom
   cryptiles
@@ -118,6 +91,9 @@ BSD License
   hoek
   hoist-non-react-statics
   ieee754
+  JLine JANSI Terminal
+  JLine Reader
+  JLine Terminal
   json-schema
   node-pre-gyp
   qs
@@ -125,12 +101,10 @@ BSD License
   react-dnd-html5-backend
   sntp
   tough-cookie
-  Zstandard
 
 BSD License 2-clause
   tar-pack
   uri-js
-  zstd-jni
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -179,6 +153,7 @@ ISC
 MIT License
   ajv
   ansi-regex
+  argparse4j
   asap
   ascii-data-table
   asn1
@@ -296,7 +271,6 @@ MIT License
   safer-buffer
   save-as
   setimmediate
-  SLF4J API Module
   sshpk
   string-width
   string_decoder
@@ -324,8 +298,8 @@ MIT License
   xmlhttprequest
   yargs
 
-Mozilla Public License, Version 2.0
-  kiama
+MIT No Attribution License
+  reactive-streams
 
 SIL OFL 1.1
   Font Awesome
