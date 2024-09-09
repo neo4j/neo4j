@@ -96,33 +96,55 @@ object expressionVariableAllocation {
           val innerVars = allocateVariables(outerVars, x.introducedVariables)
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
-      case x: TraversalEndpoint =>
-        outerVars =>
-          val innerVars = allocateVariables(outerVars, Set(x.tempVar))
-          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
-
       case x: VarExpand =>
         outerVars =>
+          val traversalEndpoints = x.folder.treeCollect {
+            case TraversalEndpoint(name, _) => name
+          }
+
           val innerVars =
-            allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable).toSet)
+            allocateVariables(
+              outerVars,
+              ((x.nodePredicates ++ x.relationshipPredicates).map(_.variable) ++ traversalEndpoints).toSet
+            )
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: PruningVarExpand =>
         outerVars =>
+          val traversalEndpoints = x.folder.treeCollect {
+            case TraversalEndpoint(name, _) => name
+          }
+
           val innerVars =
-            allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable).toSet)
+            allocateVariables(
+              outerVars,
+              ((x.nodePredicates ++ x.relationshipPredicates).map(_.variable) ++ traversalEndpoints).toSet
+            )
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: BFSPruningVarExpand =>
         outerVars =>
+          val traversalEndpoints = x.folder.treeCollect {
+            case TraversalEndpoint(name, _) => name
+          }
+
           val innerVars =
-            allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable).toSet)
+            allocateVariables(
+              outerVars,
+              ((x.nodePredicates ++ x.relationshipPredicates).map(_.variable) ++ traversalEndpoints).toSet
+            )
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: FindShortestPaths =>
         outerVars =>
+          val traversalEndpoints = x.folder.treeCollect {
+            case TraversalEndpoint(name, _) => name
+          }
           val innerVars =
-            allocateVariables(outerVars, (x.perStepNodePredicates ++ x.perStepRelPredicates).map(_.variable).toSet)
+            allocateVariables(
+              outerVars,
+              ((x.perStepNodePredicates ++ x.perStepRelPredicates).map(_.variable) ++ traversalEndpoints).toSet
+            )
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: StatefulShortestPath =>

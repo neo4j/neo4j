@@ -46,6 +46,8 @@ import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -422,6 +424,40 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
       withExpressionVariables(expr4, ExpressionVariable(1, "B")),
       withExpressionVariables(expr5, ExpressionVariable(2, "z"))
     ))
+  }
+
+  test("should allocate traversal endpoint variables in the scope of the parent var length plan") {
+    val t1 = TraversalEndpoint(varFor("anon1"), Endpoint.From)
+    val t2 = TraversalEndpoint(varFor("anon2"), Endpoint.To)
+    val expr = equals(t1, t2)
+
+    val plan = varLengthPlan(varFor("tempNode"), varFor("tempEdge"), trueLiteral, expr)
+
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
+    nSlots shouldBe 4
+    newPlan shouldBe varLengthPlan(
+      ExpressionVariable(0, "tempNode"),
+      ExpressionVariable(1, "tempEdge"),
+      withExpressionVariables(trueLiteral),
+      withExpressionVariables(expr, ExpressionVariable(2, "anon1"), ExpressionVariable(3, "anon2"))
+    )
+  }
+
+  test("should allocate traversal endpoint variables in the scope of the parent pruning var length plan") {
+    val t1 = TraversalEndpoint(varFor("anon1"), Endpoint.From)
+    val t2 = TraversalEndpoint(varFor("anon2"), Endpoint.To)
+    val expr = equals(t1, t2)
+
+    val plan = pruningVarLengthPlan(varFor("tempNode"), varFor("tempEdge"), trueLiteral, expr)
+
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
+    nSlots shouldBe 4
+    newPlan shouldBe pruningVarLengthPlan(
+      ExpressionVariable(0, "tempNode"),
+      ExpressionVariable(1, "tempEdge"),
+      withExpressionVariables(trueLiteral),
+      withExpressionVariables(expr, ExpressionVariable(2, "anon1"), ExpressionVariable(3, "anon2"))
+    )
   }
 
   // ========== HELPERS ==========
