@@ -18,13 +18,19 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-sealed trait ActionResource {
-  def simplify: Seq[ActionResource] = Seq(this)
+sealed trait ActionResourceBase {
+  def simplify: Seq[ActionResource]
 }
+
+sealed trait ActionResource extends ActionResourceBase {
+  override def simplify: Seq[ActionResource] = Seq(this)
+}
+
+sealed trait NestedActionResource extends ActionResourceBase {}
 
 final case class PropertyResource(property: String)(val position: InputPosition) extends ActionResource
 
-final case class PropertiesResource(properties: Seq[String])(val position: InputPosition) extends ActionResource {
+final case class PropertiesResource(properties: Seq[String])(val position: InputPosition) extends NestedActionResource {
   override def simplify: Seq[ActionResource] = properties.map(PropertyResource(_)(position))
 }
 
@@ -32,7 +38,7 @@ final case class AllPropertyResource()(val position: InputPosition) extends Acti
 
 final case class LabelResource(label: String)(val position: InputPosition) extends ActionResource
 
-final case class LabelsResource(labels: Seq[String])(val position: InputPosition) extends ActionResource {
+final case class LabelsResource(labels: Seq[String])(val position: InputPosition) extends NestedActionResource {
   override def simplify: Seq[ActionResource] = labels.map(LabelResource(_)(position))
 }
 

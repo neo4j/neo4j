@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
-import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
@@ -65,7 +65,7 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
 
   case class Action(action: GraphAction, verb: String, preposition: String, func: resourcePrivilegeFunc)
 
-  case class Resource(properties: String, resource: ActionResource)
+  case class Resource(properties: String, resource: ActionResourceBase)
 
   val actions: Seq[Action] = Seq(
     Action(ReadAction, "GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),

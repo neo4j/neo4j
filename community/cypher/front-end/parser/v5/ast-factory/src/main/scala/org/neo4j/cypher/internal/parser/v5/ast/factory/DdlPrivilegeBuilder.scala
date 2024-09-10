@@ -22,6 +22,7 @@ import org.antlr.v4.runtime.tree.RuleNode
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AllAliasManagementActions
 import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
@@ -723,9 +724,9 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
 
   private def labelAllQualifier(
     privilege: PrivilegeType,
-    resource: Option[ActionResource],
+    resource: Option[ActionResourceBase],
     pos: InputPosition
-  ): (PrivilegeType, Option[ActionResource], List[GraphPrivilegeQualifier]) = {
+  ): (PrivilegeType, Option[ActionResourceBase], List[GraphPrivilegeQualifier]) = {
     (privilege, resource, List(LabelAllQualifier()(pos)))
   }
 

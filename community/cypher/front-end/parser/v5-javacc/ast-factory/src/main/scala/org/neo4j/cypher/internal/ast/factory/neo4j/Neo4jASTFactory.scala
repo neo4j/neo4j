@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
@@ -520,7 +521,7 @@ import scala.language.implicitConversions
 
 final case class Privilege(
   privilegeType: PrivilegeType,
-  resource: ActionResource,
+  resource: ActionResourceBase,
   qualifier: util.List[PrivilegeQualifier],
   immutable: Boolean
 )
@@ -578,7 +579,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       AdministrationAction,
       GraphScope,
       Privilege,
-      ActionResource,
+      ActionResourceBase,
       PrivilegeQualifier,
       Auth,
       AuthAttribute,
@@ -2609,7 +2610,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     p: InputPosition,
     action: AdministrationAction,
     scope: GraphScope,
-    resource: ActionResource,
+    resource: ActionResourceBase,
     qualifier: util.List[PrivilegeQualifier],
     immutable: Boolean
   ): Privilege =
@@ -2721,12 +2722,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   // Resources
 
-  override def propertiesResource(p: InputPosition, properties: util.List[String]): ActionResource =
+  override def propertiesResource(p: InputPosition, properties: util.List[String]): ActionResourceBase =
     PropertiesResource(properties.asScala.toSeq)(p)
 
   override def allPropertiesResource(p: InputPosition): ActionResource = AllPropertyResource()(p)
 
-  override def labelsResource(p: InputPosition, labels: util.List[String]): ActionResource =
+  override def labelsResource(p: InputPosition, labels: util.List[String]): ActionResourceBase =
     LabelsResource(labels.asScala.toSeq)(p)
 
   override def allLabelsResource(p: InputPosition): ActionResource = AllLabelResource()(p)

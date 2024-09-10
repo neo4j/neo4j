@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
-import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
@@ -110,7 +110,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                   ).foreach {
                     case (
                         properties: String,
-                        resource: ActionResource,
+                        resource: ActionResourceBase,
                         graphName: String,
                         graphScope: GraphScope
                       ) =>
@@ -405,7 +405,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                   ).foreach {
                     case (
                         properties: String,
-                        resource: ActionResource,
+                        resource: ActionResourceBase,
                         graphName: String,
                         graphScope: GraphScope
                       ) =>
@@ -694,7 +694,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                   ).foreach {
                     case (
                         properties: String,
-                        resource: ActionResource,
+                        resource: ActionResourceBase,
                         graphName: String,
                         graphScope: GraphScope
                       ) =>
@@ -983,7 +983,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
               ).foreach {
                 case (
                     properties: String,
-                    resource: ActionResource,
+                    resource: ActionResourceBase,
                     graphName: String,
                     graphScope: GraphScope
                   ) =>

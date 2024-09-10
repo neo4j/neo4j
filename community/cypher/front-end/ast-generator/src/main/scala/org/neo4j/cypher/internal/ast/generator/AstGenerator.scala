@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.ast.generator
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
-import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -2713,7 +2713,7 @@ class AstGenerator(
     } yield expression
 
   def _graphQualifierAndResource(graphAction: GraphAction)
-    : Gen[(List[GraphPrivilegeQualifier], Option[ActionResource])] =
+    : Gen[(List[GraphPrivilegeQualifier], Option[ActionResourceBase])] =
     if (graphAction == AllGraphAction) {
       // ALL GRAPH PRIVILEGES has AllQualifier and no resource
       (List(AllQualifier()(pos)), None)

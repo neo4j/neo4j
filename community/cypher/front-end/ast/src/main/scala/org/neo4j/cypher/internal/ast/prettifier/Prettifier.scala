@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.ast.Access
-import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.ActionResourceBase
 import org.neo4j.cypher.internal.ast.AddedInRewrite
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
@@ -1347,7 +1347,7 @@ object Prettifier {
     privilegeName: String,
     graphScope: GraphScope,
     qualifierString: String,
-    resource: Option[ActionResource],
+    resource: Option[ActionResourceBase],
     preposition: String,
     roleNames: Seq[Expression]
   ): String = {

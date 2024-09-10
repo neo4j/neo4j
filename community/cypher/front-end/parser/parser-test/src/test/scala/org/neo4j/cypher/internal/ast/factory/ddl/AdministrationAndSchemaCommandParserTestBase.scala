@@ -105,7 +105,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   type resourcePrivilegeFunc = (
     ast.PrivilegeType,
-    ast.ActionResource,
+    ast.ActionResourceBase,
     List[ast.GraphPrivilegeQualifier],
     Seq[Expression],
     Immutable
@@ -171,7 +171,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   def grantGraphPrivilege(
     p: ast.PrivilegeType,
-    a: ast.ActionResource,
+    a: ast.ActionResourceBase,
     q: List[ast.PrivilegeQualifier],
     r: Seq[Expression],
     i: Immutable
@@ -236,7 +236,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   def denyGraphPrivilege(
     p: ast.PrivilegeType,
-    a: ast.ActionResource,
+    a: ast.ActionResourceBase,
     q: List[ast.PrivilegeQualifier],
     r: Seq[Expression],
     i: Immutable
@@ -301,7 +301,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   def revokeGrantGraphPrivilege(
     p: ast.PrivilegeType,
-    a: ast.ActionResource,
+    a: ast.ActionResourceBase,
     q: List[ast.PrivilegeQualifier],
     r: Seq[Expression],
     i: Immutable
@@ -366,7 +366,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   def revokeDenyGraphPrivilege(
     p: ast.PrivilegeType,
-    a: ast.ActionResource,
+    a: ast.ActionResourceBase,
     q: List[ast.PrivilegeQualifier],
     r: Seq[Expression],
     i: Immutable
@@ -431,7 +431,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   def revokeGraphPrivilege(
     p: ast.PrivilegeType,
-    a: ast.ActionResource,
+    a: ast.ActionResourceBase,
     q: List[ast.PrivilegeQualifier],
     r: Seq[Expression],
     i: Immutable

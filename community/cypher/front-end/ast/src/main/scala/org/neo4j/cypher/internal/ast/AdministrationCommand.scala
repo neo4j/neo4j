@@ -953,7 +953,7 @@ sealed abstract class PrivilegeCommand(
 final case class GrantPrivilege(
   privilege: PrivilegeType,
   immutable: Boolean,
-  resource: Option[ActionResource],
+  resource: Option[ActionResourceBase],
   qualifier: List[PrivilegeQualifier],
   roleNames: Seq[Expression]
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
@@ -986,7 +986,7 @@ object GrantPrivilege {
   def graphAction[T <: GraphPrivilegeQualifier](
     action: GraphAction,
     immutable: Boolean,
-    resource: Option[ActionResource],
+    resource: Option[ActionResourceBase],
     scope: GraphScope,
     qualifier: List[T],
     roleNames: Seq[Expression]
@@ -997,7 +997,7 @@ object GrantPrivilege {
 final case class DenyPrivilege(
   privilege: PrivilegeType,
   immutable: Boolean,
-  resource: Option[ActionResource],
+  resource: Option[ActionResourceBase],
   qualifier: List[PrivilegeQualifier],
   roleNames: Seq[Expression]
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
@@ -1035,7 +1035,7 @@ object DenyPrivilege {
   def graphAction[T <: GraphPrivilegeQualifier](
     action: GraphAction,
     immutable: Boolean,
-    resource: Option[ActionResource],
+    resource: Option[ActionResourceBase],
     scope: GraphScope,
     qualifier: List[T],
     roleNames: Seq[Expression]
@@ -1046,7 +1046,7 @@ object DenyPrivilege {
 final case class RevokePrivilege(
   privilege: PrivilegeType,
   immutableOnly: Boolean,
-  resource: Option[ActionResource],
+  resource: Option[ActionResourceBase],
   qualifier: List[PrivilegeQualifier],
   roleNames: Seq[Expression],
   revokeType: RevokeType
@@ -1100,7 +1100,7 @@ object RevokePrivilege {
   def graphAction[T <: GraphPrivilegeQualifier](
     action: GraphAction,
     immutable: Boolean,
-    resource: Option[ActionResource],
+    resource: Option[ActionResourceBase],
     scope: GraphScope,
     qualifier: List[T],
     roleNames: Seq[Expression],
