@@ -43,8 +43,7 @@ class Cypher6ParserUtilTest {
 				    }
 				""";
 
-        assertThat(readGeneratedParserSourceFile())
-                .contains(expectedDFAImplementation.replace("    ", "\t"));
+        assertThat(readGeneratedParserSourceFile()).contains(expectedDFAImplementation.replace("    ", "\t"));
     }
 
     private String readGeneratedParserSourceFile() throws IOException {
