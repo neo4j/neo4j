@@ -101,6 +101,7 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
+import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.MapValue
 
