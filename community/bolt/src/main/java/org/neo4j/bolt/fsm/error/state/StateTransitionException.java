@@ -33,8 +33,4 @@ public abstract class StateTransitionException extends StateMachineException {
     public StateTransitionException(String message, Throwable cause) {
         super(message, cause);
     }
-
-    public StateTransitionException(Throwable cause) {
-        super(cause);
-    }
 }

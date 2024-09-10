@@ -21,17 +21,11 @@ package org.neo4j.bolt.protocol.error;
 
 public abstract class BoltNetworkException extends RuntimeException {
 
-    public BoltNetworkException() {}
-
     public BoltNetworkException(String message) {
         super(message);
     }
 
     public BoltNetworkException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    public BoltNetworkException(Throwable cause) {
-        super(cause);
     }
 }

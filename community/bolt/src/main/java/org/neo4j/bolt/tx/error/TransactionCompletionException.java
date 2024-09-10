@@ -21,17 +21,11 @@ package org.neo4j.bolt.tx.error;
 
 public class TransactionCompletionException extends TransactionException {
 
-    public TransactionCompletionException() {}
-
     public TransactionCompletionException(String message) {
         super(message);
     }
 
     public TransactionCompletionException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    public TransactionCompletionException(Throwable cause) {
-        super(cause);
     }
 }

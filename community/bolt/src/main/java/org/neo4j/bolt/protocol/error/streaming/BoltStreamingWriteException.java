@@ -24,20 +24,11 @@ package org.neo4j.bolt.protocol.error.streaming;
  * contents to the underlying network connection while streaming a result set.
  */
 public class BoltStreamingWriteException extends BoltStreamingException {
-
-    public BoltStreamingWriteException() {
-        super();
-    }
-
     public BoltStreamingWriteException(String message) {
         super(message);
     }
 
     public BoltStreamingWriteException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    public BoltStreamingWriteException(Throwable cause) {
-        super(cause);
     }
 }

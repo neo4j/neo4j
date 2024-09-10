@@ -20,18 +20,7 @@
 package org.neo4j.bolt.protocol.error;
 
 public class ClientRequestComplexityExceeded extends BoltNetworkException {
-
-    public ClientRequestComplexityExceeded() {}
-
     public ClientRequestComplexityExceeded(String message) {
         super(message);
-    }
-
-    public ClientRequestComplexityExceeded(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ClientRequestComplexityExceeded(Throwable cause) {
-        super(cause);
     }
 }

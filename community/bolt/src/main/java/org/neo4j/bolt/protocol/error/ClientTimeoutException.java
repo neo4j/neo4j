@@ -20,18 +20,7 @@
 package org.neo4j.bolt.protocol.error;
 
 public class ClientTimeoutException extends BoltNetworkException {
-
-    public ClientTimeoutException() {}
-
     public ClientTimeoutException(String message) {
         super(message);
-    }
-
-    public ClientTimeoutException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ClientTimeoutException(Throwable cause) {
-        super(cause);
     }
 }

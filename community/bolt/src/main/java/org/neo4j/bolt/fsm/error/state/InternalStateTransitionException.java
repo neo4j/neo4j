@@ -20,16 +20,7 @@
 package org.neo4j.bolt.fsm.error.state;
 
 public class InternalStateTransitionException extends StateTransitionException {
-
-    public InternalStateTransitionException(String message) {
-        super(message);
-    }
-
     public InternalStateTransitionException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    public InternalStateTransitionException(Throwable cause) {
-        super(cause);
     }
 }

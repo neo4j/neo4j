@@ -20,13 +20,6 @@
 package org.neo4j.bolt.tx.error.statement;
 
 public class StatementStreamingException extends StatementException {
-
-    public StatementStreamingException() {}
-
-    public StatementStreamingException(String message) {
-        super(message);
-    }
-
     public StatementStreamingException(String message, Throwable cause) {
         super(message, cause);
     }

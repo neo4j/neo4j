@@ -20,18 +20,7 @@
 package org.neo4j.bolt.tx.error;
 
 public class TransactionCloseException extends TransactionException {
-
-    public TransactionCloseException() {}
-
-    public TransactionCloseException(String message) {
-        super(message);
-    }
-
     public TransactionCloseException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    public TransactionCloseException(Throwable cause) {
-        super(cause);
     }
 }

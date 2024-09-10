@@ -26,19 +26,11 @@ import org.neo4j.bolt.protocol.error.BoltNetworkException;
  */
 public abstract class BoltStreamingException extends BoltNetworkException {
 
-    public BoltStreamingException() {
-        super();
-    }
-
     public BoltStreamingException(String message) {
         super(message);
     }
 
     public BoltStreamingException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    public BoltStreamingException(Throwable cause) {
-        super(cause);
     }
 }

@@ -21,8 +21,6 @@ package org.neo4j.bolt.tx.error;
 
 public class TransactionCreationException extends TransactionException {
 
-    public TransactionCreationException() {}
-
     public TransactionCreationException(String message) {
         super(message);
     }
