@@ -175,3 +175,20 @@ Feature: AggregationAcceptance
       | count | avg |
       | 20    | 5.5 |
     And no side effects
+
+  Scenario: Count of cartesian product of a node and relationship patterns
+    Given an empty graph
+    And having executed:
+      """
+      UNWIND range(1, 10) AS i
+      CREATE ()-[:REL]->()
+      """
+    When executing query:
+      """
+      MATCH (n), (x)-[r]->(y)
+      RETURN count(*) AS count // 20 nodes * 10 relationships
+      """
+    Then the result should be, in any order:
+      | count |
+      | 200   |
+    And no side effects

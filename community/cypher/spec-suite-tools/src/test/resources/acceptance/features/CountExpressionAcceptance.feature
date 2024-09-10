@@ -1474,3 +1474,17 @@ Feature: CountExpressionAcceptance
       | 1     |
       | 1     |
       | 1     |
+
+  Scenario: COUNT of cartesian product of a node and relationship patterns
+    Given an empty graph
+    When executing query:
+      """
+      RETURN
+        // See `Background` setup at the top of the file
+        COUNT { (n), (x)-[r]->(y) } AS countCartesian,
+        COUNT { (n) } * COUNT { (x)-[r]->(y) } AS countMul
+      """
+    Then the result should be, in any order:
+      | countCartesian | countMul |
+      | 60             | 60       |
+    And no side effects

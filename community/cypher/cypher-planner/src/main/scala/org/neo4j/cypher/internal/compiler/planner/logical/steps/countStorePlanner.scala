@@ -238,7 +238,11 @@ case object countStorePlanner {
       } else {
         None
       }
-    } else if (patternRelationships.size == 1 && notLoop(patternRelationships.head)) { // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
+    } else if (
+      patternRelationships.size == 1 &&
+      notLoop(patternRelationships.head) &&
+      patternNodes == patternRelationships.head.nodes
+    ) { // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
       val types = patternRelationships.head.types
       // this means that the given type implies the predicate that we do the count on through constraint
       if (types.forall(relTypeImpliesProperty(_, propertyKeyName, context))) {

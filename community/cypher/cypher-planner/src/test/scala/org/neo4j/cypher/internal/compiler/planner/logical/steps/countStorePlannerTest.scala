@@ -368,6 +368,13 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
+  test("should not plan a count store plan for a cartesian product of a node and relationship patterns") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (a), (b)-[r]->(c)", "r")
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
   private def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
     pq.withHorizon(AggregatingQueryProjection(
