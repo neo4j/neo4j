@@ -147,7 +147,6 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         };
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
-        builder.setConfig(GraphDatabaseInternalSettings.type_constraints, true);
         builder.setConfig(GraphDatabaseInternalSettings.skip_default_indexes_on_creation, true);
     }
 

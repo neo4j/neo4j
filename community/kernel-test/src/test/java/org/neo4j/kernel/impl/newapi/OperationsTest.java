@@ -255,10 +255,7 @@ abstract class OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(Map.of(
-                        GraphDatabaseInternalSettings.type_constraints,
-                        true,
-                        GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints,
-                        true)),
+                        GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints, true)),
                 INSTANCE,
                 () -> Static.FULL);
         operations.initialize(NULL_CONTEXT);

@@ -195,7 +195,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final IndexingProvidersService indexProviders;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
-    private final boolean typeConstraintEnabled;
     private final boolean dependentConstraintsEnabled;
     private final boolean relationshipEndpointAndLabelCoexistenceConstraintsEnabled;
     private DefaultNodeCursor nodeCursor;
@@ -241,7 +240,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.indexProviders = indexProviders;
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
-        this.typeConstraintEnabled = config.get(GraphDatabaseInternalSettings.type_constraints);
         this.dependentConstraintsEnabled = config.get(GraphDatabaseInternalSettings.dependent_constraints_enabled);
         this.relationshipEndpointAndLabelCoexistenceConstraintsEnabled =
                 config.get(GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints);
@@ -2469,7 +2467,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         // Only the basic type constraint was introduced in KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED.
         // For expanded support, we require the kernel version below:
-        if (!typeConstraintEnabled && (isUnion || hasListType)) {
+        if (isUnion || hasListType) {
             assertSupportedInVersion(
                     KernelVersion.VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED,
                     "Failed to create property type constraint with %s.",
