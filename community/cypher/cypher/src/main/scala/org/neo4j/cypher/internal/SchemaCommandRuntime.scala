@@ -73,6 +73,7 @@ import org.neo4j.cypher.internal.procs.SchemaExecutionPlan
 import org.neo4j.cypher.internal.procs.SuccessResult
 import org.neo4j.cypher.internal.runtime.ConstraintInformation
 import org.neo4j.cypher.internal.runtime.IndexInformation
+import org.neo4j.cypher.internal.runtime.IndexProviderContext
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
@@ -98,6 +99,8 @@ import org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
+import org.neo4j.kernel.KernelVersion
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.MapValue
 
@@ -135,7 +138,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             val indexProvider =
-              IndexBackedConstraintsOptionsConverter("node key constraint", ctx)
+              IndexBackedConstraintsOptionsConverter("node key constraint", indexContext(ctx))
                 .convert(context.cypherVersion, options, params)
                 .flatMap(_.provider)
             val labelId = ctx.getOrCreateLabelId(label.name)
@@ -153,7 +156,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             val indexProvider =
-              IndexBackedConstraintsOptionsConverter("relationship key constraint", ctx)
+              IndexBackedConstraintsOptionsConverter("relationship key constraint", indexContext(ctx))
                 .convert(context.cypherVersion, options, params)
                 .flatMap(_.provider)
             val relId = ctx.getOrCreateRelTypeId(relType.name)
@@ -172,7 +175,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             val indexProvider =
-              IndexBackedConstraintsOptionsConverter("uniqueness constraint", ctx)
+              IndexBackedConstraintsOptionsConverter("uniqueness constraint", indexContext(ctx))
                 .convert(context.cypherVersion, options, params)
                 .flatMap(_.provider)
             val labelId = ctx.getOrCreateLabelId(label.name)
@@ -192,7 +195,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             val indexProvider =
-              IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", ctx)
+              IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", indexContext(ctx))
                 .convert(context.cypherVersion, options, params)
                 .flatMap(_.provider)
             val relTypeId = ctx.getOrCreateRelTypeId(relType.name)
@@ -210,11 +213,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             // Assert empty options
-            PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", ctx).convert(
-              context.cypherVersion,
-              options,
-              params
-            )
+            PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", indexContext(ctx))
+              .convert(context.cypherVersion, options, params)
             (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(
               label,
               prop.head.propertyKey,
@@ -233,11 +233,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             // Assert empty options
-            PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", ctx).convert(
-              context.cypherVersion,
-              options,
-              params
-            )
+            PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", indexContext(ctx))
+              .convert(context.cypherVersion, options, params)
             (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(
               relType,
               prop.head.propertyKey,
@@ -255,11 +252,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             // Assert empty options
-            PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", ctx).convert(
-              context.cypherVersion,
-              options,
-              params
-            )
+            PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", indexContext(ctx))
+              .convert(context.cypherVersion, options, params)
             val (labelId, propId, _) = labelPropWithName(ctx)(label, prop.head.propertyKey, constraintName)
             ctx.createNodePropertyTypeConstraint(
               labelId,
@@ -280,11 +274,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           (ctx, params) => {
             val constraintName = getName(name, params)
             // Assert empty options
-            PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", ctx).convert(
-              context.cypherVersion,
-              options,
-              params
-            )
+            PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", indexContext(ctx))
+              .convert(context.cypherVersion, options, params)
             val (relTypeId, propId, _) = typePropWithName(ctx)(relType, prop.head.propertyKey, constraintName)
             ctx.createRelationshipPropertyTypeConstraint(
               relTypeId,
@@ -330,7 +321,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               case EntityType.RELATIONSHIP => "range relationship property index"
             }
             val provider =
-              CreateRangeIndexOptionsConverter(schemaType, ctx)
+              CreateRangeIndexOptionsConverter(schemaType, indexContext(ctx))
                 .convert(context.cypherVersion, options, params)
                 .flatMap(_.provider)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
@@ -347,8 +338,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "CreateIndex",
           (ctx, params) => {
             val indexName = getName(name, params)
-            val provider =
-              CreateLookupIndexOptionsConverter(ctx).convert(context.cypherVersion, options, params).flatMap(_.provider)
+            val provider = CreateLookupIndexOptionsConverter(indexContext(ctx))
+              .convert(context.cypherVersion, options, params)
+              .flatMap(_.provider)
             ctx.addLookupIndexRule(entityType, indexName, provider)
             SuccessResult()
           },
@@ -362,11 +354,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "CreateIndex",
           (ctx, params) => {
             val indexName = getName(name, params)
-            val (indexProvider, indexConfig) =
-              CreateFulltextIndexOptionsConverter(ctx).convert(context.cypherVersion, options, params) match {
-                case None                                               => (None, IndexConfig.empty())
-                case Some(CreateIndexWithFullOptions(provider, config)) => (provider, config)
-              }
+            val (indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter(indexContext(ctx))
+              .convert(context.cypherVersion, options, params) match {
+              case None                                               => (None, IndexConfig.empty())
+              case Some(CreateIndexWithFullOptions(provider, config)) => (provider, config)
+            }
             val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, indexName, indexProvider, indexConfig)
@@ -382,8 +374,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "CreateIndex",
           (ctx, params) => {
             val indexName = getName(name, params)
-            val provider =
-              CreateTextIndexOptionsConverter(ctx).convert(context.cypherVersion, options, params).flatMap(_.provider)
+            val provider = CreateTextIndexOptionsConverter(indexContext(ctx))
+              .convert(context.cypherVersion, options, params)
+              .flatMap(_.provider)
             val (entityId, entityType) = getEntityInfo(entityName, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addTextIndexRule(entityId, entityType, propertyKeyIds, indexName, provider)
@@ -399,11 +392,15 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "CreateIndex",
           (ctx, params) => {
             val indexName = getName(name, params)
-            val (indexProvider, indexConfig) =
-              CreatePointIndexOptionsConverter(ctx).convert(context.cypherVersion, options, params) match {
-                case None                                               => (None, IndexConfig.empty())
-                case Some(CreateIndexWithFullOptions(provider, config)) => (provider, config)
-              }
+            val (indexProvider, indexConfig) = CreatePointIndexOptionsConverter(indexContext(ctx))
+              .convert(
+                context.cypherVersion,
+                options,
+                params
+              ) match {
+              case None                                               => (None, IndexConfig.empty())
+              case Some(CreateIndexWithFullOptions(provider, config)) => (provider, config)
+            }
             val (entityId, entityType) = getEntityInfo(entityName, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addPointIndexRule(entityId, entityType, propertyKeyIds, indexName, indexProvider, indexConfig)
@@ -419,7 +416,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "CreateIndex",
           (ctx, params) => {
             val indexName = getName(name, params)
-            val optionsConverter = CreateVectorIndexOptionsConverter(ctx)
+            val optionsConverter = CreateVectorIndexOptionsConverter(indexContext(ctx), vectorIndexVersion(ctx))
             val (indexProvider, indexConfig) = optionsConverter.convert(context.cypherVersion, options, params) match {
               case None =>
                 // will not get here due to mandatory config but need this to make it compile
@@ -456,10 +453,18 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, name, options) => context =>
         val (innerIndexType, optionsConverter) = indexType match {
-          case POINT  => (IndexType.POINT, CreatePointIndexOptionsConverter)
-          case RANGE  => (IndexType.RANGE, ctx => CreateRangeIndexOptionsConverter("range index", ctx))
-          case TEXT   => (IndexType.TEXT, CreateTextIndexOptionsConverter)
-          case VECTOR => (IndexType.VECTOR, CreateVectorIndexOptionsConverter)
+          case POINT => (IndexType.POINT, CreatePointIndexOptionsConverter)
+          case RANGE => (
+              IndexType.RANGE,
+              (ctx: QueryContext) =>
+                CreateRangeIndexOptionsConverter("range index", indexContext(ctx))
+            )
+          case TEXT => (IndexType.TEXT, CreateTextIndexOptionsConverter)
+          case VECTOR => (
+              IndexType.VECTOR,
+              (ctx: QueryContext) =>
+                CreateVectorIndexOptionsConverter(indexContext(ctx), vectorIndexVersion(ctx))
+            )
           case it =>
             throw new IllegalStateException(
               s"Did not expect index type $it here: only point, range, text or vector indexes."
@@ -585,28 +590,28 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             // Assert correct options to get errors even if matching constraint already exists
             assertion match {
               case NodeKey =>
-                IndexBackedConstraintsOptionsConverter("node key constraint", ctx)
+                IndexBackedConstraintsOptionsConverter("node key constraint", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
               case RelationshipKey =>
-                IndexBackedConstraintsOptionsConverter("relationship key constraint", ctx)
+                IndexBackedConstraintsOptionsConverter("relationship key constraint", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
               case NodePropertyUniqueness =>
-                IndexBackedConstraintsOptionsConverter("uniqueness constraint", ctx)
+                IndexBackedConstraintsOptionsConverter("uniqueness constraint", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
               case RelationshipPropertyUniqueness =>
-                IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", ctx)
+                IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
               case NodePropertyExistence =>
-                PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", ctx)
+                PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
               case RelationshipPropertyExistence =>
-                PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", ctx)
+                PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
               case _: NodePropertyType =>
-                PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", ctx)
+                PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
               case _: RelationshipPropertyType =>
-                PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", ctx)
+                PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", indexContext(ctx))
                   .convert(context.cypherVersion, options, params)
             }
 
@@ -837,6 +842,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
+  private def vectorIndexVersion(ctx: QueryContext): VectorIndexVersion =
+    VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(ctx.getConfig))
+
   private def getPrettyName(nameOption: Option[String]): PrettyString =
     getPrettyStringName(nameOption.map(Left(_)))
 
@@ -865,4 +873,5 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   private def getPrettyPropertyPattern(properties: List[String], start: String, end: String): PrettyString =
     properties.map(asPrettyString(_)).mkPrettyString(s"${start}e.", ", e.", end)
 
+  private def indexContext(ctx: QueryContext): IndexProviderContext = ctx.asInstanceOf[IndexProviderContext]
 }

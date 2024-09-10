@@ -21,6 +21,7 @@ package org.neo4j.token;
 
 import static org.neo4j.token.ReadOnlyTokenCreator.READ_ONLY;
 
+import java.util.List;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -33,28 +34,8 @@ import org.neo4j.token.api.TokensLoader;
  * and for easily extending available instances in one place.
  * Resolves token names without going through transaction and locking layers.
  */
-public class TokenHolders implements TokenNameLookup {
-    private final TokenHolder propertyKeyTokens;
-    private final TokenHolder labelTokens;
-    private final TokenHolder relationshipTypeTokens;
-
-    public TokenHolders(TokenHolder propertyKeyTokens, TokenHolder labelTokens, TokenHolder relationshipTypeTokens) {
-        this.propertyKeyTokens = propertyKeyTokens;
-        this.labelTokens = labelTokens;
-        this.relationshipTypeTokens = relationshipTypeTokens;
-    }
-
-    public TokenHolder propertyKeyTokens() {
-        return propertyKeyTokens;
-    }
-
-    public TokenHolder labelTokens() {
-        return labelTokens;
-    }
-
-    public TokenHolder relationshipTypeTokens() {
-        return relationshipTypeTokens;
-    }
+public record TokenHolders(TokenHolder propertyKeyTokens, TokenHolder labelTokens, TokenHolder relationshipTypeTokens)
+        implements TokenNameLookup {
 
     public void setInitialTokens(TokensLoader loader, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         propertyKeyTokens().setInitialTokens(loader.getPropertyKeyTokens(storeCursors, memoryTracker));
@@ -111,6 +92,59 @@ public class TokenHolders implements TokenNameLookup {
         };
     }
 
+    /**
+     * @param label the label whose ID is required
+     * @return the ID that represents the provided label
+     */
+    public int labelForName(String label) {
+        return labelTokens().getIdByName(label);
+    }
+
+    /**
+     * @param labels the labels whose IDs are required
+     * @return the IDs that represents the provided labels
+     */
+    public int[] labelsForNames(List<String> labels) {
+        return idsForNames(labelTokens(), labels);
+    }
+
+    /**
+     * @param relType the relationship whose ID is required
+     * @return the ID that represents the provided relationship
+     */
+    public int relationshipForName(String relType) {
+        return relationshipTypeTokens().getIdByName(relType);
+    }
+
+    /**
+     * @param relTypes the relationships whose IDs are required
+     * @return the IDs that represents the provided relationships
+     */
+    public int[] relationshipsForNames(List<String> relTypes) {
+        return idsForNames(relationshipTypeTokens(), relTypes);
+    }
+
+    /**
+     * @param property the property whose ID is required
+     * @return the ID that represents the provided property
+     */
+    public int propertyForName(String property) {
+        return propertyKeyTokens().getIdByName(property);
+    }
+
+    /**
+     * @param properties the properties whose IDs are required
+     * @return the IDs that represents the provided properties
+     */
+    public int[] propertiesForName(List<String> properties) {
+        return idsForNames(propertyKeyTokens(), properties);
+    }
+
+    /**
+     * @param loader the token loader
+     * @param storeCursors cursors used to load the tokens
+     * @return all the tokens
+     */
     public static TokenHolders readOnlyTokenHolders(
             TokensLoader loader, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         var tokenHolders = new TokenHolders(
@@ -119,5 +153,13 @@ public class TokenHolders implements TokenNameLookup {
                 new CreatingTokenHolder(READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE));
         tokenHolders.setInitialTokens(loader, storeCursors, memoryTracker);
         return tokenHolders;
+    }
+
+    private static int[] idsForNames(TokenHolder holder, List<String> tokens) {
+        final var ids = new int[tokens.size()];
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = holder.getIdByName(tokens.get(i));
+        }
+        return ids;
     }
 }

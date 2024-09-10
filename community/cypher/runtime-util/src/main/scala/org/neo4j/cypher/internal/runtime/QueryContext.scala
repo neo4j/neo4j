@@ -505,7 +505,16 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   }
 }
 
-trait WriteQueryContext {
+trait IndexProviderContext {
+
+  def validateIndexProvider(
+    schemaDescription: String,
+    providerString: String,
+    indexType: IndexType
+  ): IndexProviderDescriptor
+}
+
+trait WriteQueryContext extends IndexProviderContext {
   def nodeWriteOps: NodeOperations
 
   def relationshipWriteOps: RelationshipOperations
@@ -527,12 +536,6 @@ trait WriteQueryContext {
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
-
-  def validateIndexProvider(
-    schemaDescription: String,
-    providerString: String,
-    indexType: IndexType
-  ): IndexProviderDescriptor
 
   def addRangeIndexRule(
     entityId: Int,

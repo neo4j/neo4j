@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.IndexProviderContext
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
@@ -46,8 +46,8 @@ abstract class CreateRangeOptionsConverter(schemaType: String)
   override def operation: String = s"create $schemaType"
 }
 
-case class IndexBackedConstraintsOptionsConverter(schemaType: String, context: QueryContext)
+case class IndexBackedConstraintsOptionsConverter(schemaType: String, context: IndexProviderContext)
     extends CreateRangeOptionsConverter(schemaType)
 
-case class CreateRangeIndexOptionsConverter(schemaType: String, context: QueryContext)
+case class CreateRangeIndexOptionsConverter(schemaType: String, context: IndexProviderContext)
     extends CreateRangeOptionsConverter(schemaType)

@@ -92,7 +92,9 @@ public class CsvInput implements Input {
      * @param relationshipHeaderFactory factory for reading relationship headers.
      * @param idType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
+     * @param autoSkipHeaders  flag to skip headers
      * @param monitor {@link Monitor} for internal events.
+     * @param memoryTracker the {@link MemoryTracker} to use
      */
     public CsvInput(
             Iterable<DataFactory> nodeDataFactory,
@@ -117,6 +119,22 @@ public class CsvInput implements Input {
                 memoryTracker);
     }
 
+    /**
+     * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
+     * specifies an input group with its own header, extracted by the {@code nodeHeaderFactory}. From the outside
+     * it looks like one stream of nodes.
+     * @param nodeHeaderFactory factory for reading node headers.
+     * @param relationshipDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
+     * specifies an input group with its own header, extracted by the {@code relationshipHeaderFactory}.
+     * From the outside it looks like one stream of relationships.
+     * @param relationshipHeaderFactory factory for reading relationship headers.
+     * @param idType {@link IdType} to expect in id fields of node and relationship input.
+     * @param config CSV configuration.
+     * @param autoSkipHeaders  flag to skip headers
+     * @param monitor {@link Monitor} for internal events.
+     * @param groups the ID groups to use
+     * @param memoryTracker the {@link MemoryTracker} to use
+     */
     public CsvInput(
             Iterable<DataFactory> nodeDataFactory,
             Header.Factory nodeHeaderFactory,

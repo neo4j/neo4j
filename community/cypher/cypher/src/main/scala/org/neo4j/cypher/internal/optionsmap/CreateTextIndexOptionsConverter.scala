@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.IndexProviderContext
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
-case class CreateTextIndexOptionsConverter(context: QueryContext)
+case class CreateTextIndexOptionsConverter(context: IndexProviderContext)
     extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
   private val schemaType = "text index"
 

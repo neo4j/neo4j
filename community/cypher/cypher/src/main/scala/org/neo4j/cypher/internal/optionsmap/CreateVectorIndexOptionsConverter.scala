@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.optionsmap
 
 import org.eclipse.collections.api.PrimitiveIterable
 import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.IndexProviderContext
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexConfigValidationRecords
 import org.neo4j.internal.schema.IndexConfigValidationRecords.IncorrectType
@@ -34,7 +34,6 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.State.UNRECOGNIZED
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SettingsAccessor.MapValueAccessor
-import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
@@ -49,7 +48,7 @@ import java.lang
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-case class CreateVectorIndexOptionsConverter(context: QueryContext)
+case class CreateVectorIndexOptionsConverter(context: IndexProviderContext, latestSupportedVersion: VectorIndexVersion)
     extends IndexOptionsConverter[CreateIndexWithFullOptions] {
   private val schemaType = "vector index"
 
@@ -159,9 +158,7 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
 
     config match {
       case itemsMap: MapValue =>
-        val version = maybeIndexProvider.map(VectorIndexVersion.fromDescriptor).getOrElse(
-          VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(context.getConfig))
-        )
+        val version = maybeIndexProvider.map(VectorIndexVersion.fromDescriptor).getOrElse(latestSupportedVersion)
         val validator = version.indexSettingValidator
         val validationRecords = validator.validate(new MapValueAccessor(itemsMap))
         if (validationRecords.valid) return validator.trustIsValidToVectorIndexConfig(validationRecords).config

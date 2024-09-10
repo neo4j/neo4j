@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.optionsmap
 
 import Ordering.comparatorToOrdering
 import org.neo4j.cypher.internal.MapValueOps.Ops
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.IndexProviderContext
 import org.neo4j.graphdb.schema.IndexSetting
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_ANALYZER
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
@@ -54,7 +54,7 @@ import java.lang.String.CASE_INSENSITIVE_ORDER
 import scala.collection.immutable.SortedSet
 
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
-  protected def context: QueryContext
+  protected def context: IndexProviderContext
 
   protected def getOptionsParts(
     options: MapValue,
