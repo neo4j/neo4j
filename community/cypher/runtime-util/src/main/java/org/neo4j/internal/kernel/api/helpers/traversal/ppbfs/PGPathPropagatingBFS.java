@@ -49,8 +49,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
     private final long intoTarget;
     private final State finalState;
     private final SearchMode searchMode;
-    private final PathTracer pathTracer;
-    private final Function<PathTracer.TracedPath, Row> toRow;
+    private final PathTracer<Row> pathTracer;
+    private final Function<SignpostStack, Row> toRow;
     private final Predicate<Row> nonInlinedPredicate;
     private final Boolean isGroupSelector;
     private final int maxDepth;
@@ -83,8 +83,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             State finalState,
             SearchMode searchMode,
             ProductGraphTraversalCursor.DataGraphRelationshipCursor graphCursor,
-            PathTracer pathTracer,
-            Function<PathTracer.TracedPath, Row> toRow,
+            PathTracer<Row> pathTracer,
+            Function<SignpostStack, Row> toRow,
             Predicate<Row> nonInlinedPredicate,
             Boolean isGroupSelector,
             int maxDepth,
@@ -130,8 +130,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             Read read,
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
-            PathTracer pathTracer,
-            Function<PathTracer.TracedPath, Row> toRow,
+            PathTracer<Row> pathTracer,
+            Function<SignpostStack, Row> toRow,
             Predicate<Row> nonInlinedPredicate,
             Boolean isGroupSelector,
             int maxDepth,
@@ -169,8 +169,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             if (pathTracer.ready()) {
                 // exhaust the paths for the current target if there is one
                 while (pathTracer.hasNext()) {
-                    var path = pathTracer.next();
-                    var row = toRow.apply(path);
+                    var row = pathTracer.next();
                     if (nonInlinedPredicate.test(row)) {
                         if (isGroupSelector) {
                             groupYielded = true;
@@ -208,7 +207,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             }
 
             pathTracer.reset();
-            pathTracer.initialize(sourceNodeState, currentTargets.next(), globalState.depth());
+            pathTracer.initialize(toRow, sourceNodeState, currentTargets.next(), globalState.depth());
         }
     }
 

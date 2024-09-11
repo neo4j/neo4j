@@ -21,6 +21,7 @@ package org.neo4j.collection.trackable;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
 import org.neo4j.memory.HeapEstimator;
@@ -32,7 +33,7 @@ import org.neo4j.memory.MemoryTracker;
  *
  * <a href="https://en.wikipedia.org/wiki/Skip_list">Wikipedia: Skip List</a>
  */
-public abstract class HeapTrackingSkipList<T> implements Iterable<T>, AutoCloseable {
+public class HeapTrackingSkipList<T> implements Iterable<T>, AutoCloseable {
 
     private static class Node<T> implements Measurable {
         public final T value;
@@ -92,12 +93,14 @@ public abstract class HeapTrackingSkipList<T> implements Iterable<T>, AutoClosea
             + HeapEstimator.shallowSizeOfInstance(Random.class);
 
     private final MemoryTracker memoryTracker;
+    private final Comparator<T> comparator;
     private final Node<T> head;
     private final Random random = new Random();
     private int levels = 1;
 
-    protected HeapTrackingSkipList(MemoryTracker memoryTracker) {
+    public HeapTrackingSkipList(MemoryTracker memoryTracker, Comparator<T> comparator) {
         this.memoryTracker = memoryTracker.getScopedMemoryTracker();
+        this.comparator = comparator;
         this.head = new Node<>(null, MAX_LEVEL + 1);
         this.memoryTracker.allocateHeap(SHALLOW_SIZE + head.estimatedHeapUsage());
     }
@@ -128,7 +131,7 @@ public abstract class HeapTrackingSkipList<T> implements Iterable<T>, AutoClosea
         var prevStack = nodeArray(level + 1);
         for (int i = levels - 1; i >= 0; i--) {
             for (; current.next[i] != null; current = current.next[i]) {
-                int cmp = compare(current.next[i].value, value);
+                int cmp = comparator.compare(current.next[i].value, value);
 
                 if (cmp > 0) {
                     break;
@@ -174,6 +177,16 @@ public abstract class HeapTrackingSkipList<T> implements Iterable<T>, AutoClosea
         return popped.value;
     }
 
+    /** Returns the smallest element from the collection */
+    public T peek() {
+        var node = head.next[0];
+        if (node == null) {
+            return null;
+        }
+
+        return node.value;
+    }
+
     /** Iterates the collection in ascending order */
     @Override
     public Iterator<T> iterator() {
@@ -193,10 +206,6 @@ public abstract class HeapTrackingSkipList<T> implements Iterable<T>, AutoClosea
         };
     }
 
-    public void clear() {
-        Arrays.fill(this.head.next, null);
-    }
-
     @Override
     public String toString() {
         var sb = new StringBuilder("{");
@@ -211,13 +220,9 @@ public abstract class HeapTrackingSkipList<T> implements Iterable<T>, AutoClosea
         return head.next[0] == null;
     }
 
-    /** Implementations must define a total order of elements of T where a positive result indicates a > b,
-     * a negative result indicates a < b, and 0 indicates a = b */
-    protected abstract int compare(T a, T b);
-
     @Override
     public void close() {
-        clear();
+        Arrays.fill(this.head.next, null);
         this.memoryTracker.close();
     }
 }

@@ -119,6 +119,9 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
     public abstract int dataGraphLength();
 
+    /** Write the entities of this signpost out to a row */
+    public abstract void materialize(PathWriter pathWriter);
+
     /**
      * The "hasBeenTraced" mechanism is used to control how we register TargetSignposts. For reasons explained in the
      * PPBFS guide (https://neo4j.atlassian.net/wiki/spaces/CYPHER/pages/180977665/Shortest+K+Implementation),
@@ -199,6 +202,12 @@ public abstract sealed class TwoWaySignpost implements Measurable {
         }
 
         @Override
+        public void materialize(PathWriter pathWriter) {
+            pathWriter.writeNode(prevNode.state().slotOrName(), prevNode.id());
+            pathWriter.writeRel(relationshipExpansion.slotOrName(), relId);
+        }
+
+        @Override
         public int entityCount() {
             return 2; // prevNode and rel
         }
@@ -257,6 +266,11 @@ public abstract sealed class TwoWaySignpost implements Measurable {
         private NodeSignpost(NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
             super(prevNode, forwardNode, lengthFromSource);
             assert prevNode != forwardNode : "A state cannot have a node juxtaposition to itself";
+        }
+
+        @Override
+        public void materialize(PathWriter pathWriter) {
+            pathWriter.writeNode(prevNode.state().slotOrName(), prevNode.id());
         }
 
         @Override
@@ -331,6 +345,26 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
             assert rels.length == transition.rels().length;
             assert nodes.length == transition.nodes().length;
+        }
+
+        @Override
+        public void materialize(PathWriter pathWriter) {
+            pathWriter.writeNode(prevNode.state().slotOrName(), prevNode.id());
+
+            for (int i = 0; i < nodes.length; i++) {
+                var rel = rels[i];
+                var relSlot = transition.rels()[i].slotOrName();
+                pathWriter.writeRel(relSlot, rel);
+
+                var node = nodes[i];
+                var nodeSlot = transition.nodes()[i].slotOrName();
+                pathWriter.writeNode(nodeSlot, node);
+            }
+
+            var lastRel = rels[rels.length - 1];
+            var lastSlot = transition.rels()[transition.rels().length - 1].slotOrName();
+
+            pathWriter.writeRel(lastSlot, lastRel);
         }
 
         private MultiRelSignpost(

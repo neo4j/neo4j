@@ -23,7 +23,8 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.FoundNodes
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.GlobalState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.SignpostStack
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TracedPath
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
 
@@ -33,8 +34,8 @@ private[ppbfs] class EventPPBFSHooks(recorder: EventRecorder) extends PPBFSHooks
     recorder.propagateLengthPair(nodeData.id(), lengthFromSource, lengthToTarget)
   }
 
-  override def returnPath(tracedPath: PathTracer.TracedPath): Unit = {
-    recorder.returnPath(tracedPath.entities().map(_.id()): _*)
+  override def returnPath(signposts: SignpostStack): Unit = {
+    recorder.returnPath(TracedPath.fromSignpostStack(signposts).entities.map(_.id): _*)
   }
 
   override def nextLevel(depth: Int): Unit = {

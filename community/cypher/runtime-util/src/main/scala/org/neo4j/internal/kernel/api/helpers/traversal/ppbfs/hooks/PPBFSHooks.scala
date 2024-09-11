@@ -20,12 +20,12 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList
-import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap
+import org.neo4j.collection.trackable.HeapTrackingSkipList
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.FoundNodes
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.GlobalState.ScheduleSource
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.Propagator.NodeStateSkipList
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.Propagator
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.SignpostStack
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
  * The production environment should use [[PPBFSHooks.NULL]]
  */
 object PPBFSHooks {
-  val NULL: PPBFSHooks = new PPBFSHooks {}
+  object NULL extends PPBFSHooks
 
   private var current: PPBFSHooks = null
 
@@ -60,9 +60,9 @@ abstract class PPBFSHooks {
   def validateSourceLength(nodeState: NodeState, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {}
 
   // PathTracer
-  def returnPath(tracedPath: PathTracer.TracedPath): Unit = {}
-  def invalidTrail(getTracedPath: () => PathTracer.TracedPath): Unit = {}
-  def skippingDuplicateRelationship(getTracedPath: () => PathTracer.TracedPath): Unit = {}
+  def returnPath(signposts: SignpostStack): Unit = {}
+  def invalidTrail(signposts: SignpostStack): Unit = {}
+  def skippingDuplicateRelationship(signposts: SignpostStack): Unit = {}
   def activateSignpost(currentLength: Int, child: TwoWaySignpost): Unit = {}
   def deactivateSignpost(currentLength: Int, last: TwoWaySignpost): Unit = {}
 
@@ -73,7 +73,7 @@ abstract class PPBFSHooks {
 
   // Propagator
   def propagate(
-    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[NodeStateSkipList]],
+    nodesToPropagate: HeapTrackingSkipList[Propagator.QueuedPropagation],
     totalLength: Int
   ): Unit = {}
   def propagateAllAtLengths(lengthFromSource: Int, lengthToTarget: Int): Unit = {}

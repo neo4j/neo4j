@@ -39,8 +39,10 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFS
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer.TracedPath
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathWriter
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.SignpostStack
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
+import org.neo4j.values.VirtualValue
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
@@ -78,7 +80,7 @@ case class StatefulShortestPathSlottedPipe(
     state.query.resources.trace(traversalCursor)
 
     val hooks = PPBFSHooks.getInstance()
-    val pathTracer = new PathTracer(memoryTracker, hooks)
+    val pathTracer = new PathTracer[CypherRow](memoryTracker, hooks)
     val pathPredicate =
       preFilters.fold[java.util.function.Predicate[CypherRow]](_ => true)(pred => pred.isTrue(_, state))
 
@@ -110,15 +112,13 @@ case class StatefulShortestPathSlottedPipe(
     }.closing(nodeCursor).closing(traversalCursor)
   }
 
-  private def withPathVariables(original: CypherRow, path: TracedPath): CypherRow = {
+  private def withPathVariables(original: CypherRow, stack: SignpostStack): CypherRow = {
     val row = new SlottedRow(slots)
     row.copyAllFrom(original)
     val groupMap = Array.ofDim[ListValueBuilder](slots.numberOfReferences)
 
-    var i = 0
-    while (i < path.entities().length) {
-      val e = path.entities()(i)
-      e.slotOrName match {
+    def write(slotOrName: SlotOrName, id: Long, getValue: Long => VirtualValue): Unit =
+      slotOrName match {
         case SlotOrName.Slotted(slotOffset, isGroup) =>
           if (isGroup) {
             var builder = groupMap(slotOffset)
@@ -126,15 +126,21 @@ case class StatefulShortestPathSlottedPipe(
               builder = ListValueBuilder.newListBuilder()
               groupMap(slotOffset) = builder
             }
-            builder.add(e.idValue)
+            builder.add(getValue(id))
           } else {
-            row.setLongAt(slotOffset, e.id)
+            row.setLongAt(slotOffset, id)
           }
         case _: SlotOrName.VarName => throw new IllegalStateException("Legacy metadata in Slotted runtime")
         case SlotOrName.None       => ()
       }
-      i += 1
-    }
+
+    stack.materialize(new PathWriter {
+      def writeNode(slotOrName: SlotOrName, id: Long): Unit =
+        write(slotOrName, id, VirtualValues.node)
+
+      def writeRel(slotOrName: SlotOrName, id: Long): Unit =
+        write(slotOrName, id, VirtualValues.relationship)
+    })
 
     groupSlots.foreach { offset =>
       val value = groupMap(offset) match {

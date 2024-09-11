@@ -19,34 +19,28 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
-import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap;
+import java.util.Comparator;
 import org.neo4j.collection.trackable.HeapTrackingSkipList;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 /** Encapsulates propagation-related global data & functions. */
 public final class Propagator implements AutoCloseable {
-    private final HeapTrackingIntObjectHashMap<HeapTrackingIntObjectHashMap<NodeStateSkipList>>
-            nodesToPropagate; // Indexed with (lengthFromSource + lengthToTarget, lengthFromSource)
+    private final HeapTrackingSkipList<QueuedPropagation> nodesToPropagate;
+    private final MemoryTracker memoryTracker;
     private final PPBFSHooks hooks;
-    private final MemoryTracker mt;
 
     public Propagator(MemoryTracker memoryTracker, PPBFSHooks hooks) {
-        this.mt = memoryTracker;
+        this.memoryTracker = memoryTracker;
         this.hooks = hooks;
-        this.nodesToPropagate = HeapTrackingIntObjectHashMap.createIntObjectHashMap(memoryTracker);
+        this.nodesToPropagate = new HeapTrackingSkipList<>(memoryTracker, QueuedPropagation.COMPARATOR);
     }
 
-    public void schedule(
-            NodeState nodeState, int lengthFromSource, int lengthToTarget, GlobalState.ScheduleSource source) {
-        hooks.schedule(nodeState, lengthFromSource, lengthToTarget, source);
-
-        nodesToPropagate
-                .getIfAbsentPut(
-                        lengthFromSource + lengthToTarget,
-                        () -> HeapTrackingIntObjectHashMap.createIntObjectHashMap(mt))
-                .getIfAbsentPut(lengthFromSource, () -> new NodeStateSkipList(mt))
-                .insert(nodeState);
+    public void schedule(NodeState nodeState, int sourceLength, int targetLength, GlobalState.ScheduleSource source) {
+        hooks.schedule(nodeState, sourceLength, targetLength, source);
+        nodesToPropagate.insert(new QueuedPropagation(sourceLength + targetLength, sourceLength, nodeState));
+        memoryTracker.allocateHeap(QueuedPropagation.SHALLOW_SIZE);
     }
 
     /**
@@ -59,67 +53,58 @@ public final class Propagator implements AutoCloseable {
     public void propagate(int totalLength) {
         hooks.propagate(nodesToPropagate, totalLength);
 
-        assert nodesToPropagate.keysView().allSatisfy(k -> k >= totalLength)
-                : "Propagation scheduled for previous depth; this will never be executed";
-
-        var nodesToPropagateForLength = nodesToPropagate.get(totalLength);
-        if (nodesToPropagateForLength == null) {
-            return;
+        while (!nodesToPropagate.isEmpty() && nodesToPropagate.peek().totalLength <= totalLength) {
+            var node = nodesToPropagate.pop();
+            node.propagate();
+            memoryTracker.releaseHeap(QueuedPropagation.SHALLOW_SIZE);
         }
-
-        int minLengthFromSourceToPropagate =
-                nodesToPropagateForLength.keysView().min();
-
-        for (int lengthFromSource = minLengthFromSourceToPropagate;
-                lengthFromSource <= totalLength;
-                lengthFromSource++) {
-            int lengthToTarget = totalLength - lengthFromSource;
-
-            hooks.propagateAllAtLengths(lengthFromSource, lengthToTarget);
-
-            NodeStateSkipList nodesToPropagateAtLengthPair = nodesToPropagateForLength.get(lengthFromSource);
-
-            if (nodesToPropagateAtLengthPair != null) {
-                // propagations can cause scheduled propagations at the same depth, so we can't simply iterate the
-                // collection; hence `while` and then removal from the parent collection
-                for (var node = nodesToPropagateAtLengthPair.pop();
-                        node != null;
-                        node = nodesToPropagateAtLengthPair.pop()) {
-                    node.propagateLengthPair(lengthFromSource, lengthToTarget);
-                }
-
-                nodesToPropagateForLength.remove(lengthFromSource);
-
-                nodesToPropagateAtLengthPair.close();
-            }
-        }
-
-        nodesToPropagate.remove(totalLength).close();
     }
 
     public boolean hasScheduled() {
-        return nodesToPropagate.notEmpty();
+        return !nodesToPropagate.isEmpty();
     }
 
     @Override
     public void close() throws Exception {
-        nodesToPropagate.forEach(map -> {
-            map.forEach(NodeStateSkipList::close);
-            map.close();
-        });
         nodesToPropagate.close();
     }
 
-    public static class NodeStateSkipList extends HeapTrackingSkipList<NodeState> {
+    public static class QueuedPropagation {
+        private final int totalLength;
+        private final int sourceLength;
+        private final NodeState nodeState;
 
-        public NodeStateSkipList(MemoryTracker memoryTracker) {
-            super(memoryTracker);
+        public QueuedPropagation(int totalLength, int sourceLength, NodeState nodeState) {
+            this.totalLength = totalLength;
+            this.sourceLength = sourceLength;
+            this.nodeState = nodeState;
         }
 
         @Override
-        protected int compare(NodeState a, NodeState b) {
-            int cmp = Long.compare(a.id(), b.id());
-            return cmp != 0 ? cmp : Integer.compare(a.state().id(), b.state().id());
+        public String toString() {
+            return "QueuedPropagation{" + "totalLength="
+                    + totalLength + ", sourceLength="
+                    + sourceLength + ", nodeState="
+                    + nodeState + '}';
         }
+
+        void propagate() {
+            nodeState.propagateLengthPair(sourceLength, totalLength - sourceLength);
+        }
+
+        public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(QueuedPropagation.class);
+
+        static Comparator<QueuedPropagation> COMPARATOR = (a, b) -> {
+            var tl = Integer.compare(a.totalLength, b.totalLength);
+            if (tl != 0) return tl;
+
+            var sl = Integer.compare(a.sourceLength, b.sourceLength);
+            if (sl != 0) return sl;
+
+            var nid = Long.compare(a.nodeState.id(), b.nodeState.id());
+            if (nid != 0) return nid;
+
+            return Integer.compare(a.nodeState.state().id(), b.nodeState.state().id());
+        };
     }
 }

@@ -19,18 +19,12 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
-import java.util.Arrays;
 import java.util.BitSet;
-import org.neo4j.common.EntityType;
+import java.util.function.Function;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
-import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion;
-import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * The PathTracer will use data produced by PGPathPropagatingBFS to return paths between the source and the target.
@@ -39,7 +33,7 @@ import org.neo4j.values.virtual.VirtualValues;
  * The PathTracer is also responsible for doing bookkeeping related to PPBFS which is only possible to do during
  * path tracing. Therefore, it's very important to exhaust the path tracer for every target node.
  */
-public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath> {
+public final class PathTracer<Row> extends PrefetchingIterator<Row> {
     private final PPBFSHooks hooks;
     private final SignpostStack stack;
     private NodeState sourceNode;
@@ -48,6 +42,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     private int dgLength;
 
     private final BitSet protectFromPruning;
+    private Function<SignpostStack, Row> toRow;
 
     /**
      * Because path tracing performs much of the bookkeeping of PPBFS, we may need to continue to trace paths to a
@@ -89,7 +84,9 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
      * a given length.
      * {@link #reset} must be called prior to this if the SignpostStack has been used previously.
      */
-    public void initialize(NodeState sourceNode, NodeState targetNode, int dgLength) {
+    public void initialize(
+            Function<SignpostStack, Row> toRow, NodeState sourceNode, NodeState targetNode, int dgLength) {
+        this.toRow = toRow;
         Preconditions.checkState(!ready, "PathTracer was not reset before initializing");
         this.ready = true;
         this.sourceNode = sourceNode;
@@ -121,7 +118,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     }
 
     @Override
-    protected TracedPath fetchNextOrNull() {
+    protected Row fetchNextOrNull() {
         if (!ready) {
             throw new IllegalStateException("PathTracer attempted to iterate without initializing.");
         }
@@ -130,7 +127,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
             shouldReturnSingleNodePath = false;
             Preconditions.checkState(
                     stack.lengthFromSource() == 0, "Attempting to return a path that does not reach the source");
-            return stack.currentPath();
+            return toRow.apply(stack);
         }
 
         while (stack.hasNext()) {
@@ -145,16 +142,15 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
                 }
 
                 if (allNodesAreValidatedBetweenDuplicates()) {
-                    hooks.skippingDuplicateRelationship(stack::currentPath);
+                    hooks.skippingDuplicateRelationship(stack);
                     stack.pop();
                     // the order of these predicates is important since validateTrail has side effects:
                 } else if (sourceSignpost.prevNode == sourceNode && validateTrail() && !isSaturated()) {
                     Preconditions.checkState(
                             stack.lengthFromSource() == 0,
                             "Attempting to return a path that does not reach the source");
-                    TracedPath path = stack.currentPath();
-                    hooks.returnPath(path);
-                    return path;
+                    hooks.returnPath(stack);
+                    return toRow.apply(stack);
                 }
             }
         }
@@ -199,7 +195,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
                 var bitset = stack.relationshipPresenceAtDepth.get(rel.relId);
                 assert bitset.get(i);
                 if (bitset.length() > i + 1) {
-                    hooks.invalidTrail(stack::currentPath);
+                    hooks.invalidTrail(stack);
                     return false;
                 }
             } else if (signpost instanceof TwoWaySignpost.MultiRelSignpost rels) {
@@ -208,7 +204,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
                     var bitset = stack.relationshipPresenceAtDepth.get(relId);
                     assert bitset.get(i);
                     if (bitset.length() > i + 1) {
-                        hooks.invalidTrail(stack::currentPath);
+                        hooks.invalidTrail(stack);
                         return false;
                     }
                 }
@@ -225,70 +221,5 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
 
     public void decrementTargetCount() {
         stack.target().decrementTargetCount();
-    }
-
-    public record PathEntity(SlotOrName slotOrName, long id, EntityType entityType) {
-        static PathEntity fromNode(NodeState node) {
-            return fromNode(node.state(), node.id());
-        }
-
-        static PathEntity fromNode(State state, long id) {
-            return new PathEntity(state.slotOrName(), id, EntityType.NODE);
-        }
-
-        static PathEntity fromRel(TwoWaySignpost.RelSignpost signpost) {
-            return fromRel(signpost.relationshipExpansion, signpost.relId);
-        }
-
-        static PathEntity fromRel(RelationshipExpansion expansion, long id) {
-            return new PathEntity(expansion.slotOrName(), id, EntityType.RELATIONSHIP);
-        }
-
-        public AnyValue idValue() {
-            return switch (entityType) {
-                case NODE -> VirtualValues.node(id);
-                case RELATIONSHIP -> VirtualValues.relationship(id);
-            };
-        }
-    }
-
-    public record TracedPath(PathEntity[] entities) {
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("(");
-            PathEntity last = null;
-            for (var e : entities) {
-                switch (e.entityType) {
-                    case NODE -> {
-                        if (last == null || last.entityType == EntityType.RELATIONSHIP) {
-                            sb.append(e.id);
-                            if (e.slotOrName != SlotOrName.none()) {
-                                sb.append("@").append(e.slotOrName);
-                            }
-                        } else if (last.slotOrName != e.slotOrName) {
-                            sb.append(",").append(e.slotOrName);
-                        }
-                    }
-                    case RELATIONSHIP -> sb.append(")-[").append(e.id).append("]->(");
-                }
-                last = e;
-            }
-            sb.append(")");
-
-            return sb.toString();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            TracedPath that = (TracedPath) o;
-            return Arrays.equals(entities, that.entities);
-        }
-
-        @Override
-        public int hashCode() {
-            return Arrays.hashCode(entities);
-        }
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.GlobalState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.SignpostStack
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
@@ -68,7 +68,7 @@ class MetricsPPBFSHooks extends PPBFSHooks with AutoCloseable {
     prunes += 1
   }
 
-  override def skippingDuplicateRelationship(getTracedPath: () => PathTracer.TracedPath): Unit = {
+  override def skippingDuplicateRelationship(signposts: SignpostStack): Unit = {
     skips += 1
   }
 

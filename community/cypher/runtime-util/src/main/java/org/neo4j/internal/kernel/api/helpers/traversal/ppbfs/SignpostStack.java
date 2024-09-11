@@ -24,10 +24,8 @@ import java.util.BitSet;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingIntArrayList;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Preconditions;
 
 /**
  * A stack of TwoWaySignposts (and thus NodeDatas) leading back from the target towards the source. This maintains
@@ -151,45 +149,12 @@ public class SignpostStack {
         return this.dgLength - dgLengthToTarget;
     }
 
-    /**
-     * Returns the nodes and relationships that form the current active path, top-down (from source to target).
-     */
-    public PathTracer.TracedPath currentPath() {
-        // TODO: remove the traced path from production code and simply write straight to the row
-        var entities = new PathTracer.PathEntity[entityCount + 1];
-
-        int index = entities.length - 1;
-        entities[index--] = PathTracer.PathEntity.fromNode(targetNode);
-
-        for (var signpost : activeSignposts) {
-            if (signpost instanceof TwoWaySignpost.RelSignpost relSignpost) {
-                entities[index--] = PathTracer.PathEntity.fromRel(relSignpost);
-            } else if (signpost instanceof TwoWaySignpost.MultiRelSignpost multiRelSignpost) {
-                var lastRel = multiRelSignpost.rels[multiRelSignpost.rels.length - 1];
-                var lastSlot =
-                        multiRelSignpost.transition.rels()[multiRelSignpost.transition.rels().length - 1].slotOrName();
-                entities[index--] = new PathTracer.PathEntity(lastSlot, lastRel, EntityType.RELATIONSHIP);
-
-                for (int i = multiRelSignpost.nodes.length - 1; i >= 0; i--) {
-                    var node = multiRelSignpost.nodes[i];
-                    var nodeSlot = multiRelSignpost.transition.nodes()[i].slotOrName();
-                    entities[index--] = new PathTracer.PathEntity(nodeSlot, node, EntityType.NODE);
-
-                    var rel = multiRelSignpost.rels[i];
-                    var relSlot = multiRelSignpost.transition.rels()[i].slotOrName();
-                    entities[index--] = new PathTracer.PathEntity(relSlot, rel, EntityType.RELATIONSHIP);
-                }
-            }
-
-            entities[index--] = PathTracer.PathEntity.fromNode(signpost.prevNode);
+    public void materialize(PathWriter writer) {
+        for (int i = activeSignposts.size() - 1; i >= 0; i--) {
+            var signpost = activeSignposts.get(i);
+            signpost.materialize(writer);
         }
-
-        Preconditions.checkState(
-                index == -1,
-                "Traced path length was not as expected (expected " + entities.length + " but found "
-                        + (entities.length - (index + 1)) + ")");
-
-        return new PathTracer.TracedPath(entities);
+        writer.writeNode(targetNode.state().slotOrName(), targetNode.id());
     }
 
     /**

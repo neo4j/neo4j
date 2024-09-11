@@ -40,12 +40,10 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBF
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(s) ((a)-->(b))+ (t)`
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(s) ((a)-->(b)<--(c))+ (t)`
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.anyDirectedPath
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.pathLength
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.singleRelPath
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.testGraphs
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer.PathEntity
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer.TracedPath
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TestGraph.Rel
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TracedPath.PathEntity
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.AddTarget
@@ -685,7 +683,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa(anyDirectedPath)
-      .project(pathLength)
+      .project(TracedPath.fromSignpostStack(_).length)
       .filter(onlyFirstOfGroup)
       .into(d, SearchMode.Unidirectional)
       .grouped
@@ -716,7 +714,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.graph)
       .from(graph.a)
       .withNfa(anyDirectedPath)
-      .filter(p => pathLength(p) > 1)
+      .filter(p => p.length > 1)
       .withK(1)
       .paths()
 
@@ -730,7 +728,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.graph)
       .from(graph.a)
       .withNfa(anyDirectedPath)
-      .project(pathLength)
+      .project(TracedPath.fromSignpostStack(_).length)
       .filter(_ > 0)
       .toList
 
@@ -973,7 +971,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     val mt = new LocalMemoryTracker()
 
     // ignore the memory tracker for path tracer for the purposes of this test
-    def createPathTracer(_mt: MemoryTracker, hooks: PPBFSHooks): PathTracer =
+    def createPathTracer(_mt: MemoryTracker, hooks: PPBFSHooks): PathTracer[TracedPath] =
       new PathTracer(EmptyMemoryTracker.INSTANCE, hooks)
 
     val iter = fixture()
@@ -1214,7 +1212,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     isGroup: Boolean,
     maxDepth: Int,
     k: Int,
-    projection: TracedPath => A,
+    projection: SignpostStack => A,
     predicate: A => Boolean,
     mt: MemoryTracker,
     hooks: PPBFSHooks,
@@ -1244,7 +1242,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     def onAssertOpen(assertOpen: => Unit): FixtureBuilder[A] = copy(assertOpen = () => assertOpen)
 
     /** NB: wipes any configured filter, since the iterated item type will change */
-    def project[B](projection: TracedPath => B): FixtureBuilder[B] =
+    def project[B](projection: SignpostStack => B): FixtureBuilder[B] =
       FixtureBuilder[B](
         graph,
         nfa,
@@ -1262,7 +1260,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       )
     def filter(predicate: A => Boolean): FixtureBuilder[A] = copy(predicate = predicate)
 
-    def build(createPathTracer: (MemoryTracker, PPBFSHooks) => PathTracer = new PathTracer(_, _)) =
+    def build(createPathTracer: (MemoryTracker, PPBFSHooks) => PathTracer[A] = new PathTracer(_, _)) =
       new PGPathPropagatingBFS[A](
         source,
         nfa.getStart.state,
@@ -1297,7 +1295,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     /** Run the iterator and extract the entity ids from the yielded paths.
      * Graph IDs are unique across nodes and relationships so there is no risk of inadvertent overlap when comparing. */
     def paths()(implicit ev: A =:= TracedPath): Seq[Seq[Long]] =
-      build().asScala.map(_.entities().map(_.id()).toSeq).toSeq
+      build().asScala.map(_.entities.map(_.id).toSeq).toSeq
 
     /** Runs a naive/slow DFS equivalent of the algorithm and compares results with the real implementation */
     def assertExpected()(implicit ev: A =:= TracedPath): Unit = {
@@ -1351,9 +1349,9 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
               if dir.matches(r.direction) &&
                 r.predicate.test(rel) &&
                 n.predicate.test(nextNode) &&
-                !stack.exists(e => e.id() == rel.id)
+                !stack.exists(e => e.id == rel.id)
 
-              newStack = new PathTracer.PathEntity(n.slotOrName, nextNode, EntityType.NODE) ::
+              newStack = new PathEntity(n.slotOrName, nextNode, EntityType.NODE) ::
                 new PathEntity(r.slotOrName, rel.id, EntityType.RELATIONSHIP) ::
                 stack
 
@@ -1372,9 +1370,9 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
               if dir.matches(r.direction) &&
                 r.predicate.test(rel) &&
                 targetState.test(nextNode) &&
-                !stack.exists(e => e.id() == rel.id)
+                !stack.exists(e => e.id == rel.id)
 
-              newStack = new PathTracer.PathEntity(targetState.slotOrName, nextNode, EntityType.NODE) ::
+              newStack = new PathEntity(targetState.slotOrName, nextNode, EntityType.NODE) ::
                 new PathEntity(r.slotOrName, rel.id, EntityType.RELATIONSHIP) ::
                 stack
 
@@ -1402,7 +1400,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
           if dir.matches(re.direction) &&
             re.testRelationship(rel) &&
             re.targetState().test(nextNode) &&
-            !stack.exists(e => e.id() == rel.id)
+            !stack.exists(e => e.id == rel.id)
 
           newStack = PathEntity.fromNode(re.targetState(), nextNode) ::
             PathEntity.fromRel(re, rel.id) ::
@@ -1417,7 +1415,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         } yield path
 
         val wholePath = Option.when(state.isFinalState && (intoTarget == -1L || intoTarget == node))(new TracedPath(
-          stack.reverse.toArray
+          stack.reverse
         ))
 
         nodeJuxtapositions ++ relExpansions ++ multRelExpansions ++ wholePath
@@ -1437,7 +1435,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     isGroup = false,
     maxDepth = -1,
     k = Int.MaxValue,
-    projection = identity,
+    projection = TracedPath.fromSignpostStack,
     predicate = _ => true,
     mt = EmptyMemoryTracker.INSTANCE,
     hooks = PPBFSHooks.NULL,
@@ -1455,9 +1453,6 @@ object PGPathPropagatingBFSTest {
   private def singleRelPath(sb: PGStateBuilder): Unit = {
     sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
   }
-
-  private def pathLength(path: TracedPath) = path.entities().count(_.entityType() == EntityType.RELATIONSHIP)
-  private def target(path: TracedPath) = path.entities().last.id()
 
   /** Divides up paths by their target, then chunks them into groups of ascending path length */
   case class OrderedResults(byTargetThenLength: Map[Long, List[Set[TracedPath]]]) {
@@ -1477,9 +1472,9 @@ object PGPathPropagatingBFSTest {
 
     def fromSeq(seq: Seq[TracedPath]): OrderedResults = OrderedResults(
       seq
-        .groupBy(target)
+        .groupBy(_.target)
         .view
-        .mapValues(_.groupBy(pathLength).toList.sortBy(_._1).map(_._2.toSet))
+        .mapValues(_.groupBy(_.length).toList.sortBy(_._1).map(_._2.toSet))
         .toMap
     )
 

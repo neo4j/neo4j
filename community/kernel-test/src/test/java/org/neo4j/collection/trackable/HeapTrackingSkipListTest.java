@@ -167,7 +167,7 @@ public class HeapTrackingSkipListTest {
         private final IntSupplier getLevel;
 
         public IntSkipList(MemoryTracker memoryTracker, IntSupplier getLevel) {
-            super(memoryTracker);
+            super(memoryTracker, Integer::compare);
             this.getLevel = getLevel;
         }
 
@@ -178,11 +178,6 @@ public class HeapTrackingSkipListTest {
         @Override
         protected int getLevel(Integer value) {
             return getLevel == null ? super.getLevel(value) : getLevel.getAsInt();
-        }
-
-        @Override
-        protected int compare(Integer a, Integer b) {
-            return Integer.compare(a, b);
         }
     }
 }

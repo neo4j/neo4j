@@ -20,14 +20,15 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList
-import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap
+import org.neo4j.collection.trackable.HeapTrackingSkipList
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.FoundNodes
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.GlobalState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.Propagator.NodeStateSkipList
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathWriter
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.Propagator
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.SignpostStack
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Debug
@@ -118,16 +119,16 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
     )
   }
 
-  override def skippingDuplicateRelationship(getTracedPath: () => PathTracer.TracedPath): Unit = {
-    log(Debug, "duplicate rels skipped" -> getTracedPath().toString)
+  override def skippingDuplicateRelationship(signposts: SignpostStack): Unit = {
+    log(Debug, "duplicate rels skipped" -> renderPath(signposts))
   }
 
-  override def returnPath(tracedPath: PathTracer.TracedPath): Unit = {
-    log(Info, "tracedPath" -> tracedPath.toString)
+  override def returnPath(signposts: SignpostStack): Unit = {
+    log(Info, "tracedPath" -> renderPath(signposts))
   }
 
-  override def invalidTrail(getTracedPath: () => PathTracer.TracedPath): Unit = {
-    log(Info, "invalidTrail" -> getTracedPath().toString)
+  override def invalidTrail(signposts: SignpostStack): Unit = {
+    log(Info, "invalidTrail" -> renderPath(signposts))
   }
 
   override def schedule(
@@ -146,28 +147,22 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
   }
 
   override def propagate(
-    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[NodeStateSkipList]],
+    nodesToPropagate: HeapTrackingSkipList[Propagator.QueuedPropagation],
     totalLength: Int
   ): Unit = {
     color = DebugSupport.Magenta
 
-    if (nodesToPropagate.notEmpty()) {
+    if (!nodesToPropagate.isEmpty) {
       val str = new StringBuilder
 
-      nodesToPropagate.forEachKeyValue((totalLength: Int, v: HeapTrackingIntObjectHashMap[NodeStateSkipList]) => {
-        v.forEachKeyValue((sourceLength: Int, s: NodeStateSkipList) => {
-          str.append("\n")
-            .append(" ".repeat(PADDING))
-            .append("- ")
-            .append(list(
-              "totalLength" -> totalLength,
-              "sourceLength" -> sourceLength,
-              "nodes" -> s.toString
-            ))
-        })
-      })
+      nodesToPropagate.iterator().asScala.foreach { qp =>
+        str.append("\n")
+          .append(" ".repeat(PADDING))
+          .append("- ")
+          .append(qp)
+      }
 
-      log(Debug, "nodesToPropagate" -> str)
+      log(Debug, "totalLength" -> totalLength, "propagationQueue" -> str)
     }
   }
 
@@ -254,7 +249,6 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
   }
 
   implicit private def pairToString(pair: (String, Any)): String = pair._1 + ": " + pair._2
-  private def list(pairs: (String, Any)*): String = pairs.map(pairToString).mkString(", ")
 
   private def log(level: Level, items: String*) = logMsg(level, items.mkString(", ") + "\n", 4)
 
@@ -278,6 +272,20 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
       builder.append(DebugSupport.Reset).append(message)
       System.out.print(builder)
     }
+
+  private def renderPath(signposts: SignpostStack): String = {
+    val sb = new StringBuilder()
+
+    signposts.materialize(new PathWriter {
+      def writeNode(slotOrName: SlotOrName, id: Long): Unit =
+        sb.append("(").append(id).append(")")
+
+      def writeRel(slotOrName: SlotOrName, id: Long): Unit =
+        sb.append("-[").append(id).append("]-")
+    })
+
+    sb.toString
+  }
 }
 
 object LoggingPPBFSHooks {
