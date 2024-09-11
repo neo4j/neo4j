@@ -67,6 +67,9 @@
                             <goal>format</goal>
                         </goals>
                         <phase>process-sources</phase>
+                        <configuration>
+                            <skip>false</skip> <!-- Never skip license:format here since these files are generated -->
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
