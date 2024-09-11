@@ -43,12 +43,17 @@ public class StaticContentFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
             throws IOException, ServletException {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        response.addHeader("Cache-Control", "no-store");
-        response.addHeader("Pragma", "no-cache");
-        response.addHeader("Content-Security-Policy", contentSecurityPolicyHeader);
-        response.addHeader("X-Frame-Options", "DENY");
-        response.addHeader("X-Content-Type-Options", "nosniff");
-        response.addHeader("X-XSS-Protection", "1; mode=block");
+
+        // redirects pass through this filter twice so we check this request hasn't already been filtered
+        if (response.getHeader("Cache-Control") == null) {
+            response.addHeader("Cache-Control", "no-store");
+            response.addHeader("Pragma", "no-cache");
+            response.addHeader("Content-Security-Policy", contentSecurityPolicyHeader);
+            response.addHeader("X-Frame-Options", "DENY");
+            response.addHeader("X-Content-Type-Options", "nosniff");
+            response.addHeader("X-XSS-Protection", "1; mode=block");
+        }
+        System.out.println(servletResponse);
         filterChain.doFilter(servletRequest, servletResponse);
     }
 
