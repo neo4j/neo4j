@@ -952,15 +952,18 @@ case class Prettifier(
     }
 
     def asString(c: ImportingWithSubqueryCall): String = {
+      val optional = if (c.optional) "OPTIONAL " else ""
       val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
-      s"""${INDENT}CALL {
+      s"""${INDENT}${optional}CALL {
          |${indented().query(c.innerQuery)}
          |$INDENT}$inTxParams""".stripMargin
     }
 
     def asString(c: ScopeClauseSubqueryCall): String = {
+      val optional = if (c.optional) "OPTIONAL " else ""
       val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
-      s"""${INDENT}CALL (${if (c.isImportingAll) "*" else c.importedVariables.map(expr(_)).mkString("", ",", "")}) {
+      s"""${INDENT}${optional}CALL (${if (c.isImportingAll) "*"
+        else c.importedVariables.map(expr(_)).mkString("", ",", "")}) {
          |${indented().query(c.innerQuery)}
          |$INDENT}$inTxParams""".stripMargin
     }
@@ -1132,6 +1135,7 @@ case class Prettifier(
 
     def asString(u: UnresolvedCall): String = {
       val namespace = expr(u.procedureNamespace)
+      val optional = if (u.optional) "OPTIONAL " else ""
       val prefix = if (namespace.isEmpty) "" else namespace + "."
       val args = u.declaredArguments.map(_.filter {
         case CoerceTo(_: ImplicitProcedureArgument, _) => false
@@ -1143,7 +1147,7 @@ case class Prettifier(
       val yields =
         if (u.yieldAll) asNewLine(s"${indented().INDENT}YIELD *")
         else u.declaredResult.filter(_.items.nonEmpty).map(ind.asString).map(asNewLine).getOrElse("")
-      s"${INDENT}CALL $prefix${expr(u.procedureName)}$arguments$yields"
+      s"${INDENT}${optional}CALL $prefix${expr(u.procedureName)}$arguments$yields"
     }
 
     def asString(r: ProcedureResult): String = {

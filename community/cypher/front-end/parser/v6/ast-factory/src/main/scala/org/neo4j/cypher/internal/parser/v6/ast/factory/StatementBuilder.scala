@@ -435,7 +435,14 @@ trait StatementBuilder extends Cypher6ParserListener {
         Some(ProcedureResult(procRes, astOpt(ctx.whereClause()))(pos(ctx.YIELD().getSymbol)))
       }
     }
-    ctx.ast = UnresolvedCall(namespace, procedureName, procedureArguments, procedureResults, yieldAll)(pos(ctx))
+    ctx.ast = UnresolvedCall(
+      namespace,
+      procedureName,
+      procedureArguments,
+      procedureResults,
+      yieldAll,
+      ctx.OPTIONAL() != null
+    )(pos(ctx))
   }
 
   final override def exitProcedureName(
@@ -488,12 +495,14 @@ trait StatementBuilder extends Cypher6ParserListener {
         ctx.regularQuery().ast(),
         isImportingAll,
         importedVariables,
-        astOpt(ctx.subqueryInTransactionsParameters())
+        astOpt(ctx.subqueryInTransactionsParameters()),
+        ctx.OPTIONAL() != null
       )(pos(ctx))
     } else {
       ImportingWithSubqueryCall(
         ctx.regularQuery().ast(),
-        astOpt(ctx.subqueryInTransactionsParameters())
+        astOpt(ctx.subqueryInTransactionsParameters()),
+        ctx.OPTIONAL() != null
       )(pos(ctx))
     }
   }

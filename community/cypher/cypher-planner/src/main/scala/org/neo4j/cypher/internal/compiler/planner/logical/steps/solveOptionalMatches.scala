@@ -109,7 +109,7 @@ case object applyOptional extends OptionalSolver {
           stopper = !_.isInstanceOf[LogicalPlan]
         ))
 
-        val rhs = context.staticComponents.logicalPlanProducer.planOptional(
+        val rhs = context.staticComponents.logicalPlanProducer.planOptionalMatch(
           innerWithFixedArguments,
           lhsSymbols,
           innerContext,

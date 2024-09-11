@@ -47,7 +47,8 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
             (1, 8, 7)
           ))
         )(defaultPos),
-        Some(InTransactionsParameters(None, None, None, None)((1, 24, 23)))
+        Some(InTransactionsParameters(None, None, None, None)((1, 24, 23))),
+        false
       )(defaultPos)
     }
   }

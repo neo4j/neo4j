@@ -68,6 +68,8 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.missingPro
 import static org.neo4j.notifications.NotificationCodeWithDescription.missingRelType;
 import static org.neo4j.notifications.NotificationCodeWithDescription.noDatabasesReallocated;
 import static org.neo4j.notifications.NotificationCodeWithDescription.procedureWarning;
+import static org.neo4j.notifications.NotificationCodeWithDescription.redundantOptionalProcedure;
+import static org.neo4j.notifications.NotificationCodeWithDescription.redundantOptionalSubquery;
 import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedRelationshipReference;
 import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
 import static org.neo4j.notifications.NotificationCodeWithDescription.requestedTopologyMatchedCurrentTopology;
@@ -988,6 +990,41 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_REDUNDANT_OPTIONAL_PROCEDURE() {
+        NotificationImplementation notification = redundantOptionalProcedure(InputPosition.empty, "db.test");
+
+        verifyNotification(
+                notification,
+                "The use of `OPTIONAL` is redundant when `CALL` is a void procedure.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Statement.RedundantOptionalProcedure",
+                "The use of `OPTIONAL` is redundant as `CALL db.test` is a void procedure.",
+                NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
+                "03N61",
+                new DiagnosticRecord(info, NotificationClassification.GENERIC, -1, -1, -1, Map.of("proc", "db.test"))
+                        .asMap(),
+                "info: redundant optional procedure. The use of `OPTIONAL` is redundant as `CALL db.test` is a void procedure.");
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_REDUNDANT_OPTIONAL_SUBQUERY() {
+        NotificationImplementation notification = redundantOptionalSubquery(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "The use of `OPTIONAL` is redundant when `CALL` is a unit subquery.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Statement.RedundantOptionalSubquery",
+                "The use of `OPTIONAL` is redundant as `CALL` is a unit subquery.",
+                NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
+                "03N62",
+                new DiagnosticRecord(info, NotificationClassification.GENERIC, -1, -1, -1, Map.of()).asMap(),
+                "info: redundant optional subquery. The use of `OPTIONAL` is redundant as `CALL` is a unit subquery.");
+    }
+
+    @Test
     void shouldConstructNotificationsFor_DEPRECATED_IMPORTING_WITH_IN_SUBQUERY_CALL() {
         NotificationImplementation notification = deprecatedImportingWithInSubqueryCall(InputPosition.empty, "a");
 
@@ -1718,8 +1755,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            64, 4, 125, -114, -66, 48, 123, 74, 11, 7, -20, 59, 92, -3, -37, -10, 62, 13, 44, 0, -14, -56, -13, -55,
-            -93, -120, 92, 103, 111, -25, -71, 6
+            -65, 11, 52, -41, 119, 83, -27, -43, 3, -32, 120, -15, -128, 29, -52, -32, -122, 81, 4, -84, -111, -100,
+            -76, -18, -15, 40, 114, 113, 82, -31, -86, -108
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

@@ -96,7 +96,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = true,
-      inTransactionsParameters = None
+      inTransactionsParameters = None,
+      optional = false
     ))
 
     query.tail should not be empty
@@ -116,7 +117,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = false,
-      inTransactionsParameters = None
+      inTransactionsParameters = None,
+      optional = false
     ))
 
     query.tail should not be empty
@@ -144,7 +146,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         callSubquery = RegularSinglePlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set(v"x")),
           horizon = RegularQueryProjection(Map(v"y" -> v"x"))
-        )
+        ),
+        optional = false
       )
     )
 
@@ -170,7 +173,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         callSubquery = RegularSinglePlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set(v"x")),
           horizon = QueryProjection.empty
-        )
+        ),
+        optional = false
       )
     )
 
@@ -191,7 +195,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = true,
-      inTransactionsParameters = None
+      inTransactionsParameters = None,
+      optional = false
     ))
 
     query.tail should not be empty
@@ -215,7 +220,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = true,
-      inTransactionsParameters = None
+      inTransactionsParameters = None,
+      optional = false
     ))
 
     query.tail should not be empty
@@ -242,7 +248,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = false,
-      inTransactionsParameters = None
+      inTransactionsParameters = None,
+      optional = false
     ))
 
     query.tail should not be empty
@@ -277,7 +284,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         ),
         distinct = true,
         List(UnionMapping(v"y", v"y", v"y"))
-      )
+      ),
+      optional = false
     ))
 
     subquery.tail should not be empty
@@ -309,7 +317,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         ),
         distinct = true,
         List()
-      )
+      ),
+      optional = false
     ))
 
     subquery.tail should not be empty
@@ -336,7 +345,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = true,
-      inTransactionsParameters = None
+      inTransactionsParameters = None,
+      optional = false
     ))
 
     query.tail should not be empty
@@ -353,7 +363,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = false,
-      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None))
+      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
+      optional = false
     )
 
     query.tail should not be empty
@@ -381,7 +392,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = true,
       yielding = false,
-      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None))
+      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
+      optional = false
     )
 
     subQuery.tail should not be empty
@@ -402,7 +414,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = true,
-      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None))
+      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
+      optional = false
     )
 
     query.tail should not be empty
@@ -431,7 +444,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = true,
       yielding = true,
-      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None))
+      inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
+      optional = false
     )
 
     subQuery.tail should not be empty

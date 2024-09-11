@@ -195,7 +195,8 @@ object CompositeQueryConverter {
             subquery = convertNestedQuery(cancellationChecker, nameGenerator, semanticTable, subQuery.innerQuery),
             correlated = subQuery.isCorrelated,
             yielding = subQuery.isYielding,
-            inTransactionsParameters = subQuery.inTransactionsParameters
+            inTransactionsParameters = subQuery.inTransactionsParameters,
+            optional = subQuery.optional
           )
       }
     }

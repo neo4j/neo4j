@@ -47,7 +47,7 @@ import org.neo4j.exceptions.SyntaxException
 object ResolvedCall {
 
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
-    val UnresolvedCall(_, _, declaredArguments, declaredResult, yieldAll) = unresolved
+    val UnresolvedCall(_, _, declaredArguments, declaredResult, yieldAll, optional) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
     def implicitArguments = signature.inputSignature.map(s =>
@@ -75,7 +75,8 @@ object ResolvedCall {
         callResults,
         declaredArguments.nonEmpty,
         declaredResult.nonEmpty,
-        yieldAll
+        yieldAll,
+        optional
       )(position)
   }
 
@@ -111,7 +112,8 @@ case class ResolvedCall(
   // true if given by the user originally
   declaredResults: Boolean = true,
   // YIELD *
-  override val yieldAll: Boolean = false
+  override val yieldAll: Boolean = false,
+  override val optional: Boolean = false
 )(val position: InputPosition)
     extends CallClause {
 
@@ -215,9 +217,9 @@ case class ResolvedCall(
         }
       }
     } else {
-      if (totalNumArgs == 0)
+      if (totalNumArgs == 0) {
         error("Procedure call is missing parentheses: " + signature.name, position)
-      else
+      } else
         error(
           "Procedure call inside a query does not support passing arguments implicitly. " +
             "Please pass arguments explicitly in parentheses after procedure name for " + signature.name,
@@ -258,6 +260,7 @@ case class ResolvedCall(
     procedureName = ProcedureName(signature.name.name)(position),
     declaredArguments = if (declaredArguments) Some(callArguments) else None,
     declaredResult = if (declaredResults) Some(ProcedureResult(callResults)(position)) else None,
-    yieldAll
+    yieldAll,
+    optional
   )(position)
 }

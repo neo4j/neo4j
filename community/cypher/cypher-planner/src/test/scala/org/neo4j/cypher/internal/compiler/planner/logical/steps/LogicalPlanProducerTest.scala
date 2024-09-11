@@ -682,7 +682,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = false,
         yielding = true,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }
@@ -695,7 +696,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = false,
         yielding = true,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }
@@ -708,7 +710,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = true,
         yielding = true,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }
@@ -721,7 +724,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = true,
         yielding = true,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }
@@ -734,7 +738,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = false,
         yielding = false,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }
@@ -747,7 +752,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = false,
         yielding = false,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }
@@ -760,7 +766,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = true,
         yielding = false,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }
@@ -773,7 +780,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.context,
         correlated = true,
         yielding = false,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
   }

@@ -168,7 +168,7 @@ case object planShortestRelationships {
       disallowSameNode = context.settings.errorIfShortestPathHasCommonNodesAtRuntime,
       context = context
     )
-    val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context, QueryGraph.empty)
+    val lhsOption = lpp.planOptionalMatch(lhsSp, lhsArgument.availableSymbols, context, QueryGraph.empty)
     val lhs = lpp.planApply(inner, lhsOption, context)
 
     val rhsArgument = context.staticComponents.logicalPlanProducer.planArgument(

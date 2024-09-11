@@ -179,6 +179,8 @@ org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseError org.neo
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterMissing org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterNotProvided org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::PropertyNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::RedundantOptionalProcedure org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::RedundantOptionalSubquery org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RemoteExecutionClientError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RemoteExecutionFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RemoteExecutionTransientError org.neo4j.kernel.api.exceptions.Status.Statement public static final

@@ -84,7 +84,7 @@ object LimitSelectivity {
             parentLimitSelectivity
           )
 
-        case ProcedureCallProjection(ResolvedCall(signature, _, _, _, _, _)) if signature.eager => Selectivity.ONE
+        case ProcedureCallProjection(ResolvedCall(signature, _, _, _, _, _, _)) if signature.eager => Selectivity.ONE
 
         case _ => parentLimitSelectivity
       }

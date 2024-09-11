@@ -1749,11 +1749,11 @@ CLAUSE Clause() throws Exception:
         | x=DeleteClause()
         | x=SetClause()
         | x=RemoveClause()
-        | x=MatchClause()
+        | LOOKAHEAD(2) x=MatchClause() // because call/subqueries also use OPTIONAL
         | x=MergeClause()
         | x=WithClause()
         | x=UnwindClause()
-        | LOOKAHEAD(2) x=CallClause() // because subqueries also start with CALL
+        | LOOKAHEAD(3) x=CallClause() // because subqueries also start with CALL
         | x=SubqueryClause()
         | x=LoadCSVClause()
         | x=ForeachClause()
@@ -2178,6 +2178,7 @@ CLAUSE UnwindClause() throws Exception:
 
 CLAUSE CallClause() throws Exception:
 {
+    Token optionalT = null;
     Token t;
     Token procedureNamePosition;
     Token procedureResultPosition = null;
@@ -2189,9 +2190,10 @@ CLAUSE CallClause() throws Exception:
     CALL_RESULT_ITEM x;
     List<CALL_RESULT_ITEM> items = null;
     WHERE where = null;
+    boolean optional = false;
 }
 {
-    t=<CALL> namespace=Namespace() {procedureNamePosition = token;} name=ProcedureName()
+    ( optionalT=<OPTIONAL> { optional=true; })? t=<CALL> namespace=Namespace() {procedureNamePosition = token;} name=ProcedureName()
     ( <LPAREN> { arguments = new ArrayList<>(); }
         ( e=Expression() { arguments.add( e ); } ( <COMMA> e=Expression() { arguments.add( e ); })* )?
         <RPAREN>
@@ -2205,7 +2207,7 @@ CLAUSE CallClause() throws Exception:
         )
     )?
     {
-        return astFactory.callClause( pos( t ),
+        return astFactory.callClause( pos( optionalT != null ? optionalT : t ),
                                      pos( t.next ),
                                      pos( procedureNamePosition.next ),
                                      pos( procedureResultPosition ),
@@ -2214,7 +2216,8 @@ CLAUSE CallClause() throws Exception:
                                      arguments,
                                      yieldAll,
                                      items,
-                                     where );
+                                     where,
+                                     optional);
     }
 }
 
@@ -2288,6 +2291,7 @@ CLAUSE ForeachClause() throws Exception:
 
 CLAUSE SubqueryClause() throws Exception :
 {
+    Token optionalT = null;
     Token t;
     QUERY q;
     SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactionsParams = null;
@@ -2295,8 +2299,10 @@ CLAUSE SubqueryClause() throws Exception :
     boolean hasScope = false;
     VARIABLE v;
     List<VARIABLE> variables = new ArrayList<>();
+    boolean optional = false;
 }
 {
+    ( optionalT=<OPTIONAL> { optional=true; } )?
     t=<CALL>
     ( <LPAREN> { hasScope = true; }
     ( <TIMES> { isImportingAll = true; } |
@@ -2307,7 +2313,15 @@ CLAUSE SubqueryClause() throws Exception :
     <RCURLY>
     ( inTransactionsParams = SubqueryInTransactionsParameters() )?
     {
-        return astFactory.subqueryClause( pos( t ), q, inTransactionsParams, isImportingAll, hasScope, variables );
+        return astFactory.subqueryClause(
+            pos( optionalT != null ? optionalT : t ),
+            q,
+            inTransactionsParams,
+            isImportingAll,
+            hasScope,
+            variables,
+            optional
+        );
     }
 }
 

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.replaceExtendedCasePlacehol
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShortestPathWithFixedLengthRelationship
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShowQuery
 import org.neo4j.cypher.internal.rewriting.rewriters.timestampRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.wrapOptionalCallProcedure
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
@@ -49,6 +50,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
       Set(
         normalizeWithAndReturnClauses,
         insertWithBetweenOptionalMatchAndMatch,
+        wrapOptionalCallProcedure,
         expandCallWhere,
         expandShowWhere,
         rewriteShowQuery,

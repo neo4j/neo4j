@@ -491,6 +491,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       with_(literal(1).as("a")),
       importingWithSubqueryCall(unionDistinct(
+        false,
         singleQuery(
           with_(varFor("a").aliased),
           return_(varFor("a").as("b"))
@@ -522,6 +523,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       with_(literal(1).as("a"), literal(1).as("b"), literal(1).as("c")),
       importingWithSubqueryCall(unionDistinct(
+        false,
         singleQuery(
           with_(varFor("a").aliased),
           return_(varFor("a").as("x"))
@@ -551,6 +553,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   WITH c
     //   RETURN c AS x
     unionDistinct(
+      false,
       singleQuery(
         with_(literal(1).as("a")),
         return_(varFor("a").as("x"))

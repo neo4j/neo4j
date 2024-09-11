@@ -170,7 +170,8 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
         ),
         correlated = true,
         yielding = true,
-        inTransactionsParameters = None
+        inTransactionsParameters = None,
+        optional = false
       )
     )
 
@@ -187,7 +188,8 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
           ),
           correlated = true,
           yielding = true,
-          inTransactionsParameters = None
+          inTransactionsParameters = None,
+          optional = false
         )
       )
     )

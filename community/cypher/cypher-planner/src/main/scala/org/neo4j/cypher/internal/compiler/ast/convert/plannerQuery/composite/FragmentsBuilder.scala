@@ -66,10 +66,11 @@ class FragmentsBuilder(arguments: Set[LogicalVariable]) {
     innerQuery: CompositeQuery,
     isCorrelated: Boolean,
     isYielding: Boolean,
-    inTransactionsParameters: Option[ast.SubqueryCall.InTransactionsParameters]
+    inTransactionsParameters: Option[ast.SubqueryCall.InTransactionsParameters],
+    isOptional: Boolean
   ): Unit = {
     commitLastClausesToNewFragment()
-    val subQueryFragment = Fragment.SubQuery(innerQuery, isCorrelated, isYielding, inTransactionsParameters)
+    val subQueryFragment = Fragment.SubQuery(innerQuery, isCorrelated, isYielding, inTransactionsParameters, isOptional)
     fragments.addOne(subQueryFragment)
   }
 

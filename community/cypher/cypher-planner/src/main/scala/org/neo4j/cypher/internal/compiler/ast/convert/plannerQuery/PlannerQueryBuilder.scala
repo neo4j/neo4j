@@ -52,9 +52,10 @@ case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTab
     subquery: PlannerQuery,
     correlated: Boolean,
     yielding: Boolean,
-    inTransactionsParameters: Option[InTransactionsParameters]
+    inTransactionsParameters: Option[InTransactionsParameters],
+    optional: Boolean
   ): PlannerQueryBuilder = {
-    withHorizon(CallSubqueryHorizon(subquery, correlated, yielding, inTransactionsParameters)).withTail(
+    withHorizon(CallSubqueryHorizon(subquery, correlated, yielding, inTransactionsParameters, optional)).withTail(
       SinglePlannerQuery.empty
     )
   }

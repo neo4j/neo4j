@@ -50,6 +50,8 @@ import org.neo4j.cypher.internal.util.IndexOrConstraintDoesNotExistNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.NoDatabasesReallocated
+import org.neo4j.cypher.internal.util.RedundantOptionalProcedure
+import org.neo4j.cypher.internal.util.RedundantOptionalSubquery
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
 import org.neo4j.cypher.internal.util.RequestedTopologyMatchedCurrentTopology
@@ -244,6 +246,15 @@ object NotificationWrapping {
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.shadowingVariable(varName),
         varName
+      )
+    case RedundantOptionalProcedure(pos, proc) =>
+      NotificationCodeWithDescription.redundantOptionalProcedure(
+        pos.withOffset(offset).asInputPosition,
+        proc
+      )
+    case RedundantOptionalSubquery(pos) =>
+      NotificationCodeWithDescription.redundantOptionalSubquery(
+        pos.withOffset(offset).asInputPosition
       )
     case DeprecatedImportingWithInSubqueryCall(pos, varName) =>
       NotificationCodeWithDescription.deprecatedImportingWithInSubqueryCall(

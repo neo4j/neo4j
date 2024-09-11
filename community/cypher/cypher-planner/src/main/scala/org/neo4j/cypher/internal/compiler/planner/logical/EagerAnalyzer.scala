@@ -239,7 +239,7 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
 
     val conflictsWithQqInHorizon: ListSet[EagernessReason] = tail.horizon match {
       // if we are running CALL { ... } IN TRANSACTIONS, we cannot rely on stable iterators
-      case CallSubqueryHorizon(_, _, _, Some(_)) =>
+      case CallSubqueryHorizon(_, _, _, Some(_), _) =>
         tail.horizon.allQueryGraphs.map(_.queryGraph).view.flatMap(overlapsHead(allHeadQgsIgnoringStableIterators)).to(
           ListSet
         )

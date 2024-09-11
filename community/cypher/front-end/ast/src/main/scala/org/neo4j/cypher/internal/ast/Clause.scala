@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.error
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.ast.semantics.TypeGenerator
 import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
 import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
@@ -105,6 +106,7 @@ import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.RedundantOptionalSubquery
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -1335,8 +1337,8 @@ abstract class CallClause extends Clause {
   override def name = "CALL"
 
   def containsNoUpdates: Boolean
-
   def yieldAll: Boolean
+  def optional: Boolean
 }
 
 case class UnresolvedCall(
@@ -1347,7 +1349,8 @@ case class UnresolvedCall(
   // None: No results declared  (i.e. no "YIELD" part or "YIELD *")
   declaredResult: Option[ProcedureResult] = None,
   // YIELD *
-  override val yieldAll: Boolean = false
+  override val yieldAll: Boolean = false,
+  override val optional: Boolean = false
 )(val position: InputPosition) extends CallClause {
 
   override def returnVariables: ReturnVariables =
@@ -1380,6 +1383,20 @@ case class UnresolvedCall(
   // At this stage we can't know this, so we assume the CALL is non updating,
   // it should be rechecked when the call is resolved
   override def containsNoUpdates = true
+
+  // Used to throw the correct error message if the optional procedure call is wrapped in an outer subquery.
+  // See wrapOptionalCallProcedure.scala for more information.
+  def wrappedOptional(subqueryScope: ScopeLocation): SemanticCheck = {
+    declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty).foldSemanticCheck(result =>
+      subqueryScope.localSymbol(result.name) match {
+        case Some(_) => error(
+            s"Variable `${result.name}` already declared",
+            result.position
+          )
+        case _ => success
+      }
+    )
+  }
 }
 
 sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
@@ -1780,15 +1797,18 @@ object SubqueryCall {
 sealed trait SubqueryCall extends HorizonClause with SemanticAnalysisTooling {
   def innerQuery: Query
   def inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters]
+  def optional: Boolean
 
   final override def name: String = "CALL"
 
   final override def clauseSpecificSemanticCheck: SemanticCheck = {
-    checkSubquery chain
+    wrappedCallProcedureCheck chain
+      checkSubquery chain
       inTransactionsParameters.foldSemanticCheck {
         _.semanticCheck chain
           checkNoNestedCallInTransactions
       } chain
+      redundantOptionalCheck chain
       checkNoCallInTransactionsInsideRegularCall
   }
 
@@ -1815,6 +1835,29 @@ sealed trait SubqueryCall extends HorizonClause with SemanticAnalysisTooling {
 
       SemanticCheckResult.success(after)
     }
+  }
+
+  // Used to throw the correct error message if the subquery is used to wrap an optional procedure call
+  // See wrapOptionalCallProcedure.scala for more information.
+  final private def wrappedCallProcedureCheck: SemanticCheck = {
+    innerQuery match {
+      case q: SingleQuery if optional =>
+        q.clauses.head match {
+          case c: UnresolvedCall =>
+            for {
+              state <- SemanticCheck.getState
+              result <- c.wrappedOptional(state.state.currentScope)
+            } yield result
+          case _ => SemanticCheck.success
+        }
+      case _ => SemanticCheck.success
+    }
+  }
+
+  final private def redundantOptionalCheck: SemanticCheck = {
+    if (optional && !innerQuery.isReturning) {
+      warn(RedundantOptionalSubquery(position))
+    } else SemanticCheck.success
   }
 
   final override def semanticCheckContinuation(
@@ -1854,7 +1897,8 @@ sealed trait SubqueryCall extends HorizonClause with SemanticAnalysisTooling {
 
 case class ImportingWithSubqueryCall(
   override val innerQuery: Query,
-  override val inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters]
+  override val inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters],
+  override val optional: Boolean
 )(val position: InputPosition) extends SubqueryCall {
 
   override def isCorrelated: Boolean = {
@@ -1886,10 +1930,11 @@ case class ImportingWithSubqueryCall(
 }
 
 case class ScopeClauseSubqueryCall(
-  innerQuery: Query,
+  override val innerQuery: Query,
   isImportingAll: Boolean,
   importedVariables: Seq[Variable],
-  inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters]
+  override val inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters],
+  override val optional: Boolean
 )(val position: InputPosition) extends SubqueryCall {
 
   override def isCorrelated: Boolean = {

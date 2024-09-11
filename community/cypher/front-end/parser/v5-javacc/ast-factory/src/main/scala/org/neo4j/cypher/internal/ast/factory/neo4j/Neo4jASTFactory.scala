@@ -861,7 +861,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     arguments: util.List[Expression],
     yieldAll: Boolean,
     resultItems: util.List[ProcedureResultItem],
-    where: Where
+    where: Where,
+    optional: Boolean
   ): Clause =
     UnresolvedCall(
       Namespace(namespace.asScala.toList)(namespacePosition),
@@ -870,7 +871,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       Option(resultItems).map(items =>
         ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where))(procedureResultPosition)
       ),
-      yieldAll
+      yieldAll,
+      optional
     )(p)
 
   override def callResultItem(p: InputPosition, name: String, v: Variable): ProcedureResultItem =
@@ -945,19 +947,22 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     inTransactions: SubqueryCall.InTransactionsParameters,
     scopeAll: Boolean,
     hasScope: Boolean,
-    variables: util.List[Variable]
+    variables: util.List[Variable],
+    optional: Boolean
   ): Clause = {
     if (hasScope) {
       ScopeClauseSubqueryCall(
         subquery,
         scopeAll,
         variables.asScala.toSeq,
-        Option(inTransactions)
+        Option(inTransactions),
+        optional
       )(p)
     } else {
       ImportingWithSubqueryCall(
         subquery,
-        Option(inTransactions)
+        Option(inTransactions),
+        optional
       )(p)
     }
   }

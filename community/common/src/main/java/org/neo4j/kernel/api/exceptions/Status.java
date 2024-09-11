@@ -364,13 +364,25 @@ public interface Status {
                 "Variable in subquery is shadowing a variable with the same name from the outer scope.",
                 SeverityLevel.INFORMATION,
                 NotificationCategory.GENERIC),
+
+        RedundantOptionalProcedure(
+                ClientNotification,
+                "The use of `OPTIONAL` is redundant when `CALL` is a void procedure.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.GENERIC),
+
+        RedundantOptionalSubquery(
+                ClientNotification,
+                "The use of `OPTIONAL` is redundant when `CALL` is a unit subquery.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.GENERIC),
+
         // client notifications (runtime)
         AggregationSkippedNull(
                 ClientNotification,
                 "The query contains an aggregation function that skips null values.",
                 SeverityLevel.WARNING,
-                NotificationCategory.UNRECOGNIZED),
-        ;
+                NotificationCategory.UNRECOGNIZED);
 
         private final Code code;
 

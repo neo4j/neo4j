@@ -265,7 +265,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         horizon = RegularQueryProjection(
           projections = Map(v"m" -> v"m")
         )
-      )
+      ),
+      optional = false
     )
   }
 
@@ -283,7 +284,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
             CreatePattern(nodes("m"))
           )
         )
-      )
+      ),
+      optional = false
     )
   }
 

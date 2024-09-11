@@ -187,7 +187,7 @@ unwindClause
    ;
 
 callClause
-   : CALL procedureName (LPAREN (procedureArgument (COMMA procedureArgument)*)? RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
+   : OPTIONAL? CALL procedureName (LPAREN (procedureArgument (COMMA procedureArgument)*)? RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
    ;
 
 procedureName
@@ -211,7 +211,7 @@ foreachClause
    ;
 
 subqueryClause
-   : CALL subqueryScope? LCURLY regularQuery RCURLY subqueryInTransactionsParameters?
+   : OPTIONAL? CALL subqueryScope? LCURLY regularQuery RCURLY subqueryInTransactionsParameters?
    ;
 
 subqueryScope

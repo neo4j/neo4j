@@ -80,7 +80,8 @@ object CompositeQuery {
       innerQuery: CompositeQuery,
       isCorrelated: Boolean,
       isYielding: Boolean,
-      inTransactionsParameters: Option[ast.SubqueryCall.InTransactionsParameters]
+      inTransactionsParameters: Option[ast.SubqueryCall.InTransactionsParameters],
+      optional: Boolean
     ) extends Fragment
   }
 

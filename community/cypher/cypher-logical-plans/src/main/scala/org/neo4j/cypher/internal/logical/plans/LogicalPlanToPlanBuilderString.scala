@@ -533,7 +533,8 @@ object LogicalPlanToPlanBuilderString {
             callResults,
             _,
             _,
-            yieldAll
+            yieldAll,
+            optional
           )
         ) =>
         val yielding =

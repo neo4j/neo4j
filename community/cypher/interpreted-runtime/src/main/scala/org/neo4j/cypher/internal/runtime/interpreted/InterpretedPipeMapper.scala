@@ -1574,7 +1574,7 @@ case class InterpretedPipeMapper(
       case PartitionedUnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable.name)(id = id)
 
-      case ProcedureCall(_, call @ ResolvedCall(signature, callArguments, _, _, _, _)) =>
+      case ProcedureCall(_, call @ ResolvedCall(signature, callArguments, _, _, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
         val callArgumentCommands: Array[Expression] = callArguments
           .map(Some(_))

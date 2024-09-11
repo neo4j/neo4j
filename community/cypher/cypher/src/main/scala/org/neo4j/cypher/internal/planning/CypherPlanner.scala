@@ -551,6 +551,7 @@ case class CypherPlanner(
     notification.LogicalPlanNotifications
       .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, plannerConfig)
       .foreach(notificationLogger.log)
+
     if (missingParameterNames.nonEmpty) {
       notificationLogger.log(MissingParametersNotification(missingParameterNames))
     }
@@ -565,7 +566,7 @@ case class CypherPlanner(
           (FineToReuse, allowQueryCaching)
         } else {
           logicalPlanState.maybeLogicalPlan match {
-            case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure =>
+            case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _, _, _))) if signature.systemProcedure =>
               (FineToReuse, false)
             case Some(_: ProcedureCall) =>
               throw new NotSystemDatabaseException("Attempting invalid procedure call in administration runtime")

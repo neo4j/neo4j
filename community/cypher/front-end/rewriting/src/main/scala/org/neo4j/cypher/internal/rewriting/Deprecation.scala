@@ -226,7 +226,7 @@ object Deprecations {
           ))
         ))
 
-      case c @ ImportingWithSubqueryCall(innerQuery, _) =>
+      case c @ ImportingWithSubqueryCall(innerQuery, _, _) =>
         @tailrec
         def includesExisting(q: Query): Boolean = {
           q match {

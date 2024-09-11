@@ -976,7 +976,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ),
           correlated = true,
           yielding = true,
-          inTransactionsParameters = None
+          inTransactionsParameters = None,
+          optional = false
         )),
         tail = Some(
           RegularSinglePlannerQuery(

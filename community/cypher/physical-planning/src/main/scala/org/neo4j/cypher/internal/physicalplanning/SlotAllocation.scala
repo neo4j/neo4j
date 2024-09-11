@@ -922,7 +922,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         slots.newReference(variableName, nullable, CTMap)
         slots.newMetaData(LOAD_CSV_METADATA_KEY)
 
-      case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _, _)) =>
+      case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _, _, _)) =>
         callResults.foreach {
           case ProcedureResultItem(_, variable) =>
             slots.newReference(variable.name, true, CTAny)

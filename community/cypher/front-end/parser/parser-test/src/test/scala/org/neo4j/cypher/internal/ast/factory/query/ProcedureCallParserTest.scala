@@ -64,4 +64,50 @@ class ProcedureCallParserTest extends AstParsingTestBase {
   test("procedure parameters with invalid start comma should not parse") {
     "CALL foo(, 'test', 42)" should notParse[Clause]
   }
+
+  // OPTIONAL CALL
+
+  test("OPTIONAL CALL foo") {
+    parsesTo[Clause](optCall(Seq.empty, "foo", None))
+  }
+
+  test("OPTIONAL CALL foo()") {
+    parsesTo[Clause](optCall(Seq.empty, "foo", Some(Seq.empty)))
+  }
+
+  test("OPTIONAL CALL foo('Test', 1+2)") {
+    parsesTo[Clause](optCall(Seq.empty, "foo", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
+  }
+
+  test("OPTIONAL CALL foo.bar.baz('Test', 1+2)") {
+    parsesTo[Clause](optCall(
+      List("foo", "bar"),
+      "baz",
+      Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))
+    ))
+  }
+
+  test("OPTIONAL CALL foo YIELD bar") {
+    parsesTo[Clause](optCall(Seq.empty, "foo", None, Some(Seq(varFor("bar")))))
+  }
+
+  test("OPTIONAL CALL foo YIELD bar, baz") {
+    parsesTo[Clause](optCall(Seq.empty, "foo", None, Some(Seq(varFor("bar"), varFor("baz")))))
+  }
+
+  test("OPTIONAL CALL foo() YIELD bar") {
+    parsesTo[Clause](optCall(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar")))))
+  }
+
+  test("OPTIONAL CALL foo() YIELD bar, baz") {
+    parsesTo[Clause](optCall(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar"), varFor("baz")))))
+  }
+
+  test("optional call procedure parameters without comma separation should not parse") {
+    "OPTIONAL CALL foo('test' 42)" should notParse[Clause]
+  }
+
+  test("optional call procedure parameters with invalid start comma should not parse") {
+    "OPTIONAL CALL foo(, 'test', 42)" should notParse[Clause]
+  }
 }

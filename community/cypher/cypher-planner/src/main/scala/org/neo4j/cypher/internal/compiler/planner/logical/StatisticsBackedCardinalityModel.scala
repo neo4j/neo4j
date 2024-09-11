@@ -203,7 +203,7 @@ class StatisticsBackedCardinalityModel(
     case _: PassthroughAllHorizon =>
       cardinalityAndInput
 
-    case CallSubqueryHorizon(subquery, _, true, _) =>
+    case CallSubqueryHorizon(subquery, _, true, _, _) =>
       val subQueryCardinality = apply(
         subquery,
         cardinalityAndInput.labelInfo,
@@ -215,7 +215,7 @@ class StatisticsBackedCardinalityModel(
       // Cardinality of the subquery times current cardinality is the result
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * subQueryCardinality)
 
-    case CallSubqueryHorizon(_, _, false, _) =>
+    case CallSubqueryHorizon(_, _, false, _, _) =>
       // Unit subquery call does not affect the driving table
       cardinalityAndInput
   }

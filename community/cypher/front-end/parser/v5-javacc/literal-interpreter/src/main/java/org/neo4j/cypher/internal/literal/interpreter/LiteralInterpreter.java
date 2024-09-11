@@ -331,7 +331,8 @@ public class LiteralInterpreter
             List<Object> arguments,
             boolean yieldAll,
             List<NULL> nulls,
-            NULL where) {
+            NULL where,
+            boolean optional) {
         throw new UnsupportedOperationException("callClause is not a literal");
     }
 
@@ -476,7 +477,13 @@ public class LiteralInterpreter
 
     @Override
     public NULL subqueryClause(
-            NULL p, NULL subquery, NULL inTransactions, boolean scopeAll, boolean hasScope, List<Object> variables) {
+            NULL p,
+            NULL subquery,
+            NULL inTransactions,
+            boolean scopeAll,
+            boolean hasScope,
+            List<Object> variables,
+            boolean optional) {
         throw new UnsupportedOperationException("subqueryClause is not a literal");
     }
 

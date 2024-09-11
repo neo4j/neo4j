@@ -653,7 +653,13 @@ object ClauseConverters {
           position = QueryProjection.Position.Intermediate
         )
     }
-    acc.withCallSubquery(callSubquery, clause.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
+    acc.withCallSubquery(
+      callSubquery,
+      clause.isCorrelated,
+      subquery.isReturning,
+      clause.inTransactionsParameters,
+      clause.optional
+    )
   }
 
   private def addCommandClauseToLogicalPlanInput(

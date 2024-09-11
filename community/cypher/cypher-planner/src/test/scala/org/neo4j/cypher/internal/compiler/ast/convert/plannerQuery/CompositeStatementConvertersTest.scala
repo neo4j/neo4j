@@ -396,7 +396,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                   )),
               correlated = true,
               yielding = true,
-              inTransactionsParameters = None
+              inTransactionsParameters = None,
+              optional = false
             )).withTail(
               SinglePlannerQuery
                 .empty
@@ -508,7 +509,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                             ),
                             correlated = true,
                             yielding = true,
-                            inTransactionsParameters = None
+                            inTransactionsParameters = None,
+                            optional = false
                           )
                         ).withTail(
                           SinglePlannerQuery
@@ -578,7 +580,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
               ),
               correlated = true,
               yielding = true,
-              inTransactionsParameters = None
+              inTransactionsParameters = None,
+              optional = false
             )).withTail(
               SinglePlannerQuery
                 .empty
@@ -640,7 +643,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
             ),
             correlated = true,
             yielding = true,
-            inTransactionsParameters = None
+            inTransactionsParameters = None,
+            optional = false
           )).withTail(
             SinglePlannerQuery
               .empty
@@ -752,7 +756,8 @@ object StandardFixtures extends AstConstructionTestSupport {
                 )),
             correlated = true,
             yielding = true,
-            inTransactionsParameters = None
+            inTransactionsParameters = None,
+            optional = false
           )).withTail(
             SinglePlannerQuery
               .empty

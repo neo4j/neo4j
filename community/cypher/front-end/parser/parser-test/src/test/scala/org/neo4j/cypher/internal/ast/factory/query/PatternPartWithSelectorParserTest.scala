@@ -257,7 +257,8 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
                 None
               )(pos)
             ),
-            None
+            None,
+            false
           )(pos)
         }
       }

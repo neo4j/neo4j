@@ -255,7 +255,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val projected = context.staticComponents.logicalPlanProducer.planPassAll(plan, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
-      case CallSubqueryHorizon(callSubquery, correlated, yielding, inTransactionsParameters) =>
+      case CallSubqueryHorizon(callSubquery, correlated, yielding, inTransactionsParameters, optional) =>
         val subqueryContext =
           if (correlated)
             context.withModifiedPlannerState(_
@@ -263,14 +263,25 @@ case object PlanEventHorizon extends EventHorizonPlanner {
               .withUpdatedLabelInfo(plan, context.staticComponents.planningAttributes.solveds))
           else
             context.withModifiedPlannerState(_.forSubquery())
+
         val subPlan = plannerQueryPlanner.plan(callSubquery, subqueryContext)
+
+        val finalSubPlan = if (optional)
+          context.staticComponents.logicalPlanProducer.planOptional(
+            subPlan,
+            plan.availableSymbols,
+            subqueryContext
+          )
+        else subPlan
+
         val projected = context.staticComponents.logicalPlanProducer.planSubquery(
           plan,
-          subPlan,
+          finalSubPlan,
           context,
           correlated,
           yielding,
-          inTransactionsParameters
+          inTransactionsParameters,
+          optional
         )
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 

@@ -63,7 +63,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
         if (values.includeExisting) returnItems(clause, values.items, values.defaultOrderOnColumns) else values
       clause.copy(returnItems = newReturnItems)(clause.position)
 
-    case clause @ ScopeClauseSubqueryCall(_, true, _, _) =>
+    case clause @ ScopeClauseSubqueryCall(_, true, _, _, _) =>
       val expandedItems = importVariables(clause)
       clause.copy(isImportingAll = false, importedVariables = expandedItems)(clause.position)
 

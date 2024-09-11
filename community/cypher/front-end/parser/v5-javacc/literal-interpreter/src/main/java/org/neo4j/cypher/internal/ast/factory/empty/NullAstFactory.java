@@ -725,7 +725,8 @@ public class NullAstFactory
             List<NULL> arguments,
             boolean yieldAll,
             List<NULL> nulls,
-            NULL aNull) {
+            NULL aNull,
+            boolean optional) {
         return null;
     }
 
@@ -870,7 +871,13 @@ public class NullAstFactory
 
     @Override
     public NULL subqueryClause(
-            NULL p, NULL subquery, NULL inTransactions, boolean scopeAll, boolean hasScope, List<NULL> variables) {
+            NULL p,
+            NULL subquery,
+            NULL inTransactions,
+            boolean scopeAll,
+            boolean hasScope,
+            List<NULL> variables,
+            boolean optional) {
         return null;
     }
 

@@ -136,7 +136,8 @@ object CompositeQueryFragmenter {
               subQuery,
               call.isCorrelated,
               innerQuery.isReturning,
-              None
+              None,
+              call.optional
             )
           case standardClause =>
             fragments.addStandardClause(standardClause)

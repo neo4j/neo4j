@@ -1495,14 +1495,16 @@ class AstGenerator(
   def _importingWithSubqueryCall: Gen[ImportingWithSubqueryCall] = for {
     innerQuery <- _query
     params <- option(_inTransactionsParameters)
-  } yield ImportingWithSubqueryCall(innerQuery, params)(pos)
+    optional <- boolean
+  } yield ImportingWithSubqueryCall(innerQuery, params, optional)(pos)
 
   def _scopeClauseSubqueryCall: Gen[ScopeClauseSubqueryCall] = for {
     innerQuery <- _query
     _importVariables <- listOfN(1, _variable)
     (isImportingAll, importVariables) <- oneOf((true, Seq.empty), (false, _importVariables))
     params <- option(_inTransactionsParameters)
-  } yield ScopeClauseSubqueryCall(innerQuery, isImportingAll, importVariables, params)(pos)
+    optional <- boolean
+  } yield ScopeClauseSubqueryCall(innerQuery, isImportingAll, importVariables, params, optional)(pos)
 
   def _inTransactionsParameters: Gen[InTransactionsParameters] =
     for {

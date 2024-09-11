@@ -201,6 +201,76 @@ class PrettifierIT extends CypherFunSuite {
       """CALL {
         |  RETURN 1 AS i
         |} IN TRANSACTIONS ON ERROR BREAK""".stripMargin,
+    "OPTIONAL CALL nsp.proc()" ->
+      """OPTIONAL CALL nsp.proc()""".stripMargin,
+    "OPTIONAL CALL proc()" ->
+      """OPTIONAL CALL proc()""".stripMargin,
+    "OPTIONAL CALL nsp1.nsp2.proc()" ->
+      """OPTIONAL CALL nsp1.nsp2.proc()""".stripMargin,
+    "OPTIONAL CALL nsp.proc(a)" ->
+      """OPTIONAL CALL nsp.proc(a)""".stripMargin,
+    "OPTIONAL CALL nsp.proc(a,b)" ->
+      """OPTIONAL CALL nsp.proc(a, b)""".stripMargin,
+    "OPTIONAL CALL nsp.proc() yield x" ->
+      """OPTIONAL CALL nsp.proc()
+        |  YIELD x""".stripMargin,
+    "OPTIONAL CALL nsp.proc() yield x, y" ->
+      """OPTIONAL CALL nsp.proc()
+        |  YIELD x, y""".stripMargin,
+    "OPTIONAL CALL nsp.proc() yield x where x > 2" ->
+      """OPTIONAL CALL nsp.proc()
+        |  YIELD x
+        |    WHERE x > 2""".stripMargin,
+    "OPTIONAL CALL nsp.proc() yield *" ->
+      """OPTIONAL CALL nsp.proc()
+        |  YIELD *""".stripMargin,
+    "optional call { Match (n)  where n:(A| (B)) finish }" ->
+      """OPTIONAL CALL {
+        |  MATCH (n)
+        |    WHERE n:A|B
+        |  FINISH
+        |}""".stripMargin,
+    "optional call { create ( n ) } in transactions" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS""".stripMargin,
+    "optional call { create ( n ) } in transactions of 1 row on error break" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 1 ROWS ON ERROR BREAK""".stripMargin,
+    "optional call { create ( n ) } in transactions of 1 row on error continue" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 1 ROWS ON ERROR CONTINUE""".stripMargin,
+    "optional call { create ( n ) } in transactions report status as s" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS REPORT STATUS AS s""".stripMargin,
+    "optional call { create ( n ) } in transactions of 1 row on error fail report status as s" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 1 ROWS ON ERROR FAIL REPORT STATUS AS s""".stripMargin,
+    "optional call { create ( n ) } in transactions of 10 rows" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 10 ROWS""".stripMargin,
+    "optional call { create ( n ) } in transactions of $p rows" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF $p ROWS""".stripMargin,
+    "optional call { create ( n ) } in transactions of 10 rows on error break" ->
+      """OPTIONAL CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 10 ROWS ON ERROR BREAK""".stripMargin,
+    "optional call { return 1 as i } in transactions of 10 rows report status as s on error break return s, i" ->
+      """OPTIONAL CALL {
+        |  RETURN 1 AS i
+        |} IN TRANSACTIONS OF 10 ROWS ON ERROR BREAK REPORT STATUS AS s
+        |RETURN s, i""".stripMargin,
+    "optional call { return 1 as i } in transactions on error break" ->
+      """OPTIONAL CALL {
+        |  RETURN 1 AS i
+        |} IN TRANSACTIONS ON ERROR BREAK""".stripMargin,
     "match (n) SET n:A   :$(B):   $(  1 + 1  + \"2\")  :D" ->
       """MATCH (n)
         |SET n:A:$(B):$((1 + 1) + "2"):D""".stripMargin,

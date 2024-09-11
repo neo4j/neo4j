@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.RedundantOptionalProcedure
 import org.neo4j.exceptions.InternalException
 import org.neo4j.notifications.DeprecatedFunctionFieldNotification
 import org.neo4j.notifications.DeprecatedProcedureFieldNotification
@@ -51,6 +52,7 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
           _,
           _,
           _,
+          _,
           _
         ) =>
         seq =>
@@ -62,6 +64,7 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
           )
       case f @ ResolvedCall(
           ProcedureSignature(name, inputFields, _, _, _, _, _, _, _, _, _, _),
+          _,
           _,
           _,
           _,
@@ -123,18 +126,27 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
 case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
 
   override def visit(value: BaseState, context: BaseContext): Unit = {
-    val warnings = findWarnings(value.statement())
+    val warnings = findWarnings(value.statement()) ++ findWarningsForOptionals(value.statement())
 
     warnings.foreach(context.notificationLogger.log)
   }
 
   private def findWarnings(statement: Statement): Set[InternalNotification] =
     statement.folder.treeFold(Set.empty[InternalNotification]) {
-      case f @ ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning), _, _, _, _, _), _, _, _, _, _) =>
+      case f @ ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning), _, _, _, _, _), _, _, _, _, _, _) =>
         seq => TraverseChildren(seq + ProcedureWarningNotification(f.position, name.toString, warning))
-      case ResolvedCall(ProcedureSignature(name, _, Some(output), _, _, _, _, _, _, _, _, _), _, results, _, _, _)
+      case ResolvedCall(ProcedureSignature(name, _, Some(output), _, _, _, _, _, _, _, _, _), _, results, _, _, _, _)
         if output.exists(_.deprecated) =>
         set => TraverseChildren(set ++ usedDeprecatedFields(name.toString, results, output))
+      case _: UnresolvedCall =>
+        throw new InternalException("Expected procedures to have been resolved already")
+    }
+
+  private def findWarningsForOptionals(statement: Statement): Set[InternalNotification] =
+    statement.folder.treeFold(Set.empty[InternalNotification]) {
+      case f @ ResolvedCall(signature, _, Seq(), _, _, _, true) =>
+        seq =>
+          TraverseChildren(seq + RedundantOptionalProcedure(f.position, signature.name.toString))
       case _: UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }

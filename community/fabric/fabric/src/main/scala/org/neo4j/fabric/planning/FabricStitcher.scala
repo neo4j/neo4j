@@ -138,7 +138,8 @@ case class FabricStitcher(
         SingleQuery(clausesWithoutInsertedWith)(pos),
         isImportingAll = false,
         originalExec.importColumns.map(x => Variable(x)(pos)),
-        Some(adjustedParameters)
+        Some(adjustedParameters),
+        optional = false
       )(pos)
     val outputColumns = callInTxOutputColumns(originalExec, adjustedParameters)
     val returnClause = aliasedReturn(outputColumns, pos)
@@ -428,7 +429,8 @@ case class FabricStitcher(
               inner.query,
               isImportingAll = false,
               imports,
-              apply.inTransactionsParameters
+              apply.inTransactionsParameters,
+              optional = false
             )(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances
           )

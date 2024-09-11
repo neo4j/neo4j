@@ -250,7 +250,8 @@ public interface ASTFactory<
             List<EXPRESSION> arguments,
             boolean yieldAll,
             List<CALL_RESULT_ITEM> resultItems,
-            WHERE where);
+            WHERE where,
+            boolean optional);
 
     CALL_RESULT_ITEM callResultItem(POS p, String name, VARIABLE v);
 
@@ -334,7 +335,8 @@ public interface ASTFactory<
             SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactions,
             boolean scopeAll,
             boolean hasScope,
-            List<VARIABLE> variables);
+            List<VARIABLE> variables,
+            boolean optional);
 
     SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams(
             POS p,

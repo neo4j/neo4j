@@ -846,28 +846,48 @@ trait AstConstructionTestSupport {
   def singleQuery(cs: Clause*): SingleQuery =
     SingleQuery(cs)(pos)
 
-  def unionDistinct(qs: SingleQuery*): Query =
-    qs.reduceLeft[Query](UnionDistinct(_, _, differentReturnOrderAllowed = false)(pos))
+  def unionDistinct(differentReturnOrderAllowed: Boolean, qs: SingleQuery*): Query =
+    qs.reduceLeft[Query](UnionDistinct(_, _, differentReturnOrderAllowed = differentReturnOrderAllowed)(pos))
 
   def importingWithSubqueryCall(cs: Clause*): ImportingWithSubqueryCall =
-    ImportingWithSubqueryCall(SingleQuery(cs)(pos), None)(pos)
+    ImportingWithSubqueryCall(SingleQuery(cs)(pos), None, false)(pos)
 
   def importingWithSubqueryCall(innerQuery: Query): ImportingWithSubqueryCall =
-    ImportingWithSubqueryCall(innerQuery, None)(pos)
+    ImportingWithSubqueryCall(innerQuery, None, false)(pos)
 
   def scopeClauseSubqueryCall(
     isImportingAll: Boolean,
     importedVariables: Seq[Variable],
     cs: Clause*
   ): ScopeClauseSubqueryCall =
-    ScopeClauseSubqueryCall(SingleQuery(cs)(pos), isImportingAll, importedVariables, None)(pos)
+    ScopeClauseSubqueryCall(SingleQuery(cs)(pos), isImportingAll, importedVariables, None, false)(pos)
 
   def scopeClauseSubqueryCall(
     isImportingAll: Boolean,
     importedVariables: Seq[Variable],
     innerQuery: Query
   ): ScopeClauseSubqueryCall =
-    ScopeClauseSubqueryCall(innerQuery, isImportingAll, importedVariables, None)(pos)
+    ScopeClauseSubqueryCall(innerQuery, isImportingAll, importedVariables, None, false)(pos)
+
+  def optionalImportingWithSubqueryCall(cs: Clause*): ImportingWithSubqueryCall =
+    ImportingWithSubqueryCall(SingleQuery(cs)(pos), None, true)(pos)
+
+  def optionalImportingWithSubqueryCall(innerQuery: Query): ImportingWithSubqueryCall =
+    ImportingWithSubqueryCall(innerQuery, None, true)(pos)
+
+  def optionalScopeClauseSubqueryCall(
+    isImportingAll: Boolean,
+    importedVariables: Seq[Variable],
+    cs: Clause*
+  ): ScopeClauseSubqueryCall =
+    ScopeClauseSubqueryCall(SingleQuery(cs)(pos), isImportingAll, importedVariables, None, true)(pos)
+
+  def optionalScopeClauseSubqueryCall(
+    isImportingAll: Boolean,
+    importedVariables: Seq[Variable],
+    innerQuery: Query
+  ): ScopeClauseSubqueryCall =
+    ScopeClauseSubqueryCall(innerQuery, isImportingAll, importedVariables, None, true)(pos)
 
   def importingWithSubqueryCallInTransactions(cs: Clause*): SubqueryCall = {
     val call = importingWithSubqueryCall(cs: _*)
@@ -1082,7 +1102,24 @@ trait AstConstructionTestSupport {
       Namespace(ns.toList)(pos),
       ProcedureName(name)(pos),
       args,
-      yields.map(vs => ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)))(pos))
+      yields.map(vs => ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)))(pos)),
+      false,
+      false
+    )(pos)
+
+  def optCall(
+    ns: Seq[String],
+    name: String,
+    args: Option[Seq[Expression]] = Some(Vector()),
+    yields: Option[Seq[Variable]] = None
+  ): UnresolvedCall =
+    UnresolvedCall(
+      Namespace(ns.toList)(pos),
+      ProcedureName(name)(pos),
+      args,
+      yields.map(vs => ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)))(pos)),
+      false,
+      true
     )(pos)
 
   def use(names: List[String]): UseGraph = {

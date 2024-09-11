@@ -142,7 +142,8 @@ case class CallSubqueryHorizon(
   callSubquery: PlannerQuery,
   correlated: Boolean,
   yielding: Boolean,
-  inTransactionsParameters: Option[InTransactionsParameters]
+  inTransactionsParameters: Option[InTransactionsParameters],
+  optional: Boolean
 ) extends QueryHorizon {
 
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = {

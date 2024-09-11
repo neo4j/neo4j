@@ -304,6 +304,20 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             new GqlMessageParams[] {GqlMessageParams.var, GqlMessageParams.var},
             Condition.INFORMATIONAL,
             "subquery variable shadowing"),
+    STATUS_03N61(
+            new GqlStatus("03N61"),
+            """
+                    The use of `OPTIONAL` is redundant as `CALL %s` is a void procedure.""",
+            new GqlMessageParams[] {GqlMessageParams.proc},
+            Condition.INFORMATIONAL,
+            "redundant optional procedure"),
+    STATUS_03N62(
+            new GqlStatus("03N62"),
+            """
+                    The use of `OPTIONAL` is redundant as `CALL` is a unit subquery.""",
+            new GqlMessageParams[] {},
+            Condition.INFORMATIONAL,
+            "redundant optional subquery"),
     STATUS_03N90(
             new GqlStatus("03N90"),
             """

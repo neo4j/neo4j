@@ -1296,25 +1296,25 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case SingleQuery(Seq(
-          resolved @ ResolvedCall(signature, _, _, _, _, _),
+          resolved @ ResolvedCall(signature, _, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
         )) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
       case SingleQuery(Seq(
           UseGraph(GraphDirectReference(CatalogName(List(SYSTEM_DATABASE_NAME)))),
-          resolved @ ResolvedCall(signature, _, _, _, _, _),
+          resolved @ ResolvedCall(signature, _, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
         )) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
-      case SingleQuery(Seq(resolved @ ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure =>
+      case SingleQuery(Seq(resolved @ ResolvedCall(signature, _, _, _, _, _, _))) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))
 
       case SingleQuery(
           Seq(
             UseGraph(GraphDirectReference(CatalogName(List(SYSTEM_DATABASE_NAME)))),
-            resolved @ ResolvedCall(signature, _, _, _, _, _)
+            resolved @ ResolvedCall(signature, _, _, _, _, _, _)
           )
         ) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))

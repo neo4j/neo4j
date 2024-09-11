@@ -987,7 +987,8 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext,
     correlated: Boolean,
     yielding: Boolean,
-    inTransactionsParameters: Option[InTransactionsParameters]
+    inTransactionsParameters: Option[InTransactionsParameters],
+    optional: Boolean
   ): LogicalPlan = {
     val solvedLeft = solveds.get(left.id)
     val solvedRight = solveds.get(right.id)
@@ -995,7 +996,8 @@ case class LogicalPlanProducer(
       solvedRight,
       correlated,
       yielding,
-      inTransactionsParameters
+      inTransactionsParameters,
+      optional
     )))
 
     val plan =
@@ -1616,6 +1618,14 @@ case class LogicalPlanProducer(
   def planOptional(
     inputPlan: LogicalPlan,
     ids: Set[LogicalVariable],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    annotate(Optional(inputPlan, ids), solveds.get(inputPlan.id), ProvidedOrder.Left, context)
+  }
+
+  def planOptionalMatch(
+    inputPlan: LogicalPlan,
+    ids: Set[LogicalVariable],
     context: LogicalPlanningContext,
     optionalQG: QueryGraph
   ): LogicalPlan = {
@@ -2177,10 +2187,12 @@ case class LogicalPlanProducer(
     val rewrittenCall = call.mapCallArguments(solver.solve(_))
     val rewrittenInner = solver.rewrittenPlan()
 
-    if (call.containsNoUpdates)
+    val _call = if (call.containsNoUpdates)
       annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, ProvidedOrder.Left, context)
     else
       annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, ProvidedOrder.empty, context)
+
+    if (call.optional) planOptional(_call, inner.availableSymbols, context) else _call
   }
 
   def planCommand(inner: LogicalPlan, clause: CommandClause, context: LogicalPlanningContext): LogicalPlan = {

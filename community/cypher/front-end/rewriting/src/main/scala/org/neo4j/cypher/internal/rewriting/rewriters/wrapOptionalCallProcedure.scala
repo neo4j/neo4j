@@ -16,11 +16,12 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.ProcedureResult
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
-import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.rewriting.conditions.OptionalCallProcedureWrapped
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
@@ -28,32 +29,33 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
-import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
-// Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
-case object expandCallWhere extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
+/**
+ * Rewrites OPTIONAL CALL neo4j.proc(a,b) YIELD x, y to OPTIONAL CALL (*) { CALL neo4j.proc(a,b) YIELD x, y RETURN x, y }
+ * Standalone procedure calls are not wrapped, e.g. OPTIONAL CALL neo4j.proc
+ */
+case object wrapOptionalCallProcedure extends StepSequencer.Step with PreparatoryRewritingRewriterFactory {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(OptionalCallProcedureWrapped)
+  override def preConditions: Set[StepSequencer.Condition] = Set()
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(OptionalCallProcedureWrapped)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  val instance: Rewriter = bottomUp(Rewriter.lift {
-    case query @ SingleQuery(clauses) =>
-      val newClauses = clauses.flatMap {
-        case unresolved @ UnresolvedCall(_, _, _, Some(result @ ProcedureResult(_, optWhere @ Some(where))), _, _) =>
-          val newResult = result.copy(where = None)(result.position)
-          val newUnresolved = unresolved.copy(declaredResult = Some(newResult))(unresolved.position)
-          val newItems = ReturnItems(includeExisting = true, Seq.empty)(where.position)
-          val newWith = With(distinct = false, newItems, None, None, None, optWhere)(where.position)
-          Seq(newUnresolved, newWith)
+  private val rewriter: Rewriter = Rewriter.lift {
+    case unresolved @ UnresolvedCall(_, _, _, Some(_), _, true) =>
+      val pos = unresolved.position
+      val copyResolved = unresolved.copy(optional = false)(pos)
+      val returnItems = unresolved.returnVariables.explicitVariables.map(x => AliasedReturnItem(x))
+      val returnClause =
+        if (returnItems.nonEmpty) Seq(Return(ReturnItems(includeExisting = false, returnItems)(pos))(pos))
+        else Seq.empty
+      val innerQuery = SingleQuery(Seq(copyResolved) ++ returnClause)(pos)
+      ScopeClauseSubqueryCall(innerQuery, isImportingAll = true, Seq.empty, None, optional = true)(pos)
+  }
 
-        case clause =>
-          Some(clause)
-      }
-      query.copy(clauses = newClauses)(query.position)
-  })
+  private val instance = bottomUp(rewriter)
 
   override def getRewriter(
     cypherExceptionFactory: CypherExceptionFactory,
