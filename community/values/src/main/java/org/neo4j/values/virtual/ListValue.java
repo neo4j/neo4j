@@ -586,11 +586,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     {
         private final ListValue base;
         private final AnyValue appended;
+        private int size;
+        private static final int NOT_MEMOIZED = -1;
 
         AppendList( ListValue base, AnyValue appended )
         {
             this.base = base;
             this.appended = appended;
+            this.size = NOT_MEMOIZED;
         }
 
         @Override
@@ -616,7 +619,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public int size()
         {
-            return base.size() + 1;
+            if ( size == NOT_MEMOIZED )
+            {
+                size = base.size() + 1;
+            }
+            return size;
         }
 
         @Override
@@ -687,11 +694,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     {
         private final ListValue base;
         private final AnyValue prepended;
+        private int size;
+        private static final int NOT_MEMOIZED = -1;
 
         PrependList( ListValue base, AnyValue prepended )
         {
             this.base = base;
             this.prepended = prepended;
+            this.size = NOT_MEMOIZED;
         }
 
         @Override
@@ -703,7 +713,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public int size()
         {
-            return 1 + base.size();
+            if ( size == NOT_MEMOIZED )
+            {
+                size = base.size() + 1;
+            }
+            return size;
         }
 
         @Override
