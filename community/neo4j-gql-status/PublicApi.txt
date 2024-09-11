@@ -2,11 +2,19 @@ org.neo4j.gqlstatus.CommonGqlStatusObject public abstract interface
 org.neo4j.gqlstatus.CommonGqlStatusObject::diagnosticRecord() java.util.Map<java.lang.String,java.lang.Object> public abstract
 org.neo4j.gqlstatus.CommonGqlStatusObject::gqlStatus() java.lang.String public abstract
 org.neo4j.gqlstatus.CommonGqlStatusObject::statusDescription() java.lang.String public abstract
+org.neo4j.gqlstatus.ErrorClassification public final enum extends java.lang.Enum<org.neo4j.gqlstatus.ErrorClassification> implements org.neo4j.gqlstatus.GqlClassification
+org.neo4j.gqlstatus.ErrorClassification::CLIENT_ERROR org.neo4j.gqlstatus.ErrorClassification public static final
+org.neo4j.gqlstatus.ErrorClassification::DATABASE_ERROR org.neo4j.gqlstatus.ErrorClassification public static final
+org.neo4j.gqlstatus.ErrorClassification::TRANSIENT_ERROR org.neo4j.gqlstatus.ErrorClassification public static final
+org.neo4j.gqlstatus.ErrorClassification::UNKNOWN org.neo4j.gqlstatus.ErrorClassification public static final
+org.neo4j.gqlstatus.ErrorClassification::valueOf(java.lang.String) org.neo4j.gqlstatus.ErrorClassification public static
+org.neo4j.gqlstatus.ErrorClassification::values() org.neo4j.gqlstatus.ErrorClassification[] public static
 org.neo4j.gqlstatus.ErrorGqlStatusObject public abstract interface implements org.neo4j.gqlstatus.CommonGqlStatusObject
 org.neo4j.gqlstatus.ErrorGqlStatusObject::DEFAULT_STATUS_CODE java.lang.String public static final
 org.neo4j.gqlstatus.ErrorGqlStatusObject::DEFAULT_STATUS_DESCRIPTION java.lang.String public static final
 org.neo4j.gqlstatus.ErrorGqlStatusObject::cause() java.util.Optional<org.neo4j.gqlstatus.ErrorGqlStatusObject> public default
 org.neo4j.gqlstatus.ErrorGqlStatusObject::diagnosticRecord() java.util.Map<java.lang.String,java.lang.Object> public default
+org.neo4j.gqlstatus.ErrorGqlStatusObject::getClassification() org.neo4j.gqlstatus.ErrorClassification public default
 org.neo4j.gqlstatus.ErrorGqlStatusObject::gqlStatus() java.lang.String public default
 org.neo4j.gqlstatus.ErrorGqlStatusObject::gqlStatusObject() org.neo4j.gqlstatus.ErrorGqlStatusObject public abstract
 org.neo4j.gqlstatus.ErrorGqlStatusObject::legacyMessage() java.lang.String public abstract

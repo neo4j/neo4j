@@ -19,8 +19,28 @@
  */
 package org.neo4j.gqlstatus;
 
+import org.neo4j.annotations.api.PublicApi;
+
+@PublicApi
 public enum ErrorClassification implements GqlClassification {
+
+    /**
+     * The Client sent a bad request - changing the request might yield a successful outcome.
+     */
     CLIENT_ERROR,
+
+    /**
+     * The database failed to service the request.
+     */
     DATABASE_ERROR,
-    TRANSIENT_ERROR;
+
+    /**
+     * The database cannot service the request right now, retrying later might yield a successful outcome.
+     */
+    TRANSIENT_ERROR,
+
+    /**
+     * Classification is unknown
+     */
+    UNKNOWN
 }

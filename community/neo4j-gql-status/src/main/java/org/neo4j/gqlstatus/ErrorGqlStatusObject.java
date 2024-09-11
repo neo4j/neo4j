@@ -72,4 +72,13 @@ public interface ErrorGqlStatusObject extends CommonGqlStatusObject {
         }
         return Optional.empty();
     }
+
+    default ErrorClassification getClassification() {
+        Object maybeClassification = diagnosticRecord().get("_classification");
+        if (maybeClassification == null) {
+            return ErrorClassification.UNKNOWN;
+        } else {
+            return ErrorClassification.valueOf((String) maybeClassification);
+        }
+    }
 }
