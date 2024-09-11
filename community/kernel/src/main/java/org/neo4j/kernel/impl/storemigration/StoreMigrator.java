@@ -153,7 +153,7 @@ public class StoreMigrator {
                 new StorageEngineMigrationAbstraction(storageEngineFactory, targetStorageEngineFactory);
     }
 
-    public void migrateIfNeeded(String formatToMigrateTo, boolean forceBtreeIndexesToRange)
+    public void migrateIfNeeded(String formatToMigrateTo, boolean forceBtreeIndexesToRange, boolean keepNodeIds)
             throws UnableToMigrateException, IOException {
         checkStoreExists();
 
@@ -201,7 +201,8 @@ public class StoreMigrator {
                     VisibleMigrationProgressMonitorFactory.forMigration(internalLog),
                     LogsMigrator.CheckResult::migrate,
                     forceBtreeIndexesToRange,
-                    storageEngineMigrationAbstraction);
+                    storageEngineMigrationAbstraction,
+                    keepNodeIds);
         }
     }
 
@@ -227,7 +228,7 @@ public class StoreMigrator {
         progressMonitor.completeTransactionLogsMigration();
 
         // We are only changing logs, but we need to do the postMigration step since the last tx id has changed
-        var participants = getStoreMigrationParticipants(storageEngineMigrationAbstraction, false);
+        var participants = getStoreMigrationParticipants(storageEngineMigrationAbstraction, false, false);
         postMigration(participants, toVersion, txIds.txIdBeforeMigration(), txIds.txIdAfterMigration());
 
         progressMonitor.completed();
@@ -267,7 +268,8 @@ public class StoreMigrator {
                     VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
                     LogsMigrator.CheckResult::upgrade,
                     false,
-                    storageEngineMigrationAbstraction);
+                    storageEngineMigrationAbstraction,
+                    false);
         }
     }
 
@@ -284,9 +286,11 @@ public class StoreMigrator {
             MigrationProgressMonitor progressMonitor,
             LogsAction logsAction,
             boolean forceBtreeIndexesToRange,
-            StorageEngineMigrationAbstraction storageEngineMigrationAbstraction)
+            StorageEngineMigrationAbstraction storageEngineMigrationAbstraction,
+            boolean keepNodeIds)
             throws IOException {
-        var participants = getStoreMigrationParticipants(storageEngineMigrationAbstraction, forceBtreeIndexesToRange);
+        var participants =
+                getStoreMigrationParticipants(storageEngineMigrationAbstraction, forceBtreeIndexesToRange, keepNodeIds);
         // One or more participants would like to do migration
         progressMonitor.started(participants.size());
 
@@ -432,7 +436,8 @@ public class StoreMigrator {
                         // Since we are doing a migration it should be safe to use the LogsMigrator#migrate
                         LogsMigrator.CheckResult::migrate,
                         false,
-                        storageEngineMigrationAbstraction);
+                        storageEngineMigrationAbstraction,
+                        false);
 
                 // Have new logTail now, use that one instead
                 logTailSupplier = getLogTailSupplier(targetStorageEngineFactory);
@@ -468,7 +473,8 @@ public class StoreMigrator {
                         VisibleMigrationProgressMonitorFactory.forUpgrade(internalLog),
                         LogsMigrator.CheckResult::upgrade,
                         false,
-                        storageEngineMigrationAbstraction);
+                        storageEngineMigrationAbstraction,
+                        false);
 
                 // Could have new logTail now, use that one instead
                 logTailSupplier = getLogTailSupplier(storageEngineFactory);
@@ -479,9 +485,12 @@ public class StoreMigrator {
     }
 
     private List<StoreMigrationParticipant> getStoreMigrationParticipants(
-            StorageEngineMigrationAbstraction storageEngineMigrationAbstraction, boolean forceBtreeIndexesToRange) {
+            StorageEngineMigrationAbstraction storageEngineMigrationAbstraction,
+            boolean forceBtreeIndexesToRange,
+            boolean keepNodeIds) {
         return storageEngineMigrationAbstraction.getMigrationParticipants(
                 forceBtreeIndexesToRange,
+                keepNodeIds,
                 fs,
                 pageCache,
                 pageCacheTracer,

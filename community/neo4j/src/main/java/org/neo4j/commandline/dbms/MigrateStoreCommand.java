@@ -144,6 +144,14 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
             description = "A special option for forcing migration of Enterprise System database.")
     protected boolean forceSystemDatabase;
 
+    @Option(
+            names = "--keep-node-ids",
+            hidden = true,
+            fallbackValue = "true",
+            description = "If the node id space should not be compacted during a migration that switches format. "
+                    + "Only applies when changing storage engine.")
+    private boolean keepNodeIds;
+
     public MigrateStoreCommand(ExecutionContext ctx) {
         super(ctx);
     }
@@ -251,7 +259,7 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                                         databaseLayout,
                                         memoryTracker)));
 
-                        storeMigrator.migrateIfNeeded(formatForDb, forceBtreeToRange);
+                        storeMigrator.migrateIfNeeded(formatForDb, forceBtreeToRange, keepNodeIds);
                     } catch (FileLockException e) {
                         throw new CommandFailedException(
                                 "The database is in use. Stop database '" + dbName + "' and try again.", e);

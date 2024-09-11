@@ -129,7 +129,8 @@ class StoreMigratorTest {
         var storeMigrator = createMigrator();
 
         var exception = assertThrows(
-                IllegalStateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false));
+                IllegalStateException.class,
+                () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false));
         assertThat(exception)
                 .hasMessage(
                         "Migration participants should have unique names. Participant with name: 'Store files' is already registered.");
@@ -147,7 +148,8 @@ class StoreMigratorTest {
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
-                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false));
+                UnableToMigrateException.class,
+                () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false));
         assertThat(exception)
                 .hasMessage(
                         "A critical failure during migration has occurred. Failed to move migrated files into place")
@@ -159,7 +161,7 @@ class StoreMigratorTest {
         StoreMigrationParticipant observingParticipant = Mockito.mock(StoreMigrationParticipant.class);
         mockParticipantAddition(observingParticipant);
 
-        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false);
 
         // migrate not called ...
         verify(observingParticipant, never()).migrate(any(), any(), any(), any(), any(), any(), any());
@@ -184,7 +186,8 @@ class StoreMigratorTest {
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
-                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false));
+                UnableToMigrateException.class,
+                () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false));
         assertThat(exception)
                 .hasMessage("A critical failure during migration has occurred")
                 .hasRootCauseExactlyInstanceOf(IOException.class)
@@ -193,7 +196,7 @@ class StoreMigratorTest {
         StoreMigrationParticipant observingParticipant = Mockito.mock(StoreMigrationParticipant.class);
         mockParticipantAddition(observingParticipant);
 
-        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false);
 
         verify(observingParticipant).migrate(any(), any(), any(), any(), any(), any(), any());
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any(), any());
@@ -216,7 +219,8 @@ class StoreMigratorTest {
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
-                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(Standard.LATEST_NAME, false));
+                UnableToMigrateException.class,
+                () -> storeMigrator.migrateIfNeeded(Standard.LATEST_NAME, false, false));
         assertThat(exception)
                 .hasMessage("A critical failure during migration has occurred")
                 .hasRootCauseExactlyInstanceOf(IOException.class)
@@ -225,7 +229,7 @@ class StoreMigratorTest {
         StoreMigrationParticipant observingParticipant = Mockito.mock(StoreMigrationParticipant.class);
         mockParticipantAddition(observingParticipant);
 
-        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false);
 
         // The newly requested migration should be done, the old one should just have been ignored
         verify(observingParticipant)
@@ -257,7 +261,8 @@ class StoreMigratorTest {
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
-                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(Standard.LATEST_NAME, false));
+                UnableToMigrateException.class,
+                () -> storeMigrator.migrateIfNeeded(Standard.LATEST_NAME, false, false));
         assertThat(exception)
                 .hasMessage(
                         "A critical failure during migration has occurred. Failed to move migrated files into place")
@@ -269,7 +274,7 @@ class StoreMigratorTest {
         StoreMigrationParticipant observingParticipant = Mockito.mock(StoreMigrationParticipant.class);
         mockParticipantAddition(observingParticipant);
 
-        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false);
 
         // Moving of the ongoing migration should be done and then the actual migration
         verify(observingParticipant)
@@ -314,7 +319,8 @@ class StoreMigratorTest {
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
-                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false));
+                UnableToMigrateException.class,
+                () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false));
         assertThat(exception)
                 .hasMessage("A critical failure during migration has occurred")
                 .hasRootCauseExactlyInstanceOf(IOException.class)
@@ -356,7 +362,8 @@ class StoreMigratorTest {
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
-                UnableToMigrateException.class, () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false));
+                UnableToMigrateException.class,
+                () -> storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false));
         assertThat(exception)
                 .hasMessage(
                         "A critical failure during migration has occurred. Failed to move migrated files into place")
@@ -386,7 +393,7 @@ class StoreMigratorTest {
         mockParticipantAddition(participant);
         var storeMigrator = createMigrator();
 
-        assertThatThrownBy(() -> storeMigrator.migrateIfNeeded("foo", false))
+        assertThatThrownBy(() -> storeMigrator.migrateIfNeeded("foo", false, false))
                 .isInstanceOf(UnableToMigrateException.class)
                 .hasMessageContaining("to 'foo' not supported");
     }
@@ -425,7 +432,7 @@ class StoreMigratorTest {
         when(logService.getInternalLog(any())).thenReturn(logProvider.getLog("something"));
 
         var storeMigrator = createMigrator(logService);
-        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false);
 
         assertThat(logProvider)
                 .containsMessages(
@@ -451,7 +458,7 @@ class StoreMigratorTest {
         mockParticipantAddition(participant);
 
         // when
-        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false);
 
         // then
         verify(participant).postMigration(any(), any(), eq(txIdBeforeMigration), eq(txIdBeforeMigration + 1));
@@ -476,7 +483,7 @@ class StoreMigratorTest {
         when(participant.getName()).thenReturn("Me");
         mockParticipantAddition(participant);
 
-        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false, false);
 
         verify(participant, never()).migrate(any(), any(), any(), any(), any(), any(), any());
         verify(participant).postMigration(any(), any(), eq(txIdBeforeMigration), eq(txIdBeforeMigration + 1));

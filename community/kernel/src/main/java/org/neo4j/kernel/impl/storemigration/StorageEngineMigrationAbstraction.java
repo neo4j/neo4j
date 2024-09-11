@@ -83,6 +83,7 @@ public class StorageEngineMigrationAbstraction {
 
     List<StoreMigrationParticipant> getMigrationParticipants(
             boolean forceBtreeIndexesToRange,
+            boolean keepNodeIds,
             FileSystemAbstraction fs,
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
@@ -107,7 +108,8 @@ public class StorageEngineMigrationAbstraction {
                     memoryTracker,
                     storageEngineFactory,
                     targetStorageEngineFactory,
-                    forceBtreeIndexesToRange));
+                    forceBtreeIndexesToRange,
+                    keepNodeIds));
         } else {
             // Get all the participants from the storage engine and add them where they want to be
             storeParticipants.addAll(storageEngineFactory.migrationParticipants(

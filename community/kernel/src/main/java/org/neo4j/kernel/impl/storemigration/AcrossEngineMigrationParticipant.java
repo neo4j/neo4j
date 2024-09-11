@@ -78,6 +78,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
     private final StorageEngineFactory srcStorageEngine;
     private final StorageEngineFactory targetStorageEngine;
     private final boolean forceBtreeIndexesToRange;
+    private final boolean keepNodeIds;
 
     public AcrossEngineMigrationParticipant(
             FileSystemAbstraction fileSystem,
@@ -90,7 +91,8 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
             MemoryTracker memoryTracker,
             StorageEngineFactory srcStorageEngine,
             StorageEngineFactory targetStorageEngine,
-            boolean forceBtreeIndexesToRange) {
+            boolean forceBtreeIndexesToRange,
+            boolean keepNodeIds) {
         super(NAME);
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
@@ -103,6 +105,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
         this.srcStorageEngine = srcStorageEngine;
         this.targetStorageEngine = targetStorageEngine;
         this.forceBtreeIndexesToRange = forceBtreeIndexesToRange;
+        this.keepNodeIds = keepNodeIds;
     }
 
     @Override
@@ -165,7 +168,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 localConfig,
                 memoryTracker,
                 ReadBehaviour.INCLUSIVE_STRICT,
-                false,
+                !keepNodeIds,
                 contextFactory,
                 tailMetadata)) {
             importer.doImport(fromInput);
@@ -256,8 +259,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
 
     @Override
     public void postMigration(
-            DatabaseLayout databaseLayout, StoreVersion toVersion, long txIdBeforeMigration, long txIdAfterMigration)
-            throws IOException {
+            DatabaseLayout databaseLayout, StoreVersion toVersion, long txIdBeforeMigration, long txIdAfterMigration) {
         // No need for updating the latest count stores tx-id here. Logs migration will end up on same id as
         // the batchimporter.
     }
