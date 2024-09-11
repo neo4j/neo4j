@@ -2049,6 +2049,103 @@
     "enterpriseOnly": true
   },
   {
+    "admin": true,
+    "name": "dbms.cluster.statusCheck",
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "signature": "dbms.cluster.statusCheck(databases :: LIST<STRING>, timeoutMilliseconds = null :: INTEGER) :: (database :: STRING, serverId :: STRING, serverName :: STRING, address :: STRING, replicationSuccessful :: BOOLEAN, memberStatus :: STRING, recognisedLeader :: STRING, recognisedLeaderTerm :: INTEGER, requester :: BOOLEAN, error :: STRING)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "serverId",
+        "description": "serverId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "serverName",
+        "description": "serverName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "address",
+        "description": "address :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "replicationSuccessful",
+        "description": "replicationSuccessful :: BOOLEAN",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      },
+      {
+        "name": "memberStatus",
+        "description": "memberStatus :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "recognisedLeader",
+        "description": "recognisedLeader :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "recognisedLeaderTerm",
+        "description": "recognisedLeaderTerm :: INTEGER",
+        "type": "INTEGER",
+        "isDeprecated": false
+      },
+      {
+        "name": "requester",
+        "description": "requester :: BOOLEAN",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      },
+      {
+        "name": "error",
+        "description": "error :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "description": "Performs a rafted status check.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "databases",
+        "description": "databases :: LIST<STRING>",
+        "type": "LIST<STRING>",
+        "isDeprecated": false
+      },
+      {
+        "default" : "DefaultParameterValue{value=null, type=INTEGER}",
+        "name": "timeoutMilliseconds",
+        "description": "timeoutMilliseconds = null :: INTEGER",
+        "type": "INTEGER",
+        "isDeprecated": false
+      }
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "mode": "DBMS",
+    "enterpriseOnly": true
+  },
+  {
     "admin": false,
     "name": "dbms.cluster.uncordonServer",
     "isDeprecated": true,
