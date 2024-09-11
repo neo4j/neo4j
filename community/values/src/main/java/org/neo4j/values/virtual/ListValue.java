@@ -54,6 +54,8 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue>
 {
+    private static final int NOT_MEMOIZED = -1;
+
     public abstract int size();
 
     public abstract ValueRepresentation itemValueRepresentation();
@@ -587,7 +589,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         private final ListValue base;
         private final AnyValue appended;
         private int size;
-        private static final int NOT_MEMOIZED = -1;
 
         AppendList( ListValue base, AnyValue appended )
         {
@@ -695,7 +696,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         private final ListValue base;
         private final AnyValue prepended;
         private int size;
-        private static final int NOT_MEMOIZED = -1;
 
         PrependList( ListValue base, AnyValue prepended )
         {
