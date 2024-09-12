@@ -16,30 +16,32 @@
  */
 package org.neo4j.cypher.internal.frontend.prettifier
 
+import PrettifierTestSupport.ChangedBetween5And6
+import PrettifierTestSupport.SameAcrossVersions
+import PrettifierTestSupport.Test
+import PrettifierTestSupport.TestConverter
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.UnionAll
-import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
+
+import scala.math.Ordered.orderingToOrdered
 
 class PrettifierIT extends CypherFunSuite {
   implicit private val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
-  val tests: Seq[(String, String)] =
+  val tests: Seq[Test] =
     queryTests() ++ indexCommandTests() ++ constraintCommandTests() ++ showCommandTests() ++ administrationTests()
 
-  def queryTests(): Seq[(String, String)] = Seq[(String, String)](
+  def queryTests(): Seq[Test] = Seq[Test](
     "return 42" -> "RETURN 42",
     "return 42 as x" -> "RETURN 42 AS x",
     "return 42 as `43`" -> "RETURN 42 AS `43`",
@@ -446,7 +448,7 @@ class PrettifierIT extends CypherFunSuite {
         |  WHERE point.distance(c.coordinates, $p1, $p2) < 1000""".stripMargin
   )
 
-  def indexCommandTests(): Seq[(String, String)] = Seq[(String, String)](
+  def indexCommandTests(): Seq[Test] = Seq[Test](
     // index commands
 
     // default type
@@ -846,7 +848,7 @@ class PrettifierIT extends CypherFunSuite {
       "DROP INDEX foo IF EXISTS"
   )
 
-  def constraintCommandTests(): Seq[(String, String)] = Seq(
+  def constraintCommandTests(): Seq[Test] = Seq(
     "create CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
       "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY",
     "create CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS KEY" ->
@@ -1049,7 +1051,7 @@ class PrettifierIT extends CypherFunSuite {
       "DROP CONSTRAINT foo IF EXISTS"
   )
 
-  def showCommandTests(): Seq[(String, String)] = Seq[(String, String)](
+  def showCommandTests(): Seq[Test] = Seq[Test](
     // show indexes
 
     "show index" ->
@@ -1126,22 +1128,46 @@ class PrettifierIT extends CypherFunSuite {
       "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
     "show rel property EXISTence cOnStRaInTs" ->
       "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
-    "show unique constraint" ->
-      "SHOW PROPERTY UNIQUENESS CONSTRAINTS",
-    "show node unique constraint" ->
-      "SHOW NODE PROPERTY UNIQUENESS CONSTRAINTS",
-    "show REL unique constraint" ->
-      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
-    "show Relationship unique constraint" ->
-      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
-    "show uniqueness constraint" ->
-      "SHOW PROPERTY UNIQUENESS CONSTRAINTS",
-    "show node uniqueness constraint" ->
-      "SHOW NODE PROPERTY UNIQUENESS CONSTRAINTS",
-    "show REL uniqueness constraint" ->
-      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
-    "show Relationship uniqueness constraint" ->
-      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
+    ChangedBetween5And6(
+      "show unique constraint",
+      "SHOW UNIQUENESS CONSTRAINTS",
+      "SHOW PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
+    ChangedBetween5And6(
+      "show node unique constraint",
+      "SHOW NODE UNIQUENESS CONSTRAINTS",
+      "SHOW NODE PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
+    ChangedBetween5And6(
+      "show REL unique constraint",
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
+    ChangedBetween5And6(
+      "show Relationship unique constraint",
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
+    ChangedBetween5And6(
+      "show uniqueness constraint",
+      "SHOW UNIQUENESS CONSTRAINTS",
+      "SHOW PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
+    ChangedBetween5And6(
+      "show node uniqueness constraint",
+      "SHOW NODE UNIQUENESS CONSTRAINTS",
+      "SHOW NODE PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
+    ChangedBetween5And6(
+      "show REL uniqueness constraint",
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
+    ChangedBetween5And6(
+      "show Relationship uniqueness constraint",
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS"
+    ),
     "show key CONSTRAINTS" ->
       "SHOW KEY CONSTRAINTS",
     "show node key CONSTRAINTS" ->
@@ -1167,10 +1193,15 @@ class PrettifierIT extends CypherFunSuite {
     "show constraint  YIELD *" ->
       """SHOW ALL CONSTRAINTS
         |YIELD *""".stripMargin,
-    "show UNIQUE constraint  YIELD * Return DISTINCT type" ->
-      """SHOW PROPERTY UNIQUENESS CONSTRAINTS
+    ChangedBetween5And6(
+      "show UNIQUE constraint  YIELD * Return DISTINCT type",
+      """SHOW UNIQUENESS CONSTRAINTS
         |YIELD *
         |RETURN DISTINCT type""".stripMargin,
+      """SHOW PROPERTY UNIQUENESS CONSTRAINTS
+        |YIELD *
+        |RETURN DISTINCT type""".stripMargin
+    ),
     "show existence constraint YIELD * where name = 'neo4j' Return *" ->
       """SHOW PROPERTY EXISTENCE CONSTRAINTS
         |YIELD *
@@ -1448,7 +1479,7 @@ class PrettifierIT extends CypherFunSuite {
         |  WHERE isExplicitlySet""".stripMargin
   )
 
-  def administrationTests(): Seq[(String, String)] = Seq[(String, String)](
+  def administrationTests(): Seq[Test] = Seq[Test](
     // user commands
     "Show Users" ->
       "SHOW USERS",
@@ -2394,7 +2425,7 @@ class PrettifierIT extends CypherFunSuite {
         |    WHERE name = "serverId"""".stripMargin
   ) ++ privilegeTests()
 
-  def privilegeTests(): Seq[(String, String)] = {
+  def privilegeTests(): Seq[Test] = {
     Seq(
       ("GRANT", "TO"),
       ("DENY", "TO"),
@@ -2403,7 +2434,7 @@ class PrettifierIT extends CypherFunSuite {
       ("REVOKE", "FROM")
     ) flatMap {
       case (action, preposition) =>
-        Seq(
+        Seq[Test](
           s"$action traverse on graph * $preposition role" ->
             s"$action TRAVERSE ON GRAPH * ELEMENTS * $preposition role",
           s"$action traverse on graph * nodes * $preposition role" ->
@@ -2801,7 +2832,7 @@ class PrettifierIT extends CypherFunSuite {
           ("all database privileges", "ALL DATABASE PRIVILEGES")
         ).flatMap {
           case (databaseAction, prettifiedDatabaseAction) =>
-            Seq(
+            Seq[Test](
               s"$action $databaseAction on database * $preposition role" ->
                 s"$action $prettifiedDatabaseAction ON DATABASE * $preposition role",
               s"$action $databaseAction on databases * $preposition role" ->
@@ -2825,7 +2856,7 @@ class PrettifierIT extends CypherFunSuite {
               s"$action $databaseAction on default database $preposition role" ->
                 s"$action $prettifiedDatabaseAction ON DEFAULT DATABASE $preposition role"
             )
-        } ++ Seq(
+        } ++ Seq[Test](
           s"$action show transaction (*) on database * $preposition role" ->
             s"$action SHOW TRANSACTION (*) ON DATABASE * $preposition role",
           s"$action show transactions (*) on database foo $preposition role" ->
@@ -3001,52 +3032,47 @@ class PrettifierIT extends CypherFunSuite {
   }
 
   tests foreach {
-    case (inputString, expected) if parsesSameInAllCypherVersions(inputString) =>
+    case SameAcrossVersions(inputString, expected) =>
       test(inputString) {
-        val statementJavaCc = rewriteASTDifferences(JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None)))
+        val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
         prettifier.asString(statementJavaCc) should equal(expected)
 
         CypherVersion.values().foreach { version =>
-          val statement = rewriteASTDifferences(parseAntlr(version, inputString))
-          statement shouldBe statementJavaCc
+          val statement = parseAntlr(version, inputString)
+          if (version == CypherVersion.Cypher5) {
+            // The two Cypher 5 parsers should get the same values
+            statement shouldBe statementJavaCc
+          }
           prettifier.asString(statement) should equal(expected)
         }
       }
-    case (inputString, expectedNotCypher5) =>
+    case ChangedBetween5And6(inputString, expectedCypher5, expectedCypher6AndLater) =>
       test(inputString) {
-        // The two Cypher 5 parsers should get the same values
         val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
-        val statementCypher5 = parseAntlr(CypherVersion.Cypher5, inputString)
-        statementCypher5 shouldBe statementJavaCc
-        prettifier.asString(statementJavaCc) should equal(prettifier.asString(statementCypher5))
+        prettifier.asString(statementJavaCc) should equal(expectedCypher5)
 
-        CypherVersion.values().toList.diff(Seq(CypherVersion.Cypher5)).foreach { version =>
-          val statement = parseAntlr(version, inputString)
-          prettifier.asString(statement) should equal(expectedNotCypher5)
+        CypherVersion.values().foreach { version =>
+          if (version >= CypherVersion.Cypher6) {
+            val statement = parseAntlr(version, inputString)
+            prettifier.asString(statement) should equal(expectedCypher6AndLater)
+          } else {
+            val statement = parseAntlr(CypherVersion.Cypher5, inputString)
+            // The two Cypher 5 parsers should get the same values
+            statement shouldBe statementJavaCc
+            prettifier.asString(statement) should equal(expectedCypher5)
+          }
         }
       }
-  }
-
-  /**
-   * There are some AST changes done at the parser level for semantic analysis that won't affect the plan.
-   * This rewriter can be expanded to update those parts.
-   */
-  def rewriteASTDifferences(statement: Statement): Statement = {
-    statement.endoRewrite(bottomUp(Rewriter.lift {
-      case u: UnionDistinct => u.copy(differentReturnOrderAllowed = true)(u.position)
-      case u: UnionAll      => u.copy(differentReturnOrderAllowed = true)(u.position)
-    }))
   }
 
   private def parseAntlr(version: CypherVersion, cypher: String): Statement =
     AstParserFactory(version)(cypher, Neo4jCypherExceptionFactory(cypher, None), None).singleStatement()
 
-  private def parsesSameInAllCypherVersions(inputString: String): Boolean = {
-    // to compare case insensitively
-    val inputLowerCase = inputString.toLowerCase
+}
 
-    // showing constraints differs between Cypher 5 and Cypher 6
-    // removing 'database' as that is the privileges and not the show command
-    !(inputLowerCase.matches(".*show.*constraint.*") && !inputLowerCase.contains("database"))
-  }
+object PrettifierTestSupport {
+  sealed trait Test
+  case class SameAcrossVersions(inputString: String, output: String) extends Test
+  case class ChangedBetween5And6(inputString: String, outputCypher5: String, outputCypher6AndLater: String) extends Test
+  implicit class TestConverter(tuple: (String, String)) extends SameAcrossVersions(tuple._1, tuple._2)
 }
