@@ -22,20 +22,15 @@ package org.neo4j.exceptions;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class KernelException extends Exception implements Status.HasStatus, HasGqlStatusInfo {
+public abstract class KernelException extends GqlException implements Status.HasStatus {
     private final Status statusCode;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     protected KernelException(Status statusCode, Throwable cause, String message, Object... parameters) {
         super(toMessage(message, parameters), cause);
         this.statusCode = statusCode;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = toMessage(message, parameters);
     }
 
     protected KernelException(
@@ -44,49 +39,29 @@ public abstract class KernelException extends Exception implements Status.HasSta
             Throwable cause,
             String message,
             Object... parameters) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, toMessage(message, parameters)), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, toMessage(message, parameters), cause);
         this.statusCode = statusCode;
-        this.oldMessage = toMessage(message, parameters);
     }
 
     protected KernelException(Status statusCode, Throwable cause) {
-        super(cause);
+        super(ErrorMessageHolder.getOldCauseMessage(cause), cause);
         this.statusCode = statusCode;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     protected KernelException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, ErrorMessageHolder.getOldCauseMessage(cause), cause);
         this.statusCode = statusCode;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     protected KernelException(Status statusCode, String message, Object... parameters) {
         super(toMessage(message, parameters));
         this.statusCode = statusCode;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = toMessage(message, parameters);
     }
 
     protected KernelException(
             ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Object... parameters) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, toMessage(message, parameters)));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, toMessage(message, parameters));
         this.statusCode = statusCode;
-        this.oldMessage = toMessage(message, parameters);
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     /** The Neo4j status code associated with this exception type. */
@@ -103,10 +78,5 @@ public abstract class KernelException extends Exception implements Status.HasSta
         // need to check for params as some messages (when no params are provided) could have a '%' within
         // and that makes String.format most unhappy and we get exceptions thrown in exception code
         return (parameters.length > 0) ? String.format(message, parameters) : message;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

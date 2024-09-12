@@ -22,12 +22,11 @@ package org.neo4j.bolt.protocol.common.fsm.error;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 
 public final class StatusTransactionStateTransitionException extends TransactionStateTransitionException
-        implements HasStatus, HasGqlStatusInfo {
+        implements HasStatus, ErrorGqlStatusObject {
     private final Status status;
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
@@ -36,19 +35,19 @@ public final class StatusTransactionStateTransitionException extends Transaction
         super(cause);
         this.status = status;
         this.gqlStatusObject = null;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+        this.oldMessage = ErrorMessageHolder.getOldCauseMessage(cause);
     }
 
     protected StatusTransactionStateTransitionException(
             ErrorGqlStatusObject gqlStatusObject, TransactionException cause, Status status) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, ErrorMessageHolder.getOldCauseMessage(cause)), cause);
         this.status = status;
         this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+        this.oldMessage = ErrorMessageHolder.getOldCauseMessage(cause);
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return oldMessage;
     }
 

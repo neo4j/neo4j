@@ -20,24 +20,17 @@
 package org.neo4j.exceptions;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class Neo4jException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
+public abstract class Neo4jException extends GqlRuntimeException implements Status.HasStatus {
 
     public Neo4jException(String message, Throwable cause) {
         super(message, cause);
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public Neo4jException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = message;
+        super(gqlStatusObject, message, cause);
     }
 
     public Neo4jException(String message) {
@@ -46,15 +39,5 @@ public abstract class Neo4jException extends RuntimeException implements Status.
 
     public Neo4jException(ErrorGqlStatusObject gqlStatusObject, String message) {
         this(gqlStatusObject, message, null);
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

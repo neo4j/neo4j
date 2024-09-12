@@ -20,43 +20,24 @@
 package org.neo4j.kernel.api.security.exception;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class InvalidAuthTokenException extends Exception implements Status.HasStatus, HasGqlStatusInfo {
+public class InvalidAuthTokenException extends GqlException implements Status.HasStatus {
     private final Status status;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     public InvalidAuthTokenException(String message) {
         super(message);
         this.status = Status.Security.Unauthorized;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public InvalidAuthTokenException(ErrorGqlStatusObject gqlStatusObject, String message) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message);
         this.status = Status.Security.Unauthorized;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

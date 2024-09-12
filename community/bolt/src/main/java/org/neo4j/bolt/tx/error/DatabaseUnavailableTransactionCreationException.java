@@ -21,13 +21,12 @@ package org.neo4j.bolt.tx.error;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.General;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 
 public class DatabaseUnavailableTransactionCreationException extends TransactionCreationException
-        implements HasStatus, HasGqlStatusInfo {
+        implements HasStatus, ErrorGqlStatusObject {
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
@@ -49,7 +48,7 @@ public class DatabaseUnavailableTransactionCreationException extends Transaction
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return oldMessage;
     }
 

@@ -21,33 +21,25 @@ package org.neo4j.router;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class QueryRouterException extends RuntimeException implements Status.HasStatus, HasQuery, HasGqlStatusInfo {
+public class QueryRouterException extends GqlRuntimeException implements Status.HasStatus, HasQuery {
     private final Status statusCode;
     private Long queryId;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     @Deprecated
     public QueryRouterException(Status statusCode, Throwable cause) {
-        super(cause);
+        super(ErrorMessageHolder.getOldCauseMessage(cause), cause);
         this.statusCode = statusCode;
         this.queryId = null;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     public QueryRouterException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, ErrorMessageHolder.getOldCauseMessage(cause), cause);
         this.statusCode = statusCode;
         this.queryId = null;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     @Deprecated
@@ -55,19 +47,13 @@ public class QueryRouterException extends RuntimeException implements Status.Has
         super(String.format(message, parameters));
         this.statusCode = statusCode;
         this.queryId = null;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = String.format(message, parameters);
     }
 
     public QueryRouterException(
             ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Object... parameters) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, String.format(message, parameters)));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, String.format(message, parameters));
         this.statusCode = statusCode;
         this.queryId = null;
-        this.oldMessage = String.format(message, parameters);
     }
 
     @Deprecated
@@ -75,34 +61,18 @@ public class QueryRouterException extends RuntimeException implements Status.Has
         super(message, cause);
         this.statusCode = statusCode;
         this.queryId = null;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public QueryRouterException(
             ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message, cause);
         this.statusCode = statusCode;
         this.queryId = null;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     @Override
     public Status status() {
         return statusCode;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 
     @Override

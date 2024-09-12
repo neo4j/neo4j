@@ -20,8 +20,7 @@
 package org.neo4j.graphdb.security;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -29,60 +28,36 @@ import org.neo4j.kernel.api.exceptions.Status;
  *
  * For instance, if attempting to write with READ_ONLY rights.
  */
-public class AuthorizationViolationException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
+public class AuthorizationViolationException extends GqlRuntimeException implements Status.HasStatus {
     public static final String PERMISSION_DENIED = "Permission denied.";
 
     private final Status statusCode;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     @Deprecated
     public AuthorizationViolationException(String message, Status statusCode) {
         super(message);
         this.statusCode = statusCode;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public AuthorizationViolationException(ErrorGqlStatusObject gqlStatusObject, String message, Status statusCode) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message);
         this.statusCode = statusCode;
-        this.oldMessage = message;
     }
 
     @Deprecated
     public AuthorizationViolationException(String message) {
         super(message);
         statusCode = Status.Security.Forbidden;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public AuthorizationViolationException(ErrorGqlStatusObject gqlStatusObject, String message) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message);
         statusCode = Status.Security.Forbidden;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
     public Status status() {
         return statusCode;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

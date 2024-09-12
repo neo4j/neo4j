@@ -60,7 +60,7 @@ public interface DatabaseContextProvider<DB extends DatabaseContext> {
     default DB getSystemDatabaseContext() {
         return getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID)
                 .orElseThrow(() -> new DatabaseShutdownException(
-                        new DatabaseManagementException("Unable to retrieve the system database!")));
+                        (Throwable) new DatabaseManagementException("Unable to retrieve the system database!")));
     }
 
     /**

@@ -20,44 +20,25 @@
 package org.neo4j.dbms.routing;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class RoutingException extends Exception implements Status.HasStatus, HasGqlStatusInfo {
+public class RoutingException extends GqlException implements Status.HasStatus {
     private final Status status;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     @Deprecated
     public RoutingException(Status status, String message) {
         super(message);
         this.status = status;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public RoutingException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message);
         this.status = status;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

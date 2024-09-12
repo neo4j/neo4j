@@ -21,11 +21,12 @@ package org.neo4j.gqlstatus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 
 import org.junit.jupiter.api.Test;
 
-public class HasGqlStatusInfoTest {
+class ErrorGqlStatusObjectTest {
 
     @Test
     void testGetOldCauseMessage() {
@@ -58,15 +59,18 @@ public class HasGqlStatusInfoTest {
             errorMessageHolder
                     .when(() -> ErrorMessageHolder.getMessage(gql2, gql2.toString()))
                     .thenReturn(gql2.toString());
+            errorMessageHolder
+                    .when(() -> ErrorMessageHolder.getOldCauseMessage(any()))
+                    .thenCallRealMethod();
 
             var exWithOut = new ExceptionWithoutCause(someOtherGql, oldMessage);
             var exceptionWithCause1 = new ExceptionWithCause(gql1, exWithOut);
             var exceptionWithCause2 = new ExceptionWithCause(gql2, exceptionWithCause1);
             var exceptionWithCause3 = new ExceptionWithCause(gql2, exceptionWithCause2);
 
-            var oldEx1 = exceptionWithCause1.getOldMessage();
-            var oldEx2 = exceptionWithCause2.getOldMessage();
-            var oldEx3 = exceptionWithCause3.getOldMessage();
+            var oldEx1 = exceptionWithCause1.legacyMessage();
+            var oldEx2 = exceptionWithCause2.legacyMessage();
+            var oldEx3 = exceptionWithCause3.legacyMessage();
 
             var gqlEx1 = exceptionWithCause1.getMessage();
             var gqlEx2 = exceptionWithCause2.getMessage();
@@ -85,7 +89,7 @@ public class HasGqlStatusInfoTest {
         }
     }
 
-    static class ExceptionWithoutCause extends Exception implements HasGqlStatusInfo {
+    static class ExceptionWithoutCause extends GqlException {
         private final ErrorGqlStatusObject gqlStatusObject;
         private final String oldMessage;
 
@@ -96,7 +100,7 @@ public class HasGqlStatusInfoTest {
         }
 
         @Override
-        public String getOldMessage() {
+        public String legacyMessage() {
             return oldMessage;
         }
 
@@ -106,7 +110,7 @@ public class HasGqlStatusInfoTest {
         }
     }
 
-    static class ExceptionWithCause extends Exception implements HasGqlStatusInfo {
+    static class ExceptionWithCause extends GqlException {
         private final ErrorGqlStatusObject gqlStatusObject;
         private final String oldMessage;
 
@@ -114,11 +118,11 @@ public class HasGqlStatusInfoTest {
             super(ErrorMessageHolder.getMessage(gqlStatusObject, cause.getMessage()));
             this.gqlStatusObject = gqlStatusObject;
             // This logic is what we test
-            this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+            this.oldMessage = ErrorMessageHolder.getOldCauseMessage(cause);
         }
 
         @Override
-        public String getOldMessage() {
+        public String legacyMessage() {
             return oldMessage;
         }
 

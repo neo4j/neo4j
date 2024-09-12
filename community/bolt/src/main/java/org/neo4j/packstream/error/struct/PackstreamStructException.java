@@ -21,11 +21,11 @@ package org.neo4j.packstream.error.struct;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 
-public class PackstreamStructException extends PackstreamReaderException implements Status.HasStatus, HasGqlStatusInfo {
+public class PackstreamStructException extends PackstreamReaderException
+        implements Status.HasStatus, ErrorGqlStatusObject {
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
@@ -56,7 +56,7 @@ public class PackstreamStructException extends PackstreamReaderException impleme
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return oldMessage;
     }
 

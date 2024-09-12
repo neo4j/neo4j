@@ -21,33 +21,25 @@ package org.neo4j.fabric.executor;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class FabricException extends RuntimeException implements Status.HasStatus, HasQuery, HasGqlStatusInfo {
+public class FabricException extends GqlRuntimeException implements Status.HasStatus, HasQuery {
     private final Status statusCode;
     private Long queryId;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     @Deprecated
     public FabricException(Status statusCode, Throwable cause) {
-        super(cause);
+        super(ErrorMessageHolder.getOldCauseMessage(cause), cause);
         this.statusCode = statusCode;
         this.queryId = null;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     public FabricException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
+        super(gqlStatusObject, ErrorMessageHolder.getOldCauseMessage(cause), cause);
         this.statusCode = statusCode;
         this.queryId = null;
-
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     @Deprecated
@@ -55,19 +47,13 @@ public class FabricException extends RuntimeException implements Status.HasStatu
         super(String.format(message, parameters));
         this.statusCode = statusCode;
         this.queryId = null;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = String.format(message, parameters);
     }
 
     public FabricException(
             ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Object... parameters) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, String.format(message, parameters)));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, String.format(message, parameters));
         this.statusCode = statusCode;
         this.queryId = null;
-        this.oldMessage = String.format(message, parameters);
     }
 
     @Deprecated
@@ -75,18 +61,12 @@ public class FabricException extends RuntimeException implements Status.HasStatu
         super(message, cause);
         this.statusCode = statusCode;
         this.queryId = null;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public FabricException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message, cause);
         this.statusCode = statusCode;
         this.queryId = null;
-        this.oldMessage = message;
     }
 
     @Deprecated
@@ -94,34 +74,18 @@ public class FabricException extends RuntimeException implements Status.HasStatu
         super(message, cause);
         this.statusCode = statusCode;
         this.queryId = queryId;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public FabricException(
             ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Throwable cause, Long queryId) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message, cause);
         this.statusCode = statusCode;
         this.queryId = queryId;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     @Override
     public Status status() {
         return statusCode;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 
     @Override

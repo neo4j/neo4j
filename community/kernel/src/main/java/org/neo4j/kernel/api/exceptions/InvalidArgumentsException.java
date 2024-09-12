@@ -20,13 +20,10 @@
 package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlException;
 
-public class InvalidArgumentsException extends Exception implements Status.HasStatus, HasGqlStatusInfo {
+public class InvalidArgumentsException extends GqlException implements Status.HasStatus {
     private final Status status;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     public InvalidArgumentsException(String message) {
         this(message, null);
@@ -39,31 +36,15 @@ public class InvalidArgumentsException extends Exception implements Status.HasSt
     public InvalidArgumentsException(String message, Throwable cause) {
         super(message, cause);
         this.status = Status.General.InvalidArguments;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public InvalidArgumentsException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message, cause);
         this.status = Status.General.InvalidArguments;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

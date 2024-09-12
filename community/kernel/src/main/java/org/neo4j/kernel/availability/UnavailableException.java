@@ -20,39 +20,21 @@
 package org.neo4j.kernel.availability;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class UnavailableException extends Exception implements Status.HasStatus, HasGqlStatusInfo {
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
+public class UnavailableException extends GqlException implements Status.HasStatus {
 
     public UnavailableException(String message) {
         super(message);
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public UnavailableException(ErrorGqlStatusObject gqlStatusObject, String message) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
+        super(gqlStatusObject, message);
     }
 
     @Override
     public Status status() {
         return Status.General.DatabaseUnavailable;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

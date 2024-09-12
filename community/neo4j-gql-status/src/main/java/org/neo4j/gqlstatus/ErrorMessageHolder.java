@@ -25,4 +25,12 @@ public class ErrorMessageHolder {
         // doesn't populate with GQL info
         return oldMessage;
     }
+
+    public static String getOldCauseMessage(Throwable cause) {
+        if (cause instanceof ErrorGqlStatusObject gqlCause) {
+            return gqlCause.legacyMessage();
+        } else {
+            return cause.getMessage();
+        }
+    }
 }

@@ -46,8 +46,18 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
     }
 
     @Override
-    public Optional<ErrorGqlStatusObject> getCause() {
+    public Optional<ErrorGqlStatusObject> cause() {
         return cause;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return this;
+    }
+
+    @Override
+    public String legacyMessage() {
+        return "";
     }
 
     @Override

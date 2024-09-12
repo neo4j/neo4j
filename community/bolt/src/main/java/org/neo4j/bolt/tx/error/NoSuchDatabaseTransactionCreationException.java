@@ -21,13 +21,12 @@ package org.neo4j.bolt.tx.error;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Database;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 
 public class NoSuchDatabaseTransactionCreationException extends TransactionCreationException
-        implements HasStatus, HasGqlStatusInfo {
+        implements HasStatus, ErrorGqlStatusObject {
 
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
@@ -50,7 +49,7 @@ public class NoSuchDatabaseTransactionCreationException extends TransactionCreat
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return oldMessage;
     }
 

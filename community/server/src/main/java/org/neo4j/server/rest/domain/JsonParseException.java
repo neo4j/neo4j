@@ -21,52 +21,30 @@ package org.neo4j.server.rest.domain;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 @SuppressWarnings("serial")
-public class JsonParseException extends Exception implements Status.HasStatus, HasGqlStatusInfo {
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
+public class JsonParseException extends GqlException implements Status.HasStatus {
 
     public JsonParseException(String message, Throwable cause) {
         super(message, cause);
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public JsonParseException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = message;
+        super(gqlStatusObject, message, cause);
     }
 
     public JsonParseException(Throwable cause) {
-        super(cause);
-
-        this.gqlStatusObject = null;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+        super(ErrorMessageHolder.getOldCauseMessage(cause), cause);
     }
 
     public JsonParseException(ErrorGqlStatusObject gqlStatusObject, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
+        super(gqlStatusObject, ErrorMessageHolder.getOldCauseMessage(cause), cause);
     }
 
     @Override
     public Status status() {
         return Status.Request.InvalidFormat;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

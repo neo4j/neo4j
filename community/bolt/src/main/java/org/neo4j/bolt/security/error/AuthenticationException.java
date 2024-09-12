@@ -22,10 +22,9 @@ package org.neo4j.bolt.security.error;
 import java.io.IOException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class AuthenticationException extends IOException implements Status.HasStatus, HasGqlStatusInfo {
+public class AuthenticationException extends IOException implements Status.HasStatus, ErrorGqlStatusObject {
     private final Status status;
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
@@ -61,7 +60,7 @@ public class AuthenticationException extends IOException implements Status.HasSt
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return oldMessage;
     }
 

@@ -21,100 +21,63 @@ package org.neo4j.graphdb;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Signals that a transaction failed and has been rolled back.
  */
 @PublicApi
-public class TransactionFailureException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
+public class TransactionFailureException extends GqlRuntimeException implements Status.HasStatus {
     public final Status status;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     @Deprecated
     public TransactionFailureException(String message) {
         super(message);
         this.status = Status.Database.Unknown;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public TransactionFailureException(ErrorGqlStatusObject gqlStatusObject, String message) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message);
         this.status = Status.Database.Unknown;
-        this.oldMessage = message;
     }
 
     @Deprecated
     public TransactionFailureException(String message, Throwable cause) {
         super(message, cause);
         this.status = (cause instanceof Status.HasStatus se) ? se.status() : Status.Database.Unknown;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public TransactionFailureException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message, cause);
         this.status = (cause instanceof Status.HasStatus se) ? se.status() : Status.Database.Unknown;
-        this.oldMessage = message;
     }
 
     @Deprecated
     public TransactionFailureException(String message, Status status) {
         super(message);
         this.status = status;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public TransactionFailureException(ErrorGqlStatusObject gqlStatusObject, String message, Status status) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message);
         this.status = status;
-        this.oldMessage = message;
     }
 
     @Deprecated
     public TransactionFailureException(String message, Throwable cause, Status status) {
         super(message, cause);
         this.status = status;
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public TransactionFailureException(
             ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause, Status status) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-
+        super(gqlStatusObject, message, cause);
         this.status = status;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

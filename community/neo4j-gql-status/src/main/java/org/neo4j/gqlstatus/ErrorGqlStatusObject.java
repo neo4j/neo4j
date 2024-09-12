@@ -19,10 +19,57 @@
  */
 package org.neo4j.gqlstatus;
 
+import static org.neo4j.gqlstatus.DiagnosticRecord.DEFAULT_DIAGNOSTIC_RECORD;
+
+import java.util.Map;
 import java.util.Optional;
 import org.neo4j.annotations.api.PublicApi;
 
 @PublicApi
 public interface ErrorGqlStatusObject extends CommonGqlStatusObject {
-    Optional<ErrorGqlStatusObject> getCause();
+    String DEFAULT_STATUS_CODE = GqlStatusInfoCodes.STATUS_50N42.getStatusString();
+
+    String DEFAULT_STATUS_DESCRIPTION = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N42)
+            .build()
+            .statusDescription();
+
+    ErrorGqlStatusObject gqlStatusObject();
+
+    String legacyMessage();
+
+    @Override
+    default String gqlStatus() {
+        var innerGqlStatusObject = gqlStatusObject();
+        if (innerGqlStatusObject != null) {
+            return innerGqlStatusObject.gqlStatus();
+        }
+        return DEFAULT_STATUS_CODE;
+    }
+
+    @Override
+    default String statusDescription() {
+        var innerGqlStatusObject = gqlStatusObject();
+        if (innerGqlStatusObject != null) {
+            return innerGqlStatusObject.statusDescription();
+        }
+        return DEFAULT_STATUS_DESCRIPTION;
+    }
+
+    @Override
+    default Map<String, Object> diagnosticRecord() {
+        var innerGqlStatusObject = gqlStatusObject();
+        if (innerGqlStatusObject != null) {
+
+            return innerGqlStatusObject.diagnosticRecord();
+        }
+        return DEFAULT_DIAGNOSTIC_RECORD;
+    }
+
+    default Optional<ErrorGqlStatusObject> cause() {
+        var innerGqlStatusObject = gqlStatusObject();
+        if (innerGqlStatusObject != null) {
+            return innerGqlStatusObject.cause();
+        }
+        return Optional.empty();
+    }
 }

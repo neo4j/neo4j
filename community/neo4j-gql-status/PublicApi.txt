@@ -3,14 +3,32 @@ org.neo4j.gqlstatus.CommonGqlStatusObject::diagnosticRecord() java.util.Map<java
 org.neo4j.gqlstatus.CommonGqlStatusObject::gqlStatus() java.lang.String public abstract
 org.neo4j.gqlstatus.CommonGqlStatusObject::statusDescription() java.lang.String public abstract
 org.neo4j.gqlstatus.ErrorGqlStatusObject public abstract interface implements org.neo4j.gqlstatus.CommonGqlStatusObject
-org.neo4j.gqlstatus.ErrorGqlStatusObject::getCause() java.util.Optional<org.neo4j.gqlstatus.ErrorGqlStatusObject> public abstract
+org.neo4j.gqlstatus.ErrorGqlStatusObject::DEFAULT_STATUS_CODE java.lang.String public static final
+org.neo4j.gqlstatus.ErrorGqlStatusObject::DEFAULT_STATUS_DESCRIPTION java.lang.String public static final
+org.neo4j.gqlstatus.ErrorGqlStatusObject::cause() java.util.Optional<org.neo4j.gqlstatus.ErrorGqlStatusObject> public default
+org.neo4j.gqlstatus.ErrorGqlStatusObject::diagnosticRecord() java.util.Map<java.lang.String,java.lang.Object> public default
+org.neo4j.gqlstatus.ErrorGqlStatusObject::gqlStatus() java.lang.String public default
+org.neo4j.gqlstatus.ErrorGqlStatusObject::gqlStatusObject() org.neo4j.gqlstatus.ErrorGqlStatusObject public abstract
+org.neo4j.gqlstatus.ErrorGqlStatusObject::legacyMessage() java.lang.String public abstract
+org.neo4j.gqlstatus.ErrorGqlStatusObject::statusDescription() java.lang.String public default
 org.neo4j.gqlstatus.GqlClassification public abstract interface
-org.neo4j.gqlstatus.HasGqlStatusInfo public abstract interface
-org.neo4j.gqlstatus.HasGqlStatusInfo::DEFAULT_STATUS_CODE java.lang.String public static final
-org.neo4j.gqlstatus.HasGqlStatusInfo::getOldCauseMessage(java.lang.Throwable) java.lang.String public static
-org.neo4j.gqlstatus.HasGqlStatusInfo::getOldMessage() java.lang.String public abstract
-org.neo4j.gqlstatus.HasGqlStatusInfo::gqlStatus() java.lang.String public default
-org.neo4j.gqlstatus.HasGqlStatusInfo::gqlStatusObject() org.neo4j.gqlstatus.ErrorGqlStatusObject public abstract
+org.neo4j.gqlstatus.GqlException public abstract class extends java.lang.Exception implements org.neo4j.gqlstatus.ErrorGqlStatusObject
+org.neo4j.gqlstatus.GqlException::GqlException(java.lang.String) void protected
+org.neo4j.gqlstatus.GqlException::GqlException(java.lang.String, java.lang.Throwable) void protected
+org.neo4j.gqlstatus.GqlException::GqlException(org.neo4j.gqlstatus.ErrorGqlStatusObject, java.lang.String) void protected
+org.neo4j.gqlstatus.GqlException::GqlException(org.neo4j.gqlstatus.ErrorGqlStatusObject, java.lang.String, java.lang.Throwable) void protected
+org.neo4j.gqlstatus.GqlException::gqlStatusObject() org.neo4j.gqlstatus.ErrorGqlStatusObject public
+org.neo4j.gqlstatus.GqlException::legacyMessage() java.lang.String public
+org.neo4j.gqlstatus.GqlRuntimeException public abstract class extends java.lang.RuntimeException implements org.neo4j.gqlstatus.ErrorGqlStatusObject
+org.neo4j.gqlstatus.GqlRuntimeException::GqlRuntimeException(java.lang.String) void protected
+org.neo4j.gqlstatus.GqlRuntimeException::GqlRuntimeException(java.lang.String, boolean, boolean) void protected
+org.neo4j.gqlstatus.GqlRuntimeException::GqlRuntimeException(java.lang.String, java.lang.Throwable) void protected
+org.neo4j.gqlstatus.GqlRuntimeException::GqlRuntimeException(org.neo4j.gqlstatus.ErrorGqlStatusObject, java.lang.Exception) void protected
+org.neo4j.gqlstatus.GqlRuntimeException::GqlRuntimeException(org.neo4j.gqlstatus.ErrorGqlStatusObject, java.lang.String) void protected
+org.neo4j.gqlstatus.GqlRuntimeException::GqlRuntimeException(org.neo4j.gqlstatus.ErrorGqlStatusObject, java.lang.String, boolean, boolean) void protected
+org.neo4j.gqlstatus.GqlRuntimeException::GqlRuntimeException(org.neo4j.gqlstatus.ErrorGqlStatusObject, java.lang.String, java.lang.Throwable) void protected
+org.neo4j.gqlstatus.GqlRuntimeException::gqlStatusObject() org.neo4j.gqlstatus.ErrorGqlStatusObject public
+org.neo4j.gqlstatus.GqlRuntimeException::legacyMessage() java.lang.String public
 org.neo4j.gqlstatus.NotificationClassification public final enum extends java.lang.Enum<org.neo4j.gqlstatus.NotificationClassification> implements org.neo4j.gqlstatus.GqlClassification
 org.neo4j.gqlstatus.NotificationClassification::DEPRECATION org.neo4j.gqlstatus.NotificationClassification public static final
 org.neo4j.gqlstatus.NotificationClassification::GENERIC org.neo4j.gqlstatus.NotificationClassification public static final

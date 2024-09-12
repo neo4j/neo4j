@@ -21,12 +21,12 @@ package org.neo4j.packstream.error.reader;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.io.Type;
 import org.neo4j.packstream.io.TypeMarker;
 
-public class UnexpectedTypeException extends PackstreamReaderException implements Status.HasStatus, HasGqlStatusInfo {
+public class UnexpectedTypeException extends PackstreamReaderException
+        implements Status.HasStatus, ErrorGqlStatusObject {
     private final Type expected;
     private final Type actual;
     private final ErrorGqlStatusObject gqlStatusObject;
@@ -105,7 +105,7 @@ public class UnexpectedTypeException extends PackstreamReaderException implement
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return this.oldMessage;
     }
 

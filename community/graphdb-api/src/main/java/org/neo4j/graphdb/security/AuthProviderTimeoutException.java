@@ -20,44 +20,26 @@
 package org.neo4j.graphdb.security;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Thrown when a request for authentication or authorization against an external server timed out.
  */
-public class AuthProviderTimeoutException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
+public class AuthProviderTimeoutException extends GqlRuntimeException implements Status.HasStatus {
     private static final Status statusCode = Status.Security.AuthProviderTimeout;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     public AuthProviderTimeoutException(String message, Throwable cause) {
         super(message, cause);
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public AuthProviderTimeoutException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
+        super(gqlStatusObject, message, cause);
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
     public Status status() {
         return statusCode;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

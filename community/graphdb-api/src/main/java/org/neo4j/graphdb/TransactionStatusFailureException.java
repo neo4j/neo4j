@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class TransactionStatusFailureException extends TransactionFailureException implements Status.HasStatus {
     private final Status status;
 
+    @Deprecated
     public TransactionStatusFailureException(Status status, String message, Exception exception) {
         super(message, exception, status);
         this.status = status;

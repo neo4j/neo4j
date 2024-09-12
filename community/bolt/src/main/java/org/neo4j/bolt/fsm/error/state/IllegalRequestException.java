@@ -21,12 +21,12 @@ package org.neo4j.bolt.fsm.error.state;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 
-public abstract class IllegalRequestException extends StateTransitionException implements HasStatus, HasGqlStatusInfo {
+public abstract class IllegalRequestException extends StateTransitionException
+        implements HasStatus, ErrorGqlStatusObject {
 
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
@@ -58,7 +58,7 @@ public abstract class IllegalRequestException extends StateTransitionException i
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return oldMessage;
     }
 

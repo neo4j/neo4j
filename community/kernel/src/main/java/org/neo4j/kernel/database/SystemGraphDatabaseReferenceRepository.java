@@ -86,7 +86,7 @@ public class SystemGraphDatabaseReferenceRepository implements DatabaseReference
         var systemDb = databaseContext.databaseFacade();
         if (!systemDb.isAvailable(100)) {
             throw new DatabaseShutdownException(
-                    new DatabaseManagementException("System database is not (yet) available"));
+                    (Throwable) new DatabaseManagementException("System database is not (yet) available"));
         }
         try (var tx = systemDb.beginTx()) {
             var model = new CommunityTopologyGraphDbmsModel(tx);

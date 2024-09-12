@@ -21,10 +21,10 @@ package org.neo4j.packstream.error.reader;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class LimitExceededException extends PackstreamReaderException implements Status.HasStatus, HasGqlStatusInfo {
+public class LimitExceededException extends PackstreamReaderException
+        implements Status.HasStatus, ErrorGqlStatusObject {
     private final long limit;
     private final long actual;
     private final ErrorGqlStatusObject gqlStatusObject;
@@ -59,7 +59,7 @@ public class LimitExceededException extends PackstreamReaderException implements
     }
 
     @Override
-    public String getOldMessage() {
+    public String legacyMessage() {
         return oldMessage;
     }
 

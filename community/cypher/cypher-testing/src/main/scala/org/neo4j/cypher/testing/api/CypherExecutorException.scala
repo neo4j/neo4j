@@ -20,8 +20,7 @@
 package org.neo4j.cypher.testing.api
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
-import org.neo4j.gqlstatus.ErrorMessageHolder
-import org.neo4j.gqlstatus.HasGqlStatusInfo
+import org.neo4j.gqlstatus.GqlRuntimeException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
@@ -36,21 +35,19 @@ case class CypherExecutorException(
   override val status: Status,
   original: Throwable,
   message: Option[String]
-) extends RuntimeException(ErrorMessageHolder.getMessage(errorGqlStatusObject, message.getOrElse(original.getMessage)))
-    with HasStatus with HasGqlStatusInfo {
+) extends GqlRuntimeException(errorGqlStatusObject, message.getOrElse(original.getMessage))
+    with HasStatus {
 
   def this(errorGqlStatusObject: ErrorGqlStatusObject, status: Status, original: Throwable) =
     this(errorGqlStatusObject, status, original, None)
   def this(status: Status, original: Throwable, message: Option[String]) = this(null, status, original, message)
   def this(status: Status, original: Throwable) = this(null, status, original, None)
 
-  override def gqlStatusObject: ErrorGqlStatusObject = errorGqlStatusObject
-
-  override def getOldMessage: String = if (message.isDefined) message.get
+  override def legacyMessage: String = if (message.isDefined) message.get
   else {
     original match {
-      case e: HasGqlStatusInfo => e.getOldMessage
-      case _                   => original.getMessage
+      case e: ErrorGqlStatusObject => e.legacyMessage
+      case _                       => original.getMessage
     }
   }
 }

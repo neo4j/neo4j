@@ -21,6 +21,7 @@ package org.neo4j.gqlstatus;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +31,9 @@ import java.util.Optional;
  * or collections that consists of such types (like _position)
  */
 public class DiagnosticRecord {
+
+    static final Map<String, Object> DEFAULT_DIAGNOSTIC_RECORD = new DiagnosticRecord().asMap();
+
     private static final String CURRENT_SCHEMA_DEFAULT = "/";
     private static final String OPERATION_DEFAULT = "";
     private static final String OPERATION_CODE_DEFAULT = "0";
@@ -116,7 +120,7 @@ public class DiagnosticRecord {
     }
 
     public Map<String, Object> asMap() {
-        return innerDiagnosticRecord;
+        return Collections.unmodifiableMap(innerDiagnosticRecord);
     }
 
     // This is not used right now, but will be later when Gql is included in logs

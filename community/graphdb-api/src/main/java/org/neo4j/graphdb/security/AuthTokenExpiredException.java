@@ -20,41 +20,23 @@
 package org.neo4j.graphdb.security;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class AuthTokenExpiredException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
+public class AuthTokenExpiredException extends GqlRuntimeException implements Status.HasStatus {
     private static final Status statusCode = Status.Security.TokenExpired;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     public AuthTokenExpiredException(String message) {
         super(message);
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public AuthTokenExpiredException(ErrorGqlStatusObject gqlStatusObject, String message) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
+        super(gqlStatusObject, message);
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
     public Status status() {
         return statusCode;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }

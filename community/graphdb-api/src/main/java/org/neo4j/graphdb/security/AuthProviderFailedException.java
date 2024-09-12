@@ -20,8 +20,7 @@
 package org.neo4j.graphdb.security;
 
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
-import org.neo4j.gqlstatus.ErrorMessageHolder;
-import org.neo4j.gqlstatus.HasGqlStatusInfo;
+import org.neo4j.gqlstatus.GqlRuntimeException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -31,50 +30,28 @@ import org.neo4j.kernel.api.exceptions.Status;
  * but for failures where such information could not be established because of an external server problem,
  * misconfiguration etc.
  */
-public class AuthProviderFailedException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
+public class AuthProviderFailedException extends GqlRuntimeException implements Status.HasStatus {
     private static final Status statusCode = Status.Security.AuthProviderFailed;
-    private final ErrorGqlStatusObject gqlStatusObject;
-    private final String oldMessage;
 
     public AuthProviderFailedException(String message) {
         super(message);
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public AuthProviderFailedException(ErrorGqlStatusObject gqlStatusObject, String message) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = message;
+        super(gqlStatusObject, message);
     }
 
     public AuthProviderFailedException(String message, Throwable cause) {
         super(message, cause);
-
-        this.gqlStatusObject = null;
-        this.oldMessage = message;
     }
 
     public AuthProviderFailedException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
-        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
-        this.gqlStatusObject = gqlStatusObject;
-        this.oldMessage = message;
-    }
-
-    @Override
-    public String getOldMessage() {
-        return oldMessage;
+        super(gqlStatusObject, message, cause);
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
     public Status status() {
         return statusCode;
-    }
-
-    @Override
-    public ErrorGqlStatusObject gqlStatusObject() {
-        return gqlStatusObject;
     }
 }
