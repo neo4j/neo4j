@@ -19,8 +19,8 @@
  */
 package org.neo4j.router.impl.transaction.database;
 
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.fabric.bookmark.LocalBookmark;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
@@ -32,6 +32,7 @@ import org.neo4j.fabric.executor.TaggingPlanDescriptionWrapper;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
@@ -56,7 +57,7 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
     private final TransactionBookmarkManager bookmarkManager;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
     private ConstituentTransactionFactory constituentTransactionFactory;
-    private final Set<TransactionalContext> openExecutionContexts = ConcurrentHashMap.newKeySet();
+    private final Set<TransactionalContext> openExecutionContexts = new HashSet<>();
 
     public LocalDatabaseTransaction(
             Location.Local location,
@@ -143,7 +144,7 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
                     query.parameters(),
                     transactionalContext,
                     true,
-                    new StatementLifecycleQuerySubscriber(querySubscriber, statementLifecycle),
+                    new QuerySubscriberImpl(transactionalContext, querySubscriber, statementLifecycle),
                     QueryExecutionMonitor.NO_OP);
             return new TransactionalContextQueryExecution(execution, transactionalContext);
         });
@@ -189,6 +190,7 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         @Override
         public void cancel() {
             super.cancel();
+            openExecutionContexts.remove(transactionalContext);
             transactionalContext.close();
         }
 
@@ -201,5 +203,32 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
     @Override
     public boolean isOpen() {
         return internalTransaction.isOpen();
+    }
+
+    private class QuerySubscriberImpl extends StatementLifecycleQuerySubscriber {
+
+        private final TransactionalContext transactionalContext;
+
+        public QuerySubscriberImpl(
+                TransactionalContext transactionalContext,
+                QuerySubscriber querySubscriber,
+                QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
+            super(querySubscriber, statementLifecycle);
+            this.transactionalContext = transactionalContext;
+        }
+
+        @Override
+        public void onResultCompleted(QueryStatistics statistics) {
+            super.onResultCompleted(statistics);
+            openExecutionContexts.remove(transactionalContext);
+            transactionalContext.close();
+        }
+
+        @Override
+        public void onError(Throwable throwable) throws Exception {
+            super.onError(throwable);
+            openExecutionContexts.remove(transactionalContext);
+            transactionalContext.close();
+        }
     }
 }
