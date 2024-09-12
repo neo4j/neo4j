@@ -72,6 +72,8 @@ public interface DatabaseLayout {
 
     Path metadataStore();
 
+    Path indexStatisticsStore();
+
     Path pathForExistsMarker();
 
     Path pathForStore(CommonDatabaseStores store);

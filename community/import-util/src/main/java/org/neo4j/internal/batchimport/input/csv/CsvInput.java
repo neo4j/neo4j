@@ -34,6 +34,7 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.ToIntFunction;
@@ -54,6 +55,7 @@ import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.Inputs;
+import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.ByteUnit;
@@ -74,6 +76,7 @@ public class CsvInput implements Input {
     private final Header.Factory nodeHeaderFactory;
     private final Iterable<DataFactory> relationshipDataFactory;
     private final Header.Factory relationshipHeaderFactory;
+    private final List<SchemaCommand> schemaCommands;
     private final IdType idType;
     private final Configuration config;
     private final Monitor monitor;
@@ -111,6 +114,7 @@ public class CsvInput implements Input {
                 nodeHeaderFactory,
                 relationshipDataFactory,
                 relationshipHeaderFactory,
+                List.of(),
                 idType,
                 config,
                 autoSkipHeaders,
@@ -146,6 +150,50 @@ public class CsvInput implements Input {
             Monitor monitor,
             Groups groups,
             MemoryTracker memoryTracker) {
+        this(
+                nodeDataFactory,
+                nodeHeaderFactory,
+                relationshipDataFactory,
+                relationshipHeaderFactory,
+                List.of(),
+                idType,
+                config,
+                autoSkipHeaders,
+                monitor,
+                groups,
+                memoryTracker);
+    }
+
+    /**
+     * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
+     * specifies an input group with its own header, extracted by the {@code nodeHeaderFactory}. From the outside
+     * it looks like one stream of nodes.
+     * @param nodeHeaderFactory factory for reading node headers.
+     * @param relationshipDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
+     * specifies an input group with its own header, extracted by the {@code relationshipHeaderFactory}.
+     * From the outside it looks like one stream of relationships.
+     * @param relationshipHeaderFactory factory for reading relationship headers.
+     * @param schemaCommands the schema changes to apply to the database after the data is imported.
+     * @param idType {@link IdType} to expect in id fields of node and relationship input.
+     * @param config CSV configuration.
+     * @param autoSkipHeaders  flag to skip headers
+     * @param monitor {@link Monitor} for internal events.
+     * @param groups the ID groups to use
+     * @param memoryTracker the {@link MemoryTracker} to use
+     *
+     */
+    public CsvInput(
+            Iterable<DataFactory> nodeDataFactory,
+            Header.Factory nodeHeaderFactory,
+            Iterable<DataFactory> relationshipDataFactory,
+            Header.Factory relationshipHeaderFactory,
+            List<SchemaCommand> schemaCommands,
+            IdType idType,
+            Configuration config,
+            boolean autoSkipHeaders,
+            Monitor monitor,
+            Groups groups,
+            MemoryTracker memoryTracker) {
         this.autoSkipHeaders = autoSkipHeaders;
         this.memoryTracker = memoryTracker;
         assertSaneConfiguration(config);
@@ -154,6 +202,7 @@ public class CsvInput implements Input {
         this.nodeHeaderFactory = nodeHeaderFactory;
         this.relationshipDataFactory = relationshipDataFactory;
         this.relationshipHeaderFactory = relationshipHeaderFactory;
+        this.schemaCommands = schemaCommands;
         this.idType = idType;
         this.config = config;
         this.monitor = monitor;
@@ -264,6 +313,11 @@ public class CsvInput implements Input {
             throw new IllegalArgumentException("Character '" + character + "' specified by " + characterDescription
                     + " is the same as specified by " + conflict);
         }
+    }
+
+    @Override
+    public List<SchemaCommand> schemaCommands() {
+        return schemaCommands;
     }
 
     @Override

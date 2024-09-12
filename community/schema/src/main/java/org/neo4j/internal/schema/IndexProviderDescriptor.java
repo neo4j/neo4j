@@ -21,6 +21,11 @@ package org.neo4j.internal.schema;
 
 import java.util.Objects;
 
+/**
+ * Describes the provider for a specific {@link IndexType} and version via a standard name/version string
+ * <br>
+ * <strong>PLEASE NOTE</strong> that any new name/version pairs must be added to {@link AllIndexProviderDescriptors}
+ */
 public class IndexProviderDescriptor {
 
     private final String key;

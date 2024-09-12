@@ -24,15 +24,39 @@ package org.neo4j.kernel.lifecycle;
  * like one {@link AutoCloseable}.
  */
 public class Lifespan extends LifeSupport implements AutoCloseable {
+
+    private Lifespan() {}
+
+    /**
+     * @param subjects the subjects to be managed by the lifecycle. <strong>NOTE</strong> The lifecycle will have the
+     * state {@link LifecycleStatus#STARTED} after all the subjects are added
+     */
     public Lifespan(Lifecycle... subjects) {
-        for (Lifecycle subject : subjects) {
-            add(subject);
-        }
+        this();
+        addAll(subjects);
         start();
+    }
+
+    /**
+     * @param subjects the subjects to be managed by the lifecycle. <strong>NOTE</strong> The lifecycle will still have
+     * the state {@link LifecycleStatus#NONE} after all the subjects are added and {@link Lifecycle#init()} will
+     * need to be called manually.
+     * @return the initialized lifespan
+     */
+    public static Lifespan createWithNoneState(Lifecycle... subjects) {
+        final var lifespan = new Lifespan();
+        lifespan.addAll(subjects);
+        return lifespan;
     }
 
     @Override
     public void close() {
         shutdown();
+    }
+
+    private void addAll(Lifecycle... subjects) {
+        for (Lifecycle subject : subjects) {
+            add(subject);
+        }
     }
 }

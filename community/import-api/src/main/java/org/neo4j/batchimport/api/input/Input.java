@@ -20,10 +20,12 @@
 package org.neo4j.batchimport.api.input;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.neo4j.batchimport.api.BatchImporter;
 import org.neo4j.batchimport.api.InputIterable;
 import org.neo4j.batchimport.api.InputIterator;
+import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.token.TokenHolders;
 
@@ -99,6 +101,13 @@ public interface Input extends AutoCloseable {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @return the schema commands to be applied after the data has been imported.
+     */
+    default List<SchemaCommand> schemaCommands() {
+        return List.of();
+    }
+
     @Override
     default void close() {}
 
@@ -136,7 +145,7 @@ public interface Input extends AutoCloseable {
         };
     }
 
-    public static Estimates knownEstimates(
+    static Estimates knownEstimates(
             long numberOfNodes,
             long numberOfRelationships,
             long numberOfNodeProperties,

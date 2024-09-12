@@ -108,6 +108,10 @@ public class ParallelBatchImporter implements BatchImporter {
 
     @Override
     public void doImport(Input input) throws IOException {
+        if (!input.schemaCommands().isEmpty()) {
+            throw new UnsupportedOperationException("Record format batch import does not support schema changes");
+        }
+
         try (BatchingNeoStores store = ImportLogic.instantiateNeoStores(
                         fileSystem,
                         databaseLayout,

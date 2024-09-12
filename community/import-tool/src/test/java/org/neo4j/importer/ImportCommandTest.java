@@ -81,6 +81,7 @@ class ImportCommandTest {
         "--delimiter",
         "--array-delimiter",
         "--quote",
+        "--schema",
         "--read-buffer-size",
         "--max-off-heap-memory",
         "--high-parallel-io",

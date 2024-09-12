@@ -40,7 +40,7 @@ public class CommandTestUtils {
      * @param fs file system this is run on.
      * @param command to set up and run the command, given this created {@link ExecutionContext}.
      */
-    public static void withSuppressedOutput(
+    public static CapturingExecutionContext withSuppressedOutput(
             Path homeDir,
             Path confDir,
             FileSystemAbstraction fs,
@@ -48,6 +48,7 @@ public class CommandTestUtils {
         var executionContext = capturingExecutionContext(homeDir, confDir, fs);
         try {
             command.accept(executionContext);
+            return executionContext;
         } catch (Throwable e) {
             throw new RuntimeException(
                     format(
@@ -69,13 +70,13 @@ public class CommandTestUtils {
      * @param command instantiator of the command.
      * @param args arguments to the command.
      */
-    public static void runCommandWithSuppressedOutput(
+    public static CapturingExecutionContext runCommandWithSuppressedOutput(
             Path homeDir,
             Path confDir,
             FileSystemAbstraction fs,
             Function<ExecutionContext, AbstractCommand> command,
             String... args) {
-        withSuppressedOutput(homeDir, confDir, fs, ctx -> {
+        return withSuppressedOutput(homeDir, confDir, fs, ctx -> {
             var cmd = command.apply(ctx);
             CommandLine.populateCommand(cmd, args);
             cmd.execute();
@@ -90,9 +91,9 @@ public class CommandTestUtils {
      * @param fs file system this is run on.
      * @param args arguments to the admin tool
      */
-    public static void runAdminToolWithSuppressedOutput(
+    public static CapturingExecutionContext runAdminToolWithSuppressedOutput(
             Path homeDir, Path confDir, FileSystemAbstraction fs, String... args) {
-        withSuppressedOutput(homeDir, confDir, fs, ctx -> AdminTool.execute(ctx, args));
+        return withSuppressedOutput(homeDir, confDir, fs, ctx -> AdminTool.execute(ctx, args));
     }
 
     public static CapturingExecutionContext capturingExecutionContext(

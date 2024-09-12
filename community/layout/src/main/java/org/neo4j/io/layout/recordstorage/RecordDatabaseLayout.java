@@ -146,6 +146,7 @@ public class RecordDatabaseLayout extends PlainDatabaseLayout {
         return file(RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE.getName());
     }
 
+    @Override
     public Path indexStatisticsStore() {
         return file(RecordDatabaseFile.INDEX_STATISTICS_STORE.getName());
     }

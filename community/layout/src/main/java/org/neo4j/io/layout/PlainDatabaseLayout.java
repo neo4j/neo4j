@@ -106,6 +106,11 @@ public class PlainDatabaseLayout implements DatabaseLayout {
     }
 
     @Override
+    public Path indexStatisticsStore() {
+        throw new IllegalStateException("Can not get the metadata store for a PlainDatabaseLayout.");
+    }
+
+    @Override
     public Path pathForExistsMarker() {
         throw new IllegalStateException("Can not get the exists marker path for a PlainDatabaseLayout.");
     }

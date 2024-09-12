@@ -69,7 +69,9 @@ import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.importer.CsvImporter.CsvImportException;
+import org.neo4j.importer.SchemaCommandReader.ReaderConfig;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
+import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -77,6 +79,8 @@ import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
@@ -98,6 +102,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParentCommand;
 
 @Command(
         name = "import",
@@ -117,7 +122,7 @@ public class ImportCommand {
         private static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
         private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
 
-        private enum OnOffAuto {
+        enum OnOffAuto {
             ON,
             OFF,
             AUTO
@@ -129,6 +134,15 @@ public class ImportCommand {
                 return OnOffAuto.valueOf(value.toUpperCase(Locale.ROOT));
             }
         }
+
+        @ParentCommand
+        private ImportCommand importCommand;
+
+        @Option(
+                names = "--schema",
+                paramLabel = "<path>",
+                description = "File in which to store the Cypher schema commands to run as part of of the data import.")
+        private Path schemaCommands;
 
         @Parameters(
                 index = "0",
@@ -415,6 +429,10 @@ public class ImportCommand {
             Closeable maybeCheckLock(DatabaseLayout databaseLayout) throws CannotWriteException, IOException;
         }
 
+        public boolean allowEnterpriseFeatures() {
+            return importCommand.allowEnterpriseFeatures();
+        }
+
         protected void doExecute(
                 boolean incremental, String format, boolean overwriteDestination, Base.MaybeLocker maybeLockChecker) {
             try {
@@ -449,7 +467,8 @@ public class ImportCommand {
                             .withAutoSkipHeaders(autoSkipHeaders)
                             .withForce(overwriteDestination)
                             .withIncremental(incremental)
-                            .withLogProvider(logProvider);
+                            .withLogProvider(logProvider)
+                            .withSchemaCommands(parseSchemaCommands(fileSystem, databaseConfig));
                     if (incremental) {
                         importerBuilder.withCursorContextFactory(new CursorContextFactory(
                                 PageCacheTracer.NULL,
@@ -486,6 +505,9 @@ public class ImportCommand {
             }
         }
 
+        protected abstract SchemaCommandReader.ReaderConfig schemaCommandsReaderConfig(
+                VectorIndexVersion latestVectorIndexVersion);
+
         protected abstract void doImport(
                 FileSystemAbstraction fileSystem,
                 DatabaseLayout databaseLayout,
@@ -501,8 +523,31 @@ public class ImportCommand {
                 boolean verbose,
                 Collector badCollector,
                 MemoryTracker memoryTracker,
-                Input input)
+                Input input,
+                List<SchemaCommand> schemaCommands)
                 throws IOException;
+
+        private List<SchemaCommand> parseSchemaCommands(FileSystemAbstraction fileSystem, Config config) {
+            if (schemaCommands == null) {
+                return List.of();
+            }
+
+            if (!fileSystem.fileExists(schemaCommands)) {
+                throw new CommandFailedException("The provided schema commands file does not exist.", ExitCode.IOERR);
+            }
+
+            if (fileSystem.isDirectory(schemaCommands)) {
+                throw new CommandFailedException(
+                        "The provided schema commands file is not a regular file.", ExitCode.IOERR);
+            }
+
+            final var reader = new SchemaCommandReader(
+                    fileSystem,
+                    config,
+                    schemaCommandsReaderConfig(
+                            VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(config))));
+            return reader.parse(schemaCommands);
+        }
 
         private LogTailMetadata getLogTail(
                 FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config databaseConfig) throws IOException {
@@ -641,7 +686,6 @@ public class ImportCommand {
         @Option(
                 names = "--format",
                 showDefaultValue = NEVER,
-                required = false,
                 description = "Name of database format. The imported database will be created in the specified format "
                         + "or use the format set in the configuration. Valid formats are `standard`, `aligned`, "
                         + "`high_limit`, and `block`.")
@@ -671,6 +715,11 @@ public class ImportCommand {
         }
 
         @Override
+        protected ReaderConfig schemaCommandsReaderConfig(VectorIndexVersion latestVectorIndexVersion) {
+            return new ReaderConfig(allowEnterpriseFeatures(), true, false, latestVectorIndexVersion);
+        }
+
+        @Override
         protected void doImport(
                 FileSystemAbstraction fileSystem,
                 DatabaseLayout databaseLayout,
@@ -686,7 +735,8 @@ public class ImportCommand {
                 boolean verbose,
                 Collector badCollector,
                 MemoryTracker memoryTracker,
-                Input input)
+                Input input,
+                List<SchemaCommand> schemaCommands)
                 throws IOException {
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
             BatchImporter importer = storageEngineFactory.batchImporter(
@@ -742,6 +792,14 @@ public class ImportCommand {
         }
 
         @Override
+        protected ReaderConfig schemaCommandsReaderConfig(VectorIndexVersion latestVectorIndexVersion) {
+            // This will be the config setting when schema commands are available for incremental
+            // return new ReaderConfig(allowEnterpriseFeatures(), true, true, latestVectorIndexVersion);
+            throw new UnsupportedOperationException(
+                    "Applying schema commands during incremental import is not currently supported");
+        }
+
+        @Override
         protected void doImport(
                 FileSystemAbstraction fileSystem,
                 DatabaseLayout databaseLayout,
@@ -757,7 +815,8 @@ public class ImportCommand {
                 boolean verbose,
                 Collector badCollector,
                 MemoryTracker memoryTracker,
-                Input input)
+                Input input,
+                List<SchemaCommand> schemaCommands)
                 throws IOException {
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(
                             fileSystem, databaseLayout)
@@ -884,6 +943,10 @@ public class ImportCommand {
             usageHelp = true,
             description = "Show this help message and exit.")
     private boolean helpRequested;
+
+    protected boolean allowEnterpriseFeatures() {
+        return false;
+    }
 
     enum IncrementalStage {
         /**

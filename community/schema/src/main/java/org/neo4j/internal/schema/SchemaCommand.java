@@ -19,9 +19,20 @@
  */
 package org.neo4j.internal.schema;
 
+import static org.neo4j.internal.schema.AllIndexProviderDescriptors.DEFAULT_TEXT_DESCRIPTOR;
+import static org.neo4j.internal.schema.AllIndexProviderDescriptors.DEFAULT_VECTOR_DESCRIPTOR;
+import static org.neo4j.internal.schema.AllIndexProviderDescriptors.FULLTEXT_DESCRIPTOR;
+import static org.neo4j.internal.schema.AllIndexProviderDescriptors.POINT_DESCRIPTOR;
+import static org.neo4j.internal.schema.AllIndexProviderDescriptors.RANGE_DESCRIPTOR;
+import static org.neo4j.internal.schema.AllIndexProviderDescriptors.TOKEN_DESCRIPTOR;
+import static org.neo4j.internal.schema.SchemaCommandUtils.backingIndex;
+import static org.neo4j.internal.schema.SchemaCommandUtils.forSchema;
+import static org.neo4j.internal.schema.SchemaCommandUtils.withName;
+
 import java.util.List;
 import java.util.Optional;
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.token.TokenHolders;
 
@@ -48,7 +59,7 @@ public sealed interface SchemaCommand {
 
             Optional<IndexProviderDescriptor> provider();
 
-            SchemaDescriptor toSchema(TokenHolders tokenHolders);
+            IndexPrototype toPrototype(TokenHolders tokenHolders);
 
             // SchemaCommand.CreateRangeNodeIndex
             record NodeRange(
@@ -69,9 +80,17 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertiesForName(properties));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                    this,
+                                    SchemaDescriptors.forLabel(
+                                            tokenHolders.labelForName(label),
+                                            tokenHolders.propertiesForName(properties)),
+                                    RANGE_DESCRIPTOR),
+                            List.of(label),
+                            properties);
                 }
             }
 
@@ -94,9 +113,17 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertiesForName(properties));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                    this,
+                                    SchemaDescriptors.forRelType(
+                                            tokenHolders.relationshipForName(type),
+                                            tokenHolders.propertiesForName(properties)),
+                                    RANGE_DESCRIPTOR),
+                            List.of(type),
+                            properties);
                 }
             }
 
@@ -119,9 +146,16 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                    this,
+                                    SchemaDescriptors.forLabel(
+                                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property)),
+                                    DEFAULT_TEXT_DESCRIPTOR),
+                            List.of(label),
+                            List.of(property));
                 }
             }
 
@@ -144,9 +178,17 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                    this,
+                                    SchemaDescriptors.forRelType(
+                                            tokenHolders.relationshipForName(type),
+                                            tokenHolders.propertyForName(property)),
+                                    DEFAULT_TEXT_DESCRIPTOR),
+                            List.of(type),
+                            List.of(property));
                 }
             }
 
@@ -170,9 +212,18 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                            this,
+                                            SchemaDescriptors.forLabel(
+                                                    tokenHolders.labelForName(label),
+                                                    tokenHolders.propertyForName(property)),
+                                            POINT_DESCRIPTOR)
+                                    .withIndexConfig(config),
+                            List.of(label),
+                            List.of(property));
                 }
             }
 
@@ -196,9 +247,18 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                            this,
+                                            SchemaDescriptors.forRelType(
+                                                    tokenHolders.relationshipForName(type),
+                                                    tokenHolders.propertyForName(property)),
+                                            POINT_DESCRIPTOR)
+                                    .withIndexConfig(config),
+                            List.of(type),
+                            List.of(property));
                 }
             }
 
@@ -216,8 +276,12 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(this, SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), TOKEN_DESCRIPTOR),
+                            List.of(),
+                            List.of());
                 }
             }
 
@@ -235,8 +299,15 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP);
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                    this,
+                                    SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP),
+                                    TOKEN_DESCRIPTOR),
+                            List.of(),
+                            List.of());
                 }
             }
 
@@ -260,11 +331,19 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.fulltext(
-                            EntityType.NODE,
-                            tokenHolders.labelsForNames(labels),
-                            tokenHolders.propertiesForName(properties));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                            this,
+                                            SchemaDescriptors.fulltext(
+                                                    EntityType.NODE,
+                                                    tokenHolders.labelsForNames(labels),
+                                                    tokenHolders.propertiesForName(properties)),
+                                            FULLTEXT_DESCRIPTOR)
+                                    .withIndexConfig(config),
+                            labels,
+                            properties);
                 }
             }
 
@@ -288,11 +367,19 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.fulltext(
-                            EntityType.RELATIONSHIP,
-                            tokenHolders.relationshipsForNames(types),
-                            tokenHolders.propertiesForName(properties));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                            this,
+                                            SchemaDescriptors.fulltext(
+                                                    EntityType.RELATIONSHIP,
+                                                    tokenHolders.relationshipsForNames(types),
+                                                    tokenHolders.propertiesForName(properties)),
+                                            FULLTEXT_DESCRIPTOR)
+                                    .withIndexConfig(config),
+                            types,
+                            properties);
                 }
             }
 
@@ -316,9 +403,18 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                            this,
+                                            SchemaDescriptors.forLabel(
+                                                    tokenHolders.labelForName(label),
+                                                    tokenHolders.propertyForName(property)),
+                                            DEFAULT_VECTOR_DESCRIPTOR)
+                                    .withIndexConfig(config),
+                            List.of(label),
+                            List.of(property));
                 }
             }
 
@@ -342,9 +438,18 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
+                public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    return withName(
+                            name,
+                            forSchema(
+                                            this,
+                                            SchemaDescriptors.forRelType(
+                                                    tokenHolders.relationshipForName(type),
+                                                    tokenHolders.propertyForName(property)),
+                                            DEFAULT_VECTOR_DESCRIPTOR)
+                                    .withIndexConfig(config),
+                            List.of(type),
+                            List.of(property));
                 }
             }
         }
@@ -355,15 +460,22 @@ public sealed interface SchemaCommand {
         record Drop(String name, boolean ifExists) implements ConstraintCommand {}
 
         sealed interface Create extends ConstraintCommand {
+
+            record ConstraintPrototype(ConstraintDescriptor descriptor, IndexPrototype backingIndex) {
+                public ConstraintPrototype(ConstraintDescriptor descriptor) {
+                    this(descriptor, null);
+                }
+            }
+
             EntityType entityType();
 
             ConstraintType constraintType();
 
             boolean ifNotExists();
 
-            SchemaDescriptor toSchema(TokenHolders tokenHolders);
-
             boolean hasBackingIndex();
+
+            ConstraintPrototype toPrototype(TokenHolders tokenHolders);
 
             record NodeUniqueness(
                     String name,
@@ -383,14 +495,22 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertiesForName(properties));
+                public boolean hasBackingIndex() {
+                    return true;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return true;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forLabel(
+                            tokenHolders.labelForName(label), tokenHolders.propertiesForName(properties));
+                    final var backingIndex = backingIndex(schema, provider);
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.uniqueForSchema(schema, backingIndex.getIndexType()),
+                            List.of(label),
+                            properties);
+                    return new ConstraintPrototype(
+                            constraintDescriptor, backingIndex.withName(constraintDescriptor.getName()));
                 }
             }
 
@@ -406,14 +526,20 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
+                public boolean hasBackingIndex() {
+                    return false;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return false;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forLabel(
+                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.existsForSchema(schema, false),
+                            List.of(label),
+                            List.of(property));
+                    return new ConstraintPrototype(constraintDescriptor);
                 }
             }
 
@@ -435,14 +561,22 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertiesForName(properties));
+                public boolean hasBackingIndex() {
+                    return true;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return true;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forLabel(
+                            tokenHolders.labelForName(label), tokenHolders.propertiesForName(properties));
+                    final var backingIndex = backingIndex(schema, provider);
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.keyForSchema(schema, backingIndex.getIndexType()),
+                            List.of(label),
+                            properties);
+                    return new ConstraintPrototype(
+                            constraintDescriptor, backingIndex.withName(constraintDescriptor.getName()));
                 }
             }
 
@@ -460,14 +594,20 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forLabel(
-                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
+                public boolean hasBackingIndex() {
+                    return false;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return false;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forLabel(
+                            tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.typeForSchema(schema, propertyTypes, false),
+                            List.of(label),
+                            List.of(property));
+                    return new ConstraintPrototype(constraintDescriptor);
                 }
             }
 
@@ -489,14 +629,22 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertiesForName(properties));
+                public boolean hasBackingIndex() {
+                    return true;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return true;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forRelType(
+                            tokenHolders.relationshipForName(type), tokenHolders.propertiesForName(properties));
+                    final var backingIndex = backingIndex(schema, provider);
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.uniqueForSchema(schema, backingIndex.getIndexType()),
+                            List.of(type),
+                            properties);
+                    return new ConstraintPrototype(
+                            constraintDescriptor, backingIndex.withName(constraintDescriptor.getName()));
                 }
             }
 
@@ -513,14 +661,20 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
+                public boolean hasBackingIndex() {
+                    return false;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return false;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forRelType(
+                            tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.existsForSchema(schema, false),
+                            List.of(type),
+                            List.of(property));
+                    return new ConstraintPrototype(constraintDescriptor);
                 }
             }
 
@@ -542,14 +696,22 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertiesForName(properties));
+                public boolean hasBackingIndex() {
+                    return true;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return true;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forRelType(
+                            tokenHolders.relationshipForName(type), tokenHolders.propertiesForName(properties));
+                    final var backingIndex = backingIndex(schema, provider);
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.keyForSchema(schema, backingIndex.getIndexType()),
+                            List.of(type),
+                            properties);
+                    return new ConstraintPrototype(
+                            constraintDescriptor, backingIndex.withName(constraintDescriptor.getName()));
                 }
             }
 
@@ -567,14 +729,20 @@ public sealed interface SchemaCommand {
                 }
 
                 @Override
-                public SchemaDescriptor toSchema(TokenHolders tokenHolders) {
-                    return SchemaDescriptors.forRelType(
-                            tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
+                public boolean hasBackingIndex() {
+                    return false;
                 }
 
                 @Override
-                public boolean hasBackingIndex() {
-                    return false;
+                public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
+                    final var schema = SchemaDescriptors.forRelType(
+                            tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
+                    final var constraintDescriptor = withName(
+                            name,
+                            ConstraintDescriptorFactory.typeForSchema(schema, propertyTypes, false),
+                            List.of(type),
+                            List.of(property));
+                    return new ConstraintPrototype(constraintDescriptor);
                 }
             }
         }

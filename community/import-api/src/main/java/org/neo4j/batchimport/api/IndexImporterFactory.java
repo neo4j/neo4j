@@ -20,6 +20,7 @@
 package org.neo4j.batchimport.api;
 
 import static org.neo4j.batchimport.api.IndexImporter.EMPTY_IMPORTER;
+import static org.neo4j.batchimport.api.IndexesCreator.EMPTY_CREATOR;
 
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -45,7 +46,31 @@ public interface IndexImporterFactory {
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour);
 
-    IndexImporterFactory EMPTY =
-            (descriptor, layout, fs, pageCache, contextFactory, pageCacheTracer, openOptions, indexingBehaviour) ->
-                    EMPTY_IMPORTER;
+    /**
+     * @param context the context required for this creator to build the indexes
+     * @return the creator of indexes
+     */
+    <CONTEXT extends CreationContext> IndexesCreator getCreator(CONTEXT context);
+
+    IndexImporterFactory EMPTY = new IndexImporterFactory() {
+        @Override
+        public IndexImporter getImporter(
+                IndexDescriptor index,
+                DatabaseLayout layout,
+                FileSystemAbstraction fs,
+                PageCache pageCache,
+                CursorContextFactory contextFactory,
+                PageCacheTracer pageCacheTracer,
+                ImmutableSet<OpenOption> openOptions,
+                StorageEngineIndexingBehaviour indexingBehaviour) {
+            return EMPTY_IMPORTER;
+        }
+
+        @Override
+        public IndexesCreator getCreator(CreationContext context) {
+            return EMPTY_CREATOR;
+        }
+    };
+
+    interface CreationContext {}
 }

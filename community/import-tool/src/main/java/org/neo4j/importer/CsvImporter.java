@@ -49,8 +49,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.list.MutableList;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.IdType;
@@ -59,10 +62,12 @@ import org.neo4j.configuration.Config;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.internal.batchimport.input.BadCollector;
+import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
+import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -112,6 +117,7 @@ class CsvImporter {
     private final ImportCommand.IncrementalStage incrementalStage;
     private final boolean incremental;
     private final InternalLogProvider logProvider;
+    private final List<SchemaCommand> schemaCommands;
 
     private CsvImporter(Builder b) {
         this.databaseLayout = requireNonNull(b.databaseLayout);
@@ -141,6 +147,7 @@ class CsvImporter {
         this.force = b.force;
         this.incremental = b.incremental;
         this.incrementalStage = b.incrementalStage;
+        this.schemaCommands = b.schemaCommands;
     }
 
     void doImport(ImportCommand.Base type) throws IOException {
@@ -164,10 +171,12 @@ class CsvImporter {
                     defaultFormatNodeFileHeader(defaultTimeZone, normalizeTypes),
                     relationshipsData,
                     defaultFormatRelationshipFileHeader(defaultTimeZone, normalizeTypes),
+                    schemaCommands,
                     idType,
                     csvConfig,
                     autoSkipHeaders,
                     new CsvInput.PrintingMonitor(stdOut),
+                    new Groups(),
                     memoryTracker)) {
                 doImport(input, badCollector, type);
             }
@@ -200,7 +209,8 @@ class CsvImporter {
                     verbose,
                     badCollector,
                     memoryTracker,
-                    input);
+                    input,
+                    schemaCommands);
             success = true;
         } catch (Exception ex) {
             throw andPrintError(databaseLayout.getDatabaseName(), ex, incremental, stdErr);
@@ -406,6 +416,7 @@ class CsvImporter {
         private boolean incremental = false;
         private ImportCommand.IncrementalStage incrementalStage = null;
         private InternalLogProvider logProvider = NullLogProvider.getInstance();
+        private final MutableList<SchemaCommand> schemaCommands = Lists.mutable.empty();
 
         Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
             this.databaseLayout = databaseLayout;
@@ -541,6 +552,11 @@ class CsvImporter {
 
         Builder withLogProvider(InternalLogProvider logProvider) {
             this.logProvider = logProvider;
+            return this;
+        }
+
+        Builder withSchemaCommands(List<SchemaCommand> schemaCommands) {
+            this.schemaCommands.addAll(Objects.requireNonNull(schemaCommands));
             return this;
         }
 
