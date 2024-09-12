@@ -88,7 +88,7 @@ class CaseTest extends CypherFunSuite {
 
   test("case_with_a_single_null_value_uses_the_default") {
     // GIVEN CASE WHEN null THEN 42 ELSE "defaults"
-    val caseExpr = CaseExpression(None, IndexedSeq(CoercedPredicate(Null()) -> literal(42)), Some(literal("defaults")))
+    val caseExpr = CaseExpression(IndexedSeq(CoercedPredicate(Null()) -> literal(42)), Some(literal("defaults")))
 
     // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
@@ -153,7 +153,7 @@ class CaseTest extends CypherFunSuite {
   }
 
   test("simple case arguments should contain all children") {
-    val caseExpr = CaseExpression(None, IndexedSeq((Equals(literal(1), literal(2)), literal(3))), Some(literal(4)))
+    val caseExpr = CaseExpression(IndexedSeq((Equals(literal(1), literal(2)), literal(3))), Some(literal(4)))
     caseExpr.arguments should contain.allOf(Equals(literal(1), literal(2)), literal(3), literal(4))
   }
 
@@ -162,7 +162,7 @@ class CaseTest extends CypherFunSuite {
       case (a, b) => (Equals(literal(in), literal(a)), literal(b))
     }
 
-    CaseExpression(None, mappedAlt, None)
+    CaseExpression(mappedAlt, None)
   }
 
   private def genericCase(alternatives: ((Any, Any), Any)*): CaseExpression = {
@@ -170,10 +170,10 @@ class CaseTest extends CypherFunSuite {
       case ((a, b), c) => (Equals(literal(a), literal(b)), literal(c))
     }
 
-    CaseExpression(None, mappedAlt, None)
+    CaseExpression(mappedAlt, None)
   }
 
   implicit class SimpleCasePimp(in: CaseExpression) {
-    def defaultsTo(a: Any): CaseExpression = CaseExpression(None, in.alternatives, Some(literal(a)))
+    def defaultsTo(a: Any): CaseExpression = CaseExpression(in.alternatives, Some(literal(a)))
   }
 }

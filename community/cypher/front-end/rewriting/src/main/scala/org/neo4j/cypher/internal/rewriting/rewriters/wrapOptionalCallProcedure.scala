@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.rewriting.conditions.OptionalCallProcedureWrapped
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -57,8 +56,5 @@ case object wrapOptionalCallProcedure extends StepSequencer.Step with Preparator
 
   private val instance = bottomUp(rewriter)
 
-  override def getRewriter(
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = instance
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 }

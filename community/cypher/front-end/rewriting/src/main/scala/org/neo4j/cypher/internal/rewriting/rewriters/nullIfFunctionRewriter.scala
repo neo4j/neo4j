@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.expressions.functions.NullIf
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -36,10 +35,7 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object nullIfFunctionRewriter extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
 
-  override def getRewriter(
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = instance
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set(!FunctionInvocationsResolved)
 
@@ -50,7 +46,7 @@ case object nullIfFunctionRewriter extends Step with DefaultPostCondition with P
     case f @ FunctionInvocation(FunctionName(namespace, name), _, IndexedSeq(v1: Expression, v2: Expression), _, _)
       if namespace.parts.isEmpty && name.equalsIgnoreCase(NullIf.name) =>
       val alt1 = (Equals(v1, v2)(f.position), Null()(f.position))
-      CaseExpression(None, None, IndexedSeq(alt1), Some(v1))(f.position)
+      CaseExpression(None, IndexedSeq(alt1), Some(v1))(f.position)
   }
 
   val instance: Rewriter = topDown(rewriter)

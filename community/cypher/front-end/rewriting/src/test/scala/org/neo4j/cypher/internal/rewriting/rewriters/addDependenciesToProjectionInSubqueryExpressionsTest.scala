@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -532,10 +531,7 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
     val expected = parse(expectedQuery, cypherExceptionFactory)
 
     val normalizedWithAndReturnClauses =
-      original.endoRewrite(normalizeWithAndReturnClauses.getRewriter(
-        cypherExceptionFactory,
-        new AnonymousVariableNameGenerator()
-      ))
+      original.endoRewrite(normalizeWithAndReturnClauses.getRewriter(cypherExceptionFactory))
     val checkResult =
       normalizedWithAndReturnClauses.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
     val rewriter =

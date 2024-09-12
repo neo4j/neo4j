@@ -376,7 +376,7 @@ private class DefaultExpressionStringifier(
       case AllPropertiesSelector() => ".*"
 
       // Generic Case
-      case CaseExpression(None, _, alternatives, default) =>
+      case CaseExpression(None, alternatives, default) =>
         Seq(
           Seq("CASE"),
           for {
@@ -387,7 +387,7 @@ private class DefaultExpressionStringifier(
           Seq("END")
         ).flatten.mkString(prettifier.NL)
 
-      case CaseExpression(Some(expression), _, alternatives, default) =>
+      case CaseExpression(Some(expression), alternatives, default) =>
         Seq(
           Seq(s"CASE ${inner(ast)(expression)}"),
           for {

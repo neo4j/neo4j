@@ -522,11 +522,6 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL casePlaceholder() {
-        return null;
-    }
-
-    @Override
     public NULL inputPosition(int offset, int line, int column) {
         return null;
     }

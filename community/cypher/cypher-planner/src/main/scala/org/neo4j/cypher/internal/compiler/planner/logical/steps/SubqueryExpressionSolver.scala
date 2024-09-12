@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.irExpressionRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicates.planPredicates
+import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -416,6 +417,7 @@ object SubqueryExpressionSolver {
               // Loops
               case _: ScopeExpression => true
               // Conditionals & List accesses
+              case _: CaseExpression     => true
               case _: ContainerIndex     => true
               case _: ListSlice          => true
               case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head

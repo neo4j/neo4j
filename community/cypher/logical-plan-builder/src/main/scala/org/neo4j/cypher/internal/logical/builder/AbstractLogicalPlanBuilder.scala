@@ -265,8 +265,6 @@ import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.rewriting.rewriters.HasLabelsAndHasTypeNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.combineHasLabels
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
-import org.neo4j.cypher.internal.rewriting.rewriters.replaceExtendedCasePlaceholders
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.LabelId
@@ -3175,15 +3173,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     override def isRelationship(expr: Expression): Boolean = semanticTable.typeFor(expr).is(CTRelationship)
   }
 
-  private val anonymizer = new AnonymousVariableNameGenerator()
-
   protected def expressionRewriter: Rewriter =
-    inSequence(
-      replaceExtendedCasePlaceholders.getRewriter(null, anonymizer),
-      hasLabelsAndHasTypeNormalizer,
-      combineHasLabels,
-      desugarMapProjection.instance
-    )
+    inSequence(hasLabelsAndHasTypeNormalizer, combineHasLabels, desugarMapProjection.instance)
 
   /**
    * Returns the finalized output of the builder.
@@ -3201,15 +3192,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   private def parseProjections(projections: String*): Map[LogicalVariable, Expression] = {
     toVarMap(Parser.parseProjections(projections: _*)).view.mapValues {
-      case e: Expression =>
-        e.endoRewrite {
-          topDown {
-            Rewriter.lift {
-              case f: FunctionInvocation if f.needsToBeResolved =>
-                ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
-            }
-          }
-        }
+      case f: FunctionInvocation if f.needsToBeResolved =>
+        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
       case e => e
     }.toMap
   }

@@ -20,26 +20,17 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class CaseExpression(
-  candidate: Option[(ExpressionVariable, Expression)],
-  alternatives: IndexedSeq[(Predicate, Expression)],
-  default: Option[Expression]
-) extends Expression {
+case class CaseExpression(alternatives: IndexedSeq[(Predicate, Expression)], default: Option[Expression])
+    extends Expression {
 
   require(alternatives.nonEmpty)
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    candidate.foreach {
-      case (variable, expr) =>
-        state.expressionVariables(variable.offset) = expr(row, state)
-    }
-
     val thisMatch: Option[Expression] = alternatives collectFirst {
       case (p, res) if p.isTrue(row, state) => res
     }
@@ -58,17 +49,13 @@ case class CaseExpression(
   override def children: Seq[AstNode[_]] = arguments
 
   override def rewrite(f: Expression => Expression): Expression = {
-    val newCandidate = candidate.map {
-      case (variable, expr) => (variable, expr.rewrite(f))
-    }
-
     val newAlternatives: IndexedSeq[(Predicate, Expression)] = alternatives map {
       case (p, e) => (p.rewriteAsPredicate(f), e.rewrite(f))
     }
 
     val newDefault = default.map(_.rewrite(f))
 
-    f(CaseExpression(newCandidate, newAlternatives, newDefault))
+    f(CaseExpression(newAlternatives, newDefault))
   }
 
 }

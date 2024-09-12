@@ -407,7 +407,7 @@ class LivenessAnalysisTest extends CypherFunSuite {
         "ignored",
         "CASE i WHEN 1 THEN [1] ELSE [] END",
         Seq(setNodeProperty("n", "prop", "'new'"))
-      ).expectLive("  UNNAMED0", "i", "ignored", "n", "prop", "prop2")
+      ).expectLive("i", "ignored", "n", "prop", "prop2")
       .|.argument("n", "i").expectLive("i", "n", "prop", "prop2")
       .unwind("[0,1,2] AS i").expectLive("i", "n", "prop")
       .eager().expectLive("n", "prop")

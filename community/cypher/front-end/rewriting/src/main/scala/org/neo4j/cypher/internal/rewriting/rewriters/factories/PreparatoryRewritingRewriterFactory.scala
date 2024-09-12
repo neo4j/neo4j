@@ -16,14 +16,10 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters.factories
 
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 
 trait PreparatoryRewritingRewriterFactory {
 
-  def getRewriter(
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter
+  def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter
 }

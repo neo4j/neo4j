@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class wrapOptionalCallProcedureTest extends CypherFunSuite with RewriteTest {
 
-  override val rewriterUnderTest: Rewriter = wrapOptionalCallProcedure.getRewriter(null, null)
+  override val rewriterUnderTest: Rewriter = wrapOptionalCallProcedure.getRewriter(null)
 
   test("rewrite optional call procedure") {
     assertRewrite(

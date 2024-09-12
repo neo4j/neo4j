@@ -1732,11 +1732,6 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object casePlaceholder() {
-        throw new UnsupportedOperationException("casePlaceholder is not a literal");
-    }
-
-    @Override
     public NULL inputPosition(int offset, int line, int column) {
         return null;
     }
