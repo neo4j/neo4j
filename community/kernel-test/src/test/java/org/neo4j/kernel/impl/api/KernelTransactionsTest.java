@@ -51,6 +51,7 @@ import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.api.security.AnonymousContext.full;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.api.KernelTransactionTestBase.mockedStorageReader;
 import static org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess.EMPTY_ROLLBACK_PROCESS;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -403,9 +404,9 @@ class KernelTransactionsTest {
     @Test
     void transactionClosesUnderlyingStoreReaderWhenDisposed() throws Throwable {
         // Given
-        StorageReader storeStatement1 = mock(StorageReader.class);
-        StorageReader storeStatement2 = mock(StorageReader.class);
-        StorageReader storeStatement3 = mock(StorageReader.class);
+        StorageReader storeStatement1 = mockedStorageReader();
+        StorageReader storeStatement2 = mockedStorageReader();
+        StorageReader storeStatement3 = mockedStorageReader();
         KernelTransactions kernelTransactions = newKernelTransactions(
                 mock(TransactionCommitProcess.class), storeStatement1, storeStatement2, storeStatement3);
         // And three active transactions
@@ -695,16 +696,16 @@ class KernelTransactionsTest {
 
     private KernelTransactions newTestKernelTransactions() throws Throwable {
         return newKernelTransactions(
-                true, mock(TransactionCommitProcess.class), mock(StorageReader.class), Config.defaults());
+                true, mock(TransactionCommitProcess.class), mockedStorageReader(), Config.defaults());
     }
 
     private KernelTransactions newKernelTransactions(TransactionCommitProcess commitProcess, Config config)
             throws Throwable {
-        return newKernelTransactions(false, commitProcess, mock(StorageReader.class), config);
+        return newKernelTransactions(false, commitProcess, mockedStorageReader(), config);
     }
 
     private KernelTransactions newKernelTransactions(TransactionCommitProcess commitProcess) throws Throwable {
-        return newKernelTransactions(false, commitProcess, mock(StorageReader.class), Config.defaults());
+        return newKernelTransactions(false, commitProcess, mockedStorageReader(), Config.defaults());
     }
 
     private KernelTransactions newKernelTransactions(

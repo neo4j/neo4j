@@ -251,12 +251,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
             txStateHolder = null;
             accessModeProvider = null;
             selection = null;
-            storeCursor.close();
+            storeCursor.reset();
 
             if (securityNodeCursor != null) {
                 securityNodeCursor.close();
-                securityNodeCursor.release();
-                securityNodeCursor = null;
             }
         }
         super.closeInternal();
@@ -277,9 +275,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
 
     @Override
     public void release() {
-        if (storeCursor != null) {
-            storeCursor.close();
-        }
+        storeCursor.close();
         if (securityNodeCursor != null) {
             securityNodeCursor.close();
             securityNodeCursor.release();

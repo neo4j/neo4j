@@ -121,7 +121,7 @@ class TransactionTracingIT {
                     .isEqualTo(ENTITY_COUNT);
 
             assertThatTracing(database)
-                    .record(pins(5).noFaults())
+                    .record(pins(5).noFaults().skipUnpins())
                     .block(pins(32).noFaults().skipUnpins())
                     .matches(cursorContext.getCursorTracer());
         }

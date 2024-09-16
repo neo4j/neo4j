@@ -49,6 +49,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.neo4j.collection.diffset.MutableLongDiffSets;
 import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.collection.factory.OnHeapCollectionsFactory;
@@ -102,7 +103,11 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
@@ -123,7 +128,7 @@ class KernelTransactionTestBase {
     protected final ServerIdentity serverIdentity = mock(ServerIdentity.class);
     protected final ApplyEnrichmentStrategy enrichmentStrategy = mock(ApplyEnrichmentStrategy.class);
     protected final StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
-    protected final StorageReader storageReader = mock(StorageReader.class);
+    protected final StorageReader storageReader = mockedStorageReader();
     protected final MetadataProvider metadataProvider = mock(MetadataProvider.class);
     protected final CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
     protected final TransactionMonitor transactionMonitor = mock(TransactionMonitor.class);
@@ -166,6 +171,21 @@ class KernelTransactionTestBase {
         when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
 
         transactionExecutionMonitor.reset();
+    }
+
+    public static StorageReader mockedStorageReader() {
+        var storageReader = mock(StorageReader.class);
+        when(storageReader.allocateNodeCursor(any(), any(), any()))
+                .thenAnswer((Answer<StorageNodeCursor>) invocationOnMock -> mock(StorageNodeCursor.class));
+        when(storageReader.allocatePropertyCursor(any(), any(), any()))
+                .thenAnswer((Answer<StoragePropertyCursor>) invocationOnMock -> mock(StoragePropertyCursor.class));
+        when(storageReader.allocateRelationshipScanCursor(any(), any(), any()))
+                .thenAnswer((Answer<StorageRelationshipScanCursor>)
+                        invocationOnMock -> mock(StorageRelationshipScanCursor.class));
+        when(storageReader.allocateRelationshipTraversalCursor(any(), any(), any()))
+                .thenAnswer((Answer<StorageRelationshipTraversalCursor>)
+                        invocationOnMock -> mock(StorageRelationshipTraversalCursor.class));
+        return storageReader;
     }
 
     public KernelTransactionImplementation newTransaction(long transactionTimeoutMillis) {

@@ -174,11 +174,9 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<DefaultRel
             read = null;
             txStateHolder = null;
             accessModeProvider = null;
-            storeCursor.close();
+            storeCursor.reset();
             if (securityNodeCursor != null) {
                 securityNodeCursor.close();
-                securityNodeCursor.release();
-                securityNodeCursor = null;
             }
         }
         super.closeInternal();
@@ -217,9 +215,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<DefaultRel
 
     @Override
     public void release() {
-        if (storeCursor != null) {
-            storeCursor.close();
-        }
+        storeCursor.close();
         if (securityNodeCursor != null) {
             securityNodeCursor.close();
             securityNodeCursor.release();

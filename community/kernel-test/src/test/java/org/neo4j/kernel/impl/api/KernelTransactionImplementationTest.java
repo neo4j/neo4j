@@ -874,10 +874,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         @SuppressWarnings("resource")
         final var stateVisitor = mock(TxStateVisitor.class);
 
-        final var storeReader = mock(StorageReader.class);
-        when(storeReader.constraintsGetAll()).thenReturn(Collections.emptyIterator());
-
-        when(storageEngine.newReader()).thenReturn(storeReader);
+        when(storageReader.constraintsGetAll()).thenReturn(Collections.emptyIterator());
         when(storageEngine.createCommands(
                         any(TransactionState.class),
                         any(StorageReader.class),
