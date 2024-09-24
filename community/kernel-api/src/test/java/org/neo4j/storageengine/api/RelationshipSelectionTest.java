@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import static org.apache.commons.lang3.ArrayUtils.shuffle;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
@@ -50,5 +51,28 @@ class RelationshipSelectionTest {
 
         // then
         assertThat(selection.highestType()).isEqualTo(typesReference[typesReference.length - 1]);
+    }
+
+    @Test
+    void shouldFilterOutNoTokens() {
+        // given
+        var typesReference =
+                new int[] {NO_TOKEN, 0, NO_TOKEN, 1, NO_TOKEN, 2, NO_TOKEN, 3, NO_TOKEN, 4, NO_TOKEN, 5, NO_TOKEN};
+        var types = typesReference.clone();
+        do {
+            shuffle(types, random.random());
+        } while (Arrays.equals(typesReference, types));
+
+        // when
+        var selection = RelationshipSelection.selection(types, Direction.OUTGOING);
+        Arrays.fill(types, -1);
+
+        // then
+        assertThat(selection.highestType()).isEqualTo(5);
+        assertThat(selection.numberOfCriteria()).isEqualTo(6);
+        assertThat(selection.test(NO_TOKEN)).isFalse();
+        for (int i = 0; i < 6; i++) {
+            assertThat(selection.test(i)).isTrue();
+        }
     }
 }

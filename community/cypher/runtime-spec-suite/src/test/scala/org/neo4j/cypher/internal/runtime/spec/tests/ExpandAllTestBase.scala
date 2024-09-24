@@ -367,6 +367,120 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("a", "b", "c").withRows(expected)
   }
+
+  test("should handle single non-existing type for sparse node") {
+    // given
+
+    givenGraph {
+      val referenceNode = tx.createNode(Label.label("S"))
+      (1 to 10).foreach(i => {
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R1"))
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R2"))
+      })
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .expand("(x)-[r:NOPE]->(y)")
+      .nodeByLabelScan("x", "S")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y", "r").withNoRows()
+  }
+
+  test("should handle single non-existing type for dense node") {
+    // given
+
+    givenGraph {
+      val referenceNode = tx.createNode(Label.label("S"))
+      (1 to 10).foreach(_ => {
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R1"))
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R2"))
+      })
+
+      // Make it a dense node
+      (1 to 1000).foreach(_ => {
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R3"))
+      })
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .expand("(x)-[r:NOPE]->(y)")
+      .nodeByLabelScan("x", "S")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y", "r").withNoRows()
+  }
+
+  test("should handle multiple types where some are non-existing for sparse node") {
+    // given
+
+    givenGraph {
+      val referenceNode = tx.createNode(Label.label("S"))
+      (1 to 10).foreach(_ => {
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R1"))
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R2"))
+      })
+
+      // Make it a dense node
+      (1 to 1000).foreach(_ => {
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R3"))
+      })
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .expand("(x)-[r:R1|NOPE]->(y)")
+      .nodeByLabelScan("x", "S")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y", "r").withRows(rowCount(10))
+  }
+
+  test("should handle multiple types where some are non-existing for dense node") {
+    // given
+    givenGraph {
+      val referenceNode = tx.createNode(Label.label("S"))
+      (1 to 10).foreach(_ => {
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R1"))
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R2"))
+      })
+
+      // Make it a dense node
+      (1 to 1000).foreach(_ => {
+        referenceNode.createRelationshipTo(tx.createNode(), RelationshipType.withName("R3"))
+      })
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .expand("(x)-[r:R1|NOPE]->(y)")
+      .nodeByLabelScan("x", "S")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y", "r").withRows(rowCount(10))
+  }
 }
 
 // Supported by interpreted, slotted, pipelined, parallel

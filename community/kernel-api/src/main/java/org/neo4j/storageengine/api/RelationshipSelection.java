@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import static java.lang.String.format;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
@@ -116,13 +117,52 @@ public abstract class RelationshipSelection {
         } else if (types.length == 0) {
             return NO_RELATIONSHIPS;
         } else if (types.length == 1) {
-            return new DirectionalSingleType(types[0], direction);
+            if (types[0] == NO_TOKEN) {
+                return NO_RELATIONSHIPS;
+            } else {
+                return new DirectionalSingleType(types[0], direction);
+            }
+        } else {
+            return directionalMultipleTypesSelection(types, direction);
         }
-        return new DirectionalMultipleTypes(types, direction);
+    }
+
+    private static RelationshipSelection directionalMultipleTypesSelection(int[] types, Direction direction) {
+        int highest = -1;
+        int toFilter = 0;
+        for (int type : types) {
+            highest = Math.max(highest, type);
+            if (type == NO_TOKEN) {
+                toFilter++;
+            }
+        }
+
+        if (toFilter == 0) {
+            return new DirectionalMultipleTypes(types.clone(), direction, highest);
+        } else {
+            int[] filtered = new int[types.length - toFilter];
+            int i = 0;
+            for (int type : types) {
+                if (type != NO_TOKEN) {
+                    filtered[i++] = type;
+                }
+            }
+            if (filtered.length == 0) {
+                return NO_RELATIONSHIPS;
+            } else if (filtered.length == 1) {
+                return new DirectionalSingleType(filtered[0], direction);
+            } else {
+                return new DirectionalMultipleTypes(filtered, direction, highest);
+            }
+        }
     }
 
     public static RelationshipSelection selection(int type, Direction direction) {
-        return new DirectionalSingleType(type, direction);
+        if (type == NO_TOKEN) {
+            return NO_RELATIONSHIPS;
+        } else {
+            return new DirectionalSingleType(type, direction);
+        }
     }
 
     public static RelationshipSelection selection(Direction direction) {
@@ -244,18 +284,10 @@ public abstract class RelationshipSelection {
         private final int[] types;
         private final int highestType;
 
-        DirectionalMultipleTypes(int[] types, Direction direction) {
+        private DirectionalMultipleTypes(int[] types, Direction direction, int highestType) {
             super(direction);
-            this.types = types.clone();
-            this.highestType = findHighestType(this.types);
-        }
-
-        private static int findHighestType(int[] types) {
-            int highest = -1;
-            for (int type : types) {
-                highest = Math.max(highest, type);
-            }
-            return highest;
+            this.types = types;
+            this.highestType = highestType;
         }
 
         @Override
@@ -313,7 +345,9 @@ public abstract class RelationshipSelection {
 
         @Override
         public RelationshipSelection reverse() {
-            return Direction.BOTH.equals(direction) ? this : new DirectionalMultipleTypes(types, direction.reverse());
+            return Direction.BOTH.equals(direction)
+                    ? this
+                    : new DirectionalMultipleTypes(types, direction.reverse(), highestType);
         }
 
         @Override
