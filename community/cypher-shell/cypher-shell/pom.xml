@@ -6,12 +6,12 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-shell-parent</artifactId>
-        <version>5.24.0</version>
+        <version>5.24.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>cypher-shell</artifactId>
-    <version>5.24.0</version>
+    <version>5.24.1</version>
     <packaging>jar</packaging>
     <name>Neo4j - Cypher Shell</name>
     <description>Cypher Shell</description>

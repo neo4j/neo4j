@@ -4,11 +4,11 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>5.24.0</version>
+        <version>5.24.1</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>neo4j-genai-plugin</artifactId>
-    <version>5.24.0</version>
+    <version>5.24.1</version>
 
     <name>Neo4j - GenAI Plugin</name>
     <description>Neo4j GenAI plugin</description>
