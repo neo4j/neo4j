@@ -4,11 +4,11 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>5.24.1</version>
+        <version>5.24.2</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>neo4j-push-to-cloud</artifactId>
-    <version>5.24.1</version>
+    <version>5.24.2</version>
 
     <name>Neo4j - Push To Cloud - Admin command</name>
     <description>Neo4j Admin command for pushing a database to the Neo4j cloud service</description>
