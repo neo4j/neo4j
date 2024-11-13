@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.runtime.memory.TransactionBoundMemoryTrackerFor
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.memory.DefaultScopedMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.HeapEstimatorCache
+import org.neo4j.memory.HeapEstimatorCacheConfig
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.MemoryTracker
@@ -36,8 +38,16 @@ trait MemoryTrackerForOperatorProvider {
    * Get the memory tracker for the operator with the given id.
    *
    * @param operatorId the id of the operator
+   * @param enableScopedHeapEstimatorCache whether to enable a scoped heap estimator cache for this operator for
+   *                                       collections that can use it, e.g. HeapTrackingListValueBuilder
    */
-  def memoryTrackerForOperator(operatorId: Int): MemoryTracker
+  def memoryTrackerForOperator(operatorId: Int, enableScopedHeapEstimatorCache: Boolean = false): MemoryTracker
+
+  /**
+   * This is called from generated code (and from Java in tests)
+   */
+  def memoryTrackerForOperator(operatorId: Int): MemoryTracker =
+    memoryTrackerForOperator(operatorId, enableScopedHeapEstimatorCache = false)
 
   def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit = {
     throw new UnsupportedOperationException(
@@ -63,7 +73,8 @@ object MemoryTrackerForOperatorProvider {
  */
 case object NoOpMemoryTrackerForOperatorProvider extends MemoryTrackerForOperatorProvider {
 
-  override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = EmptyMemoryTracker.INSTANCE
+  override def memoryTrackerForOperator(operatorId: Int, enableScopedHeapEstimatorCache: Boolean): MemoryTracker =
+    EmptyMemoryTracker.INSTANCE
 }
 
 object TransactionBoundMemoryTrackerForOperatorProvider {
@@ -77,8 +88,13 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
    */
   class TransactionBoundMemoryTracker(
     transactionMemoryTracker: MemoryTracker,
-    queryGlobalMemoryTracker: HeapMemoryTracker
-  ) extends DefaultScopedMemoryTracker(transactionMemoryTracker) {
+    queryGlobalMemoryTracker: HeapMemoryTracker,
+    heapEstimatorCacheConfig: HeapEstimatorCacheConfig,
+    enableScopedHeapEstimatorCache: Boolean
+  ) extends DefaultScopedMemoryTracker(
+        transactionMemoryTracker,
+        heapEstimatorCacheConfig.newDefaultHeapEstimatorCache()
+      ) {
 
     override def allocateHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker
@@ -93,6 +109,14 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
       // Forward to the queryGlobalMemoryTracker
       queryGlobalMemoryTracker.releaseHeap(bytes)
     }
+
+    override def getScopedHeapEstimatorCache: HeapEstimatorCache = {
+      if (enableScopedHeapEstimatorCache) {
+        super.getHeapEstimatorCache.newWithSameSettings()
+      } else {
+        super.getHeapEstimatorCache
+      }
+    }
   }
 }
 
@@ -105,14 +129,23 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
  */
 class TransactionBoundMemoryTrackerForOperatorProvider(
   val transactionMemoryTracker: MemoryTracker,
-  queryHeapHighWatermarkTracker: TrackingQueryMemoryTracker
-) extends TransactionBoundMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker)
+  queryHeapHighWatermarkTracker: TrackingQueryMemoryTracker,
+  heapEstimatorCacheConfig: HeapEstimatorCacheConfig
+) extends TransactionBoundMemoryTracker(
+      transactionMemoryTracker,
+      queryHeapHighWatermarkTracker,
+      heapEstimatorCacheConfig,
+      enableScopedHeapEstimatorCache = false
+    )
     with MemoryTrackerForOperatorProvider {
 
-  override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = {
+  override def memoryTrackerForOperator(operatorId: Int, enableScopedHeapEstimatorCache: Boolean): MemoryTracker = {
+    // NOTE: This will create a heap estimator cache instance per operator regardless of the value of enableScopedHeapEstimatorCache
     new TransactionBoundMemoryTracker(
       transactionMemoryTracker,
-      queryHeapHighWatermarkTracker.memoryTrackerForOperator(operatorId)
+      queryHeapHighWatermarkTracker.memoryTrackerForOperator(operatorId),
+      heapEstimatorCacheConfig,
+      enableScopedHeapEstimatorCache
     )
   }
 }

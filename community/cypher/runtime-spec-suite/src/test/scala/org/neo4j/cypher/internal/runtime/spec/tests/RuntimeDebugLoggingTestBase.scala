@@ -55,7 +55,7 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
       .argument()
       .build()
 
-    val result = execute(buildPlan(logicalQuery, runtime), readOnly = true, implicitTx = true)
+    val result = executePlan(buildPlan(logicalQuery, runtime), readOnly = true, implicitTx = true)
 
     val expected = Range(0, size).map(x => Array[Any](x))
     result should beColumns("x").withRows(inOrder(expected))
@@ -80,7 +80,7 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
       .argument()
       .build()
 
-    val result = execute(buildPlan(logicalQuery, runtime), readOnly = true, implicitTx = true)
+    val result = executePlan(buildPlan(logicalQuery, runtime), readOnly = true, implicitTx = true)
 
     val expected = Range(0, size).map(x => Array[Any](x))
     result should beColumns("x").withRows(inOrder(expected))

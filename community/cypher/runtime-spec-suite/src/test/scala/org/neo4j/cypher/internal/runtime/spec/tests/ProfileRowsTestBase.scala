@@ -2353,7 +2353,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
       .allNodeScan("x")
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
+    val runtimeResult = profileQuery(logicalQuery, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
     consume(runtimeResult)
 
     // then

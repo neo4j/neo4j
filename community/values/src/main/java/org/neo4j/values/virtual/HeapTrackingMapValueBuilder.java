@@ -19,11 +19,13 @@
  */
 package org.neo4j.values.virtual;
 
+import static org.neo4j.memory.HeapEstimator.DEFAULT_HEAP_ESTIMATOR_CACHE_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
+import org.neo4j.memory.HeapEstimatorCache;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
@@ -48,12 +50,15 @@ public class HeapTrackingMapValueBuilder implements AutoCloseable {
     }
 
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingMapValueBuilder.class);
+    private static final long COMBINED_SHALLOW_SIZE =
+            SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + DEFAULT_HEAP_ESTIMATOR_CACHE_SHALLOW_SIZE;
 
     // We wait to track memory (bytes) below this threshold (see `unAllocatedHeapSize`).
     private static final long HEAP_SIZE_ALLOCATION_THRESHOLD = 4096;
 
     private final HeapTrackingUnifiedMap<String, AnyValue> values;
     private final MemoryTracker scopedMemoryTracker;
+    private final HeapEstimatorCache heapEstimatorCache;
 
     /*
      * Estimated heap usage in bytes of items that has been added to the
@@ -69,10 +74,14 @@ public class HeapTrackingMapValueBuilder implements AutoCloseable {
         scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
         values = HeapTrackingCollections.newMap(scopedMemoryTracker);
+        // NOTE: This _may_ create a unique estimator cache instance for this builder.
+        // If the memory tracker is configured with scoped heap estimator cache enabled,
+        // it will create a new instance for each call.
+        heapEstimatorCache = memoryTracker.getScopedHeapEstimatorCache();
     }
 
     public void put(String key, AnyValue value) {
-        unAllocatedHeapSize += value.estimatedHeapUsage();
+        unAllocatedHeapSize += value.estimatedHeapUsage(heapEstimatorCache);
         if (unAllocatedHeapSize >= HEAP_SIZE_ALLOCATION_THRESHOLD) {
             scopedMemoryTracker.allocateHeap(unAllocatedHeapSize);
             unAllocatedHeapSize = 0;
@@ -84,6 +93,7 @@ public class HeapTrackingMapValueBuilder implements AutoCloseable {
     public MapValue build() {
         scopedMemoryTracker.allocateHeap(unAllocatedHeapSize);
         unAllocatedHeapSize = 0;
+        heapEstimatorCache.fullReset();
         return new MapValue.MapWrappingMapValue(values, payloadSize());
     }
 
@@ -96,7 +106,12 @@ public class HeapTrackingMapValueBuilder implements AutoCloseable {
     private long payloadSize() {
         // The shallow size should not be transferred to the MapValue (but the ScopedMemoryTracker is)
         // If using an EmptyMemoryTracker this might evaluate to a value less than 0
-        return Math.max(unAllocatedHeapSize + scopedMemoryTracker.estimatedHeapMemory() - SHALLOW_SIZE, 0L);
+        return Math.max(
+                unAllocatedHeapSize
+                        + scopedMemoryTracker.estimatedHeapMemory()
+                        - SHALLOW_SIZE
+                        - DEFAULT_HEAP_ESTIMATOR_CACHE_SHALLOW_SIZE,
+                0L);
     }
 
     @VisibleForTesting

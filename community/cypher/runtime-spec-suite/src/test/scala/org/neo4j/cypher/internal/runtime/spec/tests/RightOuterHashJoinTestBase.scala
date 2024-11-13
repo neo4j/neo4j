@@ -687,7 +687,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("n")
       .build()
 
-    val result = execute(logicalQuery, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
+    val result = executeQuery(logicalQuery, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
 
     result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
       .withRows(inAnyOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))

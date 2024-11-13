@@ -122,7 +122,12 @@ public class HeapDumpingMemoryTracker implements MemoryTracker {
 
     @Override
     public MemoryTracker getScopedMemoryTracker() {
-        return new DefaultScopedMemoryTracker(this);
+        return new DefaultScopedMemoryTracker(this, getHeapEstimatorCache());
+    }
+
+    @Override
+    public HeapEstimatorCache getHeapEstimatorCache() {
+        return delegate.getHeapEstimatorCache();
     }
 
     public long lastAllocatedBytes() {

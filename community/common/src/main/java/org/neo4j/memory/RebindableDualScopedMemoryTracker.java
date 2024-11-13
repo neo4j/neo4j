@@ -146,7 +146,7 @@ public class RebindableDualScopedMemoryTracker extends DefaultScopedMemoryTracke
 
     @Override
     public MemoryTracker getScopedMemoryTracker() {
-        return new DefaultScopedMemoryTracker(this);
+        return new DefaultScopedMemoryTracker(this, getHeapEstimatorCache());
     }
 
     @VisibleForTesting

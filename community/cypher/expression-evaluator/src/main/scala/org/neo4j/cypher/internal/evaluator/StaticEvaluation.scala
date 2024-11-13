@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
@@ -155,6 +156,8 @@ object StaticEvaluation {
     override def transactionalContext: QueryTransactionalContext = notAvailable()
 
     override def resources: ResourceManager = notAvailable()
+
+    override def queryConfig: QueryRuntimeConfig = notAvailable()
 
     override def nodeReadOps: NodeReadOperations = notAvailable()
 

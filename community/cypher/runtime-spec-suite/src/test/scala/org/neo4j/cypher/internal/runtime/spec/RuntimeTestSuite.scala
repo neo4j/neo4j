@@ -355,7 +355,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     input: InputValues = NO_INPUT,
     params: Map[String, Any] = Map.empty
   ): Long = {
-    val (result, _) = runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input, params)
+    val (result, _) = executeAndContextNonRecording(logicalQuery, runtime, input, params)
     result.awaitAll()
   }
 

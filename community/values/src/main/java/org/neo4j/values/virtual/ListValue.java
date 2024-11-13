@@ -48,6 +48,7 @@ import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.memory.HeapEstimatorCache;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
@@ -580,6 +581,15 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+            long s = 0;
+            for (ListValue list : lists) {
+                s += list.estimatedHeapUsage(estimatorCache);
+            }
+            return CONCAT_LIST_SHALLOW_SIZE + s;
+        }
+
+        @Override
         public ListValue appendAll(ListValue value) {
             var newSize = lists.length + 1;
             var newArray = new ListValue[newSize];
@@ -722,6 +732,18 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+            long estimate = memoizedEstimatedHeapUsage;
+            if (estimate == NOT_MEMOIZED) {
+                estimate = APPEND_LIST_SHALLOW_SIZE
+                        + base.estimatedHeapUsage(estimatorCache)
+                        + appended.estimatedHeapUsage(estimatorCache);
+                memoizedEstimatedHeapUsage = estimate;
+            }
+            return estimatorCache.estimatedHeapUsage(this, estimate);
+        }
+
+        @Override
         public ValueRepresentation itemValueRepresentation() {
             if (base.isEmpty()) {
                 return appended.valueRepresentation();
@@ -826,6 +848,18 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 memoizedEstimatedHeapUsage = tmp;
             }
             return tmp;
+        }
+
+        @Override
+        public long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+            long estimate = memoizedEstimatedHeapUsage;
+            if (estimate == NOT_MEMOIZED) {
+                estimate = PREPEND_LIST_SHALLOW_SIZE
+                        + base.estimatedHeapUsage(estimatorCache)
+                        + prepended.estimatedHeapUsage(estimatorCache);
+                memoizedEstimatedHeapUsage = estimate;
+            }
+            return estimatorCache.estimatedHeapUsage(this, estimate);
         }
 
         @Override

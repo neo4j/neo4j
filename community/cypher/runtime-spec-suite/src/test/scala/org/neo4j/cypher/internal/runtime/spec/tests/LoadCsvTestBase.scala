@@ -411,7 +411,7 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
-    val runtimeResult = execute(executablePlan, readOnly = false, implicitTx = true)
+    val runtimeResult = executePlan(executablePlan, readOnly = false, implicitTx = true)
 
     // then
     runtimeResult should beColumns("n")
@@ -442,7 +442,7 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
-    val runtimeResult = execute(executablePlan, readOnly = false, implicitTx = true)
+    val runtimeResult = executePlan(executablePlan, readOnly = false, implicitTx = true)
 
     // then
     runtimeResult should beColumns("count")
@@ -558,7 +558,7 @@ trait LoadCsvWithCallInTransactionsAndMerge[CONTEXT <: RuntimeContext] {
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
-    val runtimeResult = execute(executablePlan, readOnly = false, implicitTx = true)
+    val runtimeResult = executePlan(executablePlan, readOnly = false, implicitTx = true)
 
     // then
     runtimeResult should beColumns("r")

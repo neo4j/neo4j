@@ -26,4 +26,16 @@ public interface Measurable {
      * @return an estimation of how many bytes this value consumes.
      */
     long estimatedHeapUsage();
+
+    /**
+     * Gives an estimation of the heap usage in bytes for the given value,
+     * via the given {@link HeapEstimatorCache} which could have the ability to cache
+     * and de-duplicate estimations.
+     *
+     * @return an estimation of how many bytes this value consumes.
+     */
+    default long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+        long estimate = estimatedHeapUsage();
+        return estimatorCache.estimatedHeapUsage(this, estimate);
+    }
 }

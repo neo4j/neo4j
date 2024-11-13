@@ -320,7 +320,9 @@ abstract class AbstractConcurrentTransactionsPipe(
     private def initializeMemoryTracker(): Unit = {
       var memoryTracker = TransactionWorkerThreadDelegatingMemoryTracker.threadLocalExecutionContextMemoryTracker.get
       if (memoryTracker == null) {
-        memoryTracker = state.query.transactionalContext.createExecutionContextMemoryTracker()
+        memoryTracker = state.query.transactionalContext.createExecutionContextMemoryTracker(
+          state.query.queryConfig.heapEstimatorCacheConfig
+        )
         TransactionWorkerThreadDelegatingMemoryTracker.threadLocalExecutionContextMemoryTracker.set(memoryTracker)
       }
       contextMemoryTracker = memoryTracker

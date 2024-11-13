@@ -24,6 +24,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import org.github.jamm.Unmetered;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.memory.HeapEstimatorCache;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
@@ -33,7 +34,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable {
     /**
      * Start building a list of unknown size with heap tracking
      * Values added to the list will have their heap usage estimated and tracked in the give memory tracker.
-     *
+     * <p>
      * Caveat: When calling build() the ownership of the internal heap-tracking list will be transferred
      * to the returned ListValue, and it will carry the heap usage accumulated by the builder as its payload size.
      * But to be accounted for, this ListValue will need to be measured and allocated in a memory tracker.
@@ -55,6 +56,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable {
 
     private final HeapTrackingArrayList<AnyValue> values;
     private final MemoryTracker scopedMemoryTracker;
+    private final HeapEstimatorCache heapEstimatorCache;
 
     @Unmetered
     private ValueRepresentation representation;
@@ -69,17 +71,21 @@ public class HeapTrackingListValueBuilder implements AutoCloseable {
      */
     private long unAllocatedHeapSize;
 
-    public HeapTrackingListValueBuilder(MemoryTracker memoryTracker) {
+    HeapTrackingListValueBuilder(MemoryTracker memoryTracker) {
         // To be in control of the heap usage of both the added values and the internal array list holding them,
         // we use a scoped memory tracker
         scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
         values = HeapTrackingArrayList.newArrayList(16, scopedMemoryTracker);
         representation = ValueRepresentation.ANYTHING;
+        // NOTE: This _may_ create a unique estimator cache instance for this builder.
+        // If the memory tracker is configured with scoped heap estimator cache enabled,
+        // it will create a new instance for each call.
+        heapEstimatorCache = memoryTracker.getScopedHeapEstimatorCache();
     }
 
     public void add(AnyValue value) {
-        unAllocatedHeapSize += value.estimatedHeapUsage();
+        unAllocatedHeapSize += value.estimatedHeapUsage(heapEstimatorCache);
         if (unAllocatedHeapSize >= HEAP_SIZE_ALLOCATION_THRESHOLD) {
             scopedMemoryTracker.allocateHeap(unAllocatedHeapSize);
             unAllocatedHeapSize = 0;
@@ -92,6 +98,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable {
     public ListValue build() {
         scopedMemoryTracker.allocateHeap(unAllocatedHeapSize);
         unAllocatedHeapSize = 0;
+        heapEstimatorCache.fullReset();
         return new ListValue.JavaListListValue(values, payloadSize(), representation);
     }
 

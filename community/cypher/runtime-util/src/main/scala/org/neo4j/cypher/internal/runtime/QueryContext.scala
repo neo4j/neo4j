@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
+import org.neo4j.memory.HeapEstimatorCacheConfig
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.scheduler.JobScheduler
 import org.neo4j.storageengine.api.PropertySelection
@@ -122,6 +123,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   def transactionalContext: QueryTransactionalContext
 
   def resources: ResourceManager
+
+  def queryConfig: QueryRuntimeConfig
 
   def nodeReadOps: NodeReadOperations
 
@@ -842,7 +845,7 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def constituentTransactionFactory: ConstituentTransactionFactory
 
-  def createExecutionContextMemoryTracker(): MemoryTracker
+  def createExecutionContextMemoryTracker(heapEstimatorCacheConfig: HeapEstimatorCacheConfig): MemoryTracker
 }
 
 trait KernelPredicate[T] {

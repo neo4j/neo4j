@@ -196,7 +196,7 @@ public final class ValuePopulation {
             RelationshipScanCursor relCursor,
             PropertyCursor propertyCursor,
             MemoryTracker memoryTracker) {
-        final var builder = new HeapTrackingListValueBuilder(memoryTracker);
+        final var builder = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker);
         for (AnyValue v : value) {
             builder.add(populate(v, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker));
         }

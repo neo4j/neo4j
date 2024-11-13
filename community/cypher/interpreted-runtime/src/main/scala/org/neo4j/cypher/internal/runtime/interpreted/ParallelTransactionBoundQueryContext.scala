@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.WriteQueryContext
@@ -50,9 +51,10 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 sealed class ParallelTransactionBoundQueryContext(
   transactionalContext: TransactionalContextWrapper,
   resources: ResourceManager,
-  closeable: Option[AutoCloseable] = None
+  closeable: Option[AutoCloseable] = None,
+  queryConfig: QueryRuntimeConfig = QueryRuntimeConfig.DEFAULT
 )(implicit indexSearchMonitor: IndexSearchMonitor)
-    extends TransactionBoundReadQueryContext(transactionalContext, resources, closeable) with QueryContext
+    extends TransactionBoundReadQueryContext(transactionalContext, resources, closeable, queryConfig) with QueryContext
     with UnsupportedWriteQueryContext {
 
   override def close(): Unit = {

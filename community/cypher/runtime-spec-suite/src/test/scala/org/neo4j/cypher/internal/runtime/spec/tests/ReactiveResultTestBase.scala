@@ -278,11 +278,11 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
     val stream = batchedInputValues(1, nodes.map(Array[Any](_)): _*).stream()
 
     // When
-    val result = execute(
+    val result = executeWithSubscriber(
       logicalQuery,
       runtime,
-      stream,
       TestSubscriber.concurrent,
+      stream,
       testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
     )
 

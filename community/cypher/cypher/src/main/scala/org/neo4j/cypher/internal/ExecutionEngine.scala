@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -271,6 +272,7 @@ abstract class ExecutionEngine(
       )
     }
 
+    val queryConfig = QueryRuntimeConfig.createFrom(query.options.queryOptions, config)
     executableQuery.execute(
       context,
       isOutermostQuery,
@@ -279,7 +281,8 @@ abstract class ExecutionEngine(
       prePopulate,
       input,
       queryMonitor,
-      subscriber
+      subscriber,
+      queryConfig
     )
   }
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.HeapEstimatorCachePreset
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_PARALLEL_RUNTIME_COMBINATIONS
 import org.neo4j.exceptions.InvalidCypherOption
+import org.neo4j.memory.HeapEstimatorCacheConfig
 
 import java.util.Locale
 
@@ -51,7 +53,8 @@ case class CypherQueryOptions(
   eagerAnalyzer: CypherEagerAnalyzerOption,
   inferSchemaParts: CypherInferSchemaPartsOption,
   statefulShortestPlanningModeOption: CypherStatefulShortestPlanningModeOption,
-  planVarExpandInto: CypherPlanVarExpandInto
+  planVarExpandInto: CypherPlanVarExpandInto,
+  heapEstimatorCacheOption: CypherHeapEstimatorCacheOption
 ) {
 
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
@@ -622,6 +625,71 @@ case object CypherPlanVarExpandInto
     OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
   implicit val reader: OptionReader[CypherPlanVarExpandInto] = singleOptionReader()
 
+}
+
+sealed abstract class CypherHeapEstimatorCacheOption(val preset: String) extends CypherOption(preset) {
+  override def companion: CypherHeapEstimatorCacheOption.type = CypherHeapEstimatorCacheOption
+  override def render: String = super.render.toUpperCase(Locale.ROOT)
+  override def cacheKey: String = "" // Does not affect the cached query
+
+  /** Does not affect the plan we produce. */
+  override def relevantForLogicalPlanCacheKey: Boolean = false
+}
+
+case object CypherHeapEstimatorCacheOption extends CypherOptionCompanion[CypherHeapEstimatorCacheOption](
+      name = "heapEstimatorCache",
+      setting = Some(GraphDatabaseInternalSettings.heap_estimator_cache_preset),
+      cypherConfigField = Some(_.heapEstimatorCacheOption)
+    ) {
+
+  case object default extends CypherHeapEstimatorCacheOption("default")
+  case object disabled extends CypherHeapEstimatorCacheOption("disabled")
+  case object small extends CypherHeapEstimatorCacheOption("small")
+  case object large extends CypherHeapEstimatorCacheOption("large")
+  case object custom extends CypherHeapEstimatorCacheOption("custom")
+
+  def values: Set[CypherHeapEstimatorCacheOption] = Set(default, disabled, small, large, custom)
+
+  implicit val hasDefault: OptionDefault[CypherHeapEstimatorCacheOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherHeapEstimatorCacheOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherHeapEstimatorCacheOption] = OptionCacheKey.create(_.cacheKey)
+
+  implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherHeapEstimatorCacheOption] =
+    OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
+  implicit val reader: OptionReader[CypherHeapEstimatorCacheOption] = singleOptionReader()
+
+  override def fromConfig(configuration: Config): CypherHeapEstimatorCacheOption = {
+    configuration.get(GraphDatabaseInternalSettings.heap_estimator_cache_preset) match {
+      case HeapEstimatorCachePreset.DEFAULT =>
+        CypherHeapEstimatorCacheOption.default
+      case HeapEstimatorCachePreset.DISABLED =>
+        CypherHeapEstimatorCacheOption.disabled
+      case HeapEstimatorCachePreset.SMALL =>
+        CypherHeapEstimatorCacheOption.small
+      case HeapEstimatorCachePreset.LARGE =>
+        CypherHeapEstimatorCacheOption.large
+      case HeapEstimatorCachePreset.CUSTOM =>
+        CypherHeapEstimatorCacheOption.custom
+    }
+  }
+
+  def heapEstimatorCacheConfigFrom(
+    option: CypherHeapEstimatorCacheOption,
+    cypherConfig: CypherConfiguration
+  ): HeapEstimatorCacheConfig = {
+    option match {
+      case CypherHeapEstimatorCacheOption.default =>
+        HeapEstimatorCacheConfig.DEFAULT
+      case CypherHeapEstimatorCacheOption.disabled =>
+        HeapEstimatorCacheConfig.DISABLED
+      case CypherHeapEstimatorCacheOption.small =>
+        HeapEstimatorCacheConfig.SMALL
+      case CypherHeapEstimatorCacheOption.large =>
+        HeapEstimatorCacheConfig.LARGE
+      case CypherHeapEstimatorCacheOption.custom =>
+        cypherConfig.customHeapEstimatorCacheConfig
+    }
+  }
 }
 
 sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOption(flag) {

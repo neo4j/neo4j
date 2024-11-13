@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.graphdb.GraphDatabaseService
@@ -64,16 +65,24 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
     override def buildPlan(
       logicalQuery: LogicalQuery,
       runtime: CypherRuntime[CONTEXT],
-      testPlanCombinationRewriterHint: Set[TestPlanCombinationRewriterHint]
+      testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+      queryConfig: QueryRuntimeConfig
     ): ExecutionPlan = {
-      super.buildPlan(rewriteLogicalQuery(logicalQuery), runtime, testPlanCombinationRewriterHint)
+      super.buildPlan(rewriteLogicalQuery(logicalQuery), runtime, testPlanCombinationRewriterHints, queryConfig)
     }
 
     override def buildPlanAndContext(
       logicalQuery: LogicalQuery,
-      runtime: CypherRuntime[CONTEXT]
+      runtime: CypherRuntime[CONTEXT],
+      testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+      queryConfig: QueryRuntimeConfig
     ): (ExecutionPlan, CONTEXT) = {
-      super.buildPlanAndContext(rewriteLogicalQuery(logicalQuery), runtime)
+      super.buildPlanAndContext(
+        rewriteLogicalQuery(logicalQuery),
+        runtime,
+        testPlanCombinationRewriterHints,
+        queryConfig
+      )
     }
   }
 }

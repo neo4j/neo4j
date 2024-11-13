@@ -38,6 +38,7 @@ import java.util.function.BiFunction;
 import java.util.stream.StreamSupport;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.memory.HeapEstimatorCache;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
@@ -218,6 +219,11 @@ public abstract class MapValue extends VirtualValue {
         public long estimatedHeapUsage() {
             return FILTERING_MAP_VALUE_SHALLOW_SIZE + map.estimatedHeapUsage();
         }
+
+        @Override
+        public long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+            return FILTERING_MAP_VALUE_SHALLOW_SIZE + map.estimatedHeapUsage(estimatorCache);
+        }
     }
 
     private static final long MAPPED_MAP_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(MappedMapValue.class);
@@ -269,6 +275,11 @@ public abstract class MapValue extends VirtualValue {
         @Override
         public long estimatedHeapUsage() {
             return MAPPED_MAP_VALUE_SHALLOW_SIZE + map.estimatedHeapUsage();
+        }
+
+        @Override
+        public long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+            return MAPPED_MAP_VALUE_SHALLOW_SIZE + map.estimatedHeapUsage(estimatorCache);
         }
     }
 
@@ -361,6 +372,14 @@ public abstract class MapValue extends VirtualValue {
                     + sizeOf(updatedKey)
                     + updatedValue.estimatedHeapUsage();
         }
+
+        @Override
+        public long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+            return UPDATED_MAP_VALUE_SHALLOW_SIZE
+                    + map.estimatedHeapUsage(estimatorCache)
+                    + sizeOf(updatedKey)
+                    + updatedValue.estimatedHeapUsage(estimatorCache);
+        }
     }
 
     private static final long COMBINED_MAP_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(CombinedMapValue.class);
@@ -452,6 +471,13 @@ public abstract class MapValue extends VirtualValue {
         @Override
         public long estimatedHeapUsage() {
             return COMBINED_MAP_VALUE_SHALLOW_SIZE + map1.estimatedHeapUsage() + map2.estimatedHeapUsage();
+        }
+
+        @Override
+        public long estimatedHeapUsage(HeapEstimatorCache estimatorCache) {
+            return COMBINED_MAP_VALUE_SHALLOW_SIZE
+                    + map1.estimatedHeapUsage(estimatorCache)
+                    + map2.estimatedHeapUsage(estimatorCache);
         }
     }
 

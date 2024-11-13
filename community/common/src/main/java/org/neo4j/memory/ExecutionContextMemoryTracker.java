@@ -109,6 +109,8 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
      */
     private long allocatedBytesNative;
 
+    private final HeapEstimatorCache heapEstimatorCache;
+
     public ExecutionContextMemoryTracker() {
         this(NO_TRACKING);
     }
@@ -123,7 +125,14 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
             long grabSize,
             long maxGrabSize,
             String limitSettingName) {
-        this(memoryPool, localBytesLimit, grabSize, maxGrabSize, limitSettingName, () -> true);
+        this(
+                memoryPool,
+                localBytesLimit,
+                grabSize,
+                maxGrabSize,
+                HeapEstimatorCacheConfig.DEFAULT,
+                limitSettingName,
+                () -> true);
     }
 
     public ExecutionContextMemoryTracker(
@@ -131,6 +140,7 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
             long localBytesLimit,
             long grabSize,
             long maxGrabSize,
+            HeapEstimatorCacheConfig heapEstimatorCacheConfig,
             String limitSettingName,
             BooleanSupplier openCheck) {
         this.memoryPool = requireNonNull(memoryPool);
@@ -144,6 +154,8 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
         // NOTE: We do not want the threshold to apply on the first grab
         this.clientCallsSinceLastPoolInteraction = CLIENT_CALLS_PER_POOL_INTERACTION_THRESHOLD;
+
+        this.heapEstimatorCache = heapEstimatorCacheConfig.newDefaultHeapEstimatorCache();
     }
 
     @Override
@@ -269,6 +281,11 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     @Override
     public MemoryTracker getScopedMemoryTracker() {
         return new DefaultScopedMemoryTracker(this);
+    }
+
+    @Override
+    public HeapEstimatorCache getHeapEstimatorCache() {
+        return heapEstimatorCache;
     }
 
     @Override

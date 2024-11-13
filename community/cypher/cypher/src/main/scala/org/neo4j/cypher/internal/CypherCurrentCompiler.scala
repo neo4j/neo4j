@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.NormalMode
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.READ_WRITE
 import org.neo4j.cypher.internal.runtime.ResourceManager
@@ -425,7 +426,11 @@ object CypherCurrentCompiler {
         cypherVersion
       )
 
-    private def createQueryContext(transactionalContext: TransactionalContext, taskCloser: TaskCloser) = {
+    private def createQueryContext(
+      transactionalContext: TransactionalContext,
+      taskCloser: TaskCloser,
+      queryConfig: QueryRuntimeConfig
+    ) = {
       val resourceManager = executionPlan.threadSafeExecutionResources() match {
         case Some(resourceManagerFactory) => resourceManagerFactory(resourceMonitor)
         case None =>
@@ -436,7 +441,8 @@ object CypherCurrentCompiler {
       statement.registerCloseableResource(resourceManager)
       taskCloser.addTask(_ => statement.unregisterCloseableResource(resourceManager))
 
-      val ctx = new TransactionBoundQueryContext(txContextWrapper, resourceManager)(searchMonitor)
+      val ctx =
+        new TransactionBoundQueryContext(txContextWrapper, resourceManager, queryConfig = queryConfig)(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
 
@@ -450,11 +456,12 @@ object CypherCurrentCompiler {
       prePopulateResults: Boolean,
       input: InputDataStream,
       queryMonitor: QueryExecutionMonitor,
-      subscriber: QuerySubscriber
+      subscriber: QuerySubscriber,
+      queryConfig: QueryRuntimeConfig
     ): QueryExecution = {
 
       val taskCloser = new TaskCloser
-      val queryContext = createQueryContext(transactionalContext, taskCloser)
+      val queryContext = createQueryContext(transactionalContext, taskCloser, queryConfig)
       val exceptionTranslatingContext = queryContext.transactionalContext
       val outerCloseable: AutoCloseable =
         if (isOutermostQuery) {

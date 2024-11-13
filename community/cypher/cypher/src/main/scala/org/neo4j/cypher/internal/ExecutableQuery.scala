@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.query.CompilerInfo
@@ -54,6 +55,7 @@ trait ExecutableQuery extends CacheabilityInfo {
    * @param input                          stream of existing records as input
    * @param queryMonitor                   monitor to submit query events to
    * @param subscriber                     The subscriber where results should be streamed to.
+   * @param queryConfig                    The runtime-specific configuration of this query.
    * @return the QueryExecution that controls the demand to the subscriber
    */
   def execute(
@@ -64,7 +66,8 @@ trait ExecutableQuery extends CacheabilityInfo {
     prePopulateResults: Boolean,
     input: InputDataStream,
     queryMonitor: QueryExecutionMonitor,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    queryConfig: QueryRuntimeConfig
   ): QueryExecution
 
   /**

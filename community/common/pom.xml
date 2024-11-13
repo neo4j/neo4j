@@ -59,5 +59,10 @@
             <artifactId>neo4j-gql-status</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.jbellis</groupId>
+            <artifactId>jamm</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

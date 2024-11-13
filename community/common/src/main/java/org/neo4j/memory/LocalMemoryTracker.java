@@ -246,7 +246,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public MemoryTracker getScopedMemoryTracker() {
-        return new DefaultScopedMemoryTracker(this);
+        return new DefaultScopedMemoryTracker(this, getHeapEstimatorCache());
     }
 
     @Override

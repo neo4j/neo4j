@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
 import org.neo4j.cypher.internal.runtime.InputValues
-import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
@@ -36,6 +36,8 @@ import org.neo4j.values.AnyValue
 
 /**
  * Methods to execute logical queries.
+ *
+ * Try to avoid overloaded method names
  */
 trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStreamTestSupport {
 
@@ -46,127 +48,73 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   def buildPlan(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
   ): ExecutionPlan
 
   /**
    * Compile a query
    * @return the execution plan and the used runtime context
    */
-  def buildPlanAndContext(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT)
-
-  /**
-   * Execute an pre-compiled query with an ExecutionPlan
-   */
-  def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult =
-    execute(executablePlan, readOnly = true, implicitTx = false)
-
-  /**
-   * Execute an pre-compiled query with an ExecutionPlan
-   */
-  def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult =
-    execute(executablePlan, readOnly, implicitTx = false)
-
-  /**
-   * Execute an pre-compiled query with an ExecutionPlan
-   */
-  def execute(executablePlan: ExecutionPlan, readOnly: Boolean, implicitTx: Boolean): RecordingRuntimeResult
-
-  /**
-   * Execute a Logical query.
-   */
-  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): RecordingRuntimeResult =
-    execute(logicalQuery, runtime, NoInput, Map.empty[String, Any])
-
-  def execute(
+  def buildPlanAndContext(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
+  ): (ExecutionPlan, CONTEXT)
+
+  /**
+   * Execute a pre-compiled query with an ExecutionPlan
+   */
+  def executePlan(
+    executablePlan: ExecutionPlan,
+    readOnly: Boolean,
+    implicitTx: Boolean,
+    parameters: Map[String, Any],
+    queryConfig: QueryRuntimeConfig
   ): RecordingRuntimeResult
+
+  /**
+   * Execute a LogicalQuery with InputDataStream.
+   */
+  def executeQuery(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputStream: InputDataStream,
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
+  ): RecordingRuntimeResult
+
+  /**
+   * Execute a LogicalQuery with a custom subscriber.
+   */
+  def executeWithSubscriber(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    subscriber: QuerySubscriber,
+    inputStream: InputDataStream,
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
+  ): RuntimeResult
 
   def executeAs(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     username: String,
-    password: String
-  ): RecordingRuntimeResult
-
-  def execute(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    parameters: Map[String, Any]
-  ): RecordingRuntimeResult =
-    execute(logicalQuery, runtime, NoInput, parameters)
-
-  /**
-   * Execute a Logical query with some input.
-   */
-  def execute(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    input: InputValues
-  ): RecordingRuntimeResult = {
-    execute(logicalQuery, runtime, input.stream(), Map.empty[String, Any])
-  }
-
-  def execute(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    input: InputValues,
-    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
-  ): RecordingRuntimeResult
-
-  /**
-   * Execute a Logical query with some input stream.
-   */
-  def execute(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    inputStream: InputDataStream
-  ): RecordingRuntimeResult = execute(logicalQuery, runtime, inputStream, Map.empty[String, Any])
-
-  def execute(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    inputStream: InputDataStream,
-    parameters: Map[String, Any]
+    password: String,
+    queryConfig: QueryRuntimeConfig
   ): RecordingRuntimeResult
 
   def executeWithoutValuePopulation(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     inputStream: InputDataStream,
-    parameters: Map[String, Any]
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
   ): RecordingRuntimeResult
-
-  /**
-   * Execute a Logical query with a custom subscriber.
-   */
-  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], subscriber: QuerySubscriber): RuntimeResult =
-    execute(logicalQuery, runtime, NoInput, subscriber)
-
-  /**
-   * Execute a Logical query with a custom subscriber and some input.
-   */
-  def execute(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    input: InputDataStream,
-    subscriber: QuerySubscriber
-  ): RuntimeResult = {
-    execute(logicalQuery, runtime, input, subscriber, Set.empty[TestPlanCombinationRewriterHint])
-  }
-
-  /**
-   * Execute a Logical query with a custom subscriber and some input and test plan combination rewriter hints.
-   */
-  def execute(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    input: InputDataStream,
-    subscriber: QuerySubscriber,
-    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
-  ): RuntimeResult
 
   /**
    * Execute a logical query in its own transaction. Return the result already materialized.
@@ -174,9 +122,11 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   def executeAndConsumeTransactionally(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None,
-    prePopulateResults: Boolean = true
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig,
+    profileAssertion: Option[QueryProfile => Unit],
+    prePopulateResults: Boolean
   ): IndexedSeq[Array[AnyValue]]
 
   /**
@@ -186,17 +136,22 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None,
-    prePopulateResults: Boolean = true
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig,
+    profileAssertion: Option[QueryProfile => Unit],
+    prePopulateResults: Boolean
   ): Long
 
   /**
-   * Execute a Logical query with some input. Return the result and the context.
+   * Execute a LogicalQuery with some input. Return the result and the context.
    */
   def executeAndContext(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    input: InputValues
+    input: InputValues,
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
   ): (RecordingRuntimeResult, CONTEXT)
 
   /**
@@ -206,50 +161,61 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     input: InputValues,
-    parameters: Map[String, Any] = Map.empty
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
   ): (NonRecordingRuntimeResult, CONTEXT)
 
   /**
-   * Execute a Logical query with some input. Return the result and the execution plan description
+   * Execute a LogicalQuery with some input. Return the result and the execution plan description
    */
   def executeAndExplain(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    input: InputValues
+    input: InputValues,
+    queryConfig: QueryRuntimeConfig
   ): (RecordingRuntimeResult, InternalPlanDescription)
 
   /**
-   * Profile a Logical query with some input.
+   * Profile a LogicalQuery with some input stream.
    */
-  def profile(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], input: InputValues): RecordingRuntimeResult =
-    profile(logicalQuery, runtime, input.stream())
-
-  /**
-   * Profile a Logical query with some input stream.
-   */
-  def profile(
+  def profileQuery(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    inputDataStream: InputDataStream = NoInput,
-    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+    inputDataStream: InputDataStream,
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
   ): RecordingRuntimeResult
 
-  def profile(executionPlan: ExecutionPlan, inputDataStream: InputDataStream, readOnly: Boolean): RecordingRuntimeResult
+  def profilePlan(
+    executionPlan: ExecutionPlan,
+    inputDataStream: InputDataStream,
+    readOnly: Boolean,
+    parameters: Map[String, Any],
+    queryConfig: QueryRuntimeConfig
+  ): RecordingRuntimeResult
 
   /**
-   * Profile a Logical query with some input stream without recording the result.
+   * Profile a LogicalQuery with some input stream without recording the result.
    */
   def profileNonRecording(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    inputDataStream: InputDataStream = NoInput
+    inputDataStream: InputDataStream,
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
   ): NonRecordingRuntimeResult
 
   def profileWithSubscriber(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     subscriber: QuerySubscriber,
-    inputDataStream: InputDataStream = NoInput
+    inputDataStream: InputDataStream,
+    parameters: Map[String, Any],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
+    queryConfig: QueryRuntimeConfig
   ): RuntimeResult
 
 }

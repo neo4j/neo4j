@@ -159,6 +159,7 @@ import org.neo4j.kernel.internal.event.TransactionEventListeners;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.HeapEstimatorCacheConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -558,12 +559,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionCursorContext,
                 clockContextSupplier,
                 kernelTransaction,
-                procedureView) -> {
+                procedureView,
+                heapEstimatorCacheConfig) -> {
             var executionContextCursorTracer = new ExecutionContextCursorTracer(
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
             var executionContextCursorContext = contextFactory.create(executionContextCursorTracer);
             StorageReader executionContextStorageReader = storageEngine.newReader();
-            MemoryTracker executionContextMemoryTracker = kernelTransaction.createExecutionContextMemoryTracker();
+            MemoryTracker executionContextMemoryTracker =
+                    kernelTransaction.createExecutionContextMemoryTracker(heapEstimatorCacheConfig);
             StoreCursors executionContextStoreCursors =
                     storageEngine.createStorageCursors(executionContextCursorContext);
             DefaultPooledCursors executionContextPooledCursors = new DefaultPooledCursors(
@@ -693,7 +696,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public ExecutionContext createExecutionContext() {
+    public ExecutionContext createExecutionContext(HeapEstimatorCacheConfig heapEstimatorCacheConfig) {
         if (hasTxStateWithChanges()) {
             throw new IllegalStateException(
                     "Execution context cannot be used for transactions with non-empty transaction state");
@@ -715,14 +718,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 cursorContext,
                 () -> statementClock,
                 this,
-                this.procedureView);
+                this.procedureView,
+                heapEstimatorCacheConfig);
     }
 
     @Override
-    public MemoryTracker createExecutionContextMemoryTracker() {
+    public MemoryTracker createExecutionContextMemoryTracker(HeapEstimatorCacheConfig heapEstimatorCacheConfig) {
         var grabSize = config.get(GraphDatabaseInternalSettings.initial_transaction_heap_grab_size_per_worker);
         var maxGrabSize = config.get(GraphDatabaseInternalSettings.max_transaction_heap_grab_size_per_worker);
-        return transactionMemoryPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+        return transactionMemoryPool.getExecutionContextPoolMemoryTracker(
+                grabSize, maxGrabSize, heapEstimatorCacheConfig);
     }
 
     @Override
@@ -1847,7 +1852,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 CursorContext transactionCursorContext,
                 Supplier<ClockContext> clockContextSupplier,
                 KernelTransaction ktx,
-                ProcedureView procedureView);
+                ProcedureView procedureView,
+                HeapEstimatorCacheConfig heapEstimatorCacheConfig);
     }
 
     private interface CommandDecorator extends Decorator {

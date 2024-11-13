@@ -82,18 +82,24 @@ abstract class BaseExecutionResultBuilderFactory(
           val delegateFactory = () => {
             new TransactionWorkerThreadDelegatingMemoryTracker
           }
-          val mainThreadMemoryTracker = queryContext.transactionalContext.createExecutionContextMemoryTracker()
+          val mainThreadMemoryTracker = queryContext.transactionalContext.createExecutionContextMemoryTracker(
+            queryContext.queryConfig.heapEstimatorCacheConfig
+          )
           val mt = if (profile) {
-            new ProfilingParallelTrackingQueryMemoryTracker(delegateFactory)
+            new ProfilingParallelTrackingQueryMemoryTracker(
+              delegateFactory,
+              queryContext.queryConfig.heapEstimatorCacheConfig
+            )
           } else {
-            new ParallelTrackingQueryMemoryTracker(delegateFactory)
+            new ParallelTrackingQueryMemoryTracker(delegateFactory, queryContext.queryConfig.heapEstimatorCacheConfig)
           }
           // mainThreadMemoryTracker should be closed together with the query context
           queryContext.resources.trace(DefaultCloseListenable.wrap(mainThreadMemoryTracker))
           mt.setInitializationMemoryTracker(mainThreadMemoryTracker)
           mt
-        case (MEMORY_TRACKING, _)                   => new TrackingQueryMemoryTracker
-        case (CUSTOM_MEMORY_TRACKING(decorator), _) => new CustomTrackingQueryMemoryTracker(decorator)
+        case (MEMORY_TRACKING, _) => new TrackingQueryMemoryTracker(queryContext.queryConfig.heapEstimatorCacheConfig)
+        case (CUSTOM_MEMORY_TRACKING(decorator), _) =>
+          new CustomTrackingQueryMemoryTracker(decorator, queryContext.queryConfig.heapEstimatorCacheConfig)
       }
     }
 

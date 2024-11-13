@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.configuration.Config
 import org.neo4j.csv.reader.CharReadable
+import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.TransactionId
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.kernel.impl.util.DefaultValueMapper
+import org.neo4j.memory.HeapEstimatorCacheConfig
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.ValueMapper
@@ -71,7 +73,7 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 
   def contextWithNewTransaction: TransactionalContextWrapper
 
-  def createParallelTransactionalContext(): ParallelTransactionalContextWrapper
+  def createParallelTransactionalContext(queryConfig: QueryRuntimeConfig): ParallelTransactionalContextWrapper
 
   def cancellationChecker: CancellationChecker
 
@@ -164,8 +166,9 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override def validateSameDB[E <: Entity](entity: E): Unit = tc.transaction().validateSameDB(entity)
 
-  override def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
-    val parallelContext = new ParallelTransactionalContextWrapper(kernelTransactionalContext)
+  override def createParallelTransactionalContext(queryConfig: QueryRuntimeConfig)
+    : ParallelTransactionalContextWrapper = {
+    val parallelContext = new ParallelTransactionalContextWrapper(kernelTransactionalContext, queryConfig)
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
       DebugSupport.TRANSACTIONAL_CONTEXT.log(
         "%s.createParallelTransactionalContext(): %s thread=%s",
@@ -205,8 +208,10 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override def constituentTransactionFactory: ConstituentTransactionFactory = tc.constituentTransactionFactory()
 
-  override def createExecutionContextMemoryTracker(): MemoryTracker =
-    tc.kernelTransaction().createExecutionContextMemoryTracker()
+  override def createExecutionContextMemoryTracker(heapEstimatorCacheConfig: HeapEstimatorCacheConfig)
+    : MemoryTracker = {
+    tc.kernelTransaction().createExecutionContextMemoryTracker(heapEstimatorCacheConfig)
+  }
 
   override def queryExecutingConfiguration: QueryExecutionConfiguration = tc.queryExecutingConfiguration()
 }

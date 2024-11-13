@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.runtime.MemoizingMeasurable.INVALID_CACHED_SIZE
+import org.neo4j.memory.HeapEstimatorCache
 import org.neo4j.memory.Measurable
 
 /**
@@ -38,6 +39,13 @@ trait MemoizingMeasurable extends Measurable {
   def estimatedHeapUsageWithCache: Long = {
     if (cachedEstimatedHeapUsage == INVALID_CACHED_SIZE) {
       cachedEstimatedHeapUsage = estimatedHeapUsage()
+    }
+    cachedEstimatedHeapUsage
+  }
+
+  def estimatedHeapUsageWithCache(heapEstimatorCache: HeapEstimatorCache): Long = {
+    if (cachedEstimatedHeapUsage == INVALID_CACHED_SIZE) {
+      cachedEstimatedHeapUsage = estimatedHeapUsage(heapEstimatorCache)
     }
     cachedEstimatedHeapUsage
   }

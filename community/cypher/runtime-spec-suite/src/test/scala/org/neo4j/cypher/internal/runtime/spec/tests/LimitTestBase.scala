@@ -1370,7 +1370,12 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val runtimeResult =
-      execute(logicalQuery, runtime, inputValues(Array[Any](1)), testPlanCombinationRewriterHints = Set(NoRewrites))
+      executeWithInputValues(
+        logicalQuery,
+        runtime,
+        inputValues(Array[Any](1)),
+        testPlanCombinationRewriterHints = Set(NoRewrites)
+      )
     runtimeResult should beColumns("c").withNoRows()
   }
 }

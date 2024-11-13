@@ -22,7 +22,7 @@ package org.neo4j.memory;
 /**
  * Memory allocation tracker that tracks bytes allocation and de-allocation on the heap and in native memory.
  */
-public interface MemoryTracker extends AutoCloseable, HeapMemoryTracker {
+public interface MemoryTracker extends AutoCloseable, HeapMemoryTracker, HeapEstimatorCache {
     /**
      * @return number of bytes of native memory that are used
      */
@@ -85,4 +85,28 @@ public interface MemoryTracker extends AutoCloseable, HeapMemoryTracker {
      * @return The scoped memory tracker.
      */
     MemoryTracker getScopedMemoryTracker();
+
+    default HeapEstimatorCache getHeapEstimatorCache() {
+        // To simplify memory measurement, let this implement a no-op HeapEstimatorCache
+        // (instead of returning HeapEstimatorCache.NoHeapEstimatorCache.INSTANCE)
+        return this;
+    }
+
+    default HeapEstimatorCache getScopedHeapEstimatorCache() {
+        return getHeapEstimatorCache();
+    }
+
+    // HeapEstimatorCache
+
+    default long estimatedHeapUsage(Measurable measurable, long estimate) {
+        return estimate;
+    }
+
+    default void fastReset() {}
+
+    default void fullReset() {}
+
+    default HeapEstimatorCache newWithSameSettings() {
+        return this;
+    }
 }
