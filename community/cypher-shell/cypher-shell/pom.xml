@@ -210,6 +210,7 @@
                     <assembleDirectory>${project.build.directory}/assembly</assembleDirectory>
                     <repositoryLayout>flat</repositoryLayout>
                     <repositoryName>lib</repositoryName>
+                    <useWildcardClassPath>true</useWildcardClassPath>
                     <programs>
                         <program>
                             <mainClass>org.neo4j.shell.startup.CypherShellBoot</mainClass>
