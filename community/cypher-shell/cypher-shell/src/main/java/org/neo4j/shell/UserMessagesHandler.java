@@ -22,6 +22,7 @@ package org.neo4j.shell;
 import static org.neo4j.shell.util.Versions.version;
 
 import org.neo4j.shell.printer.AnsiFormattedText;
+import org.neo4j.shell.util.Versions;
 
 public record UserMessagesHandler(Connector connector) {
     public String getWelcomeMessage() {
@@ -29,8 +30,13 @@ public record UserMessagesHandler(Connector connector) {
 
         String protocolVersion = connector.getProtocolVersion();
         if (!protocolVersion.isEmpty()) {
-            message.append(
-                    " using Bolt protocol version " + version(protocolVersion).majorMinorString());
+            String versionString;
+            try {
+                versionString = version(protocolVersion).majorMinorString();
+            } catch (Versions.FailedToParseException e) {
+                versionString = protocolVersion;
+            }
+            message.append(" using Bolt protocol version " + versionString);
         }
 
         message.append(" at ").bold(connector.connectionConfig().uri().toString());

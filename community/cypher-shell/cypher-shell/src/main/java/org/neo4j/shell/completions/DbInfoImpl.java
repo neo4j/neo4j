@@ -23,14 +23,17 @@ import static org.neo4j.shell.util.Versions.version;
 
 import java.util.Optional;
 import org.neo4j.driver.Value;
+import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.state.BoltStateHandler;
+import org.neo4j.shell.util.Versions;
 
 public class DbInfoImpl extends DbInfo {
+    private static final Logger log = Logger.create();
 
+    final BoltStateHandler boltStateHandler;
+    final boolean completionsEnabledByConfig;
     QueryPoller queryPoller;
-    BoltStateHandler boltStateHandler;
-    boolean completionsEnabledByConfig;
 
     private void initializeQueryPoller() {
         this.queryPoller = new QueryPoller(boltStateHandler);
@@ -83,13 +86,19 @@ public class DbInfoImpl extends DbInfo {
 
     @Override
     public boolean completionsEnabled() {
-        if (versionCompatibleWithCompletions.isEmpty() && boltStateHandler.isConnected()) {
-            var serverVersion = version(boltStateHandler.getServerVersion());
-            var enableCompletions = serverVersion.compareTo(version("5.0.0")) >= 0;
-            versionCompatibleWithCompletions = Optional.of(enableCompletions);
+        if (completionsEnabledByConfig
+                && versionCompatibleWithCompletions.isEmpty()
+                && boltStateHandler.isConnected()) {
+            try {
+                var serverVersion = version(boltStateHandler.getServerVersion());
+                var enableCompletions = serverVersion.compareTo(version("5.0.0")) >= 0;
+                versionCompatibleWithCompletions = Optional.of(enableCompletions);
+            } catch (Versions.FailedToParseException e) {
+                log.warn("Failed to parse server version", e);
+            }
         }
 
-        return versionCompatibleWithCompletions.orElse(false) && completionsEnabledByConfig;
+        return versionCompatibleWithCompletions.orElse(false);
     }
 
     @Override

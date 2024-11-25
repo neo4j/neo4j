@@ -36,6 +36,7 @@ import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.prettyprint.TableOutputFormatter;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.util.Version;
+import org.neo4j.shell.util.Versions;
 
 /**
  * Print neo4j system information
@@ -44,7 +45,7 @@ public class SysInfo implements Command {
     private final Printer printer;
     private final TableOutputFormatter tableFormatter;
     private final CypherShell shell;
-    private final Version firstSupportedVersion = version("4.4.0");
+    private final Version firstSupportedVersion = new Version(4, 4, 0);
     private final String SYSTEM_DB_TYPE = "system";
     private final String COMPOSITE_DB_TYPE = "composite";
 
@@ -58,12 +59,9 @@ public class SysInfo implements Command {
     public void execute(List<String> args) throws ExitException, CommandException {
         requireArgumentCount(args, 0);
 
-        final var version = shell.getServerVersion();
         if (!shell.isConnected()) {
             throw new CommandException("Connect to a database to use :sysinfo");
-        } else if (version != null
-                && !version.isBlank()
-                && version(shell.getServerVersion()).compareTo(firstSupportedVersion) < 0) {
+        } else if (!isSupportedVersion()) {
             throw new CommandException(":sysinfo is only supported since " + firstSupportedVersion);
         } else if (isSystemOrCompositeDb()) {
             throw new CommandException(
@@ -76,6 +74,15 @@ public class SysInfo implements Command {
             for (final var group : allMetrics) {
                 printMetrics(clientConfig, db, group);
             }
+        }
+    }
+
+    private boolean isSupportedVersion() {
+        final var version = shell.getServerVersion();
+        try {
+            return version == null || version.isBlank() || version(version).compareTo(firstSupportedVersion) >= 0;
+        } catch (Versions.FailedToParseException e) {
+            return true; // Assume supported
         }
     }
 

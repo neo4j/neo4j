@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 class VersionsTest {
     @Test
-    void shouldWorkForEmptyString() {
+    void shouldWorkForEmptyString() throws Versions.FailedToParseException {
         assertEquals(0, Versions.version("").compareTo(Versions.version("0.0.0")));
         assertEquals(0, Versions.majorVersion(""));
         assertEquals(0, Versions.minorVersion(""));
@@ -33,7 +33,7 @@ class VersionsTest {
     }
 
     @Test
-    void shouldWorkForReleaseVersion() {
+    void shouldWorkForReleaseVersion() throws Versions.FailedToParseException {
         String versionString = "3.4.5";
         assertEquals(0, Versions.version(versionString).compareTo(Versions.version("3.4.5")));
         assertEquals(3, Versions.majorVersion(versionString));
@@ -42,7 +42,7 @@ class VersionsTest {
     }
 
     @Test
-    void shouldWorkForPreReleaseVersion() {
+    void shouldWorkForPreReleaseVersion() throws Versions.FailedToParseException {
         String versionString = "3.4.55-beta99";
         assertEquals(0, Versions.version(versionString).compareTo(Versions.version("3.4.55")));
         assertEquals(3, Versions.majorVersion(versionString));

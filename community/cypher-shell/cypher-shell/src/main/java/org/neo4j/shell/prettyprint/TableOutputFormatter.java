@@ -43,6 +43,7 @@ import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.state.BoltResult;
+import org.neo4j.shell.util.Versions;
 
 public class TableOutputFormatter implements OutputFormatter {
 
@@ -328,7 +329,7 @@ public class TableOutputFormatter implements OutputFormatter {
             boolean legacyVersion;
             try {
                 legacyVersion = version(protocolVersion).compareTo(version("5.6")) < 0;
-            } catch (AssertionError e) {
+            } catch (Versions.FailedToParseException e) {
                 legacyVersion = true;
             }
 

@@ -43,6 +43,7 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.prettyprint.TablePlanFormatter;
 import org.neo4j.shell.state.BoltStateHandler;
+import org.neo4j.shell.util.Versions;
 
 class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
     private final StringLinePrinter linePrinter = new StringLinePrinter();
@@ -173,7 +174,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
     }
 
     @Test
-    void cypherWithExplainAndRulePlanner() throws CommandException {
+    void cypherWithExplainAndRulePlanner() throws CommandException, Versions.FailedToParseException {
         // given (there is no rule planner in neo4j 4.0)
         assumeTrue(majorVersion(shell.getServerVersion()) < 4);
 
