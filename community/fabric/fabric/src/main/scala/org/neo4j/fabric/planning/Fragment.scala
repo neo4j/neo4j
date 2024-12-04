@@ -148,6 +148,7 @@ object Fragment {
   )(
     val pos: InputPosition
   ) extends Fragment {
+    // NOTE: In FabricExecutor.FabricStatementExecution.runUnion we assume that the output columns of a union are the same as the lhs output columns.
     override val outputColumns: Seq[String] = lhs.outputColumns
     override val producesResults: Boolean = rhs.producesResults
     override val argumentColumns: Seq[String] = input.argumentColumns

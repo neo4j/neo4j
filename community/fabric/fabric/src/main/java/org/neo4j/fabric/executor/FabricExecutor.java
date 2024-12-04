@@ -328,13 +328,30 @@ public class FabricExecutor {
         FragmentResult runUnion(Fragment.Union union, Record argument) {
             FragmentResult lhs = run(union.lhs(), argument);
             FragmentResult rhs = run(union.rhs(), argument);
-            Flux<Record> merged = Flux.merge(lhs.records(), rhs.records());
+            Flux<Record> merged;
             Mono<QueryExecutionType> executionType = mergeExecutionType(lhs.executionType(), rhs.executionType());
+            if (union.lhs().outputColumns().equals(union.rhs().outputColumns())) {
+                merged = Flux.merge(lhs.records(), rhs.records());
+            } else {
+                // The union output columns is copied from the lhs output columns, therefor we need to change the order
+                // of the rhs output columns.
+                var rhsOutputColumns = asJava(union.rhs().outputColumns().toList());
+                List<Integer> rhsOutputOrder = asJava(union.outputColumns()).stream()
+                        .map(rhsOutputColumns::indexOf)
+                        .toList();
+                merged = Flux.merge(
+                        lhs.records(), rhs.records().map(record -> rearrangeRecordOrder(record, rhsOutputOrder)));
+            }
             if (union.distinct()) {
                 return new FragmentResult(merged.distinct(), Mono.empty(), executionType);
             } else {
                 return new FragmentResult(merged, Mono.empty(), executionType);
             }
+        }
+
+        private Record rearrangeRecordOrder(Record record, List<Integer> columns) {
+            var values = columns.stream().map(record::getValue).collect(Collectors.toList());
+            return Records.of(values);
         }
 
         FragmentResult runExec(Fragment.Exec fragment, Record argument) {
