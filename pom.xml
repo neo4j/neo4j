@@ -80,6 +80,7 @@
     <maven.compiler.source>${vm.target.version}</maven.compiler.source>
     <maven.compiler.target>${vm.target.version}</maven.compiler.target>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
+    <test.runner.mockito.agent>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</test.runner.mockito.agent>
     <jdk.custom.options>
       --add-opens=java.base/java.nio=ALL-UNNAMED
       --add-opens=java.base/java.io=ALL-UNNAMED
@@ -90,6 +91,7 @@
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings.db.format/>
     <test.runner.jvm.settings>
+      ${test.runner.mockito.agent}
       -Xmx${test.vm.heap.size}
       -XX:+UseG1GC
       -XX:-OmitStackTraceInFastThrow
@@ -124,7 +126,7 @@
       -XX:+UnlockDiagnosticVMOptions
       -XX:+DebugNonSafepoints
       -XX:MaxMetaspaceSize=550m
-      -XX:+EnableDynamicAgentLoading
+      -Xshare:off
       ${jdk.custom.options}
       ${test.runner.jvm.settings.db.format}
       ${test.runner.jvm.settings.additional}
