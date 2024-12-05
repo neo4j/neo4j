@@ -109,6 +109,7 @@ public final class Neo4jLayout {
                 .set(GraphDatabaseSettings.data_directory, home)
                 .set(GraphDatabaseSettings.transaction_logs_root_path, home)
                 .set(GraphDatabaseInternalSettings.databases_root_path, home)
+                .set(GraphDatabaseSettings.script_root_path, home)
                 .build();
         return of(config);
     }
