@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.util;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
@@ -48,5 +49,17 @@ class VersionsTest {
         assertEquals(3, Versions.majorVersion(versionString));
         assertEquals(4, Versions.minorVersion(versionString));
         assertEquals(55, Versions.patch(versionString));
+    }
+
+    @Test
+    void throwOnNull() {
+        assertThatThrownBy(() -> Versions.version(null)).isExactlyInstanceOf(Versions.FailedToParseException.class);
+    }
+
+    @Test
+    void throwOnMalformed() {
+        assertThatThrownBy(() -> Versions.version("a.b.c")).isExactlyInstanceOf(Versions.FailedToParseException.class);
+        assertThatThrownBy(() -> Versions.version("1.2.3.4"))
+                .isExactlyInstanceOf(Versions.FailedToParseException.class);
     }
 }
