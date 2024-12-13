@@ -1207,40 +1207,30 @@ public final class CypherFunctions {
         return queryContext.isLabelSetOnNode(tokenId, node.id(), nodeCursor);
     }
 
-    public static String evaluateSingleDynamicRelType(AnyValue value) throws IllegalTokenNameException {
-        TextValue singleValue = null;
-
+    public static String evaluateSingleDynamicRelType(AnyValue value) {
         if (value instanceof TextValue textValue) {
-            singleValue = textValue;
+            return textValue.stringValue();
         } else if (value instanceof SequenceValue sequenceValue) {
-            for (var t : sequenceValue) {
-                if (t instanceof TextValue textValue) {
-                    if (singleValue == null) {
-                        singleValue = textValue;
-                    } else if (!singleValue.equals(textValue)) {
-                        throw new IllegalArgumentException("Error - Exactly one relationship type must be specified.");
-                    }
-                } else {
-                    throw new CypherTypeException(format(
-                            "Invalid input for function 'evaluateDynamicRelType()': Expected %s to be a string, but it was a `%s`",
-                            t, t.getTypeName()));
-                }
+            if (sequenceValue.actualSize() != 1L) {
+                throw new IllegalArgumentException("Error - Exactly one relationship type must be specified.");
+            }
+
+            var t = sequenceValue.value(0);
+            if (t instanceof TextValue textValue) {
+                return textValue.stringValue();
+            } else {
+                throw new CypherTypeException(format(
+                        "Invalid input for function 'evaluateDynamicRelType()': Expected %s to be a string, but it was a `%s`",
+                        t, t.getTypeName()));
             }
         } else {
             throw new CypherTypeException(format(
                     "Invalid input for function 'evaluateDynamicRelType()': Expected %s to be a string or list of strings, but it was a `%s`",
                     value, value.getTypeName()));
         }
-        if (singleValue == null) {
-            // can only reach here if value was an empty sequence
-            throw new IllegalArgumentException("Error - Exactly one relationship type must be specified.");
-        }
-
-        return singleValue.stringValue();
     }
 
-    public static int getOrCreateDynamicRelType(AnyValue value, QueryContext queryContext)
-            throws IllegalTokenNameException {
+    public static int getOrCreateDynamicRelType(AnyValue value, QueryContext queryContext) {
         return queryContext.getOrCreateRelTypeId(evaluateSingleDynamicRelType(value));
     }
 

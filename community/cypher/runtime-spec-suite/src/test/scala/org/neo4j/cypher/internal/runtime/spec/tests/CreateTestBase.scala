@@ -391,6 +391,38 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     relationship.getType.name() should equal("R")
   }
 
+  test("should throw the correct error if the dynamic type is invalid") {
+    // given
+    val nodes = givenGraph {
+      Seq(tx.createNode(label("A")), tx.createNode(label("B")))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(createRelationshipWithDynamicType("r", "a", "type", "b", OUTGOING))
+      .input(nodes = Seq("a", "b"), variables = Seq("type"))
+      .build(readOnly = false)
+
+    def theDynamicType(v: Any): Unit = consume(execute(logicalQuery, runtime, inputValues((nodes :+ v).toArray)))
+
+    // then
+    the[IllegalArgumentException] thrownBy theDynamicType(
+      Array[String]()
+    ) should have message "Error - Exactly one relationship type must be specified."
+    the[IllegalArgumentException] thrownBy theDynamicType(
+      Array[String]("A", "A")
+    ) should have message "Error - Exactly one relationship type must be specified."
+    the[IllegalArgumentException] thrownBy theDynamicType(
+      Array[String]("C", "D")
+    ) should have message "Error - Exactly one relationship type must be specified."
+    the[CypherTypeException] thrownBy theDynamicType(1) should have message "Invalid input for function 'evaluateDynamicRelType()': Expected Int(1) to be a string or list of strings, but it was a `Integer`"
+    the[CypherTypeException] thrownBy theDynamicType(Array(1)) should have message "Invalid input for function 'evaluateDynamicRelType()': Expected Int(1) to be a string, but it was a `Integer`"
+    the[CypherTypeException] thrownBy theDynamicType(null) should have message "Invalid input for function 'evaluateDynamicRelType()': Expected NO_VALUE to be a string or list of strings, but it was a `NO_VALUE`"
+    a[IllegalTokenNameException] shouldBe thrownBy(theDynamicType(""))
+    a[IllegalTokenNameException] shouldBe thrownBy(theDynamicType("\u0000"))
+  }
+
   test("should create relationship with null property") {
     // given an empty data base
 
