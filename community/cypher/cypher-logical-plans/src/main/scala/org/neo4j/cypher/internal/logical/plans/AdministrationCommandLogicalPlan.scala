@@ -580,11 +580,11 @@ case class DropDatabaseAlias(source: AdministrationCommandLogicalPlan, aliasName
 ) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class AlterLocalDatabaseAlias(
-  source: Option[AdministrationCommandLogicalPlan],
+  source: AdministrationCommandLogicalPlan,
   aliasName: DatabaseName,
   targetName: Option[DatabaseName],
   properties: Option[Either[Map[String, Expression], Parameter]]
-)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(source)
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class AlterRemoteDatabaseAlias(
   source: AdministrationCommandLogicalPlan,

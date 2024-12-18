@@ -7556,7 +7556,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         AlterLocalDatabaseAlias(
-          Some(privLhsLP),
+          privLhsLP,
           NamespacedName("alias1")(pos),
           Some(NamespacedName("db2")(pos)),
           None

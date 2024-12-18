@@ -1296,7 +1296,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             _,
             "alter",
             Some(aliasName)
-          )),
+          )).getOrElse(source),
           aliasName,
           targetName,
           properties
