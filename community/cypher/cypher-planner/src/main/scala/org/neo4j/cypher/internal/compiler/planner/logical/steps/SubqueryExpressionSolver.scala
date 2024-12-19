@@ -498,7 +498,7 @@ object SubqueryExpressionSolver {
       val solver = SubqueryExpressionSolver.solverFor(inner, context)
       val rewrittenExpression = solver.solve(expression)
       val rewrittenInner = solver.rewrittenPlan()
-      context.settings.remoteBatchPropertiesStrategy.planBatchPropertiesForExpression(
+      context.settings.remoteBatchPropertiesStrategy.planBatchPropertiesForExpressionWithLookahead(
         context.staticComponents.planningAttributes.solveds.get(rewrittenInner.id).asSinglePlannerQuery.queryGraph,
         rewrittenInner,
         context,

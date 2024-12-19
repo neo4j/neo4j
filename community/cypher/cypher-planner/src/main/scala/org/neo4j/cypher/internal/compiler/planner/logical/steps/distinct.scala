@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.RemoteBatchingResult
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.RewrittenExpressions
 
 object distinct {
 
@@ -34,69 +34,56 @@ object distinct {
   def apply(
     plan: LogicalPlan,
     distinctQueryProjection: DistinctQueryProjection,
+    rewrittenExpressions: RewrittenExpressions,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-
-    val solver = SubqueryExpressionSolver.solverFor(plan, context)
-    val groupingExpressionsMap = distinctQueryProjection.groupingExpressions.map { case (k, v) =>
-      (k, solver.solve(v, Some(k)))
+    val groupingExpressionsToReport = distinctQueryProjection.groupingExpressions
+    val rewrittenGroupingExprs = groupingExpressionsToReport.map {
+      case (variable, expr) => variable -> rewrittenExpressions.rewrittenExpressionOrSelf(expr)
     }
-    val rewrittenPlan = solver.rewrittenPlan()
 
     val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
     val OrderToLeverageWithAliases(orderToLeverageForGrouping, newGroupingExpressionsMap, _) =
-      leverageOrder(inputProvidedOrder, groupingExpressionsMap, Map.empty, plan.availableSymbols)
-    val RemoteBatchingResult(
-      rewrittenExpressionsWithCachedProperties,
-      planWithAllProperties
-    ) = context.settings.remoteBatchPropertiesStrategy.planBatchPropertiesForGroupingExpressions(
-      rewrittenPlan,
-      context,
-      groupingExpressionsMap = newGroupingExpressionsMap,
-      orderToLeverage = orderToLeverageForGrouping
-    )
-
-    val previousDistinctness = rewrittenPlan.distinctness
+      leverageOrder(inputProvidedOrder, rewrittenGroupingExprs, Map.empty, rewrittenExpressions, plan.availableSymbols)
+    val previousDistinctness = plan.distinctness
 
     // If the already distinct columns cover the columns to distinctify,
     // then we do not need to plan a Distinct.
     if (previousDistinctness.covers(newGroupingExpressionsMap.values)) {
       val projections =
         projection.filterOutEmptyProjections(
-          rewrittenExpressionsWithCachedProperties.groupExpressions,
-          rewrittenPlan.availableSymbols
+          newGroupingExpressionsMap,
+          plan.availableSymbols
         )
 
       if (projections.isEmpty) {
         context.staticComponents.logicalPlanProducer.planEmptyDistinct(
-          planWithAllProperties,
-          distinctQueryProjection.groupingExpressions,
+          plan,
+          groupingExpressionsToReport,
           context
         )
       } else {
         context.staticComponents.logicalPlanProducer.planProjectionForDistinct(
-          planWithAllProperties,
+          plan,
           projections,
-          distinctQueryProjection.groupingExpressions,
+          groupingExpressionsToReport,
           context
         )
       }
-    } else if (
-      rewrittenExpressionsWithCachedProperties.orderToLeverage.isEmpty || !context.settings.executionModel.providedOrderPreserving
-    ) {
+    } else if (orderToLeverageForGrouping.isEmpty || !context.settings.executionModel.providedOrderPreserving) {
       // Parallel runtime does currently not support OrderedDistinct
       context.staticComponents.logicalPlanProducer.planDistinct(
-        planWithAllProperties,
-        rewrittenExpressionsWithCachedProperties.groupExpressions,
-        distinctQueryProjection.groupingExpressions,
+        plan,
+        newGroupingExpressionsMap,
+        groupingExpressionsToReport,
         context
       )
     } else {
       context.staticComponents.logicalPlanProducer.planOrderedDistinct(
-        planWithAllProperties,
-        rewrittenExpressionsWithCachedProperties.groupExpressions,
-        rewrittenExpressionsWithCachedProperties.orderToLeverage,
-        distinctQueryProjection.groupingExpressions,
+        plan,
+        newGroupingExpressionsMap,
+        orderToLeverageForGrouping,
+        groupingExpressionsToReport,
         context
       )
     }

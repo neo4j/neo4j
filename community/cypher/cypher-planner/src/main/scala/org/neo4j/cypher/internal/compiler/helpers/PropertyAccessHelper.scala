@@ -82,7 +82,7 @@ object PropertyAccessHelper {
     rec(query, ContextualPropertyAccess.empty)
   }
 
-  def findPropertyAccesses(propertyAccessLocations: Seq[Any]): Set[PropertyAccess] = {
+  def findPropertyAccesses(propertyAccessLocations: Iterable[Any]): Set[PropertyAccess] = {
     propertyAccessLocations.folder.treeFold(Set[PropertyAccess]()) {
       case Property(v: Variable, PropertyKeyName(propName)) => set =>
           SkipChildren(set + PropertyAccess(v, propName))

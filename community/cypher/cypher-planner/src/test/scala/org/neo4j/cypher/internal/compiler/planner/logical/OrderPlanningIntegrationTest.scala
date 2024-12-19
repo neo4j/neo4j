@@ -786,6 +786,72 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     leveragedOrders.get(plan.id) should be(true)
   }
 
+  test(
+    "should plan an additional sort before a collect in parallel runtime if aggregation solves other subquery expressions as well"
+  ) {
+    val query =
+      """
+        |MATCH (n1)
+        |WHERE n1.name STARTS WITH 'A'
+        |ORDER BY n1.age
+        |RETURN collect(n1.name) AS names, EXISTS { MATCH (n2) WHERE n2.name CONTAINS n1.name } AS n3
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setExecutionModel(ExecutionModel.BatchedParallel(1, 2))
+      .build()
+    val planState = planner.planState(query)
+    val plan = planState.logicalPlan.stripProduceResults
+    plan shouldEqual defaultConfig.subPlanBuilder()
+      .aggregation(Seq("n3 AS n3"), Seq("collect(cacheN[n1.name]) AS names"))
+      .sort("`n1.age` ASC")
+      .projection("cacheNFromStore[n1.age] AS `n1.age`")
+      .letSemiApply("n3")
+      .|.filter("n2.name CONTAINS cacheN[n1.name]")
+      .|.allNodeScan("n2", "n1")
+      .sort("`n1.age` ASC")
+      .projection("cacheNFromStore[n1.age] AS `n1.age`")
+      .filter("cacheNFromStore[n1.name] STARTS WITH 'A'")
+      .allNodeScan("n1")
+      .build()
+
+    val leveragedOrders = planState.planningAttributes.leveragedOrders
+    leveragedOrders.get(plan.id) should be(true)
+  }
+
+  test(
+    "should not plan additional sort before a collect in default runtime if aggregation solves other subquery expressions as well"
+  ) {
+    val query =
+      """
+        |MATCH (n1)
+        |WHERE n1.name STARTS WITH 'A'
+        |ORDER BY n1.age
+        |RETURN collect(n1.name) AS names, EXISTS { MATCH (n2) WHERE n2.name CONTAINS n1.name } AS n3
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setExecutionModel(ExecutionModel.default)
+      .build()
+    val planState = planner.planState(query)
+    val plan = planState.logicalPlan.stripProduceResults
+    plan shouldEqual defaultConfig.subPlanBuilder()
+      .aggregation(Seq("n3 AS n3"), Seq("collect(cacheN[n1.name]) AS names"))
+      .letSemiApply("n3")
+      .|.filter("n2.name CONTAINS cacheN[n1.name]")
+      .|.allNodeScan("n2", "n1")
+      .sort("`n1.age` ASC")
+      .projection("n1.age AS `n1.age`")
+      .filter("cacheNFromStore[n1.name] STARTS WITH 'A'")
+      .allNodeScan("n1")
+      .build()
+
+    val leveragedOrders = planState.planningAttributes.leveragedOrders
+    leveragedOrders.get(plan.id) should be(true)
+  }
+
   test("should not mark leveragedOrder in count with ORDER BY") {
     val query = "MATCH (a) WITH a ORDER BY a.age RETURN count(a.name)"
     val planState = defaultConfig.planState(query)

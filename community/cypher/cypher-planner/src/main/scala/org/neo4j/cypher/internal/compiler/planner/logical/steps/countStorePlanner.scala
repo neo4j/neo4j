@@ -60,6 +60,7 @@ case object countStorePlanner {
           context.staticComponents.logicalPlanProducer.planHorizonSelection(
             projectionPlan,
             selections.flatPredicates,
+            selections.flatPredicates,
             InterestingOrderConfig.empty,
             context
           )

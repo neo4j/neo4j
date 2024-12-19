@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RewrittenExpressions
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -45,7 +46,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
     val startPlan = newMockedLogicalPlan()
 
-    val result = aggregation(startPlan, projection, InterestingOrder.empty, None, context)
+    val result = aggregation(startPlan, projection, RewrittenExpressions.empty, InterestingOrder.empty, None, context)
     result should equal(
       Aggregation(startPlan, Map(), aggregatingMap)
     )
@@ -66,7 +67,8 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val startPlan = newMockedLogicalPlan()
 
-    val result = aggregation(startPlan, projectionPlan, InterestingOrder.empty, None, context)
+    val result =
+      aggregation(startPlan, projectionPlan, RewrittenExpressions.empty, InterestingOrder.empty, None, context)
     result should equal(
       Aggregation(startPlan, groupingMap, aggregationMap)
     )
@@ -91,10 +93,42 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Projection(startPlan, groupingMap)
 
     // When
-    val result = aggregation(projectionPlan, projection, InterestingOrder.empty, None, context)
+    val result =
+      aggregation(projectionPlan, projection, RewrittenExpressions.empty, InterestingOrder.empty, None, context)
     // Then
     result should equal(
       Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
+    )
+  }
+
+  test("should replace with rewritten expressions where possible") {
+    val groupingMap = Map[LogicalVariable, Expression](v"x.prop" -> prop("x", "prop"))
+    val aggregatingPropMap = Map[LogicalVariable, Expression](v"x" -> collect(prop("x", "prop2")))
+    val rewrittenExpressions = RewrittenExpressions(Map(
+      collect(prop("x", "prop2")) -> collect(cachedNodeProp("x", "prop2"))
+    ))
+    val projection = AggregatingQueryProjection(
+      aggregationExpressions = aggregatingPropMap
+    )
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
+      planContext = newMockedPlanContext()
+    )
+
+    val startPlan = newMockedLogicalPlan()
+
+    val projectionPlan: LogicalPlan =
+      Projection(startPlan, groupingMap)
+
+    // When
+    val result =
+      aggregation(projectionPlan, projection, rewrittenExpressions, InterestingOrder.empty, None, context)
+    // Then
+    result should equal(
+      Aggregation(
+        projectionPlan,
+        Map.empty,
+        Map[LogicalVariable, Expression](v"x" -> collect(cachedNodeProp("x", "prop2")))
+      )
     )
   }
 }

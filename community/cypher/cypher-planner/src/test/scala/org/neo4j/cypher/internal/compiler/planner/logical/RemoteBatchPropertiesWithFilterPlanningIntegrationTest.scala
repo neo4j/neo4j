@@ -633,4 +633,25 @@ class RemoteBatchPropertiesWithFilterPlanningIntegrationTest extends CypherFunSu
         )
         .build()
   }
+
+  test("should batch properties for aggregating functions like max") {
+    val query =
+      """MATCH (person)
+        |WITH MAX(person.age) as maxAge, person
+        |WHERE person.age = maxAge
+        |RETURN person.name""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("`person.name`")
+      .projection("cacheN[person.name] AS `person.name`")
+      .remoteBatchProperties("cacheNFromStore[person.name]")
+      .filter("cacheN[person.age] = maxAge")
+      .aggregation(Seq("person AS person"), Seq("MAX(cacheN[person.age]) AS maxAge"))
+      .remoteBatchProperties("cacheNFromStore[person.age]")
+      .allNodeScan("person")
+      .build()
+  }
 }

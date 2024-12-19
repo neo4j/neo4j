@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.RemoteBatchingResult
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -30,32 +29,38 @@ import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.RewrittenExpressions
 
 object aggregation {
 
   /**
+   * @param aggregation the aggregating query projection to solve
+   * @param rewrittenExpressions the expressions that have been rewritten either by a prior subquery solver or by remote batch properties
    * @param interestingOrderToReportForLimit the interesting order to report when planning a LIMIT for aggregation of this query part
    * @param previousInterestingOrder The previous interesting order, if it exists, and only if the plannerQuery has an empty query graph.
    */
   def apply(
     plan: LogicalPlan,
     aggregation: AggregatingQueryProjection,
+    rewrittenExpressions: RewrittenExpressions,
     interestingOrderToReportForLimit: InterestingOrder,
     previousInterestingOrder: Option[InterestingOrder],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solver = SubqueryExpressionSolver.solverFor(plan, context)
-    val groupingExpressionsMap = aggregation.groupingExpressions.map { case (k, v) =>
-      (k, solver.solve(v, Some(k)))
+
+    def toSolved(variableMap: Map[LogicalVariable, Expression]): Map[LogicalVariable, Expression] = variableMap.map {
+      case (variable, expr) => variable -> rewrittenExpressions.rewrittenExpressionOrSelf(expr)
     }
-    val aggregations = aggregation.aggregationExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
-    val rewrittenPlan = solver.rewrittenPlan()
+
+    val groupingExpressionsToReport = aggregation.groupingExpressions
+    val aggregationsToReport = aggregation.aggregationExpressions
+    val rewrittenGroupingExprs = toSolved(groupingExpressionsToReport)
+    val rewrittenAggregationExprs = toSolved(aggregationsToReport)
 
     val projectionMapForLimit: Map[LogicalVariable, Expression] =
-      if (AggregationHelper.isOnlyMinOrMaxAggregation(groupingExpressionsMap, aggregations)) {
-        val key = aggregations.keys.head // just checked that there is only one key
-        val value: Expression = aggregations(key)
-        val providedOrder = context.staticComponents.planningAttributes.providedOrders.get(rewrittenPlan.id)
+      if (AggregationHelper.isOnlyMinOrMaxAggregation(rewrittenGroupingExprs, rewrittenAggregationExprs)) {
+        val (key, value) = rewrittenAggregationExprs.head // just checked that there is only one key
+        val providedOrder = context.staticComponents.planningAttributes.providedOrders.get(plan.id)
 
         def minFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
@@ -81,32 +86,24 @@ object aggregation {
       }
 
     if (projectionMapForLimit.nonEmpty) {
-      val RemoteBatchingResult(
-        rewrittenExpressionsWithCachedProperties,
-        planWithAllProperties
-      ) = context.settings.remoteBatchPropertiesStrategy.planBatchPropertiesForProjections(
-        rewrittenPlan,
-        context,
-        projectionMapForLimit
-      )
 
       val projectedPlan = context.staticComponents.logicalPlanProducer.planRegularProjection(
-        planWithAllProperties,
-        rewrittenExpressionsWithCachedProperties.projections,
+        plan,
+        projectionMapForLimit,
         None,
         context
       )
 
       context.staticComponents.logicalPlanProducer.planLimitForAggregation(
         projectedPlan,
-        reportedGrouping = aggregation.groupingExpressions,
-        reportedAggregation = aggregation.aggregationExpressions,
+        reportedGrouping = groupingExpressionsToReport,
+        reportedAggregation = aggregationsToReport,
         interestingOrder = interestingOrderToReportForLimit,
         context = context
       )
     } else {
       val inputProvidedOrder =
-        context.staticComponents.planningAttributes.providedOrders(rewrittenPlan.id)
+        context.staticComponents.planningAttributes.providedOrders(plan.id)
       val OrderToLeverageWithAliases(
         orderToLeverageForGrouping,
         solvedGroupExpressionsMap,
@@ -114,41 +111,31 @@ object aggregation {
       ) =
         leverageOrder(
           inputProvidedOrder,
-          groupingExpressionsMap,
-          aggregations,
-          rewrittenPlan.availableSymbols
+          rewrittenGroupingExprs,
+          rewrittenAggregationExprs,
+          rewrittenExpressions,
+          plan.availableSymbols
         )
-
-      val RemoteBatchingResult(
-        rewrittenExpressionsWithCachedProperties,
-        planWithAllProperties
-      ) = context.settings.remoteBatchPropertiesStrategy.planBatchPropertiesForAggregations(
-        rewrittenPlan,
-        context,
-        aggregations = solvedAggregationsMap,
-        groupingExpressionsMap = solvedGroupExpressionsMap,
-        orderToLeverage = orderToLeverageForGrouping
-      )
 
       // Parallel runtime does currently not support OrderedAggregation
       if (orderToLeverageForGrouping.isEmpty || !context.settings.executionModel.providedOrderPreserving) {
         context.staticComponents.logicalPlanProducer.planAggregation(
-          planWithAllProperties,
-          rewrittenExpressionsWithCachedProperties.groupExpressions,
-          rewrittenExpressionsWithCachedProperties.aggregations,
-          aggregation.groupingExpressions,
-          aggregation.aggregationExpressions,
+          plan,
+          solvedGroupExpressionsMap,
+          solvedAggregationsMap,
+          groupingExpressionsToReport,
+          aggregationsToReport,
           previousInterestingOrder,
           context
         )
       } else {
         context.staticComponents.logicalPlanProducer.planOrderedAggregation(
-          planWithAllProperties,
-          rewrittenExpressionsWithCachedProperties.groupExpressions,
-          rewrittenExpressionsWithCachedProperties.aggregations,
-          rewrittenExpressionsWithCachedProperties.orderToLeverage,
-          aggregation.groupingExpressions,
-          aggregation.aggregationExpressions,
+          plan,
+          solvedGroupExpressionsMap,
+          solvedAggregationsMap,
+          orderToLeverageForGrouping,
+          groupingExpressionsToReport,
+          aggregationsToReport,
           context
         )
       }

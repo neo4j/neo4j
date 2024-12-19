@@ -41,7 +41,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RemoteBatchPropertiesUsingPlannerPlanningIntegrationTest extends CypherFunSuite
+class RemoteBatchPropertiesUsingPlannerPlanningIntegrationTest
+    extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
   private val spdPlanner = plannerBuilder()
@@ -676,9 +677,10 @@ class RemoteBatchPropertiesUsingPlannerPlanningIntegrationTest extends CypherFun
       .planBuilder()
       .produceResults("`person.name`")
       .projection("cacheN[person.name] AS `person.name`")
-      .filter("person.age = maxAge")
+      .remoteBatchProperties("cacheNFromStore[person.name]")
+      .filter("cacheN[person.age] = maxAge")
       .aggregation(Seq("person AS person"), Seq("MAX(cacheN[person.age]) AS maxAge"))
-      .remoteBatchProperties("cacheNFromStore[person.age]", "cacheNFromStore[person.name]")
+      .remoteBatchProperties("cacheNFromStore[person.age]")
       .allNodeScan("person")
       .build()
   }
@@ -695,9 +697,10 @@ class RemoteBatchPropertiesUsingPlannerPlanningIntegrationTest extends CypherFun
       .planBuilder()
       .produceResults("`person.name`", "ageDifference")
       .projection("cacheN[person.name] AS `person.name`")
+      .remoteBatchProperties("cacheNFromStore[person.name]")
       .projection("anon_0 - anon_1 AS ageDifference")
       .aggregation(Seq("cacheN[person.age] AS anon_1", "person AS person"), Seq("max(cacheN[person.age]) AS anon_0"))
-      .remoteBatchProperties("cacheNFromStore[person.age]", "cacheNFromStore[person.name]")
+      .remoteBatchProperties("cacheNFromStore[person.age]")
       .allNodeScan("person")
       .build()
   }

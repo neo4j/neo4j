@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.logical.plans.RewrittenExpressions
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 
 object leverageOrder {
@@ -45,6 +46,8 @@ object leverageOrder {
    *
    * @param inputProvidedOrder     the provided order of the current plan
    * @param groupingExpressionsMap a Map of projected name to grouping expression
+   * @param aggregationExpressionsMap a Map of projected name to aggregation expressions
+   * @param rewrittenExpressions the collection of all expressions that have been rewritten to use cache properties or by the subquery solvers
    * @param availableSymbols       the available symbols of the current plan
    * @return a tuple of A) the prefix of the provided order that is part of the grouping expressions
    *         and B) the grouping expressions map rewritten to use variables that are already available symbols
@@ -53,6 +56,7 @@ object leverageOrder {
     inputProvidedOrder: ProvidedOrder,
     groupingExpressionsMap: Map[LogicalVariable, Expression],
     aggregationExpressionsMap: Map[LogicalVariable, Expression],
+    rewrittenExpressions: RewrittenExpressions,
     availableSymbols: Set[LogicalVariable]
   ): OrderToLeverageWithAliases = {
     // Collect aliases for all grouping expressions which project a variable that is already an available symbol
@@ -85,7 +89,8 @@ object leverageOrder {
       providedOrderPrefix(
         aliasedInputProvidedOrderColumns,
         newGroupingExpressionsMap.values.toSet,
-        aggregationExpressionsMap
+        aggregationExpressionsMap,
+        rewrittenExpressions
       )
     }
 
@@ -95,7 +100,8 @@ object leverageOrder {
   private def providedOrderPrefix(
     inputProvidedOrderColumns: Seq[ColumnOrder],
     groupingExpressions: Set[Expression],
-    aggregationExpressionsMap: Map[LogicalVariable, Expression]
+    aggregationExpressionsMap: Map[LogicalVariable, Expression],
+    rewrittenExprs: RewrittenExpressions
   ): (Seq[Expression], Map[LogicalVariable, Expression]) = {
     // We use the instances of expressions from the groupingExpressions (instead of the instance of expressions from the ProvidedOrder).
     // This is important because some rewriters will rewrite expressions based on reference equality
@@ -103,9 +109,7 @@ object leverageOrder {
     // Likewise, we do the same for the aggregation order expression.
     val groupingOrderPrefixOptions: Seq[Option[Expression]] =
       inputProvidedOrderColumns.map(_.expression)
-        .map { exp =>
-          groupingExpressions.find(_ == exp)
-        }
+        .map { exp => groupingExpressions.find(_ == rewrittenExprs.rewrittenExpressionOrSelf(exp)) }
         .takeWhile(_.isDefined)
     val aggregationOrderCandidate: Option[ColumnOrder] =
       inputProvidedOrderColumns.lift(groupingOrderPrefixOptions.length)

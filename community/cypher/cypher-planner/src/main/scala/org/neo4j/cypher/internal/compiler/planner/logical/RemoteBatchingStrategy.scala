@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.logical.plans.RewrittenExpressions
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.SHARDED
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -66,13 +68,11 @@ sealed trait RemoteBatchingStrategy {
     predicatesToSolve: Set[Expression]
   ): RemoteBatchingResult
 
-  def planBatchPropertiesForAggregations(
-    input: LogicalPlan,
+  def planRemoteBatchProperties(
+    inputPlan: LogicalPlan,
     context: LogicalPlanningContext,
-    aggregations: Map[LogicalVariable, Expression],
-    groupingExpressionsMap: Map[LogicalVariable, Expression],
-    orderToLeverage: Seq[Expression]
-  ): RemoteBatchingResult
+    expressions: Iterable[Expression]
+  ): (RewrittenExpressions, LogicalPlan)
 
   def planBatchPropertiesForProjections(
     input: LogicalPlan,
@@ -81,20 +81,7 @@ sealed trait RemoteBatchingStrategy {
     orderToLeverage: Seq[Expression] = Seq.empty
   ): RemoteBatchingResult
 
-  def planBatchPropertiesForGroupingExpressions(
-    input: LogicalPlan,
-    context: LogicalPlanningContext,
-    groupingExpressionsMap: Map[LogicalVariable, Expression],
-    orderToLeverage: Seq[Expression]
-  ): RemoteBatchingResult
-
-  def planBatchPropertiesForLeveragedOrder(
-    input: LogicalPlan,
-    context: LogicalPlanningContext,
-    orderToLeverage: Seq[Expression]
-  ): RemoteBatchingResult
-
-  def planBatchPropertiesForExpression(
+  def planBatchPropertiesForExpressionWithLookahead(
     queryGraph: QueryGraph,
     input: LogicalPlan,
     context: LogicalPlanningContext,
@@ -110,8 +97,6 @@ case class RemoteBatchingResult(
 case class CachePropertiesRewritableExpressions(
   selections: Set[Expression] = Set.empty,
   projections: Map[LogicalVariable, Expression] = Map.empty,
-  aggregations: Map[LogicalVariable, Expression] = Map.empty,
-  groupExpressions: Map[LogicalVariable, Expression] = Map.empty,
   orderToLeverage: Seq[Expression] = Seq.empty
 )
 
@@ -153,66 +138,17 @@ object RemoteBatchingStrategy {
       )
     }
 
-    override def planBatchPropertiesForAggregations(
-      input: LogicalPlan,
+    override def planRemoteBatchProperties(
+      inputPlan: LogicalPlan,
       context: LogicalPlanningContext,
-      aggregations: Map[LogicalVariable, Expression],
-      groupingExpressionsMap: Map[LogicalVariable, Expression],
-      orderToLeverage: Seq[Expression]
-    ): RemoteBatchingResult = {
-      val accessedProperties =
-        context.plannerState.contextualPropertyAccess.interestingOrder ++ context.plannerState.contextualPropertyAccess.horizon
-
-      val rewriter = cachedPropertiesRewriter(input, context)
-      val rewrittenAggregations = aggregations.map {
-        case (v, e) => v -> e.endoRewrite(rewriter)
-      }
-      val rewrittenGroupExpressions = groupingExpressionsMap.map {
-        case (v, e) => v -> e.endoRewrite(rewriter)
-      }
-
-      val rewrittenOrderToLeverage = orderToLeverage.map(_.endoRewrite(rewriter))
-      RemoteBatchingResult(
-        rewrittenExpressionsWithCachedProperties =
-          CachePropertiesRewritableExpressions(
-            aggregations = rewrittenAggregations,
-            groupExpressions = rewrittenGroupExpressions,
-            orderToLeverage = rewrittenOrderToLeverage
-          ),
-        plan = planBatchProperties(
-          input,
-          context,
-          accessedProperties,
-          (rewrittenAggregations.values ++ rewrittenGroupExpressions.values ++ rewrittenOrderToLeverage).toSeq
-        )
-      )
-    }
-
-    override def planBatchPropertiesForGroupingExpressions(
-      input: LogicalPlan,
-      context: LogicalPlanningContext,
-      groupingExpressionsMap: Map[LogicalVariable, Expression],
-      orderToLeverage: Seq[Expression]
-    ): RemoteBatchingResult = {
-      val accessedProperties =
-        context.plannerState.contextualPropertyAccess.interestingOrder ++ context.plannerState.contextualPropertyAccess.horizon
-      val rewriter = cachedPropertiesRewriter(input, context)
-      val rewrittenGroupExpressions = groupingExpressionsMap.map {
-        case (v, e) => v -> e.endoRewrite(rewriter)
-      }
-      val rewrittenOrderToLeverage = orderToLeverage.map(_.endoRewrite(rewriter))
-      RemoteBatchingResult(
-        rewrittenExpressionsWithCachedProperties =
-          CachePropertiesRewritableExpressions(
-            groupExpressions = rewrittenGroupExpressions,
-            orderToLeverage = rewrittenOrderToLeverage
-          ),
-        plan = planBatchProperties(
-          input,
-          context,
-          accessedProperties,
-          (rewrittenGroupExpressions.values ++ rewrittenOrderToLeverage).toSeq
-        )
+      expressions: Iterable[Expression]
+    ): (RewrittenExpressions, LogicalPlan) = {
+      val accessedProperties = PropertyAccessHelper.findPropertyAccesses(expressions)
+      val rewriter = cachedPropertiesRewriter(inputPlan, context)
+      val rewrittenExpressions = RewrittenExpressions(expressions.map(expr => expr -> expr.endoRewrite(rewriter)).toMap)
+      (
+        rewrittenExpressions,
+        planBatchProperties(inputPlan, context, accessedProperties, rewrittenExpressions.allRewrittenExpressions.toSeq)
       )
     }
 
@@ -244,25 +180,7 @@ object RemoteBatchingStrategy {
       )
     }
 
-    override def planBatchPropertiesForLeveragedOrder(
-      input: LogicalPlan,
-      context: LogicalPlanningContext,
-      orderToLeverage: Seq[Expression]
-    ): RemoteBatchingResult = {
-      val accessedProperties =
-        context.plannerState.contextualPropertyAccess.interestingOrder ++ context.plannerState.contextualPropertyAccess.horizon
-      val rewriter = cachedPropertiesRewriter(input, context)
-      val rewrittenOrderToLeverage = orderToLeverage.map(_.endoRewrite(rewriter))
-      RemoteBatchingResult(
-        rewrittenExpressionsWithCachedProperties =
-          CachePropertiesRewritableExpressions(
-            orderToLeverage = rewrittenOrderToLeverage
-          ),
-        planBatchProperties(input, context, accessedProperties, rewrittenOrderToLeverage)
-      )
-    }
-
-    override def planBatchPropertiesForExpression(
+    override def planBatchPropertiesForExpressionWithLookahead(
       queryGraph: QueryGraph,
       input: LogicalPlan,
       context: LogicalPlanningContext,
@@ -338,7 +256,8 @@ object RemoteBatchingStrategy {
 
     private def cachedPropertiesRewriter(
       inputPlan: LogicalPlan,
-      context: LogicalPlanningContext
+      context: LogicalPlanningContext,
+      failIfNotCached: Boolean = false
     ) = {
       val alreadyCachedProperties =
         context.staticComponents.planningAttributes.cachedPropertiesPerPlan.get(inputPlan.id)
@@ -355,6 +274,10 @@ object RemoteBatchingStrategy {
                   entry.entityType
                 )(
                   property.position
+                )
+              case None if failIfNotCached =>
+                throw new IllegalStateException(
+                  s"Failed to find the property($logicalVariable, ${propertyKeyName.name}) in the cached properties. This is a bug.\n${LogicalPlanToPlanBuilderString(inputPlan)}"
                 )
               case None =>
                 val entityType = context.semanticTable.typeFor(logicalVariable)
@@ -497,21 +420,6 @@ object RemoteBatchingStrategy {
     ): RemoteBatchingResult =
       RemoteBatchingResult(CachePropertiesRewritableExpressions(selections = predicatesToSolve), input)
 
-    override def planBatchPropertiesForAggregations(
-      input: LogicalPlan,
-      context: LogicalPlanningContext,
-      aggregations: Map[LogicalVariable, Expression],
-      groupingExpressionsMap: Map[LogicalVariable, Expression],
-      orderToLeverage: Seq[Expression]
-    ): RemoteBatchingResult = RemoteBatchingResult(
-      CachePropertiesRewritableExpressions(
-        aggregations = aggregations,
-        groupExpressions = groupingExpressionsMap,
-        orderToLeverage = orderToLeverage
-      ),
-      plan = input
-    )
-
     override def planBatchPropertiesForProjections(
       input: LogicalPlan,
       context: LogicalPlanningContext,
@@ -522,36 +430,18 @@ object RemoteBatchingStrategy {
       plan = input
     )
 
-    override def planBatchPropertiesForGroupingExpressions(
-      input: LogicalPlan,
-      context: LogicalPlanningContext,
-      groupingExpressionsMap: Map[LogicalVariable, Expression],
-      orderToLeverage: Seq[Expression]
-    ): RemoteBatchingResult = RemoteBatchingResult(
-      CachePropertiesRewritableExpressions(
-        groupExpressions = groupingExpressionsMap,
-        orderToLeverage = orderToLeverage
-      ),
-      plan = input
-    )
-
-    override def planBatchPropertiesForLeveragedOrder(
-      input: LogicalPlan,
-      context: LogicalPlanningContext,
-      orderToLeverage: Seq[Expression]
-    ): RemoteBatchingResult = RemoteBatchingResult(
-      CachePropertiesRewritableExpressions(
-        orderToLeverage = orderToLeverage
-      ),
-      plan = input
-    )
-
-    override def planBatchPropertiesForExpression(
+    override def planBatchPropertiesForExpressionWithLookahead(
       queryGraph: QueryGraph,
       input: LogicalPlan,
       context: LogicalPlanningContext,
       expression: Expression
     ): (Expression, LogicalPlan) = (expression, input)
 
+    override def planRemoteBatchProperties(
+      inputPlan: LogicalPlan,
+      context: LogicalPlanningContext,
+      expressions: Iterable[Expression]
+    ): (RewrittenExpressions, LogicalPlan) =
+      (RewrittenExpressions.withNoRewrittenExprs(expressions), inputPlan)
   }
 }

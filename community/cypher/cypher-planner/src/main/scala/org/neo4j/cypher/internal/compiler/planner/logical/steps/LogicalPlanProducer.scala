@@ -1977,11 +1977,12 @@ case class LogicalPlanProducer(
   def planHorizonSelection(
     source: LogicalPlan,
     predicates: Seq[Expression],
+    predicatesToReport: Seq[Expression],
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.updateHorizon {
-      case p: QueryProjection => p.addPredicates(predicates: _*)
+      case p: QueryProjection => p.addPredicates(predicatesToReport: _*)
       case _ => throw new IllegalArgumentException("You can only plan HorizonSelection after a projection")
     })
 
@@ -3031,27 +3032,23 @@ case class LogicalPlanProducer(
     if (returnAll.isEmpty) {
       annotate(left.copyPlanWithIdGen(idGen), solved, ProvidedOrder.Left, cachedPropertiesPerPlan.get(left.id), context)
     } else {
-      val RemoteBatchingResult(
-        rewrittenExpressionsWithCachedProperties,
-        planWithAllProperties
-      ) = context.settings.remoteBatchPropertiesStrategy.planBatchPropertiesForLeveragedOrder(
-        left,
-        context,
-        orderToLeverage = orderToLeverage
-      )
+      val (rewrittenExpressions, rewrittenPlan) =
+        context.settings.remoteBatchPropertiesStrategy.planRemoteBatchProperties(left, context, orderToLeverage)
+
       val plan = annotate(
         OrderedDistinct(
-          planWithAllProperties,
+          rewrittenPlan,
           returnAll.toMap,
-          rewrittenExpressionsWithCachedProperties.orderToLeverage
+          rewrittenExpressions.allRewrittenExpressions.toSeq
         ),
-        solveds.get(planWithAllProperties.id),
+        solveds.get(rewrittenPlan.id),
         ProvidedOrder.Left,
-        cachedPropertiesPerPlan.get(planWithAllProperties.id),
+        cachedPropertiesPerPlan.get(rewrittenPlan.id),
         context
       )
       markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
       plan
+
     }
   }
 

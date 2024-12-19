@@ -21,10 +21,16 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SubqueryExpressionSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.aggregation
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.distinct
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.ir.AbstractProcedureCallProjection
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
@@ -40,6 +46,7 @@ import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.RewrittenExpressions
 
 /*
 Planning event horizons means planning the WITH clauses between query patterns. Some of these clauses are inlined
@@ -125,8 +132,9 @@ case object PlanEventHorizon extends EventHorizonPlanner {
     // We only want to mark a planned Sort (or a projection for a Sort) as solved if the ORDER BY comes from the current horizon.
     val updateSolvedOrdering = query.interestingOrder.requiredOrderCandidate.nonEmpty
 
-    val planSort: LogicalPlan => LogicalPlan =
-      SortPlanner.ensureSortedPlanWithSolved(_, interestingOrderConfig, context, updateSolvedOrdering)
+    def planSort(interestingOrderConfigToUse: InterestingOrderConfig = interestingOrderConfig)
+      : LogicalPlan => LogicalPlan =
+      SortPlanner.ensureSortedPlanWithSolved(_, interestingOrderConfigToUse, context, updateSolvedOrdering)
 
     val planSkipAndLimit: LogicalPlan => LogicalPlan = skipAndLimit(_, query, context)
 
@@ -134,33 +142,105 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       if (selections.isEmpty) {
         p
       } else {
-        val predicates = selections.flatPredicates
-        context.staticComponents.logicalPlanProducer.planHorizonSelection(
+        val predicatesToReport = selections.flatPredicates
+        val remoteBatchingResult = context.settings.remoteBatchPropertiesStrategy.planBatchPropertiesForSelections(
+          query.queryGraph,
           p,
-          predicates,
-          interestingOrderConfig,
-          context
+          context,
+          selections.flatPredicatesSet
+        )
+        context.staticComponents.logicalPlanProducer.planHorizonSelection(
+          source = remoteBatchingResult.plan,
+          predicates = remoteBatchingResult.rewrittenExpressionsWithCachedProperties.selections.toSeq,
+          predicatesToReport = predicatesToReport,
+          interestingOrderConfig = interestingOrderConfig,
+          context = context
         )
       }
 
+    def planRemoteBatchProperties(
+      expressions: Iterable[Expression],
+      p: LogicalPlan
+    ): (RewrittenExpressions, LogicalPlan) =
+      if (expressions.isEmpty) {
+        (RewrittenExpressions.empty, p)
+      } else {
+        context.settings.remoteBatchPropertiesStrategy.planRemoteBatchProperties(p, context, expressions)
+      }
+
+    def solveSubqueryexpressions(
+      groupingExpressions: Map[LogicalVariable, Expression],
+      aggregationExpressions: Map[LogicalVariable, Expression],
+      previouslyRewrittenExprs: RewrittenExpressions,
+      p: LogicalPlan
+    ): (RewrittenExpressions, LogicalPlan) = {
+      val solver = SubqueryExpressionSolver.solverFor(p, context)
+      val solvedRewrittenExprs = (groupingExpressions ++ aggregationExpressions).map {
+        case (k, expr) => expr -> solver.solve(previouslyRewrittenExprs.rewrittenExpressionOrSelf(expr), Some(k))
+      }
+      (RewrittenExpressions(solvedRewrittenExprs), solver.rewrittenPlan())
+    }
+
+    def isPlanBreakingOrder(p: LogicalPlan): Boolean =
+      previousInterestingOrder.exists(_.requiredOrderCandidate.nonEmpty) &&
+        context.staticComponents.planningAttributes.providedOrders(p.id).isEmpty &&
+        !context.settings.executionModel.providedOrderPreserving
+
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val planAggregation: LogicalPlan => LogicalPlan = aggregation(
-          _,
-          aggregatingProjection,
-          interestingOrderConfig.orderToReport,
-          previousInterestingOrder,
-          context
+        def hasCollectOrUDF = aggregatingProjection.aggregationExpressions.values.exists {
+          case fi: FunctionInvocation => fi.function == Collect || fi.function == UnresolvedFunction
+          case _                      => false
+        }
+
+        def planAggregation(
+          rewrittenExpressions: RewrittenExpressions
+        ): LogicalPlan => LogicalPlan = (p: LogicalPlan) =>
+          aggregation(
+            p,
+            aggregatingProjection,
+            rewrittenExpressions,
+            interestingOrderConfig.orderToReport,
+            previousInterestingOrder,
+            context
+          )
+
+        val (rewrittenExprsAfterRemoteBatching, remoteBatchPropertiesPlan) = planRemoteBatchProperties(
+          aggregatingProjection.groupingExpressions.values ++ aggregatingProjection.aggregationExpressions.values,
+          selectedPlan
         )
 
-        // for aggregation, sort happens after the projection. The provided order of the aggregation plan will include
-        // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
-        Function.chain(Seq(
-          planAggregation,
-          planSort,
-          planSkipAndLimit,
-          planWhere(aggregatingProjection.selections)
-        ))(selectedPlan)
+        solveSubqueryexpressions(
+          aggregatingProjection.groupingExpressions,
+          aggregatingProjection.aggregationExpressions,
+          rewrittenExprsAfterRemoteBatching,
+          remoteBatchPropertiesPlan
+        ) match {
+          case (rewrittenExpressions, rewrittenPlan)
+            if isPlanBreakingOrder(rewrittenPlan) && hasCollectOrUDF =>
+            // collect and some user-defined-functions need to preserve the order defined in the previous clause, which was broken
+            // so we should re-plan the previous sort first before the aggregation.
+            // any order by in the current clause will still be handled after the aggregation, since the aggregation will include the renames.
+            Function.chain(Seq(
+              planSort(InterestingOrderConfig(
+                orderToReport = InterestingOrder.empty,
+                orderToSolve = previousInterestingOrder.get
+              )),
+              planAggregation(rewrittenExpressions),
+              planSort(),
+              planSkipAndLimit,
+              planWhere(aggregatingProjection.selections)
+            ))(rewrittenPlan)
+          case (rewrittenExpressions, rewrittenPlan) =>
+            // for aggregation, sort happens after the projection. The provided order of the aggregation plan will include
+            // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
+            Function.chain(Seq(
+              planAggregation(rewrittenExpressions),
+              planSort(),
+              planSkipAndLimit,
+              planWhere(aggregatingProjection.selections)
+            ))(rewrittenPlan)
+        }
 
       case regularProjection: RegularQueryProjection =>
         val projectSubqueryExpressions: LogicalPlan => LogicalPlan = (p: LogicalPlan) => {
@@ -191,7 +271,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           }
 
         def sortFirst = Function.chain(Seq(
-          planSort,
+          planSort(),
           planSkipAndLimit,
           planProjection,
           planWhere(regularProjection.selections)
@@ -219,16 +299,35 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         else projectSubqueryExpressionsFirst(selectedPlan)
 
       case distinctProjection: DistinctQueryProjection =>
-        def planDistinct: LogicalPlan => LogicalPlan = distinct(_, distinctProjection, context)
+        def planDistinct(rewrittenExpressions: RewrittenExpressions): LogicalPlan => LogicalPlan =
+          (p: LogicalPlan) =>
+            distinct(
+              p,
+              distinctProjection,
+              rewrittenExpressions,
+              context
+            )
 
         // for distinct, sort happens after the projection. The provided order of the distinct plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
+        val (rewrittenExprsAfterRemoteBatching, remoteBatchPropertiesPlan) = planRemoteBatchProperties(
+          distinctProjection.groupingExpressions.values,
+          selectedPlan
+        )
+
+        val (rewrittenExpressions, rewrittenPlan) = solveSubqueryexpressions(
+          distinctProjection.groupingExpressions,
+          Map.empty,
+          rewrittenExprsAfterRemoteBatching,
+          remoteBatchPropertiesPlan
+        )
+
         Function.chain(Seq(
-          planDistinct,
-          planSort,
+          planDistinct(rewrittenExpressions),
+          planSort(),
           planSkipAndLimit,
           planWhere(distinctProjection.selections)
-        ))(selectedPlan)
+        ))(rewrittenPlan)
 
       case UnwindProjection(variable, expression) =>
         val projected =
