@@ -90,7 +90,7 @@ final case class ReturnItems(
 
   def containsAggregate: Boolean = items.exists(_.expression.containsAggregate)
 
-  def isSimple: Boolean = items.exists(_.expression.isSimple)
+  def isSimple: Boolean = items.forall(_.expression.isSimple)
 }
 
 sealed trait ReturnItem extends ASTNode with SemanticCheckable {

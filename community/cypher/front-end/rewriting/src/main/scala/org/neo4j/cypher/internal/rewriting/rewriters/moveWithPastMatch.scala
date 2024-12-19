@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch.isMovableWith
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -56,6 +57,17 @@ case object moveWithPastMatch extends StepSequencer.Step with DefaultPostConditi
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo // It can invalidate this condition by copying WITH clauses
   )
+
+  protected def isMovableWith(w: With): Boolean = {
+    w.skip.isEmpty &&
+    w.limit.isEmpty &&
+    w.orderBy.isEmpty &&
+    w.where.isEmpty &&
+    !w.returnItems.includeExisting &&
+    !w.returnItems.containsAggregate &&
+    w.returnItems.isSimple &&
+    !w.distinct
+  }
 }
 
 /**
@@ -152,15 +164,4 @@ case class moveWithPastMatch(cancellationChecker: CancellationChecker) {
     },
     stopper = _.isInstanceOf[SubqueryCall]
   ))
-
-  private def isMovableWith(w: With): Boolean = {
-    w.skip.isEmpty &&
-    w.limit.isEmpty &&
-    w.orderBy.isEmpty &&
-    w.where.isEmpty &&
-    !w.returnItems.includeExisting &&
-    !w.returnItems.containsAggregate &&
-    w.returnItems.isSimple &&
-    !w.distinct
-  }
 }

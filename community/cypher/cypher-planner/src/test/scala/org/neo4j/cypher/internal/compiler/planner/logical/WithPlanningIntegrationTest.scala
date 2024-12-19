@@ -1015,4 +1015,35 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         .build()
     )
   }
+
+  test("should not move WITH containing subquery expression past MATCH") {
+    // (and especially not if they contain a reference to a variable with the same name)
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 100)
+      .setLabelCardinality("M", 50)
+      .setRelationshipCardinality("()-[]->()", 200)
+      .build()
+
+    planner.plan(
+      """WITH
+        |  1 as a,
+        |  COUNT {
+        |    MATCH (n:N:M)
+        |  } as b
+        |MATCH (n)-->(m)
+        |RETURN 1
+        |""".stripMargin
+    ) should equal(
+      planner.planBuilder().produceResults("1")
+        .projection("1 AS 1")
+        .apply()
+        .|.allRelationshipsScan("(n)-[anon_0]->(m)", "a", "b")
+        .projection("1 AS a")
+        .aggregation(Seq(), Seq("count(*) AS b"))
+        .intersectionNodeByLabelsScan("n", Seq("N", "M"))
+        .build()
+    )
+  }
 }

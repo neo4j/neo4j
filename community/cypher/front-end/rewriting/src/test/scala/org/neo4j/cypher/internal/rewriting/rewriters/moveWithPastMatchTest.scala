@@ -33,10 +33,27 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
     assertIsNotRewritten("WITH 1 AS foo ORDER BY foo MATCH (n) RETURN n")
     assertIsNotRewritten("WITH 1 AS foo WHERE foo > 0 MATCH (n) RETURN n")
     assertIsNotRewritten("WITH *, 1 AS foo MATCH (n) RETURN n")
-    assertIsNotRewritten("WITH randomUUID() AS uuid MATCH (n:Node) RETURN n.index, uuid")
-    assertIsNotRewritten("WITH count{ RETURN 0 AS x } AS subqueryExpr MATCH (n:Node) RETURN n.index, uuid")
-    assertIsNotRewritten("WITH collect{ RETURN 0 AS x } AS subqueryExpr MATCH (n:Node) RETURN n.index, uuid")
-    assertIsNotRewritten("WITH exists{ RETURN 0 AS x } AS subqueryExpr MATCH (n:Node) RETURN n.index, uuid")
+
+    Seq("1 AS foo,", "").foreach { additionalProjection =>
+      assertIsNotRewritten(
+        s"""WITH
+           |  $additionalProjection
+           |  randomUUID() AS uuid
+           |MATCH (n:Node)
+           |RETURN n.index, uuid""".stripMargin
+      )
+      Seq("COUNT", "COLLECT", "EXISTS").foreach { subqueryExpression =>
+        assertIsNotRewritten(
+          s"""WITH
+             |  $additionalProjection
+             |  $subqueryExpression {
+             |    MATCH (n:A:B)
+             |  } AS a
+             |MATCH (n)-[r:R]-(m:C)
+             |RETURN 1;""".stripMargin
+        )
+      }
+    }
   }
 
   test("does not move WITH if MATCH uses projected variable") {
