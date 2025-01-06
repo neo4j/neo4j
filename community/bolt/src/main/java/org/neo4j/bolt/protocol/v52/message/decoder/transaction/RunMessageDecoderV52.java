@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.bolt.protocol.v52.message.decoder.transaction;
 
 import org.neo4j.bolt.protocol.common.message.decoder.transaction.DefaultRunMessageDecoder;
@@ -24,6 +25,9 @@ import org.neo4j.bolt.protocol.common.message.decoder.util.NotificationsConfigMe
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.values.virtual.MapValue;
+
+import io.netty.handler.codec.compression.JdkZlibDecoder;
+
 
 public final class RunMessageDecoderV52 extends DefaultRunMessageDecoder {
     private static final RunMessageDecoderV52 INSTANCE = new RunMessageDecoderV52();
@@ -38,4 +42,84 @@ public final class RunMessageDecoderV52 extends DefaultRunMessageDecoder {
     protected NotificationsConfig readNotificationsConfig(MapValue meta) throws IllegalStructArgumentException {
         return NotificationsConfigMetadataReader.readLegacyFromMapValue(meta);
     }
+
+    @Override
+    public RunMessage read(Connection ctx, PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
+        PackstreamConditions.requireLength(header, 3);
+
+        var valueReader = ctx.valueReader(buffer);
+
+        String statement;
+        MapValue params;
+        MapValue metadata;
+        Boolean compressed;
+
+        // First the metadata, because we need to know if the payload is compressed, which determines the type of the statement and params
+
+        try {
+            metadata = valueReader.readMap();
+        } catch (PackstreamReaderException ex) {
+            throw IllegalStructArgumentException.protocolError("metadata", ex);
+        }
+
+        try {
+            var bookmarks = this.readBookmarks(metadata);
+            var txTimeout = this.readTimeout(metadata);
+            var accessMode = this.readAccessMode(metadata);
+            var txMetadata = this.readMetadata(metadata);
+            var databaseName = TransactionInitiatingMetadataParser.readDatabaseName(metadata);
+            var impersonatedUser = this.readImpersonatedUser(metadata);
+            var notificationsConfig = this.readNotificationsConfig(metadata);
+            compressed = this.readStatementCompressed(metadata);
+        } catch (PackstreamReaderException ex) {
+            throw IllegalStructArgumentException.protocolError("metadata", ex);
+        }
+
+        if (compressed) {
+            try {
+                statement = buffer.readBytes();
+                byte[] bytes = new byte[statement.readableBytes()];
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(byteArrayOutputStream);
+                deflaterOutputStream.write(bytes);
+                deflaterOutputStream.flush();
+                deflaterOutputStream.close();
+                statement = Unpooled.copiedBuffer(bytes)
+
+            } catch (PackstreamReaderException ex) {
+                throw IllegalStructArgumentException.protocolError("statement", ex);
+            }
+
+            try {
+                params = valueReader.readBytes();
+            } catch (PackstreamReaderException ex) {
+                throw IllegalStructArgumentException.protocolError("params", ex);
+            }
+
+        } else {
+            try {
+                statement = buffer.readString();
+            } catch (PackstreamReaderException ex) {
+                throw IllegalStructArgumentException.protocolError("statement", ex);
+            }
+
+            try {
+                params = valueReader.readMap();
+            } catch (PackstreamReaderException ex) {
+                throw IllegalStructArgumentException.protocolError("params", ex);
+            }
+        }
+
+        return new RunMessage(
+        statement,
+        params,
+        bookmarks,
+        txTimeout,
+        accessMode,
+        txMetadata,
+        databaseName,
+        impersonatedUser,
+        notificationsConfig);
+    }
+
 }

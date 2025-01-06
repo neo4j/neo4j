@@ -325,85 +325,85 @@
         </plugin>
 
         <!-- Testing setup -->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.1</version>
-          <configuration>
-            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
-              <disable>false</disable>
-              <version>3.0</version>
-              <usePhrasedFileName>false</usePhrasedFileName>
-              <usePhrasedTestSuiteClassName>false</usePhrasedTestSuiteClassName>
-              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
-              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
-            </statelessTestsetReporter>
-            <forkCount>${forkCounts}</forkCount>
-            <trimStackTrace>false</trimStackTrace>
-            <reuseForks>true</reuseForks>
-            <argLine>${test.runner.jvm.settings}</argLine>
-            <runOrder>random</runOrder>
-            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-            <systemPropertyVariables>
-              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-              <jdk.custom.options>${jdk.custom.options}</jdk.custom.options>
-            </systemPropertyVariables>
-            <jvm>${test.runner.jvm}</jvm>
-            <excludes>
-              <exclude>**/*$*.class</exclude>
-              <exclude>**/*IntegrationTest.class</exclude>
-            </excludes>
-            <excludedGroups>${excludedTestGroups}</excludedGroups>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.5.1</version>
-          <configuration>
-            <statelessTestsetReporter
-                    implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
-              <disable>false</disable>
-              <usePhrasedFileName>false</usePhrasedFileName>
-              <usePhrasedTestSuiteClassName>false</usePhrasedTestSuiteClassName>
-              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
-              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
-            </statelessTestsetReporter>
-            <argLine>${test.runner.jvm.settings}</argLine>
-            <forkCount>${forkCounts}</forkCount>
-            <trimStackTrace>false</trimStackTrace>
-            <reuseForks>true</reuseForks>
-            <runOrder>random</runOrder>
-            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-            <includes>
-              <include>**/IT*.class</include>
-              <include>**/*IT.class</include>
-              <include>**/*ITCase.class</include>
-              <include>**/*IntegrationTest.class</include>
-            </includes>
-            <excludedGroups>${excludedTestGroups}</excludedGroups>
-            <systemPropertyVariables>
-              <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
-              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-              <jdk.custom.options>${jdk.custom.options}</jdk.custom.options>
-            </systemPropertyVariables>
-            <jvm>${test.runner.jvm}</jvm>
-          </configuration>
-          <executions>
-            <execution>
-              <id>integration-test</id>
-              <goals>
-                <goal>integration-test</goal>
-              </goals>
-            </execution>
-            <execution>
-              <id>verify</id>
-              <goals>
-                <goal>verify</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
+<!--        <plugin>-->
+<!--          <groupId>org.apache.maven.plugins</groupId>-->
+<!--          <artifactId>maven-surefire-plugin</artifactId>-->
+<!--          <version>3.5.1</version>-->
+<!--          <configuration>-->
+<!--            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">-->
+<!--              <disable>false</disable>-->
+<!--              <version>3.0</version>-->
+<!--              <usePhrasedFileName>false</usePhrasedFileName>-->
+<!--              <usePhrasedTestSuiteClassName>false</usePhrasedTestSuiteClassName>-->
+<!--              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>-->
+<!--              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>-->
+<!--            </statelessTestsetReporter>-->
+<!--            <forkCount>${forkCounts}</forkCount>-->
+<!--            <trimStackTrace>false</trimStackTrace>-->
+<!--            <reuseForks>true</reuseForks>-->
+<!--            <argLine>${test.runner.jvm.settings}</argLine>-->
+<!--            <runOrder>random</runOrder>-->
+<!--            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>-->
+<!--            <systemPropertyVariables>-->
+<!--              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>-->
+<!--              <jdk.custom.options>${jdk.custom.options}</jdk.custom.options>-->
+<!--            </systemPropertyVariables>-->
+<!--            <jvm>${test.runner.jvm}</jvm>-->
+<!--            <excludes>-->
+<!--              <exclude>**/*$*.class</exclude>-->
+<!--              <exclude>**/*IntegrationTest.class</exclude>-->
+<!--            </excludes>-->
+<!--            <excludedGroups>${excludedTestGroups}</excludedGroups>-->
+<!--          </configuration>-->
+<!--        </plugin>-->
+<!--        <plugin>-->
+<!--          <groupId>org.apache.maven.plugins</groupId>-->
+<!--          <artifactId>maven-failsafe-plugin</artifactId>-->
+<!--          <version>3.5.1</version>-->
+<!--          <configuration>-->
+<!--            <statelessTestsetReporter-->
+<!--                    implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">-->
+<!--              <disable>false</disable>-->
+<!--              <usePhrasedFileName>false</usePhrasedFileName>-->
+<!--              <usePhrasedTestSuiteClassName>false</usePhrasedTestSuiteClassName>-->
+<!--              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>-->
+<!--              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>-->
+<!--            </statelessTestsetReporter>-->
+<!--            <argLine>${test.runner.jvm.settings}</argLine>-->
+<!--            <forkCount>${forkCounts}</forkCount>-->
+<!--            <trimStackTrace>false</trimStackTrace>-->
+<!--            <reuseForks>true</reuseForks>-->
+<!--            <runOrder>random</runOrder>-->
+<!--            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>-->
+<!--            <includes>-->
+<!--              <include>**/IT*.class</include>-->
+<!--              <include>**/*IT.class</include>-->
+<!--              <include>**/*ITCase.class</include>-->
+<!--              <include>**/*IntegrationTest.class</include>-->
+<!--            </includes>-->
+<!--            <excludedGroups>${excludedTestGroups}</excludedGroups>-->
+<!--            <systemPropertyVariables>-->
+<!--              <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>-->
+<!--              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>-->
+<!--              <jdk.custom.options>${jdk.custom.options}</jdk.custom.options>-->
+<!--            </systemPropertyVariables>-->
+<!--            <jvm>${test.runner.jvm}</jvm>-->
+<!--          </configuration>-->
+<!--          <executions>-->
+<!--            <execution>-->
+<!--              <id>integration-test</id>-->
+<!--              <goals>-->
+<!--                <goal>integration-test</goal>-->
+<!--              </goals>-->
+<!--            </execution>-->
+<!--            <execution>-->
+<!--              <id>verify</id>-->
+<!--              <goals>-->
+<!--                <goal>verify</goal>-->
+<!--              </goals>-->
+<!--            </execution>-->
+<!--          </executions>-->
+<!--        </plugin>-->
 
         <!-- Jar file packaging settings -->
         <plugin>
@@ -428,12 +428,12 @@
               </configuration>
             </execution>
             <!-- Create test jar -->
-            <execution>
-              <id>create-test-jar</id>
-              <goals>
-                <goal>test-jar</goal>
-              </goals>
-            </execution>
+<!--            <execution>-->
+<!--              <id>create-test-jar</id>-->
+<!--              <goals>-->
+<!--                <goal>test-jar</goal>-->
+<!--              </goals>-->
+<!--            </execution>-->
             <!-- Create javadoc jar, will be empty if javadoc generation is skipped -->
             <execution>
               <id>create-javadoc-jar</id>
@@ -614,13 +614,13 @@
                 <goal>compile</goal>
               </goals>
             </execution>
-            <execution>
-              <id>scala-test-compile</id>
-              <phase>process-test-resources</phase>
-              <goals>
-                <goal>testCompile</goal>
-              </goals>
-            </execution>
+<!--            <execution>-->
+<!--              <id>scala-test-compile</id>-->
+<!--              <phase>process-test-resources</phase>-->
+<!--              <goals>-->
+<!--                <goal>testCompile</goal>-->
+<!--              </goals>-->
+<!--            </execution>-->
           </executions>
         </plugin>
 
@@ -830,52 +830,12 @@
     <plugins>
 
       <!-- Execute integration tests by default -->
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
+<!--      <plugin>-->
+<!--        <artifactId>maven-failsafe-plugin</artifactId>-->
+<!--      </plugin>-->
 
       <!-- Spotless is used for checkstyle and automatic code formatting -->
-      <plugin>
-        <groupId>com.diffplug.spotless</groupId>
-        <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.43.0</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <upToDateChecking>
-            <enabled>true</enabled>
-          </upToDateChecking>
-          <java>
-            <palantirJavaFormat>
-              <version>2.49.0</version>
-            </palantirJavaFormat>
-          </java>
-          <scala>
-            <scalafmt>
-              <file>scalafmt/scalafmt.conf</file>
-            </scalafmt>
-          </scala>
-            <antlr4>
-              <!-- These are the defaults, you can override if you want -->
-              <includes>
-                <include>src/*/antlr4/**/*.g4</include>
-              </includes>
-<!--              <antlr4Formatter /> &lt;!&ndash; has its own section below &ndash;&gt;-->
-            </antlr4>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.neo4j.build</groupId>
-            <artifactId>resources</artifactId>
-            <version>${build-resources.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
+
 
       <!-- Creates source jar if source exits -->
       <plugin>

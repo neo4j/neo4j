@@ -48,9 +48,11 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
         implements MessageDecoder<M> {
     private static final String FIELD_ACCESS_MODE = "mode";
     private static final String FIELD_BOOKMARKS = "bookmarks";
+    private static final String FIELD_COMPRESSED = "compressed";
     public static final String FIELD_TIMEOUT = "tx_timeout";
     public static final String FIELD_TYPE = "tx_type";
     private static final String FIELD_METADATA = "tx_metadata";
+
 
     protected AccessMode readAccessMode(MapValue meta) throws PackstreamReaderException {
         var accessMode = PackstreamConversions.asNullableStringValue(FIELD_ACCESS_MODE, meta.get(FIELD_ACCESS_MODE));
@@ -110,6 +112,11 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
 
     protected String readImpersonatedUser(MapValue meta) throws PackstreamReaderException {
         return TransactionInitiatingMetadataParser.readImpersonatedUser(meta);
+    }
+
+    protected String readCompressed(MapValue meta) throws PackstreamReaderException {
+        var statementCompressed = meta.get(FIELD_COMPRESSED);
+        return statementCompressed;
     }
 
     protected Duration readTimeout(MapValue meta) throws PackstreamReaderException {

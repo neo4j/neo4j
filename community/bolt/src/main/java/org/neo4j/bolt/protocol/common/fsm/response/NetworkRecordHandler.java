@@ -32,6 +32,10 @@ import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.AnyValue;
 
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+
+
 public class NetworkRecordHandler implements RecordHandler, Closeable {
     public static final short RECORD_TAG = 0x71;
 
@@ -65,6 +69,10 @@ public class NetworkRecordHandler implements RecordHandler, Closeable {
 
     @Override
     public void onField(AnyValue value) {
+        log = logProvider.getLog(getClass());
+        log.debug(
+        "6666666666666666666666666 onField '%s'",
+        value);
         this.writerContext.writeValue(value);
     }
 
