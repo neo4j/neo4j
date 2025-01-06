@@ -54,7 +54,9 @@ case class SlottedSetLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel], dyn
     val node = getFromNodeFunction.applyAsLong(executionContext)
     if (node != StatementConstants.NO_SUCH_NODE) {
       val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.flatMap(e => {
-        CypherFunctions.asStringList(e(executionContext, state)).asScala.map(l => state.query.getOrCreateLabelId(l))
+        CypherFunctions.nodeLabelsAsStringList(e(executionContext, state)).asScala.map(l =>
+          state.query.getOrCreateLabelId(l)
+        )
       })
       state.query.setLabelsOnNode(node, labelIds.iterator).toLong
     } else {

@@ -633,7 +633,9 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel], dynamicL
     if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
       val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.flatMap(e => {
-        CypherFunctions.asStringList(e(executionContext, state)).asScala.map(l => state.query.getOrCreateLabelId(l))
+        CypherFunctions.nodeLabelsAsStringList(e(executionContext, state)).asScala.map(l =>
+          state.query.getOrCreateLabelId(l)
+        )
       })
       state.query.setLabelsOnNode(nodeId, labelIds.iterator).toLong
     } else {

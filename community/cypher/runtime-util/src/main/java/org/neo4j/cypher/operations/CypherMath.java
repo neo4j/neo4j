@@ -119,20 +119,18 @@ public final class CypherMath {
                 return ((DurationValue) lhs).add((DurationValue) rhs);
             }
         }
-        if (lhs instanceof Value lhsVal)
+
+        if (lhs == null) {
             throw CypherTypeException.addTypeMismatch(
-                    lhsVal.prettyPrint(),
+                    "null", "NULL", rhs.getTypeName(), "NULL", CypherTypeValueMapper.valueType(rhs));
+        } else {
+            throw CypherTypeException.addTypeMismatch(
+                    lhs.prettyPrint(),
                     lhs.getTypeName(),
                     rhs.getTypeName(),
                     CypherTypeValueMapper.valueType(lhs),
                     CypherTypeValueMapper.valueType(rhs));
-        else
-            throw CypherTypeException.addTypeMismatch(
-                    String.valueOf(lhs),
-                    lhs == null ? "NULL" : lhs.getTypeName(),
-                    rhs.getTypeName(),
-                    lhs == null ? "NULL" : CypherTypeValueMapper.valueType(lhs),
-                    CypherTypeValueMapper.valueType(rhs));
+        }
     }
 
     public static AnyValue subtract(AnyValue lhs, AnyValue rhs) {
@@ -160,20 +158,18 @@ public final class CypherMath {
                 return ((DurationValue) lhs).sub((DurationValue) rhs);
             }
         }
-        if (lhs instanceof Value lhsVal)
+
+        if (lhs == null) {
             throw CypherTypeException.subtractTypeMismatch(
-                    lhsVal.prettyPrint(),
+                    "null", "NULL", rhs.getTypeName(), "NULL", CypherTypeValueMapper.valueType(rhs));
+        } else {
+            throw CypherTypeException.subtractTypeMismatch(
+                    lhs.prettyPrint(),
                     lhs.getTypeName(),
                     rhs.getTypeName(),
                     CypherTypeValueMapper.valueType(lhs),
                     CypherTypeValueMapper.valueType(rhs));
-        else
-            throw CypherTypeException.subtractTypeMismatch(
-                    String.valueOf(lhs),
-                    lhs == null ? "NULL" : lhs.getTypeName(),
-                    rhs.getTypeName(),
-                    lhs == null ? "NULL" : CypherTypeValueMapper.valueType(lhs),
-                    CypherTypeValueMapper.valueType(rhs));
+        }
     }
 
     public static AnyValue multiply(AnyValue lhs, AnyValue rhs) {
@@ -199,20 +195,18 @@ public final class CypherMath {
                 return ((DurationValue) rhs).mul((NumberValue) lhs);
             }
         }
-        if (lhs instanceof Value lhsVal)
+
+        if (lhs == null) {
             throw CypherTypeException.multiplyTypeMismatch(
-                    lhsVal.prettyPrint(),
+                    "null", "NULL", rhs.getTypeName(), "NULL", CypherTypeValueMapper.valueType(rhs));
+        } else {
+            throw CypherTypeException.multiplyTypeMismatch(
+                    lhs.prettyPrint(),
                     lhs.getTypeName(),
                     rhs.getTypeName(),
                     CypherTypeValueMapper.valueType(lhs),
                     CypherTypeValueMapper.valueType(rhs));
-        else
-            throw CypherTypeException.multiplyTypeMismatch(
-                    String.valueOf(lhs),
-                    lhs == null ? "NULL" : lhs.getTypeName(),
-                    rhs.getTypeName(),
-                    lhs == null ? "NULL" : CypherTypeValueMapper.valueType(lhs),
-                    CypherTypeValueMapper.valueType(rhs));
+        }
     }
 
     private static boolean divideCheckForNull(AnyValue lhs, AnyValue rhs) {
@@ -237,20 +231,18 @@ public final class CypherMath {
                 return ((DurationValue) lhs).div((NumberValue) rhs);
             }
         }
-        if (lhs instanceof Value lhsVal)
+
+        if (lhs == null) {
             throw CypherTypeException.divideTypeMismatch(
-                    lhsVal.prettyPrint(),
+                    "null", "NULL", rhs.getTypeName(), "NULL", CypherTypeValueMapper.valueType(rhs));
+        } else {
+            throw CypherTypeException.divideTypeMismatch(
+                    lhs.prettyPrint(),
                     lhs.getTypeName(),
                     rhs.getTypeName(),
                     CypherTypeValueMapper.valueType(lhs),
                     CypherTypeValueMapper.valueType(rhs));
-        else
-            throw CypherTypeException.divideTypeMismatch(
-                    String.valueOf(lhs),
-                    lhs == null ? "NULL" : lhs.getTypeName(),
-                    rhs.getTypeName(),
-                    lhs == null ? "NULL" : CypherTypeValueMapper.valueType(lhs),
-                    CypherTypeValueMapper.valueType(rhs));
+        }
     }
 
     public static AnyValue modulo(AnyValue lhs, AnyValue rhs) {
@@ -267,20 +259,18 @@ public final class CypherMath {
                 throw new ArithmeticException(e.getMessage(), e);
             }
         }
-        if (lhs instanceof Value lhsVal)
+
+        if (lhs == null) {
             throw CypherTypeException.modulusTypeMismatch(
-                    lhsVal.prettyPrint(),
+                    "null", "NULL", rhs.getTypeName(), "NULL", CypherTypeValueMapper.valueType(rhs));
+        } else {
+            throw CypherTypeException.modulusTypeMismatch(
+                    lhs.prettyPrint(),
                     lhs.getTypeName(),
                     rhs.getTypeName(),
                     CypherTypeValueMapper.valueType(lhs),
                     CypherTypeValueMapper.valueType(rhs));
-        else
-            throw CypherTypeException.modulusTypeMismatch(
-                    String.valueOf(lhs),
-                    lhs == null ? "NULL" : lhs.getTypeName(),
-                    rhs.getTypeName(),
-                    lhs == null ? "NULL" : CypherTypeValueMapper.valueType(lhs),
-                    CypherTypeValueMapper.valueType(rhs));
+        }
     }
 
     public static AnyValue pow(AnyValue lhs, AnyValue rhs) {
@@ -289,19 +279,17 @@ public final class CypherMath {
         } else if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
             return doubleValue(Math.pow(((NumberValue) lhs).doubleValue(), ((NumberValue) rhs).doubleValue()));
         }
-        if (lhs instanceof Value lhsVal)
+
+        if (lhs == null) {
             throw CypherTypeException.powerTypeMismatch(
-                    lhsVal.prettyPrint(),
+                    "null", "NULL", rhs.getTypeName(), "NULL", CypherTypeValueMapper.valueType(rhs));
+        } else {
+            throw CypherTypeException.powerTypeMismatch(
+                    lhs.prettyPrint(),
                     lhs.getTypeName(),
                     rhs.getTypeName(),
                     CypherTypeValueMapper.valueType(lhs),
                     CypherTypeValueMapper.valueType(rhs));
-        else
-            throw CypherTypeException.powerTypeMismatch(
-                    String.valueOf(lhs),
-                    lhs == null ? "NULL" : lhs.getTypeName(),
-                    rhs.getTypeName(),
-                    lhs == null ? "NULL" : CypherTypeValueMapper.valueType(lhs),
-                    CypherTypeValueMapper.valueType(rhs));
+        }
     }
 }

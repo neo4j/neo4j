@@ -31,11 +31,14 @@ import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.util.RuntimeUnsatisfiableRelationshipTypeExpression
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
@@ -1031,6 +1034,57 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     result should beColumns("n").withRows(singleColumn(expected))
   }
 
+  test("should fail when trying to filter with a set of invalid dynamic labels (all)") {
+    // given
+    val n = givenGraph {
+      tx.createNode()
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .filterExpression(hasDynamicLabels(varFor("n"), varFor("label")))
+      .input(nodes = Array("n"), variables = Array("label"))
+      .build()
+
+    def theDynamicLabel(v: Any): Unit = consume(execute(logicalQuery, runtime, inputValues(Array(n, v))))
+
+    // then
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      1
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      Array(1)
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      null
+    ) should have message "Expected node label to be a string or list of strings."
+  }
+
+  test("should fail when trying to filter with a set of invalid dynamic labels (any)") {
+    // given
+    val n = givenGraph {
+      tx.createNode()
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .filterExpression(hasAnyDynamicLabel(varFor("n"), varFor("label")))
+      .input(nodes = Array("n"), variables = Array("label"))
+      .build()
+
+    def theDynamicLabel(v: Any): Unit = consume(execute(logicalQuery, runtime, inputValues(Array(n, v))))
+
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      1
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      Array(1)
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      null
+    ) should have message "Expected node label to be a string or list of strings."
+  }
+
   test("should handle non-existing node with has any label expression") {
     // given
     givenGraph {
@@ -1107,6 +1161,70 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val runtimeResult = execute(logicalQuery, runtime)
 
     runtimeResult should beColumns("r").withRows(singleColumn(Seq(rels(0))))
+  }
+
+  test("should throw the correct error if the dynamic type is invalid (all)") {
+    // given
+    val rel = givenGraph {
+      val a = tx.createNode()
+      tx.createNode().createRelationshipTo(a, RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filterExpression(hasDynamicType(varFor("r"), varFor("type")))
+      .input(relationships = Seq("r"), variables = Seq("type"))
+      .build()
+
+    def theResultFor(v: Any) = execute(logicalQuery, runtime, inputValues(Array(rel, v)))
+    def theDynamicType(v: Any): Unit = consume(theResultFor(v))
+
+    // then
+    theResultFor(Array[String]("C", "D")) should beColumns("r").withNotifications(
+      RuntimeUnsatisfiableRelationshipTypeExpression(List("C", "D"))
+    )
+    the[CypherTypeException] thrownBy theDynamicType(
+      1
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      Array(1)
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      null
+    ) should have message "Expected relationship type to be a string or list of strings."
+    an[IllegalTokenNameException] shouldBe thrownBy(theDynamicType(""))
+    an[IllegalTokenNameException] shouldBe thrownBy(theDynamicType("\u0000"))
+  }
+
+  test("should throw the correct error if the dynamic type is invalid (any)") {
+    // given
+    val rel = givenGraph {
+      val a = tx.createNode()
+      tx.createNode().createRelationshipTo(a, RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filterExpression(hasAnyDynamicType(varFor("r"), varFor("type")))
+      .input(relationships = Seq("r"), variables = Seq("type"))
+      .build()
+
+    def theDynamicType(v: Any) = consume(execute(logicalQuery, runtime, inputValues(Array(rel, v))))
+
+    // then
+    the[CypherTypeException] thrownBy theDynamicType(
+      1
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      Array(1)
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      null
+    ) should have message "Expected relationship type to be a string or list of strings."
+    an[IllegalTokenNameException] shouldBe thrownBy(theDynamicType(""))
+    an[IllegalTokenNameException] shouldBe thrownBy(theDynamicType("\u0000"))
   }
 
   test("should get type of relationship") {

@@ -337,8 +337,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime, DateTimeVa
                         try {
                             result = result.withZoneSameInstant(timezone());
                         } catch (DateTimeParseException e) {
-                            String prettyVal = timezone instanceof Value v ? v.prettyPrint() : String.valueOf(timezone);
-                            throw TemporalParseException.failedToProcessDateTime(prettyVal, e);
+                            throw TemporalParseException.failedToProcessDateTime(timezone.prettyPrint(), e);
                         }
                     } else {
                         result = result.withZoneSameLocal(timezone());

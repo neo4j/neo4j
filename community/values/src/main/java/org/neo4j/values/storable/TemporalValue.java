@@ -573,10 +573,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                             "Cannot assign time zone if also assigning other fields.");
                 }
                 if (builder.timezone != null) {
-                    String timeZ;
-                    if (builder.timezone instanceof Value v) timeZ = v.prettyPrint();
-                    else timeZ = String.valueOf(builder.timezone);
-                    throw InvalidArgumentException.assignTimezoneTwice(timeZ);
+                    throw InvalidArgumentException.assignTimezoneTwice(builder.timezone.prettyPrint());
                 }
                 builder.timezone = value;
             }

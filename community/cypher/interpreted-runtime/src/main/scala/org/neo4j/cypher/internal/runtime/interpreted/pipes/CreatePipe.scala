@@ -188,7 +188,7 @@ case class CreateNodeCommand(
 object CreateNodeCommand {
 
   def resolveLabelExpressions(labelExpressions: Seq[Expression], context: CypherRow, state: QueryState): Seq[String] = {
-    labelExpressions.flatMap(label => CypherFunctions.asStringList(label(context, state)).asScala)
+    labelExpressions.flatMap(label => CypherFunctions.nodeLabelsAsStringList(label(context, state)).asScala)
   }
 }
 

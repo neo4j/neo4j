@@ -152,6 +152,18 @@ public class CypherTypeException extends Neo4jException {
         return new CypherTypeException(gql, msg);
     }
 
+    public static CypherTypeException expectedStringNotNull(String msg, String gotPretty, String gotCypherType) {
+        var gql = GqlHelper.getGql22G03_22N01(gotPretty, List.of("STRING NOT NULL"), gotCypherType);
+        return new CypherTypeException(gql, msg);
+    }
+
+    public static CypherTypeException expectedStringOrListOfStringsNotNull(
+            String msg, String gotPretty, String gotCypherType) {
+        var gql = GqlHelper.getGql22G03_22N01(
+                gotPretty, List.of("STRING NOT NULL", "LIST<STRING NOT NULL>"), gotCypherType);
+        return new CypherTypeException(gql, msg);
+    }
+
     public static CypherTypeException expectedNumber(String msg, String gotPretty, String gotCypherType) {
         var gql = GqlHelper.getGql22G03_22N01(gotPretty, List.of("INTEGER", "FLOAT"), gotCypherType);
         return new CypherTypeException(gql, msg);

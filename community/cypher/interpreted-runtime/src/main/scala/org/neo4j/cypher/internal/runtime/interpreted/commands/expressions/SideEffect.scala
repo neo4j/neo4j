@@ -56,7 +56,7 @@ case class CreateNode(command: CreateNodeCommand, allowNullOrNaNProperty: Boolea
     val query = state.query
     val labelIds = command.labels.map(_.getOrCreateId(query))
     val dynamicLabelIds = command.labelExpressions.flatMap(expr =>
-      CypherFunctions.asStringList(expr(row, state)).asScala.map(query.getOrCreateLabelId)
+      CypherFunctions.nodeLabelsAsStringList(expr(row, state)).asScala.map(query.getOrCreateLabelId)
     )
     val node = query.createNodeId((labelIds ++ dynamicLabelIds).toArray)
     command.properties.foreach(p =>
@@ -200,7 +200,9 @@ case class RemoveLabelsOperation(nodeName: String, labels: Seq[LazyLabel], dynam
     if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
       val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.flatMap(e => {
-        CypherFunctions.asStringList(e(executionContext, state)).asScala.map(l => state.query.getOrCreateLabelId(l))
+        CypherFunctions.nodeLabelsAsStringList(e(executionContext, state)).asScala.map(l =>
+          state.query.getOrCreateLabelId(l)
+        )
       })
       state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
     }

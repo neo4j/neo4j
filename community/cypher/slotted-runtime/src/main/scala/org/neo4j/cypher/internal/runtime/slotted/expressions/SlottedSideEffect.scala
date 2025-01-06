@@ -56,7 +56,7 @@ case class CreateSlottedNode(command: CreateNodeSlottedCommand, allowNullOrNaNPr
     val query = state.query
     val labelIds = command.labels.map(_.getOrCreateId(query))
     val dynamicLabelIds = command.labelExpressions.flatMap(expr =>
-      CypherFunctions.asStringList(expr(row, state)).asScala.map(query.getOrCreateLabelId)
+      CypherFunctions.nodeLabelsAsStringList(expr(row, state)).asScala.map(query.getOrCreateLabelId)
     )
     val node = query.createNodeId((labelIds ++ dynamicLabelIds).toArray)
     row.setLongAt(command.idOffset, node)
@@ -145,7 +145,9 @@ case class SlottedRemoveLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel], 
     val node = getFromNodeFunction.applyAsLong(executionContext)
     if (node != StatementConstants.NO_SUCH_NODE) {
       val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.flatMap(e => {
-        CypherFunctions.asStringList(e(executionContext, state)).asScala.map(l => state.query.getOrCreateLabelId(l))
+        CypherFunctions.nodeLabelsAsStringList(e(executionContext, state)).asScala.map(l =>
+          state.query.getOrCreateLabelId(l)
+        )
       })
       state.query.removeLabelsFromNode(node, labelIds.iterator)
     }

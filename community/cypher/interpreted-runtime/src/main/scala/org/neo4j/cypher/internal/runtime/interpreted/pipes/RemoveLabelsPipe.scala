@@ -48,7 +48,7 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel],
 
   private def removeLabels(row: CypherRow, state: QueryState, nodeId: Long): Int = {
     val labelIds = labels.map(_.getId(state.query)) ++ dynamicLabels.flatMap(l =>
-      CypherFunctions.asStringList(l(row, state)).asScala.map(l =>
+      CypherFunctions.nodeLabelsAsStringList(l(row, state)).asScala.map(l =>
         state.query.getOrCreateLabelId(l)
       )
     ).filter(_ != LazyLabel.UNKNOWN)

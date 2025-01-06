@@ -40,6 +40,10 @@ public abstract class AnyValue implements Measurable {
         return internalEquals(other);
     }
 
+    public String prettyPrint() {
+        return toString();
+    }
+
     @Override
     public final int hashCode() {
         return computeHash();

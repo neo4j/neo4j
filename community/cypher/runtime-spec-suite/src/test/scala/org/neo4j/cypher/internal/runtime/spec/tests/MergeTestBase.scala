@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.exceptions.MergeConstraintConflictException
 import org.neo4j.graphdb.Label
@@ -56,7 +57,8 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int,
   useWritesWithProfiling: Boolean = false,
-  testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+  testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] =
+    Set.empty[TestPlanCombinationRewriterHint]
 ) extends RuntimeTestSuite[CONTEXT](
       edition,
       runtime,
@@ -969,6 +971,70 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       labelsAdded = 2,
       relationshipsCreated = 1
     )
+  }
+
+  test("should throw the correct error if the dynamic label is invalid") {
+    // given
+    val n = givenGraph {
+      tx.createNode()
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("m")
+      .apply()
+      .|.merge(nodes = Seq(createNodeWithDynamicLabels("m", varFor("label"))))
+      .|.nodeByLabelScan("m", "M")
+      .input(nodes = Seq("n"), variables = Seq("label"))
+      .build(readOnly = false)
+
+    def theDynamicLabel(v: Any): Unit = consume(execute(logicalQuery, runtime, inputValues(Array(n, v))))
+    // then
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      1
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      Array(1)
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      null
+    ) should have message "Expected node label to be a string or list of strings."
+  }
+
+  test("should throw the correct error if the dynamic type is invalid") {
+    // given
+    val nodes = givenGraph {
+      Seq(tx.createNode(label("A")), tx.createNode(label("B")))
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .apply()
+      .|.merge(
+        relationships = Seq(createRelationshipWithDynamicType("r", "a", "type", "b"))
+      )
+      .|.relationshipTypeScan("(a)-[r:R]-(b)")
+      .input(nodes = Seq("a", "b"), variables = Seq("type"))
+      .build(readOnly = false)
+
+    def theDynamicType(v: Any) =
+      consume(execute(logicalQuery, runtime, inputValues((nodes :+ v).toArray)))
+
+    // then
+    the[IllegalArgumentException] thrownBy theDynamicType(
+      Array[String]()
+    ) should have message "Exactly one relationship type must be specified, but 0 were found."
+    the[IllegalArgumentException] thrownBy theDynamicType(
+      Array("C", "D")
+    ) should have message "Exactly one relationship type must be specified, but 2 were found."
+    the[CypherTypeException] thrownBy theDynamicType(
+      1
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      Array(1)
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      null
+    ) should have message "Expected relationship type to be a string or list of strings."
   }
 
   test("merge on the RHS of an apply") {

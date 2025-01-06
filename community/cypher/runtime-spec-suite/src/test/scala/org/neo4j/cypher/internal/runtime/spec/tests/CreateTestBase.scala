@@ -119,14 +119,20 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("label"))
       .build(readOnly = false)
 
+    def theDynamicLabel(v: Any): Unit = consume(execute(logicalQuery, runtime, inputValues(Array(v))))
+
     // then
-    a[CypherTypeException] shouldBe thrownBy(consume(execute(logicalQuery, runtime, inputValues(Array(1)))))
-    an[IllegalTokenNameException] shouldBe thrownBy(consume(execute(logicalQuery, runtime, inputValues(Array("")))))
-    an[IllegalTokenNameException] shouldBe thrownBy(consume(execute(
-      logicalQuery,
-      runtime,
-      inputValues(Array("\u0000"))
-    )))
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      1
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      Array(1)
+    ) should have message "Expected node label to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicLabel(
+      null
+    ) should have message "Expected node label to be a string or list of strings."
+    a[IllegalTokenNameException] shouldBe thrownBy(theDynamicLabel(""))
+    a[IllegalTokenNameException] shouldBe thrownBy(theDynamicLabel("\u0000"))
   }
 
   test("should create node with properties") {
@@ -368,7 +374,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should create relationship with dynamic type") {
-    // given an empty data base
+    // given
     givenGraph {
       val n = tx.createNode(label("A"))
       n.setProperty("prop", "R")
@@ -409,16 +415,22 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // then
     the[IllegalArgumentException] thrownBy theDynamicType(
       Array[String]()
-    ) should have message "Error - Exactly one relationship type must be specified."
-    the[IllegalArgumentException] thrownBy theDynamicType(
-      Array[String]("A", "A")
-    ) should have message "Error - Exactly one relationship type must be specified."
+    ) should have message "Exactly one relationship type must be specified, but 0 were found."
     the[IllegalArgumentException] thrownBy theDynamicType(
       Array[String]("C", "D")
-    ) should have message "Error - Exactly one relationship type must be specified."
-    the[CypherTypeException] thrownBy theDynamicType(1) should have message "Invalid input for function 'evaluateDynamicRelType()': Expected Int(1) to be a string or list of strings, but it was a `Integer`"
-    the[CypherTypeException] thrownBy theDynamicType(Array(1)) should have message "Invalid input for function 'evaluateDynamicRelType()': Expected Int(1) to be a string, but it was a `Integer`"
-    the[CypherTypeException] thrownBy theDynamicType(null) should have message "Invalid input for function 'evaluateDynamicRelType()': Expected NO_VALUE to be a string or list of strings, but it was a `NO_VALUE`"
+    ) should have message "Exactly one relationship type must be specified, but 2 were found."
+    the[IllegalArgumentException] thrownBy theDynamicType(
+      Array[String]("A", "A")
+    ) should have message "Exactly one relationship type must be specified, but 2 were found."
+    the[CypherTypeException] thrownBy theDynamicType(
+      1
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      Array(1)
+    ) should have message "Expected relationship type to be a string or list of strings."
+    the[CypherTypeException] thrownBy theDynamicType(
+      null
+    ) should have message "Expected relationship type to be a string or list of strings."
     a[IllegalTokenNameException] shouldBe thrownBy(theDynamicType(""))
     a[IllegalTokenNameException] shouldBe thrownBy(theDynamicType("\u0000"))
   }

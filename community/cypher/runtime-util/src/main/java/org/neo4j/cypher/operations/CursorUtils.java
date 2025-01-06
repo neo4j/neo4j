@@ -646,14 +646,8 @@ public final class CursorUtils {
         } else if (container instanceof PointValue point) {
             return point.get(key);
         } else {
-            if (container instanceof Value value)
-                throw CypherTypeException.expectedMap(
-                        String.valueOf(value), value.prettyPrint(), CypherTypeValueMapper.valueType(container));
-            else
-                throw CypherTypeException.expectedMap(
-                        String.valueOf(container),
-                        String.valueOf(container),
-                        CypherTypeValueMapper.valueType(container));
+            throw CypherTypeException.expectedMap(
+                    String.valueOf(container), container.prettyPrint(), CypherTypeValueMapper.valueType(container));
         }
     }
 
@@ -687,14 +681,8 @@ public final class CursorUtils {
         } else if (container instanceof PointValue point) {
             return propertiesGet(keys, point);
         } else {
-            if (container instanceof Value value)
-                throw CypherTypeException.expectedMap(
-                        String.valueOf(value), value.prettyPrint(), CypherTypeValueMapper.valueType(container));
-            else
-                throw CypherTypeException.expectedMap(
-                        String.valueOf(container),
-                        String.valueOf(container),
-                        CypherTypeValueMapper.valueType(container));
+            throw CypherTypeException.expectedMap(
+                    String.valueOf(container), container.prettyPrint(), CypherTypeValueMapper.valueType(container));
         }
     }
 

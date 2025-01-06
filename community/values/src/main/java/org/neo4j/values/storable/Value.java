@@ -202,9 +202,7 @@ public abstract class Value extends AnyValue {
         return asObjectCopy();
     }
 
-    /**
-     * Returns a json-like string representation of the current value.
-     */
+    @Override
     public abstract String prettyPrint();
 
     @Override

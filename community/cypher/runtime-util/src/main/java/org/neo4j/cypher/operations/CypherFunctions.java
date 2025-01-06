@@ -561,12 +561,8 @@ public final class CypherFunctions {
         if (anyValue instanceof VirtualRelationshipValue rel) {
             return otherNode(rel, access, node, cursor);
         } else {
-            if (anyValue instanceof Value v)
-                throw CypherTypeException.expectedRelValue(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(anyValue));
-            else
-                throw CypherTypeException.expectedRelValue(
-                        String.valueOf(anyValue), String.valueOf(anyValue), CypherTypeValueMapper.valueType(anyValue));
+            throw CypherTypeException.expectedRelValue(
+                    anyValue.toString(), anyValue.prettyPrint(), CypherTypeValueMapper.valueType(anyValue));
         }
     }
 
@@ -602,14 +598,8 @@ public final class CypherFunctions {
         } else if (container instanceof PointValue point) {
             return point.get(key);
         } else {
-            if (container instanceof Value value)
-                throw CypherTypeException.expectedMap(
-                        String.valueOf(value), value.prettyPrint(), CypherTypeValueMapper.valueType(container));
-            else
-                throw CypherTypeException.expectedMap(
-                        String.valueOf(container),
-                        String.valueOf(container),
-                        CypherTypeValueMapper.valueType(container));
+            throw CypherTypeException.expectedMap(
+                    container.toString(), container.prettyPrint(), CypherTypeValueMapper.valueType(container));
         }
     }
 
@@ -652,15 +642,8 @@ public final class CypherFunctions {
         } else if (container instanceof SequenceValue seq) {
             return listAccess(seq, index);
         } else {
-            if (container instanceof Value v)
-                throw CypherTypeException.notCollectionOrMap(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v), index);
-            else
-                throw CypherTypeException.notCollectionOrMap(
-                        String.valueOf(container),
-                        String.valueOf(container),
-                        CypherTypeValueMapper.valueType(container),
-                        index);
+            throw CypherTypeException.notCollectionOrMap(
+                    container.toString(), container.prettyPrint(), CypherTypeValueMapper.valueType(container), index);
         }
     }
 
@@ -689,15 +672,8 @@ public final class CypherFunctions {
                             // operation went wrong
                             "Cannot use non string value as or in map keys. It was " + index.toString())));
         } else {
-            if (container instanceof Value v)
-                throw CypherTypeException.notMap(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v), index);
-            else
-                throw CypherTypeException.notMap(
-                        String.valueOf(container),
-                        String.valueOf(container),
-                        CypherTypeValueMapper.valueType(container),
-                        index);
+            throw CypherTypeException.notMap(
+                    container.toString(), container.prettyPrint(), CypherTypeValueMapper.valueType(container), index);
         }
     }
 
@@ -1171,12 +1147,8 @@ public final class CypherFunctions {
         if (entity instanceof VirtualNodeValue node) {
             return access.isLabelSetOnNode(labelToken, node.id(), nodeCursor);
         } else {
-            if (entity instanceof Value v)
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(entity), String.valueOf(entity), CypherTypeValueMapper.valueType(entity));
+            throw CypherTypeException.expectedNode(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
     }
 
@@ -1186,12 +1158,8 @@ public final class CypherFunctions {
         if (entity instanceof VirtualNodeValue node) {
             return access.areLabelsSetOnNode(labelTokens, node.id(), nodeCursor);
         } else {
-            if (entity instanceof Value v)
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(entity), String.valueOf(entity), CypherTypeValueMapper.valueType(entity));
+            throw CypherTypeException.expectedNode(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
     }
 
@@ -1208,25 +1176,32 @@ public final class CypherFunctions {
     }
 
     public static String evaluateSingleDynamicRelType(AnyValue value) {
-        if (value instanceof TextValue textValue) {
+        if (value == NO_VALUE) {
+            throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                    "Expected relationship type to be a string or list of strings.", "NULL", "NULL");
+        } else if (value instanceof TextValue textValue) {
             return textValue.stringValue();
         } else if (value instanceof SequenceValue sequenceValue) {
             if (sequenceValue.actualSize() != 1L) {
-                throw new IllegalArgumentException("Error - Exactly one relationship type must be specified.");
+                throw new IllegalArgumentException(format(
+                        "Exactly one relationship type must be specified, but %d were found.",
+                        sequenceValue.actualSize()));
             }
 
             var t = sequenceValue.value(0);
             if (t instanceof TextValue textValue) {
                 return textValue.stringValue();
             } else {
-                throw new CypherTypeException(format(
-                        "Invalid input for function 'evaluateDynamicRelType()': Expected %s to be a string, but it was a `%s`",
-                        t, t.getTypeName()));
+                throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                        "Expected relationship type to be a string or list of strings.",
+                        t.prettyPrint(),
+                        CypherTypeValueMapper.valueType(t));
             }
         } else {
-            throw new CypherTypeException(format(
-                    "Invalid input for function 'evaluateDynamicRelType()': Expected %s to be a string or list of strings, but it was a `%s`",
-                    value, value.getTypeName()));
+            throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                    "Expected relationship type to be a string or list of strings.",
+                    value.prettyPrint(),
+                    CypherTypeValueMapper.valueType(value));
         }
     }
 
@@ -1256,21 +1231,22 @@ public final class CypherFunctions {
                                 return false;
                             }
                         } else {
-                            throw new CypherTypeException(format(
-                                    "Invalid input for function 'hasDynamicLabels()': Expected %s to be a string, but it was `%s`",
-                                    labelName, labelName.getTypeName()));
+                            throw CypherTypeException.expectedStringNotNull(
+                                    "Expected node label to be a string or list of strings.",
+                                    l.prettyPrint(),
+                                    CypherTypeValueMapper.valueType(l));
                         }
                     }
                 } else {
-                    throw new CypherTypeException(format(
-                            "Invalid input for function 'hasDynamicLabels()': Expected %s to be a string or list of strings, but it was `%s`",
-                            labelName, labelName.getTypeName()));
+                    throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                            "Expected node label to be a string or list of strings.",
+                            labelName.prettyPrint(),
+                            CypherTypeValueMapper.valueType(labelName));
                 }
             }
         } else {
-            throw new CypherTypeException(format(
-                    "Invalid input for function 'hasDynamicLabels()': Expected %s to be a node, but it was `%s`",
-                    entity, entity.getTypeName()));
+            throw CypherTypeException.expectedNode(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
         return true;
     }
@@ -1281,12 +1257,8 @@ public final class CypherFunctions {
         if (entity instanceof VirtualNodeValue virtualNodeValue) {
             return access.isALabelSetOnNode(virtualNodeValue.id(), nodeCursor);
         } else {
-            if (entity instanceof Value v)
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(entity), String.valueOf(entity), CypherTypeValueMapper.valueType(entity));
+            throw CypherTypeException.expectedNode(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
     }
 
@@ -1330,12 +1302,8 @@ public final class CypherFunctions {
         if (entity instanceof VirtualNodeValue node) {
             return access.isAnyLabelSetOnNode(labels, node.id(), nodeCursor);
         } else {
-            if (entity instanceof Value v)
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(entity), String.valueOf(entity), CypherTypeValueMapper.valueType(entity));
+            throw CypherTypeException.expectedNode(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
     }
 
@@ -1357,21 +1325,22 @@ public final class CypherFunctions {
                                 return true;
                             }
                         } else {
-                            throw new CypherTypeException(format(
-                                    "Invalid input for function 'hasAnyDynamicLabel()': Expected %s to be a string, but it was a `%s`",
-                                    l, l.getTypeName()));
+                            throw CypherTypeException.expectedStringNotNull(
+                                    "Expected node label to be a string or list of strings.",
+                                    l.prettyPrint(),
+                                    CypherTypeValueMapper.valueType(l));
                         }
                     }
                 } else {
-                    throw new CypherTypeException(format(
-                            "Invalid input for function 'hasAnyDynamicLabel()': Expected %s to be a string or list of strings, but it was a `%s`",
-                            labelName, labelName.getTypeName()));
+                    throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                            "Expected node label to be a string or list of strings.",
+                            labelName.prettyPrint(),
+                            CypherTypeValueMapper.valueType(labelName));
                 }
             }
         } else {
-            throw new CypherTypeException(format(
-                    "Invalid input for function 'hasAnyDynamicLabel()': Expected %s to be a node, but it was a `%s`",
-                    entity, entity.getTypeName()));
+            throw CypherTypeException.expectedNode(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
 
         return false;
@@ -1414,12 +1383,8 @@ public final class CypherFunctions {
                 return typeToken == relationship.relationshipTypeId(consumer(access, relCursor));
             }
         } else {
-            if (entity instanceof Value v)
-                throw CypherTypeException.expectedRel(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedRel(
-                        String.valueOf(entity), String.valueOf(entity), CypherTypeValueMapper.valueType(entity));
+            throw CypherTypeException.expectedRel(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
     }
 
@@ -1430,12 +1395,8 @@ public final class CypherFunctions {
         if (entity instanceof VirtualRelationshipValue relationship) {
             return access.areTypesSetOnRelationship(typeTokens, relationship, relCursor);
         } else {
-            if (entity instanceof Value v)
-                throw CypherTypeException.expectedRel(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedRel(
-                        String.valueOf(entity), String.valueOf(entity), CypherTypeValueMapper.valueType(entity));
+            throw CypherTypeException.expectedRel(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
     }
 
@@ -1487,15 +1448,17 @@ public final class CypherFunctions {
                                 conflictingTypes.add(textValue.stringValue());
                             }
                         } else {
-                            throw new CypherTypeException(format(
-                                    "Invalid input for function 'hasDynamicType()': Expected %s to be a string, but it was a `%s`",
-                                    t, t.getTypeName()));
+                            throw CypherTypeException.expectedStringNotNull(
+                                    "Expected relationship type to be a string or list of strings.",
+                                    t.prettyPrint(),
+                                    CypherTypeValueMapper.valueType(t));
                         }
                     }
                 } else {
-                    throw new CypherTypeException(format(
-                            "Invalid input for function 'hasDynamicType()': Expected %s to be a string or list of strings, but it was a `%s`",
-                            value, value.getTypeName()));
+                    throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                            "Expected relationship type to be a string or list of strings.",
+                            value.prettyPrint(),
+                            CypherTypeValueMapper.valueType(value));
                 }
             }
 
@@ -1512,9 +1475,8 @@ public final class CypherFunctions {
 
             return hasType(relationship, singleValue, relCursor, queryContext);
         } else {
-            throw new CypherTypeException(format(
-                    "Invalid input for function 'hasDynamicType()': Expected %s to be a relationship, but it was a `%s`",
-                    entity, entity.getTypeName()));
+            throw CypherTypeException.expectedRel(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
     }
 
@@ -1536,21 +1498,22 @@ public final class CypherFunctions {
                                 return true;
                             }
                         } else {
-                            throw new CypherTypeException(format(
-                                    "Invalid input for function 'hasAnyDynamicType()': Expected %s to be a string, but it was a `%s`",
-                                    t, t.getTypeName()));
+                            throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                                    "Expected relationship type to be a string or list of strings.",
+                                    t.prettyPrint(),
+                                    CypherTypeValueMapper.valueType(t));
                         }
                     }
                 } else {
-                    throw new CypherTypeException(format(
-                            "Invalid input for function 'hasAnyDynamicType()': Expected %s to be a string or list of strings, but it was a `%s`",
-                            typ, typ.getTypeName()));
+                    throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                            "Expected relationship type to be a string or list of strings.",
+                            typ.prettyPrint(),
+                            CypherTypeValueMapper.valueType(typ));
                 }
             }
         } else {
-            throw new CypherTypeException(format(
-                    "Invalid input for function 'hasAnyDynamicType()': Expected %s to be a relationship, but it was a `%s`",
-                    entity, entity.getTypeName()));
+            throw CypherTypeException.expectedRel(
+                    entity.toString(), entity.prettyPrint(), CypherTypeValueMapper.valueType(entity));
         }
 
         return false;
@@ -1963,12 +1926,9 @@ public final class CypherFunctions {
                         TextValue.class.getName(),
                         value.getClass().getName());
             }
-            if (value instanceof Value v)
-                throw CypherTypeException.expectedString(
-                        errorMessage, v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedString(
-                        errorMessage, String.valueOf(value), CypherTypeValueMapper.valueType(value));
+
+            throw CypherTypeException.expectedString(
+                    errorMessage, value.prettyPrint(), CypherTypeValueMapper.valueType(value));
         }
         return (TextValue) value;
     }
@@ -2083,17 +2043,27 @@ public final class CypherFunctions {
         return asTextValue(value).stringValue();
     }
 
-    public static List<String> asStringList(AnyValue value) {
+    public static List<String> nodeLabelsAsStringList(AnyValue value) {
         if (value instanceof TextValue text) {
             return Collections.singletonList(text.stringValue());
         } else if (value instanceof SequenceValue sequenceValue) {
             List<String> result = new ArrayList<>();
-            sequenceValue.forEach(t -> result.add(asTextValue(t).stringValue()));
+            for (var s : sequenceValue) {
+                if (s instanceof TextValue t) {
+                    result.add(t.stringValue());
+                } else {
+                    throw CypherTypeException.expectedStringNotNull(
+                            "Expected node label to be a string or list of strings.",
+                            s == NO_VALUE ? "NULL" : s.prettyPrint(),
+                            CypherTypeValueMapper.valueType(s));
+                }
+            }
             return result;
         } else {
-            throw new CypherTypeException(String.format(
-                    "Expected %s to be a %s or a %s, but it was a %s",
-                    value, TextValue.class.getName(), SequenceValue.class.getName(), value.getTypeName()));
+            throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                    "Expected node label to be a string or list of strings.",
+                    value == NO_VALUE ? "NULL" : value.prettyPrint(),
+                    CypherTypeValueMapper.valueType(value));
         }
     }
 
@@ -2109,11 +2079,8 @@ public final class CypherFunctions {
                     value,
                     NumberValue.class.getName(),
                     value.getClass().getName());
-            if (value instanceof Value v)
-                throw CypherTypeException.expectedNumber(msg, v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedNumber(
-                        msg, String.valueOf(value), CypherTypeValueMapper.valueType(value));
+
+            throw CypherTypeException.expectedNumber(msg, value.prettyPrint(), CypherTypeValueMapper.valueType(value));
         }
         return (NumberValue) value;
     }
@@ -2136,11 +2103,8 @@ public final class CypherFunctions {
             } else {
                 errorMsg = contextForErrorMessage.get() + ": Expected a numeric value but got: " + value;
             }
-            if (value instanceof Value v)
-                throw CypherTypeException.expectedNumber(errorMsg, v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedNumber(
-                        errorMsg, String.valueOf(value), CypherTypeValueMapper.valueType(value));
+            throw CypherTypeException.expectedNumber(
+                    errorMsg, value.prettyPrint(), CypherTypeValueMapper.valueType(value));
         }
     }
 
@@ -2168,12 +2132,8 @@ public final class CypherFunctions {
         if (value instanceof VirtualNodeValue) {
             return ((VirtualNodeValue) value).id();
         } else {
-            if (value instanceof Value v)
-                throw CypherTypeException.expectedVirtualNode(
-                        v.prettyPrint(), value.getClass().getName(), CypherTypeValueMapper.valueType(value));
-            else
-                throw CypherTypeException.expectedVirtualNode(
-                        String.valueOf(value), value.getClass().getName(), CypherTypeValueMapper.valueType(value));
+            throw CypherTypeException.expectedVirtualNode(
+                    value.prettyPrint(), value.getClass().getName(), CypherTypeValueMapper.valueType(value));
         }
     }
 
@@ -2375,12 +2335,8 @@ public final class CypherFunctions {
         } else if (item instanceof VirtualNodeValue) {
             return TRUE;
         } else {
-            if (item instanceof Value v)
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(v), v.prettyPrint(), CypherTypeValueMapper.valueType(v));
-            else
-                throw CypherTypeException.expectedNode(
-                        String.valueOf(item), String.valueOf(item), CypherTypeValueMapper.valueType(item));
+            throw CypherTypeException.expectedNode(
+                    String.valueOf(item), item.prettyPrint(), CypherTypeValueMapper.valueType(item));
         }
     }
 
