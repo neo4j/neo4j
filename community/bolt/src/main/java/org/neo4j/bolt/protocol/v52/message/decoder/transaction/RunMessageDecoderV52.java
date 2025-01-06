@@ -28,6 +28,8 @@ import org.neo4j.values.virtual.MapValue;
 
 import io.netty.handler.codec.compression.JdkZlibDecoder;
 
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public final class RunMessageDecoderV52 extends DefaultRunMessageDecoder {
     private static final RunMessageDecoderV52 INSTANCE = new RunMessageDecoderV52();
@@ -77,14 +79,20 @@ public final class RunMessageDecoderV52 extends DefaultRunMessageDecoder {
 
         if (compressed) {
             try {
+
                 statement = buffer.readBytes();
                 byte[] bytes = new byte[statement.readableBytes()];
+                var log = logProvider.getLog(getClass());
+                log.debug(
+                "777777777777 Run compressed '%s'",
+                bytes.toString();
+
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                 DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(byteArrayOutputStream);
                 deflaterOutputStream.write(bytes);
                 deflaterOutputStream.flush();
                 deflaterOutputStream.close();
-                statement = Unpooled.copiedBuffer(bytes)
+                statement = Unpooled.copiedBuffer(bytes);
 
             } catch (PackstreamReaderException ex) {
                 throw IllegalStructArgumentException.protocolError("statement", ex);

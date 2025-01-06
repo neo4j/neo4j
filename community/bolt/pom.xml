@@ -151,6 +151,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skipTests>true</skipTests>
+                            <skipITs>true</skipITs>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -158,6 +159,7 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skipTests>true</skipTests>
+                            <skipITs>true</skipITs>
                         </configuration>
                     </plugin>
                 </plugins>
