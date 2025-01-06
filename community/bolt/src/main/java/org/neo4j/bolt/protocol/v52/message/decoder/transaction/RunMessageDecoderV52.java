@@ -83,9 +83,7 @@ public final class RunMessageDecoderV52 extends DefaultRunMessageDecoder {
                 statement = buffer.readBytes();
                 byte[] bytes = new byte[statement.readableBytes()];
                 var log = logProvider.getLog(getClass());
-                log.debug(
-                "777777777777 Run compressed '%s'",
-                bytes.toString();
+                log.debug("777777777777 Run compressed '%s'", bytes.toString());
 
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                 DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(byteArrayOutputStream);
