@@ -20,10 +20,11 @@
 package org.neo4j.server.web;
 
 import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.eclipse.jetty.server.Request.getTimeStamp;
+import static org.eclipse.jetty.server.Response.getContentBytesWritten;
 import static org.neo4j.logging.log4j.LoggerTarget.HTTP_LOGGER;
 
 import java.util.function.Function;
-import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -43,14 +44,14 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
     public void log(Request request, Response response) {
         // Trying to replicate this logback pattern:
         // %h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] "%r" %s %b "%i{Referer}" "%i{User-Agent}" %D
-        String remoteHost = swallowExceptions(request, HttpServletRequest::getRemoteHost);
-        String user = swallowExceptions(request, HttpServletRequest::getRemoteUser);
+        String remoteHost = swallowExceptions(request, Request::getRemoteAddr);
+        String user = swallowExceptions(request, Request::getId);
         String requestURL = findRequestURI(request);
         int statusCode = response.getStatus();
-        long length = response.getContentLength();
-        String referer = swallowExceptions(request, r -> r.getHeader("Referer"));
-        String userAgent = swallowExceptions(request, r -> r.getHeader("User-Agent"));
-        long requestTimeStamp = request != null ? request.getTimeStamp() : -1;
+        long length = getContentBytesWritten(response);
+        String referer = swallowExceptions(request, r -> r.getHeaders().get("Referer"));
+        String userAgent = swallowExceptions(request, r -> r.getHeaders().get("User-Agent"));
+        long requestTimeStamp = request != null ? getTimeStamp(request) : -1;
         long now = System.currentTimeMillis();
         long serviceTime = requestTimeStamp < 0 ? -1 : now - requestTimeStamp;
 
@@ -67,7 +68,7 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
                 serviceTime);
     }
 
-    private static <T> T swallowExceptions(HttpServletRequest outerRequest, Function<HttpServletRequest, T> function) {
+    private static <T> T swallowExceptions(Request outerRequest, Function<Request, T> function) {
         try {
             return outerRequest == null ? null : function.apply(outerRequest);
         } catch (Throwable t) {
@@ -79,12 +80,12 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
     public void eventCount(long count) {}
 
     private static String findRequestURI(Request request) {
-        var requestURI = swallowExceptions(request, HttpServletRequest::getRequestURI);
-        var queryString = swallowExceptions(request, HttpServletRequest::getQueryString);
+        var requestURI = swallowExceptions(request, Request::getHttpURI);
 
-        if (queryString == null || queryString.isBlank()) {
-            return requestURI;
+        if (requestURI != null) {
+            return requestURI.asString();
         }
-        return requestURI + "?" + queryString;
+
+        return "";
     }
 }

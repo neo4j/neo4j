@@ -22,17 +22,17 @@ package org.neo4j.server.security.ssl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
 import static org.eclipse.jetty.server.HttpConfiguration.Customizer;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.ListIterator;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.api.Test;
@@ -45,9 +45,9 @@ class HttpsRequestCustomizerTest {
         Customizer customizer = newCustomizer();
         Request request = newRequest();
 
-        customize(customizer, request);
+        var customizedReq = customize(customizer, request, null);
 
-        assertThat(request.getHttpURI()).isEqualTo(HttpURI.build("https://example.com"));
+        assertThat(customizedReq.getHttpURI()).isEqualTo(HttpURI.build("https://example.com"));
     }
 
     @Test
@@ -55,36 +55,38 @@ class HttpsRequestCustomizerTest {
         String configuredValue = "max-age=3600; includeSubDomains";
         Customizer customizer = newCustomizer(configuredValue);
         Request request = newRequest();
+        ListIterator<HttpField> responseHeaders = mock(ListIterator.class);
 
-        customize(customizer, request);
+        customize(customizer, request, responseHeaders);
 
-        String receivedValue = request.getResponse().getHttpFields().get(STRICT_TRANSPORT_SECURITY);
-        assertEquals(configuredValue, receivedValue);
+        var stsHeader = new PreEncodedHttpField(STRICT_TRANSPORT_SECURITY, configuredValue);
+
+        verify(responseHeaders).add(eq(stsHeader));
     }
 
     @Test
     void shouldNotAddHstsHeaderWhenNotConfigured() {
         Customizer customizer = newCustomizer();
         Request request = newRequest();
+        ListIterator<HttpField> responseHeaders = mock(ListIterator.class);
 
-        customize(customizer, request);
+        customize(customizer, request, responseHeaders);
 
-        String hstsValue = request.getResponse().getHttpFields().get(STRICT_TRANSPORT_SECURITY);
-        assertNull(hstsValue);
+        verifyNoInteractions(responseHeaders);
     }
 
-    private static void customize(Customizer customizer, Request request) {
-        customizer.customize(mock(Connector.class), new HttpConfiguration(), request);
+    private static Request customize(Customizer customizer, Request request, ListIterator<HttpField> responseHeaders) {
+        var response = mock(Response.class);
+        when(response.getHeaders()).thenReturn(index -> responseHeaders);
+        return customizer.customize(request, response.getHeaders());
     }
 
     private static Request newRequest() {
         HttpChannel channel = mock(HttpChannel.class);
-        Response response = new Response(channel, mock(HttpOutput.class));
-        Request request = new Request(channel, mock(HttpInput.class));
+        Request request = mock(Request.class);
         var httpUri = HttpURI.build("http://example.com");
-        request.setHttpURI(httpUri);
+        when(request.getHttpURI()).thenReturn(httpUri);
         when(channel.getRequest()).thenReturn(request);
-        when(channel.getResponse()).thenReturn(response);
         return request;
     }
 

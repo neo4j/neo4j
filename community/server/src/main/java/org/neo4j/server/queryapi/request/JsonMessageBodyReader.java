@@ -59,14 +59,24 @@ public class JsonMessageBodyReader implements MessageBodyReader<QueryRequest> {
             MultivaluedMap<String, String> httpHeaders,
             InputStream entityStream)
             throws IOException, WebApplicationException {
-        try {
-            // to handle case with completely blank body
-            if (entityStream.available() == 0) {
-                return new QueryRequest();
+
+        return readQueryRequestFromStream(jsonMapper, entityStream);
+    }
+
+    public static QueryRequest readQueryRequestFromStream(JsonMapper jsonMapper, InputStream entityStream)
+            throws IOException {
+        var buffStream = new PeekedFirstByteInputStream(entityStream);
+
+        var hasBytes = buffStream.peek() != -1;
+
+        if (hasBytes) {
+            try {
+                return jsonMapper.readValue(buffStream, QueryRequest.class);
+            } catch (JacksonException e) {
+                throw new BadRequestException(e);
             }
-            return jsonMapper.readValue(entityStream, QueryRequest.class);
-        } catch (JacksonException e) {
-            throw new BadRequestException(e);
+        } else {
+            return new QueryRequest();
         }
     }
 }

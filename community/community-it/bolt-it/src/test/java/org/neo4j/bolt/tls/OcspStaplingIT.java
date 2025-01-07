@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.Map;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -48,8 +49,12 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -178,12 +183,24 @@ class OcspStaplingIT {
 
     private static Server startMockOCSPResponder() throws Exception {
         var jettyServer = new Server(0);
-        var handler = new ServletHandler();
+
+        // We need this prevent issues with the stricter URI matching in Jetty 12
+        for (Connector connector : jettyServer.getConnectors()) {
+            HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
+            if (httpConnectionFactory != null) {
+                HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
+                httpConfiguration.setUriCompliance(
+                        UriCompliance.from(EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)));
+            }
+        }
+
+        var handler = new ServletContextHandler();
         jettyServer.setHandler(handler);
 
         jettyServer.setDumpBeforeStop(true);
-        handler.addServletWithMapping(EndUserOcspResponderServlet.class, "/endUserCA/*");
-        handler.addServletWithMapping(IntOcspResponderServlet.class, "/intCA/*");
+
+        handler.addServlet(EndUserOcspResponderServlet.class, "/endUserCA/*");
+        handler.addServlet(IntOcspResponderServlet.class, "/intCA/*");
         jettyServer.start();
 
         return jettyServer;

@@ -38,21 +38,20 @@ import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
+import org.eclipse.jetty.ee8.servlet.FilterHolder;
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.webapp.WebAppContext;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.helpers.PortBindException;
@@ -78,7 +77,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
     private RequestLog requestLog;
 
     private Server jetty;
-    private HandlerCollection handlers;
+    private ContextHandlerCollection handlers;
     private SocketAddress httpAddress = DEFAULT_ADDRESS;
     private SocketAddress httpsAddress;
 
@@ -137,11 +136,11 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
             }
         }
 
-        handlers = new HandlerList();
+        handlers = new ContextHandlerCollection();
         jetty.setHandler(handlers);
-        handlers.addHandler(new MovedContextHandler());
 
         loadAllMounts();
+        handlers.addHandler(new MovedContextHandler());
 
         if (requestLog != null) {
             loadRequestLogging();
@@ -319,11 +318,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
 
     private void loadRequestLogging() {
         // This makes the request log handler decorate whatever other handlers are already set up
-        final RequestLogHandler requestLogHandler = new HttpChannelOptionalRequestLogHandler();
-        requestLogHandler.setRequestLog(requestLog);
-        requestLogHandler.setServer(jetty);
-        requestLogHandler.setHandler(jetty.getHandler());
-        jetty.setHandler(requestLogHandler);
+        jetty.setRequestLog(requestLog);
     }
 
     private static String trimTrailingSlashToKeepJettyHappy(String mountPoint) {
@@ -354,17 +349,14 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
     private void loadStaticContent(String mountPoint) {
         String contentLocation = staticContent.get(mountPoint);
         try {
-            SessionHandler sessionHandler = new SessionHandler();
-            sessionHandler.setServer(getJetty());
             final WebAppContext staticContext = new WebAppContext();
             staticContext.setServer(getJetty());
             staticContext.setContextPath(mountPoint);
-            staticContext.setSessionHandler(sessionHandler);
             staticContext.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
             URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
             if (resourceLoc != null) {
                 URL url = resourceLoc.toURI().toURL();
-                final Resource resource = Resource.newResource(url);
+                final Resource resource = new URLResourceFactory().newResource(url);
                 staticContext.setBaseResource(resource);
 
                 addFiltersTo(staticContext);
@@ -392,7 +384,6 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
         jerseyContext.setServer(getJetty());
         jerseyContext.setErrorHandler(new NeoJettyErrorHandler());
         jerseyContext.setContextPath(mountPoint);
-        jerseyContext.setSessionHandler(sessionHandler);
         jerseyContext.addServlet(jaxRsServletHolderFactory.create(binder, wadlEnabled), "/*");
         addFiltersTo(jerseyContext);
         handlers.addHandler(jerseyContext);

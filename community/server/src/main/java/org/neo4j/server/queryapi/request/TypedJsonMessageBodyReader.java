@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.queryapi.request;
 
-import com.fasterxml.jackson.core.JacksonException;
+import static org.neo4j.server.queryapi.request.JsonMessageBodyReader.readQueryRequestFromStream;
+
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -62,14 +62,6 @@ public class TypedJsonMessageBodyReader implements MessageBodyReader<QueryReques
             InputStream entityStream)
             throws IOException, WebApplicationException {
 
-        if (entityStream.available() == 0) {
-            return new QueryRequest();
-        }
-
-        try {
-            return jsonMapper.readValue(entityStream, QueryRequest.class);
-        } catch (JacksonException e) {
-            throw new BadRequestException();
-        }
+        return readQueryRequestFromStream(jsonMapper, entityStream);
     }
 }

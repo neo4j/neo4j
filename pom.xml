@@ -148,7 +148,8 @@
     <jamm.version>0.4.0</jamm.version>
     <lucene.version>9.11.1</lucene.version>
     <bouncycastle.version>1.78.1</bouncycastle.version>
-    <jetty.version>10.0.24</jetty.version>
+    <bouncycastle.version>1.79</bouncycastle.version>
+    <jetty.version>12.0.16</jetty.version>
     <scala-maven-plugin.version>4.9.2</scala-maven-plugin.version>
     <scala.version>2.13.11</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
@@ -1635,7 +1636,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-server</artifactId>
+        <artifactId>jetty-http2-server</artifactId>
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
@@ -1649,13 +1650,13 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-webapp</artifactId>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-webapp</artifactId>
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-servlet</artifactId>
         <version>${jetty.version}</version>
         <exclusions>
           <exclusion>
@@ -1666,7 +1667,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-jetty-client</artifactId>
+        <artifactId>jetty-websocket-jetty-client</artifactId>
         <version>${jetty.version}</version>
       </dependency>
       <dependency>

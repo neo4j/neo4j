@@ -27,23 +27,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.ee8.servlet.ErrorPageErrorHandler;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.View;
 
-public class NeoJettyErrorHandler extends ErrorHandler {
+public class NeoJettyErrorHandler extends ErrorPageErrorHandler {
 
     @Override
     protected void generateAcceptableResponse(
-            Request baseRequest,
+            org.eclipse.jetty.ee8.nested.Request baseRequest,
             HttpServletRequest request,
             HttpServletResponse response,
             int code,
-            String message,
-            String contentType)
+            String message)
             throws IOException {
         // Overriding to generate HTTP API V2's error format
         // todo should be filter out other endpoints here?

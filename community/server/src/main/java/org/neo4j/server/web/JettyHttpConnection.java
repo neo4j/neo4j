@@ -23,7 +23,7 @@ import java.net.SocketAddress;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.internal.HttpConnection;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 
 /**
