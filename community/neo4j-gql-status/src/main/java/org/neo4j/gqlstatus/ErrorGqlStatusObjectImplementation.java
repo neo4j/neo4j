@@ -28,7 +28,7 @@ import java.util.Optional;
 public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImplementation
         implements ErrorGqlStatusObject {
     private boolean isCause = false;
-    private Optional<ErrorGqlStatusObject> cause;
+    private ErrorGqlStatusObject cause;
     private final Map<GqlParams.GqlParam, Object> paramMap;
     private final GqlStatusInfoCodes gqlStatusInfoCode;
 
@@ -39,7 +39,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
             DiagnosticRecord diagnosticRecord) {
         super(gqlStatusInfoCode, diagnosticRecord, parameters);
         this.gqlStatusInfoCode = gqlStatusInfoCode;
-        this.cause = Optional.ofNullable(cause);
+        this.cause = cause;
         this.paramMap = Map.copyOf(parameters);
     }
 
@@ -62,7 +62,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
 
     @Override
     public Optional<ErrorGqlStatusObject> cause() {
-        return cause;
+        return Optional.ofNullable(cause);
     }
 
     public boolean isCause() {
@@ -75,7 +75,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
     }
 
     public void setCause(ErrorGqlStatusObject cause) {
-        this.cause = Optional.of(cause);
+        this.cause = cause;
     }
 
     public void markAsCause() {
@@ -85,7 +85,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
     @Override
     public void adjustPosition(int oldLine, int oldColumn, int oldOffset, int newLine, int newCol, int newOffset) {
         super.adjustPosition(oldLine, oldColumn, oldOffset, newLine, newCol, newOffset);
-        cause.ifPresent(gqlStatusObjectCause -> {
+        cause().ifPresent(gqlStatusObjectCause -> {
             if (gqlStatusObjectCause instanceof ErrorGqlStatusObjectImplementation errorGqlStatusObjectImplementation) {
                 // Recursive call for the chain of causes
                 errorGqlStatusObjectImplementation.adjustPosition(
@@ -124,11 +124,11 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
         sb.append("\n");
         sb.append("Subcondition: ");
         sb.append(gqlStatusInfoCode.getSubCondition().trim());
-        if (cause.isPresent()) {
+        if (cause != null) {
             sb.append("\n");
             sb.append("Caused by:");
 
-            return sb.append(indent(4, cause.get().toString())).toString();
+            return sb.append(indent(4, cause.toString())).toString();
         } else {
             return sb.toString();
         }

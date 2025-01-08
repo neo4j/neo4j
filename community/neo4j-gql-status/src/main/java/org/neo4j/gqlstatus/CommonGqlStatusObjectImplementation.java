@@ -21,6 +21,7 @@ package org.neo4j.gqlstatus;
 
 import static org.neo4j.gqlstatus.Condition.createStandardDescription;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -30,7 +31,7 @@ import java.util.Objects;
  *  Contains common implementations for notifications, standard codes and errors without exposing GqlStatusInfo
  *  and DiagnosticRecord as public API.
  */
-public class CommonGqlStatusObjectImplementation implements CommonGqlStatusObject {
+public class CommonGqlStatusObjectImplementation implements CommonGqlStatusObject, Serializable {
 
     protected final GqlStatusInfo gqlStatusInfo;
     protected final DiagnosticRecord diagnosticRecord;

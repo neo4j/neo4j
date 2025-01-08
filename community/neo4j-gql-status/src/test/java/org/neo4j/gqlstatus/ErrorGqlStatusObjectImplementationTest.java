@@ -20,7 +20,9 @@
 package org.neo4j.gqlstatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.Test;
 
 class ErrorGqlStatusObjectImplementationTest {
@@ -67,5 +69,19 @@ class ErrorGqlStatusObjectImplementationTest {
         assertThat(error.statusDescription())
                 .isEqualTo(
                         "error: procedure exception - procedure execution client error. Execution of the procedure $proc() failed due to a client error.");
+    }
+
+    @Test
+    void shouldBeSerializedAndDeserialized() {
+        var errorBuilder = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N02);
+        errorBuilder.withParam(GqlParams.StringParam.db, "my_db"); // this parameter occurs twice in the message
+        errorBuilder.withParam(GqlParams.StringParam.cfgSetting, "my_setting");
+        var error = errorBuilder.build();
+
+        byte[] data = SerializationUtils.serialize((ErrorGqlStatusObjectImplementation) error.gqlStatusObject());
+
+        ErrorGqlStatusObjectImplementation deserialized = SerializationUtils.deserialize(data);
+
+        assertEquals(error, deserialized);
     }
 }

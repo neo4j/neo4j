@@ -21,6 +21,7 @@ package org.neo4j.gqlstatus;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +31,7 @@ import java.util.Optional;
  * They must either be primitive types like int, or String
  * or collections that consists of such types (like _position)
  */
-public class DiagnosticRecord {
+public class DiagnosticRecord implements Serializable {
 
     static final Map<String, Object> DEFAULT_DIAGNOSTIC_RECORD = new DiagnosticRecord().asMap();
 
