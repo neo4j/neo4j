@@ -51,7 +51,7 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
     private static final String FIELD_BOOKMARKS = "bookmarks";
     public static final String FIELD_TIMEOUT = "tx_timeout";
     private static final String FIELD_COMPRERSSED_STATEMENT = "compressed_statement";
-    private static final String FIELD_COMPRERSSED_PARAMETERS = "compressed_parameters";
+    private static final String FIELD_COMPRERSSED_PARAMS = "compressed_params";
     public static final String FIELD_TYPE = "tx_type";
     private static final String FIELD_METADATA = "tx_metadata";
 
@@ -120,7 +120,7 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
     }
 
     protected byte[] readCompressedParams(MapValue meta) throws PackstreamReaderException {
-        return PackstreamConversions.asNullableByteArrayValue(FIELD_COMPRERSSED_PARAMETERS, meta.get(FIELD_COMPRERSSED_PARAMETERS));
+        return PackstreamConversions.asNullableByteArrayValue(FIELD_COMPRERSSED_PARAMS, meta.get(FIELD_COMPRERSSED_PARAMS));
     }
 
     protected Duration readTimeout(MapValue meta) throws PackstreamReaderException {

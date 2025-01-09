@@ -30,17 +30,15 @@ import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.util.PackstreamConditions;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.Inflater;
+import java.util.zip.*;
 
 public class DefaultRunMessageDecoder extends AbstractTransactionInitiatingMessageDecoder<RunMessage> {
     private static final DefaultRunMessageDecoder INSTANCE = new DefaultRunMessageDecoder();
@@ -96,49 +94,54 @@ public class DefaultRunMessageDecoder extends AbstractTransactionInitiatingMessa
             }
             else if (compressedStatement != null) {
                 try {
-                    Inflater inflater = new Inflater();
-                    inflater.setInput(compressedStatement);
+                    final StringBuilder outStr = new StringBuilder();
+                    final GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(compressedStatement));
+                    final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(gis, "UTF-8"));
 
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    byte[] decompressed = new byte[]{};
-
-                    while (!inflater.finished()) {
-                        int decompressedSize = inflater.inflate(decompressed);
-                        outputStream.write(decompressed, 0, decompressedSize);
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        outStr.append(line);
                     }
-                    statement = outputStream.toString(StandardCharsets.UTF_8);
-                } catch (DataFormatException ex) {
-                    throw new IllegalArgumentException("metadata.compressedStatement cannot be decompressed");
+                    statement = outStr.toString();
+                } catch (UnsupportedEncodingException e) {
+                    throw new IllegalArgumentException("metadata.compressedStatement cannot be gzip-decompressed");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             }
 
-            String paramsAsJson;
+            String paramsSerialized;
             var compressedParams = this.readCompressedParams(metadata);
             if (compressedParams != null && !(params.isEmpty())) {
                 throw new IllegalArgumentException("metadata.compressedParams and params cannot both be present");
             }
             else if (compressedParams != null) {
                 try {
-                    Inflater inflater = new Inflater();
-                    inflater.setInput(compressedStatement);
+                    final StringBuilder outStr = new StringBuilder();
+                    final GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(compressedParams));
+                    final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(gis, "UTF-8"));
 
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    byte[] decompressed = new byte[]{};
-
-                    while (!inflater.finished()) {
-                        int decompressedSize = inflater.inflate(decompressed);
-                        outputStream.write(decompressed, 0, decompressedSize);
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        outStr.append(line);
                     }
-                    paramsAsJson = outputStream.toString(StandardCharsets.UTF_8);
-                } catch (DataFormatException ex) {
-                    throw new IllegalArgumentException("metadata.compressedParams cannot be decompressed");
+                    paramsSerialized = outStr.toString();
+                } catch (UnsupportedEncodingException e) {
+                    throw new IllegalArgumentException("metadata.compressedParams cannot be gzip-decompressed");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
 
+                Map<String, AnyValue> paramsMap;
                 try {
-                    Map<String,Object> paramsMap = new ObjectMapper().readValue(paramsAsJson, Map.class);
+                    paramsMap = new ObjectMapper().readValue(paramsSerialized, Map.class);
                 } catch (JsonProcessingException ex) {
                     throw new IllegalArgumentException("metadata.compressedParams was uncompressed but cannot be parsed into a valid map");
                 }
+
+                var builder = new MapValueBuilder(paramsMap.size());
+                paramsMap.forEach(builder::add);
+                params = builder.build();
             }
 
             return new RunMessage(
