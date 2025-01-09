@@ -25,6 +25,7 @@ import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -225,5 +226,28 @@ public final class PackstreamConversions {
         throw IllegalStructArgumentException.wrongTypeForFieldName(
                 // DRI-028
                 fieldName, String.valueOf(fieldValue), List.of("STRING"), fieldValue.getTypeName(), "Expected string");
+    }
+
+    /**
+     * Ensures that the given field is set to a string value or null.
+     *
+     * @param fieldName a field name as specified within the protocol documentation.
+     * @param fieldValue a decoded field value.
+     * @return the cast representation of the field value.
+     * @throws IllegalStructArgumentException when the given field value is not a byte array.
+     */
+    public static byte[] asNullableByteArrayValue(String fieldName, AnyValue fieldValue)
+            throws IllegalStructArgumentException {
+        if (fieldValue instanceof ByteArray byteArray) {
+            return byteArray.asObject();
+        }
+
+        if (fieldValue == Values.NO_VALUE) {
+            return null;
+        }
+
+        throw IllegalStructArgumentException.wrongTypeForFieldName(
+                // DRI-028
+                fieldName, String.valueOf(fieldValue), List.of("BYTE[]]"), fieldValue.getTypeName(), "Expected byte[]");
     }
 }

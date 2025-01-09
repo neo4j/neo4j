@@ -38,6 +38,7 @@ import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.util.PackstreamConversions;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -49,6 +50,8 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
     private static final String FIELD_ACCESS_MODE = "mode";
     private static final String FIELD_BOOKMARKS = "bookmarks";
     public static final String FIELD_TIMEOUT = "tx_timeout";
+    private static final String FIELD_COMPRERSSED_STATEMENT = "compressed_statement";
+    private static final String FIELD_COMPRERSSED_PARAMETERS = "compressed_parameters";
     public static final String FIELD_TYPE = "tx_type";
     private static final String FIELD_METADATA = "tx_metadata";
 
@@ -110,6 +113,14 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
 
     protected String readImpersonatedUser(MapValue meta) throws PackstreamReaderException {
         return TransactionInitiatingMetadataParser.readImpersonatedUser(meta);
+    }
+
+    protected byte[] readCompressedStatement(MapValue meta) throws PackstreamReaderException {
+        return PackstreamConversions.asNullableByteArrayValue(FIELD_COMPRERSSED_STATEMENT, meta.get(FIELD_COMPRERSSED_STATEMENT));
+    }
+
+    protected byte[] readCompressedParams(MapValue meta) throws PackstreamReaderException {
+        return PackstreamConversions.asNullableByteArrayValue(FIELD_COMPRERSSED_PARAMETERS, meta.get(FIELD_COMPRERSSED_PARAMETERS));
     }
 
     protected Duration readTimeout(MapValue meta) throws PackstreamReaderException {

@@ -140,7 +140,6 @@ public final class ByteArray extends IntegralArray {
     }
 
     @Override
-    @Deprecated
     public byte[] asObject() {
         checkValid();
         return value;
