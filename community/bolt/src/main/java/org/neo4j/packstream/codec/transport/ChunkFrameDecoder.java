@@ -27,6 +27,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -74,7 +75,7 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws LimitExceededException {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws IOException {
         // mark the initial position within the buffer to be able to return to this position if there
         // is insufficient data remaining within the buffer
         in.markReaderIndex();
@@ -115,8 +116,6 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
                                 byteArrayOutputStream.write(buffer, 0, readResult);
                             }
                         }
-                        byte[] uncompressed = byteArrayOutputStream.toByteArray();
-
                         gzipInputStream.close();
                         byteArrayInputStream.close();
                         byteArrayOutputStream.close();
