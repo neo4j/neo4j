@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.gzipInputStream;
 
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -101,7 +100,7 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
                     int readerIndex = msg.readerIndex();
                     msg.getBytes(readerIndex, bytes);
 
-                    if (bytes.length >= 2 && bytes[0] == 31 && bytes[1] == 139) {
+                    if (bytes.length >= 2 && bytes[0] == 31 && bytes[1] == -117) {
                         String debugString =  Hex.encodeHexString( bytes );
                         log.debug("123");
 
