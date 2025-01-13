@@ -117,7 +117,6 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
                         byte[] decompressed = byteArrayOutputStream.toByteArray();
                         ByteBuf decompressedMsg = Unpooled.wrappedBuffer(decompressed);
                         out.add(PackstreamBuf.wrap(decompressedMsg));
-                        msg.readBytes(bytes);
                     } else {
                         out.add(PackstreamBuf.wrap(msg));
                     }
