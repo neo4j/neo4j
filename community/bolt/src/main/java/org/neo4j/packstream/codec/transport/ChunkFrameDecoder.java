@@ -18,25 +18,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package org.neo4j.packstream.codec.transport;
-import io.netty.buffer.Unpooled;
-import org.apache.commons.codec.binary.Hex;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.GZIPInputStream;
-
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.io.PackstreamBuf;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Decodes message frames based on a 16-bit unsigned length prefix.
@@ -94,16 +94,12 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
 
                     // otherwise, an empty chunk will mark the end of the message thus permitting further
                     // processing of the message downstream
-                    ByteBuf msg = ctx.alloc().compositeBuffer(slices.size()).addComponents(true, slices);
+                    CompositeByteBuf msg = ctx.alloc().compositeBuffer(slices.size()).addComponents(true, slices);
 
                     byte[] bytes = new byte[msg.readableBytes()];
                     int readerIndex = msg.readerIndex();
                     msg.getBytes(readerIndex, bytes);
-
                     if (bytes.length >= 2 && bytes[0] == 31 && bytes[1] == -117) {
-                        String debugString =  Hex.encodeHexString( bytes );
-                        log.debug("123");
-
                         byte[] buffer = new byte[1024];
                         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
                         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -119,10 +115,12 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
                         byteArrayInputStream.close();
                         byteArrayOutputStream.close();
                         byte[] decompressed = byteArrayOutputStream.toByteArray();
-                        msg = Unpooled.wrappedBuffer(decompressed);
+                        ByteBuf decompressedMsg = Unpooled.wrappedBuffer(decompressed);
+                        out.add(PackstreamBuf.wrap(decompressedMsg));
+                        msg.readBytes(bytes);
+                    } else {
+                        out.add(PackstreamBuf.wrap(msg));
                     }
-
-                    out.add(PackstreamBuf.wrap(msg));
 
                     totalLength = 0;
                     slices.clear();
