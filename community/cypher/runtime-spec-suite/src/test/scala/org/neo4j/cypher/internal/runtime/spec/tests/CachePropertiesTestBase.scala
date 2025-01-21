@@ -836,6 +836,26 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n").withRows(expected)
   }
 
+  test("should handle cached properties in a separate (potentially fused) pipeline") {
+    // given
+    val nodes = givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> i) }) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(column("n", "cacheN[n.p]", "cacheN[n.q]", "cacheN[n.r]"))
+      .unwind("[1] AS i")
+      .nonFuseable()
+      .filter("cache[n.p] < 20 AND cache[n.q] < 20 AND cache[n.r] IS NULL")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.take(20).map(n => Array(n))
+    runtimeResult should beColumns("n").withRows(expected)
+  }
+
   test("should handle multiple cached node properties using properties function") {
     // given
     givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> i, "r" -> i) }) }

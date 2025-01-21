@@ -222,3 +222,25 @@ Feature: MiscAcceptance
       | x     |
       | '\n\\\\\n\n' |
     And no side effects
+
+  Scenario: Issue with generated code and value population
+    Given an empty graph
+    When executing query:
+      """
+     UNWIND [1, 2, 3] AS row
+     MERGE (node:L {id:row})
+       ON CREATE SET node.id=row, node.bar = true
+     SET node.foo = node.bar
+     WITH node WHERE node.bar
+     REMOVE node.sendEventStream
+     RETURN node
+      """
+    Then the result should be, in any order:
+      | node                               |
+      | (:L {bar: true, foo: true, id: 1}) |
+      | (:L {bar: true, foo: true, id: 2}) |
+      | (:L {bar: true, foo: true, id: 3}) |
+    And the side effects should be:
+      | +nodes      | 3 |
+      | +labels     | 1 |
+      | +properties | 9 |
