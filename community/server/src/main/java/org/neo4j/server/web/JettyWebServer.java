@@ -50,7 +50,7 @@ import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.URLResourceFactory;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
@@ -356,7 +356,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
             URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
             if (resourceLoc != null) {
                 URL url = resourceLoc.toURI().toURL();
-                final Resource resource = new URLResourceFactory().newResource(url);
+                final Resource resource = ResourceFactory.root().newResource(url);
                 staticContext.setBaseResource(resource);
 
                 addFiltersTo(staticContext);
