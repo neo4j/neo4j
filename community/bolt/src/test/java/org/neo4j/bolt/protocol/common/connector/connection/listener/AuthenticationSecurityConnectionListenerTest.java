@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoop;
 import java.time.Duration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,7 @@ class AuthenticationSecurityConnectionListenerTest {
     private Connection connection;
     private MemoryTracker memoryTracker;
     private Channel channel;
+    private EventLoop eventLoop;
     private ChannelPipeline pipeline;
     private AssertableLogProvider logProvider;
 
@@ -64,6 +66,7 @@ class AuthenticationSecurityConnectionListenerTest {
         this.connection = Mockito.mock(Connection.class, Mockito.RETURNS_MOCKS);
         this.memoryTracker = Mockito.mock(MemoryTracker.class);
         this.channel = Mockito.mock(Channel.class);
+        this.eventLoop = Mockito.mock(EventLoop.class);
         this.pipeline = Mockito.mock(ChannelPipeline.class, Mockito.RETURNS_SELF);
         this.logProvider = new AssertableLogProvider();
 
@@ -72,7 +75,16 @@ class AuthenticationSecurityConnectionListenerTest {
         Mockito.doReturn(this.connector).when(this.connection).connector();
         Mockito.doReturn(this.memoryTracker).when(this.connection).memoryTracker();
         Mockito.doReturn(this.channel).when(this.connection).channel();
+        Mockito.doReturn(this.eventLoop).when(this.channel).eventLoop();
         Mockito.doReturn(this.pipeline).when(this.channel).pipeline();
+
+        Mockito.doAnswer(invocationOnMock -> {
+                    var runnable = invocationOnMock.<Runnable>getArgument(0);
+                    runnable.run();
+                    return null;
+                })
+                .when(this.eventLoop)
+                .execute(Mockito.any(Runnable.class));
 
         Mockito.doReturn(64).when(this.configuration).maxAuthenticationStructureElements();
         Mockito.doReturn(4).when(this.configuration).maxAuthenticationStructureDepth();
@@ -139,13 +151,14 @@ class AuthenticationSecurityConnectionListenerTest {
 
         this.listener.onLogon(loginContext);
 
-        var inOrder = Mockito.inOrder(loginContext, this.connection, this.channel, this.pipeline);
+        var inOrder = Mockito.inOrder(loginContext, this.connection, this.channel, this.pipeline, this.eventLoop);
 
         inOrder.verify(this.connection).channel();
         inOrder.verify(this.channel).pipeline();
-        inOrder.verify(this.pipeline).remove(any(AuthenticationTimeoutHandler.class));
         inOrder.verify(this.connection).channel();
-        inOrder.verify(this.channel).pipeline();
+        inOrder.verify(this.channel).eventLoop();
+        inOrder.verify(this.eventLoop).execute(Mockito.notNull());
+        inOrder.verify(this.pipeline).remove(any(AuthenticationTimeoutHandler.class));
         inOrder.verify(this.pipeline).remove(any(AuthenticationProtocolLimiterHandler.class));
         inOrder.verifyNoMoreInteractions();
 
