@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -123,7 +124,7 @@ class CancelIndexPopulationIT
         return new IndexMonitor.MonitorAdapter()
         {
             @Override
-            public void indexPopulationScanComplete()
+            public void indexPopulationScanComplete( IndexDescriptor[] indexDescriptors )
             {
                 barrier.reached();
             }

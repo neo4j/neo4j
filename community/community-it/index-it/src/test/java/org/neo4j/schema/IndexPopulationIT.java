@@ -19,11 +19,8 @@
  */
 package org.neo4j.schema;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -34,18 +31,23 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.database.DatabaseMemoryTrackers;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -55,13 +57,23 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.Values.utf8Value;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @TestDirectoryExtension
 class IndexPopulationIT
@@ -69,18 +81,19 @@ class IndexPopulationIT
     @Inject
     private TestDirectory directory;
 
-    private static GraphDatabaseAPI database;
-    private static ExecutorService executorService;
-    private static AssertableLogProvider logProvider;
-    private static DatabaseManagementService managementService;
+    private GraphDatabaseAPI database;
+    private ExecutorService executorService;
+    private AssertableLogProvider logProvider;
+    private DatabaseManagementService managementService;
+    private Monitors monitors;
 
     @BeforeEach
     void setUp()
     {
+        monitors = new Monitors();
         logProvider = new AssertableLogProvider( true );
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .setInternalLogProvider( logProvider )
-                .build();
+        managementService =
+                new TestDatabaseManagementServiceBuilder( directory.homePath() ).setInternalLogProvider( logProvider ).setMonitors( monitors ).build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         executorService = Executors.newCachedThreadPool();
     }
@@ -126,7 +139,7 @@ class IndexPopulationIT
             {
                 populationJobCompleted.countDown();
             }
-        });
+        } );
 
         try ( Transaction transaction = database.beginTx() )
         {
@@ -149,7 +162,7 @@ class IndexPopulationIT
         Label nodeLabel = Label.label( "nodeLabel" );
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.createNode(nodeLabel);
+            transaction.createNode( nodeLabel );
             transaction.commit();
         }
 
@@ -215,9 +228,7 @@ class IndexPopulationIT
         Label testLabel = Label.label( "testLabel" );
         String propertyName = "testProperty";
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( storeDir )
-                        .setInternalLogProvider( assertableLogProvider )
-                        .build();
+                new TestDatabaseManagementServiceBuilder( storeDir ).setInternalLogProvider( assertableLogProvider ).build();
         GraphDatabaseService shutDownDb = managementService.database( DEFAULT_DATABASE_NAME );
         prePopulateDatabase( shutDownDb, testLabel, propertyName );
 
@@ -262,6 +273,72 @@ class IndexPopulationIT
         assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages( "TIME/PHASE Final:" );
     }
 
+    @Test
+    void concurrentUpdatesPopulationOfManyIndexesOnSameSchema() throws InterruptedException, KernelException
+    {
+        Label nodeLabel = Label.label( "nodeLabel" );
+        var propertyName = "testProperty";
+        var rangeIndex = "rangeIndex";
+        var textIndex = "textIndex";
+        var concurrentValue = "concurrentValue";
+
+        CountDownLatch blockLatch = new CountDownLatch( 1 );
+        CountDownLatch signalLatch = new CountDownLatch( 1 );
+
+        monitors.addMonitorListener( new PopulationScanCompleteBlock( rangeIndex, blockLatch, signalLatch ) );
+
+        try ( var transaction = database.beginTx() )
+        {
+            var node = transaction.createNode( nodeLabel );
+            node.setProperty( propertyName, "initialValue" );
+            transaction.commit();
+        }
+
+        try ( var transaction = database.beginTx() )
+        {
+            transaction.schema().indexFor( nodeLabel ).on( propertyName ).withIndexType( IndexType.RANGE ).withName( rangeIndex ).create();
+            transaction.schema().indexFor( nodeLabel ).on( propertyName ).withIndexType( IndexType.TEXT ).withName( textIndex ).create();
+            transaction.commit();
+        }
+
+        Assertions.assertThat( signalLatch.await( 1, MINUTES ) ).isTrue();
+
+        // scan complete
+        // new transaction can add to the concurrent queue that will be processed on flip
+        try ( var concurrentUpdater = database.beginTx() )
+        {
+            var node = concurrentUpdater.createNode( nodeLabel );
+            node.setProperty( propertyName, concurrentValue );
+            concurrentUpdater.commit();
+        }
+
+        // release population flip
+        blockLatch.countDown();
+        waitForOnlineIndexes();
+
+        assertThat( nodeValueExistsInIndex( propertyName, concurrentValue, rangeIndex ) ).isTrue();
+        assertThat( nodeValueExistsInIndex( propertyName, concurrentValue, textIndex ) ).isTrue();
+    }
+
+    private boolean nodeValueExistsInIndex( String propertyName, String value, String indexName ) throws KernelException
+    {
+        try ( var transaction = database.beginTx() )
+        {
+            var ktx = ((TransactionImpl) transaction).kernelTransaction();
+            TokenRead tokenRead = ktx.tokenRead();
+            int propertyId = tokenRead.propertyKey( propertyName );
+            var query = PropertyIndexQuery.exact( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+
+            var index = ktx.schemaRead().indexGetForName( indexName );
+            try ( var cursor = ktx.cursors().allocateNodeValueIndexCursor( NULL, INSTANCE ) )
+            {
+                var indexSession = ktx.dataRead().indexReadSession( index );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), query );
+                return cursor.next();
+            }
+        }
+    }
+
     private static void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
     {
         final RandomValues randomValues = RandomValues.create();
@@ -278,7 +355,7 @@ class IndexPopulationIT
         }
     }
 
-    private static Runnable createNodeWithLabel( Label label )
+    private Runnable createNodeWithLabel( Label label )
     {
         return () ->
         {
@@ -290,7 +367,7 @@ class IndexPopulationIT
         };
     }
 
-    private static long countIndexes()
+    private long countIndexes()
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -298,7 +375,7 @@ class IndexPopulationIT
         }
     }
 
-    private static Runnable createIndexForLabelAndProperty( Label label, String propertyKey )
+    private Runnable createIndexForLabelAndProperty( Label label, String propertyKey )
     {
         return () ->
         {
@@ -312,7 +389,7 @@ class IndexPopulationIT
         };
     }
 
-    private static void waitForOnlineIndexes()
+    private void waitForOnlineIndexes()
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -321,7 +398,7 @@ class IndexPopulationIT
         }
     }
 
-    private static Callable<Number> countNodes()
+    private Callable<Number> countNodes()
     {
         return () ->
         {
@@ -332,5 +409,36 @@ class IndexPopulationIT
                 return (Number) resultMap.get( "count" );
             }
         };
+    }
+
+    private static class PopulationScanCompleteBlock extends IndexMonitor.MonitorAdapter
+    {
+        private final String indexName;
+        private final CountDownLatch blockLatch;
+        private final CountDownLatch signalLatch;
+
+        PopulationScanCompleteBlock( String indexName, CountDownLatch blockLatch, CountDownLatch signalLatch )
+        {
+            this.indexName = indexName;
+            this.blockLatch = blockLatch;
+            this.signalLatch = signalLatch;
+        }
+
+        @Override
+        public void indexPopulationScanComplete( IndexDescriptor[] indexDescriptors )
+        {
+            if ( Arrays.stream( indexDescriptors ).map( IndexDescriptor::getName ).anyMatch( indexName::equals ) )
+            {
+                signalLatch.countDown();
+                try
+                {
+                    blockLatch.await();
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        }
     }
 }

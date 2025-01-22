@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -128,7 +131,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     // Populators are added into this list. The same thread adding populators will later call #createStoreScan.
     // Multiple concurrent threads might fail individual populations.
     // Failed populations are removed from this list while iterating over it.
-    private final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
+    private final ConcurrentHashMap<IndexDescriptor, IndexPopulation> populations = new ConcurrentHashMap<>();
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final IndexStoreView storeView;
@@ -175,7 +178,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         IndexPopulation population = createPopulation( populator, indexProxyStrategy, flipper, failedIndexProxyFactory );
-        populations.add( population );
+        populations.put( population.indexProxyStrategy.getIndexDescriptor(), population );
         return population;
     }
 
@@ -253,7 +256,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
      */
     public void cancel( Throwable failure, CursorContext cursorContext )
     {
-        for ( IndexPopulation population : populations )
+        for ( IndexPopulation population : populations.values() )
         {
             cancel( population, failure, cursorContext );
         }
@@ -308,11 +311,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     @VisibleForTesting
     MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
-        Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
+        MutableLongObjectMap<Pair<IndexPopulation,IndexUpdater>> updaters = LongObjectMaps.mutable.withInitialCapacity( populations.size() );
         forEachPopulation( population ->
         {
             IndexUpdater updater = population.populator.newPopulatingUpdater( accessor, cursorContext );
-            updaters.put( population.schema(), Pair.of( population, updater ) );
+            updaters.put( population.indexProxyStrategy.getIndexDescriptor().getId(), Pair.of( population, updater ) );
         }, cursorContext );
         return new MultipleIndexUpdater( this, updaters, logProvider, cursorContext );
     }
@@ -356,7 +359,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
      */
     void flipAfterStoreScan( boolean verifyBeforeFlipping, CursorContext cursorContext )
     {
-        for ( IndexPopulation population : populations )
+        for ( IndexPopulation population : populations.values() )
         {
             try
             {
@@ -372,7 +375,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     private int[] propertyKeyIds()
     {
-        return populations.stream().flatMapToInt( this::propertyKeyIds ).distinct().toArray();
+        return populations.values().stream().flatMapToInt( this::propertyKeyIds ).distinct().toArray();
     }
 
     private IntStream propertyKeyIds( IndexPopulation population )
@@ -382,7 +385,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     private int[] entityTokenIds()
     {
-        return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
+        return populations.values().stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }
 
     /**
@@ -426,7 +429,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     private boolean removeFromOngoingPopulations( IndexPopulation indexPopulation )
     {
-        return populations.remove( indexPopulation );
+        return populations.remove( indexPopulation.indexProxyStrategy.getIndexDescriptor() ) != null;
     }
 
     @Override
@@ -484,7 +487,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     private void forEachPopulation( ThrowingConsumer<IndexPopulation,Exception> action, CursorContext cursorContext )
     {
-        for ( IndexPopulation population : populations )
+        for ( IndexPopulation population : populations.values() )
         {
             try
             {
@@ -500,7 +503,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private PropertyScanConsumer createPropertyScanConsumer()
     {
         // are we going to populate only token indexes?
-        if ( populations.stream().allMatch( population -> population.indexProxyStrategy.getIndexDescriptor().getIndexType() == LOOKUP ) )
+        if ( populations.values().stream().allMatch( population -> population.indexProxyStrategy.getIndexDescriptor().getIndexType() == LOOKUP ) )
         {
             return null;
         }
@@ -511,7 +514,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private TokenScanConsumer createTokenScanConsumer()
     {
         // is there a token index among the to-be-populated indexes?
-        var maybeTokenIdxPopulation = populations.stream()
+        var maybeTokenIdxPopulation = populations.values().stream()
                                                  .filter( population -> population.indexProxyStrategy.getIndexDescriptor().getIndexType() == LOOKUP )
                                                  .findAny();
         return maybeTokenIdxPopulation.map( TokenScanConsumerImpl::new ).orElse( null );
@@ -520,8 +523,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     @Override
     public String toString()
     {
-        String updatesString = populations
-                .stream()
+        String updatesString = populations.values().stream()
                 .map( Object::toString )
                 .collect( joining( ", ", "[", "]" ) );
 
@@ -531,20 +533,22 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     IndexDescriptor[] indexDescriptors()
     {
-        return populations.stream()
+        return populations.values().stream()
                 .map( p -> p.indexProxyStrategy.getIndexDescriptor() )
                 .toArray( IndexDescriptor[]::new );
     }
 
     public static class MultipleIndexUpdater implements IndexUpdater
     {
-        private final Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
+        private final MutableLongObjectMap<Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
         private final Log log;
         private final CursorContext cursorContext;
 
         MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
-                Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider, CursorContext cursorContext )
+                              MutableLongObjectMap<Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters,
+                              LogProvider logProvider,
+                              CursorContext cursorContext )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;
@@ -555,7 +559,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         @Override
         public void process( IndexEntryUpdate<?> update )
         {
-            Pair<IndexPopulation,IndexUpdater> pair = populationsWithUpdaters.get( update.indexKey().schema() );
+            assert update.indexKey() instanceof IndexDescriptor;
+            long indexId = ((IndexDescriptor) update.indexKey()).getId();
+            Pair<IndexPopulation,IndexUpdater> pair = populationsWithUpdaters.get( indexId );
             if ( pair != null )
             {
                 IndexPopulation population = pair.first();
@@ -576,7 +582,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                     {
                         log.error( format( "Failed to close index updater: [%s]", updater ), ce );
                     }
-                    populationsWithUpdaters.remove( update.indexKey().schema() );
+                    populationsWithUpdaters.remove( indexId );
                     multipleIndexPopulator.cancel( population, t, cursorContext );
                 }
             }
@@ -805,17 +811,22 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
             // EntityUpdates object. Therefore no additional properties need to be loaded.
-            Map<IndexPopulation,List<IndexEntryUpdate<IndexPopulation>>> updates = new HashMap<>( populations.size() );
+            Map<IndexPopulation,List<IndexEntryUpdate<IndexDescriptor>>> updates = new HashMap<>( populations.size() );
             for ( EntityUpdates update : entityUpdates )
             {
-                for ( IndexEntryUpdate<IndexPopulation> indexUpdate : update.valueUpdatesForIndexKeys( populations ) )
+                for ( IndexEntryUpdate<IndexDescriptor> indexUpdate : update.valueUpdatesForIndexKeys( populations.keySet() ) )
                 {
-                    IndexPopulation population = indexUpdate.indexKey();
-                    population.populator.includeSample( indexUpdate );
-                    updates.computeIfAbsent( population, p -> new ArrayList<>() ).add( indexUpdate );
+                    IndexDescriptor indexDescriptor = indexUpdate.indexKey();
+                    IndexPopulation population = populations.get( indexDescriptor );
+                    // population could be cancelled concurrently and removed from the map
+                    if ( population != null )
+                    {
+                        population.populator.includeSample( indexUpdate );
+                        updates.computeIfAbsent( population, p -> new ArrayList<>() ).add( indexUpdate );
+                    }
                 }
             }
-            for ( Map.Entry<IndexPopulation,List<IndexEntryUpdate<IndexPopulation>>> entry : updates.entrySet() )
+            for ( var entry : updates.entrySet() )
             {
                 try
                 {
@@ -843,12 +854,12 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         {
             return new Batch()
             {
-                private final List<TokenIndexEntryUpdate<IndexPopulation>> updates = new ArrayList<>();
+                private final List<TokenIndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
 
                 @Override
                 public void addRecord( long entityId, long[] tokens )
                 {
-                    updates.add( IndexEntryUpdate.change( entityId, population, EMPTY_LONG_ARRAY, tokens ) );
+                    updates.add( IndexEntryUpdate.change( entityId, population.indexProxyStrategy.getIndexDescriptor(), EMPTY_LONG_ARRAY, tokens ) );
                 }
 
                 @Override

@@ -29,6 +29,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -135,9 +136,10 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.create( cursorContext );
                 multiPopulator.resetIndexCounts( cursorContext );
 
-                monitor.indexPopulationScanStarting( multiPopulator.indexDescriptors() );
+                var indexDescriptors = multiPopulator.indexDescriptors();
+                monitor.indexPopulationScanStarting( indexDescriptors );
                 indexAllEntities( pageCacheTracer );
-                monitor.indexPopulationScanComplete();
+                monitor.indexPopulationScanComplete( indexDescriptors );
                 if ( stopped )
                 {
                     multiPopulator.stop( cursorContext );

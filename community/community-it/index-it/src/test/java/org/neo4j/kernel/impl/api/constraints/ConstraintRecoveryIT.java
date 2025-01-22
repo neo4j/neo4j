@@ -34,6 +34,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -84,7 +85,7 @@ class ConstraintRecoveryIT
         monitors.addMonitorListener( new IndexMonitor.MonitorAdapter()
         {
             @Override
-            public void indexPopulationScanComplete()
+            public void indexPopulationScanComplete( IndexDescriptor[] indexDescriptors )
             {
                 monitorCalled.set( true );
                 db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore().flush( NULL );

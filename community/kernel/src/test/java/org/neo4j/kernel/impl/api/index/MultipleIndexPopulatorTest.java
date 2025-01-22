@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.NullLogProvider;
@@ -69,6 +70,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -91,7 +93,7 @@ class MultipleIndexPopulatorTest
     @Inject
     private JobScheduler jobScheduler;
 
-    private final SchemaDescriptorSupplier index1 = () -> SchemaDescriptors.forLabel( 1, 1 );
+    private final SchemaDescriptorSupplier index1 = TestIndexDescriptorFactory.forSchema( SchemaDescriptors.forLabel( 1, 1 ) );
     private IndexStoreView indexStoreView;
     private SchemaState schemaState;
     private MultipleIndexPopulator multipleIndexPopulator;
@@ -322,14 +324,15 @@ class MultipleIndexPopulatorTest
     @Test
     void testCancelByNonExistingPopulation() throws FlipFailedKernelException
     {
-        IndexPopulation nonExistingPopulation = mock( IndexPopulation.class );
         IndexPopulator populator = createIndexPopulator();
+        IndexPopulation population = addPopulator( populator, 1 );
 
         addPopulator( populator, 1 );
 
-        multipleIndexPopulator.cancel( nonExistingPopulation, getPopulatorException(), NULL );
+        multipleIndexPopulator.cancel( population, getPopulatorException(), NULL );
+        multipleIndexPopulator.cancel( population, getPopulatorException(), NULL );
 
-        verify( populator, never() ).markAsFailed( anyString() );
+        verify( populator, atMostOnce() ).markAsFailed( anyString() );
     }
 
     @Test
@@ -421,7 +424,7 @@ class MultipleIndexPopulatorTest
 
         IndexUpdater multipleIndexUpdater =
             multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL );
-        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
+        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( indexDescriptor( 1 ) );
         multipleIndexUpdater.process( propertyUpdate );
 
         checkPopulatorFailure( indexPopulator2 );
@@ -448,7 +451,8 @@ class MultipleIndexPopulatorTest
     @Test
     void testPropertyUpdateFailure() throws IndexEntryConflictException, FlipFailedKernelException
     {
-        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
+        var index = indexDescriptor( 1 );
+        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index );
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
         IndexPopulator indexPopulator1 = createIndexPopulator( indexUpdater1 );
 
@@ -468,9 +472,10 @@ class MultipleIndexPopulatorTest
     @Test
     void testMultiplePropertyUpdateFailures() throws IndexEntryConflictException, FlipFailedKernelException
     {
+        var index = indexDescriptor( 1 );
         NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
-        IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
-        IndexEntryUpdate<?> update2 = add( 2, index1, "bar" );
+        IndexEntryUpdate<?> update1 = add( 1, index, "foo" );
+        IndexEntryUpdate<?> update2 = add( 2, index, "bar" );
         IndexUpdater updater = mock( IndexUpdater.class );
         IndexPopulator populator = createIndexPopulator( updater );
 
@@ -575,12 +580,12 @@ class MultipleIndexPopulatorTest
         IndexUpdater updater = mock( IndexUpdater.class );
         IndexPopulator populator = createIndexPopulator( updater );
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        var schema = SchemaDescriptors.forLabel( 1, 1 );
+        IndexDescriptor indexKey = indexDescriptor( 1 );
         addPopulator( populator, 1 );
 
         // when external updates comes in
-        var lowUpdate = IndexEntryUpdate.add( 10, () -> schema, intValue( 99 ) );
-        var highUpdate = IndexEntryUpdate.add( 20, () -> schema, intValue( 101 ) );
+        var lowUpdate = IndexEntryUpdate.add( 10, indexKey, intValue( 99 ) );
+        var highUpdate = IndexEntryUpdate.add( 20, indexKey, intValue( 101 ) );
         multipleIndexPopulator.queueConcurrentUpdate( lowUpdate );
         multipleIndexPopulator.queueConcurrentUpdate( highUpdate );
 
@@ -662,6 +667,11 @@ class MultipleIndexPopulatorTest
         verify( populator ).close( false, NULL );
     }
 
+    private IndexDescriptor indexDescriptor( int id )
+    {
+        return IndexPrototype.forSchema( SchemaDescriptors.forLabel( id, id ) ).withName( "index_" + id ).materialise( id );
+    }
+
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id,
         FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
@@ -671,8 +681,7 @@ class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
         int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( id, id ) ).withName( "index_" + id ).materialise( id );
-        return addPopulator( multipleIndexPopulator, descriptor, indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
+        return addPopulator( multipleIndexPopulator, indexDescriptor( id ), indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
     }
 
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor, IndexPopulator indexPopulator,

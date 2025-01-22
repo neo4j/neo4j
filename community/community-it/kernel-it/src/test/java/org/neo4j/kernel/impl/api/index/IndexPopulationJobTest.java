@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +63,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -116,6 +113,10 @@ import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 
 @ImpermanentDbmsExtension
 class IndexPopulationJobTest
@@ -375,8 +376,9 @@ class IndexPopulationJobTest
         @SuppressWarnings( "UnnecessaryLocalVariable" )
         long changeNode = node1;
         int propertyKeyId = getPropertyKeyForName( name );
-        NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue, labelId );
-        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, indexPrototype( FIRST, name, false ) );
+        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+        NodeChangingWriter populator = new NodeChangingWriter( changeNode, value1, changedValue, index );
+        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, index );
         populator.setJob( job );
 
         // WHEN
@@ -402,8 +404,9 @@ class IndexPopulationJobTest
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );
         int propertyKeyId = getPropertyKeyForName( name );
-        NodeDeletingWriter populator = new NodeDeletingWriter( node2, propertyKeyId, value2, labelId );
-        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, indexPrototype( FIRST, name, false ) );
+        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+        NodeDeletingWriter populator = new NodeDeletingWriter( node2, value2, index );
+        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, index );
         populator.setJob( job );
 
         // WHEN
@@ -564,9 +567,8 @@ class IndexPopulationJobTest
         // Given
         FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
         IndexPopulator populator = spy( indexPopulator( false ) );
-        IndexPopulationJob job =
-                newIndexPopulationJob( failureDelegateFactory, populator, new FlippableIndexProxy(), indexStoreView, NullLogProvider.getInstance(),
-                        EntityType.NODE, indexPrototype( FIRST, name, false ), NULL );
+        IndexPopulationJob job = newIndexPopulationJob( failureDelegateFactory, populator, new FlippableIndexProxy(), EntityType.NODE,
+                                                        indexPrototype( FIRST, name, false ), NULL );
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
         doThrow( failure ).when( populator ).close( eq( true ), any() );
@@ -690,14 +692,14 @@ class IndexPopulationJobTest
         private final long nodeToChange;
         private final Value newValue;
         private final Value previousValue;
-        private final LabelSchemaDescriptor index;
+        private final IndexDescriptor index;
 
-        NodeChangingWriter( long nodeToChange, int propertyKeyId, Object previousValue, Object newValue, int label )
+        NodeChangingWriter( long nodeToChange, Object previousValue, Object newValue, IndexDescriptor index )
         {
             this.nodeToChange = nodeToChange;
             this.previousValue = Values.of( previousValue );
             this.newValue = Values.of( newValue );
-            this.index = SchemaDescriptors.forLabel( label, propertyKeyId );
+            this.index = index;
         }
 
         @Override
@@ -713,7 +715,7 @@ class IndexPopulationJobTest
         {
             if ( update.getEntityId() == 2 )
             {
-                job.update( IndexEntryUpdate.change( nodeToChange, () -> index, previousValue, newValue ) );
+                job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
             }
             added.add( Pair.of( update.getEntityId(), update.values()[0].asObjectCopy() ) );
         }
@@ -758,13 +760,13 @@ class IndexPopulationJobTest
         private final long nodeToDelete;
         private IndexPopulationJob job;
         private final Value valueToDelete;
-        private final LabelSchemaDescriptor index;
+        private final IndexDescriptor index;
 
-        NodeDeletingWriter( long nodeToDelete, int propertyKeyId, Object valueToDelete, int label )
+        NodeDeletingWriter( long nodeToDelete, Object valueToDelete, IndexDescriptor index )
         {
             this.nodeToDelete = nodeToDelete;
             this.valueToDelete = Values.of( valueToDelete );
-            this.index = SchemaDescriptors.forLabel( label, propertyKeyId );
+            this.index = index;
         }
 
         void setJob( IndexPopulationJob job )
@@ -785,7 +787,7 @@ class IndexPopulationJobTest
         {
             if ( update.getEntityId() == 2 )
             {
-                job.update( IndexEntryUpdate.remove( nodeToDelete, () -> index, valueToDelete ) );
+                job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
             }
             added.put( update.getEntityId(), update.values()[0].asObjectCopy() );
         }
@@ -836,33 +838,47 @@ class IndexPopulationJobTest
         return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
     }
 
-    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )
+    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexDescriptor indexDescriptor )
     {
-        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, NULL );
+        return newIndexPopulationJob( populator, flipper, type, NULL, indexDescriptor );
     }
 
-    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype,
-            PageCacheTracer cacheTracer )
+    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, PageCacheTracer cacheTracer,
+            IndexDescriptor descriptor )
     {
-        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, cacheTracer );
+        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, indexStoreView, NullLogProvider.getInstance(), type,
+                                      cacheTracer, descriptor );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, IndexStoreView storeView, LogProvider logProvider,
-            EntityType type, IndexPrototype prototype, PageCacheTracer pageCacheTracer )
+            EntityType type, IndexPrototype prototype )
     {
-        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, pageCacheTracer );
+        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, NULL,
+                                      prototype.withName( "index_0" ).materialise( 0 ) );
     }
 
-    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper,
-            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype )
+    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype,
+            PageCacheTracer pageCacheTracer )
     {
-        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, NULL );
+        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, indexStoreView, NullLogProvider.getInstance(), type,
+                                      pageCacheTracer, prototype.withName( "index_0" ).materialise( 0 ) );
+    }
+
+    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )
+    {
+        return newIndexPopulationJob(populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype);
     }
 
     private IndexPopulationJob newIndexPopulationJob( FailedIndexProxyFactory failureDelegateFactory, IndexPopulator populator, FlippableIndexProxy flipper,
-            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype, PageCacheTracer pageCacheTracer )
+            EntityType type, IndexPrototype prototype, PageCacheTracer pageCacheTracer )
     {
-        long indexId = 0;
+        return newIndexPopulationJob( failureDelegateFactory, populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, pageCacheTracer,
+                                      prototype.withName( "index_0" ).materialise( 0 ) );
+    }
+
+    private IndexPopulationJob newIndexPopulationJob( FailedIndexProxyFactory failureDelegateFactory, IndexPopulator populator, FlippableIndexProxy flipper,
+            IndexStoreView storeView, LogProvider logProvider, EntityType type, PageCacheTracer pageCacheTracer, IndexDescriptor descriptor )
+    {
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator =
@@ -870,7 +886,6 @@ class IndexPopulationJobTest
                         "", AUTH_DISABLED, Config.defaults() );
         IndexPopulationJob job =
                 new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
-        IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, indexStatisticsStore, tokens );
         job.addPopulator( populator, indexProxyStrategy, flipper, failureDelegateFactory );
         return job;

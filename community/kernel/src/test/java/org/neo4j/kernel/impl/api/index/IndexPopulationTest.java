@@ -19,16 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -54,6 +51,8 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import org.junit.jupiter.api.Test;
+
 class IndexPopulationTest
 {
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
@@ -65,9 +64,10 @@ class IndexPopulationTest
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
         IndexStoreView storeView = emptyIndexStoreViewThatProcessUpdates();
+        IndexDescriptor indexDescriptor = TestIndexDescriptorFactory.forLabel( 0, 0 );
         IndexPopulator.Adapter populator = emptyPopulatorWithThrowingUpdater();
-        FailedIndexProxy failedProxy = failedIndexProxy( populator );
-        OnlineIndexProxy onlineProxy = onlineIndexProxy();
+        FailedIndexProxy failedProxy = failedIndexProxy( indexDescriptor, populator );
+        OnlineIndexProxy onlineProxy = onlineIndexProxy( indexDescriptor );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
 
@@ -75,26 +75,26 @@ class IndexPopulationTest
                 MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ),
                         scheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() ) )
         {
-            MultipleIndexPopulator.IndexPopulation indexPopulation = multipleIndexPopulator.addPopulator( populator, dummyIndex(), flipper, t -> failedProxy );
-            multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
+            multipleIndexPopulator.queueConcurrentUpdate( someUpdate( indexDescriptor ) );
             multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL ).run( StoreScan.NO_EXTERNAL_UPDATES );
+            multipleIndexPopulator.addPopulator( populator, dummyIndex( indexDescriptor ), flipper, t -> failedProxy );
 
             // when
-            indexPopulation.flip( false, CursorContext.NULL );
+            multipleIndexPopulator.flipAfterStoreScan( false, CursorContext.NULL );
 
             // then
             assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );
         }
     }
 
-    private OnlineIndexProxy onlineIndexProxy()
+    private OnlineIndexProxy onlineIndexProxy( IndexDescriptor indexDescriptor )
     {
-        return new OnlineIndexProxy( dummyIndex(), IndexAccessor.EMPTY, false );
+        return new OnlineIndexProxy( dummyIndex( indexDescriptor ), IndexAccessor.EMPTY, false );
     }
 
-    private FailedIndexProxy failedIndexProxy( MinimalIndexAccessor minimalIndexAccessor )
+    private FailedIndexProxy failedIndexProxy( IndexDescriptor indexDescriptor, MinimalIndexAccessor minimalIndexAccessor )
     {
-        return new FailedIndexProxy( dummyIndex(), minimalIndexAccessor, IndexPopulationFailure
+        return new FailedIndexProxy( dummyIndex( indexDescriptor ), minimalIndexAccessor, IndexPopulationFailure
                 .failure( "failure" ), NullLogProvider.getInstance() );
     }
 
@@ -153,13 +153,13 @@ class IndexPopulationTest
         };
     }
 
-    private IndexProxyStrategy dummyIndex()
+    private IndexProxyStrategy dummyIndex( IndexDescriptor indexDescriptor )
     {
-        return new ValueIndexProxyStrategy( TestIndexDescriptorFactory.forLabel( 0, 0 ), indexStatisticsStore, tokens );
+        return new ValueIndexProxyStrategy( indexDescriptor, indexStatisticsStore, tokens );
     }
 
-    private static ValueIndexEntryUpdate<SchemaDescriptorSupplier> someUpdate()
+    private static ValueIndexEntryUpdate<IndexDescriptor> someUpdate( IndexDescriptor indexDescriptor )
     {
-        return IndexEntryUpdate.add( 0, () -> SchemaDescriptors.forLabel( 0, 0 ), Values.numberValue( 0 ) );
+        return IndexEntryUpdate.add( 0, indexDescriptor, Values.numberValue( 0 ) );
     }
 }

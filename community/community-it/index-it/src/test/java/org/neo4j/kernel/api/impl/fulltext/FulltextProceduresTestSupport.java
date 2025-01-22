@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.queryparser.flexible.standard.QueryParserUtil;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
@@ -47,6 +46,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Level;
 import org.neo4j.monitoring.Monitors;
@@ -101,7 +101,7 @@ class FulltextProceduresTestSupport
         IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
         {
             @Override
-            public void indexPopulationScanComplete()
+            public void indexPopulationScanComplete( IndexDescriptor[] indexDescriptors )
             {
                 if ( trapPopulation.get() )
                 {

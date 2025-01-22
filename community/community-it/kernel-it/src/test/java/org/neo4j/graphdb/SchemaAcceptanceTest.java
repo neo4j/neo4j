@@ -75,7 +75,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -141,7 +140,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
         {
             @Override
-            public void indexPopulationScanComplete()
+            public void indexPopulationScanComplete( IndexDescriptor[] indexDescriptors )
             {
                 if ( trapPopulation.get() )
                 {

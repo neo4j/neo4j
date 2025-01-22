@@ -294,7 +294,7 @@ class IndexingServiceTest
             }
 
             @Override
-            public void indexPopulationScanComplete()
+            public void indexPopulationScanComplete( IndexDescriptor[] indexDescriptors )
             {
                 try
                 {
