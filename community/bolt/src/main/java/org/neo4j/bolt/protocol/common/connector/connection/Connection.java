@@ -19,8 +19,10 @@
  */
 package org.neo4j.bolt.protocol.common.connector.connection;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import java.time.Clock;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
@@ -97,56 +100,62 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
     }
 
     /**
-     * Retrieves the underlying network channel for this connection.
+     * Retrieves the ByteBuf allocator used by this connection.
      *
-     * @return a network channel.
+     * @return a buffer allocator.
      */
-    Channel channel();
+    ByteBufAllocator allocator();
+
+    /**
+     * Modifies the channel pipeline from within a safe context.
+     *
+     * @param modifier a modification function.
+     */
+    void modifyPipeline(BiConsumer<Channel, ChannelPipeline> modifier);
+
+    /**
+     * Modifies the channel pipeline from within a safe context.
+     *
+     * @param modifier a modification function.
+     */
+    default void modifyPipeline(Consumer<ChannelPipeline> modifier) {
+        this.modifyPipeline((ch, pipeline) -> modifier.accept(pipeline));
+    }
 
     /**
      * Shorthand for {@link Channel#write(Object)}
      *
      * @see Channel#write(Object)
      */
-    default ChannelFuture write(Object msg) {
-        return this.channel().write(msg);
-    }
+    ChannelFuture write(Object msg);
 
     /**
      * Shorthand for {@link Channel#write(Object, ChannelPromise)}
      *
      * @see Channel#write(Object, ChannelPromise)
      */
-    default ChannelFuture write(Object msg, ChannelPromise promise) {
-        return this.channel().write(msg, promise);
-    }
+    ChannelFuture write(Object msg, ChannelPromise promise);
 
     /**
      * Shorthand for {@link Channel#writeAndFlush(Object)}
      *
      * @see Channel#writeAndFlush(Object)
      */
-    default ChannelFuture writeAndFlush(Object msg) {
-        return this.channel().writeAndFlush(msg);
-    }
+    ChannelFuture writeAndFlush(Object msg);
 
     /**
      * Shorthand for {@link Channel#writeAndFlush(Object, ChannelPromise)}
      *
      * @see Channel#writeAndFlush(Object, ChannelPromise)
      */
-    default ChannelFuture writeAndFlush(Object msg, ChannelPromise promise) {
-        return this.channel().writeAndFlush(msg, promise);
-    }
+    ChannelFuture writeAndFlush(Object msg, ChannelPromise promise);
 
     /**
      * Shorthand for {@link Channel#flush()}
      *
      * @see Channel#flush()
      */
-    default void flush() {
-        this.channel().flush();
-    }
+    void flush();
 
     /**
      * Registers a new listener with this connection.

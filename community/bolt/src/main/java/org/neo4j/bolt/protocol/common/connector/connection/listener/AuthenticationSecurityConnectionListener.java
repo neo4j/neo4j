@@ -89,16 +89,14 @@ public class AuthenticationSecurityConnectionListener implements ConnectionListe
         log.debug("[%s] Removing authentication timeout handler", this.connection.id());
 
         if (timeoutHandler != null) {
-            var ch = this.connection.channel();
-
             var timeoutHandler = this.timeoutHandler;
             var protocolLimiterHandler = this.protocolLimiterHandler;
 
-            ch.eventLoop().execute(() -> {
-                ch.pipeline().remove(timeoutHandler);
+            this.connection.modifyPipeline(pipeline -> {
+                pipeline.remove(timeoutHandler);
 
                 if (protocolLimiterHandler != null) {
-                    ch.pipeline().remove(protocolLimiterHandler);
+                    pipeline.remove(protocolLimiterHandler);
                 }
             });
 
@@ -112,14 +110,11 @@ public class AuthenticationSecurityConnectionListener implements ConnectionListe
         log.debug("[%s] Re-adding authentication timeout handler", this.connection.id());
         connection.memoryTracker().allocateHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
 
-        var ch = this.connection.channel();
-
         var timeoutHandler = new AuthenticationTimeoutHandler(timeout);
         this.timeoutHandler = timeoutHandler;
 
-        ch.eventLoop().execute(() -> {
-            ch.pipeline().addBefore(HouseKeeperHandler.HANDLER_NAME, "authenticationTimeoutHandler", timeoutHandler);
-        });
+        this.connection.modifyPipeline(pipeline ->
+                pipeline.addBefore(HouseKeeperHandler.HANDLER_NAME, "authenticationTimeoutHandler", timeoutHandler));
 
         this.installStructureLimitHandler();
     }
@@ -143,9 +138,7 @@ public class AuthenticationSecurityConnectionListener implements ConnectionListe
                 new AuthenticationProtocolLimiterHandler(structureElementLimit, structureDepthLimit);
         this.protocolLimiterHandler = protocolLimiterHandler;
 
-        var ch = this.connection.channel();
-        ch.eventLoop().execute(() -> {
-            ch.pipeline().addAfter(ChunkFrameDecoder.NAME, "protocolLimiterHandler", protocolLimiterHandler);
-        });
+        this.connection.modifyPipeline(pipeline ->
+                pipeline.addAfter(ChunkFrameDecoder.NAME, "protocolLimiterHandler", protocolLimiterHandler));
     }
 }

@@ -19,7 +19,11 @@
  */
 package org.neo4j.bolt.protocol.common.connector.connection;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -32,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.neo4j.bolt.fsm.StateMachine;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
@@ -130,8 +135,46 @@ public abstract class AbstractConnection implements ConnectionHandle {
     }
 
     @Override
-    public Channel channel() {
-        return this.channel;
+    public ByteBufAllocator allocator() {
+        return this.channel.alloc();
+    }
+
+    @Override
+    public void modifyPipeline(BiConsumer<Channel, ChannelPipeline> modifier) {
+        var ch = this.channel;
+        var eventLoop = ch.eventLoop();
+
+        if (eventLoop.inEventLoop()) {
+            modifier.accept(ch, ch.pipeline());
+            return;
+        }
+
+        ch.eventLoop().execute(() -> modifier.accept(ch, ch.pipeline()));
+    }
+
+    @Override
+    public ChannelFuture write(Object msg) {
+        return this.channel.write(msg);
+    }
+
+    @Override
+    public ChannelFuture write(Object msg, ChannelPromise promise) {
+        return this.channel.write(msg, promise);
+    }
+
+    @Override
+    public ChannelFuture writeAndFlush(Object msg) {
+        return this.channel.writeAndFlush(msg);
+    }
+
+    @Override
+    public ChannelFuture writeAndFlush(Object msg, ChannelPromise promise) {
+        return this.channel.writeAndFlush(msg, promise);
+    }
+
+    @Override
+    public void flush() {
+        this.channel.flush();
     }
 
     @Override

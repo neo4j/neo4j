@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.Attribute;
 import java.net.SocketAddress;
@@ -35,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.mockito.ArgumentCaptor;
@@ -172,7 +174,26 @@ public class ConnectionMockFactory extends AbstractMockFactory<ConnectionHandle,
         this.with(mock ->
                 Mockito.doAnswer(invocation -> channel.flush()).when(mock).flush());
 
-        return this.withStaticValue(Connection::channel, channel);
+        this.with(mock ->
+                Mockito.doAnswer(invocation -> channel.alloc()).when(mock).allocator());
+
+        this.with(mock -> Mockito.doAnswer(invocation -> {
+                    var consumer = invocation.<BiConsumer<Channel, ChannelPipeline>>getArgument(0);
+                    consumer.accept(channel, channel.pipeline());
+                    return null;
+                })
+                .when(mock)
+                .modifyPipeline(Mockito.<BiConsumer<Channel, ChannelPipeline>>any()));
+
+        this.with(mock -> Mockito.doAnswer(invocation -> {
+                    var consumer = invocation.<Consumer<ChannelPipeline>>getArgument(0);
+                    consumer.accept(channel.pipeline());
+                    return null;
+                })
+                .when(mock)
+                .modifyPipeline(Mockito.<Consumer<ChannelPipeline>>any()));
+
+        return this;
     }
 
     public ArgumentCaptor<ConnectionListener> withRegisterListenerCaptor() {

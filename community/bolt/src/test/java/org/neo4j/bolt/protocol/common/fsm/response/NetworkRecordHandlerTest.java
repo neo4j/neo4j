@@ -55,7 +55,7 @@ class NetworkRecordHandlerTest {
         // ensure that begin does not immediately flush as the record has yet to be completed
         Assertions.assertThat(this.channel.<Object>readOutbound()).isNull();
 
-        Mockito.verify(this.connection).channel();
+        Mockito.verify(this.connection).allocator();
         Mockito.verify(this.connection).writerContext(Mockito.notNull());
         Mockito.verifyNoMoreInteractions(this.connection);
 
@@ -87,7 +87,7 @@ class NetworkRecordHandlerTest {
         // ensure that begin does not immediately flush as the record has yet to be completed
         Assertions.assertThat(this.channel.<Object>readOutbound()).isNull();
 
-        Mockito.verify(this.connection).channel();
+        Mockito.verify(this.connection).allocator();
         Mockito.verify(this.connection).writerContext(Mockito.notNull());
         Mockito.verifyNoMoreInteractions(this.connection);
 

@@ -43,16 +43,20 @@ public class ResetMessageConnectionListener implements ConnectionListener {
     public void onLogon(LoginContext ctx) {
         connection.memoryTracker().allocateHeap(ResetMessageHandler.SHALLOW_SIZE);
 
-        resetMessageHandler = new ResetMessageHandler(logger);
-        connection
-                .channel()
-                .pipeline()
-                .addBefore(GoodbyeMessageHandler.HANDLER_NAME, "resetMessageHandler", resetMessageHandler);
+        var resetMessageHandler = this.resetMessageHandler = new ResetMessageHandler(logger);
+
+        this.connection.modifyPipeline(pipeline ->
+                pipeline.addBefore(GoodbyeMessageHandler.HANDLER_NAME, "resetMessageHandler", resetMessageHandler));
     }
 
     @Override
     public void onLogoff() {
-        connection.channel().pipeline().remove(resetMessageHandler);
-        resetMessageHandler = null;
+        var resetMessageHandler = this.resetMessageHandler;
+
+        if (resetMessageHandler != null) {
+            this.connection.modifyPipeline(pipeline -> pipeline.remove(resetMessageHandler));
+        }
+
+        this.resetMessageHandler = null;
     }
 }

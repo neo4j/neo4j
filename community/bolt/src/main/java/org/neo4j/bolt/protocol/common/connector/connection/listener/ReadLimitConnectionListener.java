@@ -57,11 +57,7 @@ public class ReadLimitConnectionListener implements ConnectionListener {
             // instance in order to remove the imposed read limit
             memoryTracker.allocateHeap(ChunkFrameDecoder.SHALLOW_SIZE);
 
-            var ch = this.connection.channel();
-
-            ch.eventLoop().execute(() -> {
-                var pipeline = ch.pipeline();
-
+            this.connection.modifyPipeline(pipeline -> {
                 var oldDecoder = pipeline.get(ChunkFrameDecoder.class);
                 var newDecoder = oldDecoder.unlimited();
 
@@ -79,11 +75,7 @@ public class ReadLimitConnectionListener implements ConnectionListener {
             // instance in order to remove the imposed read limit
             memoryTracker.allocateHeap(ChunkFrameDecoder.SHALLOW_SIZE);
 
-            var ch = this.connection.channel();
-
-            ch.eventLoop().execute(() -> {
-                var pipeline = ch.pipeline();
-
+            this.connection.modifyPipeline(pipeline -> {
                 var oldDecoder = pipeline.get(ChunkFrameDecoder.class);
                 var newDecoder = oldDecoder.limit(limit);
 

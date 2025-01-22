@@ -26,6 +26,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
 import java.time.Duration;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,9 +75,16 @@ class AuthenticationSecurityConnectionListenerTest {
         Mockito.doReturn(this.configuration).when(this.connector).configuration();
         Mockito.doReturn(this.connector).when(this.connection).connector();
         Mockito.doReturn(this.memoryTracker).when(this.connection).memoryTracker();
-        Mockito.doReturn(this.channel).when(this.connection).channel();
         Mockito.doReturn(this.eventLoop).when(this.channel).eventLoop();
         Mockito.doReturn(this.pipeline).when(this.channel).pipeline();
+
+        Mockito.doAnswer(invocationOnMock -> {
+                    var consumer = invocationOnMock.<Consumer<ChannelPipeline>>getArgument(0);
+                    consumer.accept(this.pipeline);
+                    return null;
+                })
+                .when(this.connection)
+                .modifyPipeline(Mockito.<Consumer<ChannelPipeline>>any());
 
         Mockito.doAnswer(invocationOnMock -> {
                     var runnable = invocationOnMock.<Runnable>getArgument(0);
@@ -153,11 +161,6 @@ class AuthenticationSecurityConnectionListenerTest {
 
         var inOrder = Mockito.inOrder(loginContext, this.connection, this.channel, this.pipeline, this.eventLoop);
 
-        inOrder.verify(this.connection).channel();
-        inOrder.verify(this.channel).pipeline();
-        inOrder.verify(this.connection).channel();
-        inOrder.verify(this.channel).eventLoop();
-        inOrder.verify(this.eventLoop).execute(Mockito.notNull());
         inOrder.verify(this.pipeline).remove(any(AuthenticationTimeoutHandler.class));
         inOrder.verify(this.pipeline).remove(any(AuthenticationProtocolLimiterHandler.class));
         inOrder.verifyNoMoreInteractions();
@@ -175,8 +178,6 @@ class AuthenticationSecurityConnectionListenerTest {
 
         InOrder inOrder = Mockito.inOrder(connection, channel, pipeline);
 
-        inOrder.verify(connection).channel();
-        inOrder.verify(channel).pipeline();
         inOrder.verify(pipeline)
                 .addBefore(
                         eq(HouseKeeperHandler.HANDLER_NAME),

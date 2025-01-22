@@ -22,6 +22,7 @@ package org.neo4j.bolt.protocol.common.connector.connection.listener;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -57,9 +58,16 @@ class KeepAliveConnectionListenerTest {
 
         Mockito.doReturn(CONNECTION_ID).when(this.connection).id();
         Mockito.doReturn(this.memoryTracker).when(this.connection).memoryTracker();
-        Mockito.doReturn(this.channel).when(this.connection).channel();
         Mockito.doReturn(this.eventLoop).when(this.channel).eventLoop();
         Mockito.doReturn(this.pipeline).when(this.channel).pipeline();
+
+        Mockito.doAnswer(invocationOnMock -> {
+                    var consumer = invocationOnMock.<Consumer<ChannelPipeline>>getArgument(0);
+                    consumer.accept(this.pipeline);
+                    return null;
+                })
+                .when(this.connection)
+                .modifyPipeline(Mockito.<Consumer<ChannelPipeline>>any());
 
         Mockito.doAnswer(invocationOnMock -> {
                     var runnable = invocationOnMock.<Runnable>getArgument(0);
@@ -82,8 +90,6 @@ class KeepAliveConnectionListenerTest {
 
         inOrder.verify(this.connection).memoryTracker();
         inOrder.verify(this.memoryTracker).allocateHeap(KeepAliveHandler.SHALLOW_SIZE);
-        inOrder.verify(this.connection).channel();
-        inOrder.verify(this.channel).pipeline();
         inOrder.verify(this.pipeline).addLast(ArgumentMatchers.any(KeepAliveHandler.class));
         inOrder.verify(this.connection).removeListener(this.listener);
 

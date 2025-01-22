@@ -56,7 +56,7 @@ public class NetworkRecordHandler implements RecordHandler, Closeable {
         // if no buffer has been allocated yet (e.g. because a prior record was flushed or this is
         // the first record), we'll allocate a new instance
         if (this.buffer == null) {
-            this.buffer = PackstreamBuf.wrap(connection.channel().alloc().buffer(bufferSize));
+            this.buffer = PackstreamBuf.wrap(connection.allocator().buffer(bufferSize));
             this.writerContext = connection.writerContext(this.buffer);
         }
 
