@@ -146,7 +146,7 @@
     <licensing.prepend.text>license/neo4j_gpl_v3/notice.txt</licensing.prepend.text>
 
     <jamm.version>0.4.0</jamm.version>
-    <lucene.version>9.11.1</lucene.version>
+    <lucene.version>9.12.1</lucene.version>
     <bouncycastle.version>1.78.1</bouncycastle.version>
     <bouncycastle.version>1.79</bouncycastle.version>
     <jetty.version>12.0.16</jetty.version>
