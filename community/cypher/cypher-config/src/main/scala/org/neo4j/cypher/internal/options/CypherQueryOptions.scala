@@ -342,7 +342,7 @@ case object CypherInferSchemaPartsOption extends CypherOptionCompanion[CypherInf
 
   case object mostSelectiveLabel extends CypherInferSchemaPartsOption("most_selective_label")
   case object off extends CypherInferSchemaPartsOption("off")
-  override def default: CypherInferSchemaPartsOption = mostSelectiveLabel
+  override def default: CypherInferSchemaPartsOption = off
 
   def values: Set[CypherInferSchemaPartsOption] = Set(default, mostSelectiveLabel, off)
 

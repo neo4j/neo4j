@@ -262,7 +262,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<InferSchemaPartsStrategy> cypher_infer_schema_parts_strategy = newBuilder(
                     "dbms.cypher.infer_schema_parts",
                     ofEnum(InferSchemaPartsStrategy.class),
-                    InferSchemaPartsStrategy.MOST_SELECTIVE_LABEL)
+                    InferSchemaPartsStrategy.OFF)
             .build();
 
     @Description("This setting is associated with performance optimization. Set this to `true` in situations where "
