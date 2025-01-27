@@ -52,8 +52,17 @@ public class TestHarness {
     public static final String USER = "neo4j";
     public static final String PASSWORD = "neo";
 
-    protected final Version serverVersion = Versions.version(runInDbAndReturn("", CypherShell::getServerVersion));
-    protected final Version protocolVersion = Versions.version(runInDbAndReturn("", CypherShell::getProtocolVersion));
+    protected final Version serverVersion;
+    protected final Version protocolVersion;
+
+    TestHarness() {
+        try {
+            serverVersion = Versions.version(runInDbAndReturn("", CypherShell::getServerVersion));
+            protocolVersion = Versions.version(runInDbAndReturn("", CypherShell::getProtocolVersion));
+        } catch (Versions.FailedToParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     AssertableMain.AssertableMainBuilder buildTest() {
         return new TestBuilder().outputInteractive(true);
@@ -142,11 +151,19 @@ public class TestHarness {
     }
 
     protected void assumeAtLeastVersion(String version) {
-        assumeTrue(serverVersion.compareTo(Versions.version(version)) > 0);
+        try {
+            assumeTrue(serverVersion.compareTo(Versions.version(version)) > 0);
+        } catch (Versions.FailedToParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void assumeVersionBefore(String version) {
-        assumeTrue(serverVersion.compareTo(Versions.version(version)) < 0);
+        try {
+            assumeTrue(serverVersion.compareTo(Versions.version(version)) < 0);
+        } catch (Versions.FailedToParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void runInSystemDb(ThrowingConsumer<CypherShell, Exception> systemDbConsumer) {

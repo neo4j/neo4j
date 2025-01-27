@@ -24,6 +24,7 @@ import static org.neo4j.shell.util.Versions.version;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.util.Versions;
 
 abstract class CypherShellIntegrationTest {
     CypherShell shell;
@@ -33,6 +34,10 @@ abstract class CypherShellIntegrationTest {
     }
 
     boolean runningAtLeast(String version) {
-        return version(version).compareTo(version(shell.getServerVersion())) <= 0;
+        try {
+            return version(version).compareTo(version(shell.getServerVersion())) <= 0;
+        } catch (Versions.FailedToParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -31,21 +31,21 @@ public final class Versions {
         throw new UnsupportedOperationException("Don't instantiate");
     }
 
-    public static int majorVersion(String version) {
+    public static int majorVersion(String version) throws FailedToParseException {
         return version(version).major();
     }
 
-    public static int minorVersion(String version) {
+    public static int minorVersion(String version) throws FailedToParseException {
         return version(version).minor();
     }
 
-    public static int patch(String version) {
+    public static int patch(String version) throws FailedToParseException {
         return version(version).patch();
     }
 
-    public static Version version(String version) {
+    public static Version version(String version) throws FailedToParseException {
         if (version == null) {
-            throw new AssertionError("null is not a valid version string");
+            throw new FailedToParseException("null is not a valid version string");
         }
         if (version.isEmpty()) {
             return new Version(0, 0, 0);
@@ -56,20 +56,28 @@ public final class Versions {
             version = version.substring(0, offset);
         }
         String[] split = version.split("\\.");
-        switch (split.length) {
-            case 1:
-                return new Version(parseInt(split[0]), 0, 0);
-            case 2:
-                return new Version(parseInt(split[0]), parseInt(split[1]), 0);
-            case 3:
-                return new Version(parseInt(split[0]), parseInt(split[1]), parseInt(split[2]));
-            default:
-                throw new AssertionError(
+
+        try {
+            return switch (split.length) {
+                case 1 -> new Version(parseInt(split[0]), 0, 0);
+                case 2 -> new Version(parseInt(split[0]), parseInt(split[1]), 0);
+                case 3 -> new Version(parseInt(split[0]), parseInt(split[1]), parseInt(split[2]));
+                default -> throw new FailedToParseException(
                         format("%s is not a proper version string, it should be of the form X.Y.Z ", version));
+            };
+        } catch (NumberFormatException e) {
+            throw new FailedToParseException(
+                    format("%s is not a proper version string, it should be of the form X.Y.Z ", version));
         }
     }
 
     public static boolean isPasswordChangeRequiredException(Neo4jException e) {
         return "Neo.ClientError.Security.CredentialsExpired".equalsIgnoreCase(e.code());
+    }
+
+    public static class FailedToParseException extends Exception {
+        public FailedToParseException(String message) {
+            super(message);
+        }
     }
 }
