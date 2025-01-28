@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector.codec;
 
-import org.apache.lucene.backward_codecs.lucene99.Lucene99Codec;
 import org.apache.lucene.codecs.KnnVectorsFormat;
+import org.apache.lucene.codecs.lucene99.Lucene99Codec;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig;
 
 public class VectorCodecV2 extends Lucene99Codec {
