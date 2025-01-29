@@ -735,7 +735,7 @@ class IndexStatisticsTest {
          * completing the flip and the sampling. The barrier should prevent UpdatesTracker and IndexPopulationJob from racing in this area.
          */
         @Override
-        public void indexPopulationScanComplete() {
+        public void indexPopulationScanComplete(IndexDescriptor[] indexDescriptors) {
             isOnline = true;
             if (barrier != null) {
                 try {

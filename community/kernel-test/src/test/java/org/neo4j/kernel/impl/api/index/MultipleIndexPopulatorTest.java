@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -65,6 +66,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.NullLogProvider;
@@ -91,7 +93,8 @@ class MultipleIndexPopulatorTest {
     @Inject
     private JobScheduler jobScheduler;
 
-    private final SchemaDescriptorSupplier index1 = () -> SchemaDescriptors.forLabel(1, 1);
+    private final SchemaDescriptorSupplier index1 =
+            TestIndexDescriptorFactory.forSchema(SchemaDescriptors.forLabel(1, 1));
     private IndexStoreView indexStoreView;
     private SchemaState schemaState;
     private MultipleIndexPopulator multipleIndexPopulator;
@@ -325,14 +328,15 @@ class MultipleIndexPopulatorTest {
 
     @Test
     void testCancelByNonExistingPopulation() throws Exception {
-        IndexPopulation nonExistingPopulation = mock(IndexPopulation.class);
         IndexPopulator populator = createIndexPopulator();
+        IndexPopulation population = addPopulator(populator, 1);
 
         addPopulator(populator, 1);
 
-        multipleIndexPopulator.cancel(nonExistingPopulation, getPopulatorException(), NULL_CONTEXT);
+        multipleIndexPopulator.cancel(population, getPopulatorException(), NULL_CONTEXT);
+        multipleIndexPopulator.cancel(population, getPopulatorException(), NULL_CONTEXT);
 
-        verify(populator, never()).markAsFailed(anyString());
+        verify(populator, atMostOnce()).markAsFailed(anyString());
     }
 
     @Test
@@ -415,7 +419,8 @@ class MultipleIndexPopulatorTest {
         doThrow(getPopulatorException()).when(indexPopulator2).newPopulatingUpdater(any());
 
         IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater(NULL_CONTEXT);
-        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate(index1);
+        IndexEntryUpdate<?> propertyUpdate =
+                createIndexEntryUpdate(TestIndexDescriptorFactory.forSchema(1, SchemaDescriptors.forLabel(1, 1)));
         multipleIndexUpdater.process(propertyUpdate);
 
         checkPopulatorFailure(indexPopulator2);
@@ -439,7 +444,8 @@ class MultipleIndexPopulatorTest {
 
     @Test
     void testPropertyUpdateFailure() throws Exception {
-        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate(index1);
+        var index = TestIndexDescriptorFactory.forSchema(1, SchemaDescriptors.forLabel(1, 1));
+        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate(index);
         IndexUpdater indexUpdater1 = mock(IndexUpdater.class);
         IndexPopulator indexPopulator1 = createIndexPopulator(indexUpdater1);
 
@@ -457,8 +463,9 @@ class MultipleIndexPopulatorTest {
 
     @Test
     void testMultiplePropertyUpdateFailures() throws Exception {
-        IndexEntryUpdate<?> update1 = add(1, index1, "foo");
-        IndexEntryUpdate<?> update2 = add(2, index1, "bar");
+        var index = TestIndexDescriptorFactory.forSchema(1, SchemaDescriptors.forLabel(1, 1));
+        IndexEntryUpdate<?> update1 = add(1, index, "foo");
+        IndexEntryUpdate<?> update2 = add(2, index, "bar");
         IndexUpdater updater = mock(IndexUpdater.class);
         IndexPopulator populator = createIndexPopulator(updater);
 
@@ -538,12 +545,12 @@ class MultipleIndexPopulatorTest {
         IndexUpdater updater = mock(IndexUpdater.class);
         IndexPopulator populator = createIndexPopulator(updater);
         IndexUpdater indexUpdater = mock(IndexUpdater.class);
-        var schema = SchemaDescriptors.forLabel(1, 1);
+        IndexDescriptor indexKey = TestIndexDescriptorFactory.forSchema(1, SchemaDescriptors.forLabel(1, 1));
         addPopulator(populator, 1);
 
         // when external updates comes in
-        var lowUpdate = IndexEntryUpdate.add(10, () -> schema, intValue(99));
-        var highUpdate = IndexEntryUpdate.add(20, () -> schema, intValue(101));
+        var lowUpdate = IndexEntryUpdate.add(10, indexKey, intValue(99));
+        var highUpdate = IndexEntryUpdate.add(20, indexKey, intValue(101));
         multipleIndexPopulator.queueConcurrentUpdate(lowUpdate);
         multipleIndexPopulator.queueConcurrentUpdate(highUpdate);
 

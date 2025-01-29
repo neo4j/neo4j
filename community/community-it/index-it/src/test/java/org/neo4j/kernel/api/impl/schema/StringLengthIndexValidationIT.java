@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -99,7 +100,7 @@ public abstract class StringLengthIndexValidationIT {
         Monitors monitors = new Monitors();
         IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanComplete() {
+            public void indexPopulationScanComplete(IndexDescriptor[] indexDescriptors) {
                 if (trapPopulation.get()) {
                     populationScanFinished.reached();
                 }

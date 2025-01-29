@@ -107,7 +107,7 @@ class CancelIndexPopulationIT {
     private static IndexMonitor.MonitorAdapter populationCompletionBlocker(Barrier.Control barrier) {
         return new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanComplete() {
+            public void indexPopulationScanComplete(IndexDescriptor[] indexDescriptors) {
                 barrier.reached();
             }
 

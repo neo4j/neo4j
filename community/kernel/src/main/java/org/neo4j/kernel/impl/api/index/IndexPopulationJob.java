@@ -135,7 +135,7 @@ public class IndexPopulationJob implements Runnable {
 
                 monitor.indexPopulationScanStarting(indexDescriptors);
                 indexAllEntities(contextFactory);
-                monitor.indexPopulationScanComplete();
+                monitor.indexPopulationScanComplete(indexDescriptors);
                 if (stopped) {
                     multiPopulator.stop(cursorContext);
                     // We remain in POPULATING state

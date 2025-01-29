@@ -139,7 +139,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         Monitors monitors = new Monitors();
         IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
-            public void indexPopulationScanComplete() {
+            public void indexPopulationScanComplete(IndexDescriptor[] indexDescriptors) {
                 if (trapPopulation.get()) {
                     populationScanFinished.reached();
                 }
