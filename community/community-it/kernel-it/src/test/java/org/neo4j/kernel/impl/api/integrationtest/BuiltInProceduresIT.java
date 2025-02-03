@@ -51,7 +51,6 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
 import org.neo4j.kernel.impl.query.CacheMetrics;
 import org.neo4j.kernel.impl.query.QueryCacheStatistics;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -236,9 +235,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
 
             // Then
             assertThat(asList(stream)).containsExactly(new AnyValue[] {
-                stringValue("Neo4j Kernel"),
-                VirtualValues.list(stringValue(Version.getNeo4jVersion())),
-                stringValue("community")
+                stringValue("Neo4j Kernel"), VirtualValues.list(stringValue("5.27.0")), stringValue("community")
             });
         }
 

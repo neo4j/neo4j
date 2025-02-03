@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
@@ -73,7 +74,11 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
 
     @VisibleForTesting
     public GlobalProceduresRegistry() {
-        this(SpecialBuiltInProcedures.from("N/A", "N/A"), null, NullLog.getInstance(), ProcedureConfig.DEFAULT);
+        this(
+                SpecialBuiltInProcedures.from(Version.getKernel(), "N/A"),
+                null,
+                NullLog.getInstance(),
+                ProcedureConfig.DEFAULT);
     }
 
     public GlobalProceduresRegistry(

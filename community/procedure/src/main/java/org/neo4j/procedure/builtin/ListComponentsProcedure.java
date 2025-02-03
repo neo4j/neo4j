@@ -51,13 +51,21 @@ import org.neo4j.values.virtual.VirtualValues;
  *
  * This would include things like Kernel, Storage Engine, Query Engines,
  * Bolt protocol versions et cetera.
+ *
+ * Note: As of version 2025.01.0, unless the neo4j version has been overridden using the
+ * `internal.neo4j.custom.version` custom property, the neo4jVersion field is always overwritten to return
+ * "5.27.0". This version, known here as the "false semantic version" never technically existed, but is
+ * returned to ensure compatibility with some old clients which depend on the specific structure of the
+ * return value from `dbms.components()` calls. In future `dbms.components()` will be deprecated in favour
+ * of another procedure which returns a value correctly connected to the release version.
  */
 public class ListComponentsProcedure extends CallableProcedure.BasicProcedure {
+    private static final TextValue FALSE_SEMANTIC_VERSION = utf8Value("5.27.0");
     private static final TextValue NEO4J_KERNEL = utf8Value("Neo4j Kernel");
     private final TextValue neo4jVersion;
     private final TextValue neo4jEdition;
 
-    public ListComponentsProcedure(QualifiedName name, String neo4jVersion, String neo4jEdition) {
+    public ListComponentsProcedure(QualifiedName name, String neo4jVersion, String neo4jEdition, boolean overridden) {
         super(procedureSignature(name)
                 .out("name", NTString, "The name of the component.")
                 // Since Bolt, Cypher and other components support multiple versions
@@ -68,7 +76,7 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure {
                 .description("List DBMS components and their versions.")
                 .systemProcedure()
                 .build());
-        this.neo4jVersion = stringValue(neo4jVersion);
+        this.neo4jVersion = overridden ? stringValue(neo4jVersion) : FALSE_SEMANTIC_VERSION;
         this.neo4jEdition = stringValue(neo4jEdition);
     }
 

@@ -45,7 +45,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -154,9 +153,7 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
 
             // Then
             assertThat(asList(stream)).containsExactly(new AnyValue[] {
-                stringValue("Neo4j Kernel"),
-                VirtualValues.list(stringValue(Version.getNeo4jVersion())),
-                stringValue("community")
+                stringValue("Neo4j Kernel"), VirtualValues.list(stringValue("5.27.0")), stringValue("community")
             });
         }
 

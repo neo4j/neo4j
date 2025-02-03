@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
+import org.neo4j.kernel.internal.Version;
 
 /**
  * This class houses built-in procedures which use a backdoor to inject dependencies.
@@ -38,9 +39,13 @@ public class SpecialBuiltInProcedures implements Supplier<List<CallableProcedure
         this.builtins = builtins;
     }
 
-    public static SpecialBuiltInProcedures from(String neo4jVersion, String neo4jEdition) {
+    public static SpecialBuiltInProcedures from(Version neo4jVersion, String neo4jEdition) {
         return new SpecialBuiltInProcedures(List.of(
-                new ListComponentsProcedure(new QualifiedName("dbms", "components"), neo4jVersion, neo4jEdition),
+                new ListComponentsProcedure(
+                        new QualifiedName("dbms", "components"),
+                        neo4jVersion.getReleaseVersion(),
+                        neo4jEdition,
+                        neo4jVersion.isOverridden()),
                 new JmxQueryProcedure(
                         new QualifiedName("dbms", "queryJmx"), ManagementFactory.getPlatformMBeanServer())));
     }

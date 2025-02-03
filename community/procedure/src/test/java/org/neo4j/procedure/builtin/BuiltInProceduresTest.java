@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
@@ -145,7 +146,7 @@ class BuiltInProceduresTest {
 
         doReturn(clock).when(resolver).resolveDependency(Clock.class);
 
-        var builtins = SpecialBuiltInProcedures.from("1.3.37", Edition.COMMUNITY.toString());
+        var builtins = SpecialBuiltInProcedures.from(Version.getKernel(), Edition.COMMUNITY.toString());
         for (var proc : builtins.get()) {
             procs.register(proc);
         }
@@ -233,7 +234,7 @@ class BuiltInProceduresTest {
     @Test
     void shouldListSystemComponents() throws Throwable {
         // When/Then
-        assertThat(call("dbms.components")).contains(record("Neo4j Kernel", singletonList("1.3.37"), "community"));
+        assertThat(call("dbms.components")).contains(record("Neo4j Kernel", singletonList("5.27.0"), "community"));
     }
 
     @Test
