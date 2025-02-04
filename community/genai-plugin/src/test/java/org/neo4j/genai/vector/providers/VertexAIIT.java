@@ -119,4 +119,11 @@ public class VertexAIIT {
                             "A Document About Titles"));
         }
     }
+
+    @Nested
+    class LargeBatchedInput extends BaseIT {
+        LargeBatchedInput() {
+            super(VertexAI.NAME, BASE_CONFIG, Map.of("model", "textembedding-gecko@003"), true);
+        }
+    }
 }

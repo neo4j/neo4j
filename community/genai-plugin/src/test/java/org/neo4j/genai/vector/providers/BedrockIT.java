@@ -47,7 +47,7 @@ public class BedrockIT extends BaseIT {
     }
 
     protected BedrockIT() {
-        super(Bedrock.NAME, CONFIG, EXPECTED_EMBEDDINGS);
+        super(Bedrock.NAME, CONFIG, EXPECTED_EMBEDDINGS, false);
     }
 
     private static boolean authIsSet() {

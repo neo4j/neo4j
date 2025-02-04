@@ -97,4 +97,11 @@ class OpenAIIT {
                     Map.of("model", "text-embedding-3-small", "dimensions", 512));
         }
     }
+
+    @Nested
+    class LargeBatchedInput extends BaseIT {
+        LargeBatchedInput() {
+            super(OpenAI.NAME, BASE_CONFIG, Map.of("model", "text-embedding-3-large", "dimensions", 3072), true);
+        }
+    }
 }

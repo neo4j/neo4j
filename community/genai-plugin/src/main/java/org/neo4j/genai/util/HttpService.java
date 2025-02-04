@@ -19,11 +19,11 @@
  */
 package org.neo4j.genai.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -71,13 +71,13 @@ public final class HttpService {
      */
     public static BodyPublisher pipe(Consumer<OutputStream> outputStreamConsumer) {
         return HttpRequest.BodyPublishers.ofInputStream(() -> {
-            var in = new PipedInputStream();
-            try (var out = new PipedOutputStream(in)) {
+            try (var out = new ByteArrayOutputStream()) {
                 outputStreamConsumer.accept(out);
+                out.flush();
+                return new ByteArrayInputStream(out.toByteArray());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            return in;
         });
     }
 

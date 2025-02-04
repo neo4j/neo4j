@@ -23,12 +23,18 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -57,6 +63,7 @@ abstract class BaseIT {
     private final String provider;
     private final Map<String, ?> config;
     private final List<float[]> expectedVectors;
+    private final boolean useLoremWithBatch;
 
     static List<float[]> loadExpectedEmbeddings(String filename) {
         final var vectors = new ArrayList<float[]>();
@@ -74,10 +81,11 @@ abstract class BaseIT {
         return vectors;
     }
 
-    protected BaseIT(String provider, Map<String, ?> config, List<float[]> expectedVectors) {
+    protected BaseIT(String provider, Map<String, ?> config, List<float[]> expectedVectors, boolean useLoremWithBatch) {
         this.provider = provider;
         this.config = config;
         this.expectedVectors = expectedVectors;
+        this.useLoremWithBatch = useLoremWithBatch;
     }
 
     protected BaseIT(
@@ -85,29 +93,63 @@ abstract class BaseIT {
             String expectedVectorsFileName,
             Map<String, ?> baseConfig,
             Map<String, ?> configExtension) {
-        this.provider = provider;
-        final var config = new HashMap<String, Object>();
-        config.putAll(baseConfig);
-        config.putAll(configExtension);
-        this.config = config;
-        this.expectedVectors = loadExpectedEmbeddings(expectedVectorsFileName);
+        this(
+                provider,
+                mergeBaseAndExtendedConfig(baseConfig, configExtension),
+                loadExpectedEmbeddings(expectedVectorsFileName),
+                false);
+    }
+
+    protected BaseIT(
+            String provider, Map<String, ?> baseConfig, Map<String, ?> configExtension, boolean useLoremWithBatch) {
+        this(
+                provider,
+                mergeBaseAndExtendedConfig(baseConfig, configExtension),
+                (List<float[]>) null,
+                useLoremWithBatch);
+    }
+
+    private static Map<String, ?> mergeBaseAndExtendedConfig(
+            Map<String, ?> baseConfig, Map<String, ?> configExtension) {
+        var hlp = new HashMap<String, Object>();
+        hlp.putAll(baseConfig);
+        hlp.putAll(configExtension);
+        return hlp;
     }
 
     @ParameterizedTest
     @MethodSource
     void shouldGenerateApproximatelyExpectedEmbeddings(Supplier<Stream<Value>> supplier) {
         final var similarity = VectorSimilarityFunctions.EUCLIDEAN;
-        assertThat(supplier.get()).zipSatisfy(expectedVectors, (vector, expectedVector) -> {
-            if (expectedVector == null) {
-                assertThat(vector).isEqualTo(Values.NO_VALUE);
-            } else {
-                final var score = similarity.compare(similarity.maybeToValidVector(vector), expectedVector);
-                assertThat(score).as("should be similar").isCloseTo(1.f, withinPercentage(1));
-            }
-        });
+        if (expectedVectors != null) {
+            assertThat(supplier.get()).zipSatisfy(expectedVectors, (vector, expectedVector) -> {
+                if (expectedVector == null) {
+                    assertThat(vector).isEqualTo(Values.NO_VALUE);
+                } else {
+                    final var score = similarity.compare(similarity.maybeToValidVector(vector), expectedVector);
+                    assertThat(score).as("should be similar").isCloseTo(1.f, withinPercentage(1));
+                }
+            });
+        } else {
+            var count = supplier.get().count();
+            assertThat(count).isPositive();
+        }
     }
 
     Stream<Named<Supplier<Stream<Value>>>> shouldGenerateApproximatelyExpectedEmbeddings() {
+        if (useLoremWithBatch) {
+            try (var in = new BufferedReader(new InputStreamReader(
+                    requireNonNull(this.getClass().getResourceAsStream("lorem.txt")), StandardCharsets.UTF_8))) {
+                var resources =
+                        in.lines().filter(Predicate.not(String::isEmpty)).toList();
+                return Stream.of(Named.of("batchedOnly", () -> VECTOR_ENCODING
+                        .encode(resources, provider, ParametersTest.from(config))
+                        .map(InternalBatchRow::vector)));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
         return Stream.of(
                 Named.of("single", () -> RESOURCES.stream()
                         .map(resource -> VECTOR_ENCODING.encode(resource, provider, ParametersTest.from(config)))),
