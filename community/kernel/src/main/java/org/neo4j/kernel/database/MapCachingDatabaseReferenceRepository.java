@@ -48,44 +48,37 @@ public class MapCachingDatabaseReferenceRepository implements DatabaseReferenceR
 
     @Override
     public Optional<DatabaseReference> getByAlias(NormalizedCatalogEntry catalogEntry) {
-        return Optional.ofNullable(databaseRefsByCatalogEntry.computeIfAbsent(catalogEntry, (entry) -> {
-            var databaseRef = lookupReferenceOnDelegate(entry);
-            if (databaseRef == null) {
-                return null;
-            }
+        var databaseRef = Optional.ofNullable(
+                databaseRefsByCatalogEntry.computeIfAbsent(catalogEntry, this::lookupReferenceOnDelegate));
 
-            databaseRefsByName.putIfAbsent(databaseRef.fullName(), databaseRef);
-            databaseRefsByUUID.putIfAbsent(databaseRef.id(), databaseRef);
-            return databaseRef;
-        }));
+        databaseRef.ifPresent(databaseReference -> {
+            databaseRefsByName.putIfAbsent(databaseReference.fullName(), databaseReference);
+            databaseRefsByUUID.putIfAbsent(databaseReference.id(), databaseReference);
+        });
+        return databaseRef;
     }
 
     @Override
     public Optional<DatabaseReference> getByAlias(NormalizedDatabaseName databaseAlias) {
-        return Optional.ofNullable(databaseRefsByName.computeIfAbsent(databaseAlias, (alias) -> {
-            var databaseRef = lookupReferenceOnDelegate(alias);
-            if (databaseRef == null) {
-                return null;
-            }
-
-            databaseRefsByCatalogEntry.putIfAbsent(databaseRef.catalogEntry(), databaseRef);
-            databaseRefsByUUID.putIfAbsent(databaseRef.id(), databaseRef);
-            return databaseRef;
-        }));
+        var databaseRef =
+                Optional.ofNullable(databaseRefsByName.computeIfAbsent(databaseAlias, this::lookupReferenceOnDelegate));
+        databaseRef.ifPresent(databaseReference -> {
+            databaseRefsByCatalogEntry.putIfAbsent(databaseReference.catalogEntry(), databaseReference);
+            databaseRefsByUUID.putIfAbsent(databaseReference.id(), databaseReference);
+        });
+        return databaseRef;
     }
 
     @Override
     public Optional<DatabaseReference> getByUuid(UUID uuid) {
-        return Optional.ofNullable(databaseRefsByUUID.computeIfAbsent(uuid, (uuid1) -> {
-            var databaseRef = lookupReferenceByUuidOnDelegate(uuid1);
-            if (databaseRef == null) {
-                return null;
-            }
+        var databaseRef =
+                Optional.ofNullable(databaseRefsByUUID.computeIfAbsent(uuid, this::lookupReferenceByUuidOnDelegate));
 
-            databaseRefsByName.putIfAbsent(databaseRef.fullName(), databaseRef);
-            databaseRefsByCatalogEntry.putIfAbsent(databaseRef.catalogEntry(), databaseRef);
-            return databaseRef;
-        }));
+        databaseRef.ifPresent(databaseReference -> {
+            databaseRefsByName.putIfAbsent(databaseReference.fullName(), databaseReference);
+            databaseRefsByCatalogEntry.putIfAbsent(databaseReference.catalogEntry(), databaseReference);
+        });
+        return databaseRef;
     }
 
     /**

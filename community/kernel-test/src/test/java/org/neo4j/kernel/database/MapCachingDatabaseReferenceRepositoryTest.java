@@ -30,6 +30,10 @@ import static org.neo4j.kernel.database.DatabaseId.SYSTEM_DATABASE_ID;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -49,8 +53,21 @@ public class MapCachingDatabaseReferenceRepositoryTest {
     void setUp() {
         when(delegate.getByAlias(aliasName)).thenReturn(Optional.of(aliasRef));
         when(delegate.getByAlias(name)).thenReturn(Optional.of(ref));
+        for (int i = 0; i < 100; i++) {
+            var ref = createDatabaseRef("foo" + i);
+            when(delegate.getByAlias(ref.catalogEntry())).thenReturn(Optional.of(ref));
+            when(delegate.getByAlias(ref.name())).thenReturn(Optional.of(ref));
+            when(delegate.getByAlias(ref.fullName())).thenReturn(Optional.of(ref));
+        }
+
         when(delegate.getByUuid(uuid)).thenReturn(Optional.of(ref));
         databaseRefRepo = new MapCachingDatabaseReferenceRepository(delegate);
+    }
+
+    private DatabaseReference createDatabaseRef(String dbName) {
+        var uuid = UUID.randomUUID();
+        var name = new NormalizedDatabaseName(dbName);
+        return new DatabaseReferenceImpl.Internal(name, DatabaseIdFactory.from(dbName, uuid), true);
     }
 
     @Test
@@ -78,6 +95,29 @@ public class MapCachingDatabaseReferenceRepositoryTest {
 
         assertThat(lookup).contains(ref);
         assertThat(lookupUnknown).isEmpty();
+    }
+
+    @Test
+    void testDeadlock() throws InterruptedException {
+        var worker1 = runnable(name -> databaseRefRepo.getByAlias(new NormalizedDatabaseName(name)));
+        var worker2 = runnable(name -> databaseRefRepo.getByAlias(new NormalizedCatalogEntry(name)));
+        var worker3 = runnable(name -> {
+            var ref = delegate.getByAlias(new NormalizedDatabaseName(name));
+            databaseRefRepo.getByUuid(ref.get().id());
+        });
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        executor.execute(worker1);
+        executor.execute(worker2);
+        worker3.run();
+        executor.awaitTermination(60, TimeUnit.SECONDS);
+    }
+
+    private Runnable runnable(Consumer<String> consumer) {
+        return () -> {
+            for (int i = 0; i < 100; i++) {
+                consumer.accept("foo" + i);
+            }
+        };
     }
 
     @Test
