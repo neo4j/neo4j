@@ -725,8 +725,12 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                         update.valueUpdatesForIndexKeys(populations.keySet())) {
                     IndexDescriptor indexDescriptor = indexUpdate.indexKey();
                     IndexPopulation population = populations.get(indexDescriptor);
-                    population.populator.includeSample(indexUpdate);
-                    updates.computeIfAbsent(population, p -> new ArrayList<>()).add(indexUpdate);
+                    // population could be cancelled concurrently and removed from the map
+                    if (population != null) {
+                        population.populator.includeSample(indexUpdate);
+                        updates.computeIfAbsent(population, p -> new ArrayList<>())
+                                .add(indexUpdate);
+                    }
                 }
             }
             for (var entry : updates.entrySet()) {
