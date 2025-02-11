@@ -32,7 +32,10 @@ import org.neo4j.kernel.database.NormalizedDatabaseName
 
 class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
-  final private val NL: String = System.lineSeparator()
+  // In a lot of cases, we use multi-line strings to construct our line-breaks. Let's make sure we stay consistent with that here.
+  final private val NL: String =
+    """
+      |""".stripMargin
 
   final private val productsDatabaseReference = mock[DatabaseReference]
 

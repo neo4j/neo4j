@@ -56,7 +56,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
  */
 class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  final private val NL: String = System.lineSeparator()
+  // In a lot of cases, we use multi-line strings to construct our line-breaks. Let's make sure we stay consistent with that here.
+  final private val NL: String =
+    """
+      |""".stripMargin
 
   override val semanticFeatures: List[SemanticFeature] = List(
     SemanticFeature.UseAsMultipleGraphsSelector

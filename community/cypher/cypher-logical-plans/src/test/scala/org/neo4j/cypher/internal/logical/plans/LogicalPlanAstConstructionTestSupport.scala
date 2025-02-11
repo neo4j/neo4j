@@ -22,7 +22,11 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 
 trait LogicalPlanAstConstructionTestSupport extends AstConstructionTestSupport {
-  val NL: String = System.lineSeparator()
+
+  // In a lot of cases, we use multi-line strings to construct our line-breaks. Let's make sure we stay consistent with that here.
+  val NL: String =
+    """
+      |""".stripMargin
 
   def nestedCollectExpr(
     plan: LogicalPlan,
