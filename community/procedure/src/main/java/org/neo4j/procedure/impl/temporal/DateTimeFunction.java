@@ -159,7 +159,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
                 }
                 // Number of arguments are correct, but type of arguments is wrong
                 throw ProcedureException.invalidCallSignature(
-                        getClass().getSimpleName(),
+                        String.valueOf(this.signature.name()),
                         this.signature.toString(),
                         "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                                 + Arrays.toString(input));
@@ -212,7 +212,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
                 } else {
                     // Number of arguments are correct, but type of arguments is wrong
                     throw ProcedureException.invalidCallSignature(
-                            getClass().getSimpleName(),
+                            String.valueOf(this.signature.name()),
                             this.signature.toString(),
                             "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                                     + Arrays.toString(input));

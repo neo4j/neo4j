@@ -1165,17 +1165,17 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         long ms = safeCastIntegral("millisecond", millisecond, TemporalFields.millisecond.defaultValue);
         long us = safeCastIntegral("microsecond", microsecond, TemporalFields.microsecond.defaultValue);
         long ns = safeCastIntegral("nanosecond", nanosecond, TemporalFields.nanosecond.defaultValue);
-        if (ms < 0 || ms >= 1000) {
-            final long milliLimit = 1000L;
-            throw InvalidArgumentException.invalidMillisecondValue(milliLimit, ms);
+        final long milliLimit = 1000L;
+        if (ms < 0 || ms >= milliLimit) {
+            throw InvalidArgumentException.invalidMillisecondValue(milliLimit - 1, ms);
         }
         final long microLimit = (millisecond != null ? 1000L : 1000_000L);
         if (us < 0 || us >= microLimit) {
-            throw InvalidArgumentException.invalidMicrosecondValue(microLimit, us);
+            throw InvalidArgumentException.invalidMicrosecondValue(microLimit - 1, us);
         }
         final long nanoLimit = (microsecond != null ? 1000L : millisecond != null ? 1000_000L : 1000_000_000L);
         if (ns < 0 || ns >= nanoLimit) {
-            throw InvalidArgumentException.invalidNanosecondValue(nanoLimit, ns);
+            throw InvalidArgumentException.invalidNanosecondValue(nanoLimit - 1, ns);
         }
         return (int) (ms * 1000_000 + us * 1000 + ns);
     }

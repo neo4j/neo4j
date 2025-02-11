@@ -155,7 +155,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             return build(map, defaultZone);
         } else {
             throw ProcedureException.invalidCallSignature(
-                    getClass().getSimpleName(),
+                    String.valueOf(this.signature.name()),
                     this.signature.toString(),
                     "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                             + Arrays.toString(input));
@@ -246,7 +246,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 return function.now(clockSupplier.apply(ctx), timezone.stringValue(), function.defaultZone);
             } else {
                 throw ProcedureException.invalidCallSignature(
-                        getClass().getSimpleName(),
+                        String.valueOf(this.signature().name()),
                         this.signature().toString(),
                         "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                                 + Arrays.toString(input));
@@ -284,7 +284,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 }
             }
             throw ProcedureException.invalidCallSignature(
-                    getClass().getSimpleName(),
+                    String.valueOf(this.signature().name()),
                     this.signature().toString(),
                     "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                             + Arrays.toString(args));

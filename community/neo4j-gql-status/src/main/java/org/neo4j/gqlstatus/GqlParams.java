@@ -136,6 +136,8 @@ public class GqlParams {
         sig(new VERBATIM()),
         syntax(new IDENT()),
         temporal(new TEMPORAL()),
+        temporal1(new TEMPORAL()),
+        temporal2(new TEMPORAL()),
         timeUnit(new IDENT()),
         token(new STRLIT()),
         tokenId(new STRLIT()),

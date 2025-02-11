@@ -85,26 +85,39 @@ public class InvalidArgumentException extends Neo4jException {
     }
 
     public static InvalidArgumentException timezoneAndOffsetMismatch(
-            String zoneName, String offset, List<String> validOffsets, String matcherGroup) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22003)
-                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N04)
-                        .withParam(GqlParams.StringParam.input, zoneName)
-                        .withParam(GqlParams.StringParam.context, String.valueOf(offset))
-                        .withParam(GqlParams.ListParam.inputList, validOffsets)
-                        .build())
-                .build();
+            String context, String offset, List<String> validOffsets, String matcherGroup) {
+        ErrorGqlStatusObject gql;
+        if (validOffsets.isEmpty()) {
+            // This is an indication that the provided time and timezone combination is invalid
+            gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22003)
+                    .withParam(GqlParams.StringParam.value, String.valueOf(offset))
+                    .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N05)
+                            .withParam(GqlParams.StringParam.input, String.valueOf(offset))
+                            .withParam(GqlParams.StringParam.context, context)
+                            .build())
+                    .build();
+        } else {
+            gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22003)
+                    .withParam(GqlParams.StringParam.value, String.valueOf(offset))
+                    .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N04)
+                            .withParam(GqlParams.StringParam.input, String.valueOf(offset))
+                            .withParam(GqlParams.StringParam.context, context)
+                            .withParam(GqlParams.ListParam.inputList, validOffsets)
+                            .build())
+                    .build();
+        }
         return new InvalidArgumentException(gql, "Timezone and offset do not match: " + matcherGroup);
     }
 
-    public static InvalidArgumentException temporalSelectionConflict(String fieldName, String component) {
+    public static InvalidArgumentException temporalSelectionConflict(String temporal1, String temporal2) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22007)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N14)
-                        .withParam(GqlParams.StringParam.temporal, fieldName)
-                        .withParam(GqlParams.StringParam.component, component)
+                        .withParam(GqlParams.StringParam.temporal1, temporal1)
+                        .withParam(GqlParams.StringParam.temporal2, temporal2)
                         .build())
                 .build();
-        throw new InvalidArgumentException(
-                gql, String.format("%s cannot be selected together with %s.", fieldName, component));
+        return new InvalidArgumentException(
+                gql, String.format("%s cannot be selected together with %s.", temporal1, temporal2));
     }
 
     public static InvalidArgumentException invalidCoordinateNames() {

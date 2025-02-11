@@ -1187,7 +1187,7 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             new GqlStatus("22N14"),
             """
                     Cannot select both { %s } and { %s }.""",
-            new GqlParams.GqlParam[] {GqlParams.StringParam.temporal, GqlParams.StringParam.component},
+            new GqlParams.GqlParam[] {GqlParams.StringParam.temporal1, GqlParams.StringParam.temporal2},
             emptyMap(),
             Condition.DATA_EXCEPTION,
             "invalid temporal value combination",

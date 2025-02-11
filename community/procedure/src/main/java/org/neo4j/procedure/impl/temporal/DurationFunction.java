@@ -90,7 +90,7 @@ class DurationFunction implements CallableUserFunction {
                 return DurationValue.build(map);
             }
             throw ProcedureException.invalidCallSignature(
-                    getClass().getSimpleName(),
+                    String.valueOf(this.signature().name()),
                     this.signature().toString(),
                     "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                             + Arrays.toString(input));
@@ -172,7 +172,7 @@ class DurationFunction implements CallableUserFunction {
                     return DurationValue.between(unit, from, to);
                 }
                 throw ProcedureException.invalidCallSignature(
-                        getClass().getSimpleName(),
+                        String.valueOf(this.signature.name()),
                         this.signature.toString(),
                         "Invalid call signature for " + getClass().getSimpleName() + ": Provided input was "
                                 + Arrays.toString(input));
