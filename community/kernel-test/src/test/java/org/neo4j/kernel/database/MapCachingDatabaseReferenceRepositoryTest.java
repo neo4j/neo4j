@@ -105,11 +105,12 @@ public class MapCachingDatabaseReferenceRepositoryTest {
             var ref = delegate.getByAlias(new NormalizedDatabaseName(name));
             databaseRefRepo.getByUuid(ref.get().id());
         });
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        ExecutorService executor = Executors.newFixedThreadPool(3);
         executor.execute(worker1);
         executor.execute(worker2);
-        worker3.run();
-        executor.awaitTermination(60, TimeUnit.SECONDS);
+        executor.execute(worker3);
+        executor.shutdown();
+        assertThat(executor.awaitTermination(60, TimeUnit.SECONDS)).isTrue();
     }
 
     private Runnable runnable(Consumer<String> consumer) {
