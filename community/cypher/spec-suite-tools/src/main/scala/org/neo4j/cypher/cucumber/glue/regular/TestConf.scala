@@ -19,8 +19,12 @@
  */
 package org.neo4j.cypher.cucumber.glue.regular
 
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.cucumber.CypherCucumber.Tag
 import org.neo4j.cypher.cucumber.glue.regular.TestConf.Settings
+
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 /**
  * Cypher Cucumber test configuration.
@@ -61,8 +65,18 @@ object TestConf {
       Option.when(useEnterprise)("server.metrics.enabled" -> "false"),
       Option.when(useBolt)("server.bolt.enabled" -> "true")
     ).flatten.toMap ++ neo4jConf
-    val failureTags = tagContext.map(name => Tag.FailsPrefix + name) + Tag.FailsAll
-    val ignoreTags = tagContext.map(name => Tag.IgnorePrefix + name) + Tag.IgnoreAll
+
+    // Allow for example @fails:db-format-multiversion and @ignore:db-format-multiversion
+    // Note, NEO4J_OVERRIDE_STORE_FORMAT overrides this value in some testing (through FormatOverrideMigrator)
+    val dbFormat = Config.newBuilder()
+      .setRaw(fullNeo4jConf.view.filterKeys(_ == GraphDatabaseSettings.db_format.name()).toMap.asJava)
+      .build()
+      .get(GraphDatabaseSettings.db_format)
+    val dbFormatFailsTag = s"${Tag.FailsPrefix}db-format-$dbFormat"
+    val dbFormatIgnoreTag = s"${Tag.IgnorePrefix}db-format-$dbFormat"
+
+    val failureTags = tagContext.map(name => Tag.FailsPrefix + name) + Tag.FailsAll + dbFormatFailsTag
+    val ignoreTags = tagContext.map(name => Tag.IgnorePrefix + name) + Tag.IgnoreAll + dbFormatIgnoreTag
     new TestConf(fullNeo4jConf, useBolt, useEnterprise, useSpd, preparserOptions, failureTags, ignoreTags)
   }
 
@@ -187,6 +201,8 @@ object TestConf {
 
     final override val conf: TestConf = TestConf(
       neo4jConf = Map(
+        // For unknown reasons multiversion store format override (NEO4J_OVERRIDE_STORE_FORMAT) fails here
+        "db.format" -> "aligned",
         "server.bolt.enabled" -> "true",
         "server.routing.listen_address" -> "127.0.0.1:0",
         "server.routing.advertised_address" -> "127.0.0.1:0",
@@ -223,6 +239,8 @@ object TestConf {
     final val ObjectFactoryName = "org.neo4j.cypher.cucumber.glue.regular.TestConf$Legacy$ObjectFactory"
 
     final override val conf: TestConf = TestConf(
+      // Avoid multiversion store format override (NEO4J_OVERRIDE_STORE_FORMAT) in community
+      neo4jConf = Map("db.format" -> "aligned"),
       useEnterprise = false,
       preparserOptions = Map("runtime" -> "legacy"),
       tagContext = Set("cypher-5", "legacy-runtime")

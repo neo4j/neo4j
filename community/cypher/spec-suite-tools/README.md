@@ -28,13 +28,13 @@ See classes in:
 
 - `@fails` -
   expect failure in all configurations.
-- `@fails:parallel-runtime`, `@fails:cypher-5`, ... -
+- `@fails:parallel-runtime`, `@fails:cypher-5`, `@fails:db-format-multiversion`, ... -
   expected failure in specific configuration.
 - `@conf:key=value`, `@conf:internal.cypher.enable_extra_semantic_features=MatchModes`, ... -
   scenario needs extra configuration, like a feature flag.
 - `@ignore` -
   skip scenario in all configurations. Avoid if possible!
-- `@ignore:parallel-runtime`, `@ignore:cypher-5`, ... -
+- `@ignore:parallel-runtime`, `@ignore:cypher-5`, `@ignore:db-format-multiversion`... -
   skip scenario in specific configuration. Avoid if possible!
 - External scenarios (the TCK ones from open cypher) don't have the required tags,
   so they are loaded from `tck-tags.txt`.
