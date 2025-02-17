@@ -19,13 +19,30 @@
  */
 package org.neo4j.server.queryapi.driver;
 
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import java.net.URI;
+import java.time.Clock;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.internal.BoltLoggingProvider;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.RoutingSettings;
+import org.neo4j.driver.internal.bolt.api.BoltAgent;
+import org.neo4j.driver.internal.bolt.api.BoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.api.BoltServerAddress;
+import org.neo4j.driver.internal.bolt.api.LoggingProvider;
+import org.neo4j.driver.internal.bolt.api.MetricsListener;
+import org.neo4j.driver.internal.bolt.api.RoutingContext;
+import org.neo4j.driver.internal.bolt.basicimpl.NettyBoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.pooledimpl.PooledBoltConnectionProvider;
+import org.neo4j.driver.internal.bolt.routedimpl.Rediscovery;
+import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
+import org.neo4j.driver.internal.value.BoltValueFactory;
 import org.neo4j.logging.InternalLogProvider;
 
 /**
@@ -57,5 +74,79 @@ public final class LocalChannelDriverFactory extends DriverFactory {
                         .withLogging(new DriverToInternalLogProvider(internalLogProvider))
                         .withUserAgent("neo4j-query-api/v2")
                         .build());
+    }
+
+    @Override
+    protected BoltConnectionProvider createBoltConnectionProvider(
+            URI uri,
+            Config config,
+            EventLoopGroup eventLoopGroup,
+            RoutingSettings routingSettings,
+            Supplier<Rediscovery> rediscoverySupplier,
+            BoltConnectionListener boltConnectionListener,
+            BoltServerAddress address,
+            RoutingContext routingContext,
+            BoltAgent boltAgent,
+            String userAgent,
+            int connectTimeoutMillis,
+            MetricsListener metricsListener,
+            Clock clock) {
+        var loggingProvider = new BoltLoggingProvider(config.logging());
+        Function<BoltServerAddress, BoltConnectionProvider> pooledBoltConnectionProviderSupplier =
+                selectedAddress -> createPooledBoltConnectionProvider(
+                        config,
+                        eventLoopGroup,
+                        clock,
+                        loggingProvider,
+                        boltConnectionListener,
+                        selectedAddress,
+                        boltAgent,
+                        userAgent,
+                        connectTimeoutMillis,
+                        metricsListener);
+
+        return pooledBoltConnectionProviderSupplier.apply(address);
+    }
+
+    private BoltConnectionProvider createPooledBoltConnectionProvider(
+            Config config,
+            EventLoopGroup eventLoopGroup,
+            Clock clock,
+            LoggingProvider loggingProvider,
+            BoltConnectionListener boltConnectionListener,
+            BoltServerAddress address,
+            BoltAgent boltAgent,
+            String userAgent,
+            int connectTimeoutMillis,
+            MetricsListener metricsListener) {
+        var nettyBoltConnectionProvider = createNettyBoltConnectionProvider(eventLoopGroup, clock, loggingProvider);
+        nettyBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
+                nettyBoltConnectionProvider, boltConnectionListener);
+        return new PooledBoltConnectionProvider(
+                nettyBoltConnectionProvider,
+                config.maxConnectionPoolSize(),
+                config.connectionAcquisitionTimeoutMillis(),
+                config.maxConnectionLifetimeMillis(),
+                config.idleTimeBeforeConnectionTest(),
+                clock,
+                loggingProvider,
+                metricsListener,
+                address,
+                RoutingContext.EMPTY,
+                boltAgent,
+                userAgent,
+                connectTimeoutMillis);
+    }
+
+    private BoltConnectionProvider createNettyBoltConnectionProvider(
+            EventLoopGroup eventLoopGroup, Clock clock, LoggingProvider loggingProvider) {
+        return new NettyBoltConnectionProvider(
+                eventLoopGroup,
+                clock,
+                getDomainNameResolver(),
+                localAddress(),
+                loggingProvider,
+                BoltValueFactory.getInstance(),
+                null);
     }
 }
