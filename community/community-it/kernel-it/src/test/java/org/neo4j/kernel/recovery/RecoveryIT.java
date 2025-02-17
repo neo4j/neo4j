@@ -174,6 +174,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -199,7 +200,7 @@ class RecoveryIT {
     };
 
     @Inject
-    private DefaultFileSystemAbstraction fileSystem;
+    DefaultFileSystemAbstraction fileSystem;
 
     @Inject
     private PageCache pageCache;
@@ -210,10 +211,13 @@ class RecoveryIT {
     @Inject
     private RandomSupport random;
 
-    private DatabaseLayout databaseLayout;
+    @Inject
+    TestDirectory dir;
+
+    DatabaseLayout databaseLayout;
 
     private TestDatabaseManagementServiceBuilder builder;
-    private DatabaseManagementService managementService;
+    DatabaseManagementService managementService;
     private FakeClock fakeClock;
     private AssertableLogProvider logProvider;
 
@@ -2339,7 +2343,7 @@ class RecoveryIT {
         }
     }
 
-    private static void awaitIndexesOnline(GraphDatabaseService database) {
+    static void awaitIndexesOnline(GraphDatabaseService database) {
         try (Transaction transaction = database.beginTx()) {
             transaction.schema().awaitIndexesOnline(10, MINUTES);
             transaction.commit();
@@ -2359,7 +2363,7 @@ class RecoveryIT {
         managementService.shutdown();
     }
 
-    private void recoverDatabase() throws Exception {
+    void recoverDatabase() throws Exception {
         recoverDatabase(EMPTY, ALL);
     }
 
@@ -2483,7 +2487,7 @@ class RecoveryIT {
         }
     }
 
-    private GraphDatabaseAPI createDatabase() {
+    GraphDatabaseAPI createDatabase() {
         return createDatabase(logical_log_rotation_threshold.defaultValue());
     }
 

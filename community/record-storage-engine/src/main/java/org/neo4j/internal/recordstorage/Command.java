@@ -27,6 +27,7 @@ import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
 
 import java.io.IOException;
 import java.util.Objects;
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -63,6 +64,8 @@ public abstract class Command implements StorageCommand {
     private static final int RECOVERY_LOCK_TYPE_NODE_LABEL_DYNAMIC = 2;
     private static final int RECOVERY_LOCK_TYPE_RELATIONSHIP_GROUP = 3;
     public static final int RECOVERY_LOCK_TYPE_SCHEMA_RULE = 4;
+    // Used to prevent any schema rule changes at the same time as index updates
+    public static final int RECOVERY_LOCK_TYPE_SCHEMA_BOUNDARY = 5;
 
     protected final LogCommandSerialization serialization;
     private int keyHash;
@@ -144,6 +147,12 @@ public abstract class Command implements StorageCommand {
         // most commands does not need this locking
     }
 
+    protected void takeSchemaBoundaryLockForRecovery(
+            LockService lockService, LockGroup lockGroup, EntityType entityType, LockType lockType) {
+        lockGroup.add(
+                lockService.acquireCustomLock(RECOVERY_LOCK_TYPE_SCHEMA_BOUNDARY, entityType.ordinal(), lockType));
+    }
+
     protected static String beforeAndAfterToString(AbstractBaseRecord before, AbstractBaseRecord after, Mask mask) {
         return format("\t-%s%n\t+%s", before.toString(mask), after.toString(mask));
     }
@@ -200,6 +209,7 @@ public abstract class Command implements StorageCommand {
 
         @Override
         public void lockForRecovery(LockService lockService, LockGroup locks, TransactionApplicationMode mode) {
+            takeSchemaBoundaryLockForRecovery(lockService, locks, EntityType.NODE, LockType.SHARED);
             locks.add(lockService.acquireNodeLock(getKey(), LockType.EXCLUSIVE));
             for (DynamicRecord dynamicLabelRecord : record(mode).getDynamicLabelRecords()) {
                 locks.add(lockService.acquireCustomLock(
@@ -232,6 +242,7 @@ public abstract class Command implements StorageCommand {
 
         @Override
         public void lockForRecovery(LockService lockService, LockGroup locks, TransactionApplicationMode mode) {
+            takeSchemaBoundaryLockForRecovery(lockService, locks, EntityType.RELATIONSHIP, LockType.SHARED);
             locks.add(lockService.acquireRelationshipLock(getKey(), LockType.EXCLUSIVE));
         }
     }
@@ -457,6 +468,12 @@ public abstract class Command implements StorageCommand {
         @Override
         public void serialize(WritableChannel channel) throws IOException {
             serialization.writeSchemaRuleCommand(channel, this);
+        }
+
+        @Override
+        public void lockForRecovery(LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode) {
+            takeSchemaBoundaryLockForRecovery(
+                    lockService, lockGroup, schemaRule.schema().entityType(), LockType.EXCLUSIVE);
         }
 
         public SchemaRule getSchemaRule() {
