@@ -20,6 +20,7 @@
 package org.neo4j.exceptions;
 
 import static java.lang.System.lineSeparator;
+import static java.util.Objects.nonNull;
 
 import java.util.Optional;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
@@ -28,24 +29,20 @@ import org.neo4j.gqlstatus.GqlParams;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.Status;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class SyntaxException extends Neo4jException {
-    private final transient Optional<Integer> offset;
+
+    private final transient Integer offset;
     private final String query;
 
     @Deprecated
-    public SyntaxException(String message, String query, Optional<Integer> offset, Throwable cause) {
+    public SyntaxException(String message, String query, Integer offset, Throwable cause) {
         super(message, cause);
         this.offset = offset;
         this.query = query;
     }
 
     public SyntaxException(
-            ErrorGqlStatusObject gqlStatusObject,
-            String message,
-            String query,
-            Optional<Integer> offset,
-            Throwable cause) {
+            ErrorGqlStatusObject gqlStatusObject, String message, String query, Integer offset, Throwable cause) {
         super(gqlStatusObject, message, cause);
 
         this.offset = offset;
@@ -54,39 +51,29 @@ public class SyntaxException extends Neo4jException {
 
     @Deprecated
     public SyntaxException(String message, String query, int offset) {
-        this(message, query, Optional.of(offset), null);
+        this(message, query, offset, null);
     }
 
     public SyntaxException(ErrorGqlStatusObject gqlStatusObject, String message, String query, int offset) {
-        this(gqlStatusObject, message, query, Optional.of(offset), null);
-    }
-
-    @Deprecated
-    public SyntaxException(String message, String query, int offset, Throwable cause) {
-        this(message, query, Optional.of(offset), cause);
-    }
-
-    public SyntaxException(
-            ErrorGqlStatusObject gqlStatusObject, String message, String query, int offset, Throwable cause) {
-        this(gqlStatusObject, message, query, Optional.of(offset), cause);
+        this(gqlStatusObject, message, query, offset, null);
     }
 
     @Deprecated
     public SyntaxException(String message, Throwable cause) {
-        this(message, "", Optional.empty(), cause);
+        this(message, "", null, cause);
     }
 
     public SyntaxException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
-        this(gqlStatusObject, message, "", Optional.empty(), cause);
+        this(gqlStatusObject, message, "", null, cause);
     }
 
     @Deprecated
     public SyntaxException(String message) {
-        this(message, "", Optional.empty(), null);
+        this(message, "", null, null);
     }
 
     public SyntaxException(ErrorGqlStatusObject gqlStatusObject, String message) {
-        this(gqlStatusObject, message, "", Optional.empty(), null);
+        this(gqlStatusObject, message, "", null, null);
     }
 
     public static SyntaxException invalidShortestPathException(String start) {
@@ -161,17 +148,17 @@ public class SyntaxException extends Neo4jException {
     }
 
     public Optional<Integer> getOffset() {
-        return offset;
+        return Optional.ofNullable(offset);
     }
 
     @Override
     public String getMessage() {
-        if (offset.isPresent()) {
+        if (nonNull(offset)) {
             // split can be empty if query = '\n'
             var split = query.split("\n");
             return super.getMessage()
                     + lineSeparator()
-                    + findErrorLine(offset.get(), split.length != 0 ? split : new String[] {""});
+                    + findErrorLine(offset, split.length != 0 ? split : new String[] {""});
         } else {
             return super.getMessage();
         }

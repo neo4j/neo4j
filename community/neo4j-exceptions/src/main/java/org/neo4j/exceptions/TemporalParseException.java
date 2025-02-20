@@ -33,9 +33,6 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes;
  * in order to conform with Java's {@code DateTimeParseException} and {@code SyntaxException}.
  */
 public class TemporalParseException extends SyntaxException {
-    public TemporalParseException(String errorMsg, Throwable cause) {
-        super(errorMsg, cause);
-    }
 
     public TemporalParseException(ErrorGqlStatusObject gqlStatusObject, String errorMsg, Throwable cause) {
         super(gqlStatusObject, errorMsg, cause);
@@ -48,10 +45,6 @@ public class TemporalParseException extends SyntaxException {
     public TemporalParseException(
             ErrorGqlStatusObject gqlStatusObject, String errorMsg, String parsedData, int errorIndex) {
         super(gqlStatusObject, errorMsg, parsedData, errorIndex);
-    }
-
-    public TemporalParseException(String errorMsg, String parsedData, int errorIndex, Throwable cause) {
-        super(errorMsg, parsedData, errorIndex, cause);
     }
 
     public TemporalParseException(
@@ -71,8 +64,8 @@ public class TemporalParseException extends SyntaxException {
     }
 
     public static TemporalParseException cannotParseText(String type, String text) {
-        var gql = GqlHelper.getGql22007_22N36(text.toString(), type);
-        return new TemporalParseException(gql, "Text cannot be parsed to a " + type, text.toString(), 0);
+        var gql = GqlHelper.getGql22007_22N36(text, type);
+        return new TemporalParseException(gql, "Text cannot be parsed to a " + type, text, 0);
     }
 
     public static TemporalParseException cannotParseToDateHint(String input) {
