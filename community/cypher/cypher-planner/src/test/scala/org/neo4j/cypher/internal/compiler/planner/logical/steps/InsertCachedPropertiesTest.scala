@@ -2923,6 +2923,29 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
+  test("should not cache exists check in produce result") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.p IS NOT NULL")
+      .union()
+      .|.filter("n.p IS NOT NULL")
+      .|.allNodeScan("n")
+      .filter("n.p IS NOT NULL")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("cacheNHasProperty[n.p] IS NOT NULL")
+      .union()
+      .|.filter("cacheNHasProperty[n.p] IS NOT NULL")
+      .|.allNodeScan("n")
+      .filter("cacheNHasPropertyFromStore[n.p] IS NOT NULL")
+      .allNodeScan("n")
+      .build()
+  }
+
   private def replace(
     plan: LogicalPlan,
     initialTable: SemanticTable,

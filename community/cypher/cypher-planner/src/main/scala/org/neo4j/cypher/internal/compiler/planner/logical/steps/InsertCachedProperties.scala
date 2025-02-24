@@ -369,10 +369,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           produceResult
             .returnColumns
             .map(column =>
-              cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(column.variable))).fold(column) {
-                cached =>
-                  column.copy(cachedProperties = cached)
-              }
+              cachedPropertiesTracker
+                .get(acc.variableWithOriginalName(asVariable(column.variable)))
+                .fold(column) {
+                  cached =>
+                    column.copy(cachedProperties = cached.filterNot(_.isInstanceOf[CachedHasProperty]))
+                }
             )
         produceResult.withNewReturnColumns(newColumns)
 

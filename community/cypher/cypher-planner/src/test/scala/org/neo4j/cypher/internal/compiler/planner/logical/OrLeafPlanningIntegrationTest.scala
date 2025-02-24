@@ -1309,7 +1309,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       planner.planBuilder()
-        .produceResults(column("a", "cacheNHasProperty[a.prop1]", "cacheN[a.prop2]"))
+        .produceResults(column("a", "cacheN[a.prop2]"))
         .filter(
           "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL"
         )
