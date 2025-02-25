@@ -1583,7 +1583,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<HeapEstimatorCachePreset> heap_estimator_cache_preset = newBuilder(
                     "internal.server.heap_estimator_cache.preset",
                     ofEnum(HeapEstimatorCachePreset.class),
-                    HeapEstimatorCachePreset.DEFAULT)
+                    HeapEstimatorCachePreset.DISABLED)
             .dynamic()
             .build();
 
