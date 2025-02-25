@@ -22,13 +22,18 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.ValuePopulation
+import org.neo4j.cypher.internal.runtime.ValuePopulation.labels
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 case class NodeFromSlot(offset: Int) extends Expression with SlottedExpression {
 
@@ -44,26 +49,37 @@ case class ValuePopulatingNodeFromSlot(offset: Int, cachedProperties: Array[(Laz
 
   override def apply(row: ReadableRow, state: QueryState): VirtualNodeValue = {
     if (state.prePopulateResults) {
-      val query = state.query
+      val dbAccess = state.query
       val id = row.getLongAt(offset)
-      val cachedTokens = IntSets.mutable.empty()
-      val builder = new MapValueBuilder()
-      cachedProperties.foreach {
-        case (p, e) =>
-          cachedTokens.add(p.id(query))
-          val value = e(row, state)
-          if (value ne Values.NO_VALUE) {
-            builder.add(p.name, value)
-          }
+      val nodeCursor = state.cursors.nodeCursor
+      dbAccess.singleNode(id, nodeCursor);
+      val elementId = dbAccess.elementIdMapper().nodeElementId(id)
+      if (!nodeCursor.next()) {
+        // the node has probably been deleted, we still return it but just a bare id
+        VirtualValues.nodeValue(id, elementId, EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
+      } else {
+        val cachedTokens = IntSets.mutable.empty()
+        val builder = new MapValueBuilder()
+        cachedProperties.foreach {
+          case (p, e) =>
+            cachedTokens.add(p.id(dbAccess))
+            val value = e(row, state)
+            if (value ne Values.NO_VALUE) {
+              builder.add(p.name, value)
+            }
+        }
+        val propertyCursor = state.cursors.propertyCursor
+        nodeCursor.properties(
+          propertyCursor,
+          ALL_PROPERTIES.excluding((value: Int) => cachedTokens.contains(value))
+        )
+        VirtualValues.nodeValue(
+          id,
+          elementId,
+          labels(dbAccess, nodeCursor.labels()),
+          ValuePopulation.properties(propertyCursor, dbAccess, builder)
+        )
       }
-      ValuePopulation.nodeValue(
-        id,
-        query,
-        state.cursors.nodeCursor,
-        state.cursors.propertyCursor,
-        builder,
-        cachedTokens
-      )
     } else {
       state.query.nodeById(row.getLongAt(offset))
     }

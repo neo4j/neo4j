@@ -53,7 +53,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 public final class ValuePopulation {
-    private static final NodeValue MISSING_NODE = VirtualValues.nodeValue(-1L, "", EMPTY_TEXT_ARRAY, EMPTY_MAP, false);
+    public static final NodeValue MISSING_NODE = VirtualValues.nodeValue(-1L, "", EMPTY_TEXT_ARRAY, EMPTY_MAP, false);
 
     private ValuePopulation() {
         throw new UnsupportedOperationException("Do not instantiate");
@@ -316,11 +316,11 @@ public final class ValuePopulation {
         return Values.stringArray(labels);
     }
 
-    private static MapValue properties(PropertyCursor propertyCursor, DbAccess dbAccess) {
+    public static MapValue properties(PropertyCursor propertyCursor, DbAccess dbAccess) {
         return properties(propertyCursor, dbAccess, new MapValueBuilder());
     }
 
-    private static MapValue properties(PropertyCursor propertyCursor, DbAccess dbAccess, MapValueBuilder builder) {
+    public static MapValue properties(PropertyCursor propertyCursor, DbAccess dbAccess, MapValueBuilder builder) {
         while (propertyCursor.next()) {
             builder.add(dbAccess.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue());
         }

@@ -39,7 +39,7 @@ import scala.util.Random
 abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int,
+  val sizeHint: Int,
   protected val tokenLookupDbHits: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
@@ -1049,5 +1049,44 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
     result2.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be >= (25L * tokenLookupDbHits)
     result2.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be > 0L
+  }
+
+  test("should handle value population with cached properties and deleted node") {
+    // given
+    givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i) }) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(column("n", "cacheN[n.p]"))
+      .deleteNode("n")
+      .cacheProperties("cache[n.p]")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("n").withRows(rowCount(sizeHint))
+  }
+
+  test("should handle value population with cached properties and deleted relationship") {
+    // given
+    givenGraph {
+      val (_, rels) = circleGraph(sizeHint)
+      rels.foreach(r => r.setProperty("p", Random.nextInt()))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(column("r", "cacheR[r.p]"))
+      .deleteRelationship("r")
+      .cacheProperties("cacheR[r.p]")
+      .allRelationshipsScan("()-[r]->()")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r").withRows(rowCount(sizeHint))
   }
 }
