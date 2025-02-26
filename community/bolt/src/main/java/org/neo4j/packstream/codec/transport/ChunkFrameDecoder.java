@@ -20,15 +20,23 @@
 package org.neo4j.packstream.codec.transport;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import java.util.ArrayList;
-import java.util.List;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.io.PackstreamBuf;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Decodes message frames based on a 16-bit unsigned length prefix.
@@ -66,7 +74,7 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws LimitExceededException {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws IOException {
         // mark the initial position within the buffer to be able to return to this position if there
         // is insufficient data remaining within the buffer
         in.markReaderIndex();
@@ -86,9 +94,32 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
 
                     // otherwise, an empty chunk will mark the end of the message thus permitting further
                     // processing of the message downstream
-                    var msg = ctx.alloc().compositeBuffer(slices.size()).addComponents(true, slices);
+                    CompositeByteBuf msg = ctx.alloc().compositeBuffer(slices.size()).addComponents(true, slices);
 
-                    out.add(PackstreamBuf.wrap(msg));
+                    byte[] bytes = new byte[msg.readableBytes()];
+                    int readerIndex = msg.readerIndex();
+                    msg.getBytes(readerIndex, bytes);
+                    if (bytes.length >= 2 && bytes[0] == 31 && bytes[1] == -117) {
+                        byte[] buffer = new byte[1024];
+                        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                        GZIPInputStream gzipInputStream = new GZIPInputStream(byteArrayInputStream);
+                        int readResult = 0;
+                        while (readResult >= 0) {
+                            readResult = gzipInputStream.read(buffer, 0, buffer.length);
+                            if (readResult > 0) {
+                                byteArrayOutputStream.write(buffer, 0, readResult);
+                            }
+                        }
+                        gzipInputStream.close();
+                        byteArrayInputStream.close();
+                        byteArrayOutputStream.close();
+                        byte[] decompressed = byteArrayOutputStream.toByteArray();
+                        ByteBuf decompressedMsg = Unpooled.wrappedBuffer(decompressed);
+                        out.add(PackstreamBuf.wrap(decompressedMsg));
+                    } else {
+                        out.add(PackstreamBuf.wrap(msg));
+                    }
 
                     totalLength = 0;
                     slices.clear();
