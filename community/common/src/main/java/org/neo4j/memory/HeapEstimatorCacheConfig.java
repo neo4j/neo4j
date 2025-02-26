@@ -30,7 +30,7 @@ public record HeapEstimatorCacheConfig(int sizeLimit, long largeObjectThreshold)
 
     public static final HeapEstimatorCacheConfig LARGE = new HeapEstimatorCacheConfig(128, 8L * 1024L);
 
-    public static final HeapEstimatorCacheConfig DEFAULT = HeapEstimatorCacheConfig.SMALL;
+    public static final HeapEstimatorCacheConfig DEFAULT = HeapEstimatorCacheConfig.DISABLED;
 
     public HeapEstimatorCache newDefaultHeapEstimatorCache() {
         return sizeLimit > 0
