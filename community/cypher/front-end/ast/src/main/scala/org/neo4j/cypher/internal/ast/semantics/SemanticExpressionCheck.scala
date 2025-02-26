@@ -154,7 +154,6 @@ import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.StorableType.storableType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
-import org.neo4j.gqlstatus.GqlHelper
 
 object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
@@ -896,15 +895,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         val sanitizedLabelExpression = stringifier.stringifyLabelExpression(labelExpression.replaceColonSyntax)
         if (labelExpression.containsIs) {
           error(
-            GqlHelper.getGql42001_42I29(
-              String.valueOf(labelExpression),
-              sanitizedLabelExpression,
-              legacySymbols.head.position.line,
-              legacySymbols.head.position.column,
-              legacySymbols.head.position.offset
-            ),
-            s"Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS $sanitizedLabelExpression.",
-            legacySymbols.head.position
+            SemanticError.mixingColonAndIs(
+              Set("IS " + stringifier.stringifyLabelExpression(labelExpression)),
+              Set("IS " + sanitizedLabelExpression),
+              legacySymbols.head.position
+            )
           )
         } else
           error(

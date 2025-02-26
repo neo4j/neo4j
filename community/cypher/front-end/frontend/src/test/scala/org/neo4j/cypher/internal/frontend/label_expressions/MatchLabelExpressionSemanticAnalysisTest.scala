@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.label_expressions
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.frontend.NameBasedSemanticAnalysisTestSuite
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.gqlstatus.GqlHelper
 
 class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSuite {
 
@@ -86,15 +87,23 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   test("MATCH (n IS A:B) RETURN n") {
     // should not allow mixing colon as label conjunction symbol with IS keyword in label expression
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29("IS A:B", "IS A&B", 1, 14, 13),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B.",
+        InputPosition(13, 1, 14)
+      )
     )
   }
 
   test("MATCH (n IS A&B:C) RETURN n") {
     // should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B&C."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29("IS (A&B):C", "IS A&B&C", 1, 16, 15),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B&C.",
+        InputPosition(15, 1, 16)
+      )
     )
   }
 
@@ -154,14 +163,32 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH (n:A:B)-[]-(m) WHERE m IS C RETURN *") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&B."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29(":A:B", ":A&B", 1, 11, 10),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&B.",
+        InputPosition(10, 1, 11)
+      )
+    )
+  }
+
+  test("MATCH (n:A:B)-[]-(m) WHERE n IS C AND m:D:E RETURN *") {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29(":A:B, :D:E", ":A&B, :D&E", 1, 11, 10),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. These expressions could be expressed as :A&B, :D&E.",
+        InputPosition(10, 1, 11)
+      )
     )
   }
 
   test("MATCH (n:A:B)-[r IS A|B]->(m) RETURN *") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&B."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29(":A:B", ":A&B", 1, 11, 10),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&B.",
+        InputPosition(10, 1, 11)
+      )
     )
   }
 
@@ -390,8 +417,12 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   test("MATCH (n) WHERE n IS A:C RETURN n") {
     // should not allow mixing colon as label conjunction symbol with IS keyword in label expression predicate
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&C."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29("IS A:C", "IS A&C", 1, 23, 22),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&C.",
+        InputPosition(22, 1, 23)
+      )
     )
   }
 
@@ -486,14 +517,22 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH (n:A:B) WHERE n IS C RETURN n") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&B."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29(":A:B", ":A&B", 1, 11, 10),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&B.",
+        InputPosition(10, 1, 11)
+      )
     )
   }
 
   test("MATCH (n IS A) WHERE n :B:C RETURN n") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :B&C."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29(":B:C", ":B&C", 1, 26, 25),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :B&C.",
+        InputPosition(25, 1, 26)
+      )
     )
   }
 
@@ -663,9 +702,17 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
     runSemanticAnalysis().errors shouldBe empty
   }
 
+  test("MATCH (n)-[r IS $([\"A\"])|B]->(m) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
   test("MATCH (n:A:$([\"B\"]))-[r IS $([\"A\"])|B]->(m) RETURN *") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. These expressions could be expressed as :A&$all([\"B\"]), IS $all([\"A\"])|B."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29(":A:$all([\"B\"])", ":A&$all([\"B\"])", 1, 11, 10),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&$all([\"B\"]).",
+        InputPosition(10, 1, 11)
+      )
     )
   }
 

@@ -16,14 +16,20 @@
  */
 package org.neo4j.cypher.internal.frontend.label_expressions
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.frontend.SemanticAnalysisTestSuiteWithDefaultQuery
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.TestName
+import org.neo4j.gqlstatus.GqlHelper
 
 abstract class LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(statement: UpdateStatement)
     extends SemanticAnalysisTestSuiteWithDefaultQuery
     with TestName {
 
   override def defaultQuery: String = s"$statement $testName"
+
+  // Length of the query before the test name
+  protected val offset = statement.asPrettyString.length + 1
 
   private val labelExprErrorMessage =
     s"Label expressions in patterns are not allowed in a $statement clause, but only in a MATCH clause and in expressions"
@@ -102,15 +108,23 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(state
   test("(n IS A:B)") {
     // should not allow mixing colon as label conjunction symbol with IS keyword in label expression
     // Just checking the first error, since MERGE (being ReadWrite) reports the error twice, but CREATE only once.
-    runSemanticAnalysis().errorMessages.headOption shouldEqual Some(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B."
+    runSemanticAnalysis().errors.headOption shouldEqual Some(
+      SemanticError(
+        GqlHelper.getGql42001_42I29("IS A:B", "IS A&B", 1, offset + 8, offset + 7),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B.",
+        InputPosition(offset + 7, 1, offset + 8)
+      )
     )
   }
 
   test("(n IS A&B:C)") {
     // should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B&C."
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        GqlHelper.getGql42001_42I29("IS (A&B):C", "IS A&B&C", 1, offset + 10, offset + 9),
+        "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B&C.",
+        InputPosition(offset + 9, 1, offset + 10)
+      )
     )
   }
 
@@ -170,10 +184,12 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(state
   }
 
   test("()-[IS Rel1|:Rel2]->()") {
-    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      s"A single relationship type must be specified for $statement",
-      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS Rel1|Rel2."
-    )
+    // Just checking contains, since MERGE (being ReadWrite) reports the error twice, but CREATE only once.
+    runSemanticAnalysis().errors.toSet should contain(SemanticError(
+      GqlHelper.getGql42001_42I29("IS Rel1|:Rel2", "IS Rel1|Rel2", 1, offset + 12, offset + 11),
+      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS Rel1|Rel2.",
+      InputPosition(offset + 11, 1, offset + 12)
+    ))
   }
 
   test("()-[IS !Rel1]->()") {
