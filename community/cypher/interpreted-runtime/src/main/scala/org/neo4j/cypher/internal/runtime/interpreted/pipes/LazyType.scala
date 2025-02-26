@@ -31,8 +31,6 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.internal.kernel.api.TokenWrite
 
 sealed abstract class LazyType {
-  protected var id = LazyType.UNKNOWN
-
   def getOrCreateType(row: ReadableRow, state: QueryState): Int
 
   def getOrCreateType(row: ReadableRow, state: QueryState, token: TokenWrite): Int
@@ -45,29 +43,22 @@ sealed abstract class LazyType {
 case class LazyTypeDynamic(expr: Expression, stringified: String) extends LazyType {
 
   def getOrCreateType(row: ReadableRow, state: QueryState): Int = {
-    if (id == LazyType.UNKNOWN) {
-      id = CypherFunctions.getOrCreateDynamicRelType(expr(row, state), state.query)
-    }
-    id
+    CypherFunctions.getOrCreateDynamicRelType(expr(row, state), state.query)
   }
 
   def getOrCreateType(row: ReadableRow, state: QueryState, token: TokenWrite): Int = {
-    if (id == LazyType.UNKNOWN) {
-      id = CypherFunctions.getOrCreateDynamicRelType(expr(row, state), token)
-    }
-    id
+    CypherFunctions.getOrCreateDynamicRelType(expr(row, state), token)
   }
 
   def getId(row: ReadableRow, state: QueryState): Int = {
     val name = CypherFunctions.evaluateSingleDynamicRelType(expr(row, state))
-    if (id == LazyLabel.UNKNOWN) {
-      id = state.query.getOptRelTypeId(name).getOrElse(LazyType.UNKNOWN)
-    }
-    id
+    state.query.getOptRelTypeId(name).getOrElse(LazyType.UNKNOWN)
   }
 }
 
 case class LazyTypeStatic(name: String) extends LazyType {
+  private var id = LazyType.UNKNOWN
+
   def stringified: String = name
 
   def getOrCreateType(row: ReadableRow, state: QueryState): Int =
@@ -101,6 +92,15 @@ case class LazyTypeStatic(name: String) extends LazyType {
     getId(state.query)
 }
 
+object LazyTypeStatic {
+
+  def apply(relTypeName: RelTypeName)(implicit table: TokenTable): LazyTypeStatic = {
+    val typ = LazyTypeStatic(relTypeName.name)
+    typ.id = table.id(relTypeName)
+    typ
+  }
+}
+
 object LazyType {
   val UNKNOWN: Int = -1
 
@@ -110,19 +110,12 @@ object LazyType {
     commandExpressionConverter: org.neo4j.cypher.internal.expressions.Expression => Expression
   ): LazyType = {
     relTypeExpression match {
-      case name: RelTypeName => LazyType(name)(table)
+      case name: RelTypeName => LazyTypeStatic(name)(table)
       case dyn @ DynamicRelTypeExpression(expression, _) =>
-        LazyType(commandExpressionConverter(expression), dyn.asCanonicalStringVal)
+        LazyTypeDynamic(commandExpressionConverter(expression), dyn.asCanonicalStringVal)
     }
   }
 
-  def apply(relTypeName: RelTypeName)(implicit table: TokenTable): LazyTypeStatic = {
-    val typ = LazyTypeStatic(relTypeName.name)
-    typ.id = table.id(relTypeName)
-    typ
-  }
-
-  def apply(relTypeExpr: Expression, rendered: String): LazyTypeDynamic = {
-    LazyTypeDynamic(relTypeExpr, rendered)
-  }
+  def apply(relTypeName: RelTypeName)(implicit table: TokenTable): LazyTypeStatic =
+    LazyTypeStatic(relTypeName)
 }

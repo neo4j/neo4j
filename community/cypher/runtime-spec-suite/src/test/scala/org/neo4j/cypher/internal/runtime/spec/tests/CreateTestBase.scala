@@ -397,6 +397,29 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     relationship.getType.name() should equal("R")
   }
 
+  test("should not incorrectly cache the dynamic relationship type!") {
+    // given
+    givenGraph {
+      tx.createNode()
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(createRelationshipWithDynamicType("r", "n", "relType", "n", OUTGOING))
+      .cartesianProduct()
+      .|.allNodeScan("n")
+      .unwind("['B', 'C'] as relType")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    tx.getAllRelationships.asScala.map(_.getType.name()) should contain theSameElementsAs Seq("B", "C")
+  }
+
   test("should throw the correct error if the dynamic type is invalid") {
     // given
     val nodes = givenGraph {
