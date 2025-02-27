@@ -1053,7 +1053,7 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
   test("should handle value population with cached properties and deleted node") {
     // given
-    givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i) }) }
+    val nodes = givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1066,14 +1066,15 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("n").withRows(rowCount(sizeHint))
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes))
   }
 
   test("should handle value population with cached properties and deleted relationship") {
     // given
-    givenGraph {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach(r => r.setProperty("p", Random.nextInt()))
+      rels
     }
 
     // when
@@ -1087,6 +1088,6 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("r").withRows(rowCount(sizeHint))
+    runtimeResult should beColumns("r").withRows(singleColumn(rels))
   }
 }
