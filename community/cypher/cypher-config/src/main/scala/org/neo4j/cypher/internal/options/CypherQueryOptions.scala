@@ -629,7 +629,6 @@ case object CypherPlanVarExpandInto
 
 sealed abstract class CypherHeapEstimatorCacheOption(val preset: String) extends CypherKeyValueOption(preset) {
   override def companion: CypherHeapEstimatorCacheOption.type = CypherHeapEstimatorCacheOption
-  override def render: String = super.render.toUpperCase(Locale.ROOT)
   override def cacheKey: String = "" // Does not affect the cached query
 
   /** Does not affect the plan we produce. */

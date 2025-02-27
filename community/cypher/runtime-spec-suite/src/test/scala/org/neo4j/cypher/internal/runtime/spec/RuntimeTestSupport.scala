@@ -25,11 +25,9 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.MasterCompiler
-import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.ResourceManagerFactory
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
-import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
@@ -52,7 +50,6 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewri
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
@@ -955,9 +952,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
 
   protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
 
-    val cypherConfiguration: CypherConfiguration = edition.cypherConfig
-
-    val queryOptions = PreParser.queryOptions(List.empty, InputPosition.NONE, cypherConfiguration)
+    val queryOptions = edition.defaultQueryOptions
 
     runtimeContextManager.create(
       queryOptions.queryOptions.cypherVersion.actualVersion,

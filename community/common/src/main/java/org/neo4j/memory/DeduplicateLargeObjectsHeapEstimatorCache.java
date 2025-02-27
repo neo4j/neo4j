@@ -33,7 +33,7 @@ public class DeduplicateLargeObjectsHeapEstimatorCache implements HeapEstimatorC
     private final int[] cacheHits;
     private int currentSize;
 
-    DeduplicateLargeObjectsHeapEstimatorCache(HeapEstimatorCacheConfig config) {
+    public DeduplicateLargeObjectsHeapEstimatorCache(HeapEstimatorCacheConfig config) {
         this(config.sizeLimit(), config.largeObjectThreshold());
     }
 
