@@ -23,6 +23,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Policy
 import com.github.benmanes.caffeine.cache.stats.CacheStats
 
+import java.io.Closeable
 import java.lang
 import java.util
 import java.util.Optional
@@ -39,7 +40,7 @@ import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 /**
- * The SharedCacheContainer is used for a caching architecture where multiple containers share a single backing cache. Thus multiple 'SharedCacheContainer's are
+ * The SharedCacheContainer is used for a caching architecture where multiple containers share a single backing cache. Thus, multiple 'SharedCacheContainer's are
  * expected to exist where they all share the same 'inner' cache.
  *
  * A 'SharedCacheContainer' should at creation be assigned a unique 'id'. When relaying method calls from 'SharedCacheContainer' to 'inner', keys are
@@ -50,10 +51,16 @@ import scala.jdk.CollectionConverters.MapHasAsScala
  * @param id A Int assigned to the SharedCacheContainer which is assumed to be unique in order to differentiate between different containers and their entires
  *           in the backing 'inner' cache.
  * @param tracer Tracer for the shared cache.
+ * @param destructor A function that is called when the cache is closed.
  * @tparam K The key type of the cache.
  * @tparam V The value type of the cache.
  */
-case class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int, tracer: CacheTracer[K]) extends Cache[K, V] {
+case class SharedCacheContainer[K, V](
+  inner: Cache[(Int, K), V],
+  id: Int,
+  tracer: CacheTracer[K],
+  destructor: () => Unit = () => {}
+) extends Cache[K, V] with Closeable {
 
   override def get(key: K, mappingFunction: function.Function[_ >: K, _ <: V]): V = {
     var hit = true
@@ -164,6 +171,8 @@ case class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int, tracer
   }
 
   override def policy(): Policy[K, V] = new SharedCacheContainer.Policy(inner.policy(), id)
+
+  override def close(): Unit = destructor.apply()
 }
 
 object SharedCacheContainer {

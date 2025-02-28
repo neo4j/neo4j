@@ -44,6 +44,11 @@ class LFUCache[K <: AnyRef, V <: AnyRef](
 
   private val inner: Cache[K, V] = cacheFactory.createCache(initialSize, removalListener)
 
+  def close(): Unit = inner match {
+    case closable: java.io.Closeable => closable.close()
+    case _                           => ()
+  }
+
   def computeIfAbsent(key: K, f: => V): V = {
     var hit = true
 

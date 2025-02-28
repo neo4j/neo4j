@@ -39,6 +39,7 @@ import org.neo4j.notifications.MissingRelTypeNotification
 import org.neo4j.token.api.TokenConstants
 import org.neo4j.values.virtual.MapValue
 
+import java.io.Closeable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -141,13 +142,18 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
   val tracer: CacheTracer[QUERY_KEY],
   val executingQueryTracer: ExecutingQueryTracer
-) {
+) extends Closeable {
 
   val removalListener: RemovalListener[QUERY_KEY, CacheEntry] =
-    (key: QUERY_KEY, value: CacheEntry, cause: RemovalCause) => tracer.discard(key, "")
+    (key: QUERY_KEY, _: CacheEntry, _: RemovalCause) => tracer.discard(key, "")
 
   private val inner: Cache[QUERY_KEY, CacheEntry] =
     createInner(cacheFactory, maximumSize, removalListener)
+
+  def close(): Unit = inner match {
+    case closable: java.io.Closeable => closable.close()
+    case _                           => ()
+  }
 
   protected def createInner(
     innerFactory: CaffeineCacheFactory,

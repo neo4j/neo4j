@@ -200,6 +200,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
 
     def registerExternalListener(id: Int, listener: RemovalListener[K, V]): Unit =
       externalListeners.update(id, listener)
+
+    def unregisterExternalListener(id: Int): Unit = externalListeners.remove(id)
   }
 
   private val cacheKindToCache: TrieMap[String, Cache[_, _]] = scala.collection.concurrent.TrieMap()
@@ -249,24 +251,36 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
     size: CacheSize,
     removalListener: RemovalListener[K, V],
     cacheKind: String
-  ): Cache[K, V] = {
+  ): Cache[K, V] =
+    createCacheWithRemovalListener(
+      removalListener,
+      cacheKind,
+      ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, _, size)
+    )
+
+  private def createCacheWithRemovalListener[V <: AnyRef, K <: AnyRef](
+    removalListener: RemovalListener[K, V],
+    cacheKind: String,
+    createBackingCache: InternalRemovalListener[K, V] => Cache[(Int, K), V]
+  ): SharedCacheContainer[K, V] = {
     val id = SharedCacheContainerIdGen.getNewId
     val globalTracer: CacheTracer[K] = tracer(cacheKind)
     val globalRemovalListener: RemovalListener[K, V] =
-      (key: K, value: V, cause: RemovalCause) => globalTracer.discard(key, "")
+      (key: K, _: V, _: RemovalCause) => globalTracer.discard(key, "")
     val internalRemovalListener =
-      cacheKindToListener.getOrElseUpdate(cacheKind, InternalRemovalListener(globalRemovalListener)).asInstanceOf[
-        InternalRemovalListener[K, V]
-      ]
+      cacheKindToListener
+        .getOrElseUpdate(cacheKind, InternalRemovalListener(globalRemovalListener))
+        .asInstanceOf[InternalRemovalListener[K, V]]
     internalRemovalListener.registerExternalListener(id, removalListener)
 
     SharedCacheContainer(
       cacheKindToCache.getOrElseUpdate(
         cacheKind,
-        ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, internalRemovalListener, size)
+        createBackingCache(internalRemovalListener)
       ).asInstanceOf[Cache[(Int, K), V]],
       id,
-      globalTracer
+      globalTracer,
+      () => internalRemovalListener.unregisterExternalListener(id)
     )
   }
 
@@ -297,45 +311,31 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
     )
   }
 
+  def createSoftBackingCache[K <: AnyRef, V <: AnyRef](
+    internalRemovalListener: InternalRemovalListener[K, V],
+    strongSize: CacheSize,
+    softSize: CacheSize
+  ): Cache[(Int, K), V] = {
+    val secondary = ExecutorBasedCaffeineCacheFactory.createSoftValuesCache[(Int, K), V](
+      executor,
+      internalRemovalListener,
+      softSize
+    )
+    val primary = ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](
+      executor,
+      TwoLayerCache.evictionListener(secondary),
+      strongSize
+    )
+    new TwoLayerCache[(Int, K), V](primary, secondary)
+  }
+
   def createWithSoftBackingCache[K <: AnyRef, V <: AnyRef](
     strongSize: CacheSize,
     softSize: CacheSize,
     removalListener: RemovalListener[K, V],
     cacheKind: String
-  ): Cache[K, V] = {
-
-    val id = SharedCacheContainerIdGen.getNewId
-    val globalTracer: CacheTracer[K] = tracer(cacheKind)
-    val globalRemovalListener: RemovalListener[K, V] =
-      (key: K, value: V, cause: RemovalCause) => globalTracer.discard(key, "")
-    val internalRemovalListener =
-      cacheKindToListener.getOrElseUpdate(cacheKind, InternalRemovalListener(globalRemovalListener)).asInstanceOf[
-        InternalRemovalListener[K, V]
-      ]
-    internalRemovalListener.registerExternalListener(id, removalListener)
-
-    def newCache: Cache[(Int, K), V] = {
-      val secondary = ExecutorBasedCaffeineCacheFactory.createSoftValuesCache[(Int, K), V](
-        executor,
-        internalRemovalListener,
-        softSize
-      )
-      val primary = ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](
-        executor,
-        TwoLayerCache.evictionListener(secondary),
-        strongSize
-      )
-      new TwoLayerCache[(Int, K), V](primary, secondary)
-    }
-    SharedCacheContainer(
-      cacheKindToCache.getOrElseUpdate(
-        cacheKind,
-        newCache
-      ).asInstanceOf[Cache[(Int, K), V]],
-      id,
-      globalTracer
-    )
-  }
+  ): Cache[K, V] =
+    createCacheWithRemovalListener(removalListener, cacheKind, createSoftBackingCache(_, strongSize, softSize))
 
   override def resolveCacheKind(kind: String): CaffeineCacheFactory = new CaffeineCacheFactory {
     override def createCache[K <: AnyRef, V <: AnyRef](size: CacheSize): Cache[K, V] = self.createCache(size, kind)
