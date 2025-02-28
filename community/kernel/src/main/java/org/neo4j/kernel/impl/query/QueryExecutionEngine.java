@@ -46,6 +46,11 @@ public interface QueryExecutionEngine {
 
     long clearQueryCaches();
 
+    /**
+     * Close the query caches on destruction, freeing resources.
+     */
+    default void closeQueryCaches() {}
+
     long clearExecutableQueryCache();
 
     long clearCompilerCache();
