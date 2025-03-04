@@ -44,13 +44,7 @@ object ExecutorBasedCaffeineCacheFactory {
     val currentThreadExecutor = new Executor {
       def execute(command: Runnable): Unit = command.run()
     }
-    size.withSize[K, V, Cache[K, V]](size =>
-      Caffeine
-        .newBuilder()
-        .executor(currentThreadExecutor)
-        .maximumSize(size)
-        .build[K, V]()
-    )
+    createCache(currentThreadExecutor, size)
   }
 
   def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: CacheSize): Cache[K, V] =
@@ -243,7 +237,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
         ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, size)
       ).asInstanceOf[Cache[(Int, K), V]],
       SharedCacheContainerIdGen.getNewId,
-      tracer(cacheKind)
+      tracer(cacheKind),
+      this
     )
   }
 
@@ -280,7 +275,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
       ).asInstanceOf[Cache[(Int, K), V]],
       id,
       globalTracer,
-      () => internalRemovalListener.unregisterExternalListener(id)
+      // will call back when the container is closed, so that `close(id)` can unregister the removal listener(s)
+      this
     )
   }
 
@@ -291,7 +287,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
         ExecutorBasedCaffeineCacheFactory.createCache(executor, size, ttlAfterAccess)
       ).asInstanceOf[Cache[(Int, K), V]],
       SharedCacheContainerIdGen.getNewId,
-      tracer(cacheKind)
+      tracer(cacheKind),
+      this
     )
   }
 
@@ -307,7 +304,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
         ExecutorBasedCaffeineCacheFactory.createCache(executor, ticker, ttlAfterWrite, size)
       ).asInstanceOf[Cache[(Int, K), V]],
       SharedCacheContainerIdGen.getNewId,
-      tracer(cacheKind)
+      tracer(cacheKind),
+      this
     )
   }
 
@@ -364,6 +362,9 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
     ): Cache[K, V] =
       self.createWithSoftBackingCache(primarySize, secondarySize, removalListener, kind)
   }
+
+  def close(databaseId: Int): Unit =
+    cacheKindToListener.values.foreach(_.unregisterExternalListener(databaseId))
 }
 
 object SharedCacheContainerIdGen {

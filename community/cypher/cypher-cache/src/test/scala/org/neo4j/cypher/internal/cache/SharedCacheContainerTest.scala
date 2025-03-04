@@ -47,8 +47,9 @@ class SharedCacheContainerTest extends CypherFunSuite {
     val backingCache = factory.createCache[(Int, String), String](size = CacheSize.Static(10))
     val tracer0: CacheTracer[String] = mock[CacheTracer[String]]
     val tracer1: CacheTracer[String] = mock[CacheTracer[String]]
-    val cacheContainer0 = SharedCacheContainer(backingCache, 0, tracer0)
-    val cacheContainer1 = SharedCacheContainer(backingCache, 1, tracer1)
+    val sharedExecutorBasedCaffeineCacheFactory = mock[SharedExecutorBasedCaffeineCacheFactory]
+    val cacheContainer0 = SharedCacheContainer(backingCache, 0, tracer0, sharedExecutorBasedCaffeineCacheFactory)
+    val cacheContainer1 = SharedCacheContainer(backingCache, 1, tracer1, sharedExecutorBasedCaffeineCacheFactory)
 
     TestData(cacheContainer0, tracer0, cacheContainer1, tracer1, backingCache)
   }

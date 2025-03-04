@@ -51,7 +51,7 @@ import scala.jdk.CollectionConverters.MapHasAsScala
  * @param id A Int assigned to the SharedCacheContainer which is assumed to be unique in order to differentiate between different containers and their entires
  *           in the backing 'inner' cache.
  * @param tracer Tracer for the shared cache.
- * @param destructor A function that is called when the cache is closed.
+ * @param cacheFactory factory this container was created from. Needs to be informed about this container being closed.
  * @tparam K The key type of the cache.
  * @tparam V The value type of the cache.
  */
@@ -59,7 +59,7 @@ case class SharedCacheContainer[K, V](
   inner: Cache[(Int, K), V],
   id: Int,
   tracer: CacheTracer[K],
-  destructor: () => Unit = () => {}
+  cacheFactory: SharedExecutorBasedCaffeineCacheFactory
 ) extends Cache[K, V] with Closeable {
 
   override def get(key: K, mappingFunction: function.Function[_ >: K, _ <: V]): V = {
@@ -172,7 +172,8 @@ case class SharedCacheContainer[K, V](
 
   override def policy(): Policy[K, V] = new SharedCacheContainer.Policy(inner.policy(), id)
 
-  override def close(): Unit = destructor.apply()
+  override def close(): Unit =
+    cacheFactory.close(id)
 }
 
 object SharedCacheContainer {

@@ -608,7 +608,7 @@ public class Database extends AbstractDatabase {
         life.setLast(checkpointerLifecycle);
         life.add(onStop(() -> {
             this.executionEngine.clearQueryCaches();
-            this.executionEngine.closeQueryCaches();
+            this.executionEngine.close();
         }));
 
         databaseDependencies.resolveDependency(DbmsDiagnosticsManager.class).dumpDatabaseDiagnostics(this);
