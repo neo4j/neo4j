@@ -72,6 +72,11 @@ enum NoQueryEngine implements QueryExecutionEngine {
         throw noQueryEngine();
     }
 
+    @Override
+    public void close() {
+        throw noQueryEngine();
+    }
+
     private static RuntimeException noQueryEngine() {
         return new UnsupportedOperationException("No query engine installed.");
     }
