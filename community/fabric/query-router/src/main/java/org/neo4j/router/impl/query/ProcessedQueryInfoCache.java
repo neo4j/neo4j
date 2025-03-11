@@ -38,23 +38,27 @@ public class ProcessedQueryInfoCache {
 
     public static final String MONITOR_TAG = "cypher.cache.router";
 
+    private final boolean useParameterSizeHint;
     private final LFUCache<CacheKeyWithParameterType, Value> cache;
 
     @VisibleForTesting
     public ProcessedQueryInfoCache(
             CaffeineCacheFactory cacheFactory,
             Observable<Integer> cacheSize,
+            boolean useParameterSizeHint,
             CacheTracer<CacheKeyWithParameterType> tracer) {
+        this.useParameterSizeHint = useParameterSizeHint;
         this.cache = new LFUCache<>(cacheFactory, new CacheSize.Dynamic(cacheSize), tracer);
     }
 
     public ProcessedQueryInfoCache(
             CaffeineCacheFactory cacheFactory, int cacheSize, CacheTracer<CacheKeyWithParameterType> tracer) {
+        useParameterSizeHint = true;
         this.cache = new LFUCache<>(cacheFactory, new CacheSize.Static(cacheSize), tracer);
     }
 
     public Value get(PreParsedQuery query, MapValue parameters) {
-        var maybeValue = cache.get(CypherQueryCaches.astKeyRawQuery(query, parameters, true));
+        var maybeValue = cache.get(CypherQueryCaches.astKeyRawQuery(query, parameters, useParameterSizeHint));
         if (maybeValue.isEmpty()) {
             return null;
         }
@@ -62,7 +66,7 @@ public class ProcessedQueryInfoCache {
     }
 
     public void put(PreParsedQuery query, MapValue parameters, Value value) {
-        cache.put(CypherQueryCaches.astKeyRawQuery(query, parameters, true), value);
+        cache.put(CypherQueryCaches.astKeyRawQuery(query, parameters, useParameterSizeHint), value);
     }
 
     public record Value(

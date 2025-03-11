@@ -156,7 +156,10 @@ public class CommunityQueryRouterBootstrap extends CommonQueryRouterBootstrap {
         var cacheFactory = new ExecutorBasedCaffeineCacheFactory(
                 job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
         var targetCache = new ProcessedQueryInfoCache(
-                cacheFactory, cypherConfig.queryCacheSize(), monitors.newMonitor(CacheTracer.class, MONITOR_TAG));
+                cacheFactory,
+                cypherConfig.queryCacheSize(),
+                cypherConfig.useParameterSizeHint(),
+                monitors.newMonitor(CacheTracer.class, MONITOR_TAG));
         var preParser = new PreParser(cypherConfig);
         var parsing = new CypherParsing(
                 null,
