@@ -516,6 +516,48 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     )
     result should beColumns("var6", "var0", "var1", "var3", "var2").withRows(inAnyOrder(expected))
   }
+
+  test("block format store cursor reused but not reset bug") {
+    assume(!isParallel)
+
+    // given
+    givenGraph {
+      val node1 = nodeGraph(1, "L1")
+      val nodes2 = nodeGraph(2, "L2")
+      val nodes = node1 ++ nodes2
+      connect(
+        nodes,
+        Seq(
+          (0, 1, "T"),
+          (0, 2, "T")
+        )
+      )
+    }
+
+    // Create new nodes in the _same_ transaction as the read query below
+    nodeGraph(1, "M1")
+    nodeGraph(1, "M2")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c", "d", "r")
+      .apply()
+      .|.expandInto("(c)-[r]->(d)")
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("d", "M2")
+      .|.nodeByLabelScan("c", "M1")
+      .apply()
+      .|.limit(1)
+      .|.expandAll("(a)-->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "L1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // ExpandInto should not accidentally match a relationship from the preceding ExpandAll
+    runtimeResult should beColumns("c", "d", "r").withNoRows()
+  }
 }
 
 // Supported by interpreted, slotted, pipelined, parallel
