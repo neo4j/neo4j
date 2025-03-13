@@ -260,10 +260,10 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         }
 
       case prop: CachedHasProperty =>
-        rewriteCachedProperies(slotConfiguration, prop, needsValue = false)
+        rewriteCachedProperies(slotConfiguration, prop, needsValue = false, failOnDeletedEntity = false)
 
       case prop: CachedProperty =>
-        rewriteCachedProperies(slotConfiguration, prop, needsValue = true)
+        rewriteCachedProperies(slotConfiguration, prop, needsValue = true, prop.failOnMissingEntity)
 
       case e @ Equals(Variable(k1), Variable(k2)) =>
         primitiveEqualityChecks(slotConfiguration, e, k1, k2, positiveCheck = true)
@@ -535,7 +535,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
   private def rewriteCachedProperies(
     slotConfiguration: SlotConfigurationBuilder,
     prop: ASTCachedProperty,
-    needsValue: Boolean
+    needsValue: Boolean,
+    failOnDeletedEntity: Boolean
   ) = {
     val pkn = prop.propertyKey
     val PropertyKeyName(propKey) = pkn
@@ -546,7 +547,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         if (cypherType == CTNode && entityType == NODE_TYPE) || (cypherType == CTRelationship && entityType == RELATIONSHIP_TYPE) =>
         val propExpression = tokenContext.getOptPropertyKeyId(propKey) match {
           case Some(propId) =>
-            ast.SlottedCachedPropertyWithPropertyToken(
+            ast.SlottedCachedPropertyWithPropertyToken.create(
               originalEntityName,
               pkn,
               offset,
@@ -555,10 +556,11 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
               slotConfiguration.cachedPropOffset(prop.runtimeKey),
               entityType,
               nullable,
-              needsValue
+              needsValue,
+              failOnDeletedEntity
             )
           case None =>
-            ast.SlottedCachedPropertyWithoutPropertyToken(
+            ast.SlottedCachedPropertyWithoutPropertyToken.create(
               originalEntityName,
               pkn,
               offset,
@@ -567,7 +569,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
               slotConfiguration.cachedPropOffset(prop.runtimeKey),
               entityType,
               nullable,
-              needsValue
+              needsValue,
+              failOnDeletedEntity
             )
         }
         // Primitive entities are always null-checked by the CachedNodeProperty command expression itself at runtime,

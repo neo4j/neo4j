@@ -640,9 +640,14 @@ object StaticEvaluation {
 
     override def callFunction(id: Int, args: Array[AnyValue], ctx: ProcedureCallContext): AnyValue = notAvailable()
 
-    override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value = notAvailable()
+    override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int, failOnDeletedNode: Boolean): Value =
+      notAvailable()
 
-    override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = notAvailable()
+    override def getTxStateRelationshipPropertyOrNull(
+      relId: Long,
+      propertyKey: Int,
+      faiOnDeletedRelationship: Boolean
+    ): Value = notAvailable()
 
     override def getTransactionType: KernelTransaction.Type = notAvailable()
 

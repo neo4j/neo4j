@@ -166,7 +166,7 @@ object expressionVariableAllocation {
       topDown(Rewriter.lift {
         // Cached properties would have to be cached together with the Expression Variables.
         // Not caching the property until we have support for that.
-        case cp @ CachedProperty(_, v, p, _, _) if globalMapping.contains(v.name) =>
+        case cp @ CachedProperty(_, v, p, _, _, _) if globalMapping.contains(v.name) =>
           Property(globalMapping(v.name), p)(cp.position)
         case cp @ CachedHasProperty(_, v, p, _, _) if globalMapping.contains(v.name) =>
           Property(globalMapping(v.name), p)(cp.position)

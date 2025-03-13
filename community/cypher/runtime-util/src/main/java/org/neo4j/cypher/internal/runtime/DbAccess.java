@@ -181,9 +181,9 @@ public interface DbAccess extends EntityById {
             MapValueBuilder seenProperties,
             IntSet seenPropertyTokens);
 
-    Value getTxStateNodePropertyOrNull(long nodeId, int propertyKey);
+    Value getTxStateNodePropertyOrNull(long nodeId, int propertyKey, boolean failOnDeletedNode);
 
-    Value getTxStateRelationshipPropertyOrNull(long relId, int propertyKey);
+    Value getTxStateRelationshipPropertyOrNull(long relId, int propertyKey, boolean failOnDeletedRelationship);
 
     AnyValue callFunction(int id, AnyValue[] args, ProcedureCallContext ctx);
 

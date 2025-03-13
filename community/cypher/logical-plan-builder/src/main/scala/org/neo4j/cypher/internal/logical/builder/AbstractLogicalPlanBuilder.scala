@@ -23,9 +23,9 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AndsReorderable
+import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.DynamicRelTypeExpression
 import org.neo4j.cypher.internal.expressions.Equals
@@ -3561,7 +3561,12 @@ object AbstractLogicalPlanBuilder {
   }
 
   def column(name: String, cachedProperties: String*): Column = {
-    Column(varFor(name), cachedProperties.map(cp => Parser.parseExpression(cp).asInstanceOf[ASTCachedProperty]).toSet)
+    Column(
+      varFor(name),
+      cachedProperties.map(cp =>
+        Parser.parseExpression(cp).asInstanceOf[CachedProperty].copy(failOnMissingEntity = false)(pos)
+      ).toSet
+    )
   }
 
   def coerceToPredicate(expression: String) = CoerceToPredicate(Parser.parseExpression(expression))

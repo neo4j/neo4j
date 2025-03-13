@@ -1240,31 +1240,41 @@ private[internal] class TransactionBoundReadQueryContext(
 
   override def asObject(value: AnyValue): AnyRef = value.map(valueMapper)
 
-  override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value = {
+  override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int, failOnDeletedNode: Boolean): Value = {
     if (nodeId != -1L) {
       val ops = reads()
-      if (ops.nodeDeletedInTransaction(nodeId)) {
+      val deleted = ops.nodeDeletedInTransaction(nodeId)
+      if (failOnDeletedNode && deleted) {
         throw new EntityNotFoundException(
           s"Node with id $nodeId has been deleted in this transaction"
         )
+      } else if (deleted) {
+        Values.NO_VALUE
+      } else {
+        ops.nodePropertyChangeInBatchOrNull(nodeId, propertyKey)
       }
-
-      ops.nodePropertyChangeInBatchOrNull(nodeId, propertyKey)
     } else {
       null
     }
   }
 
-  override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = {
+  override def getTxStateRelationshipPropertyOrNull(
+    relId: Long,
+    propertyKey: Int,
+    failOnDeletedRelationship: Boolean
+  ): Value = {
     if (relId != -1L) {
       val ops = reads()
-      if (ops.relationshipDeletedInTransaction(relId)) {
+      val deleted = ops.relationshipDeletedInTransaction(relId)
+      if (failOnDeletedRelationship && deleted) {
         throw new EntityNotFoundException(
           s"Relationship with id $relId has been deleted in this transaction"
         )
+      } else if (deleted) {
+        Values.NO_VALUE
+      } else {
+        ops.relationshipPropertyChangeInBatchOrNull(relId, propertyKey)
       }
-
-      ops.relationshipPropertyChangeInBatchOrNull(relId, propertyKey)
     } else {
       null
     }
@@ -1327,7 +1337,7 @@ private[internal] class TransactionBoundReadQueryContext(
     }
 
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Value =
-      getTxStateNodePropertyOrNull(nodeId, propertyKeyId)
+      getTxStateNodePropertyOrNull(nodeId, propertyKeyId, failOnDeletedNode = true)
 
     override def hasProperty(
       id: Long,
@@ -1493,7 +1503,7 @@ private[internal] class TransactionBoundReadQueryContext(
       transactionalContext.locks.releaseExclusiveRelationshipLock(obj)
 
     override def getTxStateProperty(relId: Long, propertyKeyId: Int): Value =
-      getTxStateRelationshipPropertyOrNull(relId, propertyKeyId)
+      getTxStateRelationshipPropertyOrNull(relId, propertyKeyId, failOnDeletedRelationship = true)
 
     override def hasTxStatePropertyForCachedProperty(relId: Long, propertyKeyId: Int): Option[Boolean] = {
       if (isDeletedInThisTx(relId)) {

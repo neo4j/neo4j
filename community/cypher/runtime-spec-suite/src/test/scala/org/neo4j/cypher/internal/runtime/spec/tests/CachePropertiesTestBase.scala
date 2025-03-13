@@ -1069,6 +1069,26 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("n").withRows(singleColumn(nodes))
   }
 
+  test("should handle value population with cached properties and deleted node in different pipelines") {
+    // given
+    val nodes = givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i) }) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(column("n", "cacheN[n.p]"))
+      .unwind("[1] AS ignore")
+      .nonFuseable()
+      .deleteNode("n")
+      .cacheProperties("cache[n.p]")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes))
+  }
+
   test("should handle value population with cached properties and deleted relationship") {
     // given
     val rels = givenGraph {
@@ -1080,6 +1100,30 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(column("r", "cacheR[r.p]"))
+      .deleteRelationship("r")
+      .cacheProperties("cacheR[r.p]")
+      .allRelationshipsScan("()-[r]->()")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r").withRows(singleColumn(rels))
+  }
+
+  test("should handle value population with cached properties and deleted relationship in different pipelines") {
+    // given
+    val rels = givenGraph {
+      val (_, rels) = circleGraph(sizeHint)
+      rels.foreach(r => r.setProperty("p", Random.nextInt()))
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(column("r", "cacheR[r.p]"))
+      .unwind("[1] AS ignore")
+      .nonFuseable()
       .deleteRelationship("r")
       .cacheProperties("cacheR[r.p]")
       .allRelationshipsScan("()-[r]->()")

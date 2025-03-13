@@ -29,7 +29,7 @@ trait SlottedCachedProperty extends ASTCachedProperty with RuntimeExpression {
   def offsetIsForLongSlot: Boolean
   def cachedPropertyOffset: Int
   def nullable: Boolean
-
+  def failOnMissingEntity: Boolean = true
   def needsValue: Boolean = true
 
   /**
@@ -61,7 +61,8 @@ case class SlottedCachedPropertyWithPropertyToken(
   propToken: Int,
   cachedPropertyOffset: Int,
   entityType: EntityType,
-  nullable: Boolean
+  nullable: Boolean,
+  override val failOnMissingEntity: Boolean
 ) extends SlottedCachedProperty
 
 /**
@@ -88,7 +89,7 @@ case class SlottedCachedHasPropertyWithPropertyToken(
 
 object SlottedCachedPropertyWithPropertyToken {
 
-  def apply(
+  def create(
     entityName: String,
     propertyKey: PropertyKeyName,
     offset: Int,
@@ -97,7 +98,8 @@ object SlottedCachedPropertyWithPropertyToken {
     cachedPropertyOffset: Int,
     entityType: EntityType,
     nullable: Boolean,
-    needsValue: Boolean
+    needsValue: Boolean,
+    failOnMissingEntity: Boolean
   ): ASTCachedProperty = {
     if (needsValue) {
       SlottedCachedPropertyWithPropertyToken(
@@ -108,7 +110,8 @@ object SlottedCachedPropertyWithPropertyToken {
         propToken,
         cachedPropertyOffset,
         entityType,
-        nullable
+        nullable,
+        failOnMissingEntity
       )
     } else {
       SlottedCachedHasPropertyWithPropertyToken(
@@ -145,7 +148,8 @@ case class SlottedCachedPropertyWithoutPropertyToken(
   propKey: String,
   cachedPropertyOffset: Int,
   entityType: EntityType,
-  nullable: Boolean
+  nullable: Boolean,
+  override val failOnMissingEntity: Boolean
 ) extends SlottedCachedProperty
 
 /**
@@ -172,7 +176,7 @@ case class SlottedCachedHasPropertyWithoutPropertyToken(
 
 object SlottedCachedPropertyWithoutPropertyToken {
 
-  def apply(
+  def create(
     entityName: String,
     propertyKey: PropertyKeyName,
     offset: Int,
@@ -181,7 +185,8 @@ object SlottedCachedPropertyWithoutPropertyToken {
     cachedPropertyOffset: Int,
     entityType: EntityType,
     nullable: Boolean,
-    needsValue: Boolean
+    needsValue: Boolean,
+    failOnMissingEntity: Boolean
   ): ASTCachedProperty = {
     if (needsValue) {
       SlottedCachedPropertyWithoutPropertyToken(
@@ -192,7 +197,8 @@ object SlottedCachedPropertyWithoutPropertyToken {
         propKey,
         cachedPropertyOffset,
         entityType,
-        nullable
+        nullable,
+        failOnMissingEntity
       )
     } else {
       SlottedCachedHasPropertyWithoutPropertyToken(

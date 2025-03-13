@@ -111,11 +111,11 @@ object LogicalPlanToPlanBuilderString {
       case p @ CachedHasProperty(_, _, _, NODE_TYPE, true) => s"cacheNHasPropertyFromStore[${p.propertyAccessString}]"
       case p @ CachedHasProperty(_, _, _, RELATIONSHIP_TYPE, true) =>
         s"cacheRHasPropertyFromStore[${p.propertyAccessString}]"
-      case p @ CachedProperty(_, _, _, NODE_TYPE, false)         => s"cacheN[${p.propertyAccessString}]"
-      case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, false) => s"cacheR[${p.propertyAccessString}]"
-      case p @ CachedProperty(_, _, _, NODE_TYPE, true)          => s"cacheNFromStore[${p.propertyAccessString}]"
-      case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, true)  => s"cacheRFromStore[${p.propertyAccessString}]"
-      case e                                                     => e.asCanonicalStringVal
+      case p @ CachedProperty(_, _, _, NODE_TYPE, false, _)         => s"cacheN[${p.propertyAccessString}]"
+      case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, false, _) => s"cacheR[${p.propertyAccessString}]"
+      case p @ CachedProperty(_, _, _, NODE_TYPE, true, _)          => s"cacheNFromStore[${p.propertyAccessString}]"
+      case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, true, _)  => s"cacheRFromStore[${p.propertyAccessString}]"
+      case e                                                        => e.asCanonicalStringVal
     }
   }
 

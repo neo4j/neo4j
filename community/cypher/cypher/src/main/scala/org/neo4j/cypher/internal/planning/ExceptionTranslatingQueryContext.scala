@@ -481,11 +481,18 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def asObject(value: AnyValue): AnyRef =
     translateException(tokenNameLookup, inner.asObject(value))
 
-  override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value =
-    translateException(tokenNameLookup, inner.getTxStateNodePropertyOrNull(nodeId, propertyKey))
+  override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int, failOnDeletedNode: Boolean): Value =
+    translateException(tokenNameLookup, inner.getTxStateNodePropertyOrNull(nodeId, propertyKey, failOnDeletedNode))
 
-  override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
-    translateException(tokenNameLookup, inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey))
+  override def getTxStateRelationshipPropertyOrNull(
+    relId: Long,
+    propertyKey: Int,
+    failOnDeletedRelationship: Boolean
+  ): Value =
+    translateException(
+      tokenNameLookup,
+      inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey, failOnDeletedRelationship)
+    )
 
   override def nodeCountByCountStore(labelId: Int): Long =
     translateException(tokenNameLookup, inner.nodeCountByCountStore(labelId))

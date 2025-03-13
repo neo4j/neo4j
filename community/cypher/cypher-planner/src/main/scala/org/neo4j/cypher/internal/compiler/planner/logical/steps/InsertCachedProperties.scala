@@ -370,12 +370,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           produceResult
             .returnColumns
             .map(column =>
-              cachedPropertiesTracker
-                .get(acc.variableWithOriginalName(asVariable(column.variable)))
-                .fold(column) {
-                  cached =>
-                    column.copy(cachedProperties = cached.filterNot(_.isInstanceOf[CachedHasProperty]))
-                }
+              cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(column.variable))).fold(column) {
+                cached: Set[ASTCachedProperty] =>
+                  column.copy(cachedProperties = cached.collect {
+                    case cp: CachedProperty => cp.copy(failOnMissingEntity = false)(cp.position)
+                  })
+              }
             )
         produceResult.withNewReturnColumns(newColumns)
 

@@ -771,7 +771,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
         arg,
         Set(NullCheckReferenceProperty(
           offset = 0,
-          inner = SlottedCachedPropertyWithPropertyToken(
+          inner = new SlottedCachedPropertyWithPropertyToken(
             entityName = "n.prop",
             propertyKey = PropertyKeyName("prop")(InputPosition.NONE),
             offset = 0,
@@ -779,7 +779,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
             propToken = 666,
             cachedPropertyOffset = 1,
             entityType = NODE_TYPE,
-            nullable = true
+            nullable = true,
+            failOnMissingEntity = true
           )
         ))
       )

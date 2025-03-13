@@ -671,11 +671,15 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def asObject(value: AnyValue): AnyRef = inner.asObject(value)
 
-  override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value =
-    inner.getTxStateNodePropertyOrNull(nodeId, propertyKey)
+  override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int, failOnDeletedNode: Boolean): Value =
+    inner.getTxStateNodePropertyOrNull(nodeId, propertyKey, failOnDeletedNode)
 
-  override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
-    inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey)
+  override def getTxStateRelationshipPropertyOrNull(
+    relId: Long,
+    propertyKey: Int,
+    failOnDeletedRelationship: Boolean
+  ): Value =
+    inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey, failOnDeletedRelationship)
 
   override def getTransactionType: KernelTransaction.Type = inner.getTransactionType
 

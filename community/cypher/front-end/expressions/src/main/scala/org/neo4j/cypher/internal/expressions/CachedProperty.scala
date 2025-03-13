@@ -100,12 +100,11 @@ case class CachedProperty(
   entityVariable: LogicalVariable,
   override val propertyKey: PropertyKeyName,
   override val entityType: EntityType,
-  knownToAccessStore: Boolean = false
+  knownToAccessStore: Boolean = false,
+  failOnMissingEntity: Boolean = true
 )(val position: InputPosition) extends ASTCachedProperty {
-
   override val entityName: String = entityVariable.name
   override def originalEntityName: String = originalEntity.name
-
   override def asCanonicalStringVal: String = s"cache[$propertyAccessString]"
 }
 
@@ -127,6 +126,5 @@ case class CachedHasProperty(
 
   override val entityName: String = entityVariable.name
   override def originalEntityName: String = originalEntity.name
-
   override def asCanonicalStringVal: String = s"cache[$propertyAccessString]"
 }

@@ -287,7 +287,13 @@ trait AstConstructionTestSupport {
     currentVarName: String,
     knownToAccessStore: Boolean = false
   ): CachedProperty =
-    CachedProperty(varFor(variable), varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
+    CachedProperty(
+      varFor(variable),
+      varFor(currentVarName),
+      propName(propKey),
+      NODE_TYPE,
+      knownToAccessStore = knownToAccessStore
+    )(pos)
 
   def cachedNodeHasProp(variable: String, propKey: String): CachedHasProperty =
     cachedNodeHasProp(variable, propKey, variable)
