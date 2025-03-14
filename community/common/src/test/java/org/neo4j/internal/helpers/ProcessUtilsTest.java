@@ -42,6 +42,7 @@ class ProcessUtilsTest {
         command.add(ProcessUtils.getJavaExecutable().toString());
         command.add("-cp");
         command.add(ProcessUtils.getClassPath());
+        command.add("-XX:-UsePerfData");
         command.add(getClass().getName());
 
         ProcessBuilder builder = new ProcessBuilder(command);
@@ -56,7 +57,7 @@ class ProcessUtilsTest {
 
     @Test
     void startJavaProcessUsingProcessUtil() throws IOException, InterruptedException {
-        var process = start(pb -> {}, getClass().getName());
+        var process = start(pb -> {}, "-XX:-UsePerfData", getClass().getName());
 
         BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = in.readLine();
