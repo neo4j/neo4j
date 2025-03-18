@@ -119,7 +119,7 @@ public class QueryController {
         try {
             var queryTransaction =
                     transactionManager.begin(txId, session, sessionAuthToken, databaseName, buildTxConfig(request));
-            if (request.statement() != null) {
+            if (request.statement() != null && !request.statement().isEmpty()) {
                 queryTransaction.runQuery(request.statement(), request.parameters());
                 txCleanUpAction = TxHandling.KEEP_OPEN;
                 return successWithResultResponse(queryTransaction, request.includeCounters(), false);

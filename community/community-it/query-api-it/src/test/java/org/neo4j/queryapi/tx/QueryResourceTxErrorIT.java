@@ -178,4 +178,13 @@ public class QueryResourceTxErrorIT {
         assertThat(accessReq).wasSuccessful();
         assertThat(accessReq).hasNoTransaction();
     }
+
+    @Test
+    void blankStatementShouldOpenTx() throws IOException, InterruptedException {
+        var res = testClient.beginTx(QueryRequest.newBuilder().statement("").build());
+
+        assertThat(res).wasSuccessful();
+        assertThat(res).hasTransaction();
+        testClient.commitTx(res.body().txId());
+    }
 }
