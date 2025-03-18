@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfile
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.Profiler
 import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
+import org.neo4j.cypher.internal.util.AggregationSkippedNull
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.internal.kernel
@@ -71,14 +72,18 @@ class QueryState(
   val prePopulateResults: Boolean = false,
   val input: InputDataStream = NoInput,
   val profileInformation: InterpretedProfileInformation = null,
-  val transactionWorkerExecutor: Option[CallableExecutor] = None
+  val transactionWorkerExecutor: Option[CallableExecutor] = None,
+  val warnOnAggregationSkipNull: Boolean = false
 ) extends AutoCloseable with RuntimeNotifier {
 
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
 
-  // NOTE: used as a simple cache to avoid flooding the map with adding the same object
-  private[this] var lastCachedNotification: InternalNotification = _
+  // NOTE: used as a simple cache to avoid flooding the map with adding the same object,
+  //       assigning it as AggregationSkippedNull when we shouldn't produce this error is a somewhat
+  //       silly micro optimization to avoid an extra equality check.
+  private[this] var lastCachedNotification: InternalNotification =
+    if (!warnOnAggregationSkipNull) AggregationSkippedNull else null
   private[this] val _notifications = new util.HashSet[InternalNotification]()
 
   def newRow(rowFactory: CypherRowFactory): CypherRow = {
@@ -90,7 +95,9 @@ class QueryState(
 
   def newRuntimeNotification(notification: InternalNotification): Unit = {
     if (notification ne lastCachedNotification) {
-      _notifications.add(notification)
+      if (warnOnAggregationSkipNull || (notification ne AggregationSkippedNull)) {
+        _notifications.add(notification)
+      }
       lastCachedNotification = notification
     }
   }
@@ -271,7 +278,8 @@ class QueryState(
       prePopulateResults,
       input,
       newProfileInformation,
-      transactionWorkerExecutor
+      transactionWorkerExecutor,
+      warnOnAggregationSkipNull
     )
   }
 
@@ -379,7 +387,8 @@ object QueryState {
     prePopulateResults: Boolean,
     input: InputDataStream,
     profileInformation: InterpretedProfileInformation,
-    transactionWorkerExecutor: Option[CallableExecutor]
+    transactionWorkerExecutor: Option[CallableExecutor],
+    warnOnAggregationSkipNull: Boolean
   ): QueryState = {
     val memoryTrackerForOperatorProvider =
       queryHeapHighWatermarkTracker.newMemoryTrackerForOperatorProvider(query.transactionalContext.memoryTracker)
@@ -403,7 +412,8 @@ object QueryState {
       prePopulateResults,
       input,
       profileInformation,
-      transactionWorkerExecutor
+      transactionWorkerExecutor,
+      warnOnAggregationSkipNull
     )
   }
 }

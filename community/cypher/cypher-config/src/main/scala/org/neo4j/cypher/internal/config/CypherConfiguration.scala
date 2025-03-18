@@ -173,6 +173,9 @@ class CypherConfiguration private (val config: Config) {
   val freeMemoryOfUnusedColumns: Boolean =
     config.get(GraphDatabaseInternalSettings.cypher_free_memory_of_unused_columns)
 
+  val warnOnAggregationSkipNull: Boolean =
+    config.get(GraphDatabaseInternalSettings.cypher_warn_on_aggregation_skip_null)
+
   val lpEagerFallbackEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled)
 

@@ -49,7 +49,8 @@ class SlottedExecutionResultBuilderFactory(
   lenientCreateRelationship: Boolean,
   memoryTrackingController: MemoryTrackingController,
   hasLoadCSV: Boolean,
-  transactionMode: QueryTransactionMode
+  transactionMode: QueryTransactionMode,
+  warnOnAggregationSkipNull: Boolean
 ) extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, transactionMode) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder = SlottedExecutionResultBuilder(queryContext)
@@ -93,7 +94,8 @@ class SlottedExecutionResultBuilderFactory(
         prePopulateResults = prePopulateResults,
         input = input,
         if (doProfile) profileInformation else null,
-        transactionWorkerExecutor = transactionWorkerExecutor
+        transactionWorkerExecutor = transactionWorkerExecutor,
+        warnOnAggregationSkipNull
       )
     }
   }

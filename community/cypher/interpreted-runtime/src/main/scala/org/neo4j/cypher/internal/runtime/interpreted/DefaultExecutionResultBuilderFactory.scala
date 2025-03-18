@@ -151,7 +151,8 @@ case class InterpretedExecutionResultBuilderFactory(
   lenientCreateRelationship: Boolean,
   memoryTrackingController: MemoryTrackingController,
   hasLoadCSV: Boolean,
-  transactionMode: QueryTransactionMode
+  transactionMode: QueryTransactionMode,
+  warnOnAggregationSkipNull: Boolean
 ) extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, transactionMode) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder =
@@ -188,7 +189,8 @@ case class InterpretedExecutionResultBuilderFactory(
         prePopulateResults = prePopulateResults,
         input = input,
         if (doProfile) profileInformation else null,
-        transactionWorkerExecutor
+        transactionWorkerExecutor,
+        warnOnAggregationSkipNull = warnOnAggregationSkipNull
       )
     }
   }

@@ -545,6 +545,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Warn if aggregation encounters and skips a NULL value. Part of GQL but annoying and not very useful.")
+    public static final Setting<Boolean> cypher_warn_on_aggregation_skip_null = newBuilder(
+                    "internal.cypher.warn_on_aggregation_skip_null", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Max number of recent queries to collect in the data collector module. Will round down to the"
             + " nearest power of two. The default number (8192 query invocations) "
             + " was chosen as a trade-off between getting a useful amount of queries, and not"

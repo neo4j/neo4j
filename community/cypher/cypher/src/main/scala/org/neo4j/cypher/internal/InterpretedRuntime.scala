@@ -118,7 +118,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       context.config.lenientCreateRelationship,
       context.config.memoryTrackingController,
       query.hasLoadCSV,
-      transactionsMode
+      transactionsMode,
+      context.config.warnOnAggregationSkipNull
     )
 
     new InterpretedExecutionPlan(
