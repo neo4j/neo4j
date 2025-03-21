@@ -1045,21 +1045,14 @@ case class InterpretedPipeMapper(
                 ),
                 allowNullOrNaNProperty = true
               )
-            case org.neo4j.cypher.internal.ir.CreateRelationship(
-                variable,
-                leftNode,
-                relType,
-                rightNode,
-                _,
-                properties
-              ) =>
+            case r: org.neo4j.cypher.internal.ir.CreateRelationship =>
               CreateRelationship(
                 CreateRelationshipCommand(
-                  variable.name,
-                  leftNode.name,
-                  LazyType(relType, semanticTable, buildExpression),
-                  rightNode.name,
-                  properties.map(buildExpression)
+                  r.variable.name,
+                  r.startNode.name,
+                  LazyType(r.relType, semanticTable, buildExpression),
+                  r.endNode.name,
+                  r.properties.map(buildExpression)
                 ),
                 allowNullOrNaNProperty = true
               )
