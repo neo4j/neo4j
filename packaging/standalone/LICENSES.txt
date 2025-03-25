@@ -40,6 +40,10 @@ Apache Software License, Version 2.0
   jansi
   Java Native Access
   long
+  Neo4j Bolt Connection (Netty reference impl)
+  Neo4j Bolt Connection (Pooled provider impl)
+  Neo4j Bolt Connection (Provider SPI)
+  Neo4j Bolt Connection (Routed provider impl)
   Neo4j Java Driver
   neo4j-driver
   Netty/Buffer

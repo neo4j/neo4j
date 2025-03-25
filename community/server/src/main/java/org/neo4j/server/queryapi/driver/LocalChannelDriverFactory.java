@@ -19,22 +19,12 @@
  */
 package org.neo4j.server.queryapi.driver;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.local.LocalAddress;
-import io.netty.channel.local.LocalChannel;
 import java.net.URI;
-import java.time.Clock;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.internal.BoltAgent;
-import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.GqlNotificationConfig;
-import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
-import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
 import org.neo4j.logging.InternalLogProvider;
 
@@ -54,27 +44,8 @@ public final class LocalChannelDriverFactory extends DriverFactory {
     }
 
     @Override
-    protected Bootstrap createBootstrap(int threadCount) {
-        return newBootstrap(threadCount);
-    }
-
-    @Override
-    protected ChannelConnector createConnector(
-            ConnectionSettings settings,
-            SecurityPlan securityPlan,
-            Config config,
-            Clock clock,
-            RoutingContext routingContext,
-            BoltAgent boltAgent) {
-        return new LocalChannelConnector(
-                localAddress,
-                config.userAgent(),
-                boltAgent,
-                settings.authTokenProvider(),
-                GqlNotificationConfig.from(config.notificationConfig()),
-                securityPlan,
-                clock,
-                config.logging());
+    protected LocalAddress localAddress() {
+        return localAddress;
     }
 
     public Driver createLocalDriver() {
@@ -86,12 +57,5 @@ public final class LocalChannelDriverFactory extends DriverFactory {
                         .withLogging(new DriverToInternalLogProvider(internalLogProvider))
                         .withUserAgent("neo4j-query-api/v2")
                         .build());
-    }
-
-    public static Bootstrap newBootstrap(int threadCount) {
-        var bootstrap = new Bootstrap();
-        bootstrap.group(EventLoopGroupFactory.newEventLoopGroup(threadCount));
-        bootstrap.channel(LocalChannel.class);
-        return bootstrap;
     }
 }
