@@ -56,6 +56,11 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create(TEST_DIRECTORY);
     private static final String JUNIT4_ASSUMPTION_EXCEPTION = "org.junit.AssumptionViolatedException";
 
+    public static TestDirectory getTestDirectory(ExtensionContext context) {
+        return (TestDirectory)
+                context.getStore(TEST_DIRECTORY_NAMESPACE).get(TestDirectorySupportExtension.TEST_DIRECTORY);
+    }
+
     @Override
     public void beforeAll(ExtensionContext context) throws IOException {
         if (getLifecycle(context) == PER_CLASS) {
