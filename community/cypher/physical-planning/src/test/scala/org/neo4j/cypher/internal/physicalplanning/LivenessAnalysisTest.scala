@@ -45,6 +45,22 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LivenessAnalysisTest extends CypherFunSuite {
 
+  test("ensure leaf plans copy their variables to parent plans") {
+    // https://github.com/neo4j/neo4j/issues/13568
+    new PlanWithLiveAsserts()
+      .produceResults("c").expectLive("c")
+      .apply().expectLive("c")
+      .|.union().expectLive("c")
+      .|.|.distinct("a AS c").expectLive("a", "c")
+      .|.|.argument("a").expectLive("a", "c")
+      .|.allNodeScan("c").expectLive("a", "c")
+      .sort("b ASC").expectLive("a", "b")
+      .projection("0 AS b").expectLive("a", "b")
+      .projection("0 AS a").expectLive("a")
+      .argument().expectLive()
+      .assertCorrectLiveness()
+  }
+
   test("simple eager") {
     new PlanWithLiveAsserts()
       .produceResults("a", "c").expectLive("a", "c")
@@ -389,7 +405,7 @@ class LivenessAnalysisTest extends CypherFunSuite {
       .|.|.distinct("b+1 as x").expectLive("a", "b", "c", "x")
       .|.|.argument("a", "b", "c").expectLive("a", "b", "c")
       .|.projection("3 as c").expectLive("a", "b", "c")
-      .|.argument("a", "b").expectLive("a", "b")
+      .|.argument("a", "b").expectLive("a", "b", "c")
       .projection("1 as a", "2 as b").expectLive("a", "b")
       .argument().expectLive()
       .assertCorrectLiveness()

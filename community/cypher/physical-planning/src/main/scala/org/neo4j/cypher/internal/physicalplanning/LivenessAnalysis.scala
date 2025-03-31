@@ -75,9 +75,12 @@ object LivenessAnalysis {
           p match {
             case _: LogicalBinaryPlan =>
               TraverseChildren(Acc(newLive, newLive :: acc.liveFromBinaryParents, newResult))
-            case _: LogicalLeafPlan =>
+            case leaf: LogicalLeafPlan =>
+              val arguments = leaf.argumentIds.map(_.name)
               acc.liveFromBinaryParents match {
-                case head :: tail => TraverseChildren(Acc(newLive ++ head, tail, newResult))
+                // Push arguments up into all ancestor plans, in case the RHS has arguments
+                // not present in the arguments of the LHS
+                case head :: tail => TraverseChildren(Acc(newLive ++ head, tail.map(_ ++ arguments), newResult))
                 case Nil          => TraverseChildren(Acc(newLive, Nil, newResult))
               }
             case _ =>
