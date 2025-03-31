@@ -3091,7 +3091,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       "varExpandAsShortest",
       "resetIndent",
       "planIf",
-      "planAny"
+      "planAny",
+      "foreachWithExpression"
     )
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>

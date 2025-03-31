@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
@@ -46,6 +47,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACI
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
@@ -108,6 +110,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(pos)
   private val cachedNProp1 = CachedProperty(n, n, prop, NODE_TYPE)(nProp1.position)
+  private val cachedNMProp1 = CachedProperty(n, m, prop, NODE_TYPE)(nProp1.position)
+  private val cachedNMProp1True = CachedProperty(n, m, prop, NODE_TYPE, true)(nProp1.position)
   private val cachedNHasProp1 = CachedHasProperty(n, n, prop, NODE_TYPE)(nProp1.position)
   private val cachedNFoo1 = CachedProperty(n, n, foo, NODE_TYPE)(nFoo1.position)
   private val cachedNProp2 = CachedProperty(n, n, prop, NODE_TYPE)(nProp2.position)
@@ -2942,6 +2946,162 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .|.filter("cacheNHasProperty[n.p] IS NOT NULL")
       .|.allNodeScan("n")
       .filter("cacheNHasPropertyFromStore[n.p] IS NOT NULL")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("Should not cache unavailable properties in produce result - subqueryForEach") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode)
+    val expression2 = caseExpression(
+      None,
+      Some(ListLiteral(Seq.empty)(pos)),
+      (
+        equals(cachedNMProp1, SignedDecimalIntegerLiteral("2")(pos)),
+        ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)
+      )
+    )
+    val expression1 = caseExpression(
+      None,
+      Some(ListLiteral(Seq.empty)(pos)),
+      (
+        equals(cachedNMProp1True, SignedDecimalIntegerLiteral("1")(pos)),
+        ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)
+      )
+    )
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .subqueryForeach()
+      .|.foreach(
+        "`  ignoreMe@3`",
+        """CASE
+        WHEN m.prop = 2 THEN [1]
+        ELSE []
+        END""".stripMargin,
+        Seq(createPattern(Seq(createNode("`  UNNAMED1`")), Seq()))
+      )
+      .|.foreach(
+        "`  ignoreMe@2`",
+        """CASE
+        WHEN m.prop = 1 THEN [1]
+        ELSE []
+    END""".stripMargin,
+        Seq(createPattern(Seq(createNode("`  UNNAMED0`")), Seq()))
+      )
+      .|.projection("n AS m")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .subqueryForeach()
+      .|.foreachWithExpression(
+        "`  ignoreMe@3`",
+        expression2,
+        Seq(createPattern(Seq(createNode("`  UNNAMED1`")), Seq()))
+      )
+      .|.foreachWithExpression(
+        "`  ignoreMe@2`",
+        expression1,
+        Seq(createPattern(Seq(createNode("`  UNNAMED0`")), Seq()))
+      )
+      .|.projection("n AS m")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, _) = replace(plan, initialTable)
+
+    newPlan should be(expectedPlan)
+  }
+
+  test("Should not cache unavailable properties in produce result - transactionForeach") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode)
+    val expression2 = caseExpression(
+      None,
+      Some(ListLiteral(Seq.empty)(pos)),
+      (
+        equals(cachedNMProp1, SignedDecimalIntegerLiteral("2")(pos)),
+        ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)
+      )
+    )
+    val expression1 = caseExpression(
+      None,
+      Some(ListLiteral(Seq.empty)(pos)),
+      (
+        equals(cachedNMProp1True, SignedDecimalIntegerLiteral("1")(pos)),
+        ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)
+      )
+    )
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .transactionForeach()
+      .|.foreach(
+        "`  ignoreMe@3`",
+        """CASE
+        WHEN m.prop = 2 THEN [1]
+        ELSE []
+        END""".stripMargin,
+        Seq(createPattern(Seq(createNode("`  UNNAMED1`")), Seq()))
+      )
+      .|.foreach(
+        "`  ignoreMe@2`",
+        """CASE
+        WHEN m.prop = 1 THEN [1]
+        ELSE []
+    END""".stripMargin,
+        Seq(createPattern(Seq(createNode("`  UNNAMED0`")), Seq()))
+      )
+      .|.projection("n AS m")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .transactionForeach()
+      .|.foreachWithExpression(
+        "`  ignoreMe@3`",
+        expression2,
+        Seq(createPattern(Seq(createNode("`  UNNAMED1`")), Seq()))
+      )
+      .|.foreachWithExpression(
+        "`  ignoreMe@2`",
+        expression1,
+        Seq(createPattern(Seq(createNode("`  UNNAMED0`")), Seq()))
+      )
+      .|.projection("n AS m")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, _) = replace(plan, initialTable)
+
+    newPlan should be(expectedPlan)
+  }
+
+  test("Should not cache unavailable properties in produce result - semiApply") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .optional()
+      .semiApply()
+      .|.sort("`  m.prop@1` ASC")
+      .|.projection("m.prop AS `  m.prop@1`")
+      .|.projection("n AS m")
+      .|.allNodeScan("x", "n")
+      .cacheProperties("n.prop")
+      .allNodeScan("n")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults(column("n", "cacheNFromStore[n.prop]"))
+      .optional()
+      .semiApply()
+      .|.sort("`  m.prop@1` ASC")
+      .|.projection(Map("  m.prop@1" -> CachedProperty(n, m, prop, NODE_TYPE)(pos)))
+      .|.projection("n AS m")
+      .|.allNodeScan("x", "n")
+      .cacheProperties("cacheNFromStore[n.prop]")
       .allNodeScan("n")
       .build()
   }
