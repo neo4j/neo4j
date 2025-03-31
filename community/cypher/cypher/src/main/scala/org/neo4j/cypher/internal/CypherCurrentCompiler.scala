@@ -205,7 +205,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       contextManager.config.renderPlanDescription,
       kernelMonitors,
       query.options.queryOptions.cypherVersion.actualVersion,
-      executionPlanCacheKeyHash
+      executionPlanCacheKeyHash,
+      planState.returnColumns.toArray
     )
   }
 
@@ -329,7 +330,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
           }
         } else if (planState.planningAttributes.readOnly) {
           READ_ONLY
-        } else if (CypherCurrentCompiler.columnNames(planState.logicalPlan).isEmpty) {
+        } else if (columnNames(planState.logicalPlan).isEmpty) {
           WRITE
         } else {
           READ_WRITE
@@ -340,6 +341,18 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   private def planHasDBMSProcedure(logicalPlan: LogicalPlan): Boolean =
     logicalPlan.folder.treeExists {
       case procCall: ProcedureCall if procCall.call.signature.accessMode == ProcedureDbmsAccess => true
+    }
+
+  /**
+   * The approximate column names that the user will see when executing the query. Note that these might be namespaced, so that instead of `a` one gets `  a@1` or similar.
+   *
+   * For display to the user on error, this should be fine, but for regular results the column names should be obtained through other means.
+   */
+  private def columnNames(logicalPlan: LogicalPlan): Array[String] =
+    logicalPlan match {
+      case produceResult: ProduceResult => produceResult.columns.map(_.name).toArray
+
+      case _ => Array()
     }
 
   /**
@@ -374,13 +387,6 @@ object CypherCurrentCompiler {
     }
   }
 
-  private def columnNames(logicalPlan: LogicalPlan): Array[String] =
-    logicalPlan match {
-      case produceResult: ProduceResult => produceResult.columns.map(_.name).toArray
-
-      case _ => Array()
-    }
-
   private[internal] class CypherExecutableQuery(
     logicalPlan: LogicalPlan,
     readOnly: Boolean,
@@ -402,7 +408,8 @@ object CypherCurrentCompiler {
     renderPlanDescription: Boolean,
     kernelMonitors: Monitors,
     cypherVersion: CypherVersion,
-    override val executionPlanCacheKeyHash: Int
+    override val executionPlanCacheKeyHash: Int,
+    val returnColumns: Array[String]
   ) extends ExecutableQuery {
 
     // Monitors are implemented via dynamic proxies which are slow compared to NOOP which is why we want to able to completely disable
@@ -505,7 +512,7 @@ object CypherCurrentCompiler {
           // NOTE: We leave it up to outer layers to rollback on failure
           outerCloseable.close()
           new FailedExecutionResult(
-            columnNames(logicalPlan),
+            returnColumns,
             internalQueryType,
             subscriber,
             runtimeExecutionMode(queryOptions)
@@ -546,10 +553,9 @@ object CypherCurrentCompiler {
         if (innerExecutionMode == ExplainMode) {
           taskCloser.close(Success)
           outerCloseable.close()
-          val columns = columnNames(logicalPlan)
 
           new ExplainExecutionResult(
-            columns,
+            returnColumns,
             planDescriptionBuilder.explain(),
             internalQueryType,
             filteredPlannerNotifications.toSet,
