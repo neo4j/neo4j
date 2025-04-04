@@ -66,7 +66,7 @@ public final class ValuePopulation {
 
     /**
      * Populates nodes and relationships contained in the specified value.
-     *
+     * <p>
      * Note about memory tracking!
      * Population can potentially allocate lots of memory, for example large lists of node references.
      * To try to avoid some OOMs, we sometimes(!) allocate on the provided memory tracker in these methods.
