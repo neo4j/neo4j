@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -53,7 +55,10 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 public final class ValuePopulation {
-    public static final NodeValue MISSING_NODE = VirtualValues.nodeValue(-1L, "", EMPTY_TEXT_ARRAY, EMPTY_MAP, false);
+    public static final NodeValue MISSING_NODE =
+            VirtualValues.nodeValue(NO_SUCH_NODE, "", EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
+    public static final RelationshipValue MISSING_REL = VirtualValues.relationshipValue(
+            NO_SUCH_RELATIONSHIP, "", MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);
 
     private ValuePopulation() {
         throw new UnsupportedOperationException("Do not instantiate");
@@ -233,7 +238,9 @@ public final class ValuePopulation {
         final var elementId = dbAccess.elementIdMapper().nodeElementId(id);
 
         if (!nodeCursor.next()) {
-            if (!dbAccess.nodeDeletedInThisTransaction(id)) {
+            if (id == NO_SUCH_NODE) {
+                return MISSING_NODE;
+            } else if (!dbAccess.nodeDeletedInThisTransaction(id)) {
                 var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N11)
                         .build();
                 throw new ReadAndDeleteTransactionConflictException(gql, false);
@@ -285,7 +292,9 @@ public final class ValuePopulation {
         final var elementId = idMapper.relationshipElementId(id);
 
         if (!relCursor.next()) {
-            if (!dbAccess.relationshipDeletedInThisTransaction(id)) {
+            if (id == NO_SUCH_RELATIONSHIP) {
+                return MISSING_REL;
+            } else if (!dbAccess.relationshipDeletedInThisTransaction(id)) {
                 var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N11)
                         .build();
                 throw new ReadAndDeleteTransactionConflictException(gql, false);
