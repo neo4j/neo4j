@@ -34,18 +34,16 @@ public class ContextBasedSystemDatabaseProvider implements SystemDatabaseProvide
     }
 
     @Override
-    public GraphDatabaseAPI database() throws SystemDatabaseUnavailableException {
-        return databaseContext().databaseFacade();
+    public Optional<GraphDatabaseAPI> optionalDatabase() {
+        return databaseContext().map(DatabaseContext::databaseFacade);
     }
 
     @Override
     public <T> Optional<T> dependency(Class<T> type) throws SystemDatabaseUnavailableException {
-        return SystemDatabaseProvider.dependency(databaseContext().dependencies(), type);
+        return databaseContext().flatMap(ctx -> SystemDatabaseProvider.dependency(ctx.dependencies(), type));
     }
 
-    private DatabaseContext databaseContext() {
-        return databaseContextProvider
-                .getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID)
-                .orElseThrow(SystemDatabaseUnavailableException::new);
+    private Optional<? extends DatabaseContext> databaseContext() {
+        return databaseContextProvider.getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
     }
 }

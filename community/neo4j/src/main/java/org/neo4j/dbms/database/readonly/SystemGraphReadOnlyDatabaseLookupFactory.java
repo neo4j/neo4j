@@ -67,9 +67,9 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
                     .orElse(previous);
         } catch (Exception e) {
             log.warn(
-                    "Unable to lookup readonly databases from the system database due to error!"
-                            + " Using previous lookup %s.%nUnderlying error: %s",
-                    previous, e.getMessage());
+                    "Unable to lookup readonly databases from the system database due to error! Using previous lookup "
+                            + previous,
+                    e);
         }
 
         this.previousLookup = next;

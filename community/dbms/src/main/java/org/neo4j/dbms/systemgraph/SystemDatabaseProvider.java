@@ -33,29 +33,29 @@ public interface SystemDatabaseProvider {
 
     class SystemDatabasePanickedException extends SystemDatabaseUnavailableException {}
 
-    GraphDatabaseAPI database() throws SystemDatabaseUnavailableException;
+    default GraphDatabaseAPI database() throws SystemDatabaseUnavailableException {
+        return optionalDatabase().orElseThrow(SystemDatabaseUnavailableException::new);
+    }
+
+    Optional<GraphDatabaseAPI> optionalDatabase();
 
     default void execute(Consumer<Transaction> consumer) throws SystemDatabaseUnavailableException {
-        var facade = database();
-        if (!facade.isAvailable(1000)) {
-            throw new SystemDatabaseUnavailableException();
-        }
-        try (var tx = facade.beginTx()) {
+        query(tx -> {
             consumer.accept(tx);
-            tx.commit();
-        }
+            return this; // cannot return null
+        });
     }
 
     default <T> T query(Function<Transaction, T> function) throws SystemDatabaseUnavailableException {
-        return query(database(), function, true).orElseThrow();
+        return query(optionalDatabase(), function, true).orElseThrow();
     }
 
     default <T> Optional<T> queryIfAvailable(Function<Transaction, T> function) {
-        return query(database(), function, false);
+        return query(optionalDatabase(), function, false);
     }
 
-    default <T> Optional<T> dependency(Class<T> type) throws SystemDatabaseUnavailableException {
-        return dependency(database().getDependencyResolver(), type);
+    default <T> Optional<T> dependency(Class<T> type) {
+        return optionalDatabase().flatMap(dep -> dependency(dep.getDependencyResolver(), type));
     }
 
     static <T> Optional<T> dependency(DependencyResolver dependencies, Class<T> type)
@@ -67,21 +67,30 @@ public interface SystemDatabaseProvider {
     }
 
     private static <T> Optional<T> query(
-            GraphDatabaseAPI facade, Function<Transaction, T> function, boolean waitForAvailablity)
+            @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<GraphDatabaseAPI> optionalDatabase,
+            Function<Transaction, T> function,
+            boolean failOnUnavailable)
             throws SystemDatabaseUnavailableException {
-        if (waitForAvailablity) {
-            if (!facade.isAvailable(1000)) {
-                if (dependency(facade.getDependencyResolver(), DatabaseHealth.class)
-                        .map(DatabaseHealth::hasNoPanic)
-                        .orElse(true)) {
-                    throw new SystemDatabaseUnavailableException();
-                }
-                throw new SystemDatabasePanickedException();
+        if (optionalDatabase.isEmpty()) {
+            if (failOnUnavailable) {
+                throw new SystemDatabaseUnavailableException();
             }
-        } else if (!facade.isAvailable()) {
             return Optional.empty();
         }
-        try (var tx = facade.beginTx()) {
+        var database = optionalDatabase.get();
+        if (failOnUnavailable) {
+            if (!database.isAvailable(1000)) {
+                if (!dependency(database.getDependencyResolver(), DatabaseHealth.class)
+                        .map(DatabaseHealth::hasNoPanic)
+                        .orElse(true)) {
+                    throw new SystemDatabasePanickedException();
+                }
+                throw new SystemDatabaseUnavailableException();
+            }
+        } else if (!database.isAvailable(0)) {
+            return Optional.empty();
+        }
+        try (var tx = database.beginTx()) {
             var result = function.apply(tx);
             tx.commit();
             return Optional.of(result);
