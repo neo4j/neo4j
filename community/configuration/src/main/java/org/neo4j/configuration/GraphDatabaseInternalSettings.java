@@ -1292,7 +1292,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("A feature toggle behind which the relationship property value access rule feature is developed")
     public static final Setting<Boolean> relationship_property_value_access_rules = newBuilder(
-                    "internal.dbms.feature_flag.relationship_property_value_access_rules", BOOL, false)
+                    "internal.dbms.feature_flag.relationship_property_value_access_rules", BOOL, true)
             .build();
 
     @Internal
