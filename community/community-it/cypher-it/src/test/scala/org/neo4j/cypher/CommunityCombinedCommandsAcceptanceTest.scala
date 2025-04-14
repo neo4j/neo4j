@@ -799,8 +799,49 @@ class CommunityCombinedCommandsAcceptanceTest extends TransactionCommandAcceptan
           usePreExistingUser = true
         )
 
+        execute(
+          s"""$cypherVersionString
+             |SHOW PROCEDURES
+             |YIELD name AS procedure
+             |ORDER BY procedure
+             |WHERE toLower(procedure) CONTAINS 'status'""".stripMargin
+        ).toList should be(expectedProcedures.sorted.map(p => Map("procedure" -> p)))
+        execute(
+          s"""$cypherVersionString
+             |SHOW RANGE INDEXES
+             |YIELD name AS index, entityType, owningConstraint
+             |WHERE owningConstraint IS NULL
+             |RETURN index, entityType""".stripMargin
+        ).toList should be(List(Map("index" -> "my_index", "entityType" -> "RELATIONSHIP")))
+        execute(
+          s"""$cypherVersionString
+             |SHOW SETTING '${expectedSetting("name")}'
+             |YIELD name AS setting, value""".stripMargin
+        ).toList should be(List(Map("setting" -> expectedSetting("name"), "value" -> expectedSetting("value"))))
+        execute(
+          s"""$cypherVersionString
+             |SHOW USER DEFINED FUNCTIONS EXECUTABLE
+             |YIELD name AS function
+             |WHERE function CONTAINS 'return'""".stripMargin
+        ).toList should be(List(Map("function" -> "test.return.latest")))
+        execute(
+          s"""$cypherVersionString
+             |SHOW CONSTRAINTS
+             |YIELD name AS constraint, type
+             |RETURN constraint, type AS constraintType""".stripMargin
+        ).toList should be(List(Map("constraint" -> "my_constraint", "constraintType" -> expectedConstraintType)))
+
         try {
           val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+
+          execute(
+            s"""$cypherVersionString
+               |SHOW TRANSACTION '$unwindTransactionId'
+               |YIELD transactionId AS txId, parameters""".stripMargin
+          ).toList should be(List(Map(
+            "txId" -> unwindTransactionId,
+            "parameters" -> Map("setting" -> expectedSetting("name"))
+          )))
 
           // WHEN
           val result = execute(
