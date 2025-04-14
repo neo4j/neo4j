@@ -21,8 +21,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Not
-import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
@@ -123,12 +121,11 @@ case class transitiveEqualities(cancellationChecker: CancellationChecker) extend
 
   // Collects property equalities, e.g `a.prop = 42`
   private def collect(e: Expression): Transitions = e.folder.treeFold(Transitions.empty) {
-    case _: Or                          => acc => SkipChildren(acc)
     case _: And                         => acc => TraverseChildren(acc)
     case PropertyEquivalence(p1, p2, _) => acc => SkipChildren(acc.withEquivalence(p1 -> p2))
     case PropertyMapping(p: Property, other) if !subTreeReference(p, other) =>
       acc => SkipChildren(acc.withMapping(p -> other))
-    case Not(Equals(_, _)) => acc => SkipChildren(acc)
+    case _ => acc => SkipChildren(acc)
   }
 
   // NOTE that this might introduce duplicate predicates, however at a later rewrite
@@ -151,9 +148,9 @@ case class transitiveEqualities(cancellationChecker: CancellationChecker) extend
   })
 
   private def andRewriter(transitions: Transitions): Rewriter = {
-    val stopOnNotEquals: RewriterStopper = {
-      case Not(Equals(_, _)) => true
-      case _                 => false
+    val onlyVisitAndEquals: RewriterStopper = {
+      case _: Equals | _: And => false
+      case _                  => true
     }
 
     bottomUp(
@@ -161,7 +158,7 @@ case class transitiveEqualities(cancellationChecker: CancellationChecker) extend
         case PropertyEquivalence(_, p2, equals) if transitions.mapping.contains(p2) =>
           equals.copy(rhs = transitions.mapping(p2))(equals.position)
       },
-      stopOnNotEquals
+      onlyVisitAndEquals
     )
   }
 }

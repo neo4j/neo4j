@@ -276,4 +276,20 @@ class TransitiveEqualitiesTest extends CypherFunSuite with AstConstructionTestSu
       "MATCH (n) WHERE n.p = (n.p = 1) AND n.p = 1 RETURN n"
     )
   }
+
+  test("should not rewrite nested predicates") {
+    val preds = Seq(
+      "(n.a = n.b) IS NOT NULL",
+      "NOT (n.a = n.b) IS NULL",
+      "(n.a = n.b) :: BOOLEAN",
+      "(n.a = n.b) :: BOOLEAN!",
+      "(n.a = n.b) = false",
+      "(n.a = n.b) < true"
+    )
+
+    for (pred <- preds) {
+      val query = s"MATCH (n) WHERE n.a = 123 AND ($pred) RETURN n"
+      assertNotRewritten(query)
+    }
+  }
 }
