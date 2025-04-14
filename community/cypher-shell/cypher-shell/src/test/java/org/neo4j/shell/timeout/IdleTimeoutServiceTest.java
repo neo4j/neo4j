@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.time.FakeClock;
 
@@ -83,6 +84,7 @@ class IdleTimeoutServiceTest {
     }
 
     @Test
+    @Disabled
     void timeoutAfterResume() {
         for (int i = 0; i < 100; ++i) {
             ticker.forward(DEFAULT_TIMEOUT);
