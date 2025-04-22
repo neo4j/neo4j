@@ -424,6 +424,25 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     batchedInputValues(batchSize, (0 until inputSize).map(Array[Any](_)): _*)
   }
 
+  test("should not throw an exception when generating empty row for mismatched slots under a union") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("output")
+      .optional()
+      .union()
+      .|.projection("1 AS foo", "1 AS output") // slot offset 1
+      .|.limit(0)
+      .|.argument()
+      .projection("1 AS output") // slot offset 0
+      .limit(0)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    runtimeResult should beColumns("output")
+      .withSingleRow(NO_VALUE)
+  }
+
 }
 
 // Supported by interpreted, slotted, pipelined

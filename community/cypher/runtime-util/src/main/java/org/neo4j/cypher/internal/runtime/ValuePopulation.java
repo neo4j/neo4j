@@ -89,6 +89,7 @@ public final class ValuePopulation {
             RelationshipScanCursor relCursor,
             PropertyCursor propertyCursor,
             MemoryTracker memoryTracker) {
+        assert value != null : "value should not be null";
         if (value instanceof VirtualNodeValue node) {
             return populate(node, dbAccess, nodeCursor, propertyCursor);
         } else if (value instanceof VirtualRelationshipValue relationship) {

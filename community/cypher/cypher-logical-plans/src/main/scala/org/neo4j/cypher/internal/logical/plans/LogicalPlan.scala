@@ -162,17 +162,32 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 
   /**
    * Symbols available after the current plan, regardless of whether this is a top-level query, or a sub-query on RHS of an Apply.
+   *
+   * NOTE: this should *not* be used after slot rewriting, because slotted variables are not only compared by name but
+   * also offset, which invalidates eg set intersection/subtraction
    */
   def localAvailableSymbols: Set[LogicalVariable]
 
   /**
    * Symbols available after the current plan, including arguments coming from LHS of an Apply.
+   *
+   * NOTE: this should *not* be used after slot rewriting, because slotted variables are not only compared by name but
+   * also offset, which invalidates eg set intersection/subtraction
    */
   final def availableSymbols: Set[LogicalVariable] = {
     val importedSymbols = leftmostLeaf match {
       case lp: LogicalLeafPlan => lp.argumentIds
       case _                   => Set.empty
     }
+
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      localAvailableSymbols.forall {
+        case _: Variable => true
+        case _           => false
+      },
+      "LogicalPlan.availableSymbols should not be called after slot allocation: slot offsets invalidate named variable equality"
+    )
+
     localAvailableSymbols ++ importedSymbols
   }
 

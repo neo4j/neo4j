@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.App
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.LiveVariables
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.KeyedSlot
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.ParameterMapping
@@ -35,6 +37,7 @@ import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.ImmutableAttribute
 
 object PhysicalPlanner {
@@ -53,12 +56,13 @@ object PhysicalPlanner {
       "======== BEGIN Physical Planning with %-31s ===========================",
       breakingPolicy.getClass.getSimpleName
     )
+
+    val liveVariables =
+      if (config.freeMemoryOfUnusedColumns) LivenessAnalysis.computeLiveVariables(beforeRewrite, breakingPolicy)
+      else new LiveVariables
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) =
       expressionVariableAllocation.allocate(beforeRewrite)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
-    val liveVariables =
-      if (config.freeMemoryOfUnusedColumns) LivenessAnalysis.computeLiveVariables(logicalPlan, breakingPolicy)
-      else new LiveVariables
     val slotMetaData = SlotAllocation.allocateSlots(
       withSlottedParameters,
       semanticTable,
@@ -99,4 +103,23 @@ case class PhysicalPlan(
   nestedPlanArgumentConfigurations: ImmutableAttribute[SlotConfiguration],
   availableExpressionVariables: AvailableExpressionVariables,
   parameterMapping: ParameterMapping
-)
+) {
+
+  def variableSlots(id: Id): Set[Slot] =
+    slotConfigurations(id)
+      .slots
+      .iterator
+      .collect {
+        case KeyedSlot(_: VariableSlotKey, slot, _) => slot
+      }
+      .toSet
+
+  def variableNames(id: Id): Set[String] =
+    slotConfigurations(id)
+      .slots
+      .iterator
+      .collect {
+        case KeyedSlot(key: VariableSlotKey, _, _) => key.name
+      }
+      .toSet
+}

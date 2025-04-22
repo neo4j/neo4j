@@ -92,10 +92,10 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .foreachApply("i", "[1, 2, 3]")
       .|.antiConditionalApply("y")
       .|.|.create(createNodeWithProperties("n", Seq("L"), "{prop: i}"))
-      .|.|.argument("x")
-      .|.optional()
+      .|.|.argument("y", "i", "x")
+      .|.optional("i", "x")
       .|.filter("y.prop = 42")
-      .|.allNodeScan("y")
+      .|.allNodeScan("y", "i", "x")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
