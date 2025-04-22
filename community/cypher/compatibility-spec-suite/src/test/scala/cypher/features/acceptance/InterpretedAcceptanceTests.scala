@@ -20,6 +20,8 @@
 package cypher.features.acceptance
 
 import cypher.features.TestConfig
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.AllowClauseWithMixedLabelSyntax
 import org.neo4j.graphdb.config.Setting
 
 class InterpretedAcceptanceTests extends BaseAcceptanceTest {
@@ -35,6 +37,11 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
   override val useBolt: Boolean = false
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
+    case "GpmSyntaxMixingAllowedAcceptance" => Map[Setting[_], Object](
+        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> java.util.Set.of(
+          AllowClauseWithMixedLabelSyntax.productPrefix
+        )
+      )
     case _ => Map.empty
   }
 }

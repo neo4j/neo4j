@@ -552,3 +552,21 @@ Feature: GpmSyntaxMixingAcceptance
       | REMOVE n IS A:B:C             |
       | REMOVE n:A:B:C, n IS A        |
 
+
+  Scenario: Mixing label expression symbols is not allowed in nested clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND range(1,10) AS x
+      CALL (x) {
+        UNWIND ['a', 'b'] AS y
+        CALL (x,y) {
+          MATCH (n:A {x:x, y:y}) WHERE EXISTS { (:Q:X|Z {id:x}) }
+          RETURN n.group AS group, count(n) AS count
+        }
+        RETURN group + 1 AS group, count + 1 AS count
+      }
+      RETURN group + 1, count + 1 AS count
+      """
+    Then a SyntaxError should be raised at compile time: *
+    And no side effects

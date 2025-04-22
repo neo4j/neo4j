@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.FilteringExpressions
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.AllowClauseWithMixedLabelSyntax
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.error
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -126,6 +127,7 @@ import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NormalizedDatabaseName
@@ -142,7 +144,10 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
   final override def semanticCheck: SemanticCheck =
     clauseSpecificSemanticCheck chain
-      fromState(checkIfMixingLabelExpressionWithOldSyntax) chain
+      whenState(_.features.contains(AllowClauseWithMixedLabelSyntax))(
+        thenBranch = SemanticCheck.success,
+        elseBranch = fromState(checkIfMixingLabelExpressionWithOldSyntax)
+      ) chain
       when(shouldRunQPPChecks) {
         checkIfMixingLegacyVarLengthWithQPPs chain
           checkIfMixingLegacyShortestWithPathSelectorOrMatchMode
@@ -252,19 +257,19 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
       def sortLabelExpressionIntoPartition(
         labelExpression: LabelExpression,
-        isNode: Boolean
+        entityType: TypeSpec
       ): Acc = {
         val acc = if (labelExpression.containsIs) {
           // Only allowed in GPM
           withGPMExpression(labelExpression)
         } else this
 
-        acc.sortLabelExpressionIntoPartitionIgnoringIs(labelExpression, isNode)
+        acc.sortLabelExpressionIntoPartitionIgnoringIs(labelExpression, entityType)
       }
 
       private def sortLabelExpressionIntoPartitionIgnoringIs(
         labelExpression: LabelExpression,
-        isNode: Boolean
+        entityType: TypeSpec
       ): Acc = {
         labelExpression match {
           case _: Leaf =>
@@ -276,15 +281,19 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
             // Thus not adding to any partition.
             this
           case Disjunctions(children, _)
-            if !isNode &&
+            if entityType != CTNode.invariant && // We continue here with unknown types to play it safe
               children.forall(child => child.isInstanceOf[Leaf] || child.isInstanceOf[DynamicLeaf]) =>
             // The disjunction for relationships is both GPM and legacy syntax.
             // Or in case a children is a DynamicLeaf neither GPM nor legacy syntax.
             // Thus not adding to any partition.
             this
-          case x if isNode && x.containsGpmSpecificLabelExpression    => withGPMExpression(x)
-          case x if !isNode && x.containsGpmSpecificRelTypeExpression => withGPMExpression(x)
-          case x                                                      => withLegacyExpression(x)
+          case x =>
+            val isDefinitelyNode = entityType == CTNode.invariant
+            val isDefinitelyRel = entityType == CTRelationship.invariant
+            if (!isDefinitelyRel && !isDefinitelyNode) this // We don't know the type so we ignore this expression
+            else if (isDefinitelyNode && x.containsGpmSpecificLabelExpression) withGPMExpression(x)
+            else if (isDefinitelyRel && x.containsGpmSpecificRelTypeExpression) withGPMExpression(x)
+            else withLegacyExpression(x)
         }
       }
     }
@@ -308,22 +317,16 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
       // Partition label expressions into legacy and gpm.
 
       case NodePattern(_, Some(le), _, _) => acc =>
-          val partition =
-            acc.sortLabelExpressionIntoPartition(le, isNode = true)
-          TraverseChildren(partition)
+          TraverseChildren(acc.sortLabelExpressionIntoPartition(le, CTNode))
 
       case LabelExpressionPredicate(entity, le) => acc =>
-          val isNode = state.expressionType(entity).specified == CTNode.invariant
-          val partition = Function.chain[Acc](Seq(
+          SkipChildren(Function.chain[Acc](Seq(
             _.inReadContext(),
-            _.sortLabelExpressionIntoPartition(le, isNode = isNode)
-          ))(acc)
-          SkipChildren(partition)
+            _.sortLabelExpressionIntoPartition(le, state.expressionType(entity).specified)
+          ))(acc))
 
       case RelationshipPattern(_, Some(le), _, _, _, _) => acc =>
-          val partition =
-            acc.sortLabelExpressionIntoPartition(le, isNode = false)
-          TraverseChildren(partition)
+          TraverseChildren(acc.sortLabelExpressionIntoPartition(le, CTRelationship))
     }
 
     readPartitions.semanticCheck chain

@@ -38,7 +38,7 @@ trait FeatureQueryTest extends FeatureTest {
 
   final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = {
     val executable: Executable = () => {
-      val hasFailingQueries = getQueries(scenario).exists {
+      val hasFailingQueries = denylist().exists(_.isFlaky(scenario)) || getQueries(scenario).exists {
         query => executionFails(scenario, query)
       }
 

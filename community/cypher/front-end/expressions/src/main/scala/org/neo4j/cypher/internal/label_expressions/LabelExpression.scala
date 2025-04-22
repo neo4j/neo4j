@@ -96,7 +96,7 @@ sealed trait LabelExpression extends ASTNode with HasMappableExpressions[LabelEx
   /**
    * Whether this label expression was permitted in Cypher before the introduction of GPM label expressions.
    */
-  def containsGpmSpecificLabelExpression: Boolean = this match {
+  final def containsGpmSpecificLabelExpression: Boolean = this match {
     case conj: ColonConjunction =>
       conj.lhs.containsGpmSpecificLabelExpression || conj.rhs.containsGpmSpecificLabelExpression
     case _: Leaf        => false
@@ -104,7 +104,7 @@ sealed trait LabelExpression extends ASTNode with HasMappableExpressions[LabelEx
     case _              => true
   }
 
-  def containsGpmSpecificRelTypeExpression: Boolean = this match {
+  final def containsGpmSpecificRelTypeExpression: Boolean = this match {
     case Disjunctions(children, _) =>
       children.exists(_.containsGpmSpecificRelTypeExpression)
     case ColonDisjunction(lhs, rhs, _) =>
@@ -122,7 +122,7 @@ sealed trait LabelExpression extends ASTNode with HasMappableExpressions[LabelEx
    * conjunction(:A&B)
    * dynamicLabels (:$(A))
    */
-  def containsMatchSpecificLabelExpression: Boolean = this match {
+  final def containsMatchSpecificLabelExpression: Boolean = this match {
     case conj: ColonConjunction =>
       conj.lhs.containsMatchSpecificLabelExpression || conj.rhs.containsMatchSpecificLabelExpression
     case conj: Conjunctions =>
@@ -136,7 +136,7 @@ sealed trait LabelExpression extends ASTNode with HasMappableExpressions[LabelEx
    * Dynamic Label Expressions are only allowed in:
    * CREATE, MATCH, MERGE, SET and REMOVE clauses at this time.
    */
-  def containsDynamicLabelOrTypeExpression: Boolean = this match {
+  final def containsDynamicLabelOrTypeExpression: Boolean = this match {
     case conj: BinaryLabelExpression =>
       conj.lhs.containsDynamicLabelOrTypeExpression || conj.rhs.containsDynamicLabelOrTypeExpression
     case conj: MultiOperatorLabelExpression => conj.children.exists(expr => expr.containsDynamicLabelOrTypeExpression)
@@ -146,7 +146,7 @@ sealed trait LabelExpression extends ASTNode with HasMappableExpressions[LabelEx
     case _: DynamicLeaf                     => true
   }
 
-  def replaceColonSyntax: LabelExpression = this.endoRewrite(bottomUp({
+  final def replaceColonSyntax: LabelExpression = this.endoRewrite(bottomUp({
     case disj @ ColonDisjunction(lhs, rhs, _) => Disjunctions.flat(lhs, rhs, disj.position, disj.containsIs)
     case conj @ ColonConjunction(lhs, rhs, _) => Conjunctions.flat(lhs, rhs, conj.position, conj.containsIs)
     case disj: Disjunctions                   => disj.unnestDisjunctions

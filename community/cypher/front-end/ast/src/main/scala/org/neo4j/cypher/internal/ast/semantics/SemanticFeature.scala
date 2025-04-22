@@ -65,6 +65,17 @@ object SemanticFeature {
     override def name: String = "`GRAPH TYPE` schema management"
   }
 
+  /**
+   * Normally it's not allowed to mix old and new label expression syntax within a clause.
+   * The implementation of this check has had bugs in the past, can be inconvenient for users
+   * and is not necessary for any functionality.
+   * This semantic feature exists to have a workaround of future bugs in semantic analysis.
+   * Note, even with this feature enabled, it's still not allowed to mix syntax within a single expression.
+   */
+  case object AllowClauseWithMixedLabelSyntax extends SemanticFeature with FeatureToString {
+    override def name: String = "Allow mixing old and new label expression syntax in clauses"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -73,7 +84,8 @@ object SemanticFeature {
     ShowSetting,
     MatchModes,
     ComposableCommands,
-    GraphTypes
+    GraphTypes,
+    AllowClauseWithMixedLabelSyntax
   )
 
   def fromString(str: String): SemanticFeature =

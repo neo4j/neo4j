@@ -125,6 +125,7 @@ trait PrettifierTCKTestBase extends FeatureTest with FeatureQueryTest with Match
     """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with symbol"""",
     """Feature "Literals6 - String": Scenario "Failing on incorrect unicode literal"""",
     """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing QPP and var-length relationship quantifiers in pattern expressions in same statement - syntax error"""",
+    """Feature "GpmSyntaxMixingAllowedAcceptance": Scenario "Mixing QPP and var-length relationship quantifiers in pattern expressions in same statement - syntax error"""",
 
     // EXPLAIN is not covered by the Parser, but by the pre-parser
     """Feature "ExplainAcceptance": Scenario "Explanation of query without return columns"""",
@@ -139,7 +140,8 @@ trait PrettifierTCKTestBase extends FeatureTest with FeatureQueryTest with Match
 
     // DIFFERENT NODES is not yet implemented
     """Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error""""
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error"""",
+    """?Feature "GpmSyntaxMixingAllowedAcceptance""""
   ).map(DenylistEntry(_))
 
   override def runQuery(scenario: Scenario, query: String): Option[Executable] = {

@@ -244,3 +244,287 @@ Feature: MiscAcceptance
       | +nodes      | 3 |
       | +labels     | 1 |
       | +properties | 9 |
+
+
+  Scenario: Issue aZDSO5do example 1
+    Given an empty graph
+    And having executed:
+      """
+      WITH true AS x
+      CREATE (:C:D {id:0, x:x})
+      CREATE (:C:D {id:1, x:x})-[:R]->(:Target {id:5})
+      CREATE (:C:D {id:2, x:x})-[:R]->(:Target:A {id:6})
+      CREATE (:C:D:A:B {id:3, x:x})-[:R]->(:Target:A:B {id:7})
+      CREATE (:C:D:A:B {id:4, x:x})-[:R]->(:Target {id:8})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      WITH [{node: n}] AS nodes
+      UNWIND nodes AS map
+      WITH map.node AS node
+      MATCH (x:C:D {x: (NOT node:A:B)})-->(:Target)
+      RETURN *
+      ORDER BY node.id, x.id
+      """
+    Then the result should be, in order:
+      | node                  | x                         |
+      | (:C:D {x:true, id:0}) | (:C:D {x:true, id:1})     |
+      | (:C:D {x:true, id:0}) | (:C:D {x:true, id:2})     |
+      | (:C:D {x:true, id:0}) | (:A:B:C:D {x:true, id:3}) |
+      | (:C:D {x:true, id:0}) | (:A:B:C:D {x:true, id:4}) |
+      | (:C:D {x:true, id:1}) | (:C:D {x:true, id:1})     |
+      | (:C:D {x:true, id:1}) | (:C:D {x:true, id:2})     |
+      | (:C:D {x:true, id:1}) | (:A:B:C:D {x:true, id:3}) |
+      | (:C:D {x:true, id:1}) | (:A:B:C:D {x:true, id:4}) |
+      | (:C:D {x:true, id:2}) | (:C:D {x:true, id:1})     |
+      | (:C:D {x:true, id:2}) | (:C:D {x:true, id:2})     |
+      | (:C:D {x:true, id:2}) | (:A:B:C:D {x:true, id:3}) |
+      | (:C:D {x:true, id:2}) | (:A:B:C:D {x:true, id:4}) |
+      | (:Target {id:5})      | (:C:D {x:true, id:1})     |
+      | (:Target {id:5})      | (:C:D {x:true, id:2})     |
+      | (:Target {id:5})      | (:A:B:C:D {x:true, id:3}) |
+      | (:Target {id:5})      | (:A:B:C:D {x:true, id:4}) |
+      | (:A:Target {id:6})    | (:C:D {x:true, id:1})     |
+      | (:A:Target {id:6})    | (:C:D {x:true, id:2})     |
+      | (:A:Target {id:6})    | (:A:B:C:D {x:true, id:3}) |
+      | (:A:Target {id:6})    | (:A:B:C:D {x:true, id:4}) |
+      | (:Target {id:8})      | (:C:D {x:true, id:1})     |
+      | (:Target {id:8})      | (:C:D {x:true, id:2})     |
+      | (:Target {id:8})      | (:A:B:C:D {x:true, id:3}) |
+      | (:Target {id:8})      | (:A:B:C:D {x:true, id:4}) |
+    And no side effects
+
+
+  Scenario: Issue aZDSO5do example 2
+    Given an empty graph
+    And parameters are:
+      | pid           | 'target-pid'                   |
+      | tags_for_aggs | ['target-pid', 'target-pid-2'] |
+    And having executed:
+      """
+      // Dummy data.
+
+      CREATE (partition:PolNode {_pid: $pid})<-[:MEMBER_OF]-
+             (item:PolNode:Item)-[:DESCRIBES_RESOURCE]->
+             (resource:PolNode:Resource:Record {hit_count: 10, is_deleted: false})
+      CREATE (item)-[:DESCRIBES_RESOURCE]->
+             (resource2:PolNode:TreeNode:Resource {hit_count: 100})
+      CREATE (resource)-[parent_rel:TREE_NODE_OF {_creation_date: 7345}]->
+             (parent {_pid: 'parentpid'})-[depth_rel:TREE_NODE_OF {depth: 3679}]->
+             (grandpa {_pid: 'granpid'})
+      CREATE (resource)-[:HAS_TAG]->(t:PolNode:Tag {_pid: 'target-pid', name: 't1'})
+      CREATE (resource2)-[:TREE_NODE_OF]->(:PolNode:Resource:Record)-[:HAS_TAG]->
+             (:PolNode:Tag {_pid: 'target-pid-2', name: 't2'})
+      CREATE (resource2)-[:MATCHES_RULE {hit_count: 23}]->
+             (:PolNode:DceRule {is_enabled: true})-[:MEMBER_OF]->
+             (:PolNode:DceRuleCategory)
+      CREATE (resource)<-[:TREE_NODE_OF]-
+             (:PolNode:TreeNode:Resource)-[:MATCHES_RULE {hit_count: 27}]->
+             ()-[:MATCHES_RULE]->(:PolNode:DceRule {is_enabled: true})-[:MEMBER_OF]->
+             (:PolNode:DceRuleCategory)
+      CREATE (resource)<-[:LLM_DESCRIBES_TOPIC]-(:PolNode:Topic {name: 'n1'})
+      CREATE (resource)<-[:LLM_DESCRIBES_TOPIC]-()<-[:LLM_DESCRIBES_TOPIC]-
+             (:PolNode:Topic {name: 'n2'})
+      CREATE (resource)<-[:LLM_DESCRIBES_DATA_SUBJECT]-(:PolNode:Subject {name: 'n3'})
+      CREATE (resource)<-[:LLM_DESCRIBES_DATA_SUBJECT]-
+             ()<-[:LLM_DESCRIBES_DATA_SUBJECT]-(:PolNode:Subject {name: 'n4'})
+      CREATE (resource)<-[:LLM_DESCRIBES_DATA_CLASS]-
+             (:PolNode:Metadata {data_class: 'dc1'})
+      CREATE (resource)<-[:LLM_DESCRIBES_DATA_CLASS]-()<-[:LLM_DESCRIBES_DATA_CLASS]-
+             (:PolNode:Metadata {data_class: 'dc1'})
+      CREATE (resource2)<-[:LLM_DESCRIBES_TOPIC]-(:PolNode:Topic {name: 'n5'})
+      CREATE (resource2)<-[:LLM_DESCRIBES_TOPIC]-()<-[:LLM_DESCRIBES_TOPIC]-
+             (:PolNode:Topic {name: 'n6'})
+      CREATE (resource2)<-[:LLM_DESCRIBES_DATA_SUBJECT]-
+             (:PolNode:Subject {name: 'n7'})
+      CREATE (resource2)<-[:LLM_DESCRIBES_DATA_SUBJECT]-
+             ()<-[:LLM_DESCRIBES_DATA_SUBJECT]-(:PolNode:Subject {name: 'n8'})
+      CREATE (resource2)<-[:LLM_DESCRIBES_DATA_CLASS]-
+             (:PolNode:Metadata {data_class: 'dc1'})
+      CREATE (resource2)<-[:LLM_DESCRIBES_DATA_CLASS]-()<-[:LLM_DESCRIBES_DATA_CLASS]-
+             (:PolNode:Metadata {data_class: 'dc1'})
+      """
+    When executing query:
+      """
+      MATCH (partition:PolNode {_pid: $pid})<-[:MEMBER_OF]-
+            (:PolNode:Item)-[:DESCRIBES_RESOURCE]->(resource:PolNode:Resource)
+      WITH resource
+      WHERE resource.hit_count > 0 AND COALESCE(resource.is_deleted, false) = false
+      WITH resource SKIP 0
+      LIMIT 10
+
+      CALL {
+        WITH resource
+        OPTIONAL MATCH (resource)-[parent_rel:TREE_NODE_OF]->
+                       (parent)-[depth_rel:TREE_NODE_OF]->(grandpa)
+        WHERE coalesce(parent.is_deleted, false) = false
+        RETURN parent._pid AS parent_pid_using_creation_date,
+               depth_rel.depth AS depth, grandpa._pid AS container_parent_pid
+               ORDER BY parent_rel._creation_date DESC
+        LIMIT 1
+      }
+
+      WITH resource, depth, container_parent_pid,
+           coalesce(parent_pid_using_creation_date, resource.container_pid)
+           AS parent_pid
+      WHERE parent_pid IS NOT NULL
+      WITH collect({parent_pid: parent_pid, resource: resource, depth: depth,
+                    container_parent_pid: container_parent_pid})
+           AS resources_with_parents
+
+      CALL {
+        WITH resources_with_parents
+
+        UNWIND resources_with_parents AS resource_with_parent
+        WITH resource_with_parent.parent_pid AS parent_pid,
+             resource_with_parent.resource AS resource
+
+        CALL {
+          WITH resource
+          MATCH (resource)-[:HAS_TAG]->(t:PolNode:Tag)
+          WHERE t._pid IN $tags_for_aggs
+          RETURN t
+            UNION
+          WITH resource
+          MATCH (resource:PolNode:TreeNode:Resource)-[:TREE_NODE_OF]->
+                (r:PolNode:Resource:Record)-[:HAS_TAG]->(t:PolNode:Tag)
+          WHERE t._pid IN $tags_for_aggs
+          RETURN t
+        }
+        WITH parent_pid, t, count(t) AS tag_count
+        WITH parent_pid AS c_pid,
+             {name: t.name, id: t._pid, count: tag_count} AS tag_info
+        WITH c_pid, collect(tag_info) AS tags_info
+        RETURN collect({c_pid: c_pid, tags_info: tags_info})
+               AS container_with_tags_info
+      }
+
+      CALL {
+        WITH resources_with_parents
+
+        UNWIND resources_with_parents AS resource_with_parent
+        WITH resource_with_parent.parent_pid AS parent_pid,
+             resource_with_parent.resource AS resource
+
+        CALL {
+          WITH resource
+          WITH resource
+          WHERE NOT resource:PolNode:Resource:Record
+          MATCH (resource)-[mr:MATCHES_RULE]->
+                (rule:PolNode:DceRule {is_enabled: true})
+          MATCH (rule)-[:MEMBER_OF]->(cat:PolNode:DceRuleCategory)
+
+          WHERE mr.hit_count > 0
+          RETURN cat, rule, mr.hit_count AS resource_rule_hit_count
+
+            UNION
+          WITH resource
+          WITH resource
+          WHERE resource:PolNode:Resource:Record
+          MATCH (resource)<-[:TREE_NODE_OF]-
+                (:PolNode:TreeNode:Resource)-[mr:MATCHES_RULE]->
+                (frc)-[:MATCHES_RULE]->
+                (rule:PolNode:DceRule {is_enabled: true})-[:MEMBER_OF]->
+                (cat:PolNode:DceRuleCategory)
+
+          WHERE mr.hit_count > 0
+          RETURN cat, rule, mr.hit_count AS resource_rule_hit_count
+        }
+
+        WITH parent_pid AS c_pid, cat.name AS cat_name, cat._pid AS cat_id,
+             rule.db_id AS rule_db_id,
+             COLLECT(DISTINCT resource._pid) AS rule_matched_pids,
+             SUM(resource_rule_hit_count) AS rule_hit_count
+
+        WITH c_pid, cat_name, cat_id, rule_db_id, rule_matched_pids, rule_hit_count,
+             SIZE(rule_matched_pids) AS rule_resources_count
+
+        WITH c_pid, cat_name, cat_id, SUM(rule_hit_count) AS cat_total_hit_count,
+             COUNT(DISTINCT reduce(acc = [], item IN rule_matched_pids | acc + item))
+             AS cat_count,
+             COLLECT({name: rule_db_id, id: rule_db_id, count: rule_resources_count,
+                      value: rule_hit_count}) AS rule_aggs
+
+        WITH c_pid, COLLECT({name: cat_name, id: cat_id, value: cat_total_hit_count,
+                             count: cat_count, rule_aggs: rule_aggs}) AS dce_info
+        RETURN collect({c_pid: c_pid, dce_info: dce_info}) AS container_with_dce_info
+      }
+
+      CALL {
+        WITH resources_with_parents
+
+        UNWIND resources_with_parents AS resource_with_parent
+        WITH resource_with_parent.parent_pid AS parent_pid,
+             resource_with_parent.resource AS resource
+
+        OPTIONAL
+        MATCH (resource)<-[:LLM_DESCRIBES_TOPIC*1..2]-(llm_topic:PolNode:Topic)
+        OPTIONAL MATCH (resource)<-[:LLM_DESCRIBES_DATA_SUBJECT*1..2]-
+                       (llm_subject:PolNode:Subject)
+        OPTIONAL MATCH (resource)<-[:LLM_DESCRIBES_DATA_CLASS*1..2]-
+                       (llm_metadata:PolNode:Metadata)
+        OPTIONAL MATCH (resource)<-[describes_locale:LLM_DESCRIBES_LOCALE]-
+                       ()<-[:LLM_DESCRIBES_LOCALE*0..1]-(llm_locale:PolNode:Country)
+
+        WITH llm_topic, llm_subject, llm_metadata, llm_locale, describes_locale,
+             parent_pid AS c_pid
+
+        WITH c_pid, llm_topic.name AS llm_topic_name,
+             COUNT(llm_topic) AS llm_topic_count,
+             llm_subject.name AS llm_subject_name,
+             COUNT(llm_subject) AS llm_subject_count,
+             COALESCE(llm_metadata.manual_override, llm_metadata.data_class)
+             AS llm_data_class, COUNT(llm_metadata) AS llm_data_class_count,
+             llm_locale.name AS llm_locale_name,
+             SUM(COALESCE(describes_locale.count, 1)) AS llm_locale_count
+        WITH c_pid, collect({llm_topic_name: llm_topic_name,
+                             llm_topic_count: llm_topic_count}) AS llm_topic_agg,
+             collect({llm_subject_name: llm_subject_name,
+                      llm_subject_count: llm_subject_count}) AS llm_subject_agg,
+             collect({llm_data_class: llm_data_class,
+                      llm_data_class_count: llm_data_class_count})
+             AS llm_data_class_agg,
+             COLLECT({llm_locale_name: llm_locale_name,
+                      llm_locale_count: llm_locale_count}) AS llm_locale_agg
+        WITH c_pid,
+             {llm_topic_agg: llm_topic_agg, llm_subject_agg: llm_subject_agg,
+              llm_data_class_agg: llm_data_class_agg, llm_locale_agg: llm_locale_agg}
+             AS dce_llm_info
+
+        RETURN COLLECT({c_pid: c_pid, dce_llm_info: dce_llm_info})
+               AS container_to_dce_llm_info
+      }
+
+      UNWIND resources_with_parents AS resource_with_parent
+      WITH resource_with_parent.parent_pid AS parent_pid,
+           resource_with_parent.resource AS resource,
+           resource_with_parent.depth AS depth,
+           resource_with_parent.container_parent_pid AS container_parent_pid,
+           container_with_tags_info, container_with_dce_info,
+           container_to_dce_llm_info
+
+      WITH DISTINCT parent_pid AS c_pid, container_with_tags_info,
+                    container_with_dce_info, container_to_dce_llm_info,
+                    COLLECT(DISTINCT resource._pid) AS pids,
+                    SUM(resource.dce_extracted_size) AS size, depth,
+                    container_parent_pid
+
+      RETURN c_pid, reduce(acc = [], item IN container_with_tags_info |
+        CASE
+          WHEN item.c_pid = c_pid THEN acc + item
+          ELSE acc
+        END) AS tags_info, reduce(acc = [], item IN container_with_dce_info |
+        CASE
+          WHEN item.c_pid = c_pid THEN acc + item
+          ELSE acc
+        END) AS dce_info, reduce(acc = [], item IN container_to_dce_llm_info |
+        CASE
+          WHEN item.c_pid = c_pid THEN acc + item
+          ELSE acc
+        END) AS dce_llm_info, pids, size, depth, container_parent_pid
+      """
+    Then the result should be, in order (ignoring element order for lists):
+      | c_pid       | tags_info                                                                     | dce_info                                                                                                                                  | dce_llm_info                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | pids | size | depth | container_parent_pid |
+      | 'parentpid' | [{c_pid: 'parentpid', tags_info: [{name: 't1', count: 1, id: 'target-pid'}]}] | [{c_pid: 'parentpid', dce_info: [{rule_aggs: [{name: null, count: 0, id: null, value: 27}], name: null, count: 1, id: null, value: 27}]}] | [{c_pid: 'parentpid', dce_llm_info: {llm_data_class_agg: [{llm_data_class_count: 2, llm_data_class: 'dc1'}, {llm_data_class_count: 2, llm_data_class: 'dc1'}, {llm_data_class_count: 2, llm_data_class: 'dc1'}, {llm_data_class_count: 2, llm_data_class: 'dc1'}], llm_topic_agg: [{llm_topic_count: 2, llm_topic_name: 'n1'}, {llm_topic_count: 2, llm_topic_name: 'n2'}, {llm_topic_count: 2, llm_topic_name: 'n1'}, {llm_topic_count: 2, llm_topic_name: 'n2'}], llm_subject_agg: [{llm_subject_name: 'n3', llm_subject_count: 2}, {llm_subject_name: 'n3', llm_subject_count: 2}, {llm_subject_name: 'n4', llm_subject_count: 2}, {llm_subject_name: 'n4', llm_subject_count: 2}], llm_locale_agg: [{llm_locale_count: 2, llm_locale_name: null}, {llm_locale_count: 2, llm_locale_name: null}, {llm_locale_count: 2, llm_locale_name: null}, {llm_locale_count: 2, llm_locale_name: null}]}}] | []   | 0    | 3679  | 'granpid'            |
+    And no side effects
