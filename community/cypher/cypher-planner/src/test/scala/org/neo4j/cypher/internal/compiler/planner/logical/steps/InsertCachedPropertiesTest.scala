@@ -73,6 +73,8 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -3106,6 +3108,19 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
+  test(s"should not insert cached properties when the ${CypherDebugOption.disablePropertyCaching} flag is set") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
+    val plan = Projection(
+      nodeIndexScan("n", "L", "prop", CanGetValue),
+      Map(v"x" -> nProp1)
+    )
+
+    val (newPlan, newTable) = replace(plan, initialTable, debugOptions = Set(CypherDebugOption.disablePropertyCaching))
+
+    newPlan shouldEqual plan
+    newTable shouldEqual initialTable
+  }
+
   private def replace(
     plan: LogicalPlan,
     initialTable: SemanticTable,
@@ -3115,7 +3130,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     cachePropertiesForEntities: Boolean = true,
     databaseMode: DatabaseMode = DatabaseMode.SINGLE,
     remoteBatchPropertiesImplementation: RemoteBatchPropertiesImplementation =
-      RemoteBatchPropertiesImplementation.REWRITER
+      RemoteBatchPropertiesImplementation.REWRITER,
+    debugOptions: Set[CypherDebugOption] = Set.empty
   ): (LogicalPlan, SemanticTable) = {
     val state = LogicalPlanState(InitialState("", IDPPlannerName, new AnonymousVariableNameGenerator))
       .withSemanticTable(initialTable)
@@ -3137,6 +3153,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     when(plannerContext.config).thenReturn(config)
     when(plannerContext.planContext).thenReturn(planContext)
     when(plannerContext.planContext.databaseMode).thenReturn(databaseMode)
+    when(plannerContext.debugOptions).thenReturn(CypherDebugOptions(debugOptions))
 
     val resultState = icp.transform(state, plannerContext)
     (resultState.logicalPlan, resultState.semanticTable())

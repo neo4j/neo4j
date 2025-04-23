@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
+import org.neo4j.cypher.internal.options.CypherDebugOption.disablePropertyCaching
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
@@ -300,5 +301,20 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     // `n`-Variable, so a false positive. We should therefore not check
     // OrderedIndexPlansUseCachedProperties after NameDeduplication.
     noException should be thrownBy planner.plan(query)
+  }
+
+  test(s"should not rewrite cached properties when the $disablePropertyCaching flag is set") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .enableDebugOption(disablePropertyCaching)
+      .build()
+
+    val plan = planner.plan("MATCH (n) WHERE n.prop1 > 42 RETURN n.prop1").stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("n.prop1 AS `n.prop1`")
+      .filter("n.prop1 > 42")
+      .allNodeScan("n")
+      .build()
   }
 }
