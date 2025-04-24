@@ -168,8 +168,8 @@
     <jackson.version>2.18.0</jackson.version>
     <jackson-databind.version>2.18.0</jackson-databind.version>
     <amazon-sdk.version>1.12.772</amazon-sdk.version>
-    <awssdk.version>2.28.20</awssdk.version>
-    <awssdk-crt.version>0.31.3</awssdk-crt.version>
+    <awssdk.version>2.31.20</awssdk.version>
+    <awssdk-crt.version>0.38.1</awssdk-crt.version>
     <guava.version>33.3.1-jre</guava.version>
     <awaitility.version>4.2.2</awaitility.version>
     <log4j.version>2.20.0</log4j.version>
