@@ -174,7 +174,7 @@
     <awaitility.version>4.2.2</awaitility.version>
     <log4j.version>2.20.0</log4j.version>
     <slf4j.version>2.0.9</slf4j.version>
-    <neo4j-java-driver.version>5.28.4</neo4j-java-driver.version>
+    <neo4j-java-driver.version>5.28.5</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <parquet-floor.version>1.47</parquet-floor.version>
     <picocli.version>4.7.6</picocli.version>
@@ -1227,7 +1227,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2023.0.16</version>
+        <version>2023.0.17</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1565,7 +1565,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.119.Final</version>
+        <version>4.1.120.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
