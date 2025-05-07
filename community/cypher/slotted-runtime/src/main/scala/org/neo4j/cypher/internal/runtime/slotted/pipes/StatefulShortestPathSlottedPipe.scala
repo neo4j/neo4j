@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.TraversalMatchMode
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
-import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.NO_ENTITY_FUNCTION
+import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.PRIMITIVE_NULL
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaAutoCloseableIteratorAsClosingIterator
@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathWriter
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.SignpostStack
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
+import org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY
 import org.neo4j.values.VirtualValue
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.VirtualValues
@@ -67,9 +68,9 @@ case class StatefulShortestPathSlottedPipe(
 
   private val getSourceNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(sourceSlot, throwOnTypeError = false)
 
-  private val getTargetNodeFunction: ToLongFunction[ReadableRow] = intoTargetSlot.map(slot =>
+  private val getTargetNodeFunction: Option[ToLongFunction[ReadableRow]] = intoTargetSlot.map(slot =>
     makeGetPrimitiveNodeFromSlotFunctionFor(slot, throwOnTypeError = false)
-  ).getOrElse(NO_ENTITY_FUNCTION)
+  )
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -91,29 +92,35 @@ case class StatefulShortestPathSlottedPipe(
 
     input.flatMap { inputRow =>
       val sourceNode = getSourceNodeFunction.applyAsLong(inputRow)
-      val intoTargetNode = getTargetNodeFunction.applyAsLong(inputRow)
-      val (startState, finalState) = commandNFA.compile(inputRow, state)
+      val intoTargetNode = getTargetNodeFunction.map(_.applyAsLong(inputRow))
 
-      PGPathPropagatingBFS.create(
-        sourceNode,
-        startState,
-        intoTargetNode,
-        finalState,
-        state.query.transactionalContext.dataRead,
-        nodeCursor,
-        traversalCursor,
-        pathTracer,
-        withPathVariables(inputRow, _),
-        pathPredicate,
-        selector.isGroup,
-        bounds.max.getOrElse(-1),
-        selector.k.toInt,
-        commandNFA.states.size,
-        memoryTracker,
-        hooks,
-        state.query.transactionalContext.assertTransactionOpen _,
-        tracker
-      ).asSelfClosingIterator
+      (sourceNode, intoTargetNode) match {
+        case (PRIMITIVE_NULL, _) | (_, Some(PRIMITIVE_NULL)) => ClosingIterator.empty
+        case (sourceNode, intoTargetNode) =>
+          val (startState, finalState) = commandNFA.compile(inputRow, state)
+
+          PGPathPropagatingBFS.create(
+            sourceNode,
+            startState,
+            intoTargetNode.getOrElse(NO_SUCH_ENTITY),
+            finalState,
+            state.query.transactionalContext.dataRead,
+            nodeCursor,
+            traversalCursor,
+            pathTracer,
+            withPathVariables(inputRow, _),
+            pathPredicate,
+            selector.isGroup,
+            bounds.max.getOrElse(-1),
+            selector.k.toInt,
+            commandNFA.states.size,
+            memoryTracker,
+            hooks,
+            state.query.transactionalContext.assertTransactionOpen _,
+            tracker
+          ).asSelfClosingIterator
+
+      }
 
     }.closing(nodeCursor).closing(traversalCursor)
   }

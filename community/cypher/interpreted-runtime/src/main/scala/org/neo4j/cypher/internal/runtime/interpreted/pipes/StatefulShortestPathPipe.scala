@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.TraversalMatchMode
+import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaAutoCloseableIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.StatefulShortestPathPipe.traversalMatchModeFactory
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.InternalException
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFS
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
@@ -37,6 +38,7 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathWriter
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.SignpostStack
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalMatchModeFactory
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
+import org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.VirtualValue
 import org.neo4j.values.virtual.ListValueBuilder
@@ -80,17 +82,19 @@ case class StatefulShortestPathPipe(
       preFilters.fold[java.util.function.Predicate[CypherRow]](_ => true)(pred => pred.isTrue(_, state))
 
     input.flatMap { inputRow =>
-      // TODO will blow up if not a VirtualNodeValue, clean up later
-      val intoTargetNodeId: Long =
-        intoTargetNodeName.map(inputRow.getByName).map(_.asInstanceOf[VirtualNodeValue].id()).getOrElse(-1L)
-      inputRow.getByName(sourceNodeName) match {
+      val sourceNode = inputRow.getByName(sourceNodeName)
+      val targetNode = intoTargetNodeName.map(inputRow.getByName)
 
-        case sourceNode: VirtualNodeValue =>
+      (sourceNode, targetNode) match {
+        case (IsNoValue(), _) | (_, Some(IsNoValue())) => ClosingIterator.empty
+        case (s, t) =>
+          val source = CastSupport.castOrFail[VirtualNodeValue](s).id()
+          val target = t.map(CastSupport.castOrFail[VirtualNodeValue](_).id()).getOrElse(NO_SUCH_ENTITY)
           val (startState, finalState) = commandNFA.compile(inputRow, state)
           PGPathPropagatingBFS.create(
-            sourceNode.id(),
+            source,
             startState,
-            intoTargetNodeId,
+            target,
             finalState,
             state.query.transactionalContext.dataRead,
             nodeCursor,
@@ -107,12 +111,8 @@ case class StatefulShortestPathPipe(
             state.query.transactionalContext.assertTransactionOpen _,
             tracker
           ).asSelfClosingIterator
-
-        case value =>
-          throw new InternalException(
-            s"Expected to find a node at '($sourceNodeName)' but found $value instead"
-          )
       }
+
     }.closing(nodeCursor).closing(traversalCursor)
   }
 
