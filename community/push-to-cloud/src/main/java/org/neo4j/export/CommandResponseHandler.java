@@ -44,10 +44,11 @@ public class CommandResponseHandler {
     public void debugErrorResponse(boolean verbose, HttpURLConnection connection) throws IOException {
         if (verbose) {
             String responseString;
-            try (InputStream responseData = connection.getErrorStream()) {
+            InputStream errorStream = connection.getErrorStream();
+            try (InputStream responseData = (errorStream != null) ? errorStream : connection.getInputStream()) {
                 responseString = new String(toByteArray(responseData), UTF_8);
             } catch (IOException e) {
-                throw new IOException(format("Failed to read response from server: %s", e.getMessage()));
+                throw new IOException(String.format("Failed to read response from server: %s", e.getMessage()), e);
             }
             debugResponse(responseString, connection, true);
         }

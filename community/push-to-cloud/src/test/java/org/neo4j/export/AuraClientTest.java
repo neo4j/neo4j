@@ -662,6 +662,7 @@ public class AuraClientTest {
         return post(urlMatching(".*?/import/auth$"))
                 .withHeader("Authorization", matching("^Basic .*"))
                 .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Content-Length", equalTo("0"))
                 .withHeader("Confirmed", equalTo(userConsent ? "true" : "false"));
     }
 

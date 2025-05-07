@@ -176,6 +176,13 @@ public class AuraClient {
             connection.setRequestProperty("Authorization", "Basic " + IOCommon.base64Encode(username, password));
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("Confirmed", String.valueOf(consentConfirmed));
+            connection.setDoOutput(true);
+
+            try (OutputStream os = connection.getOutputStream()) {
+                // This is required to send a content length header which is a requirement for some
+                // LBs and web apps even if we don't do anything with the output stream.
+            }
+
             int responseCode = connection.getResponseCode();
             switch (responseCode) {
                 case HTTP_NOT_FOUND -> throw errorResponse(
