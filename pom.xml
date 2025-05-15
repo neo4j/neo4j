@@ -162,7 +162,7 @@
     <jamm.version>0.4.0</jamm.version>
     <lucene.version>9.11.1</lucene.version>
     <bouncycastle.version>1.80</bouncycastle.version>
-    <jetty.version>12.0.16</jetty.version>
+    <jetty.version>12.0.17</jetty.version>
     <scala-maven-plugin.version>4.9.5</scala-maven-plugin.version>
     <scala.version>2.13.16</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
