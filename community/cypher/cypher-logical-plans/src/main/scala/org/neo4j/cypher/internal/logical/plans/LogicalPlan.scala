@@ -173,32 +173,17 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 
   /**
    * Symbols available after the current plan, regardless of whether this is a top-level query, or a sub-query on RHS of an Apply.
-   *
-   * NOTE: this should *not* be used after slot rewriting, because slotted variables are not only compared by name but
-   * also offset, which invalidates eg set intersection/subtraction
    */
   def localAvailableSymbols: Set[LogicalVariable]
 
   /**
    * Symbols available after the current plan, including arguments coming from LHS of an Apply.
-   *
-   * NOTE: this should *not* be used after slot rewriting, because slotted variables are not only compared by name but
-   * also offset, which invalidates eg set intersection/subtraction
    */
   final def availableSymbols: Set[LogicalVariable] = {
     val importedSymbols = leftmostLeaf match {
       case lp: LogicalLeafPlan => lp.argumentIds
       case _                   => Set.empty
     }
-
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      localAvailableSymbols.forall {
-        case _: Variable => true
-        case _           => false
-      },
-      "LogicalPlan.availableSymbols should not be called after slot allocation: slot offsets invalidate named variable equality"
-    )
-
     localAvailableSymbols ++ importedSymbols
   }
 
@@ -3792,8 +3777,13 @@ case class OrderedUnion(left: LogicalPlan, right: LogicalPlan, sortedColumns: Se
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val localAvailableSymbols: Set[LogicalVariable] =
-    left.localAvailableSymbols intersect right.localAvailableSymbols
+  override lazy val localAvailableSymbols: Set[LogicalVariable] = {
+    // a hack to perform set intersection by name (ignoring other data like offset)
+    val names = left.localAvailableSymbols.map(_.name) intersect right.localAvailableSymbols.map(_.name)
+    left.availableSymbols.filter(v => names.contains(v.name)) ++ right.availableSymbols.filter(v =>
+      names.contains(v.name)
+    )
+  }
   override val distinctness: Distinctness = NotDistinct
 }
 
@@ -5771,8 +5761,13 @@ case class Union(override val left: LogicalPlan, override val right: LogicalPlan
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
-  override val localAvailableSymbols: Set[LogicalVariable] =
-    left.localAvailableSymbols intersect right.localAvailableSymbols
+  override lazy val localAvailableSymbols: Set[LogicalVariable] = {
+    // a hack to perform set intersection by name (ignoring other data like offset)
+    val names = left.localAvailableSymbols.map(_.name) intersect right.localAvailableSymbols.map(_.name)
+    left.availableSymbols.filter(v => names.contains(v.name)) ++ right.availableSymbols.filter(v =>
+      names.contains(v.name)
+    )
+  }
   override val distinctness: Distinctness = NotDistinct
 }
 
