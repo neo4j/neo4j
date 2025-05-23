@@ -740,7 +740,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         assertFalse(resultIsFromSlotA(readResult));
     }
 
-    private void assertKeyEquals(KEY expectedKey, KEY actualKey) {
+    void assertKeyEquals(KEY expectedKey, KEY actualKey) {
         assertEquals(
                 0,
                 layout.compare(expectedKey, actualKey),
@@ -775,7 +775,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         leaf.initialize(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
     }
 
-    private void initializeInternal() {
+    void initializeInternal() {
         internal.initialize(cursor, DATA_LAYER_FLAG, STABLE_GENERATION, UNSTABLE_GENERATION);
     }
 

@@ -21,11 +21,15 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.io.pagecache.PageCursor;
 
 public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes> {
@@ -103,5 +107,52 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes
         assertThat(allocOffsetAfter).isGreaterThan(allocOffsetBefore);
         var deadSpaceAfter = DynamicSizeUtil.getDeadSpace(cursor);
         assertThat(deadSpaceAfter).isEqualTo(0);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldStoreTwoKeysOnTheEdgeOfMaxInlineSize(boolean testOldLimit) throws IOException {
+        // This test relies on the assumption that a tree node can always store at least 2 keys.
+
+        initializeInternal();
+        long stable = 3;
+        long unstable = 4;
+        int keyCount = 0;
+        long childId = 10;
+
+        // At one point both internal and leaf nodes were using the same inline limit even though internal nodes
+        // have a bigger overhead. This could cause problems when trying to write the rightmost child pointer as the
+        // data growing from the left and the data growing from the right in the internal node would overlap.
+        // Depending on the data on the right side this could result in a GSPP error when reading up what was
+        // in the child pointer position before doing the actual write.
+        int keySize = testOldLimit
+                ? DynamicSizeUtil.inlineKeyValueSizeCapLeafNode(PAGE_SIZE)
+                : DynamicSizeUtil.inlineKeyValueSizeCapInternalNode(PAGE_SIZE);
+
+        // A key with data so any accidental read among the keys from the offset array will be noticed
+        byte[] bytes = new byte[keySize];
+        Arrays.fill(bytes, (byte) 0xFF);
+        RawBytes key = new RawBytes(bytes);
+
+        internal.setChildAt(cursor, childId, 0, stable, unstable);
+        childId++;
+
+        internal.insertKeyAndRightChildAt(cursor, key, childId, keyCount, keyCount, stable, unstable, NULL_CONTEXT);
+        keyCount++;
+        childId++;
+
+        internal.insertKeyAndRightChildAt(cursor, key, childId, keyCount, keyCount, stable, unstable, NULL_CONTEXT);
+
+        // Assert children
+        long firstChild = 10;
+        for (int i = 0; i <= keyCount; i++) {
+            assertEquals(firstChild + i, pointer(internal.childAt(cursor, i, stable, unstable)));
+        }
+
+        // Assert keys (that happen to be the same because I'm lazy)
+        RawBytes readKey = layout.newKey();
+        for (int i = 0; i < keyCount; i++) {
+            assertKeyEquals(key, internal.keyAt(cursor, readKey, i, NULL_CONTEXT));
+        }
     }
 }

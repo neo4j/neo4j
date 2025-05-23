@@ -29,7 +29,7 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getAllocSpace;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getDeadSpace;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.inlineKeyValueSizeCap;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.inlineKeyValueSizeCapInternalNode;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.keyValueSizeCapFromPageSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putOffloadMarker;
@@ -108,7 +108,7 @@ public final class InternalNodeDynamicSize<KEY> implements InternalNodeBehaviour
         this.maxKeyCount = totalSpace / (DynamicSizeUtil.OFFSET_SIZE + MIN_SIZE_KEY_VALUE_SIZE);
         this.offloadStore = offloadStore;
 
-        this.inlineKeySizeCap = inlineKeyValueSizeCap(payloadSize);
+        this.inlineKeySizeCap = inlineKeyValueSizeCapInternalNode(payloadSize);
         this.keySizeCap = keyValueSizeCapFromPageSize(payloadSize);
 
         validateInlineCap(inlineKeySizeCap, payloadSize);
