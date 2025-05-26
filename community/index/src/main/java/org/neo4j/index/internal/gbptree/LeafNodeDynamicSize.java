@@ -104,7 +104,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         this.offloadStore = offloadStore;
         this.halfSpace = totalSpace >> 1;
 
-        this.inlineKeyValueSizeCap = DynamicSizeUtil.inlineKeyValueSizeCap(payloadSize);
+        this.inlineKeyValueSizeCap = DynamicSizeUtil.inlineKeyValueSizeCapLeafNode(payloadSize);
         this.keyValueSizeCap = keyValueSizeCapFromPageSize(payloadSize);
 
         validateInlineCap(inlineKeyValueSizeCap, payloadSize);
