@@ -34,7 +34,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   Caffeine cache
   IPAddress
-  Jackson datatype: jdk8
   Jackson-annotations
   Jackson-core
   jackson-databind

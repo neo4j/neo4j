@@ -68,7 +68,6 @@ Apache Software License, Version 2.0
   io.grpc:grpc-protobuf
   io.grpc:grpc-stub
   IPAddress
-  Jackson datatype: jdk8
   Jackson datatype: JSR310
   Jackson module: Old JAXB Annotations (javax.xml.bind)
   Jackson-annotations

@@ -43,7 +43,6 @@ Apache Software License, Version 2.0
   Apache Parquet Hadoop
   Caffeine cache
   IPAddress
-  Jackson datatype: jdk8
   Jackson-annotations
   Jackson-core
   jackson-databind

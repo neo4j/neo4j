@@ -44,7 +44,6 @@ Apache Software License, Version 2.0
   Caffeine cache
   FindBugs-jsr305
   IPAddress
-  Jackson datatype: jdk8
   Jackson-annotations
   Jackson-core
   jackson-databind
