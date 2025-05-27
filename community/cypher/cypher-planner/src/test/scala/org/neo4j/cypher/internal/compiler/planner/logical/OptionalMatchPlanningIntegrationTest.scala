@@ -1151,4 +1151,58 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       case _: LeftOuterHashJoin  => true
     }
   }
+
+  test("should be able to fulfill type scan hints in optional matches") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 100)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .build()
+
+    val plan = planner.plan(
+      """
+        |OPTIONAL MATCH (a)-[r:R]->(b)
+        |USING SCAN r:R
+        |RETURN DISTINCT a""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("a")
+        .optional()
+        .semiApply()
+        .|.filter("a = anon_0")
+        .|.relationshipTypeScan("(anon_0)-[r:R]->(b)", "a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should be able to fulfill type scan hints in optional matches II") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 100)
+      .setRelationshipCardinality("()-[:T0]->()", 10)
+      .setRelationshipCardinality("()-[:T1]->()", 10)
+      .build()
+
+    val plan = planner.plan(
+      """
+        |OPTIONAL MATCH ()-[r2:(T0|T1)]-()
+        |USING SCAN r2:T0
+        |OPTIONAL MATCH ()-[]-()-[]-()
+        |RETURN DISTINCT 1""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("1")
+        .projection("1 AS 1")
+        .optional()
+        .semiApply()
+        .|.unionRelationshipTypesScan("(anon_0)-[r2:T0|T1]-(anon_1)")
+        .argument()
+        .build()
+    )
+  }
 }
