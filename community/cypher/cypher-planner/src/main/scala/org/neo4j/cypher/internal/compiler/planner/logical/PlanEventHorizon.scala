@@ -378,10 +378,12 @@ case object PlanEventHorizon extends EventHorizonPlanner {
 
         val subPlan = plannerQueryPlanner.plan(callSubquery, subqueryContext)
 
+        val variables = plan.availableSymbols intersect subPlan.availableSymbols
+
         val finalSubPlan = if (optional)
           context.staticComponents.logicalPlanProducer.planOptional(
             subPlan,
-            plan.availableSymbols,
+            variables,
             subqueryContext
           )
         else subPlan
