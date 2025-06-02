@@ -214,7 +214,7 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
         )(null))
       ) // 3
     )
-    val optionalMatches = IndexedSeq(
+    val optionalMatches = ListSet(
       QueryGraph(patternNodes = Set(v"a", v"a0"), argumentIds = Set(v"a")), // 4
       QueryGraph(patternNodes = Set(v"noDeps"), argumentIds = Set()), // 5
       QueryGraph(patternNodes = Set(v"a", v"b", v"c", v"a1", v"c1"), argumentIds = Set(v"a", v"b", v"c")), // 6
@@ -234,10 +234,7 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // WHEN
-    val (gba, initialTodo) = GoalBitAllocation.create(
-      components,
-      QueryGraph(optionalMatches = optionalMatches)
-    )
+    val (gba, initialTodo) = GoalBitAllocation.create(components, optionalMatches)
 
     // THEN
     gba should equal(GoalBitAllocation(
@@ -255,7 +252,41 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
       )
     ))
     initialTodo.take(components.size).toSet should equal(components)
-    initialTodo.drop(components.size) should equal(optionalMatches)
+    initialTodo.drop(components.size) should equal(optionalMatches.toSeq)
+  }
+
+  test("GoalBitAllocation.create should handle duplicate optional matches") {
+    // GIVEN
+    val components = Set(
+      QueryGraph.empty.addPatternNodes(v"a"), // 1
+      QueryGraph.empty.addPatternNodes(v"z") // 2
+    )
+    val optionalMatches = ListSet(
+      QueryGraph.empty.addPatternNodes(v"a", v"b").addArgumentId(v"a"), // 3
+      QueryGraph.empty.addPatternNodes(v"a", v"b").addArgumentId(v"a"), // skip duplicate
+      QueryGraph.empty.addPatternNodes(v"a", v"b").addArgumentId(v"a"), // skip duplicate
+      QueryGraph.empty.addPatternNodes(v"a", v"x").addArgumentId(v"a").addArgumentId(v"b") // 4
+    )
+
+    // WHEN
+    val (gba, initialTodo) = GoalBitAllocation.create(components, optionalMatches)
+    val r = registry(initialTodo.size)
+
+    // THEN
+    gba shouldEqual GoalBitAllocation(
+      components.size,
+      optionalMatches.size,
+      Seq(
+        BitSet(1),
+        BitSet(1, 3)
+      )
+    )
+
+    // compacted goal should not be considered an "optional match" goal
+    val compactedGoal = r.compact(BitSet(1, 3))
+    gba.optionalMatchesGoal(Goal(BitSet(compactedGoal))) shouldEqual Goal(BitSet.empty)
+
+    gba.goalIsSolvable(r, Goal(BitSet(2, compactedGoal))) shouldBe true
   }
 
   // noinspection SameParameterValue

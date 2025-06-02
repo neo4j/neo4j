@@ -132,6 +132,10 @@ object ListSet extends IterableFactory[ListSet] {
       case _                      => (newBuilder[E] ++= it).result()
     }
 
+  implicit class IterableOnceToListSet[A](private val it: IterableOnce[A]) extends AnyVal {
+    def toListSet: ListSet[A] = ListSet.from(it)
+  }
+
   private object EmptyListSet extends ListSet[Any](new java.util.LinkedHashSet[Any]()) {
     override def knownSize: Int = 0
   }
