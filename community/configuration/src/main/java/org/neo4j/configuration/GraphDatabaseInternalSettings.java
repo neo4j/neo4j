@@ -1089,6 +1089,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.recovery.enable_parallelism", BOOL, false).build();
 
     @Internal
+    @Description(
+            "Whether to update indexes in parallel during parallel recovery (disabled if parallel recover is disabled)")
+    public static final Setting<Boolean> do_parallel_index_updates_in_recovery = newBuilder(
+                    "internal.dbms.recovery.enable_index_updates_parallelism", BOOL, true)
+            .internal()
+            .build();
+
+    @Internal
     @Description("Whether or not to log contents of data that is inconsistent when deleting it.")
     public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder(
                     "internal.dbms.log_inconsistent_data_deletion", BOOL, Boolean.FALSE)

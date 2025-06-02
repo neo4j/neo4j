@@ -783,5 +783,10 @@ public class ConsistencyCheckService {
         public ConsistencySummaryStatistics summary() {
             return summary;
         }
+
+        @Override
+        public String toString() {
+            return "Result{" + "successful=" + successful + ", reportFile=" + reportFile + ", summary=" + summary + '}';
+        }
     }
 }

@@ -115,6 +115,7 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -1788,6 +1789,41 @@ class IndexingServiceTest {
             // and the index statistics store should not have been updated
             verify(indexStatisticsStore, never()).setSampleStats(anyLong(), any());
         });
+    }
+
+    @Test
+    void shouldApplyUpdatesOneIndexAtTheTimeForWhenParallel() throws IOException, KernelException {
+        // given
+        var index1 = forSchema(forLabel(0, 1))
+                .withName("i1")
+                .withIndexType(IndexType.RANGE)
+                .withIndexProvider(PROVIDER_DESCRIPTOR)
+                .materialise(0);
+        var index2 = forSchema(forLabel(0, 2))
+                .withName("i2")
+                .withIndexType(IndexType.RANGE)
+                .withIndexProvider(PROVIDER_DESCRIPTOR)
+                .materialise(1);
+        var indexingService = newIndexingServiceWithMockedDependencies(populator, accessor, withData(), index1, index2);
+        when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
+                .thenReturn(updater);
+        life.start();
+
+        // when explicitly mixing updates for different indexes back and forth
+        var index1Update1 = IndexEntryUpdate.add(10, index1, Values.intValue(10));
+        var index2Update1 = IndexEntryUpdate.add(11, index2, Values.intValue(11));
+        var index1Update2 = IndexEntryUpdate.add(12, index1, Values.intValue(12));
+        var index2Update2 = IndexEntryUpdate.add(13, index2, Values.intValue(13));
+        List<IndexEntryUpdate<IndexDescriptor>> mixedUpdates =
+                List.of(index1Update1, index2Update1, index1Update2, index2Update2);
+        indexingService.applyUpdates(mixedUpdates, NULL_CONTEXT, true);
+
+        // then the order in which those updates arrive to the updaters should be ordered by index
+        InOrder order = inOrder(updater);
+        order.verify(updater).process(index1Update1);
+        order.verify(updater).process(index1Update2);
+        order.verify(updater).process(index2Update1);
+        order.verify(updater).process(index2Update2);
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation() {

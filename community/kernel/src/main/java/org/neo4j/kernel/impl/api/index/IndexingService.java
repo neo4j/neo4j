@@ -52,6 +52,7 @@ import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.utility.LazyIterate;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
@@ -621,9 +622,27 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             CursorContext cursorContext,
             boolean parallel)
             throws KernelException {
-        try (IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap(updateMode, parallel)) {
-            for (IndexEntryUpdate<IndexDescriptor> indexUpdate : updates) {
-                processUpdate(updaterMap, indexUpdate, cursorContext);
+        if (parallel) {
+            // For parallel updates split updates by index and for all updates for each index: open updater,
+            // apply updates and then close the updater. This removes a potential deadlock where open updaters
+            // may hold on to internal index btree node latches, causing deadlocks.
+            for (var entry : LazyIterate.adapt(updates)
+                    .groupBy(IndexEntryUpdate::indexKey)
+                    .keyMultiValuePairsView()) {
+                var indexProxy = indexMapRef.getIndexProxy(entry.getOne());
+                if (indexProxy != null) {
+                    try (var updater = indexProxy.newUpdater(updateMode, cursorContext, true)) {
+                        for (var update : entry.getTwo()) {
+                            updater.process(update);
+                        }
+                    }
+                }
+            }
+        } else {
+            try (IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap(updateMode, false)) {
+                for (IndexEntryUpdate<IndexDescriptor> indexUpdate : updates) {
+                    processUpdate(updaterMap, indexUpdate, cursorContext);
+                }
             }
         }
     }

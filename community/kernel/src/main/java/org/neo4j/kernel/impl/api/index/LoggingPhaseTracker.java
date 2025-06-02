@@ -209,7 +209,7 @@ public class LoggingPhaseTracker implements PhaseTracker {
         static void addToString(String name, long measurement, StringJoiner joiner, boolean isTime) {
             String measurementString;
             if (isTime) {
-                long timeInNanos = TimeUnit.MILLISECONDS.toNanos(measurement);
+                long timeInNanos = Math.max(0, TimeUnit.MILLISECONDS.toNanos(measurement));
                 measurementString = TimeUtil.nanosToString(timeInNanos);
             } else {
                 measurementString = Long.toString(measurement);

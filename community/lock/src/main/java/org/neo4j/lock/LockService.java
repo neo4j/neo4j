@@ -39,7 +39,7 @@ package org.neo4j.lock;
  *
  * The simples possible solution issues the same type of mutually exclusive locks for each lock type.
  *
- * @see AbstractLockService for implementation details.
+ * @see ReentrantLockService for implementation details.
  */
 public interface LockService {
     Lock acquireNodeLock(long nodeId, LockType type);

@@ -449,7 +449,7 @@ public final class Recovery {
 
         assert !(context.pageCache instanceof DatabasePageCache)
                 : "Recovery should use global page cache to avoid using overloaded mapping.";
-        var config = new LocalConfig(context.config);
+        var config = new LocalConfig(recoveryOptimizedConfig(context.config));
         try {
             return performRecovery(
                     context.fs,
@@ -475,6 +475,16 @@ public final class Recovery {
         } finally {
             config.removeAllLocalListeners();
         }
+    }
+
+    private static Config recoveryOptimizedConfig(Config config) {
+        return Config.newBuilder()
+                .fromConfig(config)
+                .set(
+                        GraphDatabaseInternalSettings.parallel_index_updates_apply,
+                        config.get(GraphDatabaseInternalSettings.do_parallel_recovery)
+                                && config.get(GraphDatabaseInternalSettings.do_parallel_index_updates_in_recovery))
+                .build();
     }
 
     private static boolean performRecovery(

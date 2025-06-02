@@ -19,148 +19,127 @@
  */
 package org.neo4j.lock;
 
-import static java.lang.Thread.currentThread;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static java.util.concurrent.locks.LockSupport.unpark;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.neo4j.util.VisibleForTesting;
 
 /**
- * Fairness in this implementation is achieved through a {@link OwnerQueueElement queue} of waiting threads for
- * {@link #locks each lock}. It guarantees that readers are not allowed before a waiting writer by not differentiating
- * between readers and writers, the locks are mutex locks, but reentrant from the same thread.
+ * Uses {@link ReentrantReadWriteLock} internally for locking.
  */
-public final class ReentrantLockService extends AbstractLockService<ReentrantLockService.OwnerQueueElement<Thread>> {
-    private final ConcurrentMap<LockedEntity, OwnerQueueElement<Thread>> locks = new ConcurrentHashMap<>();
-    private final long maxParkNanos;
+public class ReentrantLockService implements LockService {
+    private final ConcurrentMap<LockedEntity, LockInstance> locks = new ConcurrentHashMap<>();
 
+    @VisibleForTesting
     int lockCount() {
         return locks.size();
     }
 
-    public ReentrantLockService() {
-        this(1, TimeUnit.MILLISECONDS);
-    }
-
-    private ReentrantLockService(long maxParkTime, TimeUnit unit) {
-        this.maxParkNanos = unit.toNanos(maxParkTime);
+    @Override
+    public Lock acquireNodeLock(long nodeId, LockType type) {
+        return acquire(new LockedNode(nodeId), type);
     }
 
     @Override
-    protected OwnerQueueElement<Thread> acquire(LockedEntity key) {
-        OwnerQueueElement<Thread> suggestion = new OwnerQueueElement<>(currentThread());
-        for (; ; ) {
-            OwnerQueueElement<Thread> owner = locks.putIfAbsent(key, suggestion);
-            if (owner == null) { // Our suggestion was accepted, we got the lock
+    public Lock acquireRelationshipLock(long relationshipId, LockType type) {
+        return acquire(new LockedRelationship(relationshipId), type);
+    }
+
+    @Override
+    public Lock acquireCustomLock(int resourceType, long id, LockType type) {
+        return acquire(new CustomLockedEntity(resourceType, id), type);
+    }
+
+    private Lock acquire(LockedEntity key, LockType type) {
+        var lockInstance = lockInstance(key);
+        var variant = lockInstance.acquire(type);
+        return new Lock() {
+            private boolean released;
+
+            @Override
+            public void release() {
+                if (!released) {
+                    variant.unlock();
+                    if (lockInstance.deref()) {
+                        locks.remove(key);
+                    }
+                    released = true;
+                }
+            }
+
+            @Override
+            public String toString() {
+                StringBuilder repr =
+                        new StringBuilder("{").append(key.toString()).append(' ');
+                if (released) {
+                    repr.append("RELEASED");
+                } else {
+                    repr.append(lockInstance);
+                }
+                return repr.append('}').toString();
+            }
+        };
+    }
+
+    private LockInstance lockInstance(LockedEntity key) {
+        LockInstance suggestion = new LockInstance();
+        while (true) {
+            var lockInstance = locks.putIfAbsent(key, suggestion);
+            if (lockInstance == null) {
                 return suggestion;
             }
 
-            Thread other = owner.owner;
-            if (other == currentThread()) { // the lock has been handed to us (or we are re-entering), claim it!
-                owner.count++;
-                return owner;
+            if (lockInstance.ref()) {
+                return lockInstance;
             }
-
-            // Make sure that we only add to the queue once, and if that addition fails (because the queue is dead
-            // - i.e. has been removed from the map), retry form the top of the loop immediately.
-            if (suggestion.head == suggestion) // true if enqueue() has not been invoked (i.e. first time around)
-            { // otherwise it has already been enqueued, and we are in a spurious (or timed) wake up
-                if (!owner.enqueue(suggestion)) {
-                    continue; // the lock has already been released, the queue is dead, retry!
-                }
-            }
-            parkNanos(key, maxParkNanos);
+            parkNanos(1_000_000);
         }
     }
 
-    @Override
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void release(LockedEntity key, OwnerQueueElement<Thread> ownerQueueElement) {
-        if (0 == --ownerQueueElement.count) {
-            Thread nextThread;
-            synchronized (ownerQueueElement) {
-                nextThread = ownerQueueElement.dequeue();
-                if (nextThread == currentThread()) { // no more threads in the queue, remove this list
-                    locks.remove(key, ownerQueueElement); // done under synchronization to honour definition of 'dead'
-                    nextThread = null; // to make unpark() a no-op.
-                }
-            }
-            unpark(nextThread);
-        }
-    }
+    private sealed interface LockedEntity {}
 
-    /**
-     * Element in a queue of owners. Contains two fields {@link #head} and {@link #tail} which form the queue.
-     *
-     * Example queue with 3 members:
-     *
-     * <pre>
-     * locks -> [H]--+ <+
-     *          [T]  |  |
-     *          ^|   V  |
-     *          ||  [H]-+
-     *          ||  [T] ^
-     *          ||   |  |
-     *          ||   V  |
-     *          |+->[H]-+
-     *          +---[T]
-     * </pre>
-     * @param <OWNER> Type of the object that owns (or wishes to own) the lock.
-     *               In practice this is always {@link Thread}, only a parameter for testing purposes.
-     */
-    static final class OwnerQueueElement<OWNER> {
-        volatile OWNER owner;
-        int count = 1; // does not need to be volatile, only updated by the owning thread.
+    private record LockedNode(long id) implements LockedEntity {}
 
-        OwnerQueueElement(OWNER owner) {
-            this.owner = owner;
+    private record LockedRelationship(long id) implements LockedEntity {}
+
+    private record CustomLockedEntity(int type, long id) implements LockedEntity {}
+
+    private record LockInstance(ReentrantReadWriteLock lock, AtomicInteger usage) {
+        private static final int DEAD = -1;
+
+        LockInstance() {
+            this(new ReentrantReadWriteLock(true), new AtomicInteger(1));
         }
 
-        /**
-         * In the first element, head will point to the next waiting element, and tail is where we enqueue new elements.
-         * In the waiting elements, head will point to the first element, and tail to the next element.
-         */
-        private OwnerQueueElement<OWNER> head = this;
-
-        private OwnerQueueElement<OWNER> tail = this;
-
-        /**
-         * Return true if the item was enqueued, or false if this LockOwner is dead.
-         * A dead LockOwner is no longer reachable from the map, and so no longer participates in the lock.
-         */
-        synchronized boolean enqueue(OwnerQueueElement<OWNER> last) {
-            if (owner == null) {
-                return false; // don't enqueue into a dead queue
-            }
-            last.head = this;
-            last.tail = this;
-            tail.tail = last;
-            this.tail = last;
-            if (head == this) {
-                head = last;
-            }
-            return true;
+        boolean ref() {
+            return usage.updateAndGet(operand -> operand == DEAD ? DEAD : operand + 1) != DEAD;
         }
 
-        synchronized OWNER dequeue() {
-            OwnerQueueElement<OWNER> first = this.head;
-            (this.head = first.tail).head = this;
-            first.tail = this;
-            if (this.head == this) {
-                this.tail = this; // don't leave junk references around!
-            }
-            try {
-                return this.owner = first.owner;
-            } finally {
-                first.owner = null; // mark 'first' as dead.
-            }
+        java.util.concurrent.locks.Lock acquire(LockType type) {
+            var variant =
+                    switch (type) {
+                        case EXCLUSIVE -> lock.writeLock();
+                        case SHARED -> lock.readLock();
+                    };
+            variant.lock();
+            return variant;
+        }
+
+        boolean deref() {
+            return usage.updateAndGet(operand -> {
+                        assert operand > 0;
+                        int result = operand - 1;
+                        return result == 0 ? DEAD : result;
+                    })
+                    == DEAD;
         }
 
         @Override
         public String toString() {
-            return String.format("%s*%s", count, owner);
+            return lock.toString();
         }
     }
 }
