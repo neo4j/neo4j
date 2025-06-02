@@ -170,7 +170,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                 this.notifyListenersSafely("requestResultFailure", listener -> listener.onResponseFailed(error));
 
                 this.channel.writeAndFlush(error.asBoltMessage());
-                this.close();
+                this.close(false);
             }
         }
     }
@@ -519,6 +519,10 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
     @Override
     public void close() {
+        this.close(true);
+    }
+
+    private void close(boolean waitForScheduler) {
         var inWorkerThread = this.inWorkerThread();
 
         State originalState;
@@ -537,7 +541,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
         // if the connection was in idle when the closure occurred or if we're already on the worker thread, we'll
         // close the connection synchronously immediately in order to reduce congestion on the worker thread pool
-        if (inWorkerThread || originalState == State.IDLE) {
+        if (inWorkerThread || originalState == State.IDLE || (originalState == State.SCHEDULED && !waitForScheduler)) {
             if (inWorkerThread) {
                 log.debug("[%s] Close request from worker thread - Performing inline closure", this.id);
             } else {
