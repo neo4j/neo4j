@@ -13,7 +13,9 @@
     <artifactId>neo4j-server-test-utils</artifactId>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+    <name>Neo4j - Server Test Utilities</name>
     <packaging>jar</packaging>
+    <description>Neo4j Server Test Utilities.</description>
 
     <properties>
         <neo4j.version>${project.version}</neo4j.version>
