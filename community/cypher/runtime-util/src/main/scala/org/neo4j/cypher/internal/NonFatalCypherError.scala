@@ -43,6 +43,9 @@ object NonFatalCypherError {
   def isNonFatal(t: Throwable): Boolean = t match {
     case NonFatal(_) =>
       true
+    // These errors can happen if we do a mistake in codegen,
+    // by making them NonFatal we will properly log them in query.log.
+    case _: NoSuchFieldError | _: NoSuchMethodError => true
     case _ =>
       false
   }
