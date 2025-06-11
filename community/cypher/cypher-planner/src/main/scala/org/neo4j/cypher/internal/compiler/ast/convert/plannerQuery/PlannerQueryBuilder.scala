@@ -32,11 +32,9 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 case class PlannerQueryBuilder(
   q: SinglePlannerQuery,
@@ -178,17 +176,6 @@ object PlannerQueryBuilder {
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
-    def groupInequalities(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
-
-      plannerQuery
-        .amendQueryGraph(_.mapSelections {
-          case Selections(predicates) =>
-            val newPredicates = groupInequalityPredicates(ListSet.from(predicates))
-            Selections(newPredicates)
-        })
-        .updateTail(groupInequalities)
-    }
-
     def fixStandaloneArgumentPatternNodes(part: SinglePlannerQuery): SinglePlannerQuery = {
 
       def addPredicates(qg: QueryGraph): QueryGraph = {
@@ -207,7 +194,6 @@ object PlannerQueryBuilder {
     Function.chain[SinglePlannerQuery](List(
       fixArgumentIds,
       fixArgumentIdsOnOptionalMatch,
-      groupInequalities,
       fixStandaloneArgumentPatternNodes
     )).apply(q)
   }

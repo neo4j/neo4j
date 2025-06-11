@@ -232,7 +232,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             differentRelationships(r, r3),
             differentRelationships(r, r2),
             differentRelationships(r3, r2),
-            andedPropertyInequalities(rPred)
+            rPred
           ))
         ),
         None
@@ -1103,7 +1103,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength)),
-          selections = Selections.from(andedPropertyInequalities(rPred))
+          selections = Selections.from(rPred)
         ),
         horizon =
           Some(AggregatingQueryProjection(
@@ -1145,8 +1145,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ),
           selections = Selections.from(Seq(
             differentRelationships(r2, r),
-            andedPropertyInequalities(rPred),
-            andedPropertyInequalities(oPred),
+            rPred,
+            oPred,
             equals(prop(r, "prop"), literalInt(5)),
             equals(prop(o, "prop"), literalInt(5)),
             not(hasALabel(o.name))
@@ -1215,7 +1215,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength)),
-          selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
+          selections = Selections.from(Seq(rPred, rLessPred))
         ),
         horizon =
           Some(AggregatingQueryProjection(
@@ -1438,7 +1438,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             differentRelationships(r, r3),
             differentRelationships(r, r2),
             differentRelationships(r3, r2),
-            andedPropertyInequalities(rPred)
+            rPred
           ))
         ),
         horizon =

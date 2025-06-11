@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.GroupInequalitiesStep
 import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.VerifyGraphTarget
@@ -110,6 +111,7 @@ object CompilationPhases extends FrontEndCompilationPhases {
           OptionalMatchRemover,
           EmptyRelationshipListEndpointProjection,
           GetDegreeRewriterStep,
+          GroupInequalitiesStep,
           InlineRelationshipTypePredicates,
           UnfulfillableQueryRewriter,
           VarLengthQuantifierMerger,

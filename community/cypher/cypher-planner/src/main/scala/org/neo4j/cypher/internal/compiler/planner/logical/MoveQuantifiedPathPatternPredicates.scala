@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.GroupInequalitiesStep
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -86,7 +87,9 @@ case object MoveQuantifiedPathPatternPredicates extends PlannerQueryRewriter wit
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     CompilationContains[PlannerQuery](),
-    InlineRelationshipTypePredicates.completed
+    InlineRelationshipTypePredicates.completed,
+    // We cannot group inequalities after moving QPP predicates, since we do not recognize ForAllRepetitions as a groupable predicate
+    GroupInequalitiesStep.completed
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

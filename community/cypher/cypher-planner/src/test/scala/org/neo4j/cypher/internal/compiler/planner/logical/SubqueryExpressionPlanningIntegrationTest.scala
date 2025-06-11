@@ -587,13 +587,58 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .filterExpression(not(HasDegreeGreaterThan(
-          v"a",
-          Some(RelTypeName("X")(pos)),
+        .filterExpression(not(hasDegreeGreater(
+          "a",
+          "X",
           SemanticDirection.OUTGOING,
           literalInt(0)
-        )(pos)))
+        )))
         .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should be able to plan comparison of node properties with GetDegree") {
+    planner.plan(
+      """MATCH (n)
+        |  WHERE n.prop < COUNT {(n)-[:X]->()}
+        |RETURN n""".stripMargin
+    ) should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .filterExpression(hasDegreeGreater("n", "X", OUTGOING, prop("n", "prop")))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should be able to plan comparison of node properties with GetDegree - original issue") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Customer", 200)
+      .setRelationshipCardinality("(:Customer)-[:SIMILAR_TO]->()", 500)
+      .setRelationshipCardinality("()-[:SIMILAR_TO]->()", 500)
+      .build()
+
+    planner.plan(
+      """WITH {
+        |    degreeCutoff: 10
+        |} as params
+        |MATCH (c:Customer)-[r:SIMILAR_TO WHERE r.combinedScore > 0.8]->(c2)
+        |WHERE count { (c)-[:ASSOC_EMAIL]->() } < params.degreeCutoff
+        |RETURN c, c2
+        |LIMIT 5""".stripMargin
+    ) should equal(
+      planner.planBuilder()
+        .produceResults("c", "c2")
+        .limit(5)
+        .filter("r.combinedScore > 0.8")
+        .expandAll("(c)-[r:SIMILAR_TO]->(c2)")
+        .filterExpression(hasDegreeLess("c", "ASSOC_EMAIL", OUTGOING, prop("params", "degreeCutoff")))
+        .apply()
+        .|.nodeByLabelScan("c", "Customer", IndexOrderNone, "params")
+        .projection("{degreeCutoff: 10} AS params")
+        .argument()
         .build()
     )
   }

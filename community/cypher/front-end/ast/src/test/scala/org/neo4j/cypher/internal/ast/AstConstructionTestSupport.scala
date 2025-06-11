@@ -65,6 +65,8 @@ import org.neo4j.cypher.internal.expressions.HasAnyDynamicLabel
 import org.neo4j.cypher.internal.expressions.HasAnyDynamicLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasAnyDynamicType
 import org.neo4j.cypher.internal.expressions.HasAnyLabel
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
+import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
 import org.neo4j.cypher.internal.expressions.HasDynamicLabels
 import org.neo4j.cypher.internal.expressions.HasDynamicLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasDynamicType
@@ -592,6 +594,32 @@ trait AstConstructionTestSupport {
   }
 
   def getDegree(node: Expression, direction: SemanticDirection): GetDegree = GetDegree(node, None, direction)(pos)
+
+  def hasDegreeGreater(
+    node: String,
+    relType: String,
+    direction: SemanticDirection,
+    degree: Expression
+  ) =
+    HasDegreeGreaterThan(
+      varFor(node),
+      Some(relTypeName(relType)),
+      direction,
+      degree
+    )(pos)
+
+  def hasDegreeLess(
+    node: String,
+    relType: String,
+    direction: SemanticDirection,
+    degree: Expression
+  ) =
+    HasDegreeLessThan(
+      varFor(node),
+      Some(relTypeName(relType)),
+      direction,
+      degree
+    )(pos)
 
   def regex(lhs: Expression, rhs: Expression): RegexMatch = RegexMatch(lhs, rhs)(pos)
 

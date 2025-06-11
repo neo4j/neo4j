@@ -19,15 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.phases.CompilationContains
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.GetDegreeRewriterStep
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerQueryRewriter
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.topDown
 
@@ -105,4 +119,33 @@ object groupInequalityPredicates extends (ListSet[Predicate] => ListSet[Predicat
         case _ => None
       }
   }
+}
+
+case object GroupInequalitiesStep extends PlannerQueryRewriter with StepSequencer.Step
+    with StepSequencer.DefaultPostCondition with PlanPipelineTransformerFactory {
+
+  private def groupInequalities(selections: Selections): Selections = {
+    val newPredicates = groupInequalityPredicates(ListSet.from(selections.predicates))
+    Selections(newPredicates)
+  }
+
+  override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = rewriter
+
+  val rewriter: Rewriter = bottomUp(Rewriter.lift {
+    case selections: Selections => groupInequalities(selections)
+  })
+
+  /**
+   * @return the conditions that need to be met before this step can be allowed to run.
+   */
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // This works on the IR
+    CompilationContains[PlannerQuery](),
+    GetDegreeRewriterStep.completed
+  )
+
+  override def getTransformer(
+    pushdownPropertyReads: Boolean,
+    semanticFeatures: Seq[SemanticFeature]
+  ): Transformer[_ <: BaseContext, _ <: BaseState, BaseState] = this
 }

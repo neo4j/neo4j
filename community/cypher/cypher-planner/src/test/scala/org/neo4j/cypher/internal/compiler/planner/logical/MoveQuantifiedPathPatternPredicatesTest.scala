@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.GroupInequalitiesStep
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -39,10 +40,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     with AstConstructionTestSupport {
 
-  private def buildSinglePlannerQueryAndRewrite(query: String): SinglePlannerQuery = {
-    val q = buildSinglePlannerQuery(query)
-    q.endoRewrite(MoveQuantifiedPathPatternPredicates.rewriter)
-  }
+  private def buildSinglePlannerQueryAndRewrite(query: String): SinglePlannerQuery =
+    buildSinglePlannerQuery(query)
+      .endoRewrite(GroupInequalitiesStep.rewriter)
+      .endoRewrite(MoveQuantifiedPathPatternPredicates.rewriter)
 
   // (start) ((a)-[r]->(b))+ (end)
   private val qpp = QuantifiedPathPattern(
@@ -109,7 +110,7 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
     val pred = ForAllRepetitions(
       v"b",
       Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
-      greaterThan(prop("b", "prop"), literal(123))
+      andedPropertyInequalities(greaterThan(prop("b", "prop"), literal(123)))
     )(pos)
 
     q.queryGraph.selectivePathPatterns.flatMap(_.allQuantifiedPathPatterns) shouldEqual Set(qpp)
@@ -125,7 +126,7 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
     val pred = ForAllRepetitions(
       v"b",
       Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
-      greaterThan(prop("b", "prop"), prop("r", "prop"))
+      andedPropertyInequalities(greaterThan(prop("b", "prop"), prop("r", "prop")))
     )(pos)
 
     q.queryGraph.selectivePathPatterns.flatMap(_.allQuantifiedPathPatterns) shouldEqual Set(qpp)
