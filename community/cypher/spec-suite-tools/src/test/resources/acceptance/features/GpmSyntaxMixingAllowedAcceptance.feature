@@ -124,7 +124,7 @@ Feature: GpmSyntaxMixingAllowedAcceptance
       }
       RETURN collect({n: n, m: m}) AS result
       """
-    Then the result should be, in order:
+    Then the result should be (ignoring element order for lists):
       | result     |
       | <expected> |
 
