@@ -29,17 +29,18 @@ public record QueryRequest(
         AccessMode accessMode,
         int maxExecutionTime,
         List<String> bookmarks,
-        String impersonatedUser) {
+        String impersonatedUser,
+        String txType) {
 
     public QueryRequest(String statement, List<String> bookmarks) {
-        this(statement, Map.of(), false, AccessMode.WRITE, 0, bookmarks, null);
+        this(statement, Map.of(), false, AccessMode.WRITE, 0, bookmarks, null, null);
     }
 
     public QueryRequest(String statement) {
-        this(statement, Map.of(), false, AccessMode.WRITE, 0, List.of(), null);
+        this(statement, Map.of(), false, AccessMode.WRITE, 0, List.of(), null, null);
     }
 
     public QueryRequest() {
-        this(null, Map.of(), false, AccessMode.WRITE, 0, List.of(), null);
+        this(null, Map.of(), false, AccessMode.WRITE, 0, List.of(), null, null);
     }
 }

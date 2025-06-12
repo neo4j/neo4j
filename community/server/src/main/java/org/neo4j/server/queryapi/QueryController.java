@@ -117,8 +117,8 @@ public class QueryController {
         var txCleanUpAction = TxHandling.CLOSE;
 
         try {
-            var queryTransaction =
-                    transactionManager.begin(txId, session, sessionAuthToken, databaseName, buildTxConfig(request));
+            var queryTransaction = transactionManager.begin(
+                    txId, session, sessionAuthToken, databaseName, buildTxConfig(request), request.txType());
             if (request.statement() != null && !request.statement().isEmpty()) {
                 queryTransaction.runQuery(request.statement(), request.parameters());
                 txCleanUpAction = TxHandling.KEEP_OPEN;

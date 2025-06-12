@@ -25,7 +25,13 @@ import org.neo4j.driver.TransactionConfig;
 
 public interface TransactionManager {
 
-    Transaction begin(String txId, Session session, AuthToken authToken, String databaseName, TransactionConfig config)
+    Transaction begin(
+            String txId,
+            Session session,
+            AuthToken authToken,
+            String databaseName,
+            TransactionConfig config,
+            String txType)
             throws TransactionIdCollisionException;
 
     Transaction retrieveTransaction(String transactionId, String requestedDatabase, AuthToken accessingUser)

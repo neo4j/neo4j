@@ -136,6 +136,18 @@ public class QueryResourceTxErrorIT {
     }
 
     @Test
+    void shouldRunCallInTransactionsInImplicit() throws IOException, InterruptedException {
+        var res = testClient.beginTx(QueryRequest.newBuilder()
+                .statement("UNWIND [4, 2, 1, 0] AS i CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i")
+                .txType("IMPLICIT")
+                .build());
+
+        assertThat(res).wasSuccessful();
+        assertThat(res).hasTransaction();
+        testClient.commitTx(res.body().txId());
+    }
+
+    @Test
     void shouldReturn404ForUnknownTxId() throws IOException, InterruptedException {
         var continueTx = testClient.runInTx("isthatyou");
         var commit = testClient.commitTx("isthisme");

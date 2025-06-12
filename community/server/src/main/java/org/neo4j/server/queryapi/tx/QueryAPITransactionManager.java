@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
@@ -53,10 +54,16 @@ public class QueryAPITransactionManager implements TransactionManager {
 
     @Override
     public Transaction begin(
-            String txId, Session session, AuthToken authToken, String databaseName, TransactionConfig config)
+            String txId,
+            Session session,
+            AuthToken authToken,
+            String databaseName,
+            TransactionConfig config,
+            String txType)
             throws TransactionIdCollisionException {
         monitor.openTransaction();
-        var driverTransaction = session.beginTransaction(config);
+        var internalSession = (InternalSession) session; // needed to support txType
+        var driverTransaction = internalSession.beginTransaction(config, txType);
         var tx = new QueryAPITransaction(
                 txId,
                 driverTransaction,
