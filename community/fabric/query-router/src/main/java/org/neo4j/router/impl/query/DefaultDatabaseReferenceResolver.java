@@ -22,17 +22,14 @@ package org.neo4j.router.impl.query;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.ast.CatalogName;
-import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.NormalizedCatalogEntry;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.router.query.DatabaseReferenceResolver;
-import scala.Option;
 
 public class DefaultDatabaseReferenceResolver implements DatabaseReferenceResolver {
     private final DatabaseReferenceRepository repository;
@@ -88,15 +85,7 @@ public class DefaultDatabaseReferenceResolver implements DatabaseReferenceResolv
     private Optional<QueryTarget> queryTarget(
             NormalizedCatalogEntry catalogEntry, CatalogName catalogName, boolean addNotification) {
         var databaseReference = repository.getByAlias(catalogEntry);
-        return databaseReference.map(reference -> {
-            if (addNotification) {
-                var notification =
-                        new DeprecatedDatabaseNameNotification(catalogName.qualifiedNameString(), Option.empty());
-                return new QueryTarget(reference, Set.of(notification));
-            } else {
-                return new QueryTarget(reference);
-            }
-        });
+        return databaseReference.map(QueryTarget::new);
     }
 
     static List<NormalizedCatalogEntry> getAllNameCombinations(List<String> nameParts) {

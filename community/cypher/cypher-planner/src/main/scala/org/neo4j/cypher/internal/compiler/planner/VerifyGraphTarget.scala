@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
@@ -106,13 +105,6 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   ): Unit = {
     evaluateGraphSelection(statement, databaseReferenceRepository, params) match {
       case Some(graphNameWithContext) =>
-        // add deprecation for aliases that need to be quoted if it's not a composite. This needs to be updated when we pass here for composite databases
-        if (!allowCompositeQueries && graphNameWithContext.graphName.names().size() > 1) {
-          notificationLogger.log(DeprecatedDatabaseNameNotification(
-            graphNameWithContext.graphName.qualifiedNameString,
-            Option.empty
-          ))
-        }
         val normalizedDatabaseName = new NormalizedDatabaseName(graphNameWithContext.graphName.qualifiedNameString)
         toScala(
           databaseReferenceRepository.getInternalByAlias(
