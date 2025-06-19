@@ -142,6 +142,8 @@ public enum Group {
     FABRIC_IDLE_DRIVER_MONITOR("FabricIdleDriverMonitor"),
     FABRIC_WORKER("FabricWorker", ExecutorServiceFactory.newVirtualThreadPerTask()),
 
+    QUERY_ROUTER_WORKER("QueryRouterWorker", ExecutorServiceFactory.newVirtualThreadPerTask()),
+
     SPD_WORKER("SpdWorker"),
 
     // SECURITY

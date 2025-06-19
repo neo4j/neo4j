@@ -37,10 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
@@ -66,22 +65,10 @@ import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.scheduler.CallableExecutorService;
+import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.Clocks;
 
 public class FabricTransactionImplTest {
-
-    private static ExecutorService executorService;
-
-    @BeforeAll
-    static void beforeAll() {
-        executorService = Executors.newVirtualThreadPerTaskExecutor();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        executorService.shutdown();
-    }
 
     @Test
     void testChildrenAreTerminated() {
@@ -232,7 +219,7 @@ public class FabricTransactionImplTest {
                 guard,
                 errorReporter,
                 globalProcedures,
-                new CallableExecutorService(executorService));
+                new SameThreadExecutor());
     }
 
     private static FabricTransactionInfo createTransactionInfo() {
@@ -250,5 +237,23 @@ public class FabricTransactionImplTest {
                 new RoutingContext(true, emptyMap()),
                 QueryExecutionConfiguration.DEFAULT_CONFIG,
                 List.of());
+    }
+
+    private static class SameThreadExecutor implements CallableExecutor {
+
+        @Override
+        public <T> Future<T> submit(Callable<T> callable) {
+            try {
+                return CompletableFuture.completedFuture(callable.call());
+            } catch (Exception e) {
+                return CompletableFuture.failedFuture(e);
+            }
+        }
+        ;
+
+        @Override
+        public void execute(Runnable command) {
+            command.run();
+        }
     }
 }
