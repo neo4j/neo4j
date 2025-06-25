@@ -34,7 +34,6 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.commandHas
 import static org.neo4j.notifications.NotificationCodeWithDescription.cordonedServersExist;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedBooleanCoercion;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption;
-import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedDatabaseName;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFormat;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithReplacement;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement;
@@ -1197,28 +1196,6 @@ class NotificationCodeWithDescriptionTest {
                 new DiagnosticRecord(info, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of("db", "db"))
                         .asMap(),
                 "note: successful completion - home database does not exist. The database `db` does not exist. Verify that the spelling is correct or create the database for the command to take effect.");
-    }
-
-    @Test
-    void shouldConstructNotificationsFor_DEPRECATED_DATABASE_NAME() {
-        NotificationImplementation notification = deprecatedDatabaseName(InputPosition.empty, "Name: db.one");
-
-        String message =
-                "Databases and aliases with unescaped `.` are deprecated unless they belong to a composite database. Names containing `.` should be escaped. (Name: db.one)";
-        verifyNotification(
-                notification,
-                "This feature is deprecated and will be removed in future versions.",
-                SeverityLevel.WARNING,
-                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
-                        + "Names containing `.` should be escaped. (Name: db.one)",
-                NotificationCategory.DEPRECATION,
-                NotificationClassification.DEPRECATION,
-                "01N00",
-                new DiagnosticRecord(
-                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("item", message))
-                        .asMap(),
-                String.format("warn: feature deprecated. %s", message));
     }
 
     @Test

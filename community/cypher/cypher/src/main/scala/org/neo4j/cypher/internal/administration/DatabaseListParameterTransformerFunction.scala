@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterTransformerOutput
 import org.neo4j.cypher.internal.procs.ParameterTransformerFunction
 import org.neo4j.cypher.internal.util.AssertionRunner
-import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.dbms.database.TopologyInfoService
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
@@ -148,7 +147,7 @@ class DatabaseListParameterTransformerFunction(
                 .getOrElse((
                   new NormalizedDatabaseName(deprecatedName),
                   None,
-                  Set(DeprecatedDatabaseNameNotification(deprecatedName, None))
+                  Set.empty
                 ))
           }
         case pn: ParameterName =>

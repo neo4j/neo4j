@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.QueryHandlerResult
 import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
-import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -1079,7 +1078,7 @@ object AdministrationCommandRuntime {
             Values.utf8Value(aliasName)
           )
             .updatedWith(aliasNameFields.namespaceKey, Values.utf8Value(DEFAULT_NAMESPACE)),
-          if (aliasNameFields.wasParameter) Set.empty else Set(DeprecatedDatabaseNameNotification(aliasName, None))
+          Set.empty
         )
       } else {
         (params, Set.empty)

@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.CordonedServersExistedDuringAllocation
 import org.neo4j.cypher.internal.util.DeprecatedBooleanCoercion
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
-import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
@@ -321,12 +320,6 @@ object NotificationWrapping {
     case DeprecatedIndexProviderOption() =>
       NotificationCodeWithDescription.deprecatedIndexProviderOption(
         graphdb.InputPosition.empty
-      )
-
-    case DeprecatedDatabaseNameNotification(name, pos) =>
-      NotificationCodeWithDescription.deprecatedDatabaseName(
-        pos.map(_.withOffset(offset).asInputPosition).getOrElse(graphdb.InputPosition.empty),
-        s"Name: $name"
       )
 
     case DeprecatedRuntimeNotification(msg, oldOption, newOption) =>
