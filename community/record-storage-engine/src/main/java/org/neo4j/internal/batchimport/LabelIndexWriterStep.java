@@ -81,7 +81,7 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
         cachedStoreCursors.reset(cursorContext);
         for (NodeRecord node : batch) {
             if (node.inUse() && node.getId() >= fromNodeId) {
-                writer.add(node.getId(), get(node, nodeStore, cachedStoreCursors, memoryTracker));
+                writer.add(node.getId(), get(node, nodeStore, cachedStoreCursors));
             }
         }
         sender.send(batch);

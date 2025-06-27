@@ -648,8 +648,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
 
         private void updateCounts(NodeRecord node, int delta) {
             writer.incrementNodeCount(TokenConstants.ANY_LABEL, delta);
-            for (int label :
-                    NodeLabelsField.parseLabelsField(node).get(nodes, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE)) {
+            for (int label : NodeLabelsField.parseLabelsField(node).get(nodes, StoreCursors.NULL)) {
                 writer.incrementNodeCount(label, delta);
             }
         }

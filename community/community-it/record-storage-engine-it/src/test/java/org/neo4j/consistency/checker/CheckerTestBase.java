@@ -431,7 +431,7 @@ class CheckerTestBase {
     }
 
     int[] nodeLabels(NodeRecord node) {
-        return NodeLabelsField.get(node, neoStores.getNodeStore(), storeCursors, EmptyMemoryTracker.INSTANCE);
+        return NodeLabelsField.get(node, neoStores.getNodeStore(), storeCursors);
     }
 
     NodeRecord loadNode(long id) {

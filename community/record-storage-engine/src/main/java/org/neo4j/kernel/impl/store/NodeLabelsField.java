@@ -80,17 +80,15 @@ public class NodeLabelsField {
                 dynamicLabelRecords, dynamicLabelStore, storeCursors, memoryTracker);
     }
 
-    public static int[] get(
-            NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+    public static int[] get(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
         return fieldPointsToDynamicRecordOfLabels(node.getLabelField())
-                ? DynamicNodeLabels.get(node, nodeStore, storeCursors, memoryTracker)
+                ? DynamicNodeLabels.get(node, nodeStore, storeCursors)
                 : InlineNodeLabels.get(node);
     }
 
-    public static boolean hasLabel(
-            NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, int label, MemoryTracker memoryTracker) {
+    public static boolean hasLabel(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, int label) {
         return fieldPointsToDynamicRecordOfLabels(node.getLabelField())
-                ? DynamicNodeLabels.hasLabel(node, nodeStore, storeCursors, label, memoryTracker)
+                ? DynamicNodeLabels.hasLabel(node, nodeStore, storeCursors, label)
                 : InlineNodeLabels.hasLabel(node, label);
     }
 

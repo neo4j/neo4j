@@ -72,7 +72,7 @@ class LenientNodeReader extends LenientStoreInputChunk {
         nodeStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor, memoryTracker);
         if (record.inUse()) {
             nodeStore.ensureHeavy(record, storeCursors, memoryTracker);
-            int[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors, memoryTracker);
+            int[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors);
             String[] labels = toNames(tokenHolders.labelTokens(), labelIds);
             if (readBehaviour.shouldIncludeNode(id, labels)) {
                 labels = readBehaviour.filterLabels(labels);

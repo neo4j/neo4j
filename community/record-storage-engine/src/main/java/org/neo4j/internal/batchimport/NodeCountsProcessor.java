@@ -64,7 +64,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
 
     @Override
     public boolean process(NodeRecord node, StoreCursors storeCursors, MemoryTracker memoryTracker) {
-        int[] labels = NodeLabelsField.get(node, nodeStore, storeCursors, memoryTracker);
+        int[] labels = NodeLabelsField.get(node, nodeStore, storeCursors);
         if (labels.length > 0) {
             for (int labelId : labels) {
                 if (node.getId() >= fromNodeId) {

@@ -154,12 +154,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
 
     @Override
     public int[] labels() {
-        return NodeLabelsField.get(this, read, storeCursors, memoryTracker);
+        return NodeLabelsField.get(this, read, storeCursors);
     }
 
     @Override
     public boolean hasLabel(int label) {
-        return NodeLabelsField.hasLabel(this, read, storeCursors, label, memoryTracker);
+        return NodeLabelsField.hasLabel(this, read, storeCursors, label);
     }
 
     @Override
