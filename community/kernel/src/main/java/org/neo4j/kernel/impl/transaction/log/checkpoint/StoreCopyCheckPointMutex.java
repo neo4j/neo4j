@@ -23,6 +23,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
@@ -74,6 +75,12 @@ public class StoreCopyCheckPointMutex {
     private int storeCopyCount;
 
     /**
+     * Whether or not the first (of the concurrently ongoing store-copy requests) has had its "before"
+     * action completed. The other store-copy requests will wait for this flag to be {@code true}.
+     */
+    private volatile boolean storeCopyActionCompleted;
+
+    /**
      * Error which may have happened during first concurrent store-copy request. Made available to
      * the other concurrent store-copy requests so that they can fail instead of waiting forever.
      */
@@ -88,23 +95,11 @@ public class StoreCopyCheckPointMutex {
     }
 
     public Resource storeCopy(ThrowingAction<IOException> beforeFirstConcurrentStoreCopy) throws IOException {
-        Lock writeLock = lock.writeLock();
         Lock readLock = lock.readLock();
-        boolean storeCopier;
-        synchronized (this) {
-            storeCopier = incrementCount() == 0;
-            if (storeCopier) {
-                writeLock.lock();
-                readLock.lock();
-            } else {
-                // If this is not the first concurrent store-copy then we need to wait for the first one to complete
-                // its "before" action before we can proceed.
-                followerLock(readLock);
-            }
-        }
+        boolean firstConcurrentRead = incrementCount() == 0;
         boolean success = false;
         try {
-            if (storeCopier) {
+            if (firstConcurrentRead) {
                 try {
                     beforeFirstConcurrentStoreCopy.apply();
                 } catch (IOException e) {
@@ -113,19 +108,17 @@ public class StoreCopyCheckPointMutex {
                 } catch (Throwable e) {
                     storeCopyActionError = e;
                     throw new IOException(e);
-                } finally {
-                    // Unlock the write lock so that all requests waiting for the read lock can proceed.
-                    writeLock.unlock();
                 }
+                storeCopyActionCompleted = true;
             } else {
-                if (storeCopyActionError != null) {
-                    throw new IOException("Co-operative action before store-copy failed", storeCopyActionError);
-                }
+                // Wait for the "before" first store copy to complete
+                waitForFirstStoreCopyActionToComplete();
             }
             success = true;
         } finally {
-            if (!success) {
-                readLock.unlock();
+            if (success) {
+                readLock.lock();
+            } else {
                 decrementCount();
             }
         }
@@ -137,8 +130,13 @@ public class StoreCopyCheckPointMutex {
         };
     }
 
-    private void followerLock(Lock readLock) {
-        readLock.lock();
+    private void waitForFirstStoreCopyActionToComplete() throws IOException {
+        while (!storeCopyActionCompleted) {
+            if (storeCopyActionError != null) {
+                throw new IOException("Co-operative action before store-copy failed", storeCopyActionError);
+            }
+            parkAWhile();
+        }
     }
 
     private synchronized void decrementCount() {
@@ -146,12 +144,21 @@ public class StoreCopyCheckPointMutex {
         if (storeCopyCount == 0) {
             // If I'm the last one then also clear the other status fields so that a clean new session
             // can begin on the next store-copy request
-            storeCopyActionError = null;
+            clear();
         }
+    }
+
+    private void clear() {
+        storeCopyActionCompleted = false;
+        storeCopyActionError = null;
     }
 
     private synchronized int incrementCount() {
         return storeCopyCount++;
+    }
+
+    private static void parkAWhile() {
+        LockSupport.parkNanos(MILLISECONDS.toNanos(100));
     }
 
     public Resource tryCheckPoint() {

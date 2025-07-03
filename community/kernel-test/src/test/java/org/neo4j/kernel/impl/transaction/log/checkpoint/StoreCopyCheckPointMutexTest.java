@@ -210,7 +210,9 @@ class StoreCopyCheckPointMutexTest {
         while (secondRequest.get() == null) {
             parkARandomWhile();
         }
-        t3.get().waitUntilWaiting(details -> details.isAt(StoreCopyCheckPointMutex.class, "followerLock"));
+        t3.get()
+                .waitUntilWaiting(details ->
+                        details.isAt(StoreCopyCheckPointMutex.class, "waitForFirstStoreCopyActionToComplete"));
 
         // WHEN
         barrier.reached();
