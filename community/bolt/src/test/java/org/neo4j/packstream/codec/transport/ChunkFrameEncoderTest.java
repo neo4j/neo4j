@@ -20,79 +20,75 @@
 package org.neo4j.packstream.codec.transport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.assertions.ByteBufAssertions;
+import org.neo4j.bolt.testing.channel.StrictBufferContext.RootStrictBufferContext;
 
+@StrictBufferExtension
 class ChunkFrameEncoderTest {
 
-    private EmbeddedChannel channel;
-
-    @BeforeEach
-    void prepareChannel() {
-        this.channel = new EmbeddedChannel(new ChunkFrameEncoder(64));
+    private ChunkFrameEncoder createEncoder() {
+        return new ChunkFrameEncoder(64);
     }
 
     @TestFactory
-    List<DynamicTest> shouldWrapMessages() {
+    List<DynamicTest> shouldWrapMessages(RootStrictBufferContext root) {
         return IntStream.range(0, 128)
                 .mapToObj(size -> {
-                    var encoded = Unpooled.buffer(size);
+                    var encoded = root.scopedBuffer(size);
                     for (var i = 0; i < size; ++i) {
                         encoded.writeByte(i % 128);
                     }
                     return encoded;
                 })
-                .map(payload -> DynamicTest.dynamicTest(payload.readableBytes() + " bytes", () -> {
-                    this.channel.writeOutbound(payload.retainedSlice());
-                    this.channel.checkException();
+                .map(payload -> root.test(payload.readableBytes() + " bytes", (ctx) -> {
+                    var channel = ctx.channel(this.createEncoder());
 
-                    ByteBuf actual = this.channel.readOutbound();
+                    var inputBytes = ctx.input(payload);
+                    channel.writeOutbound(inputBytes);
+                    channel.checkException();
 
-                    try {
-                        if (!payload.isReadable()) {
-                            assertFalse(actual.isReadable());
-                            return;
-                        }
+                    ByteBuf actual = ctx.output(channel.readOutbound());
 
-                        assertNotNull(actual);
+                    if (!payload.isReadable()) {
+                        ByteBufAssertions.assertThat(actual).hasNoRemainingReadableBytes();
 
-                        var chunkLength = actual.readUnsignedShort();
-
-                        if (payload.readableBytes() > 64) {
-                            assertEquals(chunkLength, 64);
-                            assertTrue(payload.readableBytes() > 64);
-
-                            var slice = actual.readSlice(chunkLength);
-                            assertEquals(payload.readSlice(chunkLength), slice);
-
-                            chunkLength = actual.readUnsignedShort();
-
-                            assertEquals(payload.readableBytes(), chunkLength);
-
-                            slice = actual.readSlice(chunkLength);
-                            assertEquals(payload.readSlice(chunkLength), slice);
-                        } else {
-                            assertEquals(chunkLength, payload.readableBytes());
-                            assertEquals(payload, actual.readSlice(chunkLength));
-                        }
-
-                        assertFalse(actual.isReadable());
-                        assertNull(this.channel.readOutbound());
-                    } finally {
-                        actual.release();
+                        return;
                     }
+
+                    ByteBufAssertions.assertThat(actual).hasReadableBytes(2);
+                    var chunkLength = actual.readUnsignedShort();
+
+                    if (payload.readableBytes() > 64) {
+                        var slice = actual.readSlice(chunkLength);
+
+                        assertEquals(64, chunkLength);
+                        ByteBufAssertions.assertThat(slice).hasReadableBytes(64).contains(slice);
+
+                        chunkLength = actual.readUnsignedShort();
+                        slice = actual.readSlice(chunkLength);
+
+                        assertEquals(payload.readableBytes() - 64, chunkLength);
+                        ByteBufAssertions.assertThat(slice)
+                                .hasReadableBytes(chunkLength)
+                                .contains(slice);
+                    } else {
+                        ByteBufAssertions.assertThat(actual)
+                                .hasReadableBytes(payload.readableBytes())
+                                .contains(payload);
+                    }
+
+                    ByteBufAssertions.assertThat(actual).hasNoRemainingReadableBytes();
+
+                    assertNull(ctx.tracked(channel.readOutbound()));
                 }))
                 .collect(Collectors.toList());
     }

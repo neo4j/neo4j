@@ -62,6 +62,16 @@ public final class ByteBufAssertions extends ReferenceCountedAssertions<ByteBufA
         return this;
     }
 
+    public ByteBufAssertions hasReadableBytes() {
+        this.isNotNull();
+
+        if (!this.actual.isReadable()) {
+            failWithMessage("Expected buffer to have remaining readable bytes");
+        }
+
+        return this;
+    }
+
     public ByteBufAssertions hasReadableBytes(int expected) {
         this.isNotNull();
 
@@ -102,6 +112,8 @@ public final class ByteBufAssertions extends ReferenceCountedAssertions<ByteBufA
                         ByteBufUtil.hexDump(this.actual));
             }
 
+            // skip the remaining bytes to simulate a read
+            this.actual.skipBytes(expected.readableBytes());
             return this;
         }
 

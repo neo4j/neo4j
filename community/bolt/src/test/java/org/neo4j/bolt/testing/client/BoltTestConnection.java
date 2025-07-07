@@ -179,7 +179,7 @@ public interface BoltTestConnection extends AutoCloseable {
     /**
      * Retrieves the total amount of NOOPs received during the last message read operation.
      * <p>
-     * Applies to {@link #receiveMessage()} and{@link #receiveMessage(int)}.
+     * Applies to {@link #receiveMessage()}.
      *
      * @return a number of NOOP chunks.
      */

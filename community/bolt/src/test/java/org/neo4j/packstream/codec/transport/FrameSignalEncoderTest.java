@@ -19,97 +19,102 @@
  */
 package org.neo4j.packstream.codec.transport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.assertions.ByteBufAssertions;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
+import org.neo4j.bolt.testing.channel.StrictBufferContext.RootStrictBufferContext;
 import org.neo4j.packstream.signal.FrameSignal;
 
+@StrictBufferExtension
 class FrameSignalEncoderTest {
 
     @TestFactory
-    Stream<DynamicTest> shouldEncodeSignals() {
+    Stream<DynamicTest> shouldEncodeSignals(RootStrictBufferContext root) {
         return Stream.of(FrameSignal.values())
-                .map(signal -> dynamicTest(signal.name(), () -> {
-                    var channel = new EmbeddedChannel(new FrameSignalEncoder());
+                .map(signal -> root.test(signal.name(), (ctx) -> {
+                    var channel = ctx.channel(new FrameSignalEncoder());
 
                     channel.writeOutbound(signal);
 
-                    ByteBuf buf = channel.readOutbound();
+                    var buf = ctx.output(channel.<ByteBuf>readOutbound());
 
-                    assertNotNull(buf);
-                    assertEquals(0x00, buf.readUnsignedShort());
-                    assertFalse(buf.isReadable());
+                    ByteBufAssertions.assertThat(buf)
+                            .containsUnsignedShort(0x00)
+                            .hasNoRemainingReadableBytes()
+                            .hasReferences(1);
                 }));
     }
 
     @Test
-    void shouldIgnoreSignalsWhenInsideOfMessage() {
-        var channel = new EmbeddedChannel(new FrameSignalEncoder());
+    void shouldIgnoreSignalsWhenInsideOfMessage(StrictBufferContext ctx) {
+        var channel = ctx.channel(new FrameSignalEncoder());
 
-        channel.writeOutbound(Unpooled.buffer(1).writeByte(0x42));
+        // handler passes buffer outbound as-is - mark as output since we expect it to remain at one
+        // ref count at the end of the test
+        channel.writeOutbound(ctx.outputBuffer(1).writeByte(0x42));
 
-        ByteBuf payload = channel.readOutbound();
+        var signal = ctx.output(channel.<ByteBuf>readOutbound());
 
-        assertNotNull(payload);
-        assertEquals(0x42, payload.readByte());
-        assertFalse(payload.isReadable());
+        ByteBufAssertions.assertThat(signal)
+                .containsByte(0x42)
+                .hasNoRemainingReadableBytes()
+                .hasReferences(1);
 
         channel.writeOutbound(FrameSignal.NOOP);
 
-        ByteBuf signal = channel.readOutbound();
-
+        signal = ctx.output(channel.readOutbound());
         assertFalse(signal.isReadable());
 
         channel.writeOutbound(FrameSignal.MESSAGE_END);
 
-        signal = channel.readOutbound();
+        signal = ctx.output(channel.readOutbound());
 
-        assertEquals(0x00, signal.readShort());
-        assertFalse(signal.isReadable());
+        ByteBufAssertions.assertThat(signal)
+                .containsShort(0x00)
+                .hasNoRemainingReadableBytes()
+                .hasReferences(1);
 
         channel.writeOutbound(FrameSignal.NOOP);
 
-        signal = channel.readOutbound();
+        signal = ctx.output(channel.readOutbound());
 
-        assertEquals(0x00, signal.readShort());
-        assertFalse(signal.isReadable());
+        ByteBufAssertions.assertThat(signal)
+                .containsShort(0x00)
+                .hasNoRemainingReadableBytes()
+                .hasReferences(1);
     }
 
     @Test
-    void shouldFilterSignals() {
+    void shouldFilterSignals(StrictBufferContext ctx) {
         @SuppressWarnings("unchecked")
         var predicate = (Predicate<FrameSignal>) mock(Predicate.class);
 
         when(predicate.test(FrameSignal.NOOP)).thenReturn(true);
 
-        var channel = new EmbeddedChannel(new FrameSignalEncoder(predicate));
+        var channel = ctx.channel(new FrameSignalEncoder(predicate));
 
         channel.writeOutbound(FrameSignal.NOOP);
 
-        ByteBuf signal = channel.readOutbound();
+        var signal = ctx.output(channel.<ByteBuf>readOutbound());
 
-        assertFalse(signal.isReadable());
+        ByteBufAssertions.assertThat(signal).hasNoRemainingReadableBytes();
 
         channel.writeOutbound(FrameSignal.MESSAGE_END);
 
-        signal = channel.readOutbound();
-
-        assertTrue(signal.isReadable(2));
+        signal = ctx.output(channel.readOutbound());
+        ByteBufAssertions.assertThat(signal).hasReadableBytes(2).hasReferences(1);
 
         verify(predicate).test(FrameSignal.NOOP);
         verify(predicate).test(FrameSignal.MESSAGE_END);

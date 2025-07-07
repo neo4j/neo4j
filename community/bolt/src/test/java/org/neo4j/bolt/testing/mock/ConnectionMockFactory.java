@@ -102,7 +102,8 @@ public class ConnectionMockFactory extends AbstractMockFactory<ConnectionHandle,
     }
 
     public ConnectionHandle attachTo(Channel channel, ChannelHandler... handlers) {
-        var connection = this.build();
+        var connection = this.withChannel(channel).build();
+
         Connection.setAttribute(channel, connection);
 
         channel.pipeline().addLast(handlers);

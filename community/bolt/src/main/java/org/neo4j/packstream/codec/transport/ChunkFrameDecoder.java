@@ -81,6 +81,9 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
                     // when an empty chunk is passed without prior context, it is interpreted as a keep-alive
                     // message and is thus discarded as it has previously been handled within the pipeline
                     if (slices.isEmpty()) {
+                        // prepare the method state for following iterations (if any)
+                        // by marking the next offset as the base message offset
+                        in.markReaderIndex();
                         continue;
                     }
 
@@ -103,6 +106,12 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
                 // we detect a violation
                 totalLength += chunkLength;
                 if (this.limit != -1 && totalLength > this.limit) {
+                    // explicitly consume the buffer to ensure that it will be released by
+                    // ByteToMessageDecoder at the end of decode().
+                    // without this logic, the release is delayed until the channel closes meaning
+                    // we retain memory that we no longer need
+                    in.skipBytes(in.readableBytes());
+
                     log.debug(
                             "Client %s has exceeded message size limit of %d bytes",
                             ctx.channel().remoteAddress(), this.limit);

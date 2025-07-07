@@ -26,8 +26,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.mockito.Mockito;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
 import org.neo4j.bolt.testing.assertions.BitMaskAssertions;
+import org.neo4j.bolt.testing.channel.StrictBufferContext.RootStrictBufferContext;
 
+@StrictBufferExtension
 class BitMaskTest {
 
     @TestFactory
@@ -36,7 +39,7 @@ class BitMaskTest {
                 .map(i -> i * 7)
                 .mapToObj(bits -> DynamicTest.dynamicTest(bits + " bits", () -> {
                     var expected = bits / 8 + (bits % 8 == 0 ? 0 : 1);
-                    var allocator = Mockito.mock(ByteBufAllocator.class);
+                    var allocator = Mockito.mock(ByteBufAllocator.class, Mockito.RETURNS_MOCKS);
 
                     var mask = new BitMask(allocator, bits);
 
@@ -47,27 +50,26 @@ class BitMaskTest {
     }
 
     @TestFactory
-    Stream<DynamicTest> shouldWrapByteArray() {
+    Stream<DynamicTest> shouldWrapByteArray(RootStrictBufferContext root) {
         return IntStream.range(0, 5)
-                .mapToObj(bytes -> DynamicTest.dynamicTest(bytes + " bytes", () -> {
+                .mapToObj(bytes -> root.test(bytes + " bytes", (ctx) -> {
                     var expected = bytes * 8;
                     var buffer = new byte[bytes];
 
-                    var mask = new BitMask(buffer);
-
+                    var mask = ctx.output(new BitMask(buffer));
                     BitMaskAssertions.assertThat(mask).hasLength(expected);
                 }));
     }
 
     @TestFactory
-    Stream<DynamicTest> shouldExposeBitPatterns() {
+    Stream<DynamicTest> shouldExposeBitPatterns(RootStrictBufferContext root) {
         return Stream.of(
                         0b01010101010101010101010101010101,
                         0b00001111000011110000111100001111,
                         0b11110000111100001111000011110000,
                         0b00110011001100110011001100110011,
                         0b11001100110011001100110011001100)
-                .map(value -> DynamicTest.dynamicTest(String.format("%08X", value), () -> {
+                .map(value -> root.test(String.format("%08X", value), (ctx) -> {
                     var encoded = new byte[] {
                         (byte) (value & 0xFF),
                         (byte) ((value >>> 8) & 0xFF),
@@ -75,7 +77,7 @@ class BitMaskTest {
                         (byte) (value >>> 24)
                     };
 
-                    var mask = new BitMask(encoded);
+                    var mask = ctx.output(new BitMask(encoded));
 
                     var nibble = value & 0xF;
                     var octet = (value & 0xFF0) >>> 4;
@@ -93,11 +95,11 @@ class BitMaskTest {
     }
 
     @TestFactory
-    Stream<DynamicTest> shouldIndicateReadableBits() {
+    Stream<DynamicTest> shouldIndicateReadableBits(RootStrictBufferContext root) {
         return IntStream.range(0, 5)
                 .map(i -> i * 7)
-                .mapToObj(bits -> DynamicTest.dynamicTest(bits + " bits", () -> {
-                    var mask = new BitMask(UnpooledByteBufAllocator.DEFAULT, bits);
+                .mapToObj(bits -> root.test(bits + " bits", (ctx) -> {
+                    var mask = ctx.output(new BitMask(UnpooledByteBufAllocator.DEFAULT, bits));
 
                     BitMaskAssertions.assertThat(mask).hasLength(bits).hasRemaining(bits);
 
@@ -110,11 +112,11 @@ class BitMaskTest {
     }
 
     @TestFactory
-    Stream<DynamicTest> shouldIndicateWritableBits() {
+    Stream<DynamicTest> shouldIndicateWritableBits(RootStrictBufferContext root) {
         return IntStream.range(0, 5)
                 .map(i -> i * 7)
-                .mapToObj(bits -> DynamicTest.dynamicTest(bits + " bits", () -> {
-                    var mask = new BitMask(UnpooledByteBufAllocator.DEFAULT, bits);
+                .mapToObj(bits -> root.test(bits + " bits", (ctx) -> {
+                    var mask = ctx.output(new BitMask(UnpooledByteBufAllocator.DEFAULT, bits));
 
                     BitMaskAssertions.assertThat(mask).hasLength(bits).isWritable(bits);
 

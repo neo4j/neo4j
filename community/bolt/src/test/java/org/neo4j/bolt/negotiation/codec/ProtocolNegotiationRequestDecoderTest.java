@@ -22,24 +22,25 @@ package org.neo4j.bolt.negotiation.codec;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.ByteBufAssertions.assertThat;
 
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationRequest;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
 
+@StrictBufferExtension
 class ProtocolNegotiationRequestDecoderTest {
 
     @Test
-    void shouldDecodeRequest() {
-        var buf = Unpooled.buffer()
+    void shouldDecodeRequest(StrictBufferContext ctx) {
+        var buf = ctx.buffer()
                 .writeInt(0x6060B017) // Magic Number
                 .writeInt(0x00000003) // Protocol 3.0
                 .writeInt(0x00000104) // Protocol 4.1
                 .writeInt(0x00030404) // Protocol 4.4-4.2
                 .writeInt(0x00000000); // Padding
 
-        var channel = new EmbeddedChannel(new ProtocolNegotiationRequestDecoder());
+        var channel = ctx.channel(new ProtocolNegotiationRequestDecoder());
 
         channel.writeInbound(buf);
 
@@ -51,29 +52,29 @@ class ProtocolNegotiationRequestDecoderTest {
                 .hasSize(3)
                 .containsExactly(new ProtocolVersion(3, 0), new ProtocolVersion(4, 1), new ProtocolVersion(4, 4, 3));
 
-        assertThat(buf).hasNoRemainingReadableBytes().hasBeenReleased();
+        assertThat(buf).hasNoRemainingReadableBytes();
     }
 
     @Test
-    void shouldDecodeFragmentedRequest() {
-        var channel = new EmbeddedChannel(new ProtocolNegotiationRequestDecoder());
+    void shouldDecodeFragmentedRequest(StrictBufferContext ctx) {
+        var channel = ctx.channel(new ProtocolNegotiationRequestDecoder());
 
-        channel.writeInbound(Unpooled.buffer().writeByte(0x60));
+        channel.writeInbound(ctx.buffer().writeByte(0x60));
         assertThat(channel.<ProtocolNegotiationRequest>readInbound()).isNull();
 
-        channel.writeInbound(Unpooled.buffer().writeShort(0x60B0));
+        channel.writeInbound(ctx.buffer().writeShort(0x60B0));
         assertThat(channel.<ProtocolNegotiationRequest>readInbound()).isNull();
 
-        channel.writeInbound(Unpooled.buffer().writeInt(0x17000000));
+        channel.writeInbound(ctx.buffer().writeInt(0x17000000));
         assertThat(channel.<ProtocolNegotiationRequest>readInbound()).isNull();
 
-        channel.writeInbound(Unpooled.buffer().writeShort(0x0300));
+        channel.writeInbound(ctx.buffer().writeShort(0x0300));
         assertThat(channel.<ProtocolNegotiationRequest>readInbound()).isNull();
 
-        channel.writeInbound(Unpooled.buffer().writeLong(0x0001040003040400L));
+        channel.writeInbound(ctx.buffer().writeLong(0x0001040003040400L));
         assertThat(channel.<ProtocolNegotiationRequest>readInbound()).isNull();
 
-        channel.writeInbound(Unpooled.buffer().writeByte(0x00).writeShort(0x0000));
+        channel.writeInbound(ctx.buffer().writeByte(0x00).writeShort(0x0000));
         var request = channel.<ProtocolNegotiationRequest>readInbound();
 
         assertThat(request).isNotNull();

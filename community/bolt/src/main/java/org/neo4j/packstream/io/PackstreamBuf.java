@@ -406,7 +406,7 @@ public final class PackstreamBuf implements ReferenceCounted {
      * Writes a given Java value to this buffer.
      * <p>
      * Note: This method does not support struct payloads. As such, writing structs requires explicit invocations of
-     * {@link #writeStruct(StructRegistry, Object)} with a suitable registry implementation.
+     * {@link #writeStruct(Object, StructRegistry, Object)} with a suitable registry implementation.
      *
      * @param payload a payload.
      * @return a reference to this buffer.
@@ -551,18 +551,13 @@ public final class PackstreamBuf implements ReferenceCounted {
             throw UnexpectedTypeException.invalidType(INT, marker);
         }
 
-        switch (marker) {
-            case TINY_INT:
-                return (byte) m;
-            case INT8:
-                return this.delegate.readByte();
-            case INT16:
-                return this.delegate.readShort();
-            case INT32:
-                return this.delegate.readInt();
-            default:
-                return this.delegate.readLong();
-        }
+        return switch (marker) {
+            case TINY_INT -> (byte) m;
+            case INT8 -> this.delegate.readByte();
+            case INT16 -> this.delegate.readShort();
+            case INT32 -> this.delegate.readInt();
+            default -> this.delegate.readLong();
+        };
     }
 
     /**

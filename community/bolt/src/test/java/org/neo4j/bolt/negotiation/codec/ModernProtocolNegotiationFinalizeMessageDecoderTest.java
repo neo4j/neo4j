@@ -19,95 +19,92 @@
  */
 package org.neo4j.bolt.negotiation.codec;
 
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationFinalizeMessage;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
 
+@StrictBufferExtension
 class ModernProtocolNegotiationFinalizeMessageDecoderTest {
 
-    private EmbeddedChannel channel;
-
-    @BeforeEach
-    void prepare() {
-        this.channel = new EmbeddedChannel(new ModernProtocolNegotiationFinalizeMessageDecoder());
-    }
-
     @Test
-    void shouldDecodeValidPayloads() {
-        var buf = Unpooled.buffer()
+    void shouldDecodeValidPayloads(StrictBufferContext ctx) {
+        var channel = ctx.channel(new ModernProtocolNegotiationFinalizeMessageDecoder());
+
+        var buf = ctx.buffer()
                 .writeInt(new ProtocolVersion(5, 0).encode())
                 .writeByte(0b10000001)
                 .writeByte(0b00000000);
 
-        this.channel.writeInbound(buf);
+        channel.writeInbound(buf);
 
-        var message = this.channel.readInbound();
+        var message = channel.<ModernProtocolNegotiationFinalizeMessage>readInbound();
 
-        Assertions.assertThat(message)
-                .isNotNull()
-                .isInstanceOfSatisfying(ModernProtocolNegotiationFinalizeMessage.class, m -> {
-                    Assertions.assertThat(m.selectedVersion()).isEqualTo(new ProtocolVersion(5, 0));
+        Assertions.assertThat(message).isNotNull().satisfies(m -> {
+            Assertions.assertThat(m.selectedVersion()).isEqualTo(new ProtocolVersion(5, 0));
 
-                    Assertions.assertThat(m.capabilities()).contains(ProtocolCapability.FABRIC);
-                });
+            Assertions.assertThat(m.capabilities()).contains(ProtocolCapability.FABRIC);
+        });
     }
 
     @Test
-    void shouldDecodeSplitPayloads() {
-        var buf = Unpooled.buffer()
+    void shouldDecodeSplitPayloads(StrictBufferContext ctx) {
+        var channel = ctx.channel(new ModernProtocolNegotiationFinalizeMessageDecoder());
+
+        var buf = ctx.buffer()
                 .writeInt(new ProtocolVersion(5, 0).encode())
                 .writeByte(0b10000001)
                 .writeByte(0b00000000);
 
-        this.channel.writeInbound(buf.readRetainedSlice(2));
+        channel.writeInbound(buf.readRetainedSlice(2));
 
-        Assertions.assertThat((Object) this.channel.readInbound()).isNull();
+        Assertions.assertThat(channel.<ModernProtocolNegotiationFinalizeMessage>readInbound())
+                .isNull();
 
-        this.channel.writeInbound(buf.readRetainedSlice(2));
+        channel.writeInbound(buf.readRetainedSlice(2));
 
-        Assertions.assertThat((Object) this.channel.readInbound()).isNull();
+        Assertions.assertThat(channel.<ModernProtocolNegotiationFinalizeMessage>readInbound())
+                .isNull();
 
-        this.channel.writeInbound(buf);
+        channel.writeInbound(buf);
 
-        var message = this.channel.readInbound();
+        var message = channel.<ModernProtocolNegotiationFinalizeMessage>readInbound();
 
-        Assertions.assertThat(message)
-                .isNotNull()
-                .isInstanceOfSatisfying(ModernProtocolNegotiationFinalizeMessage.class, m -> {
-                    Assertions.assertThat(m.selectedVersion()).isEqualTo(new ProtocolVersion(5, 0));
+        Assertions.assertThat(message).isNotNull().satisfies(m -> {
+            Assertions.assertThat(m.selectedVersion()).isEqualTo(new ProtocolVersion(5, 0));
 
-                    Assertions.assertThat(m.capabilities()).contains(ProtocolCapability.FABRIC);
-                });
+            Assertions.assertThat(m.capabilities()).contains(ProtocolCapability.FABRIC);
+        });
     }
 
     @Test
-    void shouldIgnoreTruncatedPayloads() {
-        this.channel.writeInbound(Unpooled.buffer().writeByte(0));
+    void shouldIgnoreTruncatedPayloads(StrictBufferContext ctx) {
+        var channel = ctx.channel(new ModernProtocolNegotiationFinalizeMessageDecoder());
 
-        Assertions.assertThat((Object) this.channel.readInbound()).isNull();
+        channel.writeInbound(ctx.buffer().writeByte(0));
 
-        this.channel.writeInbound(Unpooled.buffer().writeByte(0).writeByte(0).writeByte(0));
+        Assertions.assertThat(channel.<ModernProtocolNegotiationFinalizeMessage>readInbound())
+                .isNull();
 
-        Assertions.assertThat((Object) this.channel.readInbound()).isNull();
+        channel.writeInbound(ctx.buffer().writeByte(0).writeByte(0).writeByte(0));
+
+        Assertions.assertThat(channel.<ModernProtocolNegotiationFinalizeMessage>readInbound())
+                .isNull();
     }
 
     @Test
-    void shouldFailWhenRangeIsGiven() {
-        var buf = Unpooled.buffer()
-                .writeInt(new ProtocolVersion(5, 4, 3).encode())
-                .writeByte(0b00000000);
+    void shouldFailWhenRangeIsGiven(StrictBufferContext ctx) {
+        var channel = ctx.channel(new ModernProtocolNegotiationFinalizeMessageDecoder());
+
+        var buf = ctx.buffer().writeInt(new ProtocolVersion(5, 4, 3).encode()).writeByte(0b00000000);
 
         Assertions.assertThatExceptionOfType(DecoderException.class)
-                .isThrownBy(() -> this.channel.writeInbound(buf))
+                .isThrownBy(() -> channel.writeInbound(buf))
                 .withCauseInstanceOf(IllegalArgumentException.class)
                 .withMessageContaining("Illegal version selection: Selection cannot include range");
-
-        this.channel.writeInbound(buf);
     }
 }

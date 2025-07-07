@@ -20,130 +20,137 @@
 package org.neo4j.bolt.protocol.common.fsm.response;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCounted;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.testing.PackstreamBufAssertions;
 import org.neo4j.values.storable.BooleanValue;
 
+@StrictBufferExtension
 class NetworkRecordHandlerTest {
 
-    private EmbeddedChannel channel;
-    private Connection connection;
-
-    @BeforeEach
-    void prepare() {
-        this.channel = new EmbeddedChannel();
-
-        this.connection =
-                ConnectionMockFactory.newFactory().withChannel(this.channel).build();
-    }
-
     @Test
-    void shouldWriteStructHeaderOnBegin() {
-        var handler = new NetworkRecordHandler(this.connection, 2, 512, 0);
+    void shouldWriteStructHeaderOnBegin(StrictBufferContext ctx) {
+        var ch = ctx.channel();
 
-        handler.onBegin();
+        var connection = ConnectionMockFactory.newFactory().attachTo(ch);
 
-        // ensure that begin does not immediately flush as the record has yet to be completed
-        Assertions.assertThat(this.channel.<Object>readOutbound()).isNull();
-
-        Mockito.verify(this.connection).allocator();
-        Mockito.verify(this.connection).writerContext(Mockito.notNull());
-        Mockito.verifyNoMoreInteractions(this.connection);
-
-        // abnormal completion - handlers do not validate call order thus permitting partial
-        // validation
-        handler.onCompleted();
-
-        var buffer = this.channel.<ByteBuf>readOutbound();
-
-        Assertions.assertThat(buffer)
-                .isNotNull()
-                .asInstanceOf(PackstreamBufAssertions.wrap())
-                .containsStruct(0x71, 1)
-                .containsListHeader(2)
-                .asBuffer()
-                .hasNoRemainingReadableBytes();
-    }
-
-    @Test
-    void shouldWriteFields() {
-        var writer = Mockito.mock(WriterContext.class);
-
-        Mockito.doReturn(writer).when(this.connection).writerContext(Mockito.any());
-
-        var handler = new NetworkRecordHandler(this.connection, 2, 512, 0);
-
-        handler.onBegin();
-
-        // ensure that begin does not immediately flush as the record has yet to be completed
-        Assertions.assertThat(this.channel.<Object>readOutbound()).isNull();
-
-        Mockito.verify(this.connection).allocator();
-        Mockito.verify(this.connection).writerContext(Mockito.notNull());
-        Mockito.verifyNoMoreInteractions(this.connection);
-
-        handler.onField(BooleanValue.TRUE);
-
-        Mockito.verify(writer).writeValue(BooleanValue.TRUE);
-    }
-
-    void verifyFlushesPendingMessages(Consumer<NetworkRecordHandler> closeFunction) {
-        var handler = new NetworkRecordHandler(this.connection, 4, 512, 8192);
-
-        for (var i = 0; i < 2; ++i) {
+        try (var handler = new NetworkRecordHandler(connection, 2, 512, 0)) {
             handler.onBegin();
+
+            // ensure that begin does not immediately flush as the record has yet to be completed
+            Assertions.assertThat(ctx.tracked(ch.<ReferenceCounted>readOutbound()))
+                    .isNull();
+
+            Mockito.verify(connection).allocator();
+            Mockito.verify(connection).writerContext(Mockito.notNull());
+            Mockito.verifyNoMoreInteractions(connection);
+
+            // abnormal completion - handlers do not validate call order thus permitting partial
+            // validation
             handler.onCompleted();
-        }
 
-        // dangling record - should not end up in result
-        handler.onBegin();
-
-        Mockito.verify(this.connection, Mockito.never()).write(Mockito.any());
-        Mockito.verify(this.connection, Mockito.never()).writeAndFlush(Mockito.any());
-
-        closeFunction.accept(handler);
-
-        // implicit flush as all close functions expect a follow-up flush call
-        this.channel.flush();
-
-        for (var i = 0; i < 2; ++i) {
-            var buffer = this.channel.<ByteBuf>readOutbound();
+            var buffer = ctx.output(ch.<ByteBuf>readOutbound());
 
             Assertions.assertThat(buffer)
                     .isNotNull()
                     .asInstanceOf(PackstreamBufAssertions.wrap())
                     .containsStruct(0x71, 1)
-                    .containsListHeader(4)
+                    .containsListHeader(2)
                     .asBuffer()
                     .hasNoRemainingReadableBytes();
 
-            var signal = this.channel.<FrameSignal>readOutbound();
+            var signal = ch.<FrameSignal>readOutbound();
 
-            Assertions.assertThat(signal).isEqualTo(FrameSignal.MESSAGE_END);
+            Assertions.assertThat(signal).isNotNull().isEqualTo(FrameSignal.MESSAGE_END);
         }
-
-        // dangling record should not be written
-        var buffer = this.channel.<ByteBuf>readOutbound();
-
-        Assertions.assertThat(buffer).isNull();
     }
 
     @Test
-    void shouldFlushPendingRecordsOnClose() {
-        this.verifyFlushesPendingMessages(handler -> handler.close());
+    void shouldWriteFields(StrictBufferContext ctx) {
+        var ch = ctx.channel();
+
+        var connection = ConnectionMockFactory.newFactory().attachTo(ch);
+
+        var writer = Mockito.mock(WriterContext.class);
+
+        Mockito.doReturn(writer).when(connection).writerContext(Mockito.any());
+
+        try (var handler = new NetworkRecordHandler(connection, 2, 512, 0)) {
+            handler.onBegin();
+
+            // ensure that begin does not immediately flush as the record has yet to be completed
+            Assertions.assertThat(ctx.tracked(ch.<ReferenceCounted>readOutbound()))
+                    .isNull();
+
+            Mockito.verify(connection).allocator();
+            Mockito.verify(connection).writerContext(Mockito.notNull());
+            Mockito.verifyNoMoreInteractions(connection);
+
+            handler.onField(BooleanValue.TRUE);
+
+            Mockito.verify(writer).writeValue(BooleanValue.TRUE);
+        }
+    }
+
+    void verifyFlushesPendingMessages(StrictBufferContext ctx, Consumer<NetworkRecordHandler> closeFunction) {
+        var ch = ctx.channel();
+
+        var connection = ConnectionMockFactory.newFactory().attachTo(ch);
+
+        try (var handler = new NetworkRecordHandler(connection, 4, 512, 8192)) {
+            for (var i = 0; i < 2; ++i) {
+                handler.onBegin();
+                handler.onCompleted();
+            }
+
+            // dangling record - should not end up in result
+            handler.onBegin();
+
+            Mockito.verify(connection, Mockito.never()).write(Mockito.any());
+            Mockito.verify(connection, Mockito.never()).writeAndFlush(Mockito.any());
+
+            closeFunction.accept(handler);
+
+            // implicit flush as all close functions expect a follow-up flush call
+            ch.flush();
+
+            for (var i = 0; i < 2; ++i) {
+                var buffer = ctx.output(ch.<ByteBuf>readOutbound());
+                Assertions.assertThat(buffer)
+                        .isNotNull()
+                        .asInstanceOf(PackstreamBufAssertions.wrap())
+                        .containsStruct(0x71, 1)
+                        .containsListHeader(4)
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes();
+
+                var signal = ch.<FrameSignal>readOutbound();
+
+                Assertions.assertThat(signal).isEqualTo(FrameSignal.MESSAGE_END);
+            }
+
+            // dangling record should not be written
+            var buffer = ctx.tracked(ch.<ByteBuf>readOutbound());
+
+            Assertions.assertThat(buffer).isNull();
+        }
     }
 
     @Test
-    void shouldFlushPendingRecordsOnFailure() {
-        this.verifyFlushesPendingMessages(handler -> handler.onFailure());
+    void shouldFlushPendingRecordsOnClose(StrictBufferContext ctx) {
+        this.verifyFlushesPendingMessages(ctx, NetworkRecordHandler::close);
+    }
+
+    @Test
+    void shouldFlushPendingRecordsOnFailure(StrictBufferContext ctx) {
+        this.verifyFlushesPendingMessages(ctx, NetworkRecordHandler::onFailure);
     }
 }

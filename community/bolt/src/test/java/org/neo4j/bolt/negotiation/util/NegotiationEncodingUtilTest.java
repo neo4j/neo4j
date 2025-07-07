@@ -19,18 +19,21 @@
  */
 package org.neo4j.bolt.negotiation.util;
 
-import io.netty.buffer.Unpooled;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
 import org.neo4j.bolt.testing.assertions.BitMaskAssertions;
 import org.neo4j.bolt.testing.assertions.ByteBufAssertions;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
 
+@StrictBufferExtension
 class NegotiationEncodingUtilTest {
 
     @Test
-    void shouldWriteBitMask() {
-        var mask = new BitMask(UnpooledByteBufAllocator.DEFAULT, 24);
+    void shouldWriteBitMask(StrictBufferContext ctx) {
+        var mask = ctx.output(new BitMask(UnpooledByteBufAllocator.DEFAULT, 24));
 
         var s = true;
         for (var i = 0; i < mask.length(); ++i) {
@@ -38,7 +41,7 @@ class NegotiationEncodingUtilTest {
             s = !s;
         }
 
-        var actual = Unpooled.buffer();
+        var actual = ctx.outputBuffer();
         NegotiationEncodingUtil.writeBitMask(actual, mask);
 
         ByteBufAssertions.assertThat(actual)
@@ -51,46 +54,44 @@ class NegotiationEncodingUtilTest {
     }
 
     @Test
-    void shouldIndicateFullyReadableBitMasks() {
-        var buf = Unpooled.buffer()
+    void shouldIndicateFullyReadableBitMasks(StrictBufferContext ctx) {
+        var buf = ctx.outputBuffer()
                 .writeByte(0x80)
                 .writeByte(0xFF)
                 .writeByte(0x81)
                 .writeByte(0x0F);
 
-        Assertions.assertThat(NegotiationEncodingUtil.isBitMaskReadable(buf, 32))
-                .isTrue();
+        assertThat(NegotiationEncodingUtil.isBitMaskReadable(buf, 32)).isTrue();
     }
 
     @Test
-    void shouldIndicateTruncatedBitMasks() {
-        var buf = Unpooled.buffer().writeByte(0x80).writeByte(0xFF).writeByte(0x81);
+    void shouldIndicateTruncatedBitMasks(StrictBufferContext ctx) {
+        var buf = ctx.outputBuffer().writeByte(0x80).writeByte(0xFF).writeByte(0x81);
 
-        Assertions.assertThat(NegotiationEncodingUtil.isBitMaskReadable(buf, 32))
-                .isFalse();
+        assertThat(NegotiationEncodingUtil.isBitMaskReadable(buf, 32)).isFalse();
     }
 
     @Test
-    void shouldIndicateTruncatedBitMaskWhenLimitedIsExceeded() {
-        var buf = Unpooled.buffer()
+    void shouldIndicateTruncatedBitMaskWhenLimitedIsExceeded(StrictBufferContext ctx) {
+        var buf = ctx.outputBuffer()
                 .writeByte(0x80)
                 .writeByte(0x80)
                 .writeByte(0x80)
                 .writeByte(0x80)
                 .writeByte(0x01);
 
-        Assertions.assertThat(NegotiationEncodingUtil.isBitMaskReadable(buf, 4)).isFalse();
+        assertThat(NegotiationEncodingUtil.isBitMaskReadable(buf, 4)).isFalse();
     }
 
     @Test
-    void shouldReadBitMask() {
-        var buffer = Unpooled.buffer()
+    void shouldReadBitMask(StrictBufferContext ctx) {
+        var buffer = ctx.outputBuffer()
                 .writeByte(0b11010101)
                 .writeByte(0b10101010)
                 .writeByte(0b11010101)
                 .writeByte(0b00000010);
 
-        var actual = NegotiationEncodingUtil.readBitMask(buffer);
+        var actual = ctx.output(NegotiationEncodingUtil.readBitMask(buffer));
 
         BitMaskAssertions.assertThat(actual)
                 .hasAtLeastRemaining(24)

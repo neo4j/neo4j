@@ -19,148 +19,159 @@
  */
 package org.neo4j.packstream.codec.transport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.DecoderException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.BeforeEach;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.assertions.ByteBufAssertions;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
+import org.neo4j.bolt.testing.channel.StrictBufferContext.RootStrictBufferContext;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.io.PackstreamBuf;
 
+@StrictBufferExtension
 class ChunkFrameDecoderTest {
 
-    private EmbeddedChannel channel;
-
-    @BeforeEach
-    void prepareChannel() {
-        this.channel = new EmbeddedChannel(new ChunkFrameDecoder(128, NullLogProvider.getInstance()));
+    private ChunkFrameDecoder createDecoder() {
+        return new ChunkFrameDecoder(128, NullLogProvider.getInstance());
     }
 
     /**
-     * Evaluates whether the implementation correctly decodes chunks which are entirely self enclosed and ready to be read off the wire.
+     * Evaluates whether the implementation correctly decodes chunks which are entirely self enclosed
+     * and ready to be read off the wire.
      */
     @TestFactory
-    List<DynamicTest> shouldDecodeSelfEnclosedChunks() {
+    List<DynamicTest> shouldDecodeSelfEnclosedChunks(RootStrictBufferContext root) {
         return IntStream.range(1, 128)
                 .mapToObj(size -> {
-                    var payload = Unpooled.buffer(size);
+                    var payload = root.scopedBuffer();
                     for (var i = 0; i < size; ++i) {
                         payload.writeByte(i % 128);
                     }
                     return payload;
                 })
-                .map(expected -> dynamicTest(expected.readableBytes() + " bytes", () -> {
-                    var encoded = Unpooled.buffer()
+                .map(expected -> root.test(expected.readableBytes() + " bytes", (ctx) -> {
+                    var channel = ctx.channel(this.createDecoder());
+
+                    // allocate as output buffer since this handler is expected to be chained
+                    // resulting in a reusable buffer at the end of the run
+                    var encoded = ctx.outputBuffer()
                             .writeShort(expected.readableBytes())
-                            .writeBytes(expected.slice())
+                            .writeBytes(expected.duplicate())
                             .writeShort(0x0000);
 
-                    this.channel.writeInbound(encoded);
-                    this.channel.checkException();
+                    channel.writeInbound(encoded);
+                    channel.checkException();
 
-                    var actual = this.channel.<PackstreamBuf>readInbound().getTarget();
+                    var actual = ctx.output(channel.<PackstreamBuf>readInbound().getTarget());
 
-                    assertNotNull(actual);
-                    assertEquals(expected, actual);
-
-                    assertEquals(1, actual.refCnt());
-                    expected.release();
-                    actual.release();
+                    ByteBufAssertions.assertThat(actual).contains(expected).hasNoRemainingReadableBytes();
                 }))
                 .collect(Collectors.toList());
     }
 
     /**
-     * Evaluates whether the implementation correctly decodes fragmented messages which are immediately available to be read off the wire.
+     * Evaluates whether the implementation correctly decodes fragmented messages which are
+     * immediately available to be read off the wire.
      */
     @TestFactory
-    List<DynamicTest> shouldDecodeFragmentedMessages() {
+    List<DynamicTest> shouldDecodeFragmentedMessages(RootStrictBufferContext root) {
         return IntStream.range(4, 64)
                 .map(i -> i * 2)
-                .mapToObj(size -> {
-                    var payload = Unpooled.buffer(size);
-                    for (var i = 0; i < size; ++i) {
-                        payload.writeByte(i % 128);
-                    }
-                    return payload;
-                })
-                .map(expected -> dynamicTest(expected.readableBytes() + " bytes", () -> {
+                .<ByteBuf>mapToObj(
+                        size -> { // IntelliJ does not like this syntax
+                            var payload = root.scopedBuffer(size);
+                            for (var i = 0; i < size; ++i) {
+                                payload.writeByte(i % 128);
+                            }
+                            return payload;
+                        })
+                .map(expected -> root.test(expected.readableBytes() + " bytes", (ctx) -> {
+                    var channel = ctx.channel(this.createDecoder());
                     var fragmentedSize = expected.readableBytes() / 2;
 
-                    var encoded = Unpooled.buffer()
+                    var encoded = ctx.scopedBuffer()
                             .writeShort(fragmentedSize)
                             .writeBytes(expected.slice(0, fragmentedSize))
                             .writeShort(fragmentedSize)
                             .writeBytes(expected.slice(fragmentedSize, fragmentedSize))
                             .writeShort(0x0000);
 
-                    this.channel.writeInbound(encoded);
-                    this.channel.checkException();
+                    channel.writeInbound(encoded);
+                    channel.checkException();
 
-                    var actual = this.channel.<PackstreamBuf>readInbound().getTarget();
+                    var actual = ctx.output(channel.<PackstreamBuf>readInbound().getTarget());
 
-                    assertNotNull(actual);
-                    assertEquals(expected, actual);
+                    ByteBufAssertions.assertThat(actual).contains(expected).hasNoRemainingReadableBytes();
+
+                    // ensure the input buffer still has two references as a result of being sliced
+                    // up
+                    ByteBufAssertions.assertThat(encoded).hasReferences(2);
                 }))
                 .collect(Collectors.toList());
     }
 
     /**
-     * Evaluates whether the implementation correctly decodes fragmented messages which are only partially available during the first decoder invocation.
+     * Evaluates whether the implementation correctly decodes fragmented messages which are only
+     * partially available during the first decoder invocation.
      */
     @TestFactory
-    List<DynamicTest> shouldDecodeDelayedFragmentedMessages() {
+    List<DynamicTest> shouldDecodeDelayedFragmentedMessages(RootStrictBufferContext root) {
         return IntStream.range(4, 64)
                 .map(i -> i * 2)
-                .mapToObj(size -> {
-                    var payload = Unpooled.buffer(size);
-                    for (var i = 0; i < size; ++i) {
-                        payload.writeByte(i % 128);
-                    }
-                    return payload;
-                })
-                .map(expected -> dynamicTest(expected.readableBytes() + " bytes", () -> {
+                .<ByteBuf>mapToObj(
+                        size -> { // IntelliJ has issues understanding this ...
+                            var payload = root.scopedBuffer(size);
+                            for (var i = 0; i < size; ++i) {
+                                payload.writeByte(i % 128);
+                            }
+                            return payload;
+                        })
+                .map(expected -> root.test(expected.readableBytes() + " bytes", (ctx) -> {
+                    var channel = ctx.channel(this.createDecoder());
                     var fragmentedSize = expected.readableBytes() / 2;
 
-                    var encoded1 =
-                            Unpooled.buffer().writeShort(fragmentedSize).writeBytes(expected.slice(0, fragmentedSize));
-                    var encoded2 = Unpooled.buffer()
+                    var encoded1 = ctx.tracked(channel.alloc().buffer(), 2)
+                            .writeShort(fragmentedSize)
+                            .writeBytes(expected.slice(0, fragmentedSize));
+                    var encoded2 = ctx.buffer()
                             .writeShort(fragmentedSize)
                             .writeBytes(expected.slice(fragmentedSize, fragmentedSize));
-                    var encoded3 = Unpooled.buffer().writeShort(0x0000);
+                    var encoded3 = ctx.buffer().writeShort(0x0000);
 
-                    this.channel.writeInbound(encoded1);
-                    this.channel.checkException();
+                    channel.writeInbound(encoded1);
+                    channel.checkException();
 
-                    ByteBuf actualIncomplete = this.channel.readInbound();
+                    ByteBuf actual = ctx.output(channel.readInbound());
 
-                    assertNull(actualIncomplete);
+                    ByteBufAssertions.assertThat(actual).isNull();
 
-                    this.channel.writeInbound(encoded2);
-                    this.channel.checkException();
+                    channel.writeInbound(encoded2);
+                    channel.checkException();
 
-                    actualIncomplete = this.channel.readInbound();
+                    actual = ctx.tracked(channel.readInbound());
 
-                    assertNull(actualIncomplete);
+                    ByteBufAssertions.assertThat(actual).isNull();
 
-                    this.channel.writeInbound(encoded3);
-                    this.channel.checkException();
+                    channel.writeInbound(encoded3);
+                    channel.checkException();
 
-                    var actualComplete =
-                            this.channel.<PackstreamBuf>readInbound().getTarget();
+                    actual = ctx.output(channel.<PackstreamBuf>readInbound().getTarget());
 
-                    assertNotNull(actualComplete);
-                    assertEquals(expected, actualComplete);
+                    ByteBufAssertions.assertThat(actual).contains(expected).hasNoRemainingReadableBytes();
+
+                    ByteBufAssertions.assertThat(expected).hasReferences(1);
+
+                    ByteBufAssertions.assertThat(actual).hasReferences(1);
                 }))
                 .collect(Collectors.toList());
     }
@@ -169,25 +180,30 @@ class ChunkFrameDecoderTest {
      * Evaluates whether the implementation ignores empty standalone chunks (e.g. keep-alive chunks).
      */
     @Test
-    void shouldIgnoreEmptyStandaloneChunks() {
-        var payload = Unpooled.buffer(256);
+    void shouldIgnoreEmptyStandaloneChunks(StrictBufferContext ctx) {
+        var channel = ctx.channel(this.createDecoder());
+
+        var payload = ctx.buffer(256);
         for (var i = 0; i < 128; ++i) {
             payload.writeShort(0x0000);
         }
 
-        this.channel.writeInbound(payload);
-        this.channel.checkException();
+        channel.writeInbound(payload);
+        channel.checkException();
 
-        var actual = this.channel.readInbound();
+        var actual = ctx.output(channel.readInbound());
         assertNull(actual);
     }
 
     /**
-     * Evaluates whether the implementation ignores additional empty chunks between messages (e.g. keep-alive chunks).
+     * Evaluates whether the implementation ignores additional empty chunks between messages (e.g.
+     * keep-alive chunks).
      */
     @Test
-    void shouldIgnoreEmptyDelimitingChunks() {
-        var payload = Unpooled.buffer(8)
+    void shouldIgnoreEmptyDelimitingChunks(StrictBufferContext ctx) {
+        var channel = ctx.channel(this.createDecoder());
+
+        var payload = ctx.scopedBuffer(8)
                 .writeShort(0x08)
                 .writeBytes(new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07})
                 .writeShort(0x0000)
@@ -197,25 +213,30 @@ class ChunkFrameDecoderTest {
                 .writeShort(0x0000)
                 .writeShort(0x0000);
 
-        this.channel.writeInbound(payload);
-        this.channel.checkException();
+        channel.writeInbound(payload);
+        channel.checkException();
 
-        var firstMessage = this.channel.<PackstreamBuf>readInbound().getTarget();
-        var secondMessage = this.channel.<PackstreamBuf>readInbound().getTarget();
-        var nullMessage = this.channel.<PackstreamBuf>readInbound();
+        var firstMessage = ctx.output(channel.<PackstreamBuf>readInbound().getTarget());
+        var secondMessage = ctx.output(channel.<PackstreamBuf>readInbound().getTarget());
+        var nullMessage = ctx.output(channel.<PackstreamBuf>readInbound());
 
-        assertNotNull(firstMessage);
-        assertEquals(8, firstMessage.readableBytes());
-        assertNotNull(secondMessage);
-        assertEquals(8, secondMessage.readableBytes());
-        assertNull(nullMessage);
+        ByteBufAssertions.assertThat(firstMessage).hasReadableBytes(8);
+        ByteBufAssertions.assertThat(secondMessage).hasReadableBytes(8);
+        ByteBufAssertions.assertThat(nullMessage).isNull();
+
+        // we're using a scoped buffer for simplicity - ensure that the buffer retains exactly two
+        // references (one for each message)
+        ByteBufAssertions.assertThat(payload).hasReferences(2);
     }
 
     @Test
-    void shouldFailWithLimitExceededWhenLargePayloadIsGiven() {
-        var payload = Unpooled.buffer(129).writerIndex(128);
+    void shouldFailWithLimitExceededWhenLargePayloadIsGiven(StrictBufferContext ctx) {
+        var channel = ctx.channel(this.createDecoder());
 
-        this.channel.writeInbound(payload);
-        this.channel.checkException();
+        var payload = ctx.buffer().writeShort(64).writeBytes(new byte[64]).writeShort(65);
+
+        Assertions.assertThatExceptionOfType(DecoderException.class)
+                .isThrownBy(() -> channel.writeInbound(payload))
+                .withRootCauseInstanceOf(LimitExceededException.class);
     }
 }

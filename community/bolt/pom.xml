@@ -14,6 +14,7 @@
     <properties>
         <moduleName>org.neo4j.bolt</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
+        <test.vm.netty.leakDetection.level>DISABLED</test.vm.netty.leakDetection.level>
     </properties>
 
     <artifactId>neo4j-bolt</artifactId>
@@ -119,6 +120,12 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>test-utils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>io-test-utils</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

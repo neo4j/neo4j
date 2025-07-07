@@ -19,41 +19,31 @@
  */
 package org.neo4j.packstream.codec.transport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.assertions.ByteBufAssertions;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
 
+@StrictBufferExtension
 class WebSocketFrameUnpackingDecoderTest {
 
-    private EmbeddedChannel channel;
-
-    @BeforeEach
-    void prepareChannel() {
-        this.channel = new EmbeddedChannel(new WebSocketFrameUnpackingDecoder());
-    }
-
     @Test
-    void shouldUnpackBinaryPayloads() {
-        var expected = Unpooled.buffer().writeByte(0x01).writeByte(0x02).writeByte(0x03);
+    void shouldUnpackBinaryPayloads(StrictBufferContext ctx) {
+        var channel = ctx.channel(new WebSocketFrameUnpackingDecoder());
+        var expected = ctx.outputBuffer() // handler internally retains buffer - mark as output
+                .writeByte(0x01)
+                .writeByte(0x02)
+                .writeByte(0x03);
 
         var frame = new BinaryWebSocketFrame(expected);
 
-        this.channel.writeInbound(frame);
-        this.channel.checkException();
+        channel.writeInbound(frame);
+        channel.checkException();
 
-        ByteBuf actual = this.channel.readInbound();
+        ByteBuf actual = ctx.output(channel.readInbound());
 
-        assertNotNull(actual);
-        assertSame(expected, actual);
-
-        assertEquals(1, expected.refCnt());
-        expected.release();
+        ByteBufAssertions.assertThat(actual).isSameAs(expected);
     }
 }

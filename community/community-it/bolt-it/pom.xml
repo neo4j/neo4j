@@ -20,6 +20,8 @@
     <properties>
         <moduleName>org.neo4j.community.bolt.it</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
+        <test.vm.heap.size>4G</test.vm.heap.size>
+        <test.vm.netty.leakDetection.level>DISABLED</test.vm.netty.leakDetection.level>
     </properties>
 
     <scm>

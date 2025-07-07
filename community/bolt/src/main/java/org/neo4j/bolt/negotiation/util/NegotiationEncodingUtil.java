@@ -65,21 +65,23 @@ public final class NegotiationEncodingUtil {
 
     public static BitMask readBitMask(ByteBuf buf) {
         var recv = buf.alloc().buffer();
+        try {
+            byte i;
+            do {
+                i = buf.readByte();
+                recv.writeByte(i);
+            } while ((i & 0x80) != 0x00);
 
-        byte i;
-        do {
-            i = buf.readByte();
-            recv.writeByte(i);
-        } while ((i & 0x80) != 0x00);
+            var mask = new BitMask(buf.alloc(), recv.readableBytes() * 7);
 
-        var mask = new BitMask(buf.alloc(), recv.readableBytes() * 7);
-
-        do {
-            var b = recv.readByte();
-            mask.writeN(b, 7);
-        } while (recv.isReadable());
-
-        return mask;
+            do {
+                var b = recv.readByte();
+                mask.writeN(b, 7);
+            } while (recv.isReadable());
+            return mask;
+        } finally {
+            recv.release();
+        }
     }
 
     public static void writeVarInt(ByteBuf buf, int value) {

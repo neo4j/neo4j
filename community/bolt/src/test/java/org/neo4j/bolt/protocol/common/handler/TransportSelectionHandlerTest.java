@@ -25,16 +25,12 @@ import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-import io.netty.buffer.Unpooled;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import javax.net.ssl.SSLException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
+import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
+import org.neo4j.bolt.testing.channel.StrictBufferContext;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -42,13 +38,15 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.packstream.codec.transport.WebSocketFramePackingEncoder;
 import org.neo4j.packstream.codec.transport.WebSocketFrameUnpackingDecoder;
 
+@StrictBufferExtension
 class TransportSelectionHandlerTest {
+
     @Test
-    void shouldLogOnUnexpectedExceptionsAndClosesContext() throws Throwable {
+    void shouldLogOnUnexpectedExceptionsAndClosesContext(StrictBufferContext ctx) {
         // Given
         var logging = new AssertableLogProvider();
 
-        var channel = ConnectionMockFactory.newFactory().createChannel(new TransportSelectionHandler(logging));
+        var channel = ctx.withConnection(new TransportSelectionHandler(logging));
 
         // When
         var ex = new Throwable("Oh no!");
@@ -64,11 +62,11 @@ class TransportSelectionHandlerTest {
     }
 
     @Test
-    void shouldLogConnectionResetErrorsAtWarningLevelAndClosesContext() throws Exception {
+    void shouldLogConnectionResetErrorsAtWarningLevelAndClosesContext(StrictBufferContext ctx) {
         // Given
         var logging = new AssertableLogProvider();
 
-        var channel = ConnectionMockFactory.newFactory().createChannel(new TransportSelectionHandler(logging));
+        var channel = ctx.withConnection(new TransportSelectionHandler(logging));
 
         // When
         var ex = new IOException("Connection reset by peer");
@@ -87,17 +85,14 @@ class TransportSelectionHandlerTest {
     }
 
     @Test
-    void shouldPreventMultipleLevelsOfSslEncryption() throws SSLException {
+    void shouldPreventMultipleLevelsOfSslEncryption(StrictBufferContext ctx) {
         // Given
         var logging = new AssertableLogProvider();
-        var sslCtx = SslContextBuilder.forClient()
-                .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                .build();
 
-        var channel = ConnectionMockFactory.newFactory().createChannel(new TransportSelectionHandler(true, logging));
+        var channel = ctx.withConnection(new TransportSelectionHandler(true, logging));
 
         // When
-        channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5})); // encrypted
+        channel.writeInbound(ctx.buffer(new byte[] {22, 3, 1, 0, 5})); // encrypted
 
         // Then
         assertThat(channel.isOpen()).isFalse();
@@ -111,12 +106,12 @@ class TransportSelectionHandlerTest {
     }
 
     @Test
-    void shouldRemoveAllocationUponRemoval() {
+    void shouldRemoveAllocationUponRemoval(StrictBufferContext ctx) {
         var memoryTracker = mock(MemoryTracker.class);
 
-        var channel = ConnectionMockFactory.newFactory()
-                .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
+        var channel = ctx.withConnection(
+                conn -> conn.withMemoryTracker(memoryTracker),
+                new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         channel.pipeline().remove(TransportSelectionHandler.class);
 
@@ -124,32 +119,30 @@ class TransportSelectionHandlerTest {
     }
 
     @Test
-    void shouldAllocateUponSslHandshake() throws SSLException {
-        // since we'll need the fake SSL packet to be consumed, we'll create a client SSL context instead of a server
-        // context as this does not require any certificates to be present - there is no difference to the handler
-        var sslCtx = SslContextBuilder.forClient()
-                .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                .build();
+    void shouldAllocateUponSslHandshake(StrictBufferContext ctx) {
         var memoryTracker = mock(MemoryTracker.class);
 
-        var channel = ConnectionMockFactory.newFactory()
-                .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
+        var channel = ctx.withConnection(
+                conn -> conn.withMemoryTracker(memoryTracker),
+                new TransportSelectionHandler(NullLogProvider.getInstance()));
 
-        channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5}));
+        // expect buffer to remain valid at the end of the test since it is a truncated TLS
+        // handshake that will not be handled by SslHandler and thus remain inside its cumulation
+        // buffer
+        channel.writeInbound(ctx.buffer(new byte[] {22, 3, 1, 0, 5}, 1));
 
         verify(memoryTracker).allocateHeap(TransportSelectionHandler.SSL_HANDLER_SHALLOW_SIZE);
     }
 
     @Test
-    void shouldAllocateUponWebsocketHandshake() {
+    void shouldAllocateUponWebsocketHandshake(StrictBufferContext ctx) {
         var memoryTracker = mock(MemoryTracker.class);
 
-        var channel = ConnectionMockFactory.newFactory()
-                .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
+        var channel = ctx.withConnection(
+                conn -> conn.withMemoryTracker(memoryTracker),
+                new TransportSelectionHandler(NullLogProvider.getInstance()));
 
-        channel.writeInbound(Unpooled.wrappedBuffer("GET /\r\n".getBytes(StandardCharsets.UTF_8)));
+        channel.writeInbound(ctx.buffer("GET /\r\n"));
 
         verify(memoryTracker)
                 .allocateHeap(TransportSelectionHandler.HTTP_SERVER_CODEC_SHALLOW_SIZE
@@ -161,20 +154,25 @@ class TransportSelectionHandlerTest {
                         + WebSocketFrameUnpackingDecoder.SHALLOW_SIZE);
 
         verify(memoryTracker).releaseHeap(TransportSelectionHandler.SHALLOW_SIZE);
+
+        // discard irrelevant outbound handshake data
+        // FIXME: Reports refCnt of 2 at the end of the test despite buffers internally indicating one
+        //        reference
+        channel.releaseOutbound();
     }
 
     @Test
-    void shouldInstallProtocolLoggingHandlers() {
+    void shouldInstallProtocolLoggingHandlers(StrictBufferContext ctx) {
         var memoryTracker = Mockito.mock(MemoryTracker.class);
 
-        var channel = ConnectionMockFactory.newFactory()
-                .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.BOTH))
-                .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
+        var channel = ctx.withConnection(
+                conn -> conn.withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.BOTH))
+                        .withMemoryTracker(memoryTracker),
+                new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
         // handler
-        channel.writeInbound(Unpooled.buffer().writeInt(0x6060B017).writeInt(0x00090005));
+        channel.writeInbound(ctx.buffer().writeInt(0x6060B017).writeInt(0x00090005));
 
         var handlers = channel.pipeline().names();
 
@@ -189,17 +187,17 @@ class TransportSelectionHandlerTest {
     }
 
     @Test
-    void shouldInstallRawProtocolLoggingHandlers() {
+    void shouldInstallRawProtocolLoggingHandlers(StrictBufferContext ctx) {
         var memoryTracker = Mockito.mock(MemoryTracker.class);
 
-        var channel = ConnectionMockFactory.newFactory()
-                .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.RAW))
-                .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
+        var channel = ctx.withConnection(
+                conn -> conn.withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.RAW))
+                        .withMemoryTracker(memoryTracker),
+                new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
         // handler
-        channel.writeInbound(Unpooled.buffer().writeInt(0x6060B017).writeInt(0x00090005));
+        channel.writeInbound(ctx.buffer().writeInt(0x6060B017).writeInt(0x00090005));
 
         var handlers = channel.pipeline().names();
 
@@ -211,17 +209,17 @@ class TransportSelectionHandlerTest {
     }
 
     @Test
-    void shouldInstallDecodedProtocolLoggingHandlers() {
+    void shouldInstallDecodedProtocolLoggingHandlers(StrictBufferContext ctx) {
         var memoryTracker = Mockito.mock(MemoryTracker.class);
 
-        var channel = ConnectionMockFactory.newFactory()
-                .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.DECODED))
-                .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
+        var channel = ctx.withConnection(
+                conn -> conn.withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.DECODED))
+                        .withMemoryTracker(memoryTracker),
+                new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
         // handler
-        channel.writeInbound(Unpooled.buffer().writeInt(0x6060B017).writeInt(0x00090005));
+        channel.writeInbound(ctx.buffer().writeInt(0x6060B017).writeInt(0x00090005));
 
         var handlers = channel.pipeline().names();
 
