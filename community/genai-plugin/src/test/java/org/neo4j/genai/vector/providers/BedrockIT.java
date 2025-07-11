@@ -72,7 +72,7 @@ public class BedrockIT {
         TitanEmbedTextV2() {
             super(
                     Bedrock.NAME,
-                    "bedrock/amazon.titan-embed-text-v2:0.txt",
+                    "bedrock/amazon.titan-embed-text-v2_0.txt",
                     BASE_CONFIG,
                     Map.of("model", "amazon.titan-embed-text-v2:0"));
         }
