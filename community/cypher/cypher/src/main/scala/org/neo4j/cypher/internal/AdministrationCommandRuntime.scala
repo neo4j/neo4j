@@ -283,7 +283,6 @@ object AdministrationCommandRuntime {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
     val uuidKey = internalKey("uuid")
-    val userId = Values.utf8Value(UUID.randomUUID().toString)
     val authKey = internalKey("auth")
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
@@ -309,6 +308,7 @@ object AdministrationCommandRuntime {
     ).getOrElse("")
 
     def authMapGenerator: ParameterGenerationFunction = (_, _, params) => {
+      val userId = Values.utf8Value(UUID.randomUUID().toString)
       val authList = externalAuths.map(auth => {
         val id = runtimeStringValue(auth.id, params, prettyPrint = true)
         validateAuthId(id)
@@ -316,7 +316,7 @@ object AdministrationCommandRuntime {
       }) ++ nativeAuth.map(_ =>
         VirtualValues.map(Array("provider", "id"), Array(Values.utf8Value(NATIVE_AUTH), userId))
       )
-      VirtualValues.map(Array(authKey), Array(VirtualValues.list(authList: _*)))
+      VirtualValues.map(Array(authKey, uuidKey), Array(VirtualValues.list(authList: _*), userId))
     }
 
     val parameterTransformer = ParameterTransformer(authMapGenerator)
@@ -348,7 +348,7 @@ object AdministrationCommandRuntime {
         )
           ++ Array[AnyValue](
             userNameFields.nameValue,
-            userId,
+            Values.NO_VALUE,
             Values.booleanValue(suspended),
             Values.NO_VALUE // generated
           ) ++ homeDatabaseFields.map(_.nameValue) ++ changeRequiredOption.map(Values.booleanValue)
