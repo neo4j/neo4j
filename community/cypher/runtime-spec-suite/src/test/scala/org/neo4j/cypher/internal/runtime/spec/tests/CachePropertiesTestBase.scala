@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeFull
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
@@ -34,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Random
 
 abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
@@ -42,6 +44,34 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   val sizeHint: Int,
   protected val tokenLookupDbHits: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  test("should work with morsel reuse") {
+    assume(!isParallel)
+    givenGraph {
+      runtimeTestSupport.tx.createNode(Label.label("EXISTING")).setProperty("idx", 0)
+      runtimeTestSupport.tx.createNode(Label.label("START"), Label.label("EXISTING")).setProperty("idx", 1)
+      runtimeTestSupport.tx.createNode(Label.label("EXISTING")).setProperty("idx", 2)
+      runtimeTestSupport.tx.createNode(Label.label("EXISTING")).setProperty("idx", 3)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .create(createNodeFull("newNode"))
+      .filter("cacheN[s.idx] = a.idx")
+      .apply()
+      .|.nodeByLabelScan("s", "EXISTING")
+      .nodeByLabelScan("a", "START")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult.awaitAll()
+    runtimeResult should beColumns().withNoRows().withStatistics(nodesCreated = 1)
+    // extra check in case statistics is lying
+    givenGraph {
+      runtimeTestSupport.tx.getAllNodes.iterator().asScala should have size 5
+    }
+  }
 
   test("should not explode on cached properties") {
     // given
