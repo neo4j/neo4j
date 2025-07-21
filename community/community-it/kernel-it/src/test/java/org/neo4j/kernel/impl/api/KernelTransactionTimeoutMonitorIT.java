@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +48,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitor;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -139,6 +141,30 @@ public class KernelTransactionTimeoutMonitorIT {
             }
         });
         assertThat(exception.getMessage()).contains("The transaction has been terminated.");
+    }
+
+    @Test
+    void transactionWithHugeTimeoutDoesNotOverflow() {
+        try (Transaction transaction = database.beginTx()) {
+            transaction.createNode();
+            transaction.commit();
+        }
+
+        var transactionMonitor = database.getDependencyResolver().resolveDependency(TransactionMonitor.class);
+
+        assertDoesNotThrow(() -> {
+            try (var tx = database.beginTx(Long.MAX_VALUE, TimeUnit.DAYS)) {
+                // run transaction monitor
+                transactionMonitor.run();
+                var node = tx.createNode();
+                // run transaction monitor
+                transactionMonitor.run();
+                node.setProperty("key", "value");
+                // run transaction monitor
+                transactionMonitor.run();
+                tx.commit();
+            }
+        });
     }
 
     @Test

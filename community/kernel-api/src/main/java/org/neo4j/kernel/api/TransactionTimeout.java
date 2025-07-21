@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
+
 import java.time.Duration;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -27,13 +29,27 @@ import org.neo4j.kernel.api.exceptions.Status;
  * <p>
  * In case if timeout is {@link Duration#ZERO} - transaction does not have a timeout.
  *
- * @param timeout max transaction duration since its start.
+ * @param timeoutNanos max transaction duration in nanos since its start.
  * @param status status to use if the transaction actually times out.
  *                     It should be either {@link Status.Transaction#TransactionTimedOut}
  *                     or {@link Status.Transaction#TransactionTimedOutClientConfiguration}.
  *                     Which one depends on how the timeout was configured.
  */
-public record TransactionTimeout(Duration timeout, Status status) {
+public record TransactionTimeout(long timeoutNanos, Status status) {
+
+    // duration may include a nanoseconds part added after converting from seconds, so subtract one second for that case
+    private static final long SAFE_SECOND_BOUNDARY = (Long.MAX_VALUE / NANOS_PER_SECOND) - 1;
+
+    public TransactionTimeout(Duration duration, Status status) {
+        this(convertToNanos(duration), status);
+    }
+
+    private static long convertToNanos(Duration timeout) {
+        if (timeout.getSeconds() < SAFE_SECOND_BOUNDARY) {
+            return timeout.toNanos();
+        }
+        return Long.MAX_VALUE;
+    }
 
     public static final TransactionTimeout NO_TIMEOUT =
             new TransactionTimeout(Duration.ZERO, Status.Transaction.TransactionTimedOut);
