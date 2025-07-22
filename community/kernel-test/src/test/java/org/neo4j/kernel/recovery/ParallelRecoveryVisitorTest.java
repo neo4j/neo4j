@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
@@ -82,6 +83,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.OtherThreadExecutor;
 
 class ParallelRecoveryVisitorTest {
     private final CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
@@ -236,6 +238,76 @@ class ParallelRecoveryVisitorTest {
                 new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2);
         visitor.visit(tx(2, commandsRelatedToNode(99)));
         assertThatThrownBy(visitor::close).getCause().hasMessageContaining(failure);
+    }
+
+    @Test
+    void shouldNotLetMainRecoveryThreadDoActualWorkDeterministic() throws Exception {
+        // given
+        var mainRecoveryThread = Thread.currentThread();
+        var latch = new CountDownLatch(1);
+        var storageEngine = new RecoveryControllableStorageEngine() {
+            @Override
+            public void lockRecoveryCommands(
+                    CommandBatch commands,
+                    LockService lockService,
+                    LockGroup lockGroup,
+                    TransactionApplicationMode mode) {
+                assertThat(Thread.currentThread()).isNotEqualTo(mainRecoveryThread);
+                super.lockRecoveryCommands(commands, lockService, lockGroup, mode);
+            }
+
+            @Override
+            public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
+                assertThat(Thread.currentThread()).isNotEqualTo(mainRecoveryThread);
+                super.apply(batch, mode);
+                latch.await();
+            }
+        };
+
+        // when
+        try (var visitor = new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2)) {
+            visitor.visit(tx(2, commandsRelatedToNode(0)));
+            visitor.visit(tx(3, commandsRelatedToNode(1)));
+            try (var t2 = new OtherThreadExecutor("T2")) {
+                var tx = t2.executeDontWait(() -> visitor.visit(tx(4, commandsRelatedToNode(2))));
+
+                // then
+                t2.waitUntilWaiting(details -> details.isAt(ParallelRecoveryVisitor.class, "coordinate"));
+                latch.countDown();
+                tx.get();
+            }
+        }
+    }
+
+    @Test
+    void shouldNotLetMainRecoveryThreadDoActualWorkObservational() throws Exception {
+        // given
+        var mainRecoveryThread = Thread.currentThread();
+        var storageEngine = new RecoveryControllableStorageEngine() {
+            @Override
+            public void lockRecoveryCommands(
+                    CommandBatch commands,
+                    LockService lockService,
+                    LockGroup lockGroup,
+                    TransactionApplicationMode mode) {
+                assertThat(Thread.currentThread()).isNotEqualTo(mainRecoveryThread);
+                super.lockRecoveryCommands(commands, lockService, lockGroup, mode);
+            }
+
+            @Override
+            public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
+                assertThat(Thread.currentThread()).isNotEqualTo(mainRecoveryThread);
+                super.apply(batch, mode);
+                Thread.sleep(1);
+            }
+        };
+
+        // when
+        try (var visitor = new ParallelRecoveryVisitor(storageEngine, RECOVERY, contextFactory, "test", 2)) {
+            for (int i = 0; i < 100; i++) {
+                visitor.visit(tx(2 + i, commandsRelatedToNode(i)));
+            }
+        }
     }
 
     private CompleteBatchRepresentation tx(long txId, List<StorageCommand> commands) {
