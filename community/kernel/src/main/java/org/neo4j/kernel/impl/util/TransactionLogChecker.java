@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.enveloped.EnvelopeReadChannel;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -85,7 +87,13 @@ public class TransactionLogChecker {
             }
 
             versionSeen = verifyVersionInOneFile(
-                    logHeader, logFile, logHeaderKernelVersion, versionSeen, commandReaderFactory, config);
+                    logHeader,
+                    logFile,
+                    logHeaderKernelVersion,
+                    versionSeen,
+                    commandReaderFactory,
+                    config,
+                    logFiles.getCheckpointFile());
         }
     }
 
@@ -95,11 +103,13 @@ public class TransactionLogChecker {
             KernelVersion logHeaderKernelVersion,
             KernelVersion previouslySeenVersion,
             CommandReaderFactory commandReaderFactory,
-            Config config)
+            Config config,
+            CheckpointFile checkpointFile)
             throws IOException {
         KernelVersion versionSeenInFile = logHeader.getLogFormatVersion().usesSegments()
                 ? verifyVersionInSegmentedFile(logFile, logHeader, logHeaderKernelVersion)
-                : verifyVersionInOldFile(logFile, logHeader, logHeaderKernelVersion, commandReaderFactory, config);
+                : verifyVersionInOldFile(
+                        logFile, logHeader, logHeaderKernelVersion, commandReaderFactory, config, checkpointFile);
 
         // If there was no version in the header we have only checked that the file contains a single version so far.
         // Let's check that the version in the file is at least as great as the version seen in the previous file.
@@ -161,7 +171,8 @@ public class TransactionLogChecker {
             LogHeader logHeader,
             KernelVersion expectedVersion,
             CommandReaderFactory commandReaderFactory,
-            Config config)
+            Config config,
+            CheckpointFile checkpointFile)
             throws IOException {
         KernelVersion seenVersion = expectedVersion;
         try (ReadableLogChannel reader =
@@ -170,16 +181,53 @@ public class TransactionLogChecker {
                     new VersionAwareLogEntryReader(commandReaderFactory, new BinarySupportedKernelVersions(config));
 
             LogEntry entry;
+            long lastSeenTxId = -1;
+
             while ((entry = entryReader.readLogEntry(reader)) != null) {
                 if (entry instanceof LogEntryStart start) {
                     KernelVersion startVersion = start.kernelVersion();
                     if (seenVersion == null) {
                         seenVersion = startVersion;
                     } else if (seenVersion != startVersion) {
-                        throw new InconsistentTransactionLogException(
-                                "Log file version %d contains entry with other kernel version (%s) than version seen earlier in the file (%s)"
-                                        .formatted(logHeader.getLogVersion(), startVersion.name(), seenVersion.name()));
+                        if (startVersion.isLessThan(seenVersion)) {
+                            throw new InconsistentTransactionLogException(
+                                    "Log file version %d contains entry with lower kernel version (%s) than version seen earlier in the file (%s)"
+                                            .formatted(
+                                                    logHeader.getLogVersion(),
+                                                    startVersion.name(),
+                                                    seenVersion.name()));
+                        }
+                        // lastSeenTxId has not been updated for this entry yet,
+                        // it is the tx id of the previous entry.
+                        // Since this is the first entry with a different version,
+                        // the last entry should belong to an upgrade command.
+
+                        // There is an edge case in which tx pull pulls everything up to and
+                        // including the upgrade transaction and then starts the store and
+                        // fails to rotate the tx log. This is benign though for non-segmented
+                        // logs and won't be fixed. In order to minimize false positives,
+                        // we skip throwing here if we find that there is a checkpoint exactly
+                        // at the tx id of the upgrade transaction. The benign case described
+                        // will do recovery before starting the DB, and thus it will always
+                        // have a checkpoint with the tx id of the upgrade tx.
+
+                        final var upgradeTxId = lastSeenTxId;
+                        if (checkpointFile.reachableCheckpoints().stream()
+                                .map(c -> c.transactionId().id())
+                                .noneMatch(id -> id == upgradeTxId)) {
+                            throw new InconsistentTransactionLogException(
+                                    "Log file version %d contains entry with other kernel version (%s) than version seen earlier in the file (%s)"
+                                            .formatted(
+                                                    logHeader.getLogVersion(),
+                                                    startVersion.name(),
+                                                    seenVersion.name()));
+                        } else {
+                            seenVersion = startVersion;
+                        }
                     }
+                }
+                if (entry instanceof LogEntryCommit commit) {
+                    lastSeenTxId = commit.getTxId();
                 }
             }
         }
