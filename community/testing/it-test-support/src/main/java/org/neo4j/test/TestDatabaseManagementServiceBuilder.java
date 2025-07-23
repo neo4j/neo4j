@@ -36,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilderImplementation;
@@ -176,6 +177,10 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .setDefault(GraphDatabaseInternalSettings.gbptree_structure_log_enabled, true)
                 .setDefault(GraphDatabaseSettings.filewatcher_enabled, false)
                 .setDefault(GraphDatabaseSettings.udc_enabled, false)
+                // Add 6.0 to the Bolt tests
+                .setDefault(
+                        BoltConnectorInternalSettings.max_protocol_version,
+                        new BoltConnectorInternalSettings.ConfiguredProtocolVersion(6, 0))
                 .setDefault(
                         BoltConnector.listen_address,
                         new SocketAddress("localhost", DynamicPorts.OS_SELECTED_DYNAMIC_PORT))

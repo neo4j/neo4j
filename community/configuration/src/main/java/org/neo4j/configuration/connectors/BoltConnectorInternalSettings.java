@@ -322,7 +322,7 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     @Internal
     @Description("Maximum Bolt Protocol version negotiated by the bolt connector.")
     public static final Setting<ConfiguredProtocolVersion> max_protocol_version = newBuilder(
-                    "internal.dbms.bolt.max_protocol_version", PROTOCOL_VERSION, null)
+                    "internal.dbms.bolt.max_protocol_version", PROTOCOL_VERSION, new ConfiguredProtocolVersion(5, 8))
             .build();
 
     public enum ProtocolLoggingMode {
@@ -347,5 +347,9 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
         }
     }
 
-    public record ConfiguredProtocolVersion(Integer major, Integer minor) {}
+    public record ConfiguredProtocolVersion(Integer major, Integer minor) {
+        public String toString() {
+            return major + "." + minor;
+        }
+    }
 }
