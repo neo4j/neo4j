@@ -180,14 +180,20 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private void switchToSocket(ChannelHandlerContext ctx) {
-        if (this.connector.configuration().requiresEncryption() && !isEncrypted) {
-            throw new SecurityException("An unencrypted connection attempt was made where encryption is required.");
-        }
+        assertEncryption();
 
         switchToHandshake(ctx);
     }
 
+    private void assertEncryption() {
+        if (this.connector.configuration().requiresEncryption() && !isEncrypted) {
+            throw new SecurityException("An unencrypted connection attempt was made where encryption is required.");
+        }
+    }
+
     private void switchToWebsocket(ChannelHandlerContext ctx) {
+        assertEncryption();
+
         ChannelPipeline p = ctx.pipeline();
 
         connection

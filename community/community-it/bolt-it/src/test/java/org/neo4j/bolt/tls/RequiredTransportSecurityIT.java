@@ -23,13 +23,19 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.R
 
 import java.io.IOException;
 import java.util.Map;
+import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Assertions;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
-import org.neo4j.bolt.test.annotation.connection.transport.preset.PlaintextTransportOnly;
+import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
+import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
+import org.neo4j.bolt.testing.client.TransportType;
+import org.neo4j.bolt.testing.client.error.BoltTestClientIOException;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -51,11 +57,44 @@ public class RequiredTransportSecurityIT {
     }
 
     @TransportTest
-    @PlaintextTransportOnly
+    @ExcludeTransport({TransportType.LOCAL, TransportType.UNIX, TransportType.WEBSOCKET_TLS, TransportType.TCP_TLS})
     void shouldCloseUnencryptedConnectionOnHandshakeWhenEncryptionIsRequired(
+            BoltWire wire, @Connected ConnectionProvider connectionProvider) throws IOException {
+        BoltTestConnection connection = connectionProvider.create();
+
+        try {
+            connection.connect();
+            connection.send(wire.getProtocolVersion());
+        } catch (RuntimeException e) {
+            Assertions.assertInstanceOf(BoltTestClientIOException.class, e);
+        }
+
+        BoltConnectionAssertions.assertThat(connection)
+                .isNot(protocolNegotiated())
+                .isEventuallyTerminated();
+    }
+
+    @TransportTest
+    @IncludeTransport({TransportType.LOCAL, TransportType.UNIX, TransportType.WEBSOCKET_TLS, TransportType.TCP_TLS})
+    void shouldHandshakeOnSafeConnectionsWhenEncryptionIsRequired(
             BoltWire wire, @Connected BoltTestConnection connection) throws IOException {
         connection.send(wire.getProtocolVersion());
 
-        BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();
+        BoltConnectionAssertions.assertThat(connection).is(protocolNegotiated());
+
+        connection.close();
+    }
+
+    private static Condition<BoltTestConnection> protocolNegotiated() {
+        return new Condition<>(
+                c -> {
+                    try {
+                        c.receiveNegotiatedVersion();
+                        return true;
+                    } catch (RuntimeException e) {
+                        return false;
+                    }
+                },
+                "shouldn't receive negotiated version");
     }
 }

@@ -162,6 +162,53 @@ class TransportSelectionHandlerTest {
     }
 
     @Test
+    void shouldRejectPlainWebsocketConnectionWhenSecureRequired(StrictBufferContext ctx) throws Exception {
+        // Given
+        var logging = new AssertableLogProvider();
+        var memoryTracker = mock(MemoryTracker.class);
+
+        var channel = ctx.withConnection(
+                conn -> conn.withMemoryTracker(memoryTracker)
+                        .withConfiguration(config -> config.withRequiresEncryption(true)),
+                new TransportSelectionHandler(logging));
+
+        // When
+        channel.writeInbound(ctx.buffer("GET /\r\n"));
+
+        // Then
+        assertThat(channel.isOpen()).isFalse();
+        assertThat(channel.isActive()).isFalse();
+        assertThat(logging)
+                .forClass(TransportSelectionHandler.class)
+                .forLevel(ERROR)
+                .containsMessages("An unencrypted connection attempt was made where encryption is required.");
+    }
+
+    @Test
+    void shouldRejectPlainSocketConnectionWhenSecureRequired(StrictBufferContext ctx) throws Exception {
+        // Given
+        var logging = new AssertableLogProvider();
+        var memoryTracker = mock(MemoryTracker.class);
+
+        var channel = ctx.withConnection(
+                conn -> conn.withMemoryTracker(memoryTracker)
+                        .withConfiguration(config -> config.withRequiresEncryption(true)),
+                new TransportSelectionHandler(logging));
+
+        // When
+        channel.writeInbound(ctx.buffer().writeInt(0x6060B017).writeInt(0x00090005));
+        channel.flush();
+
+        // Then
+        assertThat(channel.isOpen()).isFalse();
+        assertThat(channel.isActive()).isFalse();
+        assertThat(logging)
+                .forClass(TransportSelectionHandler.class)
+                .forLevel(ERROR)
+                .containsMessages("An unencrypted connection attempt was made where encryption is required.");
+    }
+
+    @Test
     void shouldInstallProtocolLoggingHandlers(StrictBufferContext ctx) {
         var memoryTracker = Mockito.mock(MemoryTracker.class);
 
