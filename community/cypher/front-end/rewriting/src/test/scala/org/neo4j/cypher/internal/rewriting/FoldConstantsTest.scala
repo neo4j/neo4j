@@ -93,4 +93,22 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("RETURN (1+1)/(1-1) AS r", "RETURN 2/0 AS r")
     assertRewrite("RETURN (1/0) + (1+1) AS r", "RETURN (1/0) + 2 AS r")
   }
+
+  test("does not fold values that are too large") {
+    assertIsNotRewritten(
+      s"RETURN ${Long.MaxValue} * ${Long.MaxValue} AS r"
+    )
+    assertRewrite(
+      "RETURN 100 * 1000000000 * 100000000 AS r",
+      "RETURN 100000000000 * 100000000 AS r"
+    )
+  }
+
+  test("does fold max values") {
+    val maxSqrt = Math.sqrt(Long.MaxValue).toLong
+    assertRewrite(
+      s"RETURN $maxSqrt * $maxSqrt AS r",
+      s"RETURN ${maxSqrt * maxSqrt} AS r"
+    )
+  }
 }

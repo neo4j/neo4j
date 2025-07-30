@@ -644,11 +644,6 @@ object SemanticError {
     SemanticError(gql, s"$numberType is too large", position)
   }
 
-  def integerOperationCannotBeRepresented(operation: String, position: InputPosition): SemanticError = {
-    val gql = GqlHelper.getGql22003(operation, position.line, position.column, position.offset)
-    SemanticError(gql, s"result of $operation cannot be represented as an integer", position)
-  }
-
   def notSupported(pos: InputPosition): SemanticError = {
     val msg = "Not supported."
     val gql = GqlHelper.get50N00(SemanticError.getClass.getSimpleName, msg, pos.line, pos.column, pos.offset)

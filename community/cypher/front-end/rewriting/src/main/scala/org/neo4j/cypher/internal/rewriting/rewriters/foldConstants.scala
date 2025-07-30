@@ -69,7 +69,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
         case e: BinaryOperatorExpression if containsSensitive(e) => e
 
         case e @ Add(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-          SignedDecimalIntegerLiteral((lhs.value + rhs.value).toString)(e.position)
+          SignedDecimalIntegerLiteral(Math.addExact(lhs.value, rhs.value).toString)(e.position)
         case e @ Add(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
           DecimalDoubleLiteral((lhs.value + rhs.value).toString)(e.position)
         case e @ Add(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
@@ -78,7 +78,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
           DecimalDoubleLiteral((lhs.value + rhs.value).toString)(e.position)
 
         case e @ Subtract(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-          SignedDecimalIntegerLiteral((lhs.value - rhs.value).toString)(e.position)
+          SignedDecimalIntegerLiteral(Math.subtractExact(lhs.value, rhs.value).toString)(e.position)
         case e @ Subtract(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
           DecimalDoubleLiteral((lhs.value - rhs.value).toString)(e.position)
         case e @ Subtract(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
@@ -87,7 +87,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
           DecimalDoubleLiteral((lhs.value - rhs.value).toString)(e.position)
 
         case e @ Multiply(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-          SignedDecimalIntegerLiteral((lhs.value * rhs.value).toString)(e.position)
+          SignedDecimalIntegerLiteral(Math.multiplyExact(lhs.value, rhs.value).toString)(e.position)
         case e @ Multiply(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
           DecimalDoubleLiteral((lhs.value * rhs.value).toString)(e.position)
         case e @ Multiply(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
@@ -136,7 +136,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
 
         case e @ UnarySubtract(_: SensitiveLiteral) => e
         case e @ UnarySubtract(rhs: SignedIntegerLiteral) =>
-          SignedDecimalIntegerLiteral((-rhs.value).toString)(e.position)
+          SignedDecimalIntegerLiteral(Math.negateExact(rhs.value).toString)(e.position)
         case e: UnarySubtract =>
           Subtract(SignedDecimalIntegerLiteral("0")(e.position), e.rhs)(e.position)
 
