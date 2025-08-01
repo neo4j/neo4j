@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 
@@ -47,6 +48,11 @@ public class DefaultBoltProtocolRegistry implements BoltProtocolRegistry {
         return this.protocols.stream()
                 .filter(protocol -> protocolVersion.matches(protocol.version()))
                 .max(Comparator.comparing(BoltProtocol::version));
+    }
+
+    @Override
+    public List<ProtocolVersion> versionsAvailable() {
+        return this.protocols.stream().map(BoltProtocol::version).collect(Collectors.toList());
     }
 
     public static class Builder implements BoltProtocolRegistry.Builder {

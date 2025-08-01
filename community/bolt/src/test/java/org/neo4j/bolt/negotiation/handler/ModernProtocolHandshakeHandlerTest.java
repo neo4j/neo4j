@@ -36,7 +36,6 @@ import org.neo4j.bolt.negotiation.codec.ModernProtocolNegotiationInitMessageEnco
 import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationFinalizeMessage;
 import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationInitMessage;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
-import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.handler.ProtocolLoggingHandler;
 import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
 import org.neo4j.bolt.testing.assertions.ChannelAssertions;
@@ -71,10 +70,7 @@ public class ModernProtocolHandshakeHandlerTest extends AbstractProtocolHandshak
 
         Assertions.assertThat(msg.negotiationVersion()).isEqualTo(ProtocolVersion.NEGOTIATION_V2);
 
-        Assertions.assertThat(msg.supportedVersions())
-                .containsAll(BoltProtocol.available().stream()
-                        .map(BoltProtocol::version)
-                        .toList());
+        Assertions.assertThat(msg.supportedVersions()).containsAll(protocolRegistry.versionsAvailable());
 
         channel.writeInbound(
                 new ModernProtocolNegotiationFinalizeMessage(version, EnumSet.noneOf(ProtocolCapability.class)));

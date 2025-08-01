@@ -29,7 +29,6 @@ import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationFinalizeMessa
 import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationInitMessage;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 
@@ -50,8 +49,7 @@ public final class ModernProtocolHandshakeHandler
 
         this.protocolRegistry = this.connector.protocolRegistry();
 
-        var versions =
-                BoltProtocol.available().stream().map(BoltProtocol::version).toList();
+        var versions = protocolRegistry.versionsAvailable();
 
         ctx.writeAndFlush(new ModernProtocolNegotiationInitMessage(
                 ProtocolVersion.NEGOTIATION_V2, versions, this.connector.supportedCapabilities()));
