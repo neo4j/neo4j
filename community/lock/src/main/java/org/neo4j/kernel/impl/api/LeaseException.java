@@ -83,8 +83,29 @@ public class LeaseException extends GqlRuntimeException implements Status.HasSta
         return new LeaseException(gql, "Unexpected exception", cause, Status.General.UnknownError);
     }
 
+    public static LeaseException interruptedOrTimeout() {
+        return StacklessLeaseException.INTERRUPTED_EXCEPTION;
+    }
+
     @Override
     public Status status() {
         return status;
+    }
+
+    static class StacklessLeaseException extends LeaseException {
+        private static final StacklessLeaseException INTERRUPTED_EXCEPTION = new StacklessLeaseException(
+                ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N33)
+                        .build(),
+                "Process was interrupted while attempting to acquire lease.",
+                ReplicationFailure);
+
+        private StacklessLeaseException(ErrorGqlStatusObject gqlStatusObject, String message, Status status) {
+            super(gqlStatusObject, message, null, status);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
     }
 }
