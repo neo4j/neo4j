@@ -155,18 +155,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(TypeSpec.all, x.lhs) chain
           check(ctx, x.rhs, x +: parents) chain
           expectType(infixAddRhsTypes(x.lhs), x.rhs) chain
-          specifyType(infixAddOutputTypes(x.lhs, x.rhs), x) chain
-          checkAddBoundary(x)
+          specifyType(infixAddOutputTypes(x.lhs, x.rhs), x)
 
       case x:Subtract =>
         check(ctx, x.arguments, x +: parents) chain
-          checkTypes(x, x.signatures) chain
-          checkSubtractBoundary(x)
+          checkTypes(x, x.signatures)
 
       case x:UnarySubtract =>
         check(ctx, x.arguments, x +: parents) chain
-          checkTypes(x, x.signatures) chain
-          checkUnarySubtractBoundary(x)
+          checkTypes(x, x.signatures)
 
       case x:UnaryAdd =>
         check(ctx, x.arguments, x +: parents) chain
@@ -174,8 +171,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:Multiply =>
         check(ctx, x.arguments, x +: parents) chain
-          checkTypes(x, x.signatures) chain
-          checkMultiplyBoundary(x)
+          checkTypes(x, x.signatures)
 
       case x:Divide =>
         check(ctx, x.arguments, x +: parents) chain
@@ -670,34 +666,6 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     def possibleInnerTypes(e: FilteringExpression): TypeGenerator = s =>
       (types(e.expression)(s) constrain CTList(CTAny)).unwrapLists
   }
-
-  private def checkAddBoundary(add: Add): SemanticCheck =
-    (add.lhs, add.rhs) match {
-      case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.addExact(l.value, r.value)).isFailure =>
-        SemanticError(s"result of ${l.stringVal} + ${r.stringVal} cannot be represented as an integer", add.position)
-      case _ => SemanticCheckResult.success
-    }
-
-  private def checkSubtractBoundary(subtract: Subtract): SemanticCheck =
-    (subtract.lhs, subtract.rhs) match {
-      case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.subtractExact(l.value, r.value)).isFailure =>
-        SemanticError(s"result of ${l.stringVal} - ${r.stringVal} cannot be represented as an integer", subtract.position)
-      case _ => SemanticCheckResult.success
-    }
-
-  private def checkUnarySubtractBoundary(subtract: UnarySubtract): SemanticCheck =
-    subtract.rhs match {
-      case r:IntegerLiteral if Try(Math.subtractExact(0, r.value)).isFailure =>
-        SemanticError(s"result of -${r.stringVal} cannot be represented as an integer", subtract.position)
-      case _ => SemanticCheckResult.success
-    }
-
-  private def checkMultiplyBoundary(multiply: Multiply): SemanticCheck =
-    (multiply.lhs, multiply.rhs) match {
-      case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.multiplyExact(l.value, r.value)).isFailure =>
-        SemanticError(s"result of ${l.stringVal} * ${r.stringVal} cannot be represented as an integer", multiply.position)
-      case _ => SemanticCheckResult.success
-    }
 
   private def infixAddRhsTypes(lhs: Expression): TypeGenerator = s => {
     val lhsTypes = types(lhs)(s)

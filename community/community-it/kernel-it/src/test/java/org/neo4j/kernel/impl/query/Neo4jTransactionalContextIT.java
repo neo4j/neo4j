@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.QueryId;
 import org.neo4j.procedure.builtin.TransactionId;
@@ -168,7 +169,7 @@ class Neo4jTransactionalContextIT
         @Context
         public Transaction transaction;
 
-        @Procedure( name = "test.failingProc" )
+        @Procedure( name = "test.failingProc", mode = Mode.WRITE )
         public void stupidProcedure()
         {
             transaction.execute( "CREATE (c {prop: 1 / 0})" );
