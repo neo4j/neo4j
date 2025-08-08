@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.ir.QueryGraph.PredicatesByDependencies
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -522,6 +523,11 @@ final case class QueryGraph private (
     }.toMap
   }
 
+  def predicatesPartitionedByDependencyOnNonArgumentIds: PredicatesByDependencies = {
+    val (argumentOnly, other) = selections.predicates.partition(_.hasDependenciesMet(argumentIds))
+    PredicatesByDependencies(dependOnArgumentsOnly = argumentOnly, hasNonArgumentDependencies = other)
+  }
+
   /**
    * Returns the connected patterns of this query graph where each connected pattern is represented by a QG.
    * Connected here means can be reached through a relationship pattern.
@@ -531,9 +537,7 @@ final case class QueryGraph private (
   def connectedComponents: Seq[QueryGraph] = {
     val visited = mutable.Set.empty[LogicalVariable]
 
-    val (predicatesWithLocalDependencies, strayPredicates) = selections.predicates.partition {
-      p => (p.dependencies -- argumentIds).nonEmpty
-    }
+    val predicatesByDependencies = predicatesPartitionedByDependencyOnNonArgumentIds
 
     def createComponentQueryGraphStartingFrom(patternNode: LogicalVariable): QueryGraph = {
       val qg = connectedComponentFor(patternNode, visited)
@@ -544,7 +548,7 @@ final case class QueryGraph private (
       val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.variable) ++ p.maybePathVar)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
 
-      val predicates = predicatesWithLocalDependencies.filter(_.dependencies.subsetOf(allIds))
+      val predicates = predicatesByDependencies.hasNonArgumentDependencies.filter(_.dependencies.subsetOf(allIds))
       val filteredHints = hints.filter(_.variables.forall(coveredIds.contains))
       qg.withSelections(Selections(predicates))
         .withArgumentIds(argumentIds)
@@ -568,7 +572,7 @@ final case class QueryGraph private (
 
     (argumentComponents ++ rest) match {
       case first +: rest =>
-        first.addPredicates(strayPredicates) +: rest
+        first.addPredicates(predicatesByDependencies.dependOnArgumentsOnly) +: rest
       case x => x
     }
   }
@@ -797,4 +801,6 @@ object QueryGraph {
     preferSingleQuotes = false,
     sensitiveParamsAsParams = false
   )
+
+  case class PredicatesByDependencies(dependOnArgumentsOnly: Set[Predicate], hasNonArgumentDependencies: Set[Predicate])
 }

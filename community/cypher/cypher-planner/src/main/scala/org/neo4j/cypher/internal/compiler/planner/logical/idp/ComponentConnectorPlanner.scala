@@ -94,7 +94,17 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         ).plan
       }
     } else {
-      connectWithIDP(components, queryGraph, interestingOrderConfig, context, kit)
+      val predicatesWithArgumentDependenciesOnly =
+        queryGraph.predicatesPartitionedByDependencyOnNonArgumentIds.dependOnArgumentsOnly
+
+      val kitToUse = if (predicatesWithArgumentDependenciesOnly.isEmpty) {
+        kit
+      } else {
+        // These predicates should already be solved by one of the components, avoid solving them multiple times.
+        kit.copy(select = (plan, qg) => kit.select(plan, qg.removePredicates(predicatesWithArgumentDependenciesOnly)))
+      }
+
+      connectWithIDP(components, queryGraph, interestingOrderConfig, context, kitToUse)
     }
   }
 

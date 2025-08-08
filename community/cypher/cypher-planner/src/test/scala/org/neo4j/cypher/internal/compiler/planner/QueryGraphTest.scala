@@ -20,11 +20,15 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryGraph.PredicatesByDependencies
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryGraphTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -80,5 +84,41 @@ class QueryGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     qg.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels.cacheSize shouldBe 1)
 
     QueryGraph.empty.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels.cacheSize shouldBe 0)
+  }
+
+  test("should partition predicates by dependency on non-argument ids") {
+
+    def pred(deps: LogicalVariable*): Predicate = Predicate(deps.toSet, trueLiteral)
+
+    val predicates = Set(
+      pred(),
+      pred(v"arg1"),
+      pred(v"arg2"),
+      pred(v"arg1", v"arg3"),
+      pred(v"arg3", v"x"),
+      pred(v"y"),
+      pred(v"x", v"z"),
+      pred(v"arg1", v"arg2", v"arg3", v"x", v"y", v"z")
+    )
+
+    val qg = QueryGraph.empty
+      .addArgumentIds(Seq(v"arg1", v"arg2", v"arg3"))
+      .addPredicates(predicates)
+
+    qg.predicatesPartitionedByDependencyOnNonArgumentIds shouldEqual
+      PredicatesByDependencies(
+        dependOnArgumentsOnly = Set(
+          pred(),
+          pred(v"arg1"),
+          pred(v"arg2"),
+          pred(v"arg1", v"arg3")
+        ),
+        hasNonArgumentDependencies = Set(
+          pred(v"arg3", v"x"),
+          pred(v"y"),
+          pred(v"x", v"z"),
+          pred(v"arg1", v"arg2", v"arg3", v"x", v"y", v"z")
+        )
+      )
   }
 }
