@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -181,7 +181,9 @@ public class QuerySnapshot {
         if (compilerInfo == null) {
             return Collections.emptyList();
         }
-        return compilerInfo.indexes().stream().map(IndexUsage::asMap).collect(Collectors.toList());
+        return Stream.concat(compilerInfo.indexes().stream(), compilerInfo.relationshipTypeIndexes().stream())
+                .map(IndexUsage::asMap)
+                .toList();
     }
 
     public String status() {

@@ -81,7 +81,10 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 import java.lang
@@ -93,7 +96,6 @@ import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.jdk.CollectionConverters.MapHasAsScala
 
 // SHOW TRANSACTION[S] [transaction-id[,...]] [WHERE clause|YIELD clause]
 case class ShowTransactionsCommand(
@@ -347,14 +349,7 @@ case class ShowTransactionsCommand(
         val maybeRuntime = query.runtime
         if (maybeRuntime == null) Values.stringValue(EMPTY) else Values.stringValue(maybeRuntime)
       } else Values.NO_VALUE
-      val indexes = if (requestedColumnsNames.contains(indexesColumn))
-        VirtualValues.list(query.indexes.asScala.toList.map(m => {
-          val scalaMap = m.asScala
-          val keys = scalaMap.keys.toArray
-          val vals: Array[AnyValue] = scalaMap.values.map(Values.stringValue).toArray
-          VirtualValues.map(keys, vals)
-        }): _*)
-      else Values.NO_VALUE
+      val indexes = if (requestedColumnsNames.contains(indexesColumn)) buildIndexValue(query) else Values.NO_VALUE
       val queryStartTime = if (requestedColumnsNames.contains(currentQueryStartTimeColumn))
         getDatetimeFromMillis(query.startTimestampMillis, zoneId)
       else Values.NO_VALUE
@@ -468,11 +463,10 @@ case class ShowTransactionsCommand(
     case _                        => DurationValue.ZERO
   }
 
-  private def getMapValue(m: util.Map[String, AnyRef]) = {
-    val scalaMap = m.asScala
-    val keys = scalaMap.keys.toArray
-    val vals: Array[AnyValue] = scalaMap.values.map(ValueUtils.of).toArray
-    VirtualValues.map(keys, vals)
+  private def getMapValue(m: util.Map[String, AnyRef]): MapValue = {
+    val builder = new MapValueBuilder()
+    m.forEach((k, v) => builder.add(k, ValueUtils.of(v)))
+    builder.build()
   }
 
   private def getDatetimeFromMillis(startTime: Long, zoneId: ZoneId) =
@@ -494,6 +488,16 @@ case class ShowTransactionsCommand(
       handleDetails = defaultDetails
     }
     handleDetails
+  }
+
+  private def buildIndexValue(query: QuerySnapshot): ListValue = {
+    val listValueBuilder = ListValueBuilder.newListBuilder()
+    query.indexes.forEach(m => {
+      val mapBuilder = new MapValueBuilder()
+      m.forEach((k, v) => mapBuilder.add(k, Values.stringValue(v)))
+      listValueBuilder.add(mapBuilder.build())
+    })
+    listValueBuilder.build()
   }
 
   private def getExecutingStatus(
