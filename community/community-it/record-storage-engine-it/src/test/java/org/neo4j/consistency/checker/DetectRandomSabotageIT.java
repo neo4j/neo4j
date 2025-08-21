@@ -62,6 +62,7 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
@@ -218,6 +219,8 @@ public class DetectRandomSabotageIT {
     }
 
     @Test
+    @Disabled(
+            "Disabled for maintenance branch as this test is flaky by design. It may sabotage data into a completely valid state")
     void shouldDetectRandomSabotage() throws Exception {
         // given
         SabotageType type = random.among(SabotageType.values());
