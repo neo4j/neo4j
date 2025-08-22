@@ -209,7 +209,6 @@ trait ExecutionEngineHelper {
         prePopulate = false,
         subscriber
       ),
-      context,
       tbqc,
       subscriber
     )
@@ -230,7 +229,6 @@ trait ExecutionEngineHelper {
           queryMonitor = DummyQueryExecutionMonitor,
           subscriber = subscriber
         ),
-        context,
         tbqc,
         subscriber
       )

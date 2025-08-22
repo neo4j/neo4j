@@ -33,7 +33,6 @@ import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.notifications.NotificationImplementation
 import org.neo4j.util.Table
 import org.neo4j.values.storable.Values
@@ -122,7 +121,6 @@ object RewindableExecutionResult {
 
   def apply(
     result: QueryExecution,
-    transactionalContext: TransactionalContext,
     queryContext: QueryContext,
     subscriber: RecordingQuerySubscriber
   ): RewindableExecutionResult = {
@@ -146,7 +144,7 @@ object RewindableExecutionResult {
       )
     } finally {
       result.cancel()
-      transactionalContext.close()
+      result.awaitCleanup()
     }
   }
 
