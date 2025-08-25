@@ -32,10 +32,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Cryptography :: Hashing
   Apache Shiro :: Event
   Apache Shiro :: Lang
-  Arrow Flight Core
-  Arrow Format
-  Arrow Memory - Core
-  Arrow Vectors
   AssertJ Core
   Byte Buddy (without dependencies)
   Byte Buddy agent
@@ -58,19 +54,7 @@ Apache Software License, Version 2.0
   EE8 :: Servlet
   EE8 :: WebApp
   fastinfoset
-  FindBugs-jsr305
-  FlatBuffers Java API
-  Guava InternalFutureFailureAccess and InternalFutures
-  Guava ListenableFuture only
-  Guava: Google Core Libraries for Java
-  io.grpc:grpc-api
-  io.grpc:grpc-context
-  io.grpc:grpc-core
-  io.grpc:grpc-netty
-  io.grpc:grpc-protobuf
-  io.grpc:grpc-stub
   IPAddress
-  Jackson datatype: JSR310
   Jackson module: Old JAXB Annotations (javax.xml.bind)
   Jackson-annotations
   Jackson-core
@@ -96,7 +80,6 @@ Apache Software License, Version 2.0
   Netty/Buffer
   Netty/Codec
   Netty/Codec/HTTP
-  Netty/Codec/HTTP2
   Netty/Common
   Netty/Handler
   Netty/Resolver
@@ -110,7 +93,6 @@ Apache Software License, Version 2.0
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
   picocli
-  proto-google-common-protos
   Scala Reflect
   scala-collection-contrib
   snappy-java
@@ -372,8 +354,6 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  Protocol Buffers [Core]
-  Protocol Buffers [Util]
   Zstandard
 ------------------------------------------------------------------------------
 
