@@ -126,12 +126,22 @@ public class QueryResourceTxErrorIT {
     }
 
     @Test
-    void shouldRejectCallInTransactions() throws IOException, InterruptedException {
+    void shouldRejectCallInTransactionsWhenDelayedExecution() throws IOException, InterruptedException {
         var res = testClient.beginTx(QueryRequest.newBuilder()
                 .statement("UNWIND [4, 2, 1, 0] AS i CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i")
                 .build());
 
         assertThat(res).hasErrorStatus(202, Status.Transaction.TransactionStartFailed);
+        assertThat(res).hasNoTransaction();
+    }
+
+    @Test
+    void shouldRejectCallInTransactions() throws IOException, InterruptedException {
+        var res = testClient.beginTx(QueryRequest.newBuilder()
+                .statement("CALL() { CREATE (t:Test) } IN TRANSACTIONS OF 1 ROWS")
+                .build());
+
+        assertThat(res).hasErrorStatus(500, Status.Transaction.TransactionStartFailed);
         assertThat(res).hasNoTransaction();
     }
 

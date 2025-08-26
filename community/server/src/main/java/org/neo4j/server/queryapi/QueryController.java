@@ -44,6 +44,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
@@ -134,6 +135,8 @@ public class QueryController {
             return txCollisionResponse();
         } catch (ClientException | TransientException clientException) {
             return clientError(clientException);
+        } catch (DatabaseException databaseException) {
+            return databaseError(databaseException);
         } catch (Exception exception) {
             log.error("Local driver failed to execute query", exception);
             return serverError();
@@ -317,6 +320,12 @@ public class QueryController {
                 .entity(singleError(
                         Status.General.UnknownError.code().serialize(),
                         Status.General.UnknownError.code().description()))
+                .build();
+    }
+
+    private Response databaseError(DatabaseException databaseException) {
+        return Response.serverError()
+                .entity(fromDriverException(databaseException))
                 .build();
     }
 
