@@ -37,7 +37,7 @@ case object IndependenceCombiner extends SelectivityCombiner {
     selectivities.reduceOption(_ * _)
 
   /**
-   * We transform the disjunction to a negation of a the conjunction of negations
+   * We transform the disjunction to a negation of a conjunction of negations
    * ∪{s ∈ selectivities} = ¬ ∩{ ¬ s | s ∈ selectivities}
    * Where conjunction is computed through multiplication of the factors,
    * and negation is computed as (1 - s.factor).

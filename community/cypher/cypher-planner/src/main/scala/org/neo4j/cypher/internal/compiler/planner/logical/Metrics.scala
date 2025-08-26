@@ -200,6 +200,20 @@ object Metrics {
   type LabelInfo = Map[LogicalVariable, Set[LabelName]]
   val LabelInfo: Map.type = Map
 
+  implicit class RichLabelInfo(val inner: LabelInfo) {
+
+    def extend(variable: LogicalVariable, labelName: LabelName): LabelInfo =
+      inner.updatedWith(variable) {
+        case Some(labels) => Some(labels + labelName)
+        case None         => Some(Set(labelName))
+      }
+
+    def extend(tuples: Iterable[(LogicalVariable, LabelName)]): LabelInfo =
+      tuples.foldLeft(inner) { case (acc, (variable, labelName)) =>
+        acc.extend(variable, labelName)
+      }
+  }
+
   /**
    * A relationship can only have one type. If labelInfo("r") = RelTypeName("Foo"), then we are certain that r:Foo.
    * If a relationship is given with multiple OR'ed types, such as ()-[:T1|T2]-(), then none of those types should be present in this map.

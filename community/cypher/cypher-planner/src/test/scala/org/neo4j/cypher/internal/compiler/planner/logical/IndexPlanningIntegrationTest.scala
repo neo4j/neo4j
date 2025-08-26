@@ -95,6 +95,65 @@ class IndexPlanningIntegrationTest
       )
       .build()
 
+  test("should consider starting in a union of unique index seeks") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("A", 200)
+        .setLabelCardinality("B", 300)
+        .setLabelCardinality("C", 250)
+        .setRelationshipCardinality("()-[:REL]->()", 2000)
+        // It is quite expensive to start in :C because only the labels on the other side will reduce the cardinality significantly
+        .setRelationshipCardinality("()-[:REL]->(:C)", 1000)
+        .setRelationshipCardinality("(:A)-[:REL]->()", 10)
+        .setRelationshipCardinality("(:A)-[:REL]->(:C)", 10)
+        .setRelationshipCardinality("(:B)-[:REL]->()", 10)
+        .setRelationshipCardinality("(:B)-[:REL]->(:C)", 10)
+        .addNodeIndex("A", Seq("id"), 0.1, 0.01, isUnique = true)
+        .addNodeIndex("B", Seq("id"), 0.1, 0.01, isUnique = true)
+        .addNodeIndex("C", Seq("id"), 0.1, 0.01, isUnique = true)
+        .build()
+
+    planner.plan(
+      """MATCH (a:A|B {id: $param})-[r:REL]->(c:C {id: $param2})
+        |RETURN r
+        |""".stripMargin
+    ).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .filter("c.id = $param2", "c:C")
+        .expandAll("(a)-[r:REL]->(c)")
+        .distinct("a AS a")
+        .union()
+        .|.nodeIndexOperator("a:B(id = ???)", paramExpr = Seq(parameter("param", CTAny)), unique = true)
+        .nodeIndexOperator("a:A(id = ???)", paramExpr = Seq(parameter("param", CTAny)), unique = true)
+        .build()
+    )
+  }
+
+  test("should be able to plan a label disjunction if one of the labels causes increase in cardinality estimates") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setLabelCardinality("A", 80)
+        .setLabelCardinality("B", 40)
+        .addNodeIndex("A", Seq("prop"), 1, 0.01)
+        .build()
+
+    planner.plan(
+      """MATCH (n:A|B)
+        |WHERE n.prop IS NOT NULL
+        |RETURN n""".stripMargin
+    ).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .distinct("n AS n")
+        .union()
+        .|.filter("cacheNFromStore[n.prop] IS NOT NULL")
+        .|.nodeByLabelScan("n", "B", IndexOrderAscending)
+        .nodeIndexOperator("n:A(prop)", getValue = _ => GetValue)
+        .build()
+    )
+  }
+
   test("should plan ranged index usage if predicate depends on simple variable from horizon") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 

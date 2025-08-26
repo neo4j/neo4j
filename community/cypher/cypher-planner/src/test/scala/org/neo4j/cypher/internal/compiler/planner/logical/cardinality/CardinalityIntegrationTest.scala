@@ -746,6 +746,23 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     }
   }
 
+  test("should estimate disjunction of unique indexes properly") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("A", 100)
+        .setLabelCardinality("B", 100)
+        .addNodeIndex("A", Seq("id"), 1, 0.01, isUnique = true)
+        .addNodeIndex("B", Seq("id"), 1, 0.01, isUnique = true)
+        .build()
+
+    queryShouldHaveCardinality(
+      planner,
+      """MATCH (a:A|B { id : $param })""",
+      1.98
+    )
+  }
+
   test("should use distance seekable predicate for cardinality estimation") {
     val labelCardinality = 50
     val propSelectivity = 0.5

@@ -92,7 +92,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   test("should use UnionNodeByLabelsScan for Label disjunction between 2 labels inside a conjunction") {
     val query = "MATCH (m)-[r]-(o) WHERE (m:A OR m:B) AND o.prop = 0 RETURN m"
 
-    val plan = plannerBuilder()
+    val planner = plannerBuilder()
       .setAllNodesCardinality(10000)
       .setAllRelationshipsCardinality(100)
       .setLabelCardinality("A", 60)
@@ -102,8 +102,11 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:B)-[]->()", 100)
       .setRelationshipCardinality("()-[]->(:B)", 100)
       .build()
-      .plan(query)
-      .stripProduceResults
+
+    val plan =
+      planner
+        .plan(query)
+        .stripProduceResults
 
     plan should equal(
       planner.subPlanBuilder()

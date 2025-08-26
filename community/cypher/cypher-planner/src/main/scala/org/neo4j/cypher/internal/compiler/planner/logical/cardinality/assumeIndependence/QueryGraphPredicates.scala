@@ -20,9 +20,15 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RichLabelInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.QueryGraphPredicates.DisjunctiveHasLabels
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.QueryGraphPredicates.PredicatesWithDisjunctiveLabelInfos
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.VariableList
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.Predicate
@@ -48,9 +54,71 @@ case class QueryGraphPredicates(
   previousLabelInfo: LabelInfo,
   uniqueRelationships: Set[LogicalVariable],
   otherPredicates: Set[Predicate]
-)
+) {
+
+  /**
+   * We obtain the labelInfo (meaning that we know that a node has a label) from the top-level hasLabel predicates.
+   * That is, if we have a:A|B, we do not include that in the label info at all.
+   *
+   * This value allows to iterate through all the different (disjunctive/ored) label infos that arise from looking at one option at a time.
+   */
+  lazy val distributeLabelDisjunctionAsLabelInfo: PredicatesWithDisjunctiveLabelInfos = {
+
+    case class DisjunctiveHasLabelPredicate(predicate: Predicate, labelInfos: Set[(LogicalVariable, LabelName)])
+
+    val disjunctiveHasLabelPredicates =
+      otherPredicates.collect {
+        // if this is dependent on only one variable, then all hasLabels refer to the same variable
+        case pred @ Predicate(SetExtractor(_), DisjunctiveHasLabels(labelInfos)) =>
+          DisjunctiveHasLabelPredicate(pred, labelInfos)
+      }
+
+    val thisWithoutOredHasLabels =
+      copy(otherPredicates = otherPredicates -- disjunctiveHasLabelPredicates.map(_.predicate))
+
+    val distributedLabelInfo =
+      disjunctiveHasLabelPredicates
+        .map(_.labelInfos)
+        .foldLeft(Set(Set.empty[(LogicalVariable, LabelName)])) {
+          case (acc, right) =>
+            for (l <- acc; r <- right) yield l + r
+        }
+    val distributedPredicatesWithLabelInfo =
+      distributedLabelInfo.map { labelInfo =>
+        thisWithoutOredHasLabels.copy(
+          localLabelInfo = thisWithoutOredHasLabels.localLabelInfo.extend(labelInfo),
+          localOnlyLabelInfo = thisWithoutOredHasLabels.localOnlyLabelInfo.extend(labelInfo),
+          allLabelInfo = thisWithoutOredHasLabels.allLabelInfo.extend(labelInfo)
+        )
+      }
+
+    PredicatesWithDisjunctiveLabelInfos(thisWithoutOredHasLabels, distributedPredicatesWithLabelInfo.toSeq)
+  }
+}
 
 object QueryGraphPredicates {
+
+  /**
+   * @param basePredicates base predicates from which the disjunction of labels was removed
+   * @param predicatesWithLabelDisjunctionsDistributed predicates that each have additional label info from distributing label info
+   */
+  case class PredicatesWithDisjunctiveLabelInfos(
+    basePredicates: QueryGraphPredicates,
+    predicatesWithLabelDisjunctionsDistributed: Seq[QueryGraphPredicates]
+  )
+
+  /**
+   * Matches on the label names in `Ors(ListSet(HasLabels(...), ..., HasLabels(...)))`.
+   */
+  object DisjunctiveHasLabels {
+
+    def unapply(arg: Ors): Option[Set[(LogicalVariable, LabelName)]] =
+      arg.exprs.foldLeft(Option(Set.empty[(LogicalVariable, LabelName)])) {
+        case (Some(previous), HasLabels(variable: LogicalVariable, Seq(labelName))) =>
+          Some(previous + (variable -> labelName))
+        case _ => None
+      }
+  }
 
   def partitionSelections(
     previousLabelInfo: LabelInfo,
@@ -77,4 +145,7 @@ object QueryGraphPredicates {
       otherPredicates = otherPredicates
     )
   }
+
+  val empty: QueryGraphPredicates =
+    QueryGraphPredicates(LabelInfo.empty, LabelInfo.empty, LabelInfo.empty, LabelInfo.empty, Set.empty, Set.empty)
 }
