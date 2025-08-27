@@ -1082,4 +1082,24 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
   }
+
+  test("should schedule nested selectOrSemiApply correctly") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.selectOrSemiApply("false").withLeveragedOrder()
+      .|.|.selectOrSemiApply("b = 4").withLeveragedOrder()
+      .|.|.|.argument()
+      .|.|.unwind("[3, 4] as b")
+      .|.|.argument()
+      .|.argument()
+      .unwind("[1, 2] as a")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    // then
+    runtimeResult should beColumns("a").withRows(singleColumn(Seq(1L, 2L)))
+  }
 }

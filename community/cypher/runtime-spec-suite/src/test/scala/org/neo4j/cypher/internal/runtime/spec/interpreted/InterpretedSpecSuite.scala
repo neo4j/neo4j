@@ -115,6 +115,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.OptionalTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedAggregationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedConditionalApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedDistinctTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OrderedSelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedTrailTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedUnionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedWalkTestBase
@@ -435,6 +436,7 @@ class InterpretedAntiConditionalApplyTest
 
 class InterpretedSelectOrSemiApplyTest
     extends SelectOrSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+    with OrderedSelectOrSemiApplyTestBase[CommunityRuntimeContext]
 
 class InterpretedSelectOrAntiSemiApplyTest
     extends SelectOrAntiSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
