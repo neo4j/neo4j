@@ -46,6 +46,7 @@ object Cardinality {
 
   val EMPTY: Cardinality = Cardinality(0)
   val SINGLE: Cardinality = Cardinality(1)
+  val INFINITY: Cardinality = Cardinality(Double.PositiveInfinity)
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
 

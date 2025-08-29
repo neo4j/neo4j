@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -1852,5 +1853,126 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
       uniqueRelationships = 1,
       repetitions = n
     ).factor
+  }
+
+  test("should be able to handle infinity cardinality") {
+    // This is grid:Q7
+    val personCount = 100000
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(personCount)
+        .setLabelCardinality("Person", personCount)
+        .addNodeIndex("Person", Seq("name"), 1.0, 1.0 / personCount)
+        .build()
+
+    val query = """MATCH (:Person { name:'n(0,0)' }),
+                  |      (:Person { name:'n(0,1)' }),
+                  |      (:Person { name:'n(0,2)' }),
+                  |      (:Person { name:'n(0,3)' }),
+                  |      (:Person { name:'n(0,4)' }),
+                  |      (:Person { name:'n(0,5)' }),
+                  |      (:Person { name:'n(0,6)' }),
+                  |      (:Person { name:'n(0,7)' }),
+                  |      (:Person { name:'n(0,8)' }),
+                  |      (:Person { name:'n(0,9)' }),
+                  |      (:Person { name:'n(0,10)' }),
+                  |      (:Person { name:'n(0,11)' }),
+                  |      (:Person { name:'n(0,12)' }),
+                  |      (:Person { name:'n(0,13)' }),
+                  |      (:Person { name:'n(0,14)' }),
+                  |      (:Person { name:'n(0,15)' }),
+                  |      (:Person { name:'n(0,16)' }),
+                  |      (:Person { name:'n(0,17)' }),
+                  |      (:Person { name:'n(0,18)' }),
+                  |      (:Person { name:'n(0,19)' }),
+                  |      (:Person { name:'n(0,20)' }),
+                  |      (:Person { name:'n(0,21)' }),
+                  |      (:Person { name:'n(0,22)' }),
+                  |      (:Person { name:'n(0,23)' }),
+                  |      (:Person { name:'n(0,24)' }),
+                  |      (:Person { name:'n(0,25)' }),
+                  |      (:Person { name:'n(0,26)' }),
+                  |      (:Person { name:'n(0,27)' }),
+                  |      (:Person { name:'n(0,28)' }),
+                  |      (:Person { name:'n(0,29)' }),
+                  |      (:Person { name:'n(0,30)' }),
+                  |      (:Person { name:'n(0,31)' }),
+                  |      (:Person { name:'n(0,32)' }),
+                  |      (:Person { name:'n(0,33)' }),
+                  |      (:Person { name:'n(0,34)' }),
+                  |      (:Person { name:'n(0,35)' }),
+                  |      (:Person { name:'n(0,36)' }),
+                  |      (:Person { name:'n(0,37)' }),
+                  |      (:Person { name:'n(0,38)' }),
+                  |      (:Person { name:'n(0,39)' }),
+                  |      (:Person { name:'n(0,40)' }),
+                  |      (:Person { name:'n(0,41)' }),
+                  |      (:Person { name:'n(0,42)' }),
+                  |      (:Person { name:'n(0,43)' }),
+                  |      (:Person { name:'n(0,44)' }),
+                  |      (:Person { name:'n(0,45)' }),
+                  |      (:Person { name:'n(0,46)' }),
+                  |      (:Person { name:'n(0,47)' }),
+                  |      (:Person { name:'n(0,48)' }),
+                  |      (:Person { name:'n(0,49)' }),
+                  |      (:Person { name:'n(0,50)' }),
+                  |      (:Person { name:'n(0,51)' }),
+                  |      (:Person { name:'n(0,52)' }),
+                  |      (:Person { name:'n(0,53)' }),
+                  |      (:Person { name:'n(0,54)' }),
+                  |      (:Person { name:'n(0,55)' }),
+                  |      (:Person { name:'n(0,56)' }),
+                  |      (:Person { name:'n(0,57)' }),
+                  |      (:Person { name:'n(0,58)' }),
+                  |      (:Person { name:'n(0,59)' }),
+                  |      (:Person { name:'n(0,60)' }),
+                  |      (:Person { name:'n(0,61)' }),
+                  |      (:Person { name:'n(0,62)' }),
+                  |      (:Person { name:'n(0,63)' }),
+                  |      (:Person { name:'n(0,64)' }),
+                  |      (:Person { name:'n(0,65)' }),
+                  |      (:Person { name:'n(0,66)' }),
+                  |      (:Person { name:'n(0,67)' }),
+                  |      (:Person { name:'n(0,68)' }),
+                  |      (:Person { name:'n(0,69)' }),
+                  |      (:Person { name:'n(0,70)' }),
+                  |      (:Person { name:'n(0,71)' }),
+                  |      (:Person { name:'n(0,72)' }),
+                  |      (:Person { name:'n(0,73)' }),
+                  |      (:Person { name:'n(0,74)' }),
+                  |      (:Person { name:'n(0,75)' }),
+                  |      (:Person { name:'n(0,76)' }),
+                  |      (:Person { name:'n(0,77)' }),
+                  |      (:Person { name:'n(0,78)' }),
+                  |      (:Person { name:'n(0,79)' }),
+                  |      (:Person { name:'n(0,80)' }),
+                  |      (:Person { name:'n(0,81)' }),
+                  |      (:Person { name:'n(0,82)' }),
+                  |      (:Person { name:'n(0,83)' }),
+                  |      (:Person { name:'n(0,84)' }),
+                  |      (:Person { name:'n(0,85)' }),
+                  |      (:Person { name:'n(0,86)' }),
+                  |      (:Person { name:'n(0,87)' }),
+                  |      (:Person { name:'n(0,88)' }),
+                  |      (:Person { name:'n(0,89)' }),
+                  |      (:Person { name:'n(0,90)' }),
+                  |      (:Person { name:'n(0,91)' }),
+                  |      (:Person { name:'n(0,92)' }),
+                  |      (:Person { name:'n(0,93)' }),
+                  |      (:Person { name:'n(0,94)' }),
+                  |      (:Person { name:'n(0,95)' }),
+                  |      (:Person { name:'n(0,96)' }),
+                  |      (:Person { name:'n(0,97)' }),
+                  |      (:Person { name:'n(0,98)' }),
+                  |      (:Person { name:'n(0,99)' })
+                  |RETURN count(*)""".stripMargin
+
+    val planState = planner.planState(query)
+    // the plan is basically a big cartesian product of index seeks
+    planState.logicalPlan.folder.treeForeach {
+      case seek: NodeIndexSeek =>
+        planState.planningAttributes.cardinalities(seek.id) shouldEqual Cardinality.SINGLE
+      case _ => ()
+    }
   }
 }

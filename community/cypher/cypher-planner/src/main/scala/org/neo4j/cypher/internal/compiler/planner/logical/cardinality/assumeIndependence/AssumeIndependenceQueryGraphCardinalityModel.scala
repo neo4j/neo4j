@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
+import org.neo4j.cypher.internal.util.Selectivity
 
 import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.chaining.scalaUtilChainingOps
@@ -134,33 +135,42 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
     context: QueryGraphCardinalityContext
   ): Cardinality =
     predicates.distributeLabelDisjunctionAsLabelInfo match {
-      case PredicatesWithDisjunctiveLabelInfos(basePredicates, Seq()) =>
-        // If no disjunctions were distributed, we can just calculate the cardinality of predicates == basePredicates
-        getBaseQueryGraphCardinalityWithInferredLabelContextPerDisjunction(queryGraph, basePredicates, context)
+      case PredicatesWithDisjunctiveLabelInfos(_, Seq(nonDistributedPredicates)) =>
+        // If no disjunctions were distributed, we can just calculate the cardinality of predicates == nonDistributedPredicates
+        getBaseQueryGraphCardinalityWithInferredLabelContextPerDisjunction(
+          queryGraph,
+          nonDistributedPredicates,
+          context
+        )
 
       case PredicatesWithDisjunctiveLabelInfos(basePredicates, distributedLabelInfos) =>
         // If some disjunctions were distributed into label infos, ...
-        val baseCardinality =
-          getBaseQueryGraphCardinalityWithInferredLabelContextPerDisjunction(queryGraph, basePredicates, context)
-
-        if (baseCardinality > Cardinality.EMPTY) {
-          val labelInfoCardinalities = distributedLabelInfos
-            // ... we calculate the cardinality for each label info separately, ...
-            .map(getBaseQueryGraphCardinalityWithInferredLabelContextPerDisjunction(queryGraph, _, context))
-          // It might happen that through a label info, we estimate a cardinality higher than the base cardinality.
-          // In that case, we should use the sum of the label info cardinalities as the base cardinality as a better approximation
-          val baseCardinalityToUse = baseCardinality max labelInfoCardinalities.reduce(_ + _)
-          val labelInfosSelectivities =
-            labelInfoCardinalities
-              // ... divide it by the cardinality of the base predicates to get the selectivity of each label info ...
-              .map(card => (card / baseCardinalityToUse).get)
-          // ... and then combine the selectivities of all label infos using the formula for selectivity of disjunctions ...
-          val labelInfosSelectivity = combiner.orTogetherSelectivities(labelInfosSelectivities).get
-          // ... to get the effective selectivity of the predicates that were removed from predicates to basePredicates
-          baseCardinalityToUse * labelInfosSelectivity
-        } else {
+        getBaseQueryGraphCardinalityWithInferredLabelContextPerDisjunction(queryGraph, basePredicates, context) match {
           // If the base predicates have no cardinality, we can just return it
-          baseCardinality
+          case Cardinality.EMPTY =>
+            Cardinality.EMPTY
+          case baseCardinality =>
+            val labelInfoCardinalities = distributedLabelInfos
+              // ... we calculate the cardinality for each label info separately, ...
+              .map(getBaseQueryGraphCardinalityWithInferredLabelContextPerDisjunction(queryGraph, _, context))
+
+            if (labelInfoCardinalities.contains(Cardinality.INFINITY)) {
+              // If any of the disjunctive label already causes an overflow in cardinality, the disjunction will only be greater
+              Cardinality.INFINITY
+            } else {
+              // It might happen that through a label info, we estimate a cardinality higher than the base cardinality.
+              // In that case, we should use the sum of the label info cardinalities as the base cardinality as a better approximation
+              val baseCardinalityToUse = baseCardinality max labelInfoCardinalities.reduce(_ + _)
+              val labelInfosSelectivities =
+                labelInfoCardinalities
+                  // ... divide it by the cardinality of the base predicates to get the selectivity of each label info ...
+                  .map(card => (card / baseCardinalityToUse).getOrElse(Selectivity.ONE))
+              // ... and then combine the selectivities of all label infos using the formula for selectivity of disjunctions ...
+              val labelInfosSelectivity =
+                combiner.orTogetherSelectivities(labelInfosSelectivities).getOrElse(Selectivity.ONE)
+              // ... to get the effective selectivity of the predicates that were removed from predicates to basePredicates
+              baseCardinalityToUse * labelInfosSelectivity
+            }
         }
     }
 

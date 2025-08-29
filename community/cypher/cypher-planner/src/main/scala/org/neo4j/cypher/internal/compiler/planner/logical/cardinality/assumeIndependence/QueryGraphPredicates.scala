@@ -73,7 +73,7 @@ case class QueryGraphPredicates(
           DisjunctiveHasLabelPredicate(pred, labelInfos)
       }
 
-    val thisWithoutOredHasLabels =
+    val thisWithoutDisjunctiveHasLabels =
       copy(otherPredicates = otherPredicates -- disjunctiveHasLabelPredicates.map(_.predicate))
 
     val distributedLabelInfo =
@@ -85,14 +85,14 @@ case class QueryGraphPredicates(
         }
     val distributedPredicatesWithLabelInfo =
       distributedLabelInfo.map { labelInfo =>
-        thisWithoutOredHasLabels.copy(
-          localLabelInfo = thisWithoutOredHasLabels.localLabelInfo.extend(labelInfo),
-          localOnlyLabelInfo = thisWithoutOredHasLabels.localOnlyLabelInfo.extend(labelInfo),
-          allLabelInfo = thisWithoutOredHasLabels.allLabelInfo.extend(labelInfo)
+        thisWithoutDisjunctiveHasLabels.copy(
+          localLabelInfo = thisWithoutDisjunctiveHasLabels.localLabelInfo.extend(labelInfo),
+          localOnlyLabelInfo = thisWithoutDisjunctiveHasLabels.localOnlyLabelInfo.extend(labelInfo),
+          allLabelInfo = thisWithoutDisjunctiveHasLabels.allLabelInfo.extend(labelInfo)
         )
       }
 
-    PredicatesWithDisjunctiveLabelInfos(thisWithoutOredHasLabels, distributedPredicatesWithLabelInfo.toSeq)
+    PredicatesWithDisjunctiveLabelInfos(thisWithoutDisjunctiveHasLabels, distributedPredicatesWithLabelInfo.toSeq)
   }
 }
 
