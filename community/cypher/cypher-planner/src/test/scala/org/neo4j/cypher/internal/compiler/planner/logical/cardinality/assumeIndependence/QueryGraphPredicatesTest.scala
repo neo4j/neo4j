@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.QueryGraphPredicates.PredicatesWithDisjunctiveLabelInfos
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -106,5 +107,18 @@ class QueryGraphPredicatesTest extends CypherFunSuite with AstConstructionTestSu
         )
       )
     )
+  }
+
+  test("should not distribute overly large disjunctions") {
+    val predicates = {
+      val labelPredicates =
+        for (i <- 0 to QueryGraphPredicates.DISTRIBUTE_LABEL_DISJUNCTION_LIMIT)
+          yield hasLabels("n", s"A_$i")
+
+      Set(Predicate(Set(v"n"), ors(labelPredicates: _*)))
+    }
+
+    val qgp = QueryGraphPredicates.empty.copy(otherPredicates = predicates)
+    qgp.distributeLabelDisjunctionAsLabelInfo shouldEqual PredicatesWithDisjunctiveLabelInfos(qgp, Seq(qgp))
   }
 }

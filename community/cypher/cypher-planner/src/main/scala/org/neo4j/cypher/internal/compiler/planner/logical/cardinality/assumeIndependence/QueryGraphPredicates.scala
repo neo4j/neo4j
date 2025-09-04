@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RichLabelInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.QueryGraphPredicates.DISTRIBUTE_LABEL_DISJUNCTION_LIMIT
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.QueryGraphPredicates.DisjunctiveHasLabels
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.QueryGraphPredicates.PredicatesWithDisjunctiveLabelInfos
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.VariableList
@@ -90,9 +91,12 @@ case class QueryGraphPredicates(
           localOnlyLabelInfo = thisWithoutDisjunctiveHasLabels.localOnlyLabelInfo.extend(labelInfo),
           allLabelInfo = thisWithoutDisjunctiveHasLabels.allLabelInfo.extend(labelInfo)
         )
-      }
+      }.toSeq
 
-    PredicatesWithDisjunctiveLabelInfos(thisWithoutDisjunctiveHasLabels, distributedPredicatesWithLabelInfo.toSeq)
+    if (distributedPredicatesWithLabelInfo.size > DISTRIBUTE_LABEL_DISJUNCTION_LIMIT)
+      PredicatesWithDisjunctiveLabelInfos(this, Seq(this))
+    else
+      PredicatesWithDisjunctiveLabelInfos(thisWithoutDisjunctiveHasLabels, distributedPredicatesWithLabelInfo)
   }
 }
 
@@ -148,4 +152,6 @@ object QueryGraphPredicates {
 
   val empty: QueryGraphPredicates =
     QueryGraphPredicates(LabelInfo.empty, LabelInfo.empty, LabelInfo.empty, LabelInfo.empty, Set.empty, Set.empty)
+
+  val DISTRIBUTE_LABEL_DISJUNCTION_LIMIT = 8 // arbitrary chosen limit
 }
