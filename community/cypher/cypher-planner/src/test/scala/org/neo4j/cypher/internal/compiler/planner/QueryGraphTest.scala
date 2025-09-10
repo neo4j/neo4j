@@ -26,9 +26,13 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.QueryGraph.PredicatesByDependencies
+import org.neo4j.cypher.internal.ir.QueryGraph.PredicatesAndLegacyShortestByDependencies
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryGraphTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -90,6 +94,20 @@ class QueryGraphTest extends CypherFunSuite with AstConstructionTestSupport {
 
     def pred(deps: LogicalVariable*): Predicate = Predicate(deps.toSet, trueLiteral)
 
+    def sp(start: LogicalVariable, end: LogicalVariable): ShortestRelationshipPattern = {
+      ShortestRelationshipPattern(
+        None,
+        PatternRelationship(
+          varFor(start.name + end.name),
+          (start, end),
+          SemanticDirection.OUTGOING,
+          Seq.empty,
+          VarPatternLength(1, Some(5))
+        ),
+        true
+      )(null)
+    }
+
     val predicates = Set(
       pred(),
       pred(v"arg1"),
@@ -101,23 +119,45 @@ class QueryGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       pred(v"arg1", v"arg2", v"arg3", v"x", v"y", v"z")
     )
 
+    val shortestRels = Set(
+      sp(v"x", v"y"),
+      sp(v"x", v"arg1"),
+      sp(v"arg2", v"y"),
+      sp(v"arg1", v"arg2"),
+      sp(v"arg2", v"arg3")
+    )
+
     val qg = QueryGraph.empty
       .addArgumentIds(Seq(v"arg1", v"arg2", v"arg3"))
       .addPredicates(predicates)
+      .addShortestRelationships(shortestRels)
 
-    qg.predicatesPartitionedByDependencyOnNonArgumentIds shouldEqual
-      PredicatesByDependencies(
-        dependOnArgumentsOnly = Set(
-          pred(),
-          pred(v"arg1"),
-          pred(v"arg2"),
-          pred(v"arg1", v"arg3")
+    qg.predicatesAndLegacyShortestPartitionedByDependencyOnNonArgumentIds shouldEqual
+      PredicatesAndLegacyShortestByDependencies(
+        dependOnArgumentsOnly = PredicatesAndLegacyShortestByDependencies.Bucket(
+          predicates = Set(
+            pred(),
+            pred(v"arg1"),
+            pred(v"arg2"),
+            pred(v"arg1", v"arg3")
+          ),
+          shortestRelationshipPatterns = Set(
+            sp(v"arg1", v"arg2"),
+            sp(v"arg2", v"arg3")
+          )
         ),
-        hasNonArgumentDependencies = Set(
-          pred(v"arg3", v"x"),
-          pred(v"y"),
-          pred(v"x", v"z"),
-          pred(v"arg1", v"arg2", v"arg3", v"x", v"y", v"z")
+        hasNonArgumentDependencies = PredicatesAndLegacyShortestByDependencies.Bucket(
+          predicates = Set(
+            pred(v"arg3", v"x"),
+            pred(v"y"),
+            pred(v"x", v"z"),
+            pred(v"arg1", v"arg2", v"arg3", v"x", v"y", v"z")
+          ),
+          shortestRelationshipPatterns = Set(
+            sp(v"x", v"y"),
+            sp(v"x", v"arg1"),
+            sp(v"arg2", v"y")
+          )
         )
       )
   }

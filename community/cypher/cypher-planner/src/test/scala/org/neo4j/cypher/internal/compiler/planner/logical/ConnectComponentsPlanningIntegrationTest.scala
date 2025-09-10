@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
@@ -28,12 +29,14 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -1634,6 +1637,124 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.nodeIndexOperator("b:B(prop = 2)", _ => GetValue)
       .cacheProperties("cacheNFromStore[a.otherProp]")
       .nodeIndexOperator("a:A(id = 1)", _ => GetValue, unique = true)
+      .build()
+  }
+
+  test("should not solve COUNT {} predicate without dependencies multiple times") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 50)
+      .build()
+
+    val q =
+      """
+        |MATCH (x)
+        |SKIP 0 // make x an argument
+        |MATCH (n), (a:A), (b:B) // three components
+        |WHERE
+        |  n <> x AND // first component depends on argument
+        |  COUNT { return 1 } > $param AND // predicate has no dependencies, will be solved in the first component
+        |  a.prop > b.prop // predicate depends on two components, forces planner to connect components using IDP
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(q)
+
+    // COUNT {} should be planned only once.
+    // Solving it from multiple components would introduce the same variable on both sides of CartesianProduct,
+    // which is not allowed.
+    val aggregations = plan.folder.findAllByClass[Aggregation]
+    aggregations.size shouldEqual 1
+  }
+
+  test("should not solve shortest {} predicate without dependencies multiple times") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 50)
+      .build()
+
+    val q =
+      """
+        |MATCH (x), (y)
+        |SKIP 0 // make x and y arguments
+        |MATCH p=shortestPath((x)-[r*]->(y)), (a:A), (b:B) // three components
+        |WHERE a.prop > b.prop // predicate depends on two components, forces planner to connect components using IDP
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(q)
+
+    // shortestPath() should be planned only once.
+    // Solving it from multiple components would introduce the same variable on both sides of CartesianProduct,
+    // which is not allowed.
+    val fsps = plan.folder.findAllByClass[FindShortestPaths]
+    fsps.size shouldEqual 1
+  }
+
+  test("should put shortestPath() with argument-only dependencies and related predicate into the same component") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100000)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("A", 2048)
+      .setExecutionModel(ExecutionModel.Batched.default) // to avoid ties in cartesian product cost
+      .build()
+
+    val q =
+      """
+        |MATCH (x:A), (y)
+        |SKIP 0
+        |MATCH p=shortestPath((x)-[rs*]->(y)), (a)
+        |WHERE all(r IN rs WHERE r.prop IS NOT NULL)
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .apply()
+      .|.cartesianProduct()
+      .|.|.allNodeScan("a", "x", "y")
+      .|.shortestPath(
+        "(x)-[rs*1..]->(y)",
+        pathName = Some("p"),
+        relationshipPredicates = Seq(Predicate("r", "r.prop IS NOT NULL"))
+      )
+      .|.argument("x", "y")
+      .skip(0)
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .nodeByLabelScan("x", "A")
+      .build()
+  }
+
+  test(
+    "should not plan shortestPath() on top of cartesian product when shortestPath depends on argument and component-local symbol"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100000)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("A", 2048)
+      .setExecutionModel(ExecutionModel.Batched.default) // to avoid ties in cartesian product cost
+      .build()
+
+    val q =
+      """
+        |MATCH (x)
+        |SKIP 0
+        |MATCH p=shortestPath((x)-[r*]->(y)), (a:A)
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .apply()
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("a", "A", "x")
+      .|.shortestPath("(x)-[r*1..]->(y)", pathName = Some("p"))
+      .|.allNodeScan("y", "x")
+      .skip(0)
+      .allNodeScan("x")
       .build()
   }
 }

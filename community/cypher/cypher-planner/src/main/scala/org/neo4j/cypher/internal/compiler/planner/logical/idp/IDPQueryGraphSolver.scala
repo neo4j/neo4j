@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestRelationships
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
@@ -150,13 +151,18 @@ case class IDPQueryGraphSolver(
     initialPlan: LogicalPlan,
     qg: QueryGraph,
     context: LogicalPlanningContext
-  ): LogicalPlan =
+  ): LogicalPlan = {
+    val initialSolved = context.staticComponents.planningAttributes.solveds.get(initialPlan.id).asSinglePlannerQuery
+    def alreadySolved(sp: ShortestRelationshipPattern): Boolean =
+      initialSolved.exists(_.queryGraph.shortestRelationshipPatterns.contains(sp))
+
     qg.shortestRelationshipPatterns.foldLeft(kit.select(initialPlan, qg)) {
-      case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
+      case (plan, sp) if !alreadySolved(sp) && sp.isFindableFrom(plan.availableSymbols) =>
         val shortestPath = planShortestRelationships(plan, qg, sp, context)
         kit.select(shortestPath, qg)
       case (plan, _) => plan
     }
+  }
 
   private def planComponents(
     components: Seq[QueryGraph],

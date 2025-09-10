@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
-import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -2787,33 +2786,5 @@ class SubqueryCallPlanningIntegrationTest
         .|.argument("r")
         .allRelationshipsScan("(x)-[r]->(y)")
         .build()
-  }
-
-  test("should not solve COUNT {} predicate without dependencies multiple times") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setLabelCardinality("A", 100)
-      .setLabelCardinality("B", 50)
-      .build()
-
-    val q =
-      """
-        |MATCH (x)
-        |SKIP 0 // make x an argument
-        |MATCH (n), (a:A), (b:B) // three components
-        |WHERE
-        |  n <> x AND // first component depends on argument
-        |  COUNT { return 1 } > $param AND // predicate has no dependencies, will be solved in the first component
-        |  a.prop > b.prop // predicate depends on two components, forces planner to connect components using IDP
-        |RETURN *
-        |""".stripMargin
-
-    val plan = planner.plan(q)
-
-    // COUNT {} should be planned only once.
-    // Solving it from multiple components would introduce the same variable on both sides of CartesianProduct,
-    // which is not allowed.
-    val aggregations = plan.folder.findAllByClass[Aggregation]
-    aggregations.size shouldEqual 1
   }
 }
