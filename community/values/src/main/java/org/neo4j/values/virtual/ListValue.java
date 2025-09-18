@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.RandomAccess;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -308,7 +309,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public IterationPreference iterationPreference() {
-            if (values instanceof ArrayList<?>) {
+            if (values instanceof RandomAccess) {
                 return RANDOM_ACCESS;
             } else {
                 return ITERATION;

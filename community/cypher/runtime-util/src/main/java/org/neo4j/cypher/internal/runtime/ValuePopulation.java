@@ -26,8 +26,10 @@ import static org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import org.eclipse.collections.api.set.primitive.IntSet;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -98,16 +100,11 @@ public final class ValuePopulation {
             return populate(path, dbAccess, nodeCursor, relCursor, propertyCursor);
         } else if (value instanceof ListValue list && needsPopulation(list)) {
             return populate(list, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker);
-        } else if (value instanceof MapValue map) {
+        } else if (value instanceof MapValue map && needsPopulation(map)) {
             return populate(map, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker);
         } else {
             return value;
         }
-    }
-
-    private static boolean needsPopulation(final ListValue list) {
-        final var itemType = list.itemValueRepresentation();
-        return itemType == ValueRepresentation.UNKNOWN || itemType == ValueRepresentation.ANYTHING;
     }
 
     public static NodeValue populate(
@@ -202,7 +199,17 @@ public final class ValuePopulation {
             RelationshipScanCursor relCursor,
             PropertyCursor propertyCursor,
             MemoryTracker memoryTracker) {
-        final var builder = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker);
+        final HeapTrackingListValueBuilder builder;
+        // NOTE: We assume size() is cheap with iteration preference random access
+        if (value.iterationPreference() == ListValue.IterationPreference.RANDOM_ACCESS) {
+            long size = value.actualSize();
+            if (size > ArrayUtil.MAX_ARRAY_SIZE) {
+                throw InvalidArgumentException.listTooLarge(size, ArrayUtil.MAX_ARRAY_SIZE);
+            }
+            builder = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker, (int) size);
+        } else {
+            builder = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker);
+        }
         for (AnyValue v : value) {
             builder.add(populate(v, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker));
         }
@@ -335,5 +342,48 @@ public final class ValuePopulation {
             builder.add(dbAccess.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue());
         }
         return builder.build();
+    }
+
+    /**
+     * Checks if the specified value (or any nested value) contains nodes or relationships that need population.
+     */
+    public static boolean needsPopulation(AnyValue value) {
+        assert value != null : "value should not be null";
+        if (value instanceof VirtualNodeValue node) {
+            return true;
+        } else if (value instanceof VirtualRelationshipValue relationship) {
+            return true;
+        } else if (value instanceof VirtualPathValue path) {
+            return true;
+        } else if (value instanceof ListValue list && needsPopulation(list)) {
+            return needsPopulation(list);
+        } else if (value instanceof MapValue map) {
+            return needsPopulation(map);
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean needsPopulation(final ListValue list) {
+        final var itemType = list.itemValueRepresentation();
+        if (itemType == ValueRepresentation.UNKNOWN || itemType == ValueRepresentation.ANYTHING) {
+            for (AnyValue v : list) {
+                if (needsPopulation(v)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean needsPopulation(final MapValue value) {
+        final boolean[] result = new boolean[1];
+        // Unfortunately MapValue currently does not have an iterator or a foreach that can break out of the loop
+        value.foreach((key, anyValue) -> {
+            if (needsPopulation(anyValue)) {
+                result[0] = true;
+            }
+        });
+        return result[0];
     }
 }

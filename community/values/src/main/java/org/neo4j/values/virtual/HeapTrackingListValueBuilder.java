@@ -46,7 +46,12 @@ public class HeapTrackingListValueBuilder implements AutoCloseable {
      * @return a new heap tracking builder
      */
     public static HeapTrackingListValueBuilder newHeapTrackingListBuilder(MemoryTracker memoryTracker) {
-        return new HeapTrackingListValueBuilder(memoryTracker);
+        return new HeapTrackingListValueBuilder(memoryTracker, 16);
+    }
+
+    public static HeapTrackingListValueBuilder newHeapTrackingListBuilder(
+            MemoryTracker memoryTracker, int initialCapacity) {
+        return new HeapTrackingListValueBuilder(memoryTracker, initialCapacity);
     }
 
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingListValueBuilder.class);
@@ -71,12 +76,12 @@ public class HeapTrackingListValueBuilder implements AutoCloseable {
      */
     private long unAllocatedHeapSize;
 
-    HeapTrackingListValueBuilder(MemoryTracker memoryTracker) {
+    HeapTrackingListValueBuilder(MemoryTracker memoryTracker, int initialCapacity) {
         // To be in control of the heap usage of both the added values and the internal array list holding them,
         // we use a scoped memory tracker
         scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap(SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
-        values = HeapTrackingArrayList.newArrayList(16, scopedMemoryTracker);
+        values = HeapTrackingArrayList.newArrayList(initialCapacity, scopedMemoryTracker);
         representation = ValueRepresentation.ANYTHING;
         // NOTE: This _may_ create a unique estimator cache instance for this builder.
         // If the memory tracker is configured with scoped heap estimator cache enabled,
