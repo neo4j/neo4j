@@ -102,7 +102,8 @@ case class ShortestPathPipe(
                       returnOneShortestPathOnly,
                       allowZeroLength,
                       needOnlyOnePath,
-                      traversalMode == Walk
+                      traversalMode == Walk,
+                      null
                     )
 
                     val shortestPaths = bfs.shortestPathIterator()

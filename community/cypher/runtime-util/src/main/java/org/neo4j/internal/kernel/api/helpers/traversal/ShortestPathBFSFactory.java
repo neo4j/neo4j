@@ -50,8 +50,12 @@ public class ShortestPathBFSFactory {
             boolean stopAsapAtIntersect,
             boolean allowZeroLength,
             boolean needOnlyOnePath,
-            boolean walkTraversalMode) {
+            boolean walkTraversalMode,
+            ShortestPathBFS oldBfs) {
         if (sourceNodeId == targetNodeId && direction == Direction.BOTH) {
+            if (oldBfs != null) {
+                oldBfs.close();
+            }
             if (allowZeroLength) {
                 return new ZeroLengthShortestCursor(sourceNodeId);
             } else if (walkTraversalMode && needOnlyOnePath) {
@@ -100,6 +104,10 @@ public class ShortestPathBFSFactory {
                         memoryTracker);
             }
         } else {
+            if (oldBfs != null && oldBfs instanceof BiDirectionalBFS bfs) {
+                bfs.resetForNewRow(sourceNodeId, targetNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
+                return bfs;
+            }
             return BiDirectionalBFS.newEmptyBiDirectionalBFS(
                     sourceNodeId,
                     targetNodeId,

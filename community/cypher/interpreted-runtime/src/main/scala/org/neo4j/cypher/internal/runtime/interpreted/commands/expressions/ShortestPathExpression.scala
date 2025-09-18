@@ -95,7 +95,8 @@ case class ShortestPathExpression(
       shortestPathPattern.single,
       shortestPathPattern.allowZeroLength,
       shortestPathPattern.single,
-      false
+      false,
+      null
     )
     val shortestPathIterator = bfs.shortestPathIterator()
 

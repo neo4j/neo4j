@@ -1140,7 +1140,26 @@ object IntermediateRepresentation {
       )
     )
 
-  def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11, IN12, IN13, IN14, IN15](name: String)(
+  def method[
+    OWNER,
+    OUT,
+    IN1,
+    IN2,
+    IN3,
+    IN4,
+    IN5,
+    IN6,
+    IN7,
+    IN8,
+    IN9,
+    IN10,
+    IN11,
+    IN12,
+    IN13,
+    IN14,
+    IN15,
+    IN16
+  ](name: String)(
     implicit owner: Manifest[OWNER],
     out: Manifest[OUT],
     in1: Manifest[IN1],
@@ -1157,7 +1176,8 @@ object IntermediateRepresentation {
     in12: Manifest[IN12],
     in13: Manifest[IN13],
     in14: Manifest[IN14],
-    in15: Manifest[IN15]
+    in15: Manifest[IN15],
+    in16: Manifest[IN16]
   ): Method =
     Method(
       typeRef(owner),
@@ -1178,7 +1198,8 @@ object IntermediateRepresentation {
         typeRef(in12),
         typeRef(in13),
         typeRef(in14),
-        typeRef(in15)
+        typeRef(in15),
+        typeRef(in16)
       )
     )
 

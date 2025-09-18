@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.internal.kernel.api.helpers.traversal.ShortestPathBFS
 import org.neo4j.internal.kernel.api.helpers.traversal.ShortestPathBFSFactory
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.virtual.VirtualValues
@@ -79,6 +80,8 @@ case class ShortestPathSlottedPipe(
     val traversalCursor = state.query.traversalCursor()
     state.query.resources.trace(traversalCursor)
 
+    var bfs: ShortestPathBFS = null
+
     val pathPredicate = pathPredicates.foldLeft(True(): commands.predicates.Predicate)(_.andWith(_))
     val output = input.flatMap {
       row =>
@@ -94,7 +97,7 @@ case class ShortestPathSlottedPipe(
             if (sameNodeMode.shouldReturnEmptyResult(sourceNode, targetNode, allowZeroLength)) {
               ClosingIterator.empty
             } else {
-              val bfs = ShortestPathBFSFactory.create(
+              bfs = ShortestPathBFSFactory.create(
                 sourceNode,
                 targetNode,
                 types.types(state.query),
@@ -109,7 +112,8 @@ case class ShortestPathSlottedPipe(
                 returnOneShortestPathOnly,
                 allowZeroLength,
                 needOnlyOnePath,
-                traversalMode == Walk
+                traversalMode == Walk,
+                bfs
               )
 
               ClosingIterator.asClosingIterator {
@@ -129,13 +133,17 @@ case class ShortestPathSlottedPipe(
                 } else {
                   shortestPaths
                 }
-              }.closing(bfs)
+              }
             }
           } else {
             ClosingIterator.empty
           }
         }
     }
-    output.closing(traversalCursor).closing(nodeCursor)
+    if (bfs == null) {
+      output.closing(traversalCursor).closing(nodeCursor)
+    } else {
+      output.closing(traversalCursor).closing(nodeCursor).closing(bfs)
+    }
   }
 }

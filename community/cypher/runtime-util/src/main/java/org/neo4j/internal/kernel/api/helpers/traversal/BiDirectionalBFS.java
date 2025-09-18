@@ -256,6 +256,22 @@ public class BiDirectionalBFS implements ShortestPathBFS {
         return new BiDirectionalBFS(bfs);
     }
 
+    /**
+     * Reset the BiDirectionalBFS in preparation of computing the shortest path(s) between
+     * a new source and target node pair. Compared to creating a new BiDirectionalBFS object,
+     * doing this has the advantage of not needing us to reinitialize all the data structures
+     * we keep on the heap.
+     */
+    public void resetForNewRow(
+            long sourceNodeId,
+            long targetNodeId,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor relCursor,
+            LongPredicate nodeFilter,
+            Predicate<RelationshipTraversalEntities> relFilter) {
+        inner.resetForNewRow(sourceNodeId, targetNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
+    }
+
     public Iterator<PathReference> shortestPathIterator() {
         return inner.shortestPathIterator();
     }

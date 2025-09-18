@@ -136,6 +136,25 @@ abstract class BiDirectionalBFSImpl<STEPS> implements ShortestPathBFS {
             LongPredicate nodeFilter,
             Predicate<RelationshipTraversalEntities> relFilter);
 
+    /**
+     * Reset the BiDirectionalBFS in preparation of computing the shortest path(s) between
+     * a new source and target node pair. Compared to creating a new BiDirectionalBFS object,
+     * doing this has the advantage of not needing us to reinitialize all the data structures
+     * we keep on the heap.
+     */
+    void resetForNewRow(
+            long sourceNodeId,
+            long targetNodeId,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor relCursor,
+            LongPredicate nodeFilter,
+            Predicate<RelationshipTraversalEntities> relFilter) {
+        sourceBFS.resetWithStartNode(sourceNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
+        targetBFS.resetWithStartNode(
+                targetNodeId, nodeCursor, relCursor, nodeFilter, new ReversedRelTraversalEntitiesPredicate(relFilter));
+        algorithmState = State.CAN_SEARCH_FOR_INTERSECTION;
+    }
+
     abstract Iterator<PathReference> pathTracingIterator(LongIterator iterator);
 
     /**
