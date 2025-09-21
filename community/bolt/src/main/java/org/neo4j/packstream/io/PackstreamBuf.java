@@ -1007,7 +1007,6 @@ public final class PackstreamBuf implements ReferenceCounted {
             throw new NullPointerException("payload cannot be null");
         }
 
-        var heap = payload.getBytes(STRING_CHARSET);
         return this.writeString(payload.getBytes(STRING_CHARSET));
     }
 
