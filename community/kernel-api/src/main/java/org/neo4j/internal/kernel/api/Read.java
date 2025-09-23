@@ -521,13 +521,15 @@ public interface Read {
     /**
      * @param relationshipReference the owner of the properties.
      * @param startNodeReference    start node of the owner of the properties
+     * @param type                  the type of the relationship
      * @param reference             a reference from {@link RelationshipDataAccessor#propertiesReference()}.
-     * @param selection
-     * @param cursor
+     * @param selection             the filter to restrict which properties to read
+     * @param cursor                the cursor used to read the properties
      */
     void relationshipProperties(
             long relationshipReference,
             long startNodeReference,
+            int type,
             Reference reference,
             PropertySelection selection,
             PropertyCursor cursor);

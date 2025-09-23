@@ -435,6 +435,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
             read.relationshipProperties(
                     currentRelationship.id,
                     currentRelationship.from,
+                    currentRelationship.type,
                     currentRelationship.properties,
                     selection,
                     cursor);

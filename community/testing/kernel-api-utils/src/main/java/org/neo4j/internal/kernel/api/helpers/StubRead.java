@@ -304,6 +304,7 @@ public class StubRead implements Read {
     public void relationshipProperties(
             long nodeReference,
             long startNodeReference,
+            int type,
             Reference reference,
             PropertySelection selection,
             PropertyCursor cursor) {

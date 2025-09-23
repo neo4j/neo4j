@@ -313,6 +313,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             read.relationshipProperties(
                     relationship.relationshipReference(),
                     relationship.sourceNodeReference(),
+                    relationship.type(),
                     relationship.propertiesReference(),
                     ALL_PROPERTIES,
                     props);
@@ -525,6 +526,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             read.relationshipProperties(
                     relationship.relationshipReference(),
                     relationship.sourceNodeReference(),
+                    relationship.type(),
                     relationship.propertiesReference(),
                     ALL_PROPERTIES,
                     props);
