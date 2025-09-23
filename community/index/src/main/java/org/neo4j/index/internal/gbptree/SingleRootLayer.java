@@ -202,6 +202,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
         @Override
         public Seeker<KEY, VALUE> seek(Seeker<KEY, VALUE> seeker, KEY fromInclusive, KEY toExclusive)
                 throws IOException {
+            layout.assertValidSeekKeys(fromInclusive, toExclusive);
             return support.initializeSeeker(
                     seeker,
                     SingleRootLayer.this,

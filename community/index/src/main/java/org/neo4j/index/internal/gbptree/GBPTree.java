@@ -158,6 +158,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
 
     @Override
     public Seeker<KEY, VALUE> seek(Seeker<KEY, VALUE> seeker, KEY fromInclusive, KEY toExclusive) throws IOException {
+        layout.assertValidSeekKeys(fromInclusive, toExclusive);
         return access.seek(seeker, fromInclusive, toExclusive);
     }
 

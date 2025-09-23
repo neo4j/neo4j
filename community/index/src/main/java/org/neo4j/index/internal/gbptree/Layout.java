@@ -63,6 +63,11 @@ public interface Layout<KEY, VALUE> extends KeyLayout<KEY> {
     void readValue(PageCursor cursor, VALUE into, int valueSize);
 
     /**
+     * Asserts that the given keys are valid arguments to {@link Seeker.Factory#seek(Seeker, Object, Object)} as `fromInclusive` and `toExclusive`.
+     */
+    default void assertValidSeekKeys(KEY from, KEY to) {}
+
+    /**
      * Utility method for generating an {@link #identifier()}. Generates an 8-byte identifier from a short name
      * plus a 4-byte identifier.
      *

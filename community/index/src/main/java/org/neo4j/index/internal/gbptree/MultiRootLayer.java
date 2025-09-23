@@ -579,6 +579,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         @Override
         public Seeker<DATA_KEY, DATA_VALUE> seek(
                 Seeker<DATA_KEY, DATA_VALUE> seeker, DATA_KEY fromInclusive, DATA_KEY toExclusive) throws IOException {
+            dataLayout.assertValidSeekKeys(fromInclusive, toExclusive);
             return support.initializeSeeker(
                     seeker,
                     rootMappingInteraction,

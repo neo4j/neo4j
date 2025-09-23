@@ -354,9 +354,17 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             CursorContext cursorContext)
             throws IOException, IndexEntryConflictException {
         while (allConflictingKeys.next() && !cancellation.cancelled()) {
-            KEY key = allConflictingKeys.key();
-            key.setCompareId(false);
-            try (var seeker = tree.seek(key, key, cursorContext)) {
+            // An "exact" seek, while ignoring entity IDs has to be done like this,
+            // i.e. a small range seek, with the same value, but with entity ID from
+            // Long.MIN to Long.MAX.
+            // The reason is that setCompareId(false) is not allowed for seeks,
+            // as it would not be guaranteed to find all entries.
+            KEY from = allConflictingKeys.key();
+            from.initialize(Long.MIN_VALUE);
+            KEY to = layout.copyKey(from);
+            to.initialize(Long.MAX_VALUE);
+
+            try (var seeker = tree.seek(from, to, cursorContext)) {
                 verifyUniqueSeek(seeker, conflictHandler, cursorContext);
             }
         }
@@ -367,11 +375,12 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             throws IOException, IndexEntryConflictException {
         if (seek != null) {
             if (seek.next()) {
-                KEY key = seek.key();
-                long firstEntityId = key.getEntityId();
+                KEY firstKey = seek.key();
+                long firstEntityId = firstKey.getEntityId();
                 while (seek.next()) {
-                    long otherEntityId = key.getEntityId();
-                    var values = key.asValues();
+                    KEY otherKey = seek.key();
+                    long otherEntityId = otherKey.getEntityId();
+                    var values = otherKey.asValues();
                     switch (conflictHandler.indexEntryConflict(firstEntityId, otherEntityId, values)) {
                         case THROW -> throw new IndexEntryConflictException(
                                 descriptor.schema(), firstEntityId, otherEntityId, values);

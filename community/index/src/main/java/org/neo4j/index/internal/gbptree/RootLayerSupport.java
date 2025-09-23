@@ -420,6 +420,7 @@ class RootLayerSupport {
 
                 @Override
                 public Seeker<K, V> seek(Seeker<K, V> seeker, K fromInclusive, K toExclusive) throws IOException {
+                    layout.assertValidSeekKeys(fromInclusive, toExclusive);
                     return initializeSeeker(seeker, rootSupplier, fromInclusive, toExclusive, 1, LEAF_LEVEL, monitor);
                 }
 

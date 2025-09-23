@@ -23,6 +23,10 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
 abstract class IndexLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapter<KEY, NullValue> {
+
+    static final String INVALID_COMPARE_ID_IN_SEEK =
+            "Used a key with `compareId=false` in a seek. That is not allowed. Instead, set the entity ID of the lower key to Long.MIN_VALUE and the entity ID of the upper key to Long.MA_VALUE";
+
     // allows more control of the identifier, needed for legacy reasons for the two number layouts
     IndexLayout(boolean fixedSize, long identifier, int majorVersion, int minorVersion) {
         super(fixedSize, identifier, majorVersion, minorVersion);
@@ -50,6 +54,13 @@ abstract class IndexLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapt
     @Override
     public void readValue(PageCursor cursor, NullValue into, int valueSize) {
         // nothing to read
+    }
+
+    @Override
+    public void assertValidSeekKeys(KEY from, KEY to) {
+        // Keys must never have `compareId=false` for seeks. That is only allowed for merge and put.
+        assert from.getCompareId() : INVALID_COMPARE_ID_IN_SEEK;
+        assert to.getCompareId() : INVALID_COMPARE_ID_IN_SEEK;
     }
 
     @Override

@@ -43,8 +43,10 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
      * Marks that comparisons with this key requires also comparing entityId, this allows functionality
      * of inclusive/exclusive bounds of range queries.
      * This is because {@link GBPTree} only support from inclusive and to exclusive.
-     * <p>
+     * <p/>
      * Note that {@code compareId} is only an in memory state.
+     * <p/>
+     * Setting this to {@code false} is only allowed for merge and put operations on the tree. Not for seeks.
      */
     void setCompareId(boolean compareId) {
         this.compareId = compareId;
