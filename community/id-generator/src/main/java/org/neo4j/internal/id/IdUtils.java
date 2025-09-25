@@ -19,20 +19,23 @@
  */
 package org.neo4j.internal.id;
 
-public class IdUtils {
-    // [usss,ssss][siii,iiii][iiii,iiii][iiii,iiii] [iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii]
-    private static final long MASK_USED = 0x80000000_00000000L;
+public final class IdUtils {
+    // [0iii,iiii][iiii,iiii][iiii,iiii][iiii,iiii] [iiii,iiii][iiii,iiii][iiii,iiiu][nnnn,nnnn]
+    private static final long MASK_USED = 0x100L;
     private static final int NUM_BITS_NUMBER_OF_IDS = 8;
-    private static final int SHIFT_NUMBER_OF_IDS = Long.SIZE - 1 - NUM_BITS_NUMBER_OF_IDS;
-    private static final long MASK_NUMBER_OF_IDS = ((1L << NUM_BITS_NUMBER_OF_IDS) - 1) << SHIFT_NUMBER_OF_IDS;
-    private static final long MASK_ID = ~(MASK_USED | MASK_NUMBER_OF_IDS);
+    private static final long MASK_NUMBER_OF_IDS = 0xffL;
+    private static final int SHIFT_ID = NUM_BITS_NUMBER_OF_IDS + 1;
 
-    static final long MAX_ID = MASK_ID;
+    static final long MAX_ID = (1L << 54) - 1;
     static final int MAX_NUMBER_OF_IDS = 1 << NUM_BITS_NUMBER_OF_IDS;
+
+    private IdUtils() {}
 
     /**
      * Combines an starting ID, the number of IDs available and whether or not the IDs are used into a single {@code long} for convenience.
      * This works with the assumption that IDs don't use the high 9 bits, something which is also verified in this call.
+     * <p>
+     * The ID is stored in the MSB of the long, so it's possible to sort the combined value based on natural ordering.
      *
      * @param id the ID, or for numberOfIds > 1 the starting ID.
      * @param numberOfIds number of IDs including the given ID this is about.
@@ -41,21 +44,21 @@ public class IdUtils {
      */
     public static long combinedIdAndNumberOfIds(long id, int numberOfIds, boolean used) {
         int storedNumberOfIds = numberOfIds - 1;
-        if ((id & ~MASK_ID) != 0) {
+        if ((id & MAX_ID) != id) {
             throw new IllegalArgumentException("ID " + id + " is too big");
         }
-        if (storedNumberOfIds > 0xFF) {
+        if ((storedNumberOfIds & MASK_NUMBER_OF_IDS) != storedNumberOfIds) {
             throw new IllegalArgumentException("Number of IDs " + numberOfIds + " is too big");
         }
-        return id | (((long) storedNumberOfIds) << SHIFT_NUMBER_OF_IDS) | (used ? MASK_USED : 0);
+        return (id << SHIFT_ID) | (storedNumberOfIds & MASK_NUMBER_OF_IDS) | (used ? MASK_USED : 0);
     }
 
     public static long idFromCombinedId(long combinedId) {
-        return combinedId & MASK_ID;
+        return combinedId >>> SHIFT_ID;
     }
 
     public static int numberOfIdsFromCombinedId(long combinedId) {
-        return (int) ((combinedId & MASK_NUMBER_OF_IDS) >>> SHIFT_NUMBER_OF_IDS) + 1;
+        return (int) (combinedId & MASK_NUMBER_OF_IDS) + 1;
     }
 
     public static boolean usedFromCombinedId(long combined) {
