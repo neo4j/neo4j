@@ -86,7 +86,9 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             tail,
             queryInput
           )
-          if noOptionalShortestPathOrQpp(graph) && graph.mutatingPatterns.isEmpty && validAggregations(aggregations) =>
+          if noOptionalShortestPathSelectivePathOrQpp(graph) && graph.mutatingPatterns.isEmpty && validAggregations(
+            aggregations
+          ) =>
           val projectionDeps: Iterable[LogicalVariable] =
             (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
           rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
@@ -97,7 +99,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             proj @ DistinctQueryProjection(distinctExpressions, _, _, _, _),
             tail,
             queryInput
-          ) if noOptionalShortestPathOrQpp(graph) && graph.mutatingPatterns.isEmpty =>
+          ) if noOptionalShortestPathSelectivePathOrQpp(graph) && graph.mutatingPatterns.isEmpty =>
           val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
           rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
 
@@ -315,9 +317,9 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
   }
 
-  private def noOptionalShortestPathOrQpp(qg: QueryGraph): Boolean = {
+  private def noOptionalShortestPathSelectivePathOrQpp(qg: QueryGraph): Boolean = {
     qg.optionalMatches.forall(qg =>
-      qg.shortestRelationshipPatterns.isEmpty && qg.quantifiedPathPatterns.isEmpty
+      qg.shortestRelationshipPatterns.isEmpty && qg.quantifiedPathPatterns.isEmpty && qg.selectivePathPatterns.isEmpty
     )
   }
 
