@@ -519,6 +519,23 @@ public interface Read {
     void nodeProperties(long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor);
 
     /**
+     * <strong>NOTE</strong> ALWAYS use relationshipProperties(relationshipReference,startNodeReference,type,reference,
+     * selection,cursor) instead for performance reasons.
+     * @param relationshipReference the owner of the properties.
+     * @param startNodeReference    start node of the owner of the properties
+     * @param reference             a reference from {@link RelationshipDataAccessor#propertiesReference()}.
+     * @param selection             the filter to restrict which properties to read
+     * @param cursor                the cursor used to read the properties
+     */
+    // Used by GDS - removed in 2025.10
+    void relationshipProperties(
+            long relationshipReference,
+            long startNodeReference,
+            Reference reference,
+            PropertySelection selection,
+            PropertyCursor cursor);
+
+    /**
      * @param relationshipReference the owner of the properties.
      * @param startNodeReference    start node of the owner of the properties
      * @param type                  the type of the relationship

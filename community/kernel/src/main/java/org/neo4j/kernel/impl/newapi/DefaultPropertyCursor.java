@@ -54,6 +54,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     private AccessModeProvider accessModeProvider;
     private StoragePropertyCursor securityPropertyCursor;
     private FullAccessNodeCursor securityNodeCursor;
+    private FullAccessRelationshipScanCursor securityRelCursor;
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
@@ -188,7 +189,6 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         storeCursor.initRelationshipProperties(reference, filterSelectionForTxState(selection));
         this.entityReference = relationshipReference;
         this.type = type;
-        assert type >= 0;
     }
 
     void initRelationship(
@@ -384,6 +384,14 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     @Override
     public int getRelType() {
         assert isRelationship();
+        if (type < 0) {
+            if (securityRelCursor == null) {
+                securityRelCursor = internalCursors.allocateFullAccessRelationshipScanCursor();
+            }
+            read.singleRelationship(entityReference, securityRelCursor);
+            securityRelCursor.next();
+            type = securityRelCursor.type();
+        }
         return type;
     }
 
@@ -400,6 +408,11 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             securityNodeCursor.close();
             securityNodeCursor.release();
             securityNodeCursor = null;
+        }
+        if (securityRelCursor != null) {
+            securityRelCursor.close();
+            securityRelCursor.release();
+            securityRelCursor = null;
         }
     }
 
