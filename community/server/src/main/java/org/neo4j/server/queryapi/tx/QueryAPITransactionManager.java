@@ -116,8 +116,8 @@ public class QueryAPITransactionManager implements TransactionManager {
         var tx = transactions.get(txId);
 
         if (tx != null) {
-            tx.close();
             transactions.remove(txId);
+            tx.close();
             monitor.closeTransaction();
             tx.release();
         }
