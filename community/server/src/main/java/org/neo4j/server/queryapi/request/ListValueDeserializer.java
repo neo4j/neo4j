@@ -51,6 +51,6 @@ public class ListValueDeserializer extends StdDeserializer<ListValue> {
             throw new JsonParseException("Expected start array");
         }
 
-        return new ListValue(valueList.toArray(new Value[] {}));
+        return new ListValue(valueList);
     }
 }

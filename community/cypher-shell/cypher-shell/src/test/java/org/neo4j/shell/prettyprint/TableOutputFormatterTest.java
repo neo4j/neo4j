@@ -26,6 +26,7 @@ import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
@@ -38,11 +39,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.NotificationClassification;
+import org.neo4j.driver.NotificationSeverity;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
@@ -55,6 +60,8 @@ import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.summary.InternalGqlNotification;
+import org.neo4j.driver.internal.summary.InternalGqlStatusObject;
 import org.neo4j.driver.internal.value.DurationValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.NodeValue;
@@ -62,6 +69,7 @@ import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
@@ -136,7 +144,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
         Value point2d = new PointValue(new InternalPoint2D(4326, 42.78, 56.7));
         Value point3d = new PointValue(new InternalPoint3D(4326, 1.7, 26.79, 34.23));
-        Record record = new InternalRecord(keys, new Value[] {point2d, point3d});
+        Record record = new InternalRecord(keys, List.of(point2d, point3d));
 
         // when
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
@@ -152,7 +160,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         List<String> keys = asList("d");
 
         Value duration = new DurationValue(new InternalIsoDuration(1, 2, 3, 4));
-        Record record = new InternalRecord(keys, new Value[] {duration});
+        Record record = new InternalRecord(keys, List.of(duration));
 
         // when
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
@@ -167,7 +175,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         List<String> keys = asList("d");
 
         Value duration = new DurationValue(new InternalIsoDuration(1, 2, 3, 0));
-        Record record = new InternalRecord(keys, new Value[] {duration});
+        Record record = new InternalRecord(keys, List.of(duration));
 
         // when
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
@@ -186,7 +194,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         List<String> keys = asList("col1", "col2");
 
         Value value = new NodeValue(new InternalNode(1, labels, propertiesAsMap));
-        Record record = new InternalRecord(keys, new Value[] {value});
+        Record record = new InternalRecord(keys, List.of(value));
 
         // when
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
@@ -207,7 +215,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         RelationshipValue relationship =
                 new RelationshipValue(new InternalRelationship(1, 1, 2, "RELATIONSHIP_TYPE", propertiesAsMap));
 
-        Record record = new InternalRecord(keys, new Value[] {relationship});
+        Record record = new InternalRecord(keys, List.of(relationship));
 
         // when
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
@@ -263,7 +271,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         InternalPath internalPath = new InternalPath(segments, nodes, relationships);
         Value value = new PathValue(internalPath);
 
-        Record record = new InternalRecord(keys, new Value[] {value});
+        Record record = new InternalRecord(keys, List.of(value));
 
         // when
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
@@ -723,23 +731,53 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
     @Test
     void formatNotifications() {
-        final var notifications = List.of(
-                notification("12345", "code1", "desc1", "INFORMATION"),
-                notification("12345", "code1", "desc1", "INFORMATION"),
-                notification("03N63", "code2", "desc2", "WARNING"));
+        var gqlStatusObjects = new LinkedHashSet<GqlStatusObject>();
+        gqlStatusObjects.add(new InternalGqlNotification(
+                "12345",
+                "info: desc1",
+                Map.of(),
+                mock(),
+                NotificationSeverity.INFORMATION,
+                "INFORMATION",
+                NotificationClassification.GENERIC,
+                "GENERIC",
+                null,
+                null,
+                null));
+        gqlStatusObjects.add(new InternalGqlNotification(
+                "12345",
+                "info: desc1",
+                Map.of(),
+                mock(),
+                NotificationSeverity.INFORMATION,
+                "INFORMATION",
+                NotificationClassification.GENERIC,
+                "GENERIC",
+                null,
+                null,
+                null));
+        gqlStatusObjects.add(new InternalGqlNotification(
+                "03N63",
+                "warn: desc2",
+                Map.of(),
+                mock(),
+                NotificationSeverity.WARNING,
+                "WARNING",
+                NotificationClassification.GENERIC,
+                "GENERIC",
+                null,
+                null,
+                null));
+        var notifications = List.of(
+                notification("code1", "desc1", "INFORMATION"),
+                notification("code1", "desc1", "INFORMATION"),
+                notification("code2", "desc2", "WARNING"));
 
-        // Old style for Bolt version without GQLSTSTATUS
-        assertThat(formatNotifications(notifications, "5.5"))
-                .isEqualToNormalizingNewlines(
-                        """
-
-            info: desc1 (code1)
-
-            warn: desc2 (code2)
-            """);
-
-        // Old style for unparsable Bolt version
-        assertThat(formatNotifications(notifications, null))
+        // Old style version without GQLSTSTATUS
+        var legacySummary = mock(ResultSummary.class);
+        given(legacySummary.gqlStatusObjects()).willReturn(Set.of());
+        given(legacySummary.notifications()).willReturn(notifications);
+        assertThat(formatNotifications(legacySummary))
                 .isEqualToNormalizingNewlines(
                         """
 
@@ -749,28 +787,34 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
             """);
 
         // New style for Bolt with GQLSTATUS
-        assertThat(formatNotifications(notifications, "5.6"))
+        var summary = mock(ResultSummary.class);
+        given(summary.gqlStatusObjects()).willReturn(gqlStatusObjects);
+        given(summary.notifications()).willReturn(notifications);
+        assertThat(formatNotifications(summary))
                 .isEqualToNormalizingNewlines(
                         """
 
-            info: desc1
-            12345 (code1)
+            info: desc1 (12345)
 
-            warn: desc2
-            03N63 (code2)
+            warn: desc2 (03N63)
             """);
     }
 
     @Test
     void formatEmptyNotifications() {
-        // Bolt version without GQLSTSTATUS
-        assertThat(formatNotifications(List.of(), "5.5")).isEmpty();
+        var summary = mock(ResultSummary.class);
+        var gqlStatusObjects = new LinkedHashSet<GqlStatusObject>();
+        gqlStatusObjects.add(new InternalGqlStatusObject("status", "description", Map.of()));
+        given(summary.gqlStatusObjects()).willReturn(gqlStatusObjects);
+        var notifications = new ArrayList<Notification>();
+        given(summary.notifications()).willReturn(notifications);
 
-        // Bolt version with GQLSTSTATUS
-        assertThat(formatNotifications(List.of(), "5.6")).isEmpty();
+        // version without GQLSTSTATUS
+        assertThat(formatNotifications(summary)).isEmpty();
 
-        // Empty Bolt version
-        assertThat(formatNotifications(List.of(), "")).isEmpty();
+        // version with GQLSTSTATUS
+        gqlStatusObjects.add(new InternalGqlStatusObject("another-status", "another-description", Map.of()));
+        assertThat(formatNotifications(summary)).isEmpty();
     }
 
     private static String formatResult(Result result) {
@@ -780,8 +824,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         return printer.result();
     }
 
-    private static String formatNotifications(List<Notification> notifications, String version) {
-        return new TableOutputFormatter(true, 1000).formatNotifications(notifications, version);
+    private static String formatNotifications(ResultSummary summary) {
+        return new TableOutputFormatter(true, 1000).formatNotifications(summary);
     }
 
     private static String formatResultWithHeading(Result result, String heading) {
@@ -814,9 +858,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         return result;
     }
 
-    private Notification notification(String gqlstatus, String code, String description, String severity) {
+    private Notification notification(String code, String description, String severity) {
         final var n = mock(Notification.class);
-        when(n.gqlStatus()).thenReturn(gqlstatus);
         when(n.code()).thenReturn(code);
         when(n.description()).thenReturn(description);
         when(n.rawSeverityLevel()).thenReturn(Optional.of(severity));
@@ -825,14 +868,14 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
     private static Record record(List<String> cols, List<Object> data) {
         assert cols.size() == data.size();
-        Value[] values = data.stream().map(Values::value).toArray(Value[]::new);
+        var values = data.stream().map(Values::value).toList();
         return new InternalRecord(cols, values);
     }
 
     class ThrowAfterN implements Iterator<Record> {
         int counter = 0;
         int n;
-        Record record = new InternalRecord(List.of("i"), new IntegerValue[] {new IntegerValue(1)});
+        Record record = new InternalRecord(List.of("i"), List.of(new IntegerValue(1)));
 
         public ThrowAfterN(int n) {
             this.n = n;

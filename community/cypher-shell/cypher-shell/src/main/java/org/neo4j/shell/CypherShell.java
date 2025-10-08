@@ -137,7 +137,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         try {
             final Optional<BoltResult> result = boltStateHandler.runUserCypher(cypher, parameters.parameters());
             result.ifPresent(boltResult -> {
-                prettyPrinter.format(boltResult, printer, getProtocolVersion());
+                prettyPrinter.format(boltResult, printer);
                 boltStateHandler.updateActualDbName(boltResult.getSummary());
             });
             lastNeo4jErrorCode = null;

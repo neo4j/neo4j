@@ -23,31 +23,32 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyIterator;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.shell.prettyprint.OutputFormatter.repeat;
-import static org.neo4j.shell.util.Versions.version;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.value.NumberValueAdapter;
-import org.neo4j.driver.summary.Notification;
+import org.neo4j.driver.summary.GqlNotification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.state.BoltResult;
-import org.neo4j.shell.util.Versions;
 
 public class TableOutputFormatter implements OutputFormatter {
 
     public static final String STRING_REPRESENTATION = "string-representation";
+    private static final String INFO_SEVERITY_LEVEL = "info";
     private final boolean wrap;
     private final int numSampleRows;
 
@@ -318,46 +319,49 @@ public class TableOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String formatNotifications(List<Notification> notifications, String protocolVersion) {
-        if (notifications.isEmpty()) {
-            return "";
+    public String formatNotifications(ResultSummary summary) {
+        Set<String> messages;
+        // These GQLSTATUS codes are added by the driver when the server is too old to support GQLSTATUS
+        List<String> incompatibilityGqlstatuses = List.of("01N42", "02N42", "03N42");
+
+        var actualGqlStatusObjects = summary.gqlStatusObjects().stream()
+                .filter(gso -> !incompatibilityGqlstatuses.contains(gso.gqlStatus()))
+                .toList();
+
+        if (actualGqlStatusObjects.size() > 1) {
+            // GQL Status Objects are available, use them
+            messages = summary.gqlStatusObjects().stream()
+                    .map(gqlStatusObject -> {
+                        if (gqlStatusObject instanceof GqlNotification gqlNotification) {
+                            return String.format(
+                                    "%s (%s)", gqlNotification.statusDescription(), gqlNotification.gqlStatus());
+                        } else {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
         } else {
-            final var messages = new HashSet<String>();
-            final var builder = new StringBuilder();
-
-            // GQLSTATUS was added in Bolt 5.6. For earlier versions, or if the version is not parsable, use old format
-            boolean legacyVersion;
-            try {
-                legacyVersion = version(protocolVersion).compareTo(version("5.6")) < 0;
-            } catch (Versions.FailedToParseException e) {
-                legacyVersion = true;
-            }
-
-            for (final var notification : notifications) {
-                final var message = formatNotification(notification, legacyVersion);
-                if (messages.add(message)) {
-                    builder.append('\n').append(message).append('\n');
-                }
-            }
-            return builder.toString();
+            // use legacy notifications
+            messages = summary.notifications().stream()
+                    .map(notification -> {
+                        var severity = notification
+                                .rawSeverityLevel()
+                                .map(rawSeverity -> rawSeverity.toLowerCase(Locale.ROOT))
+                                .map(this::severity)
+                                .orElse(INFO_SEVERITY_LEVEL);
+                        return String.format("%s: %s (%s)", severity, notification.description(), notification.code());
+                    })
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
         }
+        var builder = new StringBuilder();
+        messages.forEach(message -> builder.append('\n').append(message).append('\n'));
+        return builder.toString();
     }
 
-    private String formatNotification(Notification notification, boolean legacyFormat) {
-        final var severity = severityString(notification);
-
-        if (legacyFormat) {
-            return String.format("%s: %s (%s)", severity, notification.description(), notification.code());
-        }
-        return String.format(
-                "%s: %s%n%s (%s)", severity, notification.description(), notification.gqlStatus(), notification.code());
-    }
-
-    private static String severityString(Notification notification) {
-        final var rawSeverity =
-                notification.rawSeverityLevel().orElse("information").toLowerCase(Locale.ROOT);
+    private String severity(String rawSeverity) {
         return switch (rawSeverity) {
-            case "information" -> "info";
+            case "information" -> INFO_SEVERITY_LEVEL;
             case "warning" -> "warn";
             default -> rawSeverity;
         };
@@ -371,7 +375,8 @@ public class TableOutputFormatter implements OutputFormatter {
         }
         String[] columns = info.keySet().toArray(new String[0]);
         StringBuilder sb = new StringBuilder();
-        Record record = new InternalRecord(asList(columns), info.values().toArray(new Value[0]));
+        Record record =
+                new InternalRecord(asList(columns), info.values().stream().toList());
         formatResultAndCountRows(columns, Collections.singletonList(record).iterator(), line -> sb.append(line)
                 .append(OutputFormatter.NEWLINE));
         return sb.toString();

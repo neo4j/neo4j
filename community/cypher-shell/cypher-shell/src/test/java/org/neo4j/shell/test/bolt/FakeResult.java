@@ -46,7 +46,7 @@ public class FakeResult implements Result {
     public static final FakeResult PING_SUCCESS =
             new FakeResult(Collections.singletonList(FakeRecord.of("success", BooleanValue.TRUE)));
     public static final FakeResult SERVER_VERSION = new FakeResult(
-            Collections.singletonList(FakeRecord.of("versions", new ListValue(new StringValue("4.3.0")))));
+            Collections.singletonList(FakeRecord.of("versions", new ListValue(List.of(new StringValue("4.3.0"))))));
     public static final FakeResult CALL_ACCEPTED_LICENSE =
             new FakeResult(Collections.singletonList(FakeRecord.of("value", new StringValue("yes"))));
     private final List<Record> records;

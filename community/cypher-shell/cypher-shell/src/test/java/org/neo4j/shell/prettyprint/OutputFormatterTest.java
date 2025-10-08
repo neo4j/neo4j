@@ -24,6 +24,7 @@ import static org.neo4j.driver.internal.summary.InternalProfiledPlan.PROFILED_PL
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.connection.BoltProtocolVersion;
@@ -74,7 +75,7 @@ class OutputFormatterTest {
         operatorMap.put("dbHits", Values.value(dbHits));
         operatorMap.put("rows", Values.value(rows));
         if (child != null) {
-            operatorMap.put("children", new ListValue(child));
+            operatorMap.put("children", new ListValue(List.of(child)));
         }
         return new MapValue(operatorMap);
     }

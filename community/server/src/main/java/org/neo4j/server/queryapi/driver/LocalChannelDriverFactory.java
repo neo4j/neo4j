@@ -19,30 +19,26 @@
  */
 package org.neo4j.server.queryapi.driver;
 
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Clock;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
+import org.neo4j.bolt.connection.AuthToken;
 import org.neo4j.bolt.connection.BoltAgent;
+import org.neo4j.bolt.connection.BoltConnection;
 import org.neo4j.bolt.connection.BoltConnectionProvider;
-import org.neo4j.bolt.connection.BoltServerAddress;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.LoggingProvider;
-import org.neo4j.bolt.connection.MetricsListener;
-import org.neo4j.bolt.connection.RoutingContext;
-import org.neo4j.bolt.connection.netty.NettyBoltConnectionProvider;
-import org.neo4j.bolt.connection.pooled.PooledBoltConnectionProvider;
-import org.neo4j.bolt.connection.routed.Rediscovery;
+import org.neo4j.bolt.connection.NotificationConfig;
+import org.neo4j.bolt.connection.SecurityPlan;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.internal.BoltLoggingProvider;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.RoutingSettings;
-import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.security.StaticAuthTokenManager;
-import org.neo4j.driver.internal.value.BoltValueFactory;
 import org.neo4j.logging.InternalLogProvider;
 
 /**
@@ -65,6 +61,16 @@ public final class LocalChannelDriverFactory extends DriverFactory {
         return localAddress;
     }
 
+    @Override
+    protected BoltConnectionProvider createBoltConnectionProvider(
+            ScheduledExecutorService eventLoopGroup,
+            Clock clock,
+            LoggingProvider loggingProvider,
+            int eventLoopThreads) {
+        return new BoltConnectionProviderWithRoutingContext(
+                super.createBoltConnectionProvider(eventLoopGroup, clock, loggingProvider, eventLoopThreads));
+    }
+
     public Driver createLocalDriver() {
         return super.newInstance(
                 IGNORED_HTTP_DRIVER_URI,
@@ -76,77 +82,51 @@ public final class LocalChannelDriverFactory extends DriverFactory {
                         .build());
     }
 
-    @Override
-    protected BoltConnectionProvider createBoltConnectionProvider(
-            URI uri,
-            Config config,
-            EventLoopGroup eventLoopGroup,
-            RoutingSettings routingSettings,
-            Supplier<Rediscovery> rediscoverySupplier,
-            BoltConnectionListener boltConnectionListener,
-            BoltServerAddress address,
-            RoutingContext routingContext,
-            BoltAgent boltAgent,
-            String userAgent,
-            int connectTimeoutMillis,
-            MetricsListener metricsListener,
-            Clock clock) {
-        var loggingProvider = new BoltLoggingProvider(config.logging());
-        Function<BoltServerAddress, BoltConnectionProvider> pooledBoltConnectionProviderSupplier =
-                selectedAddress -> createPooledBoltConnectionProvider(
-                        config,
-                        eventLoopGroup,
-                        clock,
-                        loggingProvider,
-                        boltConnectionListener,
-                        selectedAddress,
-                        boltAgent,
-                        userAgent,
-                        connectTimeoutMillis,
-                        metricsListener);
+    /**
+     * A delegating {@link BoltConnectionProvider} responsible for ensuring that 'neo4j' scheme is used, this makes sure
+     * that routing context is used.
+     * @param delegate the {@link BoltConnectionProvider} that it delegates to
+     */
+    private record BoltConnectionProviderWithRoutingContext(BoltConnectionProvider delegate)
+            implements BoltConnectionProvider {
+        @Override
+        public CompletionStage<BoltConnection> connect(
+                URI uri,
+                String routingContextAddress,
+                BoltAgent boltAgent,
+                String userAgent,
+                int connectTimeoutMillis,
+                SecurityPlan securityPlan,
+                AuthToken authToken,
+                BoltProtocolVersion minVersion,
+                NotificationConfig notificationConfig) {
+            try {
+                uri = new URI(
+                        "neo4j",
+                        uri.getUserInfo(),
+                        uri.getHost(),
+                        uri.getPort(),
+                        uri.getPath(),
+                        uri.getQuery(),
+                        uri.getFragment());
+            } catch (URISyntaxException e) {
+                return CompletableFuture.failedStage(e);
+            }
+            return delegate.connect(
+                    uri,
+                    routingContextAddress,
+                    boltAgent,
+                    userAgent,
+                    connectTimeoutMillis,
+                    securityPlan,
+                    authToken,
+                    minVersion,
+                    notificationConfig);
+        }
 
-        return pooledBoltConnectionProviderSupplier.apply(address);
-    }
-
-    private BoltConnectionProvider createPooledBoltConnectionProvider(
-            Config config,
-            EventLoopGroup eventLoopGroup,
-            Clock clock,
-            LoggingProvider loggingProvider,
-            BoltConnectionListener boltConnectionListener,
-            BoltServerAddress address,
-            BoltAgent boltAgent,
-            String userAgent,
-            int connectTimeoutMillis,
-            MetricsListener metricsListener) {
-        var nettyBoltConnectionProvider = createNettyBoltConnectionProvider(eventLoopGroup, clock, loggingProvider);
-        nettyBoltConnectionProvider = BoltConnectionListener.listeningBoltConnectionProvider(
-                nettyBoltConnectionProvider, boltConnectionListener);
-        return new PooledBoltConnectionProvider(
-                nettyBoltConnectionProvider,
-                config.maxConnectionPoolSize(),
-                config.connectionAcquisitionTimeoutMillis(),
-                config.maxConnectionLifetimeMillis(),
-                config.idleTimeBeforeConnectionTest(),
-                clock,
-                loggingProvider,
-                metricsListener,
-                address,
-                RoutingContext.EMPTY,
-                boltAgent,
-                userAgent,
-                connectTimeoutMillis);
-    }
-
-    private BoltConnectionProvider createNettyBoltConnectionProvider(
-            EventLoopGroup eventLoopGroup, Clock clock, LoggingProvider loggingProvider) {
-        return new NettyBoltConnectionProvider(
-                eventLoopGroup,
-                clock,
-                getDomainNameResolver(),
-                localAddress(),
-                loggingProvider,
-                BoltValueFactory.getInstance(),
-                null);
+        @Override
+        public CompletionStage<Void> close() {
+            return delegate.close();
+        }
     }
 }

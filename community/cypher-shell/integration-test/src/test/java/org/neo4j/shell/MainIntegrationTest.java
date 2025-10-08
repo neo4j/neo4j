@@ -1531,8 +1531,7 @@ class MainIntegrationTest extends TestHarness {
         final String expected;
         if (protocolVersion.compareTo(Versions.version("5.6")) >= 0) {
             expected =
-                    "info: If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (b))\n"
-                            + "03N90 (Neo.ClientNotification.Statement.CartesianProduct)";
+                    "info: cartesian product. The disconnected pattern '(a:A), (b:B)' builds a cartesian product. A cartesian product may produce a large amount of data and slow down query processing. (03N90)";
         } else if (serverVersion.compareTo(Versions.version("5.0.0")) >= 0) {
             expected =
                     "info: If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (b)) (Neo.ClientNotification.Statement.CartesianProduct)";
@@ -1556,8 +1555,8 @@ class MainIntegrationTest extends TestHarness {
         final String expected;
 
         if (protocolVersion.compareTo(Versions.version("5.6")) >= 0) {
-            expected = "warn: The query used a deprecated function: `id`.\n"
-                    + "01N02 (Neo.ClientNotification.Statement.FeatureDeprecationWarning)";
+            expected =
+                    "warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement. (01N02)";
         } else {
             expected =
                     "warn: The query used a deprecated function: `id`. (Neo.ClientNotification.Statement.FeatureDeprecationWarning)";
