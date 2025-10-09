@@ -2807,11 +2807,11 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val (predicateWithIrExpressionReferencingPath, otherPathPredicates) = shortestRelationship.maybePathVar match {
-      case Some(pathVariable) => pathPredicates.partition(_.folder.treeExists {
-          case ire: IRExpression => ire.dependencies.contains(pathVariable)
-        })
-      case None => (Set.empty[Expression], pathPredicates)
+    val (predicateWithIrExpressionReferencingPath, otherPathPredicates) = {
+      val variables = shortestRelationship.pathAndRelationshipVariables
+      pathPredicates.partition(_.folder.treeExists {
+        case ire: IRExpression => ire.dependencies.intersect(variables).nonEmpty
+      })
     }
 
     val rewrittenPredicatesWithIrExpressionReferencingPath =

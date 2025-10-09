@@ -64,7 +64,7 @@ case object planShortestRelationships {
     val rel = patternRelationship.variable
     val pathOpt = shortestRelationship.maybePathVar
 
-    val variables = Set(shortestRelationship.maybePathVar, Some(shortestRelationship.rel.variable)).flatten
+    val variables = shortestRelationship.pathAndRelationshipVariables
 
     def predicateAppliesToShortestRelationship(p: Predicate) =
       // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)

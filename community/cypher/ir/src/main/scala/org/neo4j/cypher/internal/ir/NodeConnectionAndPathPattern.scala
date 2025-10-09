@@ -513,4 +513,6 @@ final case class ShortestRelationshipPattern(
   override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
 
   override def allNodeConnections: Set[NodeConnection] = Set.empty
+
+  def pathAndRelationshipVariables: Set[LogicalVariable] = maybePathVar.toSet + rel.variable
 }
