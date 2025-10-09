@@ -10,7 +10,11 @@ https://community.neo4j.com[image:https://img.shields.io/discourse/users?label=F
 
 == Using Neo4j ==
 
-Neo4j is available both as a standalone server, or an embeddable component. You can https://neo4j.com/download/[download] or https://neo4j.com/sandbox/[try online].
+Neo4j is available as a fully managed solution where you can get started for free using https://console.neo4j.io[Neo4j Aura]. Neo4j is also available as a standalone server that you can https://neo4j.com/deployment-center[download].
+
+== Neo4j Aura ==
+
+https://neo4j.com/product/auradb[Neo4j Aura] is the fully managed graph database solution for Neo4j. You can quickly get started in seconds and use Neo4j for free - no credit card required. https://console.neo4j.io[Sign up to Neo4j Aura].
 
 == Extending Neo4j ==
 
@@ -55,6 +59,10 @@ in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want 
   bin\neo4j-admin server start
 
 instead.
+
+== Accessing Neo4j graph tools ==
+
+Neo4j provides a number of tools for https://neo4j.com/docs/aura/query/introduction/[querying], https://neo4j.com/docs/aura/dashboards/[visualizing], and https://neo4j.com/docs/aura/explore/introduction/[analyzing] data. You can access graph tools on https://console.neo4j.io[Neo4j Aura] for free - no subscription required. Neo4j graph tools are compatible with both fully managed Neo4j AuraDB instances and self-managed Neo4j databases. https://neo4j.com/docs/aura/managing-instances/self-managed/[Learn more] on how to connect your instance.
 
 == Neo4j Desktop ==
 

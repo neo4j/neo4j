@@ -20,26 +20,34 @@ Here in the installation directory, you'll find:
 * logs - log files
 * import - location of files for LOAD CSV
 
-Make it go
-----------
+Installing and running Neo4j
+----------------------------
 
 For full instructions, see https://neo4j.com/docs/operations-manual/current/installation/
 
-To get started with Neo4j, let's start the server and take a
-look at the web interface ...
+To get started with Neo4j:
 
 1. Open a console and navigate to the installation directory.
 2. Start the server:
    * Windows, use: bin\neo4j-admin server console
    * Linux/Mac, use: ./bin/neo4j-admin server console
-3. In a browser, open http://localhost:7474/
-4. Shutdown the server by typing Ctrl-C in the console.
+3. Shutdown the server by typing Ctrl-C in the console.
+
+Accessing Neo4j graph tools
+---------------------------
+
+You can access Neo4j graph tools for querying, exploring, and visualizing data by going to - no subscription required.
+
+1. Sign up or log in to https://console-preview.neo4j.io/self-managed
+2. Register a self-managed instance and connect to http://localhost:7474 using the default password which is documented in installation instructions: https://neo4j.com/docs/operations-manual/current/installation/
+
+Alternatively, you can navigate to http://localhost:7474 in your local browser to access the Query application.
 
 Learn more
 ----------
 
-* Neo4j Home: https://neo4j.com/
-* Getting Started: https://neo4j.com/docs/developer-manual/current/introduction/
+* Neo4j: https://neo4j.com/
+* Getting Started: https://neo4j.com/docs/getting-started/
 * Neo4j Documentation: https://neo4j.com/docs/
 
 License(s)
