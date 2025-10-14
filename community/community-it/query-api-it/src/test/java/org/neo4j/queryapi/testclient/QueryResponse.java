@@ -36,7 +36,10 @@ public record QueryResponse(
         JsonNode queryPlan,
         JsonNode profiledQueryPlan) {
 
-    public String txId() {
+    public String txId() throws QueryApiTestClientException {
+        if (errors != null && !errors.isEmpty()) {
+            throw QueryApiTestClientException.ofErrors(errors);
+        }
         return transaction.get(TX_ID_KEY).textValue();
     }
 }

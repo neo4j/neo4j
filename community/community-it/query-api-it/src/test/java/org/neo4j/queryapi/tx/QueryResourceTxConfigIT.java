@@ -50,6 +50,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.notifications.NotificationCodeWithDescription;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
@@ -97,7 +98,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldErrorForWrongAccessMode() throws IOException, InterruptedException {
+    void shouldErrorForWrongAccessMode() throws IOException, InterruptedException, QueryApiTestClientException {
         var res = testClient.beginTx(
                 QueryRequest.newBuilder().accessMode(AccessMode.READ).build());
         var write = testClient.runInTx(
@@ -108,7 +109,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldStartTxWithParams() throws IOException, InterruptedException {
+    void shouldStartTxWithParams() throws IOException, InterruptedException, QueryApiTestClientException {
         var res = testClient.beginTx(QueryRequest.newBuilder()
                 .statement("RETURN 1")
                 .parameters(Map.of("i", "0"))
@@ -121,7 +122,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldReturnBookmarks() throws IOException, InterruptedException {
+    void shouldReturnBookmarks() throws IOException, InterruptedException, QueryApiTestClientException {
         var res = testClient.beginTx(
                 QueryRequest.newBuilder().statement("RETURN 1").build());
         var commit = testClient.commitTx(res.body().txId());
@@ -131,7 +132,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldReturnUpdatedBookmark() throws IOException, InterruptedException {
+    void shouldReturnUpdatedBookmark() throws IOException, InterruptedException, QueryApiTestClientException {
         var firstBookmark = testClient.autoCommit(
                 QueryRequest.newBuilder().statement("CREATE (n)").build());
 
@@ -147,7 +148,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldAcceptBookmarksAsInput() throws IOException, InterruptedException {
+    void shouldAcceptBookmarksAsInput() throws IOException, InterruptedException, QueryApiTestClientException {
         var initialBookmark = testClient.autoCommit(
                 QueryRequest.newBuilder().statement("CREATE (n)").build());
 
@@ -163,7 +164,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldAcceptMultipleBookmarksAsInput() throws IOException, InterruptedException {
+    void shouldAcceptMultipleBookmarksAsInput() throws IOException, InterruptedException, QueryApiTestClientException {
         var initialBookmarkA = testClient.autoCommit(
                 QueryRequest.newBuilder().statement("CREATE (n)").build());
         var initialBookmarkB = testClient.autoCommit(
@@ -186,7 +187,8 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldTimeoutWaitingForUnreachableBookmark() throws IOException, InterruptedException {
+    void shouldTimeoutWaitingForUnreachableBookmark()
+            throws IOException, InterruptedException, QueryApiTestClientException {
         var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
                 List.of(new QueryRouterBookmark.InternalGraphState(
                         QueryApiTestUtil.resolveDependency(dbms, Database.class)
@@ -205,7 +207,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldWaitForUpdatedBookmark() throws IOException, InterruptedException {
+    void shouldWaitForUpdatedBookmark() throws IOException, InterruptedException, QueryApiTestClientException {
         var lastTxId = QueryApiTestUtil.getLastClosedTransactionId(dbms);
         var nextTxId = lastTxId + 1;
         var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
@@ -239,7 +241,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldReturnQueryStats() throws IOException, InterruptedException {
+    void shouldReturnQueryStats() throws IOException, InterruptedException, QueryApiTestClientException {
         var returnReq = QueryRequest.newBuilder()
                 .statement("RETURN 1")
                 .includeCounters()
@@ -262,7 +264,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldNotReturnQueryStatsByDefault() throws IOException, InterruptedException {
+    void shouldNotReturnQueryStatsByDefault() throws IOException, InterruptedException, QueryApiTestClientException {
         var returnReq = QueryRequest.newBuilder().statement("RETURN 1").build();
 
         var res = testClient.beginTx(returnReq);
@@ -282,7 +284,8 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldReturnLabelDoesNotExistNotification() throws IOException, InterruptedException {
+    void shouldReturnLabelDoesNotExistNotification()
+            throws IOException, InterruptedException, QueryApiTestClientException {
         var unknownLabelReq = QueryRequest.newBuilder()
                 .statement("MATCH (n:thisLabelDoesNotExist), (m:thisLabelDoesNotExist) return m, n")
                 .build();
@@ -317,7 +320,8 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldNotReturnNotificationsIfNonePresent() throws IOException, InterruptedException {
+    void shouldNotReturnNotificationsIfNonePresent()
+            throws IOException, InterruptedException, QueryApiTestClientException {
         var returnReq = QueryRequest.newBuilder().statement("RETURN 1").build();
 
         var res = testClient.beginTx(returnReq);
@@ -337,7 +341,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldReturnQueryPlan() throws IOException, InterruptedException {
+    void shouldReturnQueryPlan() throws IOException, InterruptedException, QueryApiTestClientException {
         var returnReq = QueryRequest.newBuilder().statement("EXPLAIN RETURN 1").build();
 
         var res = testClient.beginTx(returnReq);
@@ -357,7 +361,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldNotReturnQueryPlanByDefault() throws IOException, InterruptedException {
+    void shouldNotReturnQueryPlanByDefault() throws IOException, InterruptedException, QueryApiTestClientException {
         var returnReq = QueryRequest.newBuilder().statement("RETURN 1").build();
 
         var res = testClient.beginTx(returnReq);
@@ -377,7 +381,7 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldReturnProfiledQueryPlan() throws IOException, InterruptedException {
+    void shouldReturnProfiledQueryPlan() throws IOException, InterruptedException, QueryApiTestClientException {
         var profileReq = QueryRequest.newBuilder().statement("PROFILE RETURN 1").build();
 
         var res = testClient.beginTx(profileReq);
@@ -397,7 +401,8 @@ public class QueryResourceTxConfigIT {
     }
 
     @Test
-    void shouldNotReturnProfiledQueryPlanByDefault() throws IOException, InterruptedException {
+    void shouldNotReturnProfiledQueryPlanByDefault()
+            throws IOException, InterruptedException, QueryApiTestClientException {
         var request = QueryRequest.newBuilder().statement("RETURN 1").build();
 
         var res = testClient.beginTx(request);

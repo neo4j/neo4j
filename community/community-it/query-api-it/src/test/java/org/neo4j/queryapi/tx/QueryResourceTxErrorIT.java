@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
@@ -93,7 +94,7 @@ public class QueryResourceTxErrorIT {
     }
 
     @Test
-    void shouldNotSwitchDbMidTx() throws IOException, InterruptedException {
+    void shouldNotSwitchDbMidTx() throws IOException, InterruptedException, QueryApiTestClientException {
         var startTx = testClient.beginTx(
                 QueryRequest.newBuilder().statement("RETURN 1").build());
 
@@ -107,7 +108,7 @@ public class QueryResourceTxErrorIT {
     }
 
     @Test
-    void shouldNotSwitchDbOnCommit() throws IOException, InterruptedException {
+    void shouldNotSwitchDbOnCommit() throws IOException, InterruptedException, QueryApiTestClientException {
         var startTx = testClient.beginTx(
                 QueryRequest.newBuilder().statement("RETURN 1").build());
 
@@ -146,7 +147,7 @@ public class QueryResourceTxErrorIT {
     }
 
     @Test
-    void shouldRunCallInTransactionsInImplicit() throws IOException, InterruptedException {
+    void shouldRunCallInTransactionsInImplicit() throws IOException, InterruptedException, QueryApiTestClientException {
         var res = testClient.beginTx(QueryRequest.newBuilder()
                 .statement("UNWIND [4, 2, 1, 0] AS i CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i")
                 .txType("IMPLICIT")
@@ -169,7 +170,7 @@ public class QueryResourceTxErrorIT {
     }
 
     @Test
-    void shouldNotAllowConcurrentTxAccess() throws IOException, InterruptedException {
+    void shouldNotAllowConcurrentTxAccess() throws IOException, InterruptedException, QueryApiTestClientException {
         var res = testClient.beginTx();
         var latch = new CountDownLatch(1);
 
@@ -181,7 +182,7 @@ public class QueryResourceTxErrorIT {
                                 .build(),
                         res.body().txId());
                 latch.countDown();
-            } catch (IOException | InterruptedException ignored) {
+            } catch (IOException | InterruptedException | QueryApiTestClientException ignored) {
                 fail("Error starting long running transaction");
             }
         });
@@ -202,7 +203,7 @@ public class QueryResourceTxErrorIT {
     }
 
     @Test
-    void blankStatementShouldOpenTx() throws IOException, InterruptedException {
+    void blankStatementShouldOpenTx() throws IOException, InterruptedException, QueryApiTestClientException {
         var res = testClient.beginTx(QueryRequest.newBuilder().statement("").build());
 
         assertThat(res).wasSuccessful();

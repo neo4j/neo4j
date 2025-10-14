@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.QueryResponseAssertions;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.queryapi.testclient.QueryResponse;
 import org.neo4j.server.queryapi.tx.TransactionManager;
@@ -91,7 +92,7 @@ class QueryResourceTxAuthenticationIT {
     }
 
     @Test
-    void shouldAllowAccessWhenPasswordChanged() throws IOException, InterruptedException {
+    void shouldAllowAccessWhenPasswordChanged() throws IOException, InterruptedException, QueryApiTestClientException {
         testClient.autoCommit(
                 QueryRequest.newBuilder()
                         .statement("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'")
@@ -145,7 +146,7 @@ class QueryResourceTxAuthenticationIT {
     }
 
     @Test
-    void shouldNotAllowUserToChangeMidTx() throws IOException, InterruptedException {
+    void shouldNotAllowUserToChangeMidTx() throws IOException, InterruptedException, QueryApiTestClientException {
         setupUsers();
 
         var bobClient = new QueryAPITestClient(endpoint, "bob", "secretPassword");
@@ -162,7 +163,7 @@ class QueryResourceTxAuthenticationIT {
     }
 
     @Test
-    void shouldNotAllowUserToChangeOnCommit() throws IOException, InterruptedException {
+    void shouldNotAllowUserToChangeOnCommit() throws IOException, InterruptedException, QueryApiTestClientException {
         setupUsers();
 
         var bobClient = new QueryAPITestClient(endpoint, "bob", "secretPassword");
