@@ -45,7 +45,9 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.MutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.provider.Arguments;
+import org.neo4j.common.EntityType;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,7 +58,15 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -109,6 +119,7 @@ class FulltextProceduresTestSupport {
         };
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
+        builder.setConfig(GraphDatabaseInternalSettings.always_use_latest_index_provider, false);
     }
 
     @BeforeEach
@@ -293,8 +304,50 @@ class FulltextProceduresTestSupport {
                 .close();
     }
 
+    static void createSimpleRelationshipIndexWithProvider(Transaction tx, IndexProviderDescriptor indexProvider)
+            throws KernelException {
+        assertThat(AllIndexProviderDescriptors.INDEX_TYPES.get(indexProvider))
+                .as(
+                        "`%s` should be a %s %s",
+                        indexProvider, IndexType.FULLTEXT.name(), IndexProviderDescriptor.class.getSimpleName())
+                .isEqualTo(IndexType.FULLTEXT);
+
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+        TokenWrite tokenWrite = ktx.tokenWrite();
+        int typeId = tokenWrite.relationshipTypeGetOrCreateForName(REL.name());
+        int propKeyId = tokenWrite.propertyKeyGetOrCreateForName(PROP);
+        IndexPrototype prototype = IndexPrototype.forSchema(SchemaDescriptors.forSemanticSearch(
+                        EntityType.RELATIONSHIP, new int[] {typeId}, new int[] {propKeyId}))
+                .withIndexType(IndexType.FULLTEXT)
+                .withIndexProvider(indexProvider)
+                .withName(DEFAULT_REL_IDX_NAME);
+        ktx.schemaWrite().indexCreate(prototype);
+    }
+
+    static void createSimpleNodesIndexWithProvider(Transaction tx, IndexProviderDescriptor indexProvider)
+            throws KernelException {
+        assertThat(AllIndexProviderDescriptors.INDEX_TYPES.get(indexProvider))
+                .as(
+                        "`%s` should be a %s %s",
+                        indexProvider, IndexType.FULLTEXT.name(), IndexProviderDescriptor.class.getSimpleName())
+                .isEqualTo(IndexType.FULLTEXT);
+
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+        TokenWrite tokenWrite = ktx.tokenWrite();
+        int labelId = tokenWrite.labelGetOrCreateForName(LABEL.name());
+        int propKeyId = tokenWrite.propertyKeyGetOrCreateForName(PROP);
+        IndexPrototype prototype = IndexPrototype.forSchema(SchemaDescriptors.forSemanticSearch(
+                        EntityType.NODE, new int[] {labelId}, new int[] {propKeyId}))
+                .withIndexType(IndexType.FULLTEXT)
+                .withIndexProvider(indexProvider)
+                .withName(DEFAULT_NODE_IDX_NAME);
+        ktx.schemaWrite().indexCreate(prototype);
+    }
+
     interface EntityUtil {
         void createIndex(Transaction tx);
+
+        void createIndexWithProvider(Transaction tx, IndexProviderDescriptor indexProvider) throws KernelException;
 
         void createIndexWithAnalyzer(Transaction tx, String analyzer);
 
@@ -332,6 +385,12 @@ class FulltextProceduresTestSupport {
         @Override
         public void createIndex(Transaction tx) {
             createSimpleNodesIndex(tx);
+        }
+
+        @Override
+        public void createIndexWithProvider(Transaction tx, IndexProviderDescriptor indexProvider)
+                throws KernelException {
+            createSimpleNodesIndexWithProvider(tx, indexProvider);
         }
 
         @Override
@@ -419,14 +478,20 @@ class FulltextProceduresTestSupport {
         }
     }
 
-    static Stream<Arguments> entityTypeProvider() {
-        return Stream.of(Arguments.of(new NodeUtil()), Arguments.of(new RelationshipUtil()));
+    static Stream<EntityUtil> entityTypeProvider() {
+        return Stream.of(new NodeUtil(), new RelationshipUtil());
     }
 
     static class RelationshipUtil implements EntityUtil {
         @Override
         public void createIndex(Transaction tx) {
             createSimpleRelationshipIndex(tx);
+        }
+
+        @Override
+        public void createIndexWithProvider(Transaction tx, IndexProviderDescriptor indexProvider)
+                throws KernelException {
+            createSimpleRelationshipIndexWithProvider(tx, indexProvider);
         }
 
         @Override

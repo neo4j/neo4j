@@ -84,6 +84,7 @@ public class FulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> impl
         List<SearcherReference> searchers = acquireSearchers(partitions);
         return new FulltextIndexReader(
                 searchers,
+                luceneContext(),
                 propertyKeyTokenHolder,
                 getDescriptor(),
                 config,

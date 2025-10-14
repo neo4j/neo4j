@@ -22,13 +22,20 @@ package org.neo4j.kernel.api.impl.schema.fulltext;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Set;
-import org.eclipse.collections.api.factory.Sets;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.schema.AllIndexProviderDescriptors;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
@@ -182,7 +189,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void transactionStateMustNotPreventIndexUpdatesFromBeingApplied(EntityUtil entityUtil) throws Exception {
         createIndexAndWait(entityUtil);
-        Set<String> entityIds = Sets.mutable.empty();
+        Set<String> entityIds = new HashSet<>();
 
         try (Transaction tx = db.beginTx()) {
             entityIds.add(entityUtil.createEntityWithProperty(tx, "value"));
@@ -217,5 +224,39 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
             entityUtil.assertQueryFindsIdsInOrder(tx, "*", id);
             tx.commit();
         }
+    }
+
+    @MethodSource("entityTypeAndIndexProvider")
+    @ParameterizedTest
+    void transactionStateShouldWorkOnAllFulltextIndexProviders(
+            EntityUtil entityUtil, IndexProviderDescriptor indexProvider) throws KernelException {
+        try (Transaction tx = db.beginTx()) {
+            entityUtil.createIndexWithProvider(tx, indexProvider);
+            tx.commit();
+        }
+        awaitIndexesOnline();
+
+        String firstId;
+        String secondId;
+        String thirdId;
+
+        try (Transaction tx = db.beginTx()) {
+            firstId = entityUtil.createEntityWithProperty(tx, "God of War");
+            thirdId = entityUtil.createEntityWithProperty(tx, "God Wars: Future Past");
+            tx.commit();
+        }
+        try (Transaction tx = db.beginTx()) {
+            secondId = entityUtil.createEntityWithProperty(tx, "God of War III Remastered");
+            entityUtil.assertQueryFindsIdsInOrder(tx, "god of war", firstId, secondId, thirdId);
+            tx.commit();
+        }
+    }
+
+    static Stream<Arguments> entityTypeAndIndexProvider() {
+        return AllIndexProviderDescriptors.INDEX_TYPES.entrySet().stream()
+                .filter(e -> e.getValue() == IndexType.FULLTEXT)
+                .map(Entry::getKey)
+                .flatMap(indexProvider ->
+                        entityTypeProvider().map(entityUtil -> Arguments.of(entityUtil, indexProvider)));
     }
 }

@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -64,9 +65,13 @@ class FulltextIndexTransactionState implements Closeable {
     private SearcherReference currentSearcher;
 
     FulltextIndexTransactionState(
-            IndexDescriptor descriptor, Config config, Analyzer analyzer, String[] propertyNames) {
+            LuceneContext luceneContext,
+            IndexDescriptor descriptor,
+            Config config,
+            Analyzer analyzer,
+            String[] propertyNames) {
         toCloseLater = new ArrayList<>();
-        writer = new TransactionStateLuceneIndexWriter(config, analyzer, descriptor.getIndexConfig());
+        writer = new TransactionStateLuceneIndexWriter(luceneContext, config, analyzer);
         modifiedEntityIdsInThisTransaction = new LongHashSet();
         visitingNodes = descriptor.schema().entityType() == EntityType.NODE;
         txStateVisitor = new FulltextIndexTransactionStateVisitor(

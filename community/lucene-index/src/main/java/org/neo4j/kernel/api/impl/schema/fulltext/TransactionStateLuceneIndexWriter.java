@@ -23,31 +23,28 @@ import java.io.Closeable;
 import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigMode;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectory;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectoryReader;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocument;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.writer.LucenePartitionIndexWriter;
 
 class TransactionStateLuceneIndexWriter implements LucenePartitionIndexWriter, Closeable {
     private final Config config;
     private final Analyzer analyzer;
-    private final IndexConfig indexConfig;
     private LuceneIndexWriter writer;
     private final LuceneDirectory directory;
 
-    TransactionStateLuceneIndexWriter(Config config, Analyzer analyzer, IndexConfig indexConfig) {
+    TransactionStateLuceneIndexWriter(LuceneContext luceneContext, Config config, Analyzer analyzer) {
         this.config = config;
         this.analyzer = analyzer;
-        this.indexConfig = indexConfig;
-        this.directory = DirectoryFactory.CURRENT.inMemoryDirectory();
+        this.directory = luceneContext.directoryFactory().inMemoryDirectory();
     }
 
     @Override

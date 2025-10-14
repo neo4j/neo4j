@@ -40,6 +40,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LucenePartitionedSearch;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
@@ -71,6 +72,7 @@ public class FulltextIndexReader implements ValueIndexReader {
 
     FulltextIndexReader(
             List<SearcherReference> searchers,
+            LuceneContext luceneContext,
             TokenHolder propertyKeyTokenHolder,
             IndexDescriptor descriptor,
             Config config,
@@ -84,7 +86,8 @@ public class FulltextIndexReader implements ValueIndexReader {
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
         this.usageTracker = usageTracker;
-        this.transactionState = new FulltextIndexTransactionState(descriptor, config, analyzer, propertyNames);
+        this.transactionState =
+                new FulltextIndexTransactionState(luceneContext, descriptor, config, analyzer, propertyNames);
         this.log = logProvider.getLog(getClass());
     }
 
