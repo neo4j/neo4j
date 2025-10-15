@@ -104,7 +104,6 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScop
 import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.internal.kernel.api.security.SecurityExceptionLogger
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.internal.kernel.api.security.StaticAccessMode
 import org.neo4j.kernel.api.exceptions.Status
@@ -130,10 +129,8 @@ case class CommunityAdministrationCommandRuntime(
 ) extends AdministrationCommandRuntime {
   override def name: String = "community administration-commands"
 
-  private val securityLog = resolver.resolveDependency(classOf[AbstractSecurityLog])
-
   private lazy val securityAuthorizationHandler =
-    new SecurityAuthorizationHandler(securityLog)
+    new SecurityAuthorizationHandler(resolver.resolveDependency(classOf[AbstractSecurityLog]))
   private val config: Config = resolver.resolveDependency(classOf[Config])
 
   private lazy val userSecurity: UserSecurityGraphComponent =
@@ -211,7 +208,7 @@ case class CommunityAdministrationCommandRuntime(
     actions: Seq[DbmsAction]
   ): AdministrationCommandRuntimeContext => ExecutionPlan = _ => {
     AuthorizationAndPredicateExecutionPlan(
-      securityLog,
+      securityAuthorizationHandler,
       (params, securityContext) => {
         if (securityContext.subject().hasUsername(runtimeStringValue(user, params)))
           Seq((null, PermissionState.EXPLICIT_GRANT))
@@ -225,7 +222,7 @@ case class CommunityAdministrationCommandRuntime(
     // Check Admin Rights for DBMS commands
     case AssertAllowedDbmsActions(maybeSource, actions) => context =>
         AuthorizationAndPredicateExecutionPlan(
-          securityLog,
+          securityAuthorizationHandler,
           (_, securityContext) => checkActions(actions, securityContext),
           violationMessage = adminActionErrorMessage,
           source = getSource(maybeSource, context)
@@ -239,7 +236,7 @@ case class CommunityAdministrationCommandRuntime(
     // using the non-composite privileges, since community doesn't have composite databases
     case AssertCanAlterDatabase(source, database, _, actions) => context =>
         AuthorizationAndPredicateExecutionPlan(
-          securityLog,
+          securityAuthorizationHandler,
           (params, securityContext) =>
             actions.map(action =>
               (
@@ -272,7 +269,7 @@ case class CommunityAdministrationCommandRuntime(
     // Check Admin Rights for some Database commands
     case AssertAllowedDatabaseAction(action, database, maybeSource) => context =>
         AuthorizationAndPredicateExecutionPlan(
-          securityLog,
+          securityAuthorizationHandler,
           (params, securityContext) =>
             Seq((
               action,
@@ -366,12 +363,7 @@ case class CommunityAdministrationCommandRuntime(
     case SetOwnPassword(source, newPassword, currentPassword) => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-        SetOwnPasswordExecutionPlanner(
-          normalExecutionEngine,
-          securityAuthorizationHandler,
-          config,
-          securityLog
-        ).planSetOwnPassword(
+        SetOwnPasswordExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler, config).planSetOwnPassword(
           newPassword,
           currentPassword,
           sourcePlan
@@ -616,18 +608,14 @@ case class CommunityAdministrationCommandRuntime(
           QueryHandler
             .handleError {
               case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-                new SecurityExceptionLogger(securityLog).logAndGet(
-                  DatabaseAdministrationOnFollowerException.notALeader(
-                    "ALTER CURRENT USER SET PASSWORD",
-                    s"User '${currentUser(p)}' failed to alter their own password",
-                    error
-                  )
+                DatabaseAdministrationOnFollowerException.notALeader(
+                  "ALTER CURRENT USER SET PASSWORD",
+                  s"User '${currentUser(p)}' failed to alter their own password",
+                  error
                 )
               case (error: Neo4jException, _) => error
               case (error, p) =>
-                new SecurityExceptionLogger(securityLog).logAndGet(
-                  CypherExecutionException.alterOwnPassword(currentUser(p), error)
-                )
+                CypherExecutionException.alterOwnPassword(currentUser(p), error)
             }
             .handleResult((_, value, _) => {
               if (value eq BooleanValue.TRUE) Continue

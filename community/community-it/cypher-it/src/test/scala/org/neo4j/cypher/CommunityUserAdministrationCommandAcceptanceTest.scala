@@ -1864,11 +1864,6 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       GqlStatusInfoCodes.STATUS_42NFF,
       "error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details."
     ))
-    assert42NFFLogWithMessage(
-      classOf[InvalidArgumentException],
-      s"User '$username' failed to alter their own password: Invalid principal or credentials.",
-      community = true
-    )
 
     // THEN
     testUserLogin(username, password, AuthenticationResult.SUCCESS)

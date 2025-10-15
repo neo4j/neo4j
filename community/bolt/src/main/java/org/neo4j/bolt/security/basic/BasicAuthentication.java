@@ -24,9 +24,7 @@ import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.AuthenticationResult;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.kernel.api.security.SecurityExceptionLogger;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
@@ -35,11 +33,9 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
  */
 public class BasicAuthentication implements Authentication {
     private final AuthManager authManager;
-    private final SecurityExceptionLogger exceptionLog;
 
-    public BasicAuthentication(AuthManager authManager, AbstractSecurityLog securityLog) {
+    public BasicAuthentication(AuthManager authManager) {
         this.authManager = authManager;
-        exceptionLog = new SecurityExceptionLogger(securityLog);
     }
 
     @Override
@@ -53,15 +49,14 @@ public class BasicAuthentication implements Authentication {
                 case PASSWORD_CHANGE_REQUIRED:
                     break;
                 case TOO_MANY_ATTEMPTS:
-                    throw exceptionLog.logAndGet(AuthenticationException.rateLimit());
+                    throw AuthenticationException.rateLimit();
                 default:
-                    throw exceptionLog.logAndGet(AuthenticationException.unauthorized());
+                    throw AuthenticationException.unauthorized();
             }
 
             return new BasicAuthenticationResult(loginContext);
         } catch (InvalidAuthTokenException e) {
-            throw exceptionLog.logAndGet(
-                    new AuthenticationException(e.gqlStatusObject(), e.status(), e.legacyMessage()));
+            throw new AuthenticationException(e.gqlStatusObject(), e.status(), e.legacyMessage());
         }
     }
 

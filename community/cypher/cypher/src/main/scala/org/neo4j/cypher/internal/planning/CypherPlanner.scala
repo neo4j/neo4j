@@ -120,7 +120,6 @@ import org.neo4j.exceptions.DisallowedOnSystemException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SecurityAdministrationException
 import org.neo4j.exceptions.SyntaxException
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
@@ -225,7 +224,6 @@ case class CypherPlanner(
   clock: Clock,
   kernelMonitors: monitoring.Monitors,
   log: InternalLog,
-  securityLog: AbstractSecurityLog,
   queryCaches: CypherQueryCaches,
   plannerOption: CypherPlannerOption,
   databaseReferenceRepository: DatabaseReferenceRepository,
@@ -478,7 +476,6 @@ case class CypherPlanner(
       databaseReferenceRepository,
       transactionalContextWrapper.databaseId,
       log,
-      securityLog,
       internalNotificationStats,
       internalUsageStats,
       null

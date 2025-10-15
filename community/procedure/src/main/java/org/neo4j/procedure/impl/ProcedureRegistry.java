@@ -40,7 +40,6 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.PermissionState;
-import org.neo4j.internal.kernel.api.security.SecurityExceptionLogger;
 import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -203,10 +202,10 @@ public class ProcedureRegistry {
                         proc.signature().name(),
                         errorDescriptor,
                         ctx.securityContext().description());
-                var securityLog = ctx.dependencyResolver().resolveDependency(AbstractSecurityLog.class);
-                throw new SecurityExceptionLogger(securityLog)
-                        .logAndGet(
-                                ctx.securityContext(), AuthorizationViolationException.authorizationViolation(message));
+                ctx.dependencyResolver()
+                        .resolveDependency(AbstractSecurityLog.class)
+                        .error(ctx.securityContext(), message);
+                throw AuthorizationViolationException.authorizationViolation(message);
             }
         } catch (IndexOutOfBoundsException e) {
             throw ProcedureException.noSuchProcedure(id);

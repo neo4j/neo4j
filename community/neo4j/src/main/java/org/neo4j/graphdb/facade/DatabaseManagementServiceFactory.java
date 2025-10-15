@@ -72,7 +72,6 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.collector.DataCollector;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -464,8 +463,7 @@ public class DatabaseManagementServiceFactory {
                 globalModule.getMemoryPools(),
                 routingService,
                 edition.getDefaultDatabaseResolver(),
-                connectionTenantResolverFactory,
-                globalModule.getGlobalDependencies().resolveDependency(AbstractSecurityLog.class));
+                connectionTenantResolverFactory);
     }
 
     private static void dumpDbmsInfo(InternalLog log, GraphDatabaseAPI system) {

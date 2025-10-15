@@ -54,7 +54,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.CacheCountsTestSupport
 import org.neo4j.cypher.util.CacheCountsTestSupport.CacheCounts
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.kernel.api.security.CommunitySecurityLog
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.AssertableLogProvider.Level
@@ -106,7 +105,6 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
       clock,
       kernelMonitors,
       log,
-      CommunitySecurityLog.NULL_LOG,
       caches,
       CypherPlannerOption.default,
       null,

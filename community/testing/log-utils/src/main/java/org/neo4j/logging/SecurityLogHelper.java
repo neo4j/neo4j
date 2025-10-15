@@ -21,7 +21,6 @@ package org.neo4j.logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.logging.FormattedLogFormat.PLAIN;
 import static org.neo4j.logging.log4j.LogConfig.QUERY_LOG_JSON_TEMPLATE;
@@ -95,7 +94,7 @@ public class SecurityLogHelper {
                 for (int i = 0; i < logLines.length; i++) {
                     LogLineContent expected = logLines[i];
                     ObjectMapper mapper = new ObjectMapper();
-                    Map<String, Object> map = mapper.readValue(contentLines[i], new TypeReference<>() {});
+                    Map<String, String> map = mapper.readValue(contentLines[i], new TypeReference<>() {});
                     assertLine(expected, map);
                 }
             } catch (JsonProcessingException e) {
@@ -113,7 +112,7 @@ public class SecurityLogHelper {
                     boolean found = false;
                     for (; j < contentLines.length; j++) {
                         ObjectMapper mapper = new ObjectMapper();
-                        Map<String, Object> map = mapper.readValue(contentLines[j], new TypeReference<>() {});
+                        Map<String, String> map = mapper.readValue(contentLines[j], new TypeReference<>() {});
                         if (equalLine(expected, map)) {
                             found = true;
                             break;
@@ -128,18 +127,17 @@ public class SecurityLogHelper {
             }
         }
 
-        private boolean equalLine(LogLineContent expected, Map<String, Object> map) {
+        private boolean equalLine(LogLineContent expected, Map<String, String> map) {
             return Objects.equals("security", map.get("type"))
                     && Objects.equals(expected.expectedLevel, map.get("level"))
                     && Objects.equals(expected.expectedSource, map.get("source"))
                     && Objects.equals(expected.expectedDatabase, map.get("database"))
                     && Objects.equals(expected.expectedExecutingUser, map.get("executingUser"))
                     && Objects.equals(expected.expectedAuthenticatedUser, map.get("authenticatedUser"))
-                    && Objects.equals(expected.errorInfo, map.get("errorInfo"))
                     && Objects.equals(expected.expectedMessage, map.get("message"));
         }
 
-        private void assertLine(LogLineContent expected, Map<String, Object> map) {
+        private void assertLine(LogLineContent expected, Map<String, String> map) {
             assertEquals("security", map.get("type"), "'type' mismatch");
             assertEquals(expected.expectedLevel, map.get("level"), "'level' mismatch");
             assertEquals(expected.expectedSource, map.get("source"), "'source' mismatch");
@@ -147,8 +145,7 @@ public class SecurityLogHelper {
             assertEquals(expected.expectedExecutingUser, map.get("executingUser"), "'executingUser' mismatch");
             assertEquals(
                     expected.expectedAuthenticatedUser, map.get("authenticatedUser"), "'authenticatedUser' mismatch");
-            assertEquals(expected.errorInfo, map.get("errorInfo"), "'errorInfo' mismatch");
-            assertMessage(expected, assertInstanceOf(String.class, map.get("message")));
+            assertMessage(expected, map.get("message"));
         }
     }
 
@@ -159,7 +156,6 @@ public class SecurityLogHelper {
                 "^(?<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{4}) " + "(?<level>\\w{4,5})\\s{1,2}"
                         + "((?<source>embedded-session\\t|bolt-session[^>]*>|server-session(?:\\t[^\\t]*){3})\\t)?"
                         + "(\\[(?<authenticatedUser>[^\\s:]+)(:(?<executingUser>[^\\s:]+))?]: )?"
-                        + "(Exception thrown, (?<gqlstatus>\\w{5}): )?"
                         + "(?<message>.+?)");
 
         private LoggerContentValidator(String[] contentLines) {
@@ -202,10 +198,7 @@ public class SecurityLogHelper {
                     && (expected.expectedExecutingUser == null
                             || expected.expectedExecutingUser.equals(expected.expectedAuthenticatedUser)
                             || Objects.equals(expected.expectedExecutingUser, matcher.group("executingUser")))
-                    && Objects.equals(expected.expectedMessage, matcher.group("message"))
-                    && (expected.errorInfo == null
-                            || !expected.errorInfo.containsKey("GQLSTATUS")
-                            || Objects.equals(expected.errorInfo.get("GQLSTATUS"), matcher.group("gqlstatus")));
+                    && Objects.equals(expected.expectedMessage, matcher.group("message"));
         }
 
         private void assertLine(String contentLine, LogLineContent expected) {
@@ -252,7 +245,6 @@ public class SecurityLogHelper {
         private String expectedAuthenticatedUser;
         private String expectedMessage;
         private String messagePrefix;
-        private Map<String, String> errorInfo;
 
         public LogLineContent level(Level level) {
             this.expectedLevel = level.toString();
@@ -284,11 +276,6 @@ public class SecurityLogHelper {
             return this;
         }
 
-        public LogLineContent errorInfo(Map<String, String> errorInfo) {
-            this.errorInfo = errorInfo;
-            return this;
-        }
-
         public LogLineContent messagePrefix(String messagePrefix) {
             this.messagePrefix = messagePrefix;
             return this;
@@ -296,16 +283,14 @@ public class SecurityLogHelper {
 
         @Override
         public String toString() {
-            return "LogLineContent{"
-                    + "expectedLevel='" + expectedLevel + "', "
-                    + "expectedSource='" + expectedSource + "', "
-                    + "expectedDatabase='" + expectedDatabase + "', "
-                    + "expectedExecutingUser='" + expectedExecutingUser + "', "
-                    + "expectedAuthenticatedUser='" + expectedAuthenticatedUser + "', "
-                    + "expectedMessage='" + expectedMessage + "', "
-                    + "expectedErrorInfo=" + errorInfo + ", "
-                    + "messagePrefix='" + messagePrefix + "'"
-                    + '}';
+            return "LogLineContent{" + "expectedLevel='"
+                    + expectedLevel + '\'' + ", expectedSource='"
+                    + expectedSource + '\'' + ", expectedDatabase='"
+                    + expectedDatabase + '\'' + ", expectedExecutingUser='"
+                    + expectedExecutingUser + '\'' + ", expectedAuthenticatedUser='"
+                    + expectedAuthenticatedUser + '\'' + ", expectedMessage='"
+                    + expectedMessage + '\'' + ", messagePrefix='"
+                    + messagePrefix + '\'' + '}';
         }
     }
 }

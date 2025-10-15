@@ -21,9 +21,7 @@ package org.neo4j.internal.kernel.api.security;
 
 import static org.neo4j.internal.helpers.Strings.escape;
 
-import java.util.Map;
 import java.util.regex.Pattern;
-import org.neo4j.gqlstatus.GqlStatus;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.log4j.Neo4jMapMessage;
@@ -46,8 +44,7 @@ public abstract class AbstractSecurityLog {
                 context.database(),
                 subject.executingUser(),
                 message,
-                subject.authenticatedUser(),
-                null));
+                subject.authenticatedUser()));
     }
 
     public void info(String message) {
@@ -57,7 +54,7 @@ public abstract class AbstractSecurityLog {
     public void info(LoginContext context, String message) {
         AuthSubject subject = context.subject();
         inner.info(new SecurityLogLine(
-                context.connectionInfo(), null, subject.executingUser(), message, subject.authenticatedUser(), null));
+                context.connectionInfo(), null, subject.executingUser(), message, subject.authenticatedUser()));
     }
 
     public void info(SecurityContext context, String message) {
@@ -67,8 +64,7 @@ public abstract class AbstractSecurityLog {
                 context.database(),
                 subject.executingUser(),
                 message,
-                subject.authenticatedUser(),
-                null));
+                subject.authenticatedUser()));
     }
 
     public void warn(String message) {
@@ -82,8 +78,7 @@ public abstract class AbstractSecurityLog {
                 context.database(),
                 subject.executingUser(),
                 message,
-                subject.authenticatedUser(),
-                null));
+                subject.authenticatedUser()));
     }
 
     public void error(String message) {
@@ -91,76 +86,19 @@ public abstract class AbstractSecurityLog {
     }
 
     public void error(ClientConnectionInfo connectionInfo, String message) {
-        inner.error(new SecurityLogLine(connectionInfo, null, null, message, null, null));
+        inner.error(new SecurityLogLine(connectionInfo, null, null, message, null));
     }
 
     public void error(LoginContext context, String message) {
         AuthSubject subject = context.subject();
         inner.error(new SecurityLogLine(
-                context.connectionInfo(), null, subject.executingUser(), message, subject.authenticatedUser(), null));
+                context.connectionInfo(), null, subject.executingUser(), message, subject.authenticatedUser()));
     }
 
     public void error(LoginContext context, String database, String message) {
         AuthSubject subject = context.subject();
         inner.error(new SecurityLogLine(
-                context.connectionInfo(),
-                database,
-                subject.executingUser(),
-                message,
-                subject.authenticatedUser(),
-                null));
-    }
-
-    public void error(LoginContext context, String message, Throwable throwable) {
-        AuthSubject subject = context.subject();
-        inner.error(
-                new SecurityLogLine(
-                        context.connectionInfo(),
-                        null,
-                        subject.executingUser(),
-                        message,
-                        subject.authenticatedUser(),
-                        null),
-                throwable);
-    }
-
-    public void error(LoginContext context, String message, Throwable throwable, GqlStatus gqlStatus) {
-        AuthSubject subject = context.subject();
-        inner.error(
-                new SecurityLogLine(
-                        context.connectionInfo(),
-                        null,
-                        subject.executingUser(),
-                        message,
-                        subject.authenticatedUser(),
-                        gqlStatus),
-                throwable);
-    }
-
-    public void error(LoginContext context, String database, String message, Throwable throwable) {
-        AuthSubject subject = context.subject();
-        inner.error(
-                new SecurityLogLine(
-                        context.connectionInfo(),
-                        database,
-                        subject.executingUser(),
-                        message,
-                        subject.authenticatedUser(),
-                        null),
-                throwable);
-    }
-
-    public void error(LoginContext context, String database, String message, Throwable throwable, GqlStatus gqlStatus) {
-        AuthSubject subject = context.subject();
-        inner.error(
-                new SecurityLogLine(
-                        context.connectionInfo(),
-                        database,
-                        subject.executingUser(),
-                        message,
-                        subject.authenticatedUser(),
-                        gqlStatus),
-                throwable);
+                context.connectionInfo(), database, subject.executingUser(), message, subject.authenticatedUser()));
     }
 
     public void error(SecurityContext context, String message) {
@@ -170,42 +108,7 @@ public abstract class AbstractSecurityLog {
                 context.database(),
                 subject.executingUser(),
                 message,
-                subject.authenticatedUser(),
-                null));
-    }
-
-    public void error(String message, Throwable throwable) {
-        inner.error(new SecurityLogLine(message), throwable);
-    }
-
-    public void error(String message, Throwable throwable, GqlStatus exceptionThrown) {
-        inner.error(new SecurityLogLine(null, null, null, message, null, exceptionThrown), throwable);
-    }
-
-    public void error(SecurityContext context, String message, Throwable throwable) {
-        AuthSubject subject = context.subject();
-        inner.error(
-                new SecurityLogLine(
-                        context.connectionInfo(),
-                        context.database(),
-                        subject.executingUser(),
-                        message,
-                        subject.authenticatedUser(),
-                        null),
-                throwable);
-    }
-
-    public void error(SecurityContext context, String message, Throwable throwable, GqlStatus exceptionThrown) {
-        AuthSubject subject = context.subject();
-        inner.error(
-                new SecurityLogLine(
-                        context.connectionInfo(),
-                        context.database(),
-                        subject.executingUser(),
-                        message,
-                        subject.authenticatedUser(),
-                        exceptionThrown),
-                throwable);
+                subject.authenticatedUser()));
     }
 
     public boolean isDebugEnabled() {
@@ -216,11 +119,10 @@ public abstract class AbstractSecurityLog {
         private final String executingUser;
         private final String message;
         private final String authenticatedUser;
-        private final GqlStatus exceptionThrown;
         private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R+");
 
         SecurityLogLine(String message) {
-            this(null, null, null, message, null, null);
+            this(null, null, null, message, null);
         }
 
         SecurityLogLine(
@@ -228,15 +130,13 @@ public abstract class AbstractSecurityLog {
                 String database,
                 String executingUser,
                 String message,
-                String authenticatedUser,
-                GqlStatus exceptionThrown) {
+                String authenticatedUser) {
             super(7);
             String sourceString = connectionInfo != null ? connectionInfo.asConnectionDetails() : "";
             this.executingUser = executingUser;
             // clean message of newlines
             this.message = NEWLINE_PATTERN.matcher(message).replaceAll(" ");
             this.authenticatedUser = authenticatedUser;
-            this.exceptionThrown = exceptionThrown;
 
             with("type", "security");
             with("source", sourceString);
@@ -249,9 +149,6 @@ public abstract class AbstractSecurityLog {
             if (authenticatedUser != null && !authenticatedUser.isEmpty()) {
                 with("authenticatedUser", authenticatedUser);
             }
-            if (exceptionThrown != null) {
-                with("errorInfo", Map.of("GQLSTATUS", exceptionThrown.gqlStatusString()));
-            }
             with("message", this.message);
         }
 
@@ -263,9 +160,6 @@ public abstract class AbstractSecurityLog {
                 } else {
                     sb.append(String.format("[%s:%s]: ", escape(authenticatedUser), escape(executingUser)));
                 }
-            }
-            if (exceptionThrown != null) {
-                sb.append(String.format("Exception thrown, %s: ", exceptionThrown.gqlStatusString()));
             }
             sb.append(message);
         }

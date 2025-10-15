@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api.security;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
 public class AbstractSecurityLogTest {
@@ -31,50 +30,7 @@ public class AbstractSecurityLogTest {
     public void testSecurityLogLineAsString() {
 
         AbstractSecurityLog.SecurityLogLine ll = new AbstractSecurityLog.SecurityLogLine(
-                ClientConnectionInfo.EMBEDDED_CONNECTION,
-                "database",
-                "executingUser",
-                "message",
-                "authUser",
-                GqlStatusInfoCodes.STATUS_42NFF.getGqlStatus());
-
-        StringBuilder sb = new StringBuilder();
-        ll.formatAsString(sb);
-        assertEquals("[authUser:executingUser]: Exception thrown, 42NFF: message", sb.toString());
-    }
-
-    @Test
-    public void testSecurityLogLineAsStringWithoutOptionalValues() {
-
-        AbstractSecurityLog.SecurityLogLine ll = new AbstractSecurityLog.SecurityLogLine(
-                ClientConnectionInfo.EMBEDDED_CONNECTION, "database", null, "message", null, null);
-
-        StringBuilder sb = new StringBuilder();
-        ll.formatAsString(sb);
-        assertEquals("message", sb.toString());
-    }
-
-    @Test
-    public void testSecurityLogLineAsStringWithoutConnectionInfo() {
-
-        AbstractSecurityLog.SecurityLogLine ll = new AbstractSecurityLog.SecurityLogLine(
-                ClientConnectionInfo.EMBEDDED_CONNECTION,
-                "database",
-                null,
-                "message",
-                null,
-                GqlStatusInfoCodes.STATUS_42NFF.getGqlStatus());
-
-        StringBuilder sb = new StringBuilder();
-        ll.formatAsString(sb);
-        assertEquals("Exception thrown, 42NFF: message", sb.toString());
-    }
-
-    @Test
-    public void testSecurityLogLineAsStringWithoutExceptionThrown() {
-
-        AbstractSecurityLog.SecurityLogLine ll = new AbstractSecurityLog.SecurityLogLine(
-                ClientConnectionInfo.EMBEDDED_CONNECTION, "database", "executingUser", "message", "authUser", null);
+                ClientConnectionInfo.EMBEDDED_CONNECTION, "database", "executingUser", "message", "authUser");
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
@@ -89,11 +45,10 @@ public class AbstractSecurityLogTest {
                 "database",
                 "executingUser",
                 "message1\nmessage2\r\nmessage3",
-                "authUser",
-                GqlStatusInfoCodes.STATUS_42NFF.getGqlStatus());
+                "authUser");
 
         StringBuilder sb = new StringBuilder();
         ll.formatAsString(sb);
-        assertEquals("[authUser:executingUser]: Exception thrown, 42NFF: message1 message2 message3", sb.toString());
+        assertEquals("[authUser:executingUser]: message1 message2 message3", sb.toString());
     }
 }

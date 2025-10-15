@@ -25,34 +25,33 @@ import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan.bu
 import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan.checkToPredicate
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.internal.kernel.api.security.PermissionState
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.internal.kernel.api.security.SecurityExceptionLogger
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
 case class AuthorizationAndPredicateExecutionPlan(
-  securityLog: AbstractSecurityLog,
+  securityAuthorizationHandler: SecurityAuthorizationHandler,
   check: (MapValue, TransactionalContext, SecurityContext) => Seq[(AdministrationAction, PermissionState)],
   source: Option[ExecutionPlan],
   violationMessage: (PermissionState, Seq[AdministrationAction]) => String
 ) extends PredicateExecutionPlan(
       DatabaseSecurityPredicate(checkToPredicate(_, _, _, check)),
       source,
-      buildMessage(securityLog, _, _, _, check, violationMessage)
+      buildMessage(securityAuthorizationHandler, _, _, _, check, violationMessage)
     )
 
 object AuthorizationAndPredicateExecutionPlan {
 
   def apply(
-    securityLog: AbstractSecurityLog,
+    securityAuthorizationHandler: SecurityAuthorizationHandler,
     check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)],
     source: Option[ExecutionPlan] = None,
     violationMessage: (PermissionState, Seq[AdministrationAction]) => String = (_, _) => PERMISSION_DENIED
   ): AuthorizationAndPredicateExecutionPlan = {
     AuthorizationAndPredicateExecutionPlan(
-      securityLog,
+      securityAuthorizationHandler,
       (params: MapValue, _: TransactionalContext, sc: SecurityContext) => check(params, sc),
       source,
       (permissionState: PermissionState, actions: Seq[AdministrationAction]) =>
@@ -61,7 +60,7 @@ object AuthorizationAndPredicateExecutionPlan {
   }
 
   private def buildMessage(
-    securityLog: AbstractSecurityLog,
+    securityAuthorizationHandler: SecurityAuthorizationHandler,
     params: MapValue,
     transaction: TransactionalContext,
     securityContext: SecurityContext,
@@ -74,9 +73,8 @@ object AuthorizationAndPredicateExecutionPlan {
       .filterKeys(state => state != PermissionState.EXPLICIT_GRANT).map { case (state, actions) =>
         messageGenerator(state, actions.map(_._1))
       }.mkString("; ")
-    throw new SecurityExceptionLogger(
-      securityLog
-    ).logAndGet(securityContext, AuthorizationViolationException.authorizationViolation(errorMsgs))
+    securityAuthorizationHandler.logAndGetAuthorizationException(securityContext, errorMsgs)
+    throw AuthorizationViolationException.authorizationViolation(errorMsgs)
   }
 
   private def checkToPredicate(

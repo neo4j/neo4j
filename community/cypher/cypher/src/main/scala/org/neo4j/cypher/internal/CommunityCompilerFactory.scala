@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.logging.InternalLog
@@ -69,7 +68,6 @@ class CommunityCompilerFactory(
         MasterCompiler.CLOCK,
         kernelMonitors,
         log,
-        dependencies.resolveDependency(classOf[AbstractSecurityLog]),
         queryCaches,
         cypherPlanner,
         dependencies.resolveDependency(classOf[DatabaseReferenceRepository]),

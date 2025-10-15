@@ -120,7 +120,6 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       null,
-      null,
       null
     )
 

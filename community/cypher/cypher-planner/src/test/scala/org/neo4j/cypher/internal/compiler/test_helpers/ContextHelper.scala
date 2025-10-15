@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.internal.kernel.api.security.CommunitySecurityLog
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -113,7 +112,6 @@ object ContextHelper extends MockitoSugar {
       databaseReferenceRepository,
       databaseId,
       NullLog.getInstance(),
-      CommunitySecurityLog.NULL_LOG,
       internalNotificationStats,
       internalSyntaxUsageStats,
       labelInferenceStrategy,

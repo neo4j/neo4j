@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.kernel.api.security.SecurityExceptionLogger;
 import org.neo4j.internal.kernel.api.security.StaticAccessMode;
 import org.neo4j.kernel.database.PrivilegeDatabaseReference;
 import org.neo4j.kernel.impl.security.User;
@@ -91,18 +90,14 @@ public class BasicLoginContext extends LoginContext {
         SecurityContext securityContext = new SecurityContext(subject(), accessMode, connectionInfo(), dbName);
         if (subject().getAuthenticationResult().equals(FAILURE)
                 || subject().getAuthenticationResult().equals(TOO_MANY_ATTEMPTS)) {
-            throw new SecurityExceptionLogger(securityLog)
-                    .logAndGet(
-                            securityContext,
-                            String.format("Authentication failed for database '%s'.", dbName),
-                            AuthorizationViolationException.permissionDeniedUnauthorized());
+            securityLog.error(securityContext, String.format("Authentication failed for database '%s'.", dbName));
+            throw AuthorizationViolationException.permissionDeniedUnauthorized();
         } else if (!dbName.equals(SYSTEM_DATABASE_NAME)
                 && subject().getAuthenticationResult().equals(PASSWORD_CHANGE_REQUIRED)) {
             String message = AuthorizationViolationException.generateCredentialsExpiredMessage(
                     String.format("ACCESS on database '%s' is not allowed.", dbName));
             securityLog.error(securityContext, message);
-            throw new SecurityExceptionLogger(securityLog)
-                    .logAndGet(securityContext, AuthorizationViolationException.credentialsExpired(message));
+            throw AuthorizationViolationException.credentialsExpired(message);
         }
         return securityContext;
     }

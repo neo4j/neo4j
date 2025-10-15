@@ -99,7 +99,6 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.function.Suppliers;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
@@ -152,7 +151,6 @@ public class BoltServer extends LifecycleAdapter {
 
     private final List<Connector> connectors = new ArrayList<>();
     private final LifeSupport connectorLife = new LifeSupport();
-    private final AbstractSecurityLog securityLog;
     private BoltMemoryPool memoryPool;
     private EventLoopGroup bossEventLoopGroup;
     private EventLoopGroup workerEventLoopGroup;
@@ -181,8 +179,7 @@ public class BoltServer extends LifecycleAdapter {
             MemoryPools memoryPools,
             RoutingService routingService,
             DefaultDatabaseResolver defaultDatabaseResolver,
-            ConnectionAdmissionControlTrackerFactory admissionControlTrackerFactory,
-            AbstractSecurityLog securityLog) {
+            ConnectionAdmissionControlTrackerFactory admissionControlTrackerFactory) {
         this.dbmsInfo = dbmsInfo;
         this.jobScheduler = jobScheduler;
         this.connectorPortRegister = connectorPortRegister;
@@ -197,7 +194,6 @@ public class BoltServer extends LifecycleAdapter {
         this.domainSocketAuthManager = domainSocketAuthManager;
         this.memoryPools = memoryPools;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
-        this.securityLog = securityLog;
         this.connectionHintRegistry = ConnectionHintRegistry.newBuilder()
                 .withProvider(new KeepAliveConnectionHintProvider(config))
                 .withProvider(new TelemetryConnectionHintProvider(config))
@@ -326,7 +322,7 @@ public class BoltServer extends LifecycleAdapter {
             registerConnector(createDomainSocketConnector(
                     domainSocketConnectionFactory,
                     transport,
-                    createAuthentication(domainSocketAuthManager, securityLog),
+                    createAuthentication(domainSocketAuthManager),
                     allocator));
 
             log.info("Configured Unix Domain Socket Bolt connector");
@@ -350,7 +346,7 @@ public class BoltServer extends LifecycleAdapter {
                 encryptionRequired,
                 transport,
                 boltSslPolicyProvider,
-                createAuthentication(externalAuthManager, securityLog),
+                createAuthentication(externalAuthManager),
                 ConnectorType.BOLT,
                 allocator));
 
@@ -360,7 +356,7 @@ public class BoltServer extends LifecycleAdapter {
                     connectionFactory,
                     transport,
                     boltSslPolicyProvider,
-                    createAuthentication(externalAuthManager, securityLog),
+                    createAuthentication(externalAuthManager),
                     ConnectorType.BOLT,
                     allocator));
         }
@@ -388,7 +384,7 @@ public class BoltServer extends LifecycleAdapter {
                     internalEncryptionRequired,
                     transport,
                     clusterSslPolicyProvider,
-                    createAuthentication(internalAuthManager, securityLog),
+                    createAuthentication(internalAuthManager),
                     allocator));
 
             log.info("Configured internal Bolt connector with listener address %s", internalListenAddress);
@@ -400,10 +396,7 @@ public class BoltServer extends LifecycleAdapter {
             localBossEventLoopGroup = createEventLoopGroup(localTransport);
             localWorkerEventLoopGroup = createEventLoopGroup(localTransport);
             registerConnector(createLocalConnector(
-                    connectionFactory,
-                    localTransport,
-                    createAuthentication(externalAuthManager, securityLog),
-                    allocator));
+                    connectionFactory, localTransport, createAuthentication(externalAuthManager), allocator));
         }
 
         log.info("Bolt server loaded");
@@ -591,8 +584,8 @@ public class BoltServer extends LifecycleAdapter {
                 domainSocketExecutorService, clock, logService, admissionControlTrackerFactory);
     }
 
-    private static Authentication createAuthentication(AuthManager authManager, AbstractSecurityLog securityLog) {
-        return new BasicAuthentication(authManager, securityLog);
+    private static Authentication createAuthentication(AuthManager authManager) {
+        return new BasicAuthentication(authManager);
     }
 
     private void enableOcspStapling() {

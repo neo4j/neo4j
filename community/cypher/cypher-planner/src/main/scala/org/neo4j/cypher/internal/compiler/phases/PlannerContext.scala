@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.messages.MessageUtilProvider
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -131,7 +130,6 @@ class PlannerContext(
   val databaseReferenceRepository: DatabaseReferenceRepository,
   val databaseId: NamedDatabaseId,
   val log: Log,
-  val securityLog: AbstractSecurityLog,
   val internalNotificationStats: InternalNotificationStats,
   internalSyntaxUsageStats: InternalUsageStats,
   val labelInferenceStrategy: LabelInferenceStrategy,
@@ -178,7 +176,6 @@ class PlannerContext(
       databaseReferenceRepository,
       databaseId,
       log,
-      securityLog,
       internalNotificationStats,
       internalSyntaxUsageStats,
       labelInferenceStrategy,
@@ -215,7 +212,6 @@ object PlannerContext {
     databaseReferenceRepository: DatabaseReferenceRepository,
     databaseId: NamedDatabaseId,
     log: Log,
-    securityLog: AbstractSecurityLog,
     internalNotificationStats: InternalNotificationStats,
     internalUsageStats: InternalUsageStats,
     sessionDatabase: DatabaseReference
@@ -255,7 +251,6 @@ object PlannerContext {
       databaseReferenceRepository,
       databaseId,
       log,
-      securityLog,
       internalNotificationStats,
       internalUsageStats,
       labelInferenceStrategy,

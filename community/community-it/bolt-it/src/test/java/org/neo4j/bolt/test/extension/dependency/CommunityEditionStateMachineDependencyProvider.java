@@ -38,7 +38,6 @@ import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.bolt.tx.TransactionManagerImpl;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -120,8 +119,7 @@ public class CommunityEditionStateMachineDependencyProvider implements StateMach
 
         this.defaultDatabase =
                 dependencyResolver.resolveDependency(Config.class).get(GraphDatabaseSettings.initial_default_database);
-        var securityLog = dependencyResolver.resolveDependency(AbstractSecurityLog.class);
-        this.authentication = new BasicAuthentication(authManager, securityLog);
+        this.authentication = new BasicAuthentication(authManager);
         this.transactionManager = new TransactionManagerImpl(spi, clock);
     }
 

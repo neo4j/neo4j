@@ -172,11 +172,10 @@ public class GlobalModule {
         globalDependencies.satisfyDependency(fileSystem);
         globalLife.add(new FileSystemLifecycleAdapter(fileSystem));
 
-        // If entire LogService was passed in from the outside, use it
-        logService = tryResolveOrCreate(
-                LogService.class, () -> createLogService(externalDependencies.userLogProvider(), daemonMode));
-        // Then register LogService with this life
-        globalDependencies.satisfyDependency(logService);
+        // If no logging was passed in from the outside then create logging and register
+        // with this life
+        logService = globalDependencies.satisfyDependency(
+                createLogService(externalDependencies.userLogProvider(), daemonMode));
         globalConfig.setLogger(logService.getInternalLog(Config.class));
 
         // Component monitoring
