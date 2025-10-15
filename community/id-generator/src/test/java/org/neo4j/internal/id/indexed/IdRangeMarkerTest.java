@@ -20,6 +20,7 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -388,6 +389,31 @@ class IdRangeMarkerTest {
             verify(writer, times(1)).mergeIfExists(any(), any(), any());
         } else {
             verify(writer, times(1)).merge(any(), any(), any());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("markOperations")
+    void batchWriteShouldHandleBatchesCrossingOverTheRangeBoundary(NamedOperation markOperation) {
+        Writer<IdRangeKey, IdRange> writer = mock(Writer.class);
+        int highestWrittenId = markOperation.name.equals("unallocated") ? 100 : -1;
+        try (IdRangeMarker marker = new IdRangeMarker(
+                TestIdType.TEST,
+                idsPerEntry,
+                layout,
+                writer,
+                mock(Lock.class),
+                MERGER,
+                true,
+                new AtomicInteger(),
+                1,
+                new AtomicLong(highestWrittenId),
+                true,
+                false,
+                NO_MONITOR)) {
+            long id = random.nextLong(1000L);
+            assertThatCode(() -> markOperation.operation.apply(marker, id, idsPerEntry + 1))
+                    .doesNotThrowAnyException();
         }
     }
 

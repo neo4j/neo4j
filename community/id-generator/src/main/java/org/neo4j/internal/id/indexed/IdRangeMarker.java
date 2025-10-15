@@ -20,6 +20,7 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.neo4j.internal.id.indexed.IdRange.ADDITION_ALL;
+import static org.neo4j.internal.id.indexed.IdRange.ADDITION_NONE;
 import static org.neo4j.internal.id.indexed.IdRange.ADDITION_REUSE;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_ALL;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
@@ -200,8 +201,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void markUsed(long id, int numberOfIds) {
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, false);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(TYPE_USED, id, false);
-            value.setBits(BITSET_ALL, idOffset(id), numberOfIds);
+            markWithSupportForLargerThanRange(TYPE_USED, id, numberOfIds, ADDITION_NONE, BITSET_ALL, -1);
             monitor.markedAsUsed(id, numberOfIds);
         }
     }
@@ -210,8 +210,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void markDeleted(long id, int numberOfIds) {
         if (!deleteAlsoFrees) {
             if (!hasReservedIdInRange(id, id + numberOfIds)) {
-                prepareRange(TYPE_DELETED, id, true);
-                value.setBits(BITSET_COMMIT, idOffset(id), numberOfIds);
+                markWithSupportForLargerThanRange(TYPE_DELETED, id, numberOfIds, ADDITION_ALL, BITSET_COMMIT, -1);
                 monitor.markedAsDeleted(id, numberOfIds);
             }
         } else {
@@ -222,8 +221,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void markReserved(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(TYPE_RESERVED, id, true);
-            value.setBits(BITSET_RESERVED, idOffset(id), numberOfIds);
+            markWithSupportForLargerThanRange(TYPE_RESERVED, id, numberOfIds, ADDITION_ALL, BITSET_RESERVED, -1);
             monitor.markedAsReserved(id, numberOfIds);
         }
     }
@@ -231,8 +229,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void markUnreserved(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(TYPE_UNRESERVED, id, false);
-            value.setBits(BITSET_RESERVED, idOffset(id), numberOfIds);
+            markWithSupportForLargerThanRange(TYPE_UNRESERVED, id, numberOfIds, ADDITION_NONE, BITSET_RESERVED, -1);
             monitor.markedAsUnreserved(id, numberOfIds);
         }
     }
@@ -241,10 +238,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void markUncached(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
             // Mark free:1, reserved:0
-            prepareRange(TYPE_UNCACHED, id, ADDITION_REUSE);
-            var idOffset = idOffset(id);
-            value.setBits(BITSET_REUSE, idOffset, numberOfIds);
-            value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
+            markWithSupportForLargerThanRange(
+                    TYPE_UNCACHED, id, numberOfIds, ADDITION_REUSE, BITSET_REUSE, BITSET_RESERVED);
             monitor.markedAsFree(id, numberOfIds);
             monitor.markedAsUnreserved(id, numberOfIds);
         }
@@ -253,8 +248,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void markFree(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(TYPE_FREE, id, true);
-            value.setBits(BITSET_REUSE, idOffset(id), numberOfIds);
+            markWithSupportForLargerThanRange(TYPE_FREE, id, numberOfIds, ADDITION_ALL, BITSET_REUSE, -1);
             monitor.markedAsFree(id, numberOfIds);
         }
     }
@@ -262,10 +256,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void markDeletedAndFree(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(TYPE_DELETED_AND_FREE, id, true);
-            var idOffset = idOffset(id);
-            value.setBits(BITSET_COMMIT, idOffset, numberOfIds);
-            value.setBits(BITSET_REUSE, idOffset, numberOfIds);
+            markWithSupportForLargerThanRange(
+                    TYPE_DELETED_AND_FREE, id, numberOfIds, ADDITION_ALL, BITSET_COMMIT, BITSET_REUSE);
             monitor.markedAsDeleted(id, numberOfIds);
             monitor.markedAsFree(id, numberOfIds);
         }
@@ -296,10 +288,6 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
             id += numberOfIdsInThisRange;
             numberOfIds -= numberOfIdsInThisRange;
         }
-    }
-
-    private void prepareRange(int newType, long id, boolean addition) {
-        prepareRange(newType, id, addition ? ADDITION_ALL : 0);
     }
 
     private void prepareRange(int newType, long id, byte addition) {
@@ -340,7 +328,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
      * Fills the space between the previously highest ever written id and the id currently being updated. The ids between those two points
      * will be marked as deleted, or in the recovery case (where {@link #started} is {@code false} marked as deleted AND free.
      * This solves a problem of not losing track of ids that have been allocated off of high id, but either not committed or failed to be committed.
-     * @param id the id being updated.
+     *
+     * @param id          the id being updated.
      * @param numberOfIds number of ids this id allocation is.
      */
     private void bridgeGapBetweenHighestWrittenIdAndThisId(long id, int numberOfIds, boolean includeThis) {
