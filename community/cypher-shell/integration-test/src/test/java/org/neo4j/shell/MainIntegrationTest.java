@@ -938,6 +938,8 @@ class MainIntegrationTest extends TestHarness {
 
     @Test
     void shouldNicelyPrintVectors() throws Exception {
+        assumeAtLeastVersion("2025.10.0"); // When vectors were made GA
+
         buildTest()
                 .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
                 .userInputLines(
