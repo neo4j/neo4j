@@ -22,6 +22,7 @@ package org.neo4j.server.queryapi.tx;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.util.VisibleForTesting;
 
 public interface TransactionManager {
 
@@ -52,4 +53,11 @@ public interface TransactionManager {
     void beginTimeoutJob();
 
     long openTransactionCount();
+
+    /**
+     * Close and remove all managed transactions.
+     * This method is specially used in tests and it is not safe.
+     */
+    @VisibleForTesting
+    void removeAllTransactions();
 }

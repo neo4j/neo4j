@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
+import org.neo4j.util.VisibleForTesting;
 
 public class QueryAPITransactionManager implements TransactionManager {
 
@@ -141,5 +142,13 @@ public class QueryAPITransactionManager implements TransactionManager {
     @Override
     public long openTransactionCount() {
         return transactions.size();
+    }
+
+    @Override
+    @VisibleForTesting
+    public void removeAllTransactions() {
+        for (Map.Entry<String, Transaction> tx : transactions.entrySet()) {
+            removeTransaction(tx.getKey());
+        }
     }
 }

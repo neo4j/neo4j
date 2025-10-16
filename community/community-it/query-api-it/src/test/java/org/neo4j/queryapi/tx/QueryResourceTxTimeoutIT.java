@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -86,6 +87,11 @@ public class QueryResourceTxTimeoutIT {
     @AfterAll
     static void afterAll() {
         dbms.shutdown();
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        txManager.removeAllTransactions();
     }
 
     @AfterEach

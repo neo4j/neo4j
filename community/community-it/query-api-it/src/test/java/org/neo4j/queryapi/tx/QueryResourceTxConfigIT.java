@@ -33,6 +33,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
@@ -90,6 +91,11 @@ public class QueryResourceTxConfigIT {
     @AfterAll
     static void afterAll() {
         dbms.shutdown();
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        txManager.removeAllTransactions();
     }
 
     @AfterEach
@@ -259,8 +265,8 @@ public class QueryResourceTxConfigIT {
         assertThat(continueRes).hasQueryStatistics();
         assertThat(commitRes).hasQueryStatistics();
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     @Test
@@ -279,8 +285,8 @@ public class QueryResourceTxConfigIT {
         assertThat(continueRes).hasNoQueryStatistics();
         assertThat(commitRes).hasNoQueryStatistics();
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     @Test
@@ -315,8 +321,8 @@ public class QueryResourceTxConfigIT {
                         NotificationCodeWithDescription.MISSING_LABEL,
                         NotificationCodeWithDescription.CARTESIAN_PRODUCT);
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     @Test
@@ -336,8 +342,8 @@ public class QueryResourceTxConfigIT {
         assertThat(continueRes).hasNoNotifications();
         assertThat(commitRes).hasNoNotifications();
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     @Test
@@ -356,8 +362,8 @@ public class QueryResourceTxConfigIT {
         assertThat(continueRes).hasQueryPlan();
         assertThat(commitRes).hasQueryPlan();
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     @Test
@@ -376,8 +382,8 @@ public class QueryResourceTxConfigIT {
         assertThat(continueRes).hasNoQueryPlan();
         assertThat(commitRes).hasNoQueryPlan();
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     @Test
@@ -396,8 +402,8 @@ public class QueryResourceTxConfigIT {
         assertThat(continueRes).hasProfiledQueryPlan();
         assertThat(commitRes).hasProfiledQueryPlan();
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     @Test
@@ -417,8 +423,8 @@ public class QueryResourceTxConfigIT {
         assertThat(continueRes).hasNoProfiledQueryPlan();
         assertThat(commitRes).hasNoProfiledQueryPlan();
 
-        testClient.commitTx(res.body().txId());
-        testClient.commitTx(continueBeginRes.body().txId());
+        assertThat(testClient.commitTx(res.body().txId())).wasSuccessful();
+        assertThat(testClient.commitTx(continueBeginRes.body().txId())).wasSuccessful();
     }
 
     void shouldRejectConfigOnSubsequentRequests() throws IOException, InterruptedException {
