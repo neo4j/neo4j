@@ -167,6 +167,7 @@ public abstract class BatchedInputEntityVisitor implements InputEntityVisitor {
         flush();
     }
 
+    @Override
     public void flush() throws IOException {
         if (!batch.isEmpty()) {
             var entities = batch.toArray(new InputEntity[0]);

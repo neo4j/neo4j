@@ -142,6 +142,8 @@ public interface InputEntityVisitor extends Closeable {
     @Override
     default void close() throws IOException {}
 
+    default void flush() throws IOException {}
+
     class Adapter implements InputEntityVisitor {
         @Override
         public boolean property(String key, Object value, boolean identifier) {
@@ -382,6 +384,16 @@ public interface InputEntityVisitor extends Closeable {
         @Override
         public void close() throws IOException {
             actual.close();
+        }
+
+        @Override
+        public boolean removedProperties(int[] keys) {
+            return actual.removedProperties(keys);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            actual.flush();
         }
     }
 

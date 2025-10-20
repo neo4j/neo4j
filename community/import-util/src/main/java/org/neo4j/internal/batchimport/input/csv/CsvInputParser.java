@@ -88,6 +88,7 @@ public class CsvInputParser implements Closeable {
                         throw new UnexpectedEndOfInputException("Near " + mark);
                     }
                     // We're just at the end
+                    visitor.flush();
                     return false;
                 }
 
