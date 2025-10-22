@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.administration
 
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
+import org.neo4j.cypher.internal.administration.DatabaseListParameterTransformerFunction.ShowDatabaseResult
 import org.neo4j.cypher.internal.administration.DatabaseListParameterTransformerFunction.detailLevels
 import org.neo4j.cypher.internal.administration.ShowDatabaseExecutionPlanner.accessibleDbsKey
 import org.neo4j.cypher.internal.ast.DatabaseScope
@@ -38,6 +39,7 @@ import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterTransformer
 import org.neo4j.cypher.internal.procs.ParameterTransformerFunction
 import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.dbms.database.DatabaseDetails
 import org.neo4j.dbms.database.TopologyInfoService
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL
@@ -52,6 +54,7 @@ import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.DefaultDatabaseResolver
+import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -103,15 +106,26 @@ class DatabaseListParameterTransformerFunction(
         (allReferences, Set.empty)
     }
 
-    val accessibleDatabases = filteredReferences
+    val accessibleDatabases: Map[NamedDatabaseId, Seq[String]] = filteredReferences
       .collect {
+        case db: DatabaseReferenceImpl.Composite
+          if db.isPrimary && securityContext.databaseAccessMode().canSeeDatabase(db) =>
+          (DatabaseIdFactory.from(db.alias().name(), db.id()), db.constituents().asScala.map(_.name()).toSeq)
         case db if db.isPrimary && securityContext.databaseAccessMode().canSeeDatabase(db) =>
-          DatabaseIdFactory.from(db.alias().name(), db.id())
-      }
+          (DatabaseIdFactory.from(db.alias().name(), db.id()), Seq.empty)
+      }.toMap
 
     val dbMetadata = {
-      val dbInfos = infoService.databases(transaction, accessibleDatabases.asJava, detailLevels(verbose, maybeYield))
-      dbInfos.asScala.map(info => DatabaseDetailsMapper.toMapValue(info)).toList.asJava
+      val dbInfos =
+        infoService.databases(transaction, accessibleDatabases.keySet.asJava, detailLevels(verbose, maybeYield))
+          .asScala
+          .map(d =>
+            ShowDatabaseResult(
+              d,
+              accessibleDatabases.getOrElse(d.namedDatabaseId(), Seq.empty)
+            )
+          )
+      dbInfos.map(info => DatabaseDetailsMapper.toMapValue(info)).toList.asJava
     }
 
     (
@@ -223,4 +237,9 @@ object DatabaseListParameterTransformerFunction {
       TopologyInfoService.RequestedExtras.NONE
     }
   }
+
+  case class ShowDatabaseResult(
+    details: DatabaseDetails,
+    constituents: Seq[String]
+  )
 }

@@ -146,11 +146,9 @@ case class ShowDatabasesExecutionPlanner(
            |WITH d, dn, props, homeDbName
            |OPTIONAL MATCH (d)<-[:$TARGETS]-(a:$DATABASE_NAME)
            |WITH a, d, dn, props, homeDbName ORDER BY a.$DISPLAY_NAME_PROPERTY
-           |OPTIONAL MATCH (constituent:$DATABASE_NAME {$NAMESPACE_PROPERTY: dn.$NAME_PROPERTY})
-           |WHERE d:$COMPOSITE_DATABASE AND constituent <> dn
            |WITH d.name as name,
            |collect(a) as aliases,
-           |collect(constituent.$DISPLAY_NAME_PROPERTY) as constituents,
+           |props.$CONSTITUENTS_COL as $CONSTITUENTS_COL,
            |props.$ACCESS_COL as $ACCESS_COL,
            |props.$ADDRESS_COL as $ADDRESS_COL,
            |props.$ROLE_COL as $ROLE_COL,
