@@ -43,7 +43,12 @@ public final class BitMask implements ReferenceCounted {
     }
 
     public BitMask(ByteBufAllocator alloc, int length) {
-        this(alloc.buffer(length / 8 + (length % 8 == 0 ? 0 : 1)), length);
+        this(allocateZeroedBuffer(alloc, length), length);
+    }
+
+    private static ByteBuf allocateZeroedBuffer(ByteBufAllocator alloc, int length) {
+        var bufferLength = length / 8 + (length % 8 == 0 ? 0 : 1);
+        return alloc.buffer(bufferLength).setZero(0, bufferLength);
     }
 
     public BitMask(byte[] encoded) {
