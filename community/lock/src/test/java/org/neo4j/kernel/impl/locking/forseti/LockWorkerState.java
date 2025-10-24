@@ -53,4 +53,8 @@ class LockWorkerState {
         this.completedOperations.add(this.doing);
         this.doing = null;
     }
+
+    public static void resetTransactionIdCounter() {
+        TRANSACTION_ID.set(0);
+    }
 }

@@ -170,6 +170,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
     @Test
     void shouldIncludeDeadlockCycleForSimpleUpdateDeadlock() throws Exception {
         // given
+        LockWorkerState.resetTransactionIdCounter();
         var resource = 10L;
         try (var t1 = new LockWorker("T1", locks);
                 var t2 = new LockWorker("T1", locks)) {
