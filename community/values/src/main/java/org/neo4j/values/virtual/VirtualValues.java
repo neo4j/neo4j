@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.memory.HeapEstimatorCache;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.ArrayValue;
@@ -52,6 +53,18 @@ public final class VirtualValues {
         ValueRepresentation representation = ValueRepresentation.ANYTHING;
         for (AnyValue value : values) {
             payloadSize += value.estimatedHeapUsage();
+            if (value.valueRepresentation() != representation) {
+                representation = representation.coerce(value.valueRepresentation());
+            }
+        }
+        return new ListValue.ArrayListValue(values, payloadSize, representation);
+    }
+
+    public static ListValue list(HeapEstimatorCache heapEstimatorCache, AnyValue... values) {
+        long payloadSize = 0;
+        ValueRepresentation representation = ValueRepresentation.ANYTHING;
+        for (AnyValue value : values) {
+            payloadSize += value.estimatedHeapUsage(heapEstimatorCache);
             if (value.valueRepresentation() != representation) {
                 representation = representation.coerce(value.valueRepresentation());
             }

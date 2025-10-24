@@ -34,7 +34,7 @@ class DistinctSlottedPipeTest extends CypherFunSuite {
     val slots = SlotConfigurationBuilder.empty.newLong("a", nullable = false, CTNode).build()
 
     val input = FakeSlottedPipe(Seq(Map("a" -> 10)), slots)
-    val pipe = DistinctSlottedPipe(input, slots, EmptyGroupingExpression)()
+    val pipe = DistinctSlottedPipe(input, slots, EmptyGroupingExpression, enableScopedHeapEstimatorCache = false)()
     // exhaust
     pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).toList
     input.wasClosed shouldBe true
@@ -47,7 +47,7 @@ class DistinctSlottedPipeTest extends CypherFunSuite {
     val slots = SlotConfigurationBuilder.empty.newLong("a", nullable = false, CTNode).build()
 
     val input = FakeSlottedPipe(Seq(Map("a" -> 10)), slots)
-    val pipe = DistinctSlottedPipe(input, slots, EmptyGroupingExpression)()
+    val pipe = DistinctSlottedPipe(input, slots, EmptyGroupingExpression, enableScopedHeapEstimatorCache = false)()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.close()
     input.wasClosed shouldBe true

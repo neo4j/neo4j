@@ -41,17 +41,17 @@ object NestedPipeExpressions {
       private val instance = bottomUp(Rewriter.lift {
         case expr @ NestedPlanExistsExpression(patternPlan, _) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
-          val pipe = pipeBuilder.build(patternPlan, cancellationChecker)
+          val pipe = pipeBuilder.build(patternPlan, cancellationChecker, isNestedPlan = true)
           NestedPipeExistsExpression(pipe, availableForPlan)(expr.position)
 
         case expr @ NestedPlanCollectExpression(patternPlan, expression, _) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
-          val pipe = pipeBuilder.build(patternPlan, cancellationChecker)
+          val pipe = pipeBuilder.build(patternPlan, cancellationChecker, isNestedPlan = true)
           NestedPipeCollectExpression(pipe, expression, availableForPlan)(expr.position)
 
         case expr @ NestedPlanGetByNameExpression(patternPlan, columnToGet, _) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
-          val pipe = pipeBuilder.build(patternPlan, cancellationChecker)
+          val pipe = pipeBuilder.build(patternPlan, cancellationChecker, isNestedPlan = true)
           NestedPipeGetByNameExpression(pipe, columnToGet.name, availableForPlan)(expr.position)
       })
 

@@ -113,7 +113,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     )(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =
-    PipeTreeBuilder(pipeMapper).build(logicalPlan, CancellationChecker.neverCancelled())
+    PipeTreeBuilder(pipeMapper).build(logicalPlan, CancellationChecker.neverCancelled(), isNestedPlan = false)
 
   test("projection only query") {
     val logicalPlan = Projection(

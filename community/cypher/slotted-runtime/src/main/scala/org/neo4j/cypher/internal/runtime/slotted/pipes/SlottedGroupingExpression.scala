@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.WritableRow
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.memory.HeapEstimatorCache
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
@@ -38,7 +39,11 @@ case class SlotExpression(slot: Slot, expression: Expression, ordered: Boolean =
 case object EmptyGroupingExpression extends GroupingExpression {
   override type KeyType = AnyValue
 
-  override def computeGroupingKey(context: ReadableRow, state: QueryState): AnyValue = Values.NO_VALUE
+  override def computeGroupingKey(
+    context: ReadableRow,
+    state: QueryState,
+    heapEstimatorCache: HeapEstimatorCache
+  ): AnyValue = Values.NO_VALUE
   override def computeOrderedGroupingKey(groupingKey: AnyValue): AnyValue = Values.NO_VALUE
 
   override def getGroupingKey(context: CypherRow): AnyValue = Values.NO_VALUE
@@ -55,7 +60,11 @@ case class SlottedGroupingExpression1(groupingExpression: SlotExpression) extend
   private val ordered: AnyValue => AnyValue =
     if (groupingExpression.ordered) identity else _ => Values.NO_VALUE
 
-  override def computeGroupingKey(context: ReadableRow, state: QueryState): AnyValue =
+  override def computeGroupingKey(
+    context: ReadableRow,
+    state: QueryState,
+    heapEstimatorCache: HeapEstimatorCache
+  ): AnyValue =
     groupingExpression.expression(context, state)
   override def computeOrderedGroupingKey(groupingKey: AnyValue): AnyValue = ordered(groupingKey)
 
@@ -87,7 +96,12 @@ case class SlottedGroupingExpression2(groupingExpression1: SlotExpression, group
       _ => Values.NO_VALUE
     }
 
-  override def computeGroupingKey(context: ReadableRow, state: QueryState): ListValue = list(
+  override def computeGroupingKey(
+    context: ReadableRow,
+    state: QueryState,
+    heapEstimatorCache: HeapEstimatorCache
+  ): ListValue = list(
+    heapEstimatorCache,
     groupingExpression1.expression(context, state),
     groupingExpression2.expression(context, state)
   )
@@ -143,7 +157,12 @@ case class SlottedGroupingExpression3(
       _ => Values.NO_VALUE
     }
 
-  override def computeGroupingKey(context: ReadableRow, state: QueryState): ListValue = list(
+  override def computeGroupingKey(
+    context: ReadableRow,
+    state: QueryState,
+    heapEstimatorCache: HeapEstimatorCache
+  ): ListValue = list(
+    heapEstimatorCache,
     groupingExpression1.expression(context, state),
     groupingExpression2.expression(context, state),
     groupingExpression3.expression(context, state)
@@ -173,14 +192,18 @@ case class SlottedGroupingExpression(sortedGroupingExpression: Array[SlotExpress
   private val expressions = sortedGroupingExpression.map(_.expression)
   private val numberOfSortedColumns = sortedGroupingExpression.count(_.ordered)
 
-  override def computeGroupingKey(context: ReadableRow, state: QueryState): ListValue = {
+  override def computeGroupingKey(
+    context: ReadableRow,
+    state: QueryState,
+    heapEstimatorCache: HeapEstimatorCache
+  ): ListValue = {
     val values = new Array[AnyValue](expressions.length)
     var i = 0
     while (i < values.length) {
       values(i) = expressions(i)(context, state)
       i += 1
     }
-    list(values: _*)
+    list(heapEstimatorCache, values: _*)
   }
 
   override def computeOrderedGroupingKey(groupingKey: ListValue): AnyValue = {
