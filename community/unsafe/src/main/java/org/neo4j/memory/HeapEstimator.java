@@ -38,8 +38,14 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.neo4j.internal.unsafe.UnsafeUtil;
+import org.neo4j.util.FeatureToggles;
 
 public final class HeapEstimator {
+
+    private static final String FAILED_UNSAFE_LOOKUPS_NAME = "ignoreFailedUnsafeLookups";
+    private static final boolean IGNORE_FAILED_UNSAFE_LOOKUPS =
+            FeatureToggles.flag(HeapEstimator.class, FAILED_UNSAFE_LOOKUPS_NAME, false);
+
     private HeapEstimator() {}
 
     /**
@@ -436,7 +442,18 @@ public final class HeapEstimator {
                     if (!Modifier.isStatic(f.getModifiers())) {
                         Class<?> type = f.getType();
                         int fieldSize = type.isPrimitive() ? PRIMITIVE_SIZES.get(type) : OBJECT_REFERENCE_BYTES;
-                        size = max(size, UnsafeUtil.getFieldOffset(f) + fieldSize);
+                        try {
+                            size = max(size, UnsafeUtil.getFieldOffset(f) + fieldSize);
+                        } catch (Exception e) {
+                            if (!IGNORE_FAILED_UNSAFE_LOOKUPS) {
+                                throw new RuntimeException(
+                                        ("Unsafe.objectFieldOffset call failure. "
+                                                        + "To ignore this on VMs that does not support "
+                                                        + "this call please add -D%s.%s=true to the JVM arguments.")
+                                                .formatted(HeapEstimator.class.getName(), FAILED_UNSAFE_LOOKUPS_NAME),
+                                        e);
+                            }
+                        }
                     }
                 }
             }
