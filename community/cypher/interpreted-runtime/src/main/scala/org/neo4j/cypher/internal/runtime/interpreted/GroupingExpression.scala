@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.WritableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.memory.HeapEstimatorCache
+import org.neo4j.memory.HeapEstimatorCache.NoHeapEstimatorCache
 import org.neo4j.values.AnyValue
 
 /**
@@ -35,9 +37,14 @@ trait GroupingExpression {
    * Computes the grouping key, it will either be a single AnyValue or a SequenceValue of AnyValues
    * @param context used for evaluating expressions
    * @param state used for evaluating expressions
+   * @param heapEstimatorCache cache for heap estimations
    * @return the grouping key
    */
-  def computeGroupingKey(context: ReadableRow, state: QueryState): KeyType
+  def computeGroupingKey(
+    context: ReadableRow,
+    state: QueryState,
+    heapEstimatorCache: HeapEstimatorCache = NoHeapEstimatorCache.INSTANCE
+  ): KeyType
 
   /**
    * Compute the grouping key for all columns that have a provided order.

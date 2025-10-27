@@ -322,6 +322,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.UnionSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ValueHashJoinSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -344,6 +345,12 @@ class SlottedPipeMapper(
   indexRegistrator: QueryIndexRegistrator
 )(implicit semanticTable: TokenTable)
     extends PipeMapper {
+
+  override def onBeginMap(
+    rootPlan: LogicalPlan,
+    cancellationChecker: CancellationChecker,
+    isNestedPlan: Boolean
+  ): Unit = {}
 
   override def onLeaf(plan: LogicalPlan): Pipe = {
 
@@ -1644,10 +1651,12 @@ class SlottedPipeMapper(
         OrderedAggregationPipe(source, tableFactory)(id = id)
 
       case Distinct(_, groupingExpressions) =>
-        chooseDistinctPipe(groupingExpressions, Seq.empty, slots, source, id)
+        val isTopLevel = physicalPlan.applyPlans.isInOutermostScope(plan)
+        chooseDistinctPipe(groupingExpressions, Seq.empty, slots, source, id, isTopLevel)
 
       case OrderedDistinct(_, groupingExpressions, orderToLeverage) =>
-        chooseDistinctPipe(groupingExpressions, orderToLeverage, slots, source, id)
+        val isTopLevel = physicalPlan.applyPlans.isInOutermostScope(plan)
+        chooseDistinctPipe(groupingExpressions, orderToLeverage, slots, source, id, isTopLevel)
 
       case Top(_, sortItems, _) if sortItems.isEmpty => source
 
@@ -2038,7 +2047,8 @@ class SlottedPipeMapper(
     orderToLeverage: Seq[internal.expressions.Expression],
     slots: SlotConfiguration,
     source: Pipe,
-    id: Id
+    id: Id,
+    isTopLevel: Boolean
   ): Pipe = {
     val convertExpressions = (e: internal.expressions.Expression) => expressionConverters.toCommandExpression(id, e)
 
@@ -2088,7 +2098,8 @@ class SlottedPipeMapper(
           DistinctSlottedPipe(
             source,
             slots,
-            expressionConverters.toGroupingExpression(id, groupingExpressions, orderToLeverage)
+            expressionConverters.toGroupingExpression(id, groupingExpressions, orderToLeverage),
+            enableScopedHeapEstimatorCache = isTopLevel
           )(id)
         } else if (groupingExpressions.values.forall(orderToLeverage.contains)) {
           AllOrderedDistinctSlottedPipe(

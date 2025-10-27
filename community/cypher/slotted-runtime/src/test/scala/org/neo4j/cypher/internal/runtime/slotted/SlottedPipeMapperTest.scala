@@ -172,7 +172,11 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )(table)
     val pipeBuilder =
       new SlottedPipeMapper(fallback, converters, physicalPlan, true, mock[QueryIndexRegistrator])(table)
-    PipeTreeBuilder(pipeBuilder).build(physicalPlan.logicalPlan, CancellationChecker.neverCancelled())
+    PipeTreeBuilder(pipeBuilder).build(
+      physicalPlan.logicalPlan,
+      CancellationChecker.neverCancelled(),
+      isNestedPlan = false
+    )
   }
 
   private val label = labelName("label")

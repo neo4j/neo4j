@@ -26,10 +26,16 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.DistinctSet
+import org.neo4j.memory.HeapEstimatorCache
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValueBuilder
 
-case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])(val id: Id = Id.INVALID_ID)
+case class DistinctPipe(
+  source: Pipe,
+  groupingColumns: Array[GroupingCol],
+  enableScopedHeapEstimatorCache: Boolean = false
+)(val id: Id = Id.INVALID_ID)
     extends PipeWithSource(source) {
 
   private val keyNames = groupingColumns.map(_.key)
@@ -39,12 +45,20 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])(val i
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     new PrefetchingIterator[CypherRow] {
+      private val memoryTracker: MemoryTracker =
+        state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x, enableScopedHeapEstimatorCache)
+      private val heapEstimatorCache = if (enableScopedHeapEstimatorCache) {
+        memoryTracker.getScopedHeapEstimatorCache
+      } else {
+        HeapEstimatorCache.NoHeapEstimatorCache.INSTANCE
+      }
+
       /*
        * The filtering is done by extracting from the context the values of all return expressions, and keeping them
        * in a set.
        */
       private var seen =
-        DistinctSet.createDistinctSet[AnyValue](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+        DistinctSet.createDistinctSet[AnyValue](memoryTracker)
 
       state.query.resources.trace(seen)
 
@@ -58,7 +72,7 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])(val i
             i += 1
           }
           val builder = ListValueBuilder.newListBuilder(keyNames.length)
-          keyNames.foreach(name => builder.add(next.getByName(name)))
+          keyNames.foreach(name => builder.add(next.getByName(name), heapEstimatorCache))
           val groupingValue = builder.build()
 
           if (seen.add(groupingValue)) {
@@ -76,7 +90,7 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])(val i
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case DistinctPipe(otherSource, otherGroupingColumns) =>
+      case DistinctPipe(otherSource, otherGroupingColumns, _) =>
         otherSource == this.source && otherGroupingColumns.sameElements(this.groupingColumns)
       case _ => false
     }

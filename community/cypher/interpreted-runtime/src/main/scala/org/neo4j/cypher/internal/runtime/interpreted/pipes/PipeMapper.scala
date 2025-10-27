@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
  * Maps single logical plan operators to their respective pipes. Does not recurse.
  */
 trait PipeMapper extends LogicalPlans.Mapper[Pipe] {
+  def onBeginMap(rootPlan: LogicalPlan, cancellationChecker: CancellationChecker, isNestedPlan: Boolean): Unit
   override def onLeaf(plan: LogicalPlan): Pipe
   override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe
   override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe
@@ -34,7 +35,8 @@ trait PipeMapper extends LogicalPlans.Mapper[Pipe] {
 
 case class PipeTreeBuilder(pipeMapper: PipeMapper) {
 
-  def build(logicalPlan: LogicalPlan, cancellationChecker: CancellationChecker): Pipe = {
+  def build(logicalPlan: LogicalPlan, cancellationChecker: CancellationChecker, isNestedPlan: Boolean): Pipe = {
+    pipeMapper.onBeginMap(logicalPlan, cancellationChecker, isNestedPlan)
     LogicalPlans.map(logicalPlan, pipeMapper)(cancellationChecker)
   }
 }

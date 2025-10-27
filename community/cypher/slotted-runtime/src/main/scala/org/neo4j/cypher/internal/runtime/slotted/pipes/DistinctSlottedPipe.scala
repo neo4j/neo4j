@@ -29,9 +29,16 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.DistinctSet
+import org.neo4j.memory.HeapEstimatorCache
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
-case class DistinctSlottedPipe(source: Pipe, slots: SlotConfiguration, groupingExpression: GroupingExpression)(
+case class DistinctSlottedPipe(
+  source: Pipe,
+  slots: SlotConfiguration,
+  groupingExpression: GroupingExpression,
+  enableScopedHeapEstimatorCache: Boolean
+)(
   val id: Id = Id.INVALID_ID
 ) extends PipeWithSource(source) {
 
@@ -40,8 +47,15 @@ case class DistinctSlottedPipe(source: Pipe, slots: SlotConfiguration, groupingE
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     new PrefetchingIterator[CypherRow] {
+      private val memoryTracker: MemoryTracker =
+        state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x, enableScopedHeapEstimatorCache)
+      private val heapEstimatorCache = if (enableScopedHeapEstimatorCache) {
+        memoryTracker.getScopedHeapEstimatorCache
+      } else {
+        HeapEstimatorCache.NoHeapEstimatorCache.INSTANCE
+      }
       private var seen =
-        DistinctSet.createDistinctSet[AnyValue](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+        DistinctSet.createDistinctSet[AnyValue](memoryTracker)
 
       state.query.resources.trace(seen)
 
@@ -49,7 +63,7 @@ case class DistinctSlottedPipe(source: Pipe, slots: SlotConfiguration, groupingE
         while (input.hasNext) {
           val next: CypherRow = input.next()
 
-          val key = groupingExpression.computeGroupingKey(next, state)
+          val key = groupingExpression.computeGroupingKey(next, state, heapEstimatorCache)
           if (seen.add(key)) {
             // Found unseen key! Set it as the next element to yield, and exit
             groupingExpression.project(next, key)

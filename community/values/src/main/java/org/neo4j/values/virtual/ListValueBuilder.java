@@ -30,6 +30,7 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import org.neo4j.memory.HeapEstimatorCache;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ValueRepresentation;
 
@@ -67,6 +68,12 @@ public abstract class ListValueBuilder {
 
     public final void add(AnyValue value) {
         estimatedHeapSize += value.estimatedHeapUsage();
+        valueRepresentation = valueRepresentation.coerce(value.valueRepresentation());
+        internalAdd(value);
+    }
+
+    public final void add(AnyValue value, HeapEstimatorCache heapEstimatorCache) {
+        estimatedHeapSize += value.estimatedHeapUsage(heapEstimatorCache);
         valueRepresentation = valueRepresentation.coerce(value.valueRepresentation());
         internalAdd(value);
     }

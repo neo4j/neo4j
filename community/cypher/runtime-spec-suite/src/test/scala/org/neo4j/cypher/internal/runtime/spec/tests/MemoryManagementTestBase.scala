@@ -1048,6 +1048,30 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().maxAllocatedMemory() should be < 200000L
   }
 
+  test("should not count duplicated memory of large object in top-level distinct") {
+    // given
+    val sizeHint = 1000
+    val largeObject = "a".repeat(65536)
+    val input = inputValues(Array(largeObject))
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c2")
+      .distinct("i2 AS i2", "c AS c2")
+      .unwind(s"range(1, $sizeHint) AS i2")
+      .aggregation(Seq.empty, Seq("collect(x) as c"))
+      .unwind(s"range(1, $sizeHint) as i")
+      .input(variables = Seq("x"))
+      .build()
+
+    val queryConfig = QueryRuntimeConfig.DEFAULT.withHeapEstimatorCacheConfig(HeapEstimatorCacheConfig.SMALL)
+    val result = profileQuery(logicalQuery, runtime, input.stream(), queryConfig = queryConfig)
+
+    // Matching on the result is painfully slow, so skip it. It is tested elsewhere.
+
+    result.awaitAll()
+
+    result.runtimeResult.queryProfile().maxAllocatedMemory() should be < 200000L
+  }
+
   protected def assertHeapHighWaterMark(
     logicalQuery: LogicalQuery,
     valueToEstimate: ValueToEstimate,

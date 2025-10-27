@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.Profiler
 import org.neo4j.cypher.internal.runtime.slottedParameters
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -85,6 +86,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       )
     )
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
+    val cancellationChecker: CancellationChecker = () => context.assertOpen.assertOpen()
     val pipeMapper = InterpretedPipeMapper(
       context.cypherVersion,
       query.readOnly,
@@ -101,9 +103,9 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
         pipeTreeBuilder,
         withSlottedParameters,
         availableExpressionVars,
-        () => context.assertOpen.assertOpen()
+        cancellationChecker
       )
-    val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans, () => context.assertOpen.assertOpen())
+    val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans, cancellationChecker, isNestedPlan = false)
     val columns = query.resultColumns
 
     val transactionsMode = calculateTransactionMode(query)
