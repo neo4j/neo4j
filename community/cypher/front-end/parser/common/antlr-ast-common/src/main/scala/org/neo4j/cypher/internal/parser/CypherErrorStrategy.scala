@@ -48,6 +48,8 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.math.Ordering.Implicits.seqOrdering
+import scala.util.Success
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -65,7 +67,13 @@ final class CypherErrorStrategy(conf: CypherErrorStrategy.Conf) extends ANTLRErr
     if (!inErrorRecoveryMode(parser)) {
       beginErrorCondition()
       populateException(parser.getContext, e)
-      parser.notifyErrorListeners(e.getOffendingToken, message(parser, e), e)
+      Try(message(parser, e)) match {
+        case Success(msg) =>
+          parser.notifyErrorListeners(e.getOffendingToken, msg, e)
+        case _ =>
+          parser.notifyErrorListeners(e.getOffendingToken, e.getMessage, e)
+      }
+
     }
   }
 
@@ -132,12 +140,20 @@ final class CypherErrorStrategy(conf: CypherErrorStrategy.Conf) extends ANTLRErr
   }
 
   private def isUnclosedQuote(offender: Token): Boolean = {
-    offender.getText == "'" || offender.getText == "\""
+    offender != null && (offender.getText == "'" || offender.getText == "\"")
   }
 
   private def isUnclosedComment(offender: Token, recognizer: Parser): Boolean = {
-    (offender.getText == "/" && recognizer.getInputStream.LT(2).getText == "*") ||
-    (offender.getText == "*" && recognizer.getInputStream.LT(-1).getText == "/")
+    val offenderText = if (offender != null) offender.getText else null
+    if (offenderText == "/") {
+      val nextToken = recognizer.getInputStream.LT(2)
+      nextToken != null && nextToken.getText == "*"
+    } else if (offenderText == "*") {
+      val previousToken = recognizer.getInputStream.LT(-1)
+      previousToken != null && previousToken.getText == "/"
+    } else {
+      false
+    }
   }
 
   @tailrec
