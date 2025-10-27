@@ -93,10 +93,11 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
 
     @Test
     void testMultipleThreads() throws Exception {
-        LockWorker t1 = new LockWorker("T1", locks);
-        LockWorker t2 = new LockWorker("T2", locks);
-        LockWorker t3 = new LockWorker("T3", locks);
-        LockWorker t4 = new LockWorker("T4", locks);
+        LockWorkerManager workerManager = new LockWorkerManager(locks);
+        LockWorker t1 = workerManager.createWorker("T1");
+        LockWorker t2 = workerManager.createWorker("T2");
+        LockWorker t3 = workerManager.createWorker("T3");
+        LockWorker t4 = workerManager.createWorker("T4");
         long r1 = 1L;
         try {
             t1.getReadLock(r1, true);
@@ -160,20 +161,17 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
             Path file = dumper.dumpState(locks, t1, t2, t3, t4);
             throw new RuntimeException("Failed, forensics information dumped to " + file.toAbsolutePath(), e);
         } finally {
-            t1.close();
-            t2.close();
-            t3.close();
-            t4.close();
+            workerManager.closeAll();
         }
     }
 
     @Test
     void shouldIncludeDeadlockCycleForSimpleUpdateDeadlock() throws Exception {
         // given
-        LockWorkerState.resetTransactionIdCounter();
+        LockWorkerManager workerManager = new LockWorkerManager(locks);
         var resource = 10L;
-        try (var t1 = new LockWorker("T1", locks);
-                var t2 = new LockWorker("T1", locks)) {
+        try (var t1 = workerManager.createWorker("T1");
+                var t2 = workerManager.createWorker("T2")) {
             t1.getReadLock(resource, true);
             t2.getReadLock(resource, true);
             var t1ExclusiveAcquire = t1.getWriteLock(resource, false);
@@ -187,6 +185,8 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
                     .hasMessageContaining(
                             "NODE(10)-[SHARED_OWNER]->(tx:0)-[WAITING_FOR_EXCLUSIVE]->(NODE(10))-[SHARED_OWNER]->(tx:1)-[WAITING_FOR_EXCLUSIVE]->(NODE(10)");
             t1ExclusiveAcquire.get();
+        } finally {
+            workerManager.closeAll();
         }
     }
 

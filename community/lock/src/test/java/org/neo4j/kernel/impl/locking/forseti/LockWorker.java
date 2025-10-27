@@ -30,9 +30,9 @@ import org.neo4j.test.OtherThreadExecutor;
 public class LockWorker extends OtherThreadExecutor {
     private final LockWorkerState state;
 
-    public LockWorker(String name, LockManager locks) {
+    public LockWorker(String name, LockManager locks, long transactionId) {
         super(name);
-        state = new LockWorkerState(locks);
+        state = new LockWorkerState(locks, transactionId);
     }
 
     private Future<Void> perform(Callable<Void> acquireLockCommand, boolean wait) throws Exception {
