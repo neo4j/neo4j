@@ -78,8 +78,18 @@ public class Dumper {
         this.progressPrinter = createProgressPrinter(progressPrinter);
     }
 
-    public void dump(Path path, Path archive, CompressionFormat format) throws IOException {
-        dump(path, path, openForDump(archive), format, Predicates.alwaysFalse());
+    public void dump(Path path, Path archive, CompressionFormat format, boolean deleteAfterCopy) throws IOException {
+        dump(path, path, openForDump(archive), format, Predicates.alwaysFalse(), deleteAfterCopy);
+    }
+
+    public void dump(
+            Path dbPath,
+            Path transactionalLogsPath,
+            OutputStream out,
+            CompressionFormat format,
+            Predicate<Path> exclude)
+            throws IOException {
+        dump(dbPath, transactionalLogsPath, out, format, exclude, false);
     }
 
     public OutputStream openForDump(Path archive) throws IOException {
@@ -101,32 +111,34 @@ public class Dumper {
     }
 
     /**
-     * @param dbPath store file location
+     * @param dbPath                store file location
      * @param transactionalLogsPath tx logs location
-     * @param out output stream, will be closed by this method
-     * @param format compression format
-     * @param exclude exclusion predicate
+     * @param out                   output stream, will be closed by this method
+     * @param format                compression format
+     * @param exclude               exclusion predicate
+     * @param deleteAfterCopy       delete file after copying to backup
      * @throws IOException in case of error
      */
-    public void dump(
+    private void dump(
             Path dbPath,
             Path transactionalLogsPath,
             OutputStream out,
             CompressionFormat format,
-            Predicate<Path> exclude)
+            Predicate<Path> exclude,
+            boolean deleteAfterCopy)
             throws IOException {
         operations.clear();
 
-        visitPath(dbPath, exclude);
+        visitPath(dbPath, exclude, deleteAfterCopy);
         if (!Util.isSameOrChildFile(dbPath, transactionalLogsPath)) {
-            visitPath(transactionalLogsPath, exclude);
+            visitPath(transactionalLogsPath, exclude, deleteAfterCopy);
         }
 
         dump(out, format);
     }
 
     /**
-     * @param out output stream, will be closed by this method
+     * @param out    output stream, will be closed by this method
      * @param format compression format
      * @throws IOException in case of error
      */
@@ -146,18 +158,19 @@ public class Dumper {
     }
 
     /**
-     * @param folderPath folder to archive
-     * @param exclude exclusion predicate
+     * @param folderPath      folder to archive
+     * @param exclude         exclusion predicate
+     * @param deleteAfterCopy will delete file immediately after dumping file
      * @throws IOException in case of error
      */
-    public void visitPath(Path folderPath, Predicate<Path> exclude) throws IOException {
+    public void visitPath(Path folderPath, Predicate<Path> exclude, boolean deleteAfterCopy) throws IOException {
         Files.walkFileTree(
                 folderPath,
                 onlyMatching(
                         exclude.negate(),
                         throwExceptions(onDirectory(
                                 dir -> dumpDirectory(folderPath, dir),
-                                onFile(file -> dumpFile(folderPath, file), justContinue())))));
+                                onFile(file -> dumpFile(folderPath, file, deleteAfterCopy), justContinue())))));
     }
 
     private ArchiveOutputStream wrapArchiveOut(OutputStream out, CompressionFormat format) throws IOException {
@@ -184,8 +197,16 @@ public class Dumper {
         metadata.writeLong(progressPrinter.maxBytes());
     }
 
-    private void dumpFile(Path root, Path file) throws IOException {
-        withEntry(stream -> writeFile(file, stream), root, file);
+    private void dumpFile(Path root, Path file, boolean deleteAfterCopy) throws IOException {
+        withEntry(
+                stream -> {
+                    writeFile(file, stream);
+                    if (deleteAfterCopy) {
+                        fs.delete(file);
+                    }
+                },
+                root,
+                file);
     }
 
     private void dumpDirectory(Path root, Path dir) throws IOException {

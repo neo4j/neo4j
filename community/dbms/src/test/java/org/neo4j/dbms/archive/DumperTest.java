@@ -21,7 +21,9 @@ package org.neo4j.dbms.archive;
 
 import static java.util.Collections.emptySet;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 
@@ -111,5 +113,41 @@ class DumperTest {
             });
             assertEquals(archive.getParent().toString(), exception.getMessage());
         }
+    }
+
+    @Test
+    void shouldKeepOriginalFilesWhenDump() throws IOException {
+        Path db = testDirectory.directory("a-directory");
+        Path sub = db.resolve("subdir");
+        Files.createDirectories(sub);
+
+        Path storeFile = sub.resolve("store-file");
+        byte[] data = new byte[] {0, 1, 2, 3, 4};
+        Files.write(storeFile, data);
+
+        Path archive = testDirectory.file("the-archive.dump");
+        Dumper dumper = new Dumper(filesystem);
+        dumper.dump(db, archive, GZIP, false);
+
+        // Source unchanged (no diffs)
+        assertArrayEquals(data, Files.readAllBytes(storeFile));
+    }
+
+    @Test
+    void shouldDeleteOriginalFilesWhenDumpWithDeleteAfterCopy() throws IOException {
+        Path db = testDirectory.directory("a-directory");
+        Path sub = db.resolve("subdir");
+        Files.createDirectories(sub);
+
+        Path storeFile = sub.resolve("store-file");
+        byte[] data = new byte[] {0, 1, 2, 3, 4};
+        Files.write(storeFile, data);
+
+        Path archive = testDirectory.file("the-archive.dump");
+        Dumper dumper = new Dumper(filesystem);
+        dumper.dump(db, archive, GZIP, true);
+
+        // Source unchanged (no diffs)
+        assertFalse(Files.exists(storeFile));
     }
 }
