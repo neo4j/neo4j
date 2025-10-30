@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.FileUtils.toBufferedStream;
@@ -59,6 +60,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     public static final Set<OpenOption> WRITE_OPTIONS = Set.of(READ, WRITE, CREATE);
     private static final Set<OpenOption> READ_OPTIONS = Set.of(READ);
     private static final Set<OpenOption> APPEND_OPTIONS = Set.of(CREATE, APPEND);
+    private static final Set<OpenOption> TRUNCATE_OPTIONS = Set.of(WRITE, CREATE, TRUNCATE_EXISTING);
 
     @Override
     public FileWatcher fileWatcher() throws IOException {
@@ -74,7 +76,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
-        return toBufferedStream(fileName, this::getStoreFileChannel, append ? APPEND_OPTIONS : WRITE_OPTIONS);
+        return toBufferedStream(fileName, this::getStoreFileChannel, append ? APPEND_OPTIONS : TRUNCATE_OPTIONS);
     }
 
     @Override
