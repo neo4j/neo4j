@@ -53,7 +53,7 @@ trait AstBuildingAntlrParser extends Parser {
       // Here we care about correct error handling.
       // Stop on failures to not hide the cause of an error with sequent exceptions
 
-      if (localCtx.exception == null && checker.check(localCtx)) buildAstWithErrorHandling(localCtx)
+      if (checker.check(localCtx)) buildAstWithErrorHandling(localCtx)
       else hasFailed = true
     }
 
