@@ -51,6 +51,7 @@ class RelationshipSelectionTest {
 
         // then
         assertThat(selection.highestType()).isEqualTo(typesReference[typesReference.length - 1]);
+        assertThat(selection.lowestType()).isEqualTo(typesReference[0]);
     }
 
     @Test
@@ -69,10 +70,27 @@ class RelationshipSelectionTest {
 
         // then
         assertThat(selection.highestType()).isEqualTo(5);
+        assertThat(selection.lowestType()).isEqualTo(0);
         assertThat(selection.numberOfCriteria()).isEqualTo(6);
         assertThat(selection.test(NO_TOKEN)).isFalse();
         for (int i = 0; i < 6; i++) {
             assertThat(selection.test(i)).isTrue();
         }
+    }
+
+    @Test
+    void shouldHaveDecentLowestTypeForAllNoTokens() {
+        // given
+        var types = new int[] {3};
+        Arrays.fill(types, NO_TOKEN);
+
+        // when
+        var selection = RelationshipSelection.selection(types, Direction.OUTGOING);
+
+        // then
+        assertThat(selection.highestType()).isEqualTo(-1);
+        assertThat(selection.lowestType()).isEqualTo(-1);
+        assertThat(selection.numberOfCriteria()).isEqualTo(0);
+        assertThat(selection.test(NO_TOKEN)).isFalse();
     }
 }

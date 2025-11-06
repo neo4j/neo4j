@@ -97,6 +97,13 @@ public abstract class RelationshipSelection {
     }
 
     /**
+     * @return the lowest possible type in the selection. If this selection is type-limited then this will be
+     * the lowest of all selected types whereas if it's not type-limited then this will be 0.
+     * If this selection is empty then this will be -1.
+     */
+    public abstract int lowestType();
+
+    /**
      * @return the highest possible type in the selection.
      */
     public abstract int highestType();
@@ -128,17 +135,21 @@ public abstract class RelationshipSelection {
     }
 
     private static RelationshipSelection directionalMultipleTypesSelection(int[] types, Direction direction) {
+        int lowest = Integer.MAX_VALUE;
         int highest = -1;
         int toFilter = 0;
         for (int type : types) {
             highest = Math.max(highest, type);
             if (type == NO_TOKEN) {
                 toFilter++;
+            } else {
+                lowest = Math.min(lowest, type);
             }
         }
+        lowest = Math.min(lowest, highest);
 
         if (toFilter == 0) {
-            return new DirectionalMultipleTypes(types.clone(), direction, highest);
+            return new DirectionalMultipleTypes(types.clone(), direction, lowest, highest);
         } else {
             int[] filtered = new int[types.length - toFilter];
             int i = 0;
@@ -152,7 +163,7 @@ public abstract class RelationshipSelection {
             } else if (filtered.length == 1) {
                 return new DirectionalSingleType(filtered[0], direction);
             } else {
-                return new DirectionalMultipleTypes(filtered, direction, highest);
+                return new DirectionalMultipleTypes(filtered, direction, lowest, highest);
             }
         }
     }
@@ -239,6 +250,11 @@ public abstract class RelationshipSelection {
         }
 
         @Override
+        public int lowestType() {
+            return type;
+        }
+
+        @Override
         public int highestType() {
             return type;
         }
@@ -282,11 +298,13 @@ public abstract class RelationshipSelection {
 
     private static class DirectionalMultipleTypes extends Directional {
         private final int[] types;
+        private final int lowestType;
         private final int highestType;
 
-        private DirectionalMultipleTypes(int[] types, Direction direction, int highestType) {
+        private DirectionalMultipleTypes(int[] types, Direction direction, int lowestType, int highestType) {
             super(direction);
             this.types = types;
+            this.lowestType = lowestType;
             this.highestType = highestType;
         }
 
@@ -323,6 +341,11 @@ public abstract class RelationshipSelection {
         }
 
         @Override
+        public int lowestType() {
+            return lowestType;
+        }
+
+        @Override
         public int highestType() {
             return highestType;
         }
@@ -347,7 +370,7 @@ public abstract class RelationshipSelection {
         public RelationshipSelection reverse() {
             return Direction.BOTH.equals(direction)
                     ? this
-                    : new DirectionalMultipleTypes(types, direction.reverse(), highestType);
+                    : new DirectionalMultipleTypes(types, direction.reverse(), lowestType, highestType);
         }
 
         @Override
@@ -465,6 +488,11 @@ public abstract class RelationshipSelection {
         }
 
         @Override
+        public int lowestType() {
+            return directedTypes.isTypeLimited() ? directedTypes.criterionType(0) : 0;
+        }
+
+        @Override
         public int highestType() {
             return directedTypes.isTypeLimited()
                     ? directedTypes.criterionType(directedTypes.numberOfCriteria() - 1)
@@ -546,6 +574,11 @@ public abstract class RelationshipSelection {
         }
 
         @Override
+        public int lowestType() {
+            return 0;
+        }
+
+        @Override
         public int highestType() {
             return Integer.MAX_VALUE;
         }
@@ -600,6 +633,11 @@ public abstract class RelationshipSelection {
         @Override
         public boolean isTypeLimited() {
             return true;
+        }
+
+        @Override
+        public int lowestType() {
+            return -1;
         }
 
         @Override
