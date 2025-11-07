@@ -40,7 +40,7 @@ object TranslateExceptionMacros {
           $f
         } catch {
           case e: org.neo4j.exceptions.KernelException =>
-            throw new org.neo4j.exceptions.CypherExecutionException(e.getUserMessage($tokenNameLookup), e)
+            throw org.neo4j.exceptions.CypherExecutionException.wrapKernelException(e.getUserMessage($tokenNameLookup), e)
 
           case e: org.neo4j.graphdb.ConstraintViolationException =>
             throw new org.neo4j.exceptions.ConstraintViolationException(e.getMessage, e)

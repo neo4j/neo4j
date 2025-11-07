@@ -46,6 +46,13 @@ public class CypherExecutionException extends Neo4jException {
         super(gqlStatusObject, message);
     }
 
+    public static CypherExecutionException wrapKernelException(String msg, KernelException e) {
+        if (e.gqlStatusObject() != null) {
+            return new CypherExecutionException(e, msg, e);
+        }
+        return new CypherExecutionException(msg, e);
+    }
+
     public static CypherExecutionException csvBufferSizeOverflow(Throwable cause) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22000)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N49)
