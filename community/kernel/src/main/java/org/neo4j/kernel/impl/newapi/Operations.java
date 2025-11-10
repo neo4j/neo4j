@@ -979,11 +979,11 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         if (hasRelatedSchema) {
             existingPropertyKeyIds = loadSortedNodePropertyKeyList();
         }
+        ktx.securityAuthorizationHandler()
+                .assertAllowsSetProperty(
+                        ktx.securityContext(), this::resolvePropertyKey, Labels.from(labels), propertyKey);
 
         if (existingValue == NO_VALUE) {
-            ktx.securityAuthorizationHandler()
-                    .assertAllowsSetProperty(
-                            ktx.securityContext(), this::resolvePropertyKey, Labels.from(labels), propertyKey);
             if (hasRelatedSchema) {
                 checkUniquenessConstraints(node, propertyKey, value, labels, existingPropertyKeyIds);
             }
@@ -994,9 +994,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 updater.onPropertyAdd(nodeCursor, propertyCursor, labels, propertyKey, existingPropertyKeyIds, value);
             }
         } else if (propertyHasChanged(value, existingValue)) {
-            ktx.securityAuthorizationHandler()
-                    .assertAllowsSetProperty(
-                            ktx.securityContext(), this::resolvePropertyKey, Labels.from(labels), propertyKey);
             if (hasRelatedSchema) {
                 checkUniquenessConstraints(node, propertyKey, value, labels, existingPropertyKeyIds);
             }
@@ -1060,6 +1057,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         MutableIntSet afterPropertyKeyIdsSet = IntSets.mutable.of(existingPropertyKeyIds);
         RichIterable<IntObjectPair<Value>> propertiesKeyValueView = properties.keyValuesView();
         MutableIntSet removedPropertyKeyIdsSet = null;
+        MutableIntSet addedPropertyKeyIdsSet = null;
         MutableIntSet changedPropertyKeyIdsSet = null;
         for (IntObjectPair<Value> property : propertiesKeyValueView) {
             int key = property.getOne();
@@ -1072,6 +1070,10 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 afterPropertyKeyIdsSet.remove(key);
             } else {
                 afterPropertyKeyIdsSet.add(key);
+                if (addedPropertyKeyIdsSet == null) {
+                    addedPropertyKeyIdsSet = IntSets.mutable.empty();
+                }
+                addedPropertyKeyIdsSet.add(key);
                 Value existingValue = existingValuesForChangedProperties.get(key);
                 if (existingValue == null || propertyHasChanged(value, existingValue)) {
                     if (changedPropertyKeyIdsSet == null) {
@@ -1082,6 +1084,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         }
         int[] afterPropertyKeyIds = afterPropertyKeyIdsSet.toSortedArray();
+        int[] addedPropertyKeyIds =
+                addedPropertyKeyIdsSet != null ? addedPropertyKeyIdsSet.toSortedArray() : EMPTY_INT_ARRAY;
         int[] changedPropertyKeyIds =
                 changedPropertyKeyIdsSet != null ? changedPropertyKeyIdsSet.toSortedArray() : EMPTY_INT_ARRAY;
 
@@ -1187,17 +1191,19 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         }
         // add/change properties
-        if (changedPropertyKeyIdsSet != null) {
+        if (addedPropertyKeyIdsSet != null) {
             Labels labelsAfterSet = Labels.from(labelsAfter);
             MutableIntSet existingPropertyKeyIdsBeforeChange = IntSets.mutable.of(existingPropertyKeyIds);
-            for (int key : changedPropertyKeyIds) {
+            for (int key : addedPropertyKeyIds) {
+                ktx.securityAuthorizationHandler()
+                        .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, labelsAfterSet, key);
+                if (changedPropertyKeyIdsSet == null || !changedPropertyKeyIdsSet.contains(key)) {
+                    continue;
+                }
                 Value value = properties.get(key);
                 Value existingValue = existingValuesForChangedProperties.getIfAbsent(key, () -> NO_VALUE);
                 if (existingValue == NO_VALUE) {
                     // adding of new property
-                    ktx.securityAuthorizationHandler()
-                            .assertAllowsSetProperty(
-                                    ktx.securityContext(), this::resolvePropertyKey, labelsAfterSet, key);
                     ktx.txState().nodeDoAddProperty(node, key, value);
                     boolean hasRelatedSchema = storageReader.hasRelatedSchema(labelsAfter, key, NODE);
                     if (hasRelatedSchema) {
@@ -1212,9 +1218,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 } else // since it's in the changedPropertyKeyIds array we know that it's an actually changed value
                 {
                     // changing of existing property
-                    ktx.securityAuthorizationHandler()
-                            .assertAllowsSetProperty(
-                                    ktx.securityContext(), this::resolvePropertyKey, labelsAfterSet, key);
                     ktx.txState().nodeDoChangeProperty(node, key, value);
                     boolean hasRelatedSchema = storageReader.hasRelatedSchema(labelsAfter, key, NODE);
                     if (hasRelatedSchema) {
@@ -1262,6 +1265,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         int[] existingPropertyKeyIds = loadSortedRelationshipPropertyKeyList();
         MutableIntSet afterPropertyKeyIdsSet = IntSets.mutable.of(existingPropertyKeyIds);
         boolean hasPropertyRemovals = false;
+        MutableIntSet addedPropertyKeyIdsSet = null;
         MutableIntSet changedPropertyKeyIdsSet = null;
         RichIterable<IntObjectPair<Value>> propertiesKeyValueView = properties.keyValuesView();
         for (IntObjectPair<Value> property : propertiesKeyValueView) {
@@ -1272,6 +1276,10 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 afterPropertyKeyIdsSet.remove(key);
             } else {
                 afterPropertyKeyIdsSet.add(key);
+                if (addedPropertyKeyIdsSet == null) {
+                    addedPropertyKeyIdsSet = IntSets.mutable.empty();
+                }
+                addedPropertyKeyIdsSet.add(key);
                 Value existingValue = existingValuesForChangedProperties.get(key);
                 if (existingValue == null || propertyHasChanged(value, existingValue)) {
                     if (changedPropertyKeyIdsSet == null) {
@@ -1282,6 +1290,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         }
 
+        int[] addedPropertyKeyIds =
+                addedPropertyKeyIdsSet != null ? addedPropertyKeyIdsSet.toSortedArray() : EMPTY_INT_ARRAY;
         int[] changedPropertyKeyIds =
                 changedPropertyKeyIdsSet != null ? changedPropertyKeyIdsSet.toSortedArray() : EMPTY_INT_ARRAY;
 
@@ -1335,15 +1345,18 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         }
 
         // add/change properties
-        if (changedPropertyKeyIdsSet != null) {
+        if (addedPropertyKeyIdsSet != null) {
             MutableIntSet existingPropertyKeyIdsBeforeChange = IntSets.mutable.of(existingPropertyKeyIds);
-            for (int key : changedPropertyKeyIds) {
+            for (int key : addedPropertyKeyIds) {
+                ktx.securityAuthorizationHandler()
+                        .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, key);
+                if (changedPropertyKeyIdsSet == null || !changedPropertyKeyIdsSet.contains(key)) {
+                    continue;
+                }
                 Value value = properties.get(key);
                 Value existingValue = existingValuesForChangedProperties.getIfAbsent(key, () -> NO_VALUE);
                 if (existingValue == NO_VALUE) {
                     // adding of new property
-                    ktx.securityAuthorizationHandler()
-                            .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, key);
                     ktx.txState()
                             .relationshipDoReplaceProperty(
                                     relationship,
@@ -1366,8 +1379,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 } else // since it's in the changedPropertyKeyIds array we know that it's an actually changed value
                 {
                     // changing of existing property
-                    ktx.securityAuthorizationHandler()
-                            .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, key);
                     ktx.txState()
                             .relationshipDoReplaceProperty(
                                     relationship,
@@ -1489,9 +1500,10 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         if (hasRelatedSchema) {
             existingPropertyKeyIds = loadSortedRelationshipPropertyKeyList();
         }
+        ktx.securityAuthorizationHandler()
+                .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, propertyKey);
+
         if (existingValue == NO_VALUE) {
-            ktx.securityAuthorizationHandler()
-                    .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, propertyKey);
             if (hasRelatedSchema) {
                 checkRelationshipUniquenessConstraints(relationship, propertyKey, value, type, existingPropertyKeyIds);
             }
@@ -1511,8 +1523,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             return;
         }
         if (propertyHasChanged(existingValue, value)) {
-            ktx.securityAuthorizationHandler()
-                    .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, propertyKey);
             if (hasRelatedSchema) {
                 checkRelationshipUniquenessConstraints(relationship, propertyKey, value, type, existingPropertyKeyIds);
             }
