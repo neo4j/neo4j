@@ -347,6 +347,7 @@ case class pruningVarExpander(
           _: Union |
           _: ValueHashJoin =>
           val newHorizon = plan match {
+
             /**
              * [[ValueHashJoin]] needs its own case so dependencies from its join expression can be tracked.
              */

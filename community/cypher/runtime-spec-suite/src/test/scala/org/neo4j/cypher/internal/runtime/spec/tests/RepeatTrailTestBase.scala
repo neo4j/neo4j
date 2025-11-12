@@ -913,7 +913,7 @@ abstract class RepeatTrailTestBase[CONTEXT <: RuntimeContext](
       val r2 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
       (n1, n2, n3, r1, r2)
     }
-    val `() ((a)->[r]->(b)->[s]->(c))+ ()` : TrailParameters = TrailParameters(
+    val `() ((a)->[r]->(b)->[s]->(c))+ ()`: TrailParameters = TrailParameters(
       min = 1,
       max = Unlimited,
       start = "anon_start",
@@ -2662,37 +2662,37 @@ object RepeatTrailTestBase {
     )
   }
 
-  val `(me) [(a)-[r]->(b)]{0,1} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)]{0,1} (you)`: TrailParameters =
     createMeYouTrailParameters(min = 0, max = Limited(1))
 
-  val `(me) [(a)-[r]->(b)]{0,2} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)]{0,2} (you)`: TrailParameters =
     createMeYouTrailParameters(min = 0, max = Limited(2))
 
-  val `(me) [(a)-[r]->(b)]{0,3} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)]{0,3} (you)`: TrailParameters =
     createMeYouTrailParameters(min = 0, max = Limited(3))
 
-  val `(me) [(a)-[r]->(b)]{0,*} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)]{0,*} (you)`: TrailParameters =
     createMeYouTrailParameters(min = 0, max = Unlimited)
 
-  val `(me) [(a)-[r]->(b)]{1,1} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)]{1,1} (you)`: TrailParameters =
     createMeYouTrailParameters(min = 1, max = Limited(1))
 
-  val `(me) [(a)-[r]->(b)]{1,2} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)]{1,2} (you)`: TrailParameters =
     createMeYouTrailParameters(min = 1, max = Limited(2))
 
-  val `(me) [(a)-[r]->(b)]{2,2} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)]{2,2} (you)`: TrailParameters =
     createMeYouTrailParameters(min = 2, max = Limited(2))
 
-  val `(you) [(c)-[rr]->(d)]{0,1} (other)` : TrailParameters =
+  val `(you) [(c)-[rr]->(d)]{0,1} (other)`: TrailParameters =
     createYouOtherTrailParameters(min = 0, max = Limited(1))
 
-  val `(you) [(c)-[rr]->(d)]{0,2} (other)` : TrailParameters =
+  val `(you) [(c)-[rr]->(d)]{0,2} (other)`: TrailParameters =
     createYouOtherTrailParameters(min = 0, max = Limited(2))
 
-  val `(you) [(c)-[rr]->(d)]{1,2} (other)` : TrailParameters =
+  val `(you) [(c)-[rr]->(d)]{1,2} (other)`: TrailParameters =
     createYouOtherTrailParameters(min = 1, max = Limited(2))
 
-  val `(me) [(a)-[r]->()-[]->(b)]{0,*} (you)` : TrailParameters = TrailParameters(
+  val `(me) [(a)-[r]->()-[]->(b)]{0,*} (you)`: TrailParameters = TrailParameters(
     min = 0,
     max = Unlimited,
     start = "me",
@@ -2707,7 +2707,7 @@ object RepeatTrailTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)` : TrailParameters = TrailParameters(
+  val `(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)`: TrailParameters = TrailParameters(
     min = 1,
     max = Limited(1),
     start = "start",
@@ -2722,7 +2722,7 @@ object RepeatTrailTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)` : TrailParameters = TrailParameters(
+  val `(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`: TrailParameters = TrailParameters(
     min = 0,
     max = Unlimited,
     start = "firstMiddle",
@@ -2737,7 +2737,7 @@ object RepeatTrailTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)` : TrailParameters = TrailParameters(
+  val `(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`: TrailParameters = TrailParameters(
     min = 0,
     max = Unlimited,
     start = "middle",
@@ -2752,7 +2752,7 @@ object RepeatTrailTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(you) [(b)<-[r]-(a)]{0, *} (me)` : TrailParameters =
+  val `(you) [(b)<-[r]-(a)]{0, *} (me)`: TrailParameters =
     TrailParameters(
       min = 0,
       max = Unlimited,
@@ -2768,7 +2768,7 @@ object RepeatTrailTestBase {
       reverseGroupVariableProjections = true
     )
 
-  val `(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)`: TrailParameters =
     TrailParameters(
       min = 0,
       max = UpperBound.Limited(1),
@@ -2784,7 +2784,7 @@ object RepeatTrailTestBase {
       reverseGroupVariableProjections = false
     )
 
-  val `(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)` : TrailParameters = TrailParameters(
+  val `(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)`: TrailParameters = TrailParameters(
     1,
     UpperBound.Unlimited,
     "me",
@@ -2799,7 +2799,7 @@ object RepeatTrailTestBase {
     false
   )
 
-  val `(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)` : TrailParameters = TrailParameters(
+  val `(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)`: TrailParameters = TrailParameters(
     1,
     UpperBound.Unlimited,
     "b_inner",
@@ -2814,7 +2814,7 @@ object RepeatTrailTestBase {
     false
   )
 
-  val `(aa) ((e)<-[rrr]-(f)){1,}) (g)` : TrailParameters = TrailParameters(
+  val `(aa) ((e)<-[rrr]-(f)){1,}) (g)`: TrailParameters = TrailParameters(
     1,
     UpperBound.Unlimited,
     "aa_inner",
@@ -2829,7 +2829,7 @@ object RepeatTrailTestBase {
     false
   )
 
-  val `(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)` : TrailParameters =
+  val `(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)`: TrailParameters =
     TrailParameters(
       min = 0,
       max = UpperBound.Unlimited,
@@ -2845,7 +2845,7 @@ object RepeatTrailTestBase {
       reverseGroupVariableProjections = false
     )
 
-  val `(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)` : TrailParameters =
+  val `(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)`: TrailParameters =
     TrailParameters(
       min = 0,
       max = UpperBound.Limited(1),
@@ -2861,7 +2861,7 @@ object RepeatTrailTestBase {
       reverseGroupVariableProjections = false
     )
 
-  val `(b_inner)((bb)-[rr]->(aa:A)){0,}(a)` : TrailParameters = TrailParameters(
+  val `(b_inner)((bb)-[rr]->(aa:A)){0,}(a)`: TrailParameters = TrailParameters(
     min = 0,
     max = UpperBound.Unlimited,
     start = "b_inner",
@@ -3803,7 +3803,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     // (n1:START) ↗
     val (n0, n1, n2, n3, n4, r02, r12, r23, r34) = smallDoubleChainGraph
 
-    val `() ((a)->[r]->(b)->[s]->(c))+ ()` : TrailParameters = TrailParameters(
+    val `() ((a)->[r]->(b)->[s]->(c))+ ()`: TrailParameters = TrailParameters(
       min = 1,
       max = Unlimited,
       start = "anon_start",

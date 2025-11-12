@@ -52,6 +52,7 @@ case class CreateIrExpressions(
 
   private val instance: Rewriter = topDown(
     Rewriter.lift {
+
       /**
      * Rewrites exists{ MATCH (n)-[anon_0]->(anon_1:M) RETURN n} into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN n

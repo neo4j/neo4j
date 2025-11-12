@@ -185,7 +185,7 @@ abstract class Function extends FunctionWithName with TypeSignatures {
   }
 
   def asInvocation(argument: Expression, distinct: Boolean = false)(implicit
-  position: InputPosition): FunctionInvocation = {
+    position: InputPosition): FunctionInvocation = {
     FunctionInvocation(asFunctionName, distinct = distinct, IndexedSeq(argument))(position)
   }
 

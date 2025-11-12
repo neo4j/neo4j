@@ -843,7 +843,7 @@ abstract class RemoteBatchPropertiesTestBase[CONTEXT <: RuntimeContext](
       (n1, n2, n3, r21, r23)
     }
 
-    val `(b_inner)((bb)-[rr]->(aa:A)){0,}(a)` : TrailParameters = TrailParameters(
+    val `(b_inner)((bb)-[rr]->(aa:A)){0,}(a)`: TrailParameters = TrailParameters(
       min = 0,
       max = UpperBound.Unlimited,
       start = "b_inner",
@@ -858,7 +858,7 @@ abstract class RemoteBatchPropertiesTestBase[CONTEXT <: RuntimeContext](
       reverseGroupVariableProjections = false
     )
 
-    val `(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)` : TrailParameters =
+    val `(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)`: TrailParameters =
       TrailParameters(
         min = 0,
         max = UpperBound.Unlimited,

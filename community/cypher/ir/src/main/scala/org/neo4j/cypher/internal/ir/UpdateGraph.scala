@@ -462,7 +462,7 @@ trait UpdateGraph {
    * and labels being updated with SET and MERGE here
    */
   private def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
-  semanticTable: SemanticTable): Seq[EagernessReason] = {
+    semanticTable: SemanticTable): Seq[EagernessReason] = {
     // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
     lazy val overlapWithKnownLabels: Seq[LabelName] = qgWithInfo.patternNodesAndArguments(semanticTable)
       .flatMap(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet)).toSeq
@@ -674,7 +674,7 @@ trait UpdateGraph {
   }
 
   private def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
-  semanticTable: SemanticTable): Seq[EagernessReason] = {
+    semanticTable: SemanticTable): Seq[EagernessReason] = {
     lazy val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
     lazy val overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels

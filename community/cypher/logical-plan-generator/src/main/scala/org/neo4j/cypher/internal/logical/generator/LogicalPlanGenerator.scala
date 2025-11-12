@@ -590,7 +590,7 @@ class LogicalPlanGenerator(
   // Other stuff
 
   private def annotate[T <: LogicalPlan](plan: T, state: State)(implicit
-  cardinalityCalculator: CardinalityCalculator[T]): WithState[T] = {
+    cardinalityCalculator: CardinalityCalculator[T]): WithState[T] = {
     state.cardinalities.set(plan.id, cardinalityCalculator(plan, state, planContext, labelsWithIds))
     WithState(plan, state)
   }

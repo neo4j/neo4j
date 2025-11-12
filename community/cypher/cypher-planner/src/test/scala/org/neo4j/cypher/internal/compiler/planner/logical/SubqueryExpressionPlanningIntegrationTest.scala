@@ -1252,7 +1252,9 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
   }
 
-  test("should solve pattern comprehension for NodeIndexSeek") { // change labels so that one is unique and the other one nonunique
+  test(
+    "should solve pattern comprehension for NodeIndexSeek"
+  ) { // change labels so that one is unique and the other one nonunique
     val q =
       """
         |MATCH (n:Label)

@@ -660,7 +660,7 @@ sealed abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, val idName
 }
 
 sealed abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: LogicalVariable)(implicit
-idGen: IdGen)
+  idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
   override val localAvailableSymbols: Set[LogicalVariable] = left.localAvailableSymbols + idName
@@ -935,7 +935,7 @@ case class ArgumentTracker(override val source: LogicalPlan)(implicit idGen: IdG
  * node is guaranteed per seek.
  */
 case class AssertingMultiNodeIndexSeek(node: LogicalVariable, nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implicit
-idGen: IdGen)
+  idGen: IdGen)
     extends MultiNodeIndexLeafPlan(idGen) with StableLeafPlan {
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
@@ -2814,7 +2814,7 @@ case class NodeByElementIdSeek(idName: LogicalVariable, nodeIds: SeekableArgs, a
  * the node (assigned to 'idName').
  */
 case class NodeByIdSeek(idName: LogicalVariable, nodeIds: SeekableArgs, argumentIds: Set[LogicalVariable])(implicit
-idGen: IdGen)
+  idGen: IdGen)
     extends NodeLogicalLeafPlan(idGen) {
 
   override val localAvailableSymbols: Set[LogicalVariable] = argumentIds + idName
@@ -3521,7 +3521,7 @@ case class ProduceResult(
 object ProduceResult {
 
   def withNoCachedProperties(source: LogicalPlan, columns: Seq[LogicalVariable])(implicit
-  idGen: IdGen): ProduceResult = {
+    idGen: IdGen): ProduceResult = {
     new ProduceResult(source, columns.map(c => Column(c, Set.empty)))(idGen)
   }
 }
@@ -5206,7 +5206,7 @@ case class PartitionedUnwindCollection(
  * have different, non-empty variable-dependency sets.
  */
 case class ValueHashJoin(override val left: LogicalPlan, override val right: LogicalPlan, join: Equals)(implicit
-idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+  idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 

@@ -193,7 +193,7 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructio
 
   val fromRight: Boolean = false
 
-  val `(a) ((n)-[r]->(m))+ (b)` : QuantifiedPathPattern = QuantifiedPathPattern(
+  val `(a) ((n)-[r]->(m))+ (b)`: QuantifiedPathPattern = QuantifiedPathPattern(
     leftBinding = NodeBinding(v"n", v"a"),
     rightBinding = NodeBinding(v"m", v"b"),
     patternRelationships =
@@ -204,7 +204,7 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructio
     relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
   )
 
-  val `(c) ((x)-[r]->(y))+ (d)` : QuantifiedPathPattern = QuantifiedPathPattern(
+  val `(c) ((x)-[r]->(y))+ (d)`: QuantifiedPathPattern = QuantifiedPathPattern(
     leftBinding = NodeBinding(v"x", v"c"),
     rightBinding = NodeBinding(v"y", v"d"),
     patternRelationships =

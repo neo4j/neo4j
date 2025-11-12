@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class extractQppPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val `(a) ((n)-[r]->(m))+ (b)` : QuantifiedPathPattern = QuantifiedPathPattern(
+  val `(a) ((n)-[r]->(m))+ (b)`: QuantifiedPathPattern = QuantifiedPathPattern(
     leftBinding = NodeBinding(v"n_inner", v"a"),
     rightBinding = NodeBinding(v"m_inner", v"b"),
     patternRelationships =
@@ -48,7 +48,7 @@ class extractQppPredicatesTest extends CypherFunSuite with AstConstructionTestSu
     relationshipVariableGroupings = Set(variableGrouping(v"r_inner", v"r"))
   )
 
-  val `(a) ((o)-[s]->(p))+ (b)` : QuantifiedPathPattern = QuantifiedPathPattern(
+  val `(a) ((o)-[s]->(p))+ (b)`: QuantifiedPathPattern = QuantifiedPathPattern(
     leftBinding = NodeBinding(v"o_inner", v"a"),
     rightBinding = NodeBinding(v"p_inner", v"b"),
     patternRelationships =

@@ -78,6 +78,7 @@ object PrettyIR {
           append("{").newLine()
           incrIndent()
           val lastIr = ops.tail.fold(ops.head) {
+
             /**
              * boolean v3;
              * v3 = true;

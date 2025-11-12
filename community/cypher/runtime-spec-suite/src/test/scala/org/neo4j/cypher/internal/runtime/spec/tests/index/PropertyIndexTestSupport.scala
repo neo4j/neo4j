@@ -82,7 +82,7 @@ trait PropertyIndexTestSupport[CONTEXT <: RuntimeContext] {
     testWithIndex(_ => true, name)(testFun)
 
   def testWithIndex(indexFilter: IndexInTest => Boolean, name: String)(testFun: IndexInTest => Any)(implicit
-  pos: Position): Unit = {
+    pos: Position): Unit = {
     val indexToUse = indexToTest.filter(indexFilter)
     if (indexToUse.isEmpty) {
       fail("Found no index to test with.")

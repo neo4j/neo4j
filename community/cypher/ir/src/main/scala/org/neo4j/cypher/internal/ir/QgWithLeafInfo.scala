@@ -162,13 +162,12 @@ case class QgWithLeafInfo(
       patternNodesAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ irExpressionProperties
     })
 
-  val allKnownUnstableRelProperties: (SemanticTable => Set[PropertyKeyName]) with CachedFunction = CachedFunction(
-    (semanticTable: SemanticTable) => {
+  val allKnownUnstableRelProperties: (SemanticTable => Set[PropertyKeyName]) with CachedFunction =
+    CachedFunction((semanticTable: SemanticTable) => {
       patternRelationshipsAndArguments(semanticTable).flatMap(
         allKnownUnstablePropertiesFor
       ) ++ irExpressionProperties
-    }
-  )
+    })
 
   private lazy val irExpressionProperties: Set[PropertyKeyName] = {
     queryGraph.folder.findAllByClass[IRExpression].flatMap {

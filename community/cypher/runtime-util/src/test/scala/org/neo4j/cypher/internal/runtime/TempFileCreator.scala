@@ -51,7 +51,7 @@ trait TempFileCreator {
     createCSVTempFileURL(filename, null)(f)
 
   def createCSVTempFileURL(filename: String, dir: String)(f: PrintWriter => Unit)(implicit
-  writer: File => PrintWriter): String =
+    writer: File => PrintWriter): String =
     createTempFileURL(filename, ".csv")(f)
 
   def createGzipCSVTempFileURL(f: PrintWriter => Unit): String =
@@ -78,12 +78,12 @@ trait TempFileCreator {
   }
 
   def createTempFileURL(name: String, ext: String)(f: PrintWriter => Unit)(implicit
-  writer: File => PrintWriter): String = synchronized {
+    writer: File => PrintWriter): String = synchronized {
     withTempFileWriter(name, ext)(f).toURI.toURL.toString
   }
 
   private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit)(implicit
-  writer: File => PrintWriter) = {
+    writer: File => PrintWriter) = {
     val path = Files.createTempFile(name, ext)
     val file = path.toFile
     try {

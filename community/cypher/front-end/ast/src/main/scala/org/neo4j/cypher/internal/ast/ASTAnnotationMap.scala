@@ -30,7 +30,7 @@ object ASTAnnotationMap {
 
   // DummyImplicit used just to disambiguate `apply` after type erasure
   def apply[K <: ASTNode, V](elems: (PositionedNode[K], V)*)(implicit
-  dummyImplicit: DummyImplicit): ASTAnnotationMap[K, V] = Map(elems: _*)
+    dummyImplicit: DummyImplicit): ASTAnnotationMap[K, V] = Map(elems: _*)
 
   def apply[K <: ASTNode, V](elems: (K, V)*): ASTAnnotationMap[K, V] = Map(elems.map { case (k, v) =>
     (PositionedNode(k), v)

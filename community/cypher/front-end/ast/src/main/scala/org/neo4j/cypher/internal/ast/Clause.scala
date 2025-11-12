@@ -337,16 +337,16 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
     val legacyVarLengthRelationships = this.folder.treeFold(Seq.empty[RelationshipPattern]) {
       case r @ RelationshipPattern(_, _, Some(_), _, _, _) => acc =>
           TraverseChildren(acc :+ r)
-        // We should traverse into subqeries to implement CIP-40 correctly.
-        // We don't, because changing this would break backwards compatibility.
+      // We should traverse into subqeries to implement CIP-40 correctly.
+      // We don't, because changing this would break backwards compatibility.
       // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
       case _: SubqueryCall | _: FullSubqueryExpression => acc => SkipChildren(acc)
     }
     val hasQPP = this.folder.treeFold(false) {
       case _: QuantifiedPath => _ =>
           SkipChildren(true)
-        // We should traverse into subqeries to implement CIP-40 correctly.
-        // We don't, because changing this would break backwards compatibility.
+      // We should traverse into subqeries to implement CIP-40 correctly.
+      // We don't, because changing this would break backwards compatibility.
       // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
       case _: SubqueryCall | _: FullSubqueryExpression => acc => SkipChildren(acc)
       case _                                           => acc => if (acc) SkipChildren(acc) else TraverseChildren(acc)

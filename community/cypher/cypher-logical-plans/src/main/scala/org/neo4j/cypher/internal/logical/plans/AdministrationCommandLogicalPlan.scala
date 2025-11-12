@@ -69,12 +69,12 @@ abstract class AdministrationCommandLogicalPlan(
 }
 
 abstract class DatabaseAdministrationLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit
-idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
+  idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
   override def invalid(message: String): DatabaseAdministrationException = new NotSystemDatabaseException(message)
 }
 
 abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit
-idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
+  idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
   override def invalid(message: String): SecurityAdministrationException = new SecurityAdministrationException(message)
 }
 
@@ -115,7 +115,7 @@ case class RenameUser(
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class DropUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter])(implicit
-idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+  idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class AlterUser(
   source: SecurityAdministrationLogicalPlan,
@@ -157,7 +157,7 @@ case class RenameRole(
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class DropRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit
-idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+  idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class AssertRoleCanBeDropped(
   source: SecurityAdministrationLogicalPlan,
@@ -194,7 +194,7 @@ case class RevokeRoleFromUser(
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class RequireRole(source: SecurityAdministrationLogicalPlan, name: Either[String, Parameter])(implicit
-idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+  idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class CopyRolePrivileges(
   source: SecurityAdministrationLogicalPlan,
@@ -231,7 +231,7 @@ object AssertAllowedDbmsActions {
 object AssertAllowedDbmsActionsOrSelf {
 
   def apply(user: Either[String, Parameter], action: DbmsAction)(implicit
-  idGen: IdGen): AssertAllowedDbmsActionsOrSelf = AssertAllowedDbmsActionsOrSelf(user, Seq(action))(idGen)
+    idGen: IdGen): AssertAllowedDbmsActionsOrSelf = AssertAllowedDbmsActionsOrSelf(user, Seq(action))(idGen)
 }
 
 case class AssertAllowedDbmsActions(maybeSource: Option[PrivilegePlan], actions: Seq[DbmsAction])(implicit idGen: IdGen)
@@ -244,7 +244,7 @@ case class AssertCanDropDatabase(
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class AssertAllowedDbmsActionsOrSelf(user: Either[String, Parameter], actions: Seq[DbmsAction])(implicit
-idGen: IdGen) extends PrivilegePlan
+  idGen: IdGen) extends PrivilegePlan
 
 case class AssertAllowedDatabaseAction(
   action: DatabaseAction,

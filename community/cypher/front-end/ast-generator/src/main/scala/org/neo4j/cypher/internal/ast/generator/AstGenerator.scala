@@ -990,7 +990,11 @@ class AstGenerator(
     projection <- _expression
     introducedVariables <- zeroOrMore(_variable)
     scopeDependencies <- zeroOrMore(_variable)
-  } yield PatternComprehension(namedPath, pattern, predicate, projection)(pos, Some(introducedVariables.toSet), Some(scopeDependencies.toSet))
+  } yield PatternComprehension(namedPath, pattern, predicate, projection)(
+    pos,
+    Some(introducedVariables.toSet),
+    Some(scopeDependencies.toSet)
+  )
 
   // Expression
   // ----------------------------------
@@ -3081,7 +3085,16 @@ class AstGenerator(
     password <- _password
     driverSettings <- option(_optionalMapAsEither)
     properties <- option(_optionalMapAsEither)
-  } yield CreateRemoteDatabaseAlias(aliasName, targetName, ifExistsDo, url, username, password, driverSettings, properties)(pos)
+  } yield CreateRemoteDatabaseAlias(
+    aliasName,
+    targetName,
+    ifExistsDo,
+    url,
+    username,
+    password,
+    driverSettings,
+    properties
+  )(pos)
 
   def _dropAlias: Gen[DropDatabaseAlias] = for {
     aliasName <- _databaseName
@@ -3111,7 +3124,16 @@ class AstGenerator(
       else
         option(_optionalMapAsEither)
     properties <- option(_optionalMapAsEither)
-  } yield AlterRemoteDatabaseAlias(aliasName, targetName, ifExists, url, username, password, driverSettings, properties)(pos)
+  } yield AlterRemoteDatabaseAlias(
+    aliasName,
+    targetName,
+    ifExists,
+    url,
+    username,
+    password,
+    driverSettings,
+    properties
+  )(pos)
 
   def _showAliases: Gen[ShowAliases] = for {
     dbName <- option(_databaseName)

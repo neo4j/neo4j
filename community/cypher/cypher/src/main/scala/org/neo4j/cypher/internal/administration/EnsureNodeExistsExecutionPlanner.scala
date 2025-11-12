@@ -109,7 +109,7 @@ case class EnsureNodeExistsExecutionPlanner(
   }
 
   private def queryHandler[T](command: String, action: String, labelDescription: String, value: T)(implicit
-  show: Show[T]) = {
+    show: Show[T]) = {
     QueryHandler
       .handleNoResult(p =>
         Some(ThrowException(new InvalidArgumentException(

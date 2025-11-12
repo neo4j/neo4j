@@ -288,7 +288,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with AstRewritingTestSupport
   }
 
   private def assertRewrittenMatches(originalQuery: String)(matcher: PartialFunction[Any, Unit])(implicit
-  d: DummyImplicit): Unit = {
+    d: DummyImplicit): Unit = {
     assertRewrittenMatches(originalQuery, matcher)
   }
 }

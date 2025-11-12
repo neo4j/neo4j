@@ -1804,8 +1804,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   private def queryWith(
     qg: QueryGraph,
-    horizon: QueryHorizon = RegularQueryProjection(
-    )
+    horizon: QueryHorizon =
+      RegularQueryProjection(
+      )
   ): RegularSinglePlannerQuery = {
     RegularSinglePlannerQuery(
       queryGraph = qg,

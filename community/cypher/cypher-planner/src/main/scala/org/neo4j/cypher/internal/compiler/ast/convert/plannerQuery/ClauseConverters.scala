@@ -795,7 +795,7 @@ object ClauseConverters extends LabelExpressionConversion {
         val (nodes, rels) =
           allCreatePatternsInOrderAndDeduped(pattern, clause.name).foldRight((
             Seq.empty[CreateNodeCommand],
-            Seq.empty[CreateRelCommand],
+            Seq.empty[CreateRelCommand]
           )) { case (e, (ns, rs)) =>
             e match {
               case n: CreateNodeCommand => (n +: ns, rs)

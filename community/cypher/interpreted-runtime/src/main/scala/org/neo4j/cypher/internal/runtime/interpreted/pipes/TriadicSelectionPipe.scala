@@ -63,7 +63,7 @@ case class TriadicSelectionPipe(
       val innerState = state.withInitialContext(outerContext)
       right.createResults(innerState)
 
-    // 3. Probe
+      // 3. Probe
     }.filter { ctx =>
       ctx.getByName(target) match {
         case n: VirtualNodeValue =>

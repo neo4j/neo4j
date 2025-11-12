@@ -5406,23 +5406,41 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
           val endIndex1 = allNodes.indexOf(rowEnds.value(0))
           rows.value(4) should equal(allNodes(endIndex1 + 5))
           Some(rows.value(5)) should contain oneOf (allNodes(endIndex1 + 4), allNodes(endIndex1 + 6))
-          Some(rows.value(6)) should contain oneOf (allNodes(endIndex1 + 3), allNodes(endIndex1 + 5), allNodes(
-            endIndex1 + 7
-          ))
-          Some(rows.value(7)) should contain oneOf (allNodes(endIndex1 + 2), allNodes(endIndex1 + 4), allNodes(
-            endIndex1 + 6
-          ), allNodes(endIndex1 + 8))
+          Some(rows.value(6)) should contain oneOf (
+            allNodes(endIndex1 + 3),
+            allNodes(endIndex1 + 5),
+            allNodes(
+              endIndex1 + 7
+            )
+          )
+          Some(rows.value(7)) should contain oneOf (
+            allNodes(endIndex1 + 2),
+            allNodes(endIndex1 + 4),
+            allNodes(
+              endIndex1 + 6
+            ),
+            allNodes(endIndex1 + 8)
+          )
           Some(rowEnds.value(1)) should contain oneOf (allNodes(5), allNodes(7), allNodes(9))
           // Third row
           val endIndex2 = allNodes.indexOf(rowEnds.value(1))
           rows.value(8) should equal(allNodes(endIndex2 + 5))
           Some(rows.value(9)) should contain oneOf (allNodes(endIndex2 + 4), allNodes(endIndex2 + 6))
-          Some(rows.value(10)) should contain oneOf (allNodes(endIndex2 + 3), allNodes(endIndex2 + 5), allNodes(
-            endIndex2 + 7
-          ))
-          Some(rows.value(11)) should contain oneOf (allNodes(endIndex2 + 2), allNodes(endIndex2 + 4), allNodes(
-            endIndex2 + 6
-          ), allNodes(endIndex2 + 8))
+          Some(rows.value(10)) should contain oneOf (
+            allNodes(endIndex2 + 3),
+            allNodes(endIndex2 + 5),
+            allNodes(
+              endIndex2 + 7
+            )
+          )
+          Some(rows.value(11)) should contain oneOf (
+            allNodes(endIndex2 + 2),
+            allNodes(endIndex2 + 4),
+            allNodes(
+              endIndex2 + 6
+            ),
+            allNodes(endIndex2 + 8)
+          )
           Some(rowEnds.value(2)) should contain oneOf (allNodes(10), allNodes(12), allNodes(14))
           // Fourth row, for the shortest we need to end up on (19)
           val endIndex3 = allNodes.indexOf(rowEnds.value(2))
@@ -5595,23 +5613,41 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
           val endIndex1 = allNodes.indexOf(rowEnds.value(0))
           rows.value(4) should equal(allNodes(endIndex1 + 5))
           Some(rows.value(5)) should contain oneOf (allNodes(endIndex1 + 4), allNodes(endIndex1 + 6))
-          Some(rows.value(6)) should contain oneOf (allNodes(endIndex1 + 3), allNodes(endIndex1 + 5), allNodes(
-            endIndex1 + 7
-          ))
-          Some(rows.value(7)) should contain oneOf (allNodes(endIndex1 + 2), allNodes(endIndex1 + 4), allNodes(
-            endIndex1 + 6
-          ), allNodes(endIndex1 + 8))
+          Some(rows.value(6)) should contain oneOf (
+            allNodes(endIndex1 + 3),
+            allNodes(endIndex1 + 5),
+            allNodes(
+              endIndex1 + 7
+            )
+          )
+          Some(rows.value(7)) should contain oneOf (
+            allNodes(endIndex1 + 2),
+            allNodes(endIndex1 + 4),
+            allNodes(
+              endIndex1 + 6
+            ),
+            allNodes(endIndex1 + 8)
+          )
           Some(rowEnds.value(1)) should contain oneOf (allNodes(5), allNodes(7), allNodes(9))
           // Third row
           val endIndex2 = allNodes.indexOf(rowEnds.value(1))
           rows.value(8) should equal(allNodes(endIndex2 + 5))
           Some(rows.value(9)) should contain oneOf (allNodes(endIndex2 + 4), allNodes(endIndex2 + 6))
-          Some(rows.value(10)) should contain oneOf (allNodes(endIndex2 + 3), allNodes(endIndex2 + 5), allNodes(
-            endIndex2 + 7
-          ))
-          Some(rows.value(11)) should contain oneOf (allNodes(endIndex2 + 2), allNodes(endIndex2 + 4), allNodes(
-            endIndex2 + 6
-          ), allNodes(endIndex2 + 8))
+          Some(rows.value(10)) should contain oneOf (
+            allNodes(endIndex2 + 3),
+            allNodes(endIndex2 + 5),
+            allNodes(
+              endIndex2 + 7
+            )
+          )
+          Some(rows.value(11)) should contain oneOf (
+            allNodes(endIndex2 + 2),
+            allNodes(endIndex2 + 4),
+            allNodes(
+              endIndex2 + 6
+            ),
+            allNodes(endIndex2 + 8)
+          )
           Some(rowEnds.value(2)) should contain oneOf (allNodes(10), allNodes(12), allNodes(14))
           // Fourth row, for the shortest we need to end up on (19)
           val endIndex3 = allNodes.indexOf(rowEnds.value(2))
@@ -5779,23 +5815,41 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
           val endIndex1 = allNodes.indexOf(rowEnds.value(0))
           rows.value(4) should equal(allNodes(endIndex1 + 5))
           Some(rows.value(5)) should contain oneOf (allNodes(endIndex1 + 4), allNodes(endIndex1 + 6))
-          Some(rows.value(6)) should contain oneOf (allNodes(endIndex1 + 3), allNodes(endIndex1 + 5), allNodes(
-            endIndex1 + 7
-          ))
-          Some(rows.value(7)) should contain oneOf (allNodes(endIndex1 + 2), allNodes(endIndex1 + 4), allNodes(
-            endIndex1 + 6
-          ), allNodes(endIndex1 + 8))
+          Some(rows.value(6)) should contain oneOf (
+            allNodes(endIndex1 + 3),
+            allNodes(endIndex1 + 5),
+            allNodes(
+              endIndex1 + 7
+            )
+          )
+          Some(rows.value(7)) should contain oneOf (
+            allNodes(endIndex1 + 2),
+            allNodes(endIndex1 + 4),
+            allNodes(
+              endIndex1 + 6
+            ),
+            allNodes(endIndex1 + 8)
+          )
           Some(rowEnds.value(1)) should contain oneOf (allNodes(5), allNodes(7), allNodes(9))
           // Third row
           val endIndex2 = allNodes.indexOf(rowEnds.value(1))
           rows.value(8) should equal(allNodes(endIndex2 + 5))
           Some(rows.value(9)) should contain oneOf (allNodes(endIndex2 + 4), allNodes(endIndex2 + 6))
-          Some(rows.value(10)) should contain oneOf (allNodes(endIndex2 + 3), allNodes(endIndex2 + 5), allNodes(
-            endIndex2 + 7
-          ))
-          Some(rows.value(11)) should contain oneOf (allNodes(endIndex2 + 2), allNodes(endIndex2 + 4), allNodes(
-            endIndex2 + 6
-          ), allNodes(endIndex2 + 8))
+          Some(rows.value(10)) should contain oneOf (
+            allNodes(endIndex2 + 3),
+            allNodes(endIndex2 + 5),
+            allNodes(
+              endIndex2 + 7
+            )
+          )
+          Some(rows.value(11)) should contain oneOf (
+            allNodes(endIndex2 + 2),
+            allNodes(endIndex2 + 4),
+            allNodes(
+              endIndex2 + 6
+            ),
+            allNodes(endIndex2 + 8)
+          )
           Some(rowEnds.value(2)) should contain oneOf (allNodes(10), allNodes(12), allNodes(14))
           // Fourth row, for the shortest we need to end up on (19)
           val endIndex3 = allNodes.indexOf(rowEnds.value(2))
@@ -5961,23 +6015,41 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
           val endIndex1 = allNodes.indexOf(rowEnds.value(0))
           rows.value(4) should equal(allNodes(endIndex1 + 5))
           Some(rows.value(5)) should contain oneOf (allNodes(endIndex1 + 4), allNodes(endIndex1 + 6))
-          Some(rows.value(6)) should contain oneOf (allNodes(endIndex1 + 3), allNodes(endIndex1 + 5), allNodes(
-            endIndex1 + 7
-          ))
-          Some(rows.value(7)) should contain oneOf (allNodes(endIndex1 + 2), allNodes(endIndex1 + 4), allNodes(
-            endIndex1 + 6
-          ), allNodes(endIndex1 + 8))
+          Some(rows.value(6)) should contain oneOf (
+            allNodes(endIndex1 + 3),
+            allNodes(endIndex1 + 5),
+            allNodes(
+              endIndex1 + 7
+            )
+          )
+          Some(rows.value(7)) should contain oneOf (
+            allNodes(endIndex1 + 2),
+            allNodes(endIndex1 + 4),
+            allNodes(
+              endIndex1 + 6
+            ),
+            allNodes(endIndex1 + 8)
+          )
           Some(rowEnds.value(1)) should contain oneOf (allNodes(5), allNodes(7), allNodes(9))
           // Third row
           val endIndex2 = allNodes.indexOf(rowEnds.value(1))
           rows.value(8) should equal(allNodes(endIndex2 + 5))
           Some(rows.value(9)) should contain oneOf (allNodes(endIndex2 + 4), allNodes(endIndex2 + 6))
-          Some(rows.value(10)) should contain oneOf (allNodes(endIndex2 + 3), allNodes(endIndex2 + 5), allNodes(
-            endIndex2 + 7
-          ))
-          Some(rows.value(11)) should contain oneOf (allNodes(endIndex2 + 2), allNodes(endIndex2 + 4), allNodes(
-            endIndex2 + 6
-          ), allNodes(endIndex2 + 8))
+          Some(rows.value(10)) should contain oneOf (
+            allNodes(endIndex2 + 3),
+            allNodes(endIndex2 + 5),
+            allNodes(
+              endIndex2 + 7
+            )
+          )
+          Some(rows.value(11)) should contain oneOf (
+            allNodes(endIndex2 + 2),
+            allNodes(endIndex2 + 4),
+            allNodes(
+              endIndex2 + 6
+            ),
+            allNodes(endIndex2 + 8)
+          )
           Some(rowEnds.value(2)) should contain oneOf (allNodes(10), allNodes(12), allNodes(14))
           // Fourth row, for the shortest we need to end up on (19)
           val endIndex3 = allNodes.indexOf(rowEnds.value(2))

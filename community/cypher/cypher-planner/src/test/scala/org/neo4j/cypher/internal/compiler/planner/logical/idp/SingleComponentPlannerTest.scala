@@ -60,14 +60,14 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     .fakeLeafPlan("b")
     .build()
 
-  private val `expandInto(a X b)` : LogicalPlan = planBuilder()
+  private val `expandInto(a X b)`: LogicalPlan = planBuilder()
     .expandInto("(a)-[r1]->(b)")
     .cartesianProduct()
     .|.fakeLeafPlan("b")
     .fakeLeafPlan("a")
     .build()
 
-  private val `expandInto(select(a X b))` : LogicalPlan = planBuilder()
+  private val `expandInto(select(a X b))`: LogicalPlan = planBuilder()
     .expandInto("(a)-[r1]->(b)")
     .filter("a.prop = b.prop")
     .cartesianProduct()
@@ -75,14 +75,14 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     .fakeLeafPlan("a")
     .build()
 
-  private val `expandInto(b X a)` : LogicalPlan = planBuilder()
+  private val `expandInto(b X a)`: LogicalPlan = planBuilder()
     .expandInto("(a)-[r1]->(b)")
     .cartesianProduct()
     .|.fakeLeafPlan("a")
     .fakeLeafPlan("b")
     .build()
 
-  private val `expandInto(select(b X a))` : LogicalPlan = planBuilder()
+  private val `expandInto(select(b X a))`: LogicalPlan = planBuilder()
     .expandInto("(a)-[r1]->(b)")
     .filter("a.prop = b.prop")
     .cartesianProduct()

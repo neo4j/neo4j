@@ -388,11 +388,11 @@ trait PGPathPropagatingBFSTestBase { self: CypherFunSuite =>
   private def nfa(defn: DslPart): Nfa = nfa(defn.toString())(defn.build)
 
   import NfaDsl.Implicits._
-  protected val `(s) ((a)-->(b))* (t)` : Nfa = nfa("s" |> ("a" --> "b" *) |> "t")
-  protected val `(s) ((a)-->(b))+ (t)` : Nfa = nfa("s" |> ("a" --> "b" +) |> "t")
-  protected val `(s) ((a)--(b))+ (t)` : Nfa = nfa("s" |> ("a" -- "b" +) |> "t")
+  protected val `(s) ((a)-->(b))* (t)`: Nfa = nfa("s" |> ("a" --> "b" *) |> "t")
+  protected val `(s) ((a)-->(b))+ (t)`: Nfa = nfa("s" |> ("a" --> "b" +) |> "t")
+  protected val `(s) ((a)--(b))+ (t)`: Nfa = nfa("s" |> ("a" -- "b" +) |> "t")
 
-  protected val `(s) ((a)--(b)--(c))* (t)` : Nfa = nfa("(s) ((a)--(b)--(c))* (t)") { sb =>
+  protected val `(s) ((a)--(b)--(c))* (t)`: Nfa = nfa("(s) ((a)--(b)--(c))* (t)") { sb =>
     val s = sb.newState("s", isStartState = true)
     val a = sb.newState("a")
     val c = sb.newState("c")
@@ -405,7 +405,7 @@ trait PGPathPropagatingBFSTestBase { self: CypherFunSuite =>
     s.addNodeJuxtaposition(t)
   }
 
-  protected val `(s) ((a)--(b)--(c))* (t) [single transition]` : Nfa =
+  protected val `(s) ((a)--(b)--(c))* (t) [single transition]`: Nfa =
     nfa("(s) ((a)--(b)--(c))* (t) [single transition]") { sb =>
       val s = sb.newState("s", isStartState = true)
       val a = sb.newState("a")
@@ -421,7 +421,7 @@ trait PGPathPropagatingBFSTestBase { self: CypherFunSuite =>
       s.addNodeJuxtaposition(t)
     }
 
-  protected val `(s) ((a)-->(b)<--(c))+ (t)` : Nfa = nfa("(s) ((a)-->(b)<--(c))+ (t)") { sb =>
+  protected val `(s) ((a)-->(b)<--(c))+ (t)`: Nfa = nfa("(s) ((a)-->(b)<--(c))+ (t)") { sb =>
     val s = sb.newState("s", isStartState = true)
     val a = sb.newState("a")
     val c = sb.newState("c")

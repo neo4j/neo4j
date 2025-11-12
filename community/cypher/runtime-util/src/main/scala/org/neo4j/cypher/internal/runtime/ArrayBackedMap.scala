@@ -31,7 +31,7 @@ import scala.reflect.ClassTag
  * @param keyToIndexMap the mapping from keys to array indexes
  */
 class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asInstanceOf[V])(implicit
-val tag: ClassTag[V]) extends Map[K, V] {
+  val tag: ClassTag[V]) extends Map[K, V] {
   private var valueArray: Array[V] = _
 
   /**

@@ -185,7 +185,7 @@
     <javapoet.version>1.13.0</javapoet.version>
     <grpc.version>1.68.0</grpc.version>
     <testcontainers.version>1.20.2</testcontainers.version>
-    <build-resources.version>2024-07.1</build-resources.version>
+    <build-resources.version>2025.11.1</build-resources.version>
     <s3mock.version>3.12.0</s3mock.version>
   </properties>
 
@@ -859,6 +859,8 @@
           </java>
           <scala>
             <scalafmt>
+              <version>3.8.4-RC3</version>
+              <scalaMajorVersion>2.13</scalaMajorVersion>
               <file>scalafmt/scalafmt.conf</file>
             </scalafmt>
           </scala>

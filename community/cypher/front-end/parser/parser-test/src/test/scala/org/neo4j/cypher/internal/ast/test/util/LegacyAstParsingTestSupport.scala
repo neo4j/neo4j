@@ -48,7 +48,7 @@ trait LegacyAstParsingTestSupport {
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   final def givesIncludingPositions[T <: ASTNode : ClassTag](expected: T, query: String = testName)(implicit
-  p: Parsers[T]): Unit =
+    p: Parsers[T]): Unit =
     query should parse[T].toAstPositioned(expected)
 
   /**

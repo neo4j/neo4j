@@ -28,39 +28,51 @@ class ParameterTransformerTest extends CypherFunSuite {
   test("should add generate") {
     ParameterTransformer()
       .generate((_, _, _) => VirtualValues.map(Array("B"), Array(Values.stringValue("B"))))
-      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (VirtualValues.map(
-      Array("B"),
-      Array(Values.stringValue("B"))
-    ), Set.empty)
+      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (
+      VirtualValues.map(
+        Array("B"),
+        Array(Values.stringValue("B"))
+      ),
+      Set.empty
+    )
   }
 
   test("should combine generate") {
     ParameterTransformer((_, _, _) => VirtualValues.map(Array("A"), Array(Values.stringValue("A"))))
       .generate((_, _, _) => VirtualValues.map(Array("B"), Array(Values.stringValue("B"))))
-      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (VirtualValues.map(
-      Array("A", "B"),
-      Array(Values.stringValue("A"), Values.stringValue("B"))
-    ), Set.empty)
+      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (
+      VirtualValues.map(
+        Array("A", "B"),
+        Array(Values.stringValue("A"), Values.stringValue("B"))
+      ),
+      Set.empty
+    )
   }
 
   test("should combine generate and convert") {
     ParameterTransformer((_, _, _) => VirtualValues.map(Array("A"), Array(Values.stringValue("A"))))
       .convert((_, params) => params.updatedWith("C", Values.stringValue("C")))
       .generate((_, _, _) => VirtualValues.map(Array("B"), Array(Values.stringValue("B"))))
-      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (VirtualValues.map(
-      Array("A", "B", "C"),
-      Array(Values.stringValue("A"), Values.stringValue("B"), Values.stringValue("C"))
-    ), Set.empty)
+      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (
+      VirtualValues.map(
+        Array("A", "B", "C"),
+        Array(Values.stringValue("A"), Values.stringValue("B"), Values.stringValue("C"))
+      ),
+      Set.empty
+    )
   }
 
   test("should combine generate and update") {
     ParameterTransformer((_, _, _) => VirtualValues.map(Array("A"), Array(Values.stringValue("A"))))
       .convert((_, params) => params.updatedWith("A", Values.stringValue("C")))
       .generate((_, _, _) => VirtualValues.map(Array("B"), Array(Values.stringValue("B"))))
-      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (VirtualValues.map(
-      Array("A", "B"),
-      Array(Values.stringValue("C"), Values.stringValue("B"))
-    ), Set.empty)
+      .transform(null, null, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP) shouldBe (
+      VirtualValues.map(
+        Array("A", "B"),
+        Array(Values.stringValue("C"), Values.stringValue("B"))
+      ),
+      Set.empty
+    )
   }
 
 }

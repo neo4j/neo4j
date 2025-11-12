@@ -922,7 +922,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
     preserves(trail)
   }
 
-  val `(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)` : TrailParameters = TrailParameters(
+  val `(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`: TrailParameters = TrailParameters(
     min = 1,
     max = Unlimited,
     start = "a",

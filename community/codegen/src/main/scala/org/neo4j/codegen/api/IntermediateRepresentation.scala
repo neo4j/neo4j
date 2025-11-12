@@ -862,7 +862,7 @@ object IntermediateRepresentation {
     InstanceField(typeRef(typ), name)(Some(() => initializer))
 
   def lazyField[TYPE](name: String, initializer: () => IntermediateRepresentation)(implicit
-  typ: Manifest[TYPE]): InstanceField =
+    typ: Manifest[TYPE]): InstanceField =
     InstanceField(typeRef(typ), name)(Some(initializer))
 
   def staticConstant[TYPE](name: String, value: AnyRef)(implicit typ: Manifest[TYPE]): StaticField =
@@ -1745,7 +1745,7 @@ object IntermediateRepresentation {
   def returns(value: IntermediateRepresentation): IntermediateRepresentation = Returns(value)
 
   def tryCatch[E](name: String)(ops: IntermediateRepresentation)(onError: IntermediateRepresentation)(implicit
-  typ: Manifest[E]): TryCatch =
+    typ: Manifest[E]): TryCatch =
     TryCatch(ops, onError, typeRef(typ), name)
 
   def tryCatchIfNecessary[E](name: String)(ops: IntermediateRepresentation)(

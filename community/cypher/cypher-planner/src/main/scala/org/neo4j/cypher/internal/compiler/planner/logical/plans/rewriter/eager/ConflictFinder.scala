@@ -129,7 +129,7 @@ sealed trait ConflictFinder {
   }
 
   private def labelConflicts(readsAndWrites: ReadsAndWrites, leftMostLeaf: LogicalPlan)(implicit
-  planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
+    planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
     for {
       (maybeLabel, writePlans) <- allWrittenLabels(readsAndWrites)
       read @ PlanWithAccessor(Ref(readPlan), _) <- readsAndWrites.reads.plansReadingLabel(maybeLabel)

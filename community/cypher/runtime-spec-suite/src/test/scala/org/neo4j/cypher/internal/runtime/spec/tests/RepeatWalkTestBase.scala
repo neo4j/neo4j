@@ -500,7 +500,7 @@ abstract class RepeatWalkTestBase[CONTEXT <: RuntimeContext](
       val r2 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
       (n1, n2, n3, r1, r2)
     }
-    val `() ((a)->[r]->(b)->[s]->(c))+ ()` : WalkParameters = WalkParameters(
+    val `() ((a)->[r]->(b)->[s]->(c))+ ()`: WalkParameters = WalkParameters(
       min = 1,
       max = Unlimited,
       start = "anon_start",
@@ -1252,40 +1252,40 @@ object RepeatWalkTestBase {
     )
   }
 
-  val `(me) [(a)-[r]->(b)]{0,1} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{0,1} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 0, max = Limited(1))
 
-  val `(me) [(a)-[r]->(b)]{0,2} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{0,2} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 0, max = Limited(2))
 
-  val `(me) [(a)-[r]->(b)]{0,3} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{0,3} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 0, max = Limited(3))
 
-  val `(me) [(a)-[r]->(b)]{0,*} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{0,*} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 0, max = Unlimited)
 
-  val `(me) [(a)-[r]->(b)]{1,1} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{1,1} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 1, max = Limited(1))
 
-  val `(me) [(a)-[r]->(b)]{1,2} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{1,2} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 1, max = Limited(2))
 
-  val `(me) [(a)-[r]->(b)]{2,2} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{2,2} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 2, max = Limited(2))
 
-  val `(me) [(a)-[r]->(b)]{3,5} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)]{3,5} (you)`: WalkParameters =
     createMeYouWalkParameters(min = 3, max = Limited(5))
 
-  val `(you) [(c)-[rr]->(d)]{0,1} (other)` : WalkParameters =
+  val `(you) [(c)-[rr]->(d)]{0,1} (other)`: WalkParameters =
     createYouOtherWalkParameters(min = 0, max = Limited(1))
 
-  val `(you) [(c)-[rr]->(d)]{0,2} (other)` : WalkParameters =
+  val `(you) [(c)-[rr]->(d)]{0,2} (other)`: WalkParameters =
     createYouOtherWalkParameters(min = 0, max = Limited(2))
 
-  val `(you) [(c)-[rr]->(d)]{1,2} (other)` : WalkParameters =
+  val `(you) [(c)-[rr]->(d)]{1,2} (other)`: WalkParameters =
     createYouOtherWalkParameters(min = 1, max = Limited(2))
 
-  val `(me) [(a)-[r]->()-[]->(b)]{0,*} (you)` : WalkParameters = WalkParameters(
+  val `(me) [(a)-[r]->()-[]->(b)]{0,*} (you)`: WalkParameters = WalkParameters(
     min = 0,
     max = Unlimited,
     start = "me",
@@ -1297,7 +1297,7 @@ object RepeatWalkTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)` : WalkParameters = WalkParameters(
+  val `(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)`: WalkParameters = WalkParameters(
     min = 1,
     max = Limited(1),
     start = "start",
@@ -1309,7 +1309,7 @@ object RepeatWalkTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)` : WalkParameters = WalkParameters(
+  val `(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`: WalkParameters = WalkParameters(
     min = 0,
     max = Unlimited,
     start = "firstMiddle",
@@ -1321,7 +1321,7 @@ object RepeatWalkTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)` : WalkParameters = WalkParameters(
+  val `(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`: WalkParameters = WalkParameters(
     min = 0,
     max = Unlimited,
     start = "middle",
@@ -1333,7 +1333,7 @@ object RepeatWalkTestBase {
     reverseGroupVariableProjections = false
   )
 
-  val `(you) [(b)<-[r]-(a)]{0, *} (me)` : WalkParameters =
+  val `(you) [(b)<-[r]-(a)]{0, *} (me)`: WalkParameters =
     WalkParameters(
       min = 0,
       max = Unlimited,
@@ -1346,7 +1346,7 @@ object RepeatWalkTestBase {
       reverseGroupVariableProjections = true
     )
 
-  val `(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)`: WalkParameters =
     WalkParameters(
       min = 0,
       max = UpperBound.Limited(1),
@@ -1359,7 +1359,7 @@ object RepeatWalkTestBase {
       reverseGroupVariableProjections = false
     )
 
-  val `(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)` : WalkParameters = WalkParameters(
+  val `(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)`: WalkParameters = WalkParameters(
     1,
     UpperBound.Unlimited,
     "me",
@@ -1371,7 +1371,7 @@ object RepeatWalkTestBase {
     false
   )
 
-  val `(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)` : WalkParameters = WalkParameters(
+  val `(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)`: WalkParameters = WalkParameters(
     1,
     UpperBound.Unlimited,
     "b_inner",
@@ -1383,7 +1383,7 @@ object RepeatWalkTestBase {
     false
   )
 
-  val `(aa) ((e)<-[rrr]-(f)){1,}) (g)` : WalkParameters = WalkParameters(
+  val `(aa) ((e)<-[rrr]-(f)){1,}) (g)`: WalkParameters = WalkParameters(
     1,
     UpperBound.Unlimited,
     "aa_inner",
@@ -1395,7 +1395,7 @@ object RepeatWalkTestBase {
     false
   )
 
-  val `(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)` : WalkParameters =
+  val `(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)`: WalkParameters =
     WalkParameters(
       min = 0,
       max = UpperBound.Unlimited,
@@ -1408,7 +1408,7 @@ object RepeatWalkTestBase {
       reverseGroupVariableProjections = false
     )
 
-  val `(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)` : WalkParameters =
+  val `(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)`: WalkParameters =
     WalkParameters(
       min = 0,
       max = UpperBound.Limited(1),
@@ -1421,7 +1421,7 @@ object RepeatWalkTestBase {
       reverseGroupVariableProjections = false
     )
 
-  val `(b_inner)((bb)-[rr]->(aa:A)){0,}(a)` : WalkParameters = WalkParameters(
+  val `(b_inner)((bb)-[rr]->(aa:A)){0,}(a)`: WalkParameters = WalkParameters(
     min = 0,
     max = UpperBound.Unlimited,
     start = "b_inner",
@@ -1920,7 +1920,7 @@ trait OrderedWalkTestBase[CONTEXT <: RuntimeContext] {
     // (n1:START) ↗
     val (n0, n1, n2, n3, n4, r02, r12, r23, r34) = smallDoubleChainGraph
 
-    val `() ((a)->[r]->(b)->[s]->(c))+ ()` : WalkParameters = WalkParameters(
+    val `() ((a)->[r]->(b)->[s]->(c))+ ()`: WalkParameters = WalkParameters(
       min = 1,
       max = Unlimited,
       start = "anon_start",

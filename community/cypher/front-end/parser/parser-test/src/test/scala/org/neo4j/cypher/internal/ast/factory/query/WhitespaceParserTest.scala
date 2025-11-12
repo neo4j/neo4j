@@ -26,7 +26,6 @@ class WhitespaceParserTest extends AstParsingTestBase {
 
   private val whitespaceCharacters =
     Seq(
-
       // Unicode General Category Zp
       '\u2029',
 

@@ -133,7 +133,7 @@ object CandidateListFinder {
      * on if this strategy should eagerite LHS vs RHS conflicts.
      */
     def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
-    planChildrenLookup: PlanChildrenLookup): Vector[CandidateList]
+      planChildrenLookup: PlanChildrenLookup): Vector[CandidateList]
   }
 
   object LhsVsRhsEagerization {
@@ -144,7 +144,7 @@ object CandidateListFinder {
     case object Yes extends LhsVsRhsEagerization {
 
       override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
-      planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
+        planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
         candidateLists
       }
     }
@@ -155,7 +155,7 @@ object CandidateListFinder {
     case object No extends LhsVsRhsEagerization {
 
       override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
-      planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
+        planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
         val otherCandidateListsBuilder = Vector.newBuilder[CandidateList]
         candidateLists.foreach { cl =>
           if (!isLhsVsRhsConflict(plan, cl))
@@ -171,7 +171,7 @@ object CandidateListFinder {
     case object AssertNoConflicts extends LhsVsRhsEagerization {
 
       override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
-      planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
+        planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
         val otherCandidateListsBuilder = Vector.newBuilder[CandidateList]
         candidateLists.foreach { cl =>
           if (!isLhsVsRhsConflict(plan, cl))
