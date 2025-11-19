@@ -24,9 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /** Entries/fields in this "map" must be serializable* (Bolt must be able to parse them).
  * They must either be primitive types like int, or String
@@ -87,11 +86,20 @@ public class DiagnosticRecord implements Serializable {
     private DiagnosticRecord(Map<String, Object> jsonMap) {
         innerDiagnosticRecord = new HashMap<>(jsonMap);
 
-        Stream.concat(GqlStandardDiagnosticRecordProperty.asEnumSet().stream(), Neo4jDiagnosticRecordProperty.stream())
-                .filter(Predicate.not(DiagnosticRecordProperty::disabled))
-                .forEach(property -> Optional.ofNullable(jsonMap.get(property.key()))
-                        .or(() -> property.defaultValue().map((property::serializeValue)))
-                        .ifPresent(value -> innerDiagnosticRecord.put(property.key(), value)));
+        setDefaults(jsonMap, GqlStandardDiagnosticRecordProperty.asSet());
+        setDefaults(jsonMap, Neo4jDiagnosticRecordProperty.asSet());
+    }
+
+    private void setDefaults(Map<String, Object> jsonMap, Set<DiagnosticRecordProperty<?>> properties) {
+        for (var property : properties) {
+            if (!jsonMap.containsKey(property.key())
+                    && !property.disabled()
+                    && property.defaultValue().isPresent()) {
+                innerDiagnosticRecord.put(
+                        property.key(),
+                        property.serializeValue(property.defaultValue().get()));
+            }
+        }
     }
 
     public void setStatusParameters(Map<String, Object> statusParameters) {

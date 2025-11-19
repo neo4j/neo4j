@@ -19,11 +19,12 @@
  */
 package org.neo4j.gqlstatus;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * Defines all the Gql Standard properties on the Diagnostic Record.
@@ -33,6 +34,9 @@ enum GqlStandardDiagnosticRecordProperty implements DiagnosticRecordProperty<Str
     OPERATION_CODE("OPERATION_CODE", "0"),
     OPERATION("OPERATION", ""),
     ;
+    private static final Set<DiagnosticRecordProperty<?>> ALL_PROPERTIES =
+            Collections.unmodifiableSet(EnumSet.allOf(GqlStandardDiagnosticRecordProperty.class));
+
     private final String defaultValue;
     private final String key;
 
@@ -42,16 +46,18 @@ enum GqlStandardDiagnosticRecordProperty implements DiagnosticRecordProperty<Str
     }
 
     static Map<String, Object> asMap() {
-        return asEnumSet().stream()
-                .filter(Predicate.not(DiagnosticRecordProperty::disabled))
-                .map(GqlStandardDiagnosticRecordProperty::defaultEntry)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        var map = new HashMap<String, Object>();
+        for (var property : ALL_PROPERTIES) {
+            if (property.disabled()) {
+                continue;
+            }
+            property.defaultValue().ifPresent(value -> map.put(property.key(), value));
+        }
+        return map;
     }
 
-    static EnumSet<GqlStandardDiagnosticRecordProperty> asEnumSet() {
-        return EnumSet.allOf(GqlStandardDiagnosticRecordProperty.class);
+    static Set<DiagnosticRecordProperty<?>> asSet() {
+        return ALL_PROPERTIES;
     }
 
     @Override

@@ -20,7 +20,7 @@
 package org.neo4j.gqlstatus;
 
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Set;
 
 public final class Neo4jDiagnosticRecordProperty {
     public static final NonGqlStandardDiagnosticRecordProperty<String> SEVERITY =
@@ -44,8 +44,10 @@ public final class Neo4jDiagnosticRecordProperty {
                     .withValueSerializer(pos -> ((Position) pos).asMap())
                     .build();
 
-    public static Stream<NonGqlStandardDiagnosticRecordProperty<?>> stream() {
-        return Stream.of(SEVERITY, CLASSIFICATION, STATUS_PARAMETERS, POSITION);
+    private static final Set<DiagnosticRecordProperty<?>> ALL_PROPERTIES = Set.of(SEVERITY, CLASSIFICATION, POSITION);
+
+    public static Set<DiagnosticRecordProperty<?>> asSet() {
+        return ALL_PROPERTIES;
     }
 
     private static boolean isOmittedClassification(GqlClassification classification) {
