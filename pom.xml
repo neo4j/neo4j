@@ -180,7 +180,7 @@
     <asm.version>9.9</asm.version>
     <metrics.version>4.2.37</metrics.version>
     <scala.target.vm>${vm.target.version}</scala.target.vm>
-    <jersey.version>2.43</jersey.version>
+    <jersey.version>2.46</jersey.version>
     <junit.version>6.0.0</junit.version>
     <junit.platform.version>6.0.0</junit.platform.version>
     <mockito.version>5.20.0</mockito.version>
