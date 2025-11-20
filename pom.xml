@@ -157,7 +157,7 @@
     <asm.version>9.7.1</asm.version>
     <metrics.version>4.2.28</metrics.version>
     <scala.target.vm>${vm.target.version}</scala.target.vm>
-    <jersey.version>2.43</jersey.version>
+    <jersey.version>2.46</jersey.version>
     <junit.version>5.11.2</junit.version>
     <junit.platform.version>1.11.2</junit.platform.version>
     <mockito.version>5.14.1</mockito.version>
