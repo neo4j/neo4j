@@ -54,7 +54,7 @@ public interface NamingRestrictions {
             }
             var deprecatedNamespaces = deprecatedProcedureNamespaces(queryLanguage);
             final var deprecationFilter = Globbing.compose(deprecatedNamespaces, List.of());
-            if (deprecationFilter.test(name.toString())) {
+            if (deprecationFilter.test(name.toString()) || isDeprecatedInRoot(name, queryLanguage)) {
                 log.warn(
                         "The procedure `%s` is in a deprecated namespace. The namespace is deprecated in %s.",
                         name.toString(), queryLanguage.name().replace("_", " "));
@@ -85,7 +85,7 @@ public interface NamingRestrictions {
     static Boolean isDeprecatedProcedureNamespace(QualifiedName name, QueryLanguage queryLanguage) {
         var deprecatedNamespaces = deprecatedProcedureNamespaces(queryLanguage);
         final var filter = Globbing.compose(deprecatedNamespaces, List.of());
-        return filter.test(name.toString());
+        return filter.test(name.toString()) || isDeprecatedInRoot(name, queryLanguage);
     }
 
     static Boolean isDeprecatedFunctionNamespace(QualifiedName name, QueryLanguage queryLanguage) {
@@ -96,6 +96,10 @@ public interface NamingRestrictions {
 
     static Boolean isShadowingBuiltInFunction(QualifiedName name, QueryLanguage queryLanguage) {
         return namespacedBuiltInFunctions(queryLanguage).contains(name.toString());
+    }
+
+    static Boolean isDeprecatedInRoot(QualifiedName name, QueryLanguage queryLanguage) {
+        return queryLanguage != QueryLanguage.CYPHER_5 && (name.namespace() == null || name.namespace().length < 1);
     }
 
     // The reserved namespaces are the same for Cypher 5 and Cypher 25
@@ -171,7 +175,6 @@ public interface NamingRestrictions {
             case CYPHER_25 ->
                 List.of(
                         // Deprecated namespaces
-                        "*",
                         "abac.*",
                         "aura.*",
                         "builtin.*",
