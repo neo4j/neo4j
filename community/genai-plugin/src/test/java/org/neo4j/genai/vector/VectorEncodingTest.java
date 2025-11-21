@@ -40,6 +40,7 @@ import org.neo4j.genai.vector.providers.Bedrock;
 import org.neo4j.genai.vector.providers.OpenAI;
 import org.neo4j.genai.vector.providers.TestProvider;
 import org.neo4j.genai.vector.providers.VertexAI;
+import org.neo4j.genai.vector.providers.LiteLLM;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.values.storable.Value;
 
@@ -76,7 +77,9 @@ class VectorEncodingTest {
                     new ExpectedProvider(AzureOpenAI.NAME, AzureOpenAI.class),
                     new ExpectedProvider(Bedrock.NAME, Bedrock.class),
                     new ExpectedProvider(OpenAI.NAME, OpenAI.class),
-                    new ExpectedProvider(VertexAI.NAME, VertexAI.class));
+                    new ExpectedProvider(VertexAI.NAME, VertexAI.class),
+                    new ExpectedProvider(LiteLLM.NAME, LiteLLM.class)
+            );
         }
 
         record ExpectedProvider(String name, Class<? extends Provider> cls) {}
