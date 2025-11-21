@@ -46,6 +46,10 @@ import org.scalatest.OptionValues
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport with OptionValues {
 
+  // We compare "solvedExpressionString" nested inside LogicalPlans.
+  // This saves us from windows line break mismatches in those strings.
+  implicit private val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
   test("finds shortest paths") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b").stripProduceResults
@@ -477,10 +481,6 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan count predicate with path reference inside the shortestPath operator as a prefilter") {
-    // We compare "solvedExpressionString" nested inside LogicalPlans.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(50)
@@ -619,10 +619,6 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan exists predicate with path reference inside the shortestPath operator as a prefilter") {
-    // We compare "solvedExpressionString" nested inside LogicalPlans.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(50)
@@ -689,11 +685,6 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan collect predicate with path reference inside the shortestPath operator as a prefilter") {
-
-    // We compare "solvedExpressionString" nested inside LogicalPlans.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(50)
