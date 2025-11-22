@@ -34,6 +34,7 @@ import java.util.OptionalLong;
 @ServiceProvider
 public final class LiteLLM implements Provider<LiteLLM.Parameters> {
     public static final String NAME = "LiteLLM";
+    public static final String DEFAULT_ENDPOINT = "http://localhost:4000/v1/embeddings";
 
     private final HttpClient client = new HttpClient();
 
@@ -54,8 +55,9 @@ public final class LiteLLM implements Provider<LiteLLM.Parameters> {
 
     public static class Parameters {
         public String model;
-        public String endpoint = "http://localhost:4000/v1/embeddings";
+        public String endpoint = DEFAULT_ENDPOINT;
         public OptionalLong dimensions;
+        //for some reason ,some modules does not support encoding_format(like Ollama)
         public boolean supportEncodingFormat = false;
     }
 
