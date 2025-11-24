@@ -139,6 +139,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UnicodeHelper
 import org.neo4j.internal.helpers.Strings
 
+import java.util.regex.Pattern
+
 trait ExpressionStringifier {
   def apply(ast: Expression): String
   def apply(expressions: Seq[Expression], separator: String): String = expressions.map(apply).mkString(separator)
@@ -725,17 +727,22 @@ object ExpressionStringifier {
     }
   }
 
+  private val UNICODE_ESCAPE_PATTERN = Pattern.compile("([^\\\\])(\\\\u[0-9]{4})")
+
   /*
    * Some strings (identifiers) were escaped with back-ticks to allow non-identifier characters
    * When printing these again, the knowledge of the back-ticks is lost, but the same test for
    * non-identifier characters can be used to recover that knowledge.
    */
   def backtick(txt: String, alwaysBacktick: Boolean = false, globbing: Boolean = false): String = {
-    def escaped = txt.replace("`", "``")
+    def escaped = {
+      val bt = txt.replace("`", "``")
+      "`" + UNICODE_ESCAPE_PATTERN.matcher(bt).replaceAll("$1\\\\$2") + "`"
+    }
     def orGlobbedCharacter(p: Int) = globbing && (p == '*'.asInstanceOf[Int] || p == '?'.asInstanceOf[Int])
 
     if (alwaysBacktick)
-      s"`$escaped`"
+      escaped
     else {
       val isJavaIdentifier =
         Strings.codePoints(txt).limit(1).allMatch(p =>
@@ -745,7 +752,7 @@ object ExpressionStringifier {
             UnicodeHelper.isIdentifierPart(p, CypherVersion.Cypher25) || orGlobbedCharacter(p)
           )
       if (!isJavaIdentifier)
-        s"`$escaped`"
+        escaped
       else
         txt
     }

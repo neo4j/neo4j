@@ -61,6 +61,28 @@ class ExpressionStringifierTest extends CypherFunSuite with AstConstructionTestS
         computedScopeDependencies = Some(Set(varFor("r")))
       ),
       "[(u)-[r:FOLLOWS]->(u2:User) | u2.id]"
+    ),
+    (
+      varFor(
+        "yo\u005c\u0075\u0030\u0030\u0036\u0030 union all match (yo) return \u005c\u0075\u0030\u0030\u0036\u0030yo"
+      ),
+      "`yo\\\\u0060 union all match (yo) return \\\\u0060yo`"
+    ),
+    (
+      varFor("\u005c\u0074 \u005c\u006e \u005c\u0066 \u005c\u0072 \u005c\u0062"),
+      "`\\t \\n \\f \\r \\b`"
+    ),
+    (
+      varFor("\\cantbeescaped"),
+      "`\\cantbeescaped`"
+    ),
+    (
+      varFor("a\\u"),
+      "`a\\u`"
+    ),
+    (
+      varFor("a\\\\u0041"),
+      "`a\\\\u0041`"
     )
   )
 
