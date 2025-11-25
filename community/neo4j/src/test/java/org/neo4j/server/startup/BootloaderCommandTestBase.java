@@ -68,6 +68,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.testkit.engine.EngineTestKit;
 import org.junit.platform.testkit.engine.Events;
 import org.neo4j.cli.CommandFailedException;
@@ -75,6 +76,7 @@ import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -322,9 +324,21 @@ abstract class BootloaderCommandTestBase {
                     .enableImplicitConfigurationParameters(true)
                     .execute()
                     .testEvents();
-
-            testEvents.assertThatEvents().haveExactly(1, event(finishedSuccessfully()));
+            testEvents
+                    .assertThatEvents()
+                    .as(() -> getExecutionExceptionsIfAny(testEvents))
+                    .haveExactly(1, event(finishedSuccessfully()));
             System.exit(SUCCESS_CODE);
+        }
+
+        private static String getExecutionExceptionsIfAny(Events testEvents) {
+            StringBuilder sb = new StringBuilder();
+            testEvents.list().forEach(event -> {
+                event.getPayload(TestExecutionResult.class)
+                        .flatMap(TestExecutionResult::getThrowable)
+                        .ifPresent(t -> sb.append(Exceptions.stringify(t)).append(System.lineSeparator()));
+            });
+            return sb.isEmpty() ? "No execution exceptions found." : sb.toString();
         }
     }
 

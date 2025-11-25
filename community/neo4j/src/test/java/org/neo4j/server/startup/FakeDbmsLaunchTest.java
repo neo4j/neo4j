@@ -739,11 +739,9 @@ class FakeDbmsLaunchTest {
                     () -> {
                         try (OtherThreadExecutor executor = new OtherThreadExecutor("TestExecutor")) {
                             Future<Integer> console = executor.executeDontWait(() -> execute("console"));
-                            assertEventually(() -> Files.exists(pidFile), Conditions.TRUE, 2, MINUTES);
-                            Optional<ProcessHandle> process = getProcess();
-                            assertThat(process).isPresent();
+                            assertEventually(() -> getProcess().isPresent(), Conditions.TRUE, 2, MINUTES);
 
-                            process.get().destroy();
+                            getProcess().get().destroy();
                             console.get();
                         }
                     },
