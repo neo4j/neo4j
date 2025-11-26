@@ -69,7 +69,9 @@ class GraphElementValueTest {
 
         assertNotEqual(path(node(1L), rel(2L, 1L, 3L), node(3L)), path(node(1L), rel(3L, 1L, 3L), node(3L)));
 
-        assertNotEqual(path(node(1L), rel(2L, 1L, 2L), node(2L)), path(node(1L), rel(2L, 1L, 3L), node(3L)));
+        assertNotEqual(
+                path(node(1L), rel(2L, 1L, 3L), node(3L), rel(4L, 3L, 5L), node(5L)),
+                path(node(1L), rel(2L, 1L, 3L), node(3L), rel(5L, 3L, 5L), node(5L)));
     }
 
     @Test

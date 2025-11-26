@@ -21,7 +21,6 @@ package org.neo4j.values.virtual;
 
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
@@ -52,23 +51,21 @@ public abstract class VirtualPathValue extends VirtualValue {
     @Override
     public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
         VirtualPathValue otherPath = (VirtualPathValue) other;
-        long[] nodes = nodeIds();
-        long[] relationships = relationshipIds();
-        long[] otherNodes = otherPath.nodeIds();
-        long[] otherRelationships = otherPath.relationshipIds();
 
-        int x = Long.compare(nodes[0], otherNodes[0]);
+        int x = Long.compare(startNodeId(), otherPath.startNodeId());
         if (x == 0) {
             int i = 0;
-            int length = Math.min(relationships.length, otherRelationships.length);
+            int size = size();
+            int otherSize = otherPath.size();
+            int length = Math.min(size, otherSize);
 
             while (x == 0 && i < length) {
-                x = Long.compare(relationships[i], otherRelationships[i]);
+                x = Long.compare(relationshipId(i), otherPath.relationshipId(i));
                 ++i;
             }
 
             if (x == 0) {
-                x = Integer.compare(relationships.length, otherRelationships.length);
+                x = Integer.compare(size, otherSize);
             }
         }
 
@@ -85,22 +82,30 @@ public abstract class VirtualPathValue extends VirtualValue {
         if (!(other instanceof VirtualPathValue that)) {
             return false;
         }
-        return size() == that.size()
-                && Arrays.equals(nodeIds(), that.nodeIds())
-                && Arrays.equals(relationshipIds(), that.relationshipIds());
+        return size() == that.size() && startNodeId() == that.startNodeId() && relationshipIdsEquals(that);
     }
 
     @Override
     protected int computeHashToMemoize() {
-        long[] nodes = nodeIds();
-        long[] relationships = relationshipIds();
-        int result = Long.hashCode(nodes[0]);
-        for (int i = 1; i < nodes.length; i++) {
-            result += HASH_CONSTANT * (result + Long.hashCode(relationships[i - 1]));
-            result += HASH_CONSTANT * (result + Long.hashCode(nodes[i]));
+        int result = Long.hashCode(startNodeId());
+        int length = size();
+        for (int i = 0; i < length; i++) {
+            result += HASH_CONSTANT * (result + Long.hashCode(relationshipId(i)));
         }
         return result;
     }
+
+    private boolean relationshipIdsEquals(VirtualPathValue other) {
+        int length = size();
+        for (int i = 0; i < length; i++) {
+            if (relationshipId(i) != other.relationshipId(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public abstract long relationshipId(int index);
 
     @Override
     public <T> T map(ValueMapper<T> mapper) {

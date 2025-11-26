@@ -41,16 +41,6 @@ public abstract class PathValue extends VirtualPathValue {
     public abstract RelationshipValue[] relationships();
 
     @Override
-    public long startNodeId() {
-        return startNode().id();
-    }
-
-    @Override
-    public long endNodeId() {
-        return endNode().id();
-    }
-
-    @Override
     public long[] nodeIds() {
         var nodes = nodes();
         var nodeIds = new long[nodes.length];
@@ -76,63 +66,11 @@ public abstract class PathValue extends VirtualPathValue {
     }
 
     @Override
-    public boolean equals(VirtualValue other) {
-        if (other instanceof PathValue that) {
-            return size() == that.size()
-                    && Arrays.equals(nodes(), that.nodes())
-                    && Arrays.equals(relationships(), that.relationships());
-        } else {
-            return super.equals(other);
-        }
-    }
-
-    @Override
-    protected int computeHashToMemoize() {
-        NodeValue[] nodes = nodes();
-        VirtualRelationshipValue[] relationships = relationships();
-        int result = nodes[0].hashCode();
-        for (int i = 1; i < nodes.length; i++) {
-            result += HASH_CONSTANT * (result + relationships[i - 1].hashCode());
-            result += HASH_CONSTANT * (result + nodes[i].hashCode());
-        }
-        return result;
-    }
-
-    @Override
     public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
         if (writer.entityMode() == REFERENCE) {
             writer.writePathReference(nodeIds(), relationshipIds());
         } else {
             writer.writePath(nodes(), relationships());
-        }
-    }
-
-    @Override
-    public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
-        if (other instanceof PathValue otherPath) {
-            NodeValue[] nodes = nodes();
-            RelationshipValue[] relationships = relationships();
-            NodeValue[] otherNodes = otherPath.nodes();
-            RelationshipValue[] otherRelationships = otherPath.relationships();
-
-            int x = nodes[0].unsafeCompareTo(otherNodes[0], comparator);
-            if (x == 0) {
-                int i = 0;
-                int length = Math.min(relationships.length, otherRelationships.length);
-
-                while (x == 0 && i < length) {
-                    x = relationships[i].unsafeCompareTo(otherRelationships[i], comparator);
-                    ++i;
-                }
-
-                if (x == 0) {
-                    x = Integer.compare(relationships.length, otherRelationships.length);
-                }
-            }
-
-            return x;
-        } else {
-            return super.unsafeCompareTo(other, comparator);
         }
     }
 
@@ -172,11 +110,6 @@ public abstract class PathValue extends VirtualPathValue {
         return builder.build();
     }
 
-    @Override
-    public int size() {
-        return relationships().length;
-    }
-
     private static final long DIRECT_PATH_SHALLOW_SIZE = shallowSizeOfInstance(DirectPathValue.class);
 
     static class DirectPathValue extends PathValue {
@@ -192,6 +125,16 @@ public abstract class PathValue extends VirtualPathValue {
             this.nodes = nodes;
             this.edges = edges;
             this.payloadSize = payloadSize;
+        }
+
+        @Override
+        public final long startNodeId() {
+            return nodes[0].id();
+        }
+
+        @Override
+        public final long endNodeId() {
+            return nodes[nodes.length - 1].id();
         }
 
         @Override
@@ -212,6 +155,61 @@ public abstract class PathValue extends VirtualPathValue {
         @Override
         public RelationshipValue[] relationships() {
             return edges;
+        }
+
+        @Override
+        public final int size() {
+            return edges.length;
+        }
+
+        @Override
+        public final long relationshipId(int index) {
+            return edges[index].id();
+        }
+
+        @Override
+        public int unsafeCompareTo(VirtualValue other, Comparator<AnyValue> comparator) {
+            if (other instanceof DirectPathValue otherPath) {
+                NodeValue[] otherNodes = otherPath.nodes();
+                RelationshipValue[] otherRelationships = otherPath.relationships();
+
+                int x = nodes[0].unsafeCompareTo(otherNodes[0], comparator);
+                if (x == 0) {
+                    int i = 0;
+                    int length = Math.min(edges.length, otherRelationships.length);
+
+                    while (x == 0 && i < length) {
+                        x = edges[i].unsafeCompareTo(otherRelationships[i], comparator);
+                        ++i;
+                    }
+
+                    if (x == 0) {
+                        x = Integer.compare(edges.length, otherRelationships.length);
+                    }
+                }
+
+                return x;
+            } else {
+                return super.unsafeCompareTo(other, comparator);
+            }
+        }
+
+        @Override
+        public boolean equals(VirtualValue other) {
+            if (!(other instanceof DirectPathValue that)) {
+                return super.equals(other);
+            }
+            return size() == that.size() && startNodeId() == that.startNodeId() && Arrays.equals(edges, that.edges);
+        }
+
+        @Override
+        protected int computeHashToMemoize() {
+            int result = nodes[0].hashCode();
+            int length = edges.length;
+            for (int i = 0; i < length; i++) {
+                result += HASH_CONSTANT * (result + edges[i].hashCode());
+            }
+            return result;
         }
 
         @Override
