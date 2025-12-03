@@ -41,23 +41,7 @@ public interface ReadBehaviour {
 
     boolean shouldIncludeNode(long nodeId, String[] labels);
 
-    default long translateNodeId(long nodeId) {
-        return nodeId;
-    }
-
     boolean shouldIncludeRelationship(long startNodeId, long endNodeId, long relationshipId, String relationshipType);
-
-    default long translateRelationshipId(long relationshipId) {
-        return relationshipId;
-    }
-
-    default long translateRelationshipStartNodeId(long relationshipId, long startNodeId, long endNodeId) {
-        return startNodeId;
-    }
-
-    default long translateRelationshipEndNodeId(long relationshipId, long startNodeId, long endNodeId) {
-        return endNodeId;
-    }
 
     String[] filterLabels(String[] labels);
 
