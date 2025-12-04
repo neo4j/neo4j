@@ -28,7 +28,7 @@ case class GraphRefType(isNullable: Boolean)(val position: InputPosition) extend
 
   override def hasCypherParserSupport: Boolean = false
 
-  override def hasValueRepresentation: Boolean = false
+  override def couldBeStoredInProperty: Boolean = false
 
   override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 

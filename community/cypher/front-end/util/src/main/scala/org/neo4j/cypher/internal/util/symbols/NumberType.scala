@@ -32,7 +32,7 @@ case class NumberType(isNullable: Boolean)(val position: InputPosition) extends 
 
   override def hasCypherParserSupport: Boolean = false
 
-  override def hasValueRepresentation: Boolean = true
+  override def couldBeStoredInProperty: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 

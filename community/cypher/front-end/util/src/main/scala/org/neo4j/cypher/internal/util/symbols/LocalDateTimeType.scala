@@ -25,7 +25,7 @@ case class LocalDateTimeType(isNullable: Boolean)(val position: InputPosition) e
 
   override def sortOrder: Int = CypherTypeOrder.LOCAL_DATETIME.id
 
-  override def hasValueRepresentation: Boolean = true
+  override def couldBeStoredInProperty: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 

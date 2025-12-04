@@ -37,7 +37,7 @@ case class ListType(innerType: CypherType, isNullable: Boolean)(val position: In
     else s"${normalizedType.toCypherTypeString} NOT NULL"
   }
   override def sortOrder: Int = CypherTypeOrder.LIST.id
-  override def hasValueRepresentation: Boolean = innerType.hasValueRepresentation
+  override def couldBeStoredInProperty: Boolean = innerType.couldBeStoredInProperty
 
   override def simplify: CypherType = innerType match {
     case unionInnerType: ClosedDynamicUnionType =>

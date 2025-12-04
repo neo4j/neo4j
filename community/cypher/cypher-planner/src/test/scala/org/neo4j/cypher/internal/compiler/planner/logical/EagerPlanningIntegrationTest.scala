@@ -2463,4 +2463,278 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .allNodeScan("anon_0")
       .build()
   }
+
+  test("An eager should be inserted if the return type is a map since it could contain a reference to a node") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(3)
+        .setLabelCardinality("B", 3)
+        .build()
+
+    val query =
+      """
+        |UNWIND range(1, 3) as i
+        |MATCH (n:B)
+        |SET n.prop = i
+        |RETURN {node: n} as n
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .lpEager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(0)))))
+        .projection("{node: n} AS n")
+        .setNodeProperty("n", "prop", "i")
+        .apply()
+        .|.nodeByLabelScan("n", "B", IndexOrderNone, "i")
+        .unwind("range(1, 3) AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "An eager should be inserted if the return type is a map containing a Collect subquery since it could contain a reference to a node"
+  ) {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(3)
+        .setLabelCardinality("B", 3)
+        .build()
+
+    val query =
+      """
+        |UNWIND range(1, 3) as i
+        |MATCH (n:B)
+        |SET n.prop = i
+        |RETURN {node: COLLECT{MATCH (c) Return (c)}} as n
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .lpEager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(5), Id(0)))))
+        .projection("{node: anon_0} AS n")
+        .rollUpApply("anon_0", "c")
+        .|.allNodeScan("c")
+        .irEager()
+        .setNodeProperty("n", "prop", "i")
+        .apply()
+        .|.nodeByLabelScan("n", "B", IndexOrderNone, "i")
+        .unwind("range(1, 3) AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("An eager should be inserted if the return type is a List since it could contain a reference to a node") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(3)
+        .setLabelCardinality("B", 3)
+        .build()
+
+    val query =
+      """
+        |UNWIND range(1, 3) as i
+        |MATCH (n:B)
+        |SET n.prop = i
+        |RETURN [n] as z
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .lpEager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(0)))))
+        .projection("[n] AS z")
+        .setNodeProperty("n", "prop", "i")
+        .apply()
+        .|.nodeByLabelScan("n", "B", IndexOrderNone, "i")
+        .unwind("range(1, 3) AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "An eager should be inserted if the return type is a List within a Map since it could contain a reference to a node"
+  ) {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(3)
+        .setLabelCardinality("B", 3)
+        .build()
+
+    val query =
+      """
+        |UNWIND range(1, 3) as i
+        |MATCH (n:B)
+        |SET n.prop = i
+        |RETURN {Nodes: [n]} as z
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .lpEager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(0)))))
+        .projection("{Nodes: [n]} AS z")
+        .setNodeProperty("n", "prop", "i")
+        .apply()
+        .|.nodeByLabelScan("n", "B", IndexOrderNone, "i")
+        .unwind("range(1, 3) AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  ignore("An eager should not be inserted if the return type is a List which references a non overlapping node") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(3)
+        .setLabelCardinality("B", 3)
+        .build()
+
+    val query =
+      """
+        |UNWIND range(1, 3) as i
+        |MATCH (n:B), (m:!B)
+        |SET n.prop = i
+        |RETURN [m] as z
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection("[m] AS z")
+        .setNodeProperty("n", "prop", "i")
+        .apply()
+        .|.nodeByLabelScan("n", "B", IndexOrderNone, "i")
+        .unwind("range(1, 3) AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("An eager should be inserted if the return type is a map since it could contain a reference to a relationship") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(1)
+        .setRelationshipCardinality("()-[:R]->()", 1)
+        .build()
+
+    val query =
+      """
+        |UNWIND range(1, 3) as i
+        |MATCH ()-[r:R]->()
+        |SET r.prop = i
+        |RETURN {relationship: r} as r
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .lpEager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(0)))))
+        .projection("{relationship: r} AS r")
+        .setRelationshipProperty("r", "prop", "i")
+        .apply()
+        .|.relationshipTypeScan("(anon_0)-[r:R]->(anon_1)", IndexOrderNone, "i")
+        .unwind("range(1, 3) AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "An eager should be inserted if the return type is a path since it could contain a reference to a relationship"
+  ) {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(1)
+        .setLabelCardinality("B", 1)
+        .build()
+
+    val query =
+      """
+        |UNWIND range(1, 3) as i
+        |MATCH p = (n:B)
+        |SET n.prop = i
+        |RETURN p
+        |""".stripMargin
+
+    val pathExpr = PathExpressionBuilder
+      .node("n")
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .lpEager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(0)))))
+        .projection(Map("p" -> pathExpr))
+        .setNodeProperty("n", "prop", "i")
+        .apply()
+        .|.nodeByLabelScan("n", "B", IndexOrderNone, "i")
+        .unwind("range(1, 3) AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("An eager should NOT be inserted before produce result if it only contains a Property Reference") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 10)
+      .build()
+
+    val query = """MATCH (s:Person {name: 'me'})
+                  |CALL (s) {
+                  |   SET s.seen = coalesce(s.seen + 1,1)
+                  |   RETURN [s.seen] AS result
+                  |}
+                  |RETURN result""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("result")
+        .apply()
+        .|.projection("[s.seen] AS result")
+        // This eager is expected, the eager we don't want is right before the produce result
+        .|.irEager()
+        .|.lpEager(ListSet(PropertyReadSetConflict(propName("seen")).withConflict(Conflict(Id(4), Id(2)))))
+        .|.setNodeProperty("s", "seen", "coalesce(s.seen + 1, 1)")
+        .|.argument("s")
+        .filter("s.name = 'me'")
+        .nodeByLabelScan("s", "Person", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("An eager should NOT be inserted before produce result if it only contains a OperatorExpression") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 10)
+      .build()
+
+    val query = """MATCH (s:Person {name: 'me'})
+                  |CALL (s) {
+                  |   SET s.seen = coalesce(s.seen + 1,1)
+                  |   RETURN [s IS NOT NULL] AS result
+                  |}
+                  |RETURN result""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("result")
+        .apply()
+        .|.projection("[s IS NOT NULL] AS result")
+        .|.setNodeProperty("s", "seen", "coalesce(s.seen + 1, 1)")
+        .|.argument("s")
+        .filter("s.name = 'me'")
+        .nodeByLabelScan("s", "Person", IndexOrderNone)
+        .build()
+    )
+  }
 }

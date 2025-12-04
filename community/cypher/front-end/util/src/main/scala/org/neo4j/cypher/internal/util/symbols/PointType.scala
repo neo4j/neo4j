@@ -25,7 +25,7 @@ case class PointType(isNullable: Boolean)(val position: InputPosition) extends C
 
   override def sortOrder: Int = CypherTypeOrder.POINT.id
 
-  override def hasValueRepresentation: Boolean = true
+  override def couldBeStoredInProperty: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): PointType = this.copy(isNullable = isNullable)(position)
 

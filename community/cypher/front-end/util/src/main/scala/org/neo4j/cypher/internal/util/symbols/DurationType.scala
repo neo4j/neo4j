@@ -24,7 +24,7 @@ case class DurationType(isNullable: Boolean)(val position: InputPosition) extend
   override val toCypherTypeString = "DURATION"
   override def sortOrder: Int = CypherTypeOrder.DURATION.id
 
-  override def hasValueRepresentation: Boolean = true
+  override def couldBeStoredInProperty: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 

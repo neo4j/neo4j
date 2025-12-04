@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.ChildrenIds
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -43,12 +44,14 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.OperatorExpression
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
+import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
@@ -200,6 +203,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -234,6 +238,8 @@ object ReadFinder {
    *                                        If a variable is introduced by this plan, and no predicates are applied on that variable,
    *                                        it is still present as a key in this map with an empty sequence of filter expressions.
    * @param referencedRelationshipVariables all referenced Relationship variables
+   * @param callInTx                        whether this plan contains a procedure call in a transaction
+   * @param referencedVariableMap           variable mappings collected from prior projections
    */
   private[eager] case class PlanReads(
     readNodeProperties: Seq[AccessedProperty] = Seq.empty,
@@ -246,7 +252,8 @@ object ReadFinder {
     relationshipFilterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
     referencedNodeVariables: Set[LogicalVariable] = Set.empty,
     referencedRelationshipVariables: Set[LogicalVariable] = Set.empty,
-    callInTx: Boolean = false
+    callInTx: Boolean = false,
+    referencedVariableMap: Map[LogicalVariable, Set[LogicalVariable]] = Map.empty
   ) {
 
     def withNodePropertyRead(accessedProperty: AccessedProperty): PlanReads = {
@@ -311,6 +318,9 @@ object ReadFinder {
 
     def withReferencedRelationshipVariable(variable: LogicalVariable): PlanReads =
       copy(referencedRelationshipVariables = referencedRelationshipVariables + variable)
+
+    def withReferencedVariableMap(newMap: Map[LogicalVariable, Set[LogicalVariable]]): PlanReads =
+      copy(referencedVariableMap = referencedVariableMap.fuse(newMap)(_ ++ _))
   }
 
   /**
@@ -321,7 +331,8 @@ object ReadFinder {
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     childrenIds: ChildrenIds,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    variableReferenceMap: Map[LogicalVariable, Set[LogicalVariable]]
   ): PlanReads = {
     // Match on plans
     val planReads = plan match {
@@ -734,6 +745,17 @@ object ReadFinder {
             res = res
               .withUnknownRelPropertiesRead(Some(col.variable))
           }
+          variableReferenceMap.getOrElse(col.variable, Set.empty)
+            .foreach { refVar =>
+              if (semanticTable.typeFor(refVar).couldBe(CTNode)) {
+                res = res.withUnknownNodePropertiesRead(Some(refVar))
+                  .withUnknownLabelsRead(Some(refVar))
+              }
+              if (semanticTable.typeFor(refVar).couldBe(CTRelationship)) {
+                res = res.withUnknownRelPropertiesRead(Some(refVar))
+              }
+            }
+
           res
         }
 
@@ -785,6 +807,9 @@ object ReadFinder {
                 semanticTable.typeFor(nonVariableExpression).couldBe(CTRelationship)
             if (couldBeRel) {
               res = res.withIntroducedRelationshipVariable(v)
+            }
+            if (!nonVariableExpression.isInstanceOf[Property] && !(couldBeNode || couldBeRel)) {
+              res = res.withReferencedVariableMap(Map(v -> fullEntityReferences(nonVariableExpression)))
             }
 
             res
@@ -1071,6 +1096,7 @@ object ReadFinder {
         val relationshipFilterExpressions = nestedReads.relationshipFilterExpressions.view.mapValues(_.expression)
         val referencedRelationshipVariables = nestedReads.possibleRelDeleteConflictPlans.keySet
         val callInTx = nestedReads.callInTxPlans.nonEmpty
+        val variableReferenceMap = nestedReads.variableReferenceMap
 
         AssertMacros.checkOnlyWhenAssertionsAreEnabled(
           nestedReads.productIterator.toSeq == Seq(
@@ -1081,7 +1107,8 @@ object ReadFinder {
             nestedReads.readRelProperties,
             nestedReads.relationshipFilterExpressions,
             nestedReads.possibleRelDeleteConflictPlans,
-            nestedReads.callInTxPlans
+            nestedReads.callInTxPlans,
+            nestedReads.variableReferenceMap
           ),
           "Make sure to edit this place when adding new fields to Reads"
         )
@@ -1104,7 +1131,8 @@ object ReadFinder {
                 case (acc, (variable, nfe)) => acc.withAddedRelationshipFilterExpression(variable, nfe)
               },
             acc => referencedRelationshipVariables.foldLeft(acc)(_.withReferencedRelationshipVariable(_)),
-            acc => if (callInTx) acc.withCallInTx else acc
+            acc => if (callInTx) acc.withCallInTx else acc,
+            acc => acc.withReferencedVariableMap(variableReferenceMap)
           ))(acc)
           TraverseChildren(nextAcc)
         }
@@ -1348,4 +1376,34 @@ object ReadFinder {
       case _                   => None
     }
   }
+
+  /**
+   * Collect the dependencies of expression which may lead to entities (nodes, relationships, paths) containing properties being returned.
+   */
+  private def fullEntityReferences(expression: Expression): Set[LogicalVariable] =
+    expression.folder.treeFold(Expression.TreeAcc[Set[LogicalVariable]](Set.empty)) {
+      // We don't need to check these references since they will be caught in another part of eagerness analysis
+      case _: Property | _: CachedProperty =>
+        acc => SkipChildren(acc)
+      case operatorExpr: OperatorExpression
+        if operatorExpr.signatures.forall(_.outputType.canBeStoredInProperty) =>
+        acc =>
+          SkipChildren(acc)
+      case f: FunctionInvocation
+        if f.function.signatures.forall(_.outputType.canBeStoredInProperty) ||
+          // The Properties function has an output type of Map which sometimes cannot be stored in a property, so we check it separately.
+          f.function == Properties =>
+        acc =>
+          SkipChildren(acc)
+
+      case scope: ScopeExpression =>
+        acc =>
+          val newDependencies = scope.dependencies.filterNot(acc.inScope)
+          val newAcc = acc.mapData(_ ++ newDependencies)
+          SkipChildren(newAcc)
+      case id: LogicalVariable => acc => {
+          val newAcc = if (acc.inScope(id)) acc else acc.mapData(_ + id)
+          TraverseChildren(newAcc)
+        }
+    }.data
 }

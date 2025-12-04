@@ -24,7 +24,7 @@ case class StringType(isNullable: Boolean)(val position: InputPosition) extends 
   override val toCypherTypeString: String = "STRING"
   override def sortOrder: Int = CypherTypeOrder.STRING.id
 
-  override def hasValueRepresentation: Boolean = true
+  override def couldBeStoredInProperty: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): StringType = this.copy(isNullable = isNullable)(position)
 

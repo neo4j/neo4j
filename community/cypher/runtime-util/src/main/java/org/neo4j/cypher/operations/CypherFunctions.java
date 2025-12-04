@@ -2168,7 +2168,7 @@ public final class CypherFunctions {
             result = true;
         } else if (typeName instanceof ListType listType) {
             result = (item instanceof SequenceValue list) && checkInnerListIsTyped(list, listType);
-        } else if (typeName.hasValueRepresentation()) {
+        } else if (typeName.couldBeStoredInProperty()) {
             result = possibleValueRepresentations(typeName).contains(item.valueRepresentation());
         } else if (typeName instanceof NodeType) {
             result = item instanceof VirtualNodeValue;
@@ -2305,14 +2305,14 @@ public final class CypherFunctions {
             // else check that the specific array type matches
             return itemType instanceof AnyType
                     || itemType instanceof PropertyValueType
-                    || (typeName.hasValueRepresentation()
+                    || (typeName.couldBeStoredInProperty()
                             && possibleValueRepresentations(typeName).contains(array.valueRepresentation()));
         } else if (values instanceof ListValue list) {
             // For a simple LIST<TYPE NOT NULL> we can quickly check the list type
             // without needing to iterate over the list
             // Lists that are mixed ints and floats will return as a list of float here, so don't allow the shortcut for
             // that
-            if (itemType.hasValueRepresentation()
+            if (itemType.couldBeStoredInProperty()
                     && !itemType.isNullable()
                     && list.itemValueRepresentation().valueGroup() != ValueGroup.NUMBER
                     && possibleValueRepresentations(itemType).contains(list.itemValueRepresentation())) {

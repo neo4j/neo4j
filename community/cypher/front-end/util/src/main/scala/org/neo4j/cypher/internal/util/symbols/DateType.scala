@@ -25,7 +25,7 @@ case class DateType(isNullable: Boolean)(val position: InputPosition) extends Cy
 
   override def sortOrder: Int = CypherTypeOrder.DATE.id
 
-  override def hasValueRepresentation: Boolean = true
+  override def couldBeStoredInProperty: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 

@@ -27,7 +27,15 @@ trait CypherType extends ASTNode {
   def isNullable: Boolean
   def hasCypherParserSupport: Boolean = true
 
-  def hasValueRepresentation: Boolean = false
+  /**
+   * Checks if the CypherType could or could not be stored in a property.
+   */
+  def couldBeStoredInProperty: Boolean = false
+
+  /**
+   * Checks if the CypherType guarantees that it can be stored in a property.
+   */
+  def canBeStoredInProperty: Boolean = couldBeStoredInProperty
 
   def withIsNullable(isNullable: Boolean): CypherType
 

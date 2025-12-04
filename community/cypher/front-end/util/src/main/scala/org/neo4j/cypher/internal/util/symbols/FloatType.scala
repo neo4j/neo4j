@@ -25,7 +25,7 @@ case class FloatType(isNullable: Boolean)(val position: InputPosition) extends C
 
   override def sortOrder: Int = CypherTypeOrder.FLOAT.id
 
-  override def hasValueRepresentation: Boolean = true
+  override def couldBeStoredInProperty: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): CypherType = this.copy(isNullable = isNullable)(position)
 
