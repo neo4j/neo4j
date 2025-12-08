@@ -17,6 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.response;
+package org.neo4j.server.queryapi.exception;
 
-public record HttpError(String code, String message) {}
+import org.neo4j.driver.exceptions.Neo4jException;
+
+/**
+ * Utility class for UnWrap exceptions form clauses
+ */
+public class ExceptionsUnwrapper {
+    private ExceptionsUnwrapper() {}
+
+    public static void unwrapAndThrowNeo4jAndQueryApiExceptions(Throwable throwable) {
+        for (var ex = throwable; ex != null; ex = ex.getCause()) {
+            if (ex instanceof Neo4jException neo4jException) {
+                throw neo4jException;
+            } else if (ex instanceof QueryApiException queryApiException) {
+                throw queryApiException;
+            }
+        }
+    }
+}

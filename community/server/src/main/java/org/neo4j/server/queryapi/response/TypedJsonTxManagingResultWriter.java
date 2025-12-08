@@ -31,13 +31,14 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
+import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.server.queryapi.request.TxManagedResultContainer;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.View;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 
 @Provider
-@Produces(TypedJsonDriverAutoCommitResultWriter.TYPED_JSON_MIME_TYPE_VALUE)
+@Produces({QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0})
 public class TypedJsonTxManagingResultWriter extends AbstractTxManagingResultWriter {
     public TypedJsonTxManagingResultWriter(
             @Context InternalLog logger, @Context TransactionManager transactionManager) {

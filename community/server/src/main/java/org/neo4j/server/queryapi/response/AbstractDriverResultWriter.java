@@ -26,9 +26,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
+import org.neo4j.server.queryapi.exception.ExceptionsUnwrapper;
 import org.neo4j.server.queryapi.request.AutoCommitResultContainer;
 
 abstract class AbstractDriverResultWriter implements MessageBodyWriter<AutoCommitResultContainer> {
@@ -56,15 +56,8 @@ abstract class AbstractDriverResultWriter implements MessageBodyWriter<AutoCommi
                     resultSummary,
                     session.lastBookmarks(),
                     result.queryRequest().includeCounters());
-        } catch (Neo4jException ex) {
-            try {
-                resultSerializer.writeError(ex);
-            } catch (IOException errorWritingException) {
-                // We have errored during writing an error implying the connection has disappeared during writing.
-                // We simply log in this case.
-                log.warn("An error was thrown whilst attempting to write an error.", errorWritingException);
-            }
         } catch (IOException ex) {
+            ExceptionsUnwrapper.unwrapAndThrowNeo4jAndQueryApiExceptions(ex);
             throw new ConnectionException("Failed to write to the connection", ex);
         } finally {
             jsonGenerator.flush();

@@ -1,3 +1,5 @@
+package org.neo4j.queryapi.testclient;
+
 /*
  * Copyright (c) "Neo4j"
  * Neo4j Sweden AB [https://neo4j.com]
@@ -17,23 +19,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.error;
+public enum QueryContentType {
+    UNTYPED("application/json"),
+    TYPED("application/vnd.neo4j.query"),
+    TYPED_V1_0("application/vnd.neo4j.query.v1.0");
 
-import static org.neo4j.server.queryapi.response.error.HttpErrorResponse.singleError;
+    private final String mimeType;
 
-import com.fasterxml.jackson.core.JacksonException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import org.neo4j.kernel.api.exceptions.Status;
+    QueryContentType(String mimeType) {
+        this.mimeType = mimeType;
+    }
 
-public class JacksonExceptionMapper implements ExceptionMapper<JacksonException> {
-
-    @Override
-    public Response toResponse(JacksonException exception) {
-        // For some reason, json parsing errors return a 500 status code.
-        // todo make this error more helpful.
-        return Response.status(400)
-                .entity(singleError(Status.Request.Invalid.code().serialize(), "Request body invalid."))
-                .build();
+    public String mimeType() {
+        return mimeType;
     }
 }

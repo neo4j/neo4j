@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.response;
+package org.neo4j.server.queryapi.response.error;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import java.io.IOException;
@@ -31,11 +31,12 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
+import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.View;
 
 @Provider
-@Produces(MediaType.APPLICATION_JSON + "," + TypedJsonDriverAutoCommitResultWriter.TYPED_JSON_MIME_TYPE_VALUE)
+@Produces(QueryMimeTypes.ALL)
 public class ErrorResponseWriter implements MessageBodyWriter<HttpErrorResponse> {
 
     private final JsonFactory jsonFactory;

@@ -169,6 +169,7 @@ public class DriverResultSerializer {
     private void ensureResultSetClosedForErrorsWriting() throws IOException {
         if (currentState == State.IN_VALUES) {
             jsonGenerator.writeEndArray();
+            jsonGenerator.writeEndArray();
             jsonGenerator.writeEndObject();
         }
     }

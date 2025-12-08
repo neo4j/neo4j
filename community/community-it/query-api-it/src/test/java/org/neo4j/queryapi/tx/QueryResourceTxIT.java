@@ -28,12 +28,16 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -47,6 +51,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
+import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
@@ -135,7 +140,7 @@ public class QueryResourceTxIT {
                 .build());
 
         assertThat(res).hasNoTransaction();
-        assertThat(res).hasErrorStatus(202, Status.Statement.ArithmeticError);
+        assertThat(res).hasErrorStatus(400, Status.Statement.ArithmeticError);
     }
 
     @Test
@@ -181,7 +186,7 @@ public class QueryResourceTxIT {
                 res.body().txId());
 
         assertThat(cont).hasNoTransaction();
-        assertThat(cont).hasErrorStatus(202, Status.Statement.ArithmeticError);
+        assertThat(cont).hasErrorStatus(400, Status.Statement.ArithmeticError);
     }
 
     @Test
@@ -243,7 +248,7 @@ public class QueryResourceTxIT {
                 res.body().txId());
 
         assertThat(commitRes).hasNoTransaction();
-        assertThat(commitRes).hasErrorStatus(202, Status.Statement.ArithmeticError);
+        assertThat(commitRes).hasErrorStatus(400, Status.Statement.ArithmeticError);
 
         // verify node not created
         var newNodeCheck = testClient.autoCommit(QueryRequest.newBuilder()
@@ -322,9 +327,11 @@ public class QueryResourceTxIT {
         assertThat(commit).wasNotFound();
     }
 
-    @Test
-    void shouldRespondWithTypedFormat() throws IOException, InterruptedException, QueryApiTestClientException {
-        var typedClient = new QueryAPITestClient(queryEndpoint, true);
+    @ParameterizedTest
+    @MethodSource("typedMimes")
+    void shouldRespondWithTypedFormat(QueryContentType format)
+            throws IOException, InterruptedException, QueryApiTestClientException {
+        var typedClient = new QueryAPITestClient(queryEndpoint, format);
 
         var param = new LinkedHashMap<String, Object>();
         param.put("$type", "Integer");
@@ -346,9 +353,11 @@ public class QueryResourceTxIT {
         assertThat(commit).wasSuccessful().hasTypedRecord();
     }
 
-    @Test
-    void shouldHandleBlankTypedTx() throws IOException, InterruptedException, QueryApiTestClientException {
-        var typedClient = new QueryAPITestClient(queryEndpoint, true);
+    @ParameterizedTest
+    @MethodSource("typedMimes")
+    void shouldHandleBlankTypedTx(QueryContentType format)
+            throws IOException, InterruptedException, QueryApiTestClientException {
+        var typedClient = new QueryAPITestClient(queryEndpoint, format);
 
         var res = typedClient.beginTx();
         assertThat(res).wasSuccessful();
@@ -368,5 +377,9 @@ public class QueryResourceTxIT {
         assertThat(res).hasTransaction();
         Assertions.assertThat(res.body().txId().length()).isEqualTo(4);
         testClient.commitTx(res.body().txId());
+    }
+
+    public static Stream<Arguments> typedMimes() {
+        return Stream.of(QueryContentType.TYPED, QueryContentType.TYPED_V1_0).map(Arguments::of);
     }
 }

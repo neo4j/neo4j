@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi.response;
+package org.neo4j.server.queryapi.response.error;
 
-import java.util.List;
-import org.neo4j.driver.exceptions.Neo4jException;
+import static org.neo4j.server.queryapi.response.error.HttpErrorResponse.fromQueryApiException;
 
-public record HttpErrorResponse(List<HttpError> errors) {
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import org.neo4j.server.queryapi.exception.QueryApiException;
 
-    public static HttpErrorResponse singleError(String error, String message) {
-        return new HttpErrorResponse(List.of(new HttpError(error, message)));
-    }
+public class QueryApiExceptionMapper implements ExceptionMapper<QueryApiException> {
 
-    public static HttpErrorResponse fromDriverException(Neo4jException neo4jException) {
-        return new HttpErrorResponse(List.of(new HttpError(neo4jException.code(), neo4jException.getMessage())));
+    @Override
+    public Response toResponse(QueryApiException e) {
+        return Response.status(e.httpStatus()).entity(fromQueryApiException(e)).build();
     }
 }

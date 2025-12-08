@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.server.queryapi.exception.QueryApiException;
 
 public class ParameterDeserializer extends StdDeserializer<Map<String, Object>> {
 
@@ -71,6 +72,8 @@ public class ParameterDeserializer extends StdDeserializer<Map<String, Object>> 
                 }
                 var value = p.readValueAs(Value.class);
                 map.put(keyString, value);
+            } catch (QueryApiException e) {
+                throw e;
             } catch (Exception e) {
                 throw new JsonParseException(format("Unable to read value for field %s", keyString));
             }

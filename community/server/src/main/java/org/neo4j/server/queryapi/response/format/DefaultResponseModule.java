@@ -53,6 +53,7 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
 import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.server.queryapi.exception.UnknownTypeException;
 import org.neo4j.values.storable.DurationValue;
 
 /**
@@ -377,8 +378,10 @@ public final class DefaultResponseModule extends SimpleModule {
                 json.writeEndObject();
 
             } else {
-                throw new UnsupportedOperationException(
-                        "Type " + value.type().name() + " is not supported as a column value");
+                throw new UnknownTypeException(
+                        value.toString(),
+                        typeToNames.keySet().stream().map(Type::name).toList(),
+                        value.type().name());
             }
         }
 
@@ -466,8 +469,10 @@ public final class DefaultResponseModule extends SimpleModule {
             } else if (value.hasType(typeSystem.POINT())) {
                 json.writeString(CypherTypes.Point.getWriter().apply(value));
             } else {
-                throw new UnsupportedOperationException(
-                        "Type " + value.type().name() + " is not supported as a column value");
+                throw new UnknownTypeException(
+                        value.toString(),
+                        typeToNames.keySet().stream().map(Type::name).toList(),
+                        value.type().name());
             }
         }
 

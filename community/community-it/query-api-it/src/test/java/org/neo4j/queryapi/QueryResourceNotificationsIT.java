@@ -21,16 +21,8 @@ package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.NOTIFICATIONS_KEY;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,16 +35,14 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.notifications.NotificationCodeWithDescription;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 class QueryResourceNotificationsIT {
 
     private static DatabaseManagementService dbms;
-    private static HttpClient client;
-
-    private static String queryEndpoint;
-
-    private final ObjectMapper MAPPER = new ObjectMapper();
+    private static QueryAPITestClient testClient;
 
     @BeforeAll
     static void beforeAll() {
@@ -67,8 +57,9 @@ class QueryResourceNotificationsIT {
                 .impermanent()
                 .build();
         var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        client = HttpClient.newBuilder().build();
+        var queryEndpoint =
+                "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
+        testClient = new QueryAPITestClient(queryEndpoint);
     }
 
     @AfterAll
@@ -78,19 +69,13 @@ class QueryResourceNotificationsIT {
 
     @Test
     void shouldReturnLabelDoesNotExistNotification() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        "{\"statement\": \"MATCH (n:thisLabelDoesNotExist) return n\"}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("MATCH (n:thisLabelDoesNotExist) return n")
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).size()).isEqualTo(0);
-
-        var notificationsJson = parsedJson.get(NOTIFICATIONS_KEY);
+        var notificationsJson = response.body().notifications();
 
         assertThat(notificationsJson.size()).isEqualTo(1);
         assertThat(notificationsJson.get(0).get("code").asText())
@@ -117,19 +102,13 @@ class QueryResourceNotificationsIT {
 
     @Test
     void shouldReturnMultipleNotifications() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"MATCH (n:thisLabelDoesNotExist), "
-                        + "(m:thisLabelDoesNotExist) return m, n\"}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("MATCH (n:thisLabelDoesNotExist), (m:thisLabelDoesNotExist) return m, n")
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(2);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).size()).isEqualTo(0);
-
-        var notificationsJson = parsedJson.get(NOTIFICATIONS_KEY);
+        var notificationsJson = response.body().notifications();
 
         assertThat(notificationsJson.get(0).get("code").asText())
                 .isEqualTo(Status.Statement.UnknownLabelWarning.code().serialize());
@@ -141,14 +120,10 @@ class QueryResourceNotificationsIT {
 
     @Test
     void shouldNotReturnNotificationsIfNonePresent() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.returnOne());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
 
-        assertThat(parsedJson.get(NOTIFICATIONS_KEY)).isNull();
+        assertThat(response.body().notifications()).isNull();
     }
 }

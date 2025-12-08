@@ -22,10 +22,9 @@ package org.neo4j.server.queryapi;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionAccessedConcurrently;
 import static org.neo4j.server.queryapi.request.AccessMode.toDriverAccessMode;
-import static org.neo4j.server.queryapi.response.HttpErrorResponse.fromDriverException;
-import static org.neo4j.server.queryapi.response.HttpErrorResponse.singleError;
 import static org.neo4j.server.queryapi.response.QueryResponseBookmarks.fromBookmarks;
 import static org.neo4j.server.queryapi.response.QueryResponseTxInfo.fromQueryAPITransaction;
+import static org.neo4j.server.queryapi.response.error.HttpErrorResponse.singleError;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -43,11 +42,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.DatabaseException;
-import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -97,13 +92,11 @@ public class QueryController {
             var result = session.run(request.statement(), request.parameters());
             var resultContainer = new AutoCommitResultContainer(result, session, request);
             return Response.accepted(resultContainer).build();
-        } catch (FatalDiscoveryException ex) {
-            return notFoundDiscoveryResponse(ex);
-        } catch (ClientException | TransientException clientException) {
-            return clientError(clientException);
+        } catch (Neo4jException neo4jException) {
+            throw neo4jException;
         } catch (Exception exception) {
             log.error("Local driver failed to execute query", exception);
-            return serverError();
+            throw exception;
         }
     }
 
@@ -129,17 +122,13 @@ public class QueryController {
                 txCleanUpAction = TxHandling.RETURN;
                 return transactionInfoOnlyResponse(queryTransaction);
             }
-        } catch (FatalDiscoveryException ex) {
-            return notFoundDiscoveryResponse(ex);
         } catch (TransactionIdCollisionException ignored) {
             return txCollisionResponse();
-        } catch (ClientException | TransientException clientException) {
-            return clientError(clientException);
-        } catch (DatabaseException databaseException) {
-            return databaseError(databaseException);
+        } catch (Neo4jException neo4jException) {
+            throw neo4jException;
         } catch (Exception exception) {
             log.error("Local driver failed to execute query", exception);
-            return serverError();
+            throw exception;
         } finally {
             cleanUp(txId, txCleanUpAction);
         }
@@ -206,11 +195,11 @@ public class QueryController {
                     return transactionInfoOnlyResponse(queryAPITransaction);
                 }
             }
-        } catch (ClientException | TransientException clientException) {
-            return clientError(clientException);
+        } catch (Neo4jException neo4jException) {
+            throw neo4jException;
         } catch (Exception exception) {
             log.error("Local driver failed to execute query", exception);
-            return serverError();
+            throw exception;
         } finally {
             cleanUp(txId, txCleanUpAction);
         }
@@ -312,32 +301,6 @@ public class QueryController {
                                 "Transaction with Id: \"%s\" was not found. It may have timed out and therefore"
                                         + " rolled back or the routing header \'neo4j-cluster-affinity\' was not provided.",
                                 transactionId)))
-                .build();
-    }
-
-    private static Response serverError() {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(singleError(
-                        Status.General.UnknownError.code().serialize(),
-                        Status.General.UnknownError.code().description()))
-                .build();
-    }
-
-    private Response databaseError(DatabaseException databaseException) {
-        return Response.serverError()
-                .entity(fromDriverException(databaseException))
-                .build();
-    }
-
-    private static Response clientError(Neo4jException clientException) {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity(fromDriverException(clientException))
-                .build();
-    }
-
-    private static Response notFoundDiscoveryResponse(FatalDiscoveryException ex) {
-        return Response.status(Response.Status.NOT_FOUND)
-                .entity(fromDriverException(ex))
                 .build();
     }
 

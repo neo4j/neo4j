@@ -33,10 +33,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
-import org.neo4j.server.queryapi.response.TypedJsonDriverAutoCommitResultWriter;
+import org.neo4j.server.queryapi.QueryMimeTypes;
 
 @Provider
-@Consumes(TypedJsonDriverAutoCommitResultWriter.TYPED_JSON_MIME_TYPE_VALUE)
+@Consumes({QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0})
 public class TypedJsonMessageBodyReader implements MessageBodyReader<QueryRequest> {
     private final JsonMapper jsonMapper;
 

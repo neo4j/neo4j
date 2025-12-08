@@ -22,19 +22,15 @@ package org.neo4j.queryapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-import static org.neo4j.server.queryapi.response.TypedJsonDriverAutoCommitResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_VALUE;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,16 +46,16 @@ import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryContentType;
+import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 class QueryResourceTypedParametersIT {
 
     private static DatabaseManagementService dbms;
-    private static HttpClient client;
-
-    private static String queryEndpoint;
-
-    private final ObjectMapper MAPPER = new ObjectMapper();
+    private static QueryAPITestClient testClient;
 
     @BeforeAll
     static void beforeAll() {
@@ -74,8 +70,10 @@ class QueryResourceTypedParametersIT {
                 .impermanent()
                 .build();
         var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        client = HttpClient.newBuilder().build();
+        var queryEndpoint =
+                "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
+        testClient = new QueryAPITestClient(
+                queryEndpoint, QueryContentType.TYPED_V1_0, List.of(QueryContentType.TYPED_V1_0));
     }
 
     @AfterAll
@@ -85,10 +83,10 @@ class QueryResourceTypedParametersIT {
 
     public static Stream<Arguments> paramTypes() {
         return Stream.of(
-                Arguments.of("Integer", 123),
-                Arguments.of("Integer", Integer.MAX_VALUE),
-                Arguments.of("Integer", Long.MAX_VALUE),
-                Arguments.of("Float", 12.3F),
+                Arguments.of("Integer", "123"),
+                Arguments.of("Integer", String.valueOf(Integer.MAX_VALUE)),
+                Arguments.of("Integer", String.valueOf(Long.MAX_VALUE)),
+                Arguments.of("Float", "12.3"),
                 Arguments.of("Base64", "YmFuYW5hcw=="),
                 Arguments.of("OffsetDateTime", "2015-06-24T12:50:35.556+01:00"),
                 Arguments.of("ZonedDateTime", "2015-11-21T21:40:32.142Z[Antarctica/Troll]"),
@@ -106,148 +104,98 @@ class QueryResourceTypedParametersIT {
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleParameters(String typeString, Object value) throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"$type\":\"" + typeString + "\",\"_value\":\""
-                        + value.toString() + "\"}}}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", of(typeString, value)))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
+        var parsedJson = response.body().data();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_VALUE)
-                        .asText())
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).asText())
                 .isEqualTo(value.toString());
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .asText())
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo(typeString);
     }
 
     @Test
     void shouldHandleBooleanParameter() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"$type\":\"Boolean\",\"_value\": true}}}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", of("Boolean", true)))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_VALUE)
-                        .asBoolean())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).asBoolean())
                 .isEqualTo(true);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .asText())
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo("Boolean");
     }
 
     @Test
     void shouldHandleStringParam() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": " + "{\"$type\":\"String\",\"_value\":\"Hello\"}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", of("String", "Hello")))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_VALUE)
-                        .asText())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).asText())
                 .isEqualTo("Hello");
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .asText())
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo("String");
     }
 
     @Test
     void shouldHandleNullParameter() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"$type\":\"Null\",\"_value\": null}}}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\","
+                + "\"parameters\": {\"parameter\": {\"$type\":\"Null\",\"_value\": null}}}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertTrue(parsedJson
-                .get(DATA_KEY)
-                .get(VALUES_KEY)
-                .get(0)
-                .get(0)
-                .get(CYPHER_VALUE)
-                .isNull());
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .asText())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertTrue(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).isNull());
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo("Null");
     }
 
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleMapParameters(String typeString, Object value) throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"$type\":\"Map\",\"_value\":" + "{\"mappy\": {\"$type\":\""
-                        + typeString + "\", \"_value\": \"" + value.toString() + "\"} }}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\","
+                + "\"parameters\": {\"parameter\": {\"$type\":\"Map\",\"_value\":" + "{\"mappy\": {\"$type\":\""
+                + typeString + "\", \"_value\": \"" + value.toString() + "\"} }}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .textValue())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).textValue())
                 .isEqualTo("Map");
 
-        var insideParam = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
+        var insideParam = parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
 
         assertThat(insideParam.get("mappy").get(CYPHER_TYPE).textValue()).isEqualTo(typeString);
         assertThat(insideParam.get("mappy").get(CYPHER_VALUE).textValue()).isEqualTo(value.toString());
@@ -255,28 +203,22 @@ class QueryResourceTypedParametersIT {
 
     @Test
     void shouldHandleMapWithBoolean() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"$type\":\"Map\",\"_value\":"
-                        + "{\"true\": {\"$type\":\"Boolean\", \"_value\": true},"
-                        + "\"false\": {\"$type\":\"Boolean\", \"_value\": false} }}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\","
+                + "\"parameters\": {\"parameter\": {\"$type\":\"Map\",\"_value\":"
+                + "{\"true\": {\"$type\":\"Boolean\", \"_value\": true},"
+                + "\"false\": {\"$type\":\"Boolean\", \"_value\": false} }}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .textValue())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).textValue())
                 .isEqualTo("Map");
 
-        var insideParam = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
+        var insideParam = parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
 
         assertThat(insideParam.get("true").get(CYPHER_TYPE).textValue()).isEqualTo("Boolean");
         assertThat(insideParam.get("true").get(CYPHER_VALUE).booleanValue()).isEqualTo(true);
@@ -286,19 +228,19 @@ class QueryResourceTypedParametersIT {
 
     @Test
     void shouldHandleNestedMaps() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": " + "{\"$type\": \"Map\", \"_value\": {\"mappy\": "
-                        + "{\"$type\": \"Map\", \"_value\": {\"inception\": "
-                        + "{\"$type\": \"Integer\", \"_value\": \"123\"}}}}}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\","
+                + "\"parameters\": {\"parameter\": " + "{\"$type\": \"Map\", \"_value\": {\"mappy\": "
+                + "{\"$type\": \"Map\", \"_value\": {\"inception\": "
+                + "{\"$type\": \"Integer\", \"_value\": \"123\"}}}}}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
-        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
+        var parsedJson = response.body().data();
+        var result = parsedJson.get(VALUES_KEY).get(0).get(0);
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(result.get(CYPHER_TYPE).asText()).isEqualTo("Map");
         assertThat(result.get(CYPHER_VALUE).get("mappy").get(CYPHER_TYPE).asText())
                 .isEqualTo("Map");
@@ -320,28 +262,21 @@ class QueryResourceTypedParametersIT {
 
     @Test
     void shouldHandleMapNestedInList() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": "
-                        + "[{\"$type\":\"Map\",\"_value\":{\"innerMap\": "
-                        + "{\"$type\":\"Boolean\",\"_value\":true}}}]}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\","
+                + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": "
+                + "[{\"$type\":\"Map\",\"_value\":{\"innerMap\": "
+                + "{\"$type\":\"Boolean\",\"_value\":true}}}]}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .asText())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo("List");
         assertThat(parsedJson
-                        .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
                         .get(0)
@@ -351,7 +286,6 @@ class QueryResourceTypedParametersIT {
                         .asText())
                 .isEqualTo("Map");
         assertThat(parsedJson
-                        .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
                         .get(0)
@@ -363,7 +297,6 @@ class QueryResourceTypedParametersIT {
                         .asText())
                 .isEqualTo("Boolean");
         assertThat(parsedJson
-                        .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
                         .get(0)
@@ -378,17 +311,17 @@ class QueryResourceTypedParametersIT {
 
     @Test
     void shouldHandleEmptyMaps() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": " + "{\"$type\": \"Map\", \"_value\": {}}}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": "
+                + "{\"$type\": \"Map\", \"_value\": {}}}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
-        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
+        var parsedJson = response.body().data();
+        var result = parsedJson.get(VALUES_KEY).get(0).get(0);
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(result.get(CYPHER_TYPE).asText()).isEqualTo("Map");
         assertThat(result.get(CYPHER_VALUE).size()).isEqualTo(0);
     }
@@ -396,48 +329,35 @@ class QueryResourceTypedParametersIT {
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleListParameters(String typeString, Object value) throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": [{\"$type\":\"" + typeString
-                        + "\", \"_value\": \"" + value.toString() + "\"}]}}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\","
+                + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": [{\"$type\":\"" + typeString
+                + "\", \"_value\": \"" + value.toString() + "\"}]}}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .asText())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo("List");
 
-        var insideValue = parsedJson
-                .get(DATA_KEY)
-                .get(VALUES_KEY)
-                .get(0)
-                .get(0)
-                .get(CYPHER_VALUE)
-                .get(0);
+        var insideValue =
+                parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).get(0);
         assertThat(insideValue.get(CYPHER_TYPE).asText()).isEqualTo(typeString);
         assertThat(insideValue.get(CYPHER_VALUE).asText()).isEqualTo(value.toString());
     }
 
     @Test
     void shouldHandleEmptyList() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": " + "{\"$type\": \"List\", \"_value\": []}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": "
+                + "{\"$type\": \"List\", \"_value\": []}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
-        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
+
+        var parsedJson = response.body().data();
+        var result = parsedJson.get(VALUES_KEY).get(0).get(0);
 
         assertThat(result.get(CYPHER_TYPE).asText()).isEqualTo("List");
         assertThat(result.get(CYPHER_VALUE).size()).isEqualTo(0);
@@ -445,28 +365,20 @@ class QueryResourceTypedParametersIT {
 
     @Test
     void shouldHandleNestedLists() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(
-                        HttpRequest.BodyPublishers.ofString(
-                                "{\"statement\": \"RETURN $parameter\","
-                                        + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": [{\"$type\":\"List\",\"_value\":[{\"$type\":\"Boolean\",\"_value\":true}]}]}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw(
+                "{\"statement\": \"RETURN $parameter\","
+                        + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": [{\"$type\":\"List\",\"_value\":[{\"$type\":\"Boolean\",\"_value\":true}]}]}}}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(QueryContentType.TYPED_V1_0)
+                .wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(CYPHER_TYPE)
-                        .asText())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo("List");
         assertThat(parsedJson
-                        .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
                         .get(0)
@@ -476,7 +388,6 @@ class QueryResourceTypedParametersIT {
                         .asText())
                 .isEqualTo("List");
         assertThat(parsedJson
-                        .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
                         .get(0)
@@ -488,7 +399,6 @@ class QueryResourceTypedParametersIT {
                         .asText())
                 .isEqualTo("Boolean");
         assertThat(parsedJson
-                        .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
                         .get(0)
@@ -503,31 +413,17 @@ class QueryResourceTypedParametersIT {
 
     @Test
     void shouldReturnErrorIfParametersDoesNotContainMap() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": 123}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\"," + "\"parameters\": 123}");
 
-        assertThat(response.statusCode()).isEqualTo(400);
-
-        assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
-                        + "\"message\":\"Bad Request\"}]}");
+        QueryResponseAssertions.assertThat(response).hasErrorStatus(400, Status.Request.Invalid);
     }
 
     @Test
     void shouldHandleInvalidType() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": " + "{\"$type\": \"Bananas\", \"_value\": []}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\","
+                + "\"parameters\": {\"parameter\": {\"$type\": \"Bananas\", \"_value\": []}}}");
 
-        assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
-                        + "\"message\":\"Bad Request\"}]}");
+        QueryResponseAssertions.assertThat(response).hasErrorStatus(400, Status.Request.Invalid);
     }
 
     @Test
@@ -536,10 +432,11 @@ class QueryResourceTypedParametersIT {
         // todo - needs additional validation in object mapper.
     }
 
-    public static HttpRequest.Builder baseRequestBuilder(String endpoint, String databaseName) {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(endpoint.replace("{databaseName}", databaseName)))
-                .header("Content-Type", TYPED_JSON_MIME_TYPE_VALUE)
-                .header("Accept", TYPED_JSON_MIME_TYPE_VALUE);
+    private Map<String, Object> of(String type, Object value) {
+        // todo For preserving order. Remove after fixing NETCORE-180
+        var map = new LinkedHashMap<String, Object>();
+        map.put(CYPHER_TYPE, type);
+        map.put(CYPHER_VALUE, value);
+        return map;
     }
 }

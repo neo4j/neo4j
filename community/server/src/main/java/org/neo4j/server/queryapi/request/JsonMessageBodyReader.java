@@ -33,6 +33,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
+import org.neo4j.server.queryapi.exception.QueryApiException;
 
 @Provider
 @Consumes(MediaType.APPLICATION_JSON)
@@ -73,6 +74,13 @@ public class JsonMessageBodyReader implements MessageBodyReader<QueryRequest> {
             try {
                 return jsonMapper.readValue(buffStream, QueryRequest.class);
             } catch (JacksonException e) {
+                var cause = e.getCause();
+                while (cause != null) {
+                    if (cause instanceof QueryApiException queryApiException) {
+                        throw queryApiException;
+                    }
+                    cause = cause.getCause();
+                }
                 throw new BadRequestException(e);
             }
         } else {

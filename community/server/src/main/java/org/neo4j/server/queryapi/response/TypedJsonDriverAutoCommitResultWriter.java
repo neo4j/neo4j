@@ -32,14 +32,14 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
+import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.server.queryapi.request.AutoCommitResultContainer;
 import org.neo4j.server.queryapi.response.format.QueryAPICodec;
 import org.neo4j.server.queryapi.response.format.View;
 
 @Provider
-@Produces(TypedJsonDriverAutoCommitResultWriter.TYPED_JSON_MIME_TYPE_VALUE)
+@Produces({QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0})
 public class TypedJsonDriverAutoCommitResultWriter extends AbstractDriverResultWriter {
-    public static final String TYPED_JSON_MIME_TYPE_VALUE = "application/vnd.neo4j.query";
 
     private final JsonFactory jsonFactory;
 

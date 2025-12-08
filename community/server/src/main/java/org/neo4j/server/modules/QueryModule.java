@@ -27,13 +27,17 @@ import org.neo4j.server.queryapi.metrics.QueryAPIMetricsFilter;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.queryapi.request.JsonMessageBodyReader;
 import org.neo4j.server.queryapi.request.TypedJsonMessageBodyReader;
-import org.neo4j.server.queryapi.response.ErrorResponseWriter;
 import org.neo4j.server.queryapi.response.PlainJsonDriverAutoCommitResultWriter;
 import org.neo4j.server.queryapi.response.PlainJsonTxManagingResultWriter;
 import org.neo4j.server.queryapi.response.TypedJsonBookmarkWriter;
 import org.neo4j.server.queryapi.response.TypedJsonDriverAutoCommitResultWriter;
 import org.neo4j.server.queryapi.response.TypedJsonTxInfoWriter;
 import org.neo4j.server.queryapi.response.TypedJsonTxManagingResultWriter;
+import org.neo4j.server.queryapi.response.error.ErrorResponseWriter;
+import org.neo4j.server.queryapi.response.error.InternalServerExceptionMapper;
+import org.neo4j.server.queryapi.response.error.Neo4jExceptionMapper;
+import org.neo4j.server.queryapi.response.error.QueryApiExceptionMapper;
+import org.neo4j.server.queryapi.response.error.WebApplicationExceptionMapper;
 import org.neo4j.server.web.WebServer;
 
 /**
@@ -56,6 +60,7 @@ public class QueryModule implements ServerModule {
     public void start() {
         webServer.addJAXRSClasses(
                 jaxRsClasses(), config.get(ServerSettings.db_api_path).toString(), null);
+
         webServer.addFilter(new QueryAPIMetricsFilter(metricsMonitor), "/*");
     }
 
@@ -76,6 +81,10 @@ public class QueryModule implements ServerModule {
                 TypedJsonBookmarkWriter.class,
                 JsonMessageBodyReader.class,
                 TypedJsonMessageBodyReader.class,
+                Neo4jExceptionMapper.class,
+                QueryApiExceptionMapper.class,
+                WebApplicationExceptionMapper.class,
+                InternalServerExceptionMapper.class,
                 ErrorResponseWriter.class);
     }
 }

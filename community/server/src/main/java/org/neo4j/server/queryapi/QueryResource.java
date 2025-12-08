@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.queryapi;
 
-import static org.neo4j.server.queryapi.response.HttpErrorResponse.singleError;
-import static org.neo4j.server.queryapi.response.TypedJsonDriverAutoCommitResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
+import static org.neo4j.server.queryapi.response.error.HttpErrorResponse.singleError;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -40,8 +39,8 @@ import org.neo4j.server.queryapi.request.AccessMode;
 import org.neo4j.server.queryapi.request.QueryRequest;
 
 @Path(QueryResource.ROOT_PATH)
-@Produces({"application/json", TYPED_JSON_MIME_TYPE_VALUE})
-@Consumes({"application/json", TYPED_JSON_MIME_TYPE_VALUE})
+@Produces({QueryMimeTypes.UNTYPED_JSON, QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0})
+@Consumes({QueryMimeTypes.UNTYPED_JSON, QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0})
 public class QueryResource {
 
     public static final String NAME = "query";

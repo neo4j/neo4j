@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.server.queryapi.exception.UnknownTypeException;
 import org.neo4j.server.queryapi.response.format.CypherTypes;
 import org.neo4j.server.queryapi.response.format.Fieldnames;
 
@@ -73,10 +74,13 @@ public class ValueDeserializer extends StdDeserializer<Value> {
                     }
 
                 } else {
-                    var parser = CypherTypes.valueOf(typeString).getReader();
+                    var stringValue = p.getValueAsString();
+                    var parser = CypherTypes.safeValueOf(typeString)
+                            .map(CypherTypes::getReader)
+                            .orElseThrow(() ->
+                                    new UnknownTypeException(stringValue, CypherTypes.getTypeNames(), typeString));
 
                     if (parser != null) {
-                        var stringValue = p.getValueAsString();
                         p.nextToken();
                         return parser.apply(stringValue);
                     } else {

@@ -21,7 +21,6 @@ package org.neo4j.queryapi;
 
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_VALUE;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,7 +31,7 @@ final class QueryAssertions extends AbstractAssert<QueryAssertions, JsonNode> {
 
     private final JsonNode jsonNode;
 
-    protected QueryAssertions(JsonNode jsonNode) {
+    private QueryAssertions(JsonNode jsonNode) {
         super(jsonNode, QueryAssertions.class);
         this.jsonNode = jsonNode;
     }
@@ -42,15 +41,13 @@ final class QueryAssertions extends AbstractAssert<QueryAssertions, JsonNode> {
     }
 
     QueryAssertions hasTypedResultAt(int index, String expectedType, String expectedValue) {
-        Assertions.assertThat(jsonNode.get(DATA_KEY)
-                        .get(VALUES_KEY)
+        Assertions.assertThat(jsonNode.get(VALUES_KEY)
                         .get(0)
                         .get(index)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo(expectedType);
-        Assertions.assertThat(jsonNode.get(DATA_KEY)
-                        .get(VALUES_KEY)
+        Assertions.assertThat(jsonNode.get(VALUES_KEY)
                         .get(0)
                         .get(index)
                         .get(CYPHER_VALUE)

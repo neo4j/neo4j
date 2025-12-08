@@ -24,6 +24,9 @@ import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.neo4j.driver.Value;
@@ -122,6 +125,18 @@ public enum CypherTypes {
 
     public String getValue() {
         return value;
+    }
+
+    public static Optional<CypherTypes> safeValueOf(String value) {
+        try {
+            return Optional.of(CypherTypes.valueOf(value));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    public static List<String> getTypeNames() {
+        return Arrays.stream(CypherTypes.values()).map(CypherTypes::getValue).toList();
     }
 
     /**

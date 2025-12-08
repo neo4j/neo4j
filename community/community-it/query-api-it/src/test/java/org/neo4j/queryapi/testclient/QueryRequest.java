@@ -59,6 +59,11 @@ public record QueryRequest(
             return this;
         }
 
+        public Builder withoutCounters() {
+            this.includeCounters = false;
+            return this;
+        }
+
         public Builder accessMode(AccessMode accessMode) {
             this.accessMode = accessMode;
             return this;
@@ -99,5 +104,9 @@ public record QueryRequest(
 
     public static Builder newBuilder() {
         return new Builder();
+    }
+
+    public static QueryRequest returnOne() {
+        return newBuilder().statement("RETURN 1").build();
     }
 }

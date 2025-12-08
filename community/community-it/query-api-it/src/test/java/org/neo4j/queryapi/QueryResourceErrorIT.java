@@ -21,7 +21,6 @@ package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-import static org.neo4j.server.queryapi.response.TypedJsonDriverAutoCommitResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERROR_CODE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERROR_MESSAGE;
@@ -37,6 +36,8 @@ import javax.ws.rs.core.MediaType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -45,6 +46,7 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.server.queryapi.QueryMimeTypes;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 class QueryResourceErrorIT {
@@ -213,19 +215,20 @@ class QueryResourceErrorIT {
                         + "\"message\":\"Query cannot conclude with MATCH");
     }
 
-    @Test
-    void invalidTypedCypher() throws IOException, InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {QueryMimeTypes.TYPED_JSON, QueryMimeTypes.TYPED_JSON_V1x0})
+    void invalidTypedCypher(String mimeType) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))
-                .header("Content-Type", TYPED_JSON_MIME_TYPE_VALUE)
-                .header("Accept", TYPED_JSON_MIME_TYPE_VALUE)
+                .header("Content-Type", mimeType)
+                .header("Accept", mimeType)
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"MATCH (n)\"}"))
                 .build();
 
         var response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(TYPED_JSON_MIME_TYPE_VALUE);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(mimeType);
         assertThat(response.body())
                 .startsWith("{\"errors\":[{\"code\":\"Neo.ClientError.Statement.SyntaxError\","
                         + "\"message\":\"Query cannot conclude with MATCH");
@@ -235,10 +238,10 @@ class QueryResourceErrorIT {
     void cypherButInAwayThatFieldsCanBeComputedButTheResultNot() throws IOException, InterruptedException {
         var response = QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"RETURN 1/0 AS f\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
+        assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.body())
                 .startsWith(
-                        "{\"data\":{\"fields\":[\"f\"],\"values\":[]},\"errors\":[{\"code\":\"Neo.ClientError.Statement.ArithmeticError\",\"message\":\"/ by zero\"}]}");
+                        "{\"errors\":[{\"code\":\"Neo.ClientError.Statement.ArithmeticError\",\"message\":\"/ by zero\"}]}");
     }
 
     @Test
@@ -281,11 +284,10 @@ class QueryResourceErrorIT {
         var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"UNWIND range(5, 0, -1) as N RETURN 3/N\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
+        assertThat(response.statusCode()).isEqualTo(400);
 
         var parsedBody = MAPPER.readTree(response.body());
 
-        assertThat(parsedBody.get("data").get("values").size()).isEqualTo(5);
         assertThat(parsedBody.get("errors").size()).isEqualTo(1);
         assertThat(parsedBody.get("errors").get(0).get("code").asText())
                 .isEqualTo("Neo.ClientError.Statement.ArithmeticError");

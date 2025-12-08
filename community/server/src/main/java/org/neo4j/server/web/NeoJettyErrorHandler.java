@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.web;
 
-import static org.neo4j.server.queryapi.response.HttpErrorResponse.singleError;
+import static org.neo4j.server.queryapi.response.error.HttpErrorResponse.singleError;
 
 import java.io.IOException;
 import java.io.Writer;

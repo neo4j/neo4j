@@ -21,15 +21,15 @@ package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,16 +44,17 @@ import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
+import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 class QueryResourceParametersIT {
 
     private static DatabaseManagementService dbms;
     private static HttpClient client;
+    private static QueryAPITestClient testClient;
 
     private static String queryEndpoint;
-
-    private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeAll
     static void beforeAll() {
@@ -70,6 +71,7 @@ class QueryResourceParametersIT {
         var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
+        testClient = new QueryAPITestClient(queryEndpoint);
     }
 
     @AfterAll
@@ -84,73 +86,53 @@ class QueryResourceParametersIT {
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleParameters(Object parameter) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": " + parameter + "}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", parameter))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
-
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).toString())
-                .isEqualTo(parameter.toString());
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasRecords(parameter);
     }
 
     @Test
     void shouldHandleStringParam() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": \"Hello\"}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", "Hello"))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
-
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asText())
-                .isEqualTo("Hello");
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasRecords("Hello");
     }
 
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleMapParameters(Object parameter) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"mappy\": " + parameter + "}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", Map.of("mappy", parameter)))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get("mappy")
-                        .asText())
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get("mappy").asText())
                 .isEqualTo(parameter.toString());
     }
 
     @Test
     void shouldHandleNestedMaps() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": {\"mappy\": {\"inception\": 123}}}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", Map.of("mappy", Map.of("inception", 123))))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
+        var parsedJson = response.body().data();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(parsedJson
-                        .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
                         .get(0)
@@ -163,40 +145,31 @@ class QueryResourceParametersIT {
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleListParameters(Object parameter) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
-                        + "\"parameters\": {\"parameter\": [" + parameter + "]}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", List.of(parameter)))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(0).asText())
-                .isEqualTo(parameter.toString());
+        var parsedJson = response.body().data();
+
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(0).asText()).isEqualTo(parameter.toString());
     }
 
     @Test
     void shouldHandleNestedLists() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": [[123]]}}"))
-                .build();
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN $parameter")
+                .parameters(Map.of("parameter", List.of(List.of(123))))
+                .build());
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        QueryResponseAssertions.assertThat(response).wasSuccessful();
+        var parsedJson = response.body().data();
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson
-                        .get(DATA_KEY)
-                        .get(VALUES_KEY)
-                        .get(0)
-                        .get(0)
-                        .get(0)
-                        .get(0)
-                        .asInt())
+        assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(0).get(0).asInt())
                 .isEqualTo(123);
     }
 
