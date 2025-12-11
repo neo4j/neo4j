@@ -19,6 +19,8 @@
  */
 package org.neo4j.gqlstatus;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,13 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
         super(gqlStatusInfoCode, diagnosticRecord, parameters);
         this.gqlStatusInfoCode = gqlStatusInfoCode;
         this.cause = cause;
-        this.paramMap = Map.copyOf(parameters);
+        this.paramMap = replaceNulls(parameters);
+    }
+
+    // Decrease the risk of NullPointers in errors
+    private Map<GqlParams.GqlParam, Object> replaceNulls(Map<GqlParams.GqlParam, Object> parameters) {
+        return parameters.entrySet().stream()
+                .collect(toMap(Map.Entry::getKey, e -> e.getValue() == null ? "null" : e.getValue()));
     }
 
     @Override
