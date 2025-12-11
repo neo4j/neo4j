@@ -246,6 +246,7 @@ class ReuseStorageSpaceIT {
                 // better for this test
                 .setConfig(GraphDatabaseInternalSettings.force_small_id_cache, true)
                 .setConfig(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist, true)
+                .setConfig(GraphDatabaseInternalSettings.id_generator_log_enabled, true)
                 .build();
         try {
             GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
