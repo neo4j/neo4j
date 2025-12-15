@@ -219,7 +219,7 @@
     <jsr305.version>3.0.2</jsr305.version>
     <json4s.version>3.6.11</json4s.version>
     <java-jwt.version>4.5.0</java-jwt.version>
-    <lz4.version>1.9.0</lz4.version>
+    <lz4.version>1.10.1</lz4.version>
     <dependency.analyze.failOnWarning>false</dependency.analyze.failOnWarning>
     <dependency.analyze.skip>false</dependency.analyze.skip>
   </properties>
