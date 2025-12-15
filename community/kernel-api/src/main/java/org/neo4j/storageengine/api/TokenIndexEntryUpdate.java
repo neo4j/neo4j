@@ -78,6 +78,11 @@ public final class TokenIndexEntryUpdate extends IndexEntryUpdate {
         return tokenChange(entityId, indexKey(), removed, added);
     }
 
+    @Override
+    public IndexEntryUpdate eagerly() {
+        return this;
+    }
+
     public static TokenIndexEntryUpdate tokenChange(
             long entityId, IndexDescriptor indexKey, int[] removed, int[] added) {
         return new TokenIndexEntryUpdate(entityId, indexKey, removed, added);

@@ -125,6 +125,11 @@ public abstract sealed class IndexEntryUpdate
      */
     public abstract IndexEntryUpdate withEntityId(long entityId);
 
+    /**
+     * Convert to an eagerly loaded index entry update.
+     */
+    public abstract IndexEntryUpdate eagerly();
+
     @Override
     public String toString() {
         return describe(TOKEN_ID_NAME_LOOKUP);

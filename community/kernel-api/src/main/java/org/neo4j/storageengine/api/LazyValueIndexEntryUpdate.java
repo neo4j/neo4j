@@ -240,4 +240,10 @@ public final class LazyValueIndexEntryUpdate extends IndexEntryUpdate implements
     public IndexEntryUpdate withEntityId(long entityId) {
         return new LazyValueIndexEntryUpdate(entityId, indexKey(), updateMode(), before, values);
     }
+
+    @Override
+    public IndexEntryUpdate eagerly() {
+        return new EagerValueIndexEntryUpdate(
+                getEntityId(), indexKey(), updateMode(), before == null ? null : beforeValues(), values());
+    }
 }

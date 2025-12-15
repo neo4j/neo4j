@@ -41,7 +41,11 @@ class EventuallyConsistentIndexUpdater implements IndexUpdater {
 
     @Override
     public void process(IndexEntryUpdate update) {
-        updates.add(update);
+        // The updates will be processed later. The transaction might already be closed
+        // by then, so we need to eagerly compute any values needed for the index updates.
+        // When the transaction is closed, suppliers in `LazyValueIndexEntryUpdate`s
+        // would otherwise read from buffers that have been closed or reused.
+        updates.add(update.eagerly());
     }
 
     @Override

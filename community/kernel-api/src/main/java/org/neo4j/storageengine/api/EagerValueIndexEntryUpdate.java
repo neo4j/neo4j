@@ -35,7 +35,7 @@ public final class EagerValueIndexEntryUpdate extends IndexEntryUpdate implement
         this(entityId, indexKey, updateMode, null, values);
     }
 
-    private EagerValueIndexEntryUpdate(
+    EagerValueIndexEntryUpdate(
             long entityId, IndexDescriptor indexKey, UpdateMode updateMode, Value[] before, Value[] values) {
         super(entityId, indexKey, updateMode);
         validateValuesLength(indexKey, before, values);
@@ -113,6 +113,11 @@ public final class EagerValueIndexEntryUpdate extends IndexEntryUpdate implement
             case CHANGED -> change(entityId, indexKey(), before, values);
             case REMOVED -> remove(entityId, indexKey(), values);
         };
+    }
+
+    @Override
+    public IndexEntryUpdate eagerly() {
+        return this;
     }
 
     static <P> void validateValuesLength(SchemaDescriptorSupplier indexKey, P[] before, P[] values) {
