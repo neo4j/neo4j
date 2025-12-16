@@ -44,6 +44,7 @@ import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.SystemNanoClock;
 
 public class TransactionManager extends LifecycleAdapter {
@@ -60,6 +61,7 @@ public class TransactionManager extends LifecycleAdapter {
     private final AvailabilityGuard availabilityGuard;
     private final GlobalProcedures globalProcedures;
     private final CatalogManager catalogManager;
+    private final CallableExecutor executor;
 
     public TransactionManager(
             FabricRemoteExecutor remoteExecutor,
@@ -71,7 +73,8 @@ public class TransactionManager extends LifecycleAdapter {
             Config config,
             AvailabilityGuard availabilityGuard,
             ErrorReporter errorReporter,
-            GlobalProcedures globalProcedures) {
+            GlobalProcedures globalProcedures,
+            CallableExecutor executor) {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
         this.catalogManager = catalogManager;
@@ -84,6 +87,7 @@ public class TransactionManager extends LifecycleAdapter {
                 .toMillis();
         this.availabilityGuard = availabilityGuard;
         this.globalProcedures = globalProcedures;
+        this.executor = executor;
     }
 
     public FabricTransaction begin(
@@ -113,7 +117,8 @@ public class TransactionManager extends LifecycleAdapter {
                 catalogManager,
                 sessionDb instanceof DatabaseReferenceImpl.Composite,
                 clock,
-                TraceProviderFactory.getTraceProvider(config));
+                TraceProviderFactory.getTraceProvider(config),
+                executor);
 
         openTransactions.add(fabricTransaction);
         transactionMonitor.startMonitoringTransaction(fabricTransaction, transactionInfo);

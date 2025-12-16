@@ -44,6 +44,7 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.SystemNanoClock;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -54,6 +55,7 @@ import reactor.core.publisher.Mono;
 public abstract class AbstractCompoundTransaction<Child extends ChildTransaction>
         implements CompoundTransaction<Child> {
 
+    private final CallableExecutor executor;
     private final ErrorReporter errorReporter;
     private final SystemNanoClock clock;
 
@@ -143,9 +145,11 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
         }
     }
 
-    protected AbstractCompoundTransaction(ErrorReporter errorReporter, SystemNanoClock clock) {
+    protected AbstractCompoundTransaction(
+            ErrorReporter errorReporter, SystemNanoClock clock, CallableExecutor executor) {
         this.errorReporter = errorReporter;
         this.clock = clock;
+        this.executor = executor;
     }
 
     @Override
@@ -347,7 +351,9 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
             state = State.TERMINATED;
 
             terminateChildren(reason);
-            autocommitQueries.forEach(q -> q.terminate(reason));
+            autocommitQueries.forEach(q ->
+                    // See terminateChildren for explanation
+                    executor.execute(() -> q.terminate(reason)));
         } finally {
             exclusiveLock.unlock();
         }
@@ -379,19 +385,22 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
     }
 
     private void terminateChildren(Status reason) {
-        var allFailures = new ArrayList<ErrorRecord>();
-        try {
-            doOnChildren(
-                            readingTransactions,
-                            writingTransaction,
-                            singleDbTransaction -> childTransactionTerminate(singleDbTransaction, reason))
-                    .forEach(error -> allFailures.add(ErrorRecord.constituentTransactionTerminationFailed(
-                            "Failed to terminate a child transaction", error)));
-        } catch (Exception e) {
-            allFailures.add(ErrorRecord.transactionTerminateFailed(
-                    "Failed to terminate composite transaction", terminationFailedError()));
+        // Historically, transaction termination has been a quick and non-blocking
+        // operation and, unfortunately, users count on that (Bolt server invokes it
+        // on Netty event loop thread).
+        // Because of that we can't invoke the termination of remote transactions
+        // and await results. So let's invoke the termination of transactions
+        // asynchronously in a fire and forget manner. We don't care about the results anyway.
+        // It is important just to try to terminate the transactions using the best effort.
+        // Technically, we could terminate the local transactions synchronously as it is
+        // a cheap and non-blocking operation, but for simplicity, let's not distinguish
+        // between local and remote cases. Also, the remote case is more common in Composite databases.
+        readingTransactions.forEach(childTransaction -> executor.execute(
+                () -> childTransactionTerminate(childTransaction.inner, reason).block()));
+        if (writingTransaction != null) {
+            executor.execute(
+                    () -> childTransactionTerminate(writingTransaction, reason).block());
         }
-        throwIfNonEmpty(allFailures, TransactionTerminationFailed);
     }
 
     public boolean isOpen() {

@@ -47,6 +47,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.SystemNanoClock;
 import reactor.core.publisher.Mono;
 
@@ -80,8 +81,9 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
             CatalogManager catalogManager,
             Boolean inCompositeContext,
             SystemNanoClock clock,
-            TraceProvider traceProvider) {
-        super(errorReporter, clock);
+            TraceProvider traceProvider,
+            CallableExecutor executor) {
+        super(errorReporter, clock, executor);
 
         this.transactionInfo = transactionInfo;
         this.transactionManager = transactionManager;
