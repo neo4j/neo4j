@@ -30,6 +30,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction
 
 import java.time.Duration;
 import java.util.UUID;
+import org.apache.lucene.util.SameThreadExecutorService;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
+import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.time.Clocks;
 
 class TransactionManagerTest {
@@ -81,7 +83,8 @@ class TransactionManagerTest {
                 config,
                 guard,
                 errorReporter,
-                globalProcedures);
+                globalProcedures,
+                new CallableExecutorService(new SameThreadExecutorService()));
 
         // local tx
         var tx1 = transactionManager.begin(createTransactionInfo(), bookmarkManager);

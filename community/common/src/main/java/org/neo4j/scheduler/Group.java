@@ -152,6 +152,8 @@ public enum Group {
     FABRIC_IDLE_DRIVER_MONITOR("FabricIdleDriverMonitor"),
     FABRIC_WORKER("FabricWorker"),
 
+    QUERY_ROUTER_WORKER("QueryRouterWorker", ExecutorServiceFactory.cached()),
+
     // SECURITY
     AUTH_CACHE("AuthCache", ExecutorServiceFactory.workStealing()),
     SECURITY_MAINTAINENCE("SecurityMaintainence"),

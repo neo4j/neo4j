@@ -62,6 +62,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
@@ -134,6 +135,8 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
 
         var internalSyntaxUsageStats = resolve(InternalSyntaxUsageStats.class);
 
+        var executor = jobScheduler.executor(Group.FABRIC_WORKER);
+
         register(
                 new TransactionManager(
                         remoteExecutor,
@@ -145,7 +148,8 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
                         config,
                         availabilityGuard,
                         errorReporter,
-                        globalProcedures),
+                        globalProcedures,
+                        executor),
                 TransactionManager.class);
 
         var cypherConfig = CypherConfiguration.fromConfig(config);

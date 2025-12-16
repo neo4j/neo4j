@@ -36,6 +36,9 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
@@ -61,6 +64,7 @@ import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.Clocks;
 
 public class FabricTransactionImplTest {
@@ -212,7 +216,8 @@ public class FabricTransactionImplTest {
                 config,
                 guard,
                 errorReporter,
-                globalProcedures);
+                globalProcedures,
+                new SameThreadExecutor());
     }
 
     private static FabricTransactionInfo createTransactionInfo() {
@@ -229,5 +234,23 @@ public class FabricTransactionImplTest {
                 emptyMap(),
                 new RoutingContext(true, emptyMap()),
                 QueryExecutionConfiguration.DEFAULT_CONFIG);
+    }
+
+    private static class SameThreadExecutor implements CallableExecutor {
+
+        @Override
+        public <T> Future<T> submit(Callable<T> callable) {
+            try {
+                return CompletableFuture.completedFuture(callable.call());
+            } catch (Exception e) {
+                return CompletableFuture.failedFuture(e);
+            }
+        }
+        ;
+
+        @Override
+        public void execute(Runnable command) {
+            command.run();
+        }
     }
 }

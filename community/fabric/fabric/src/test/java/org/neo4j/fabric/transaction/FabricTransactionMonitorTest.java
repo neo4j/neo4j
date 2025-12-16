@@ -32,6 +32,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 
 import java.time.Duration;
 import java.util.UUID;
+import org.apache.lucene.util.SameThreadExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitor;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.time.FakeClock;
 
 class FabricTransactionMonitorTest {
@@ -99,7 +101,8 @@ class FabricTransactionMonitorTest {
                 config,
                 guard,
                 errorReporter,
-                globalProcedures);
+                globalProcedures,
+                new CallableExecutorService(new SameThreadExecutorService()));
     }
 
     @Test
