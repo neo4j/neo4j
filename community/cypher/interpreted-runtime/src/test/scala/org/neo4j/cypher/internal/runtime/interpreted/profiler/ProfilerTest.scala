@@ -308,6 +308,39 @@ class ProfilerTest extends CypherFunSuite {
     profiled2.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
   }
 
+  test("should not mask exceptions when there is an error on the RHS") {
+    // see https://linear.app/neo4j/issue/RUN-196
+    val s1 = ArgumentPipe()(idGen.id())
+    val up = new Exception("I'm sorry, Dave. I can't do that.")
+    // GIVEN
+    val lhs = ProfilerTestPipe(s1, "lhs", rows = 10, dbAccess = 10)(idGen.id())
+    val brokenPipe = new Pipe {
+      override protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] =
+        new ClosingIterator[CypherRow] {
+          override protected[this] def closeMore(): Unit = {}
+          override def next(): CypherRow = throw up
+          override protected[this] def innerHasNext: Boolean = true
+        }
+      override val id: Id = idGen.id()
+    }
+    val rhs = ProfilerTestPipe(brokenPipe, "rhs", rows = 20, dbAccess = 30)(idGen.id())
+    val apply = ApplyPipe(lhs, rhs)(idGen.id())
+    val queryContext: QueryContext = prepareQueryContext()
+    val profile = new InterpretedProfileInformation
+    val profiler = new Profiler(DbmsInfo.ENTERPRISE, profile)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
+
+    // WHEN we create the results, we should see the same error from the pipe
+    var expected: Throwable = null
+    try {
+      materialize(apply.createResults(queryState))
+    } catch {
+      case ex: Throwable => expected = ex
+    } finally {
+      assert(expected == up)
+    }
+  }
+
   private def prepareQueryContext(statisticProvider: StatisticProvider = NoKernelStatisticProvider) = {
     val queryContext = mock[QueryContext]
     val transactionalContext = mock[QueryTransactionalContext]
