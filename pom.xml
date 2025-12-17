@@ -1243,6 +1243,12 @@
         <groupId>blue.strategic.parquet</groupId>
         <artifactId>parquet-floor</artifactId>
         <version>${parquet-floor.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <!-- testing -->
