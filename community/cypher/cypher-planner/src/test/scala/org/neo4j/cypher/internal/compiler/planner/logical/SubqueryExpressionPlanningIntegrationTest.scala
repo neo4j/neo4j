@@ -3766,6 +3766,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
+      .withSetting(
+        GraphDatabaseInternalSettings.allow_duplicating_subquery_expressions_in_cnf_normalizer,
+        Boolean.box(false)
+      )
       .build()
 
     val q =
@@ -3791,6 +3795,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
+      .withSetting(
+        GraphDatabaseInternalSettings.allow_duplicating_subquery_expressions_in_cnf_normalizer,
+        Boolean.box(false)
+      )
       .build()
 
     val q =

@@ -1252,7 +1252,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description(
             "Feature flag to allow/disallow duplicating of subquery expressions (e.g. EXISTS {}) in CNFNormalizer.")
     public static final Setting<Boolean> allow_duplicating_subquery_expressions_in_cnf_normalizer = newBuilder(
-                    "internal.cypher.allow_duplicating_subquery_expressions_in_cnf_normalizer", BOOL, false)
+                    "internal.cypher.allow_duplicating_subquery_expressions_in_cnf_normalizer", BOOL, true)
             .build();
 
     @Internal
