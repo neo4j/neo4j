@@ -1824,4 +1824,42 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .nodeByLabelScan("a", "A")
       .build()
   }
+
+  test("should not leak partial predicates into plan") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 300)
+      .setLabelCardinality("C", 500)
+      // should prefer an IndexScan on :B when component is planned in isolation
+      .addNodeIndex("B", Seq("x"), 0.9, 1.0)
+      // but should prefer an index seek on :C when re-planned on RHS of Apply
+      .addNodeIndex("C", Seq("y"), 0.9, 1.0 / 450.0)
+      .setRelationshipCardinality("()-[:REL]->()", 1000)
+      .setRelationshipCardinality("(:B)-[:REL]->(:C)", 1000)
+      .setRelationshipCardinality("(:B)-[:REL]->()", 1000)
+      .setRelationshipCardinality("()-[:REL]->(:C)", 1000)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A), (b:B)-[r:REL]->(c:C)
+        |WHERE b.x = a.prop AND c.y = a.prop
+        |RETURN 1 AS result
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("1 AS result")
+      .filter("b.x = cacheN[a.prop]", "b:B")
+      .expandAll("(c)<-[:REL]-(b)")
+      .apply()
+      .|.nodeIndexOperator(
+        "c:C(y = ???)",
+        argumentIds = Set("a"),
+        paramExpr = Some(cachedNodePropFromStore("a", "prop"))
+      )
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
 }

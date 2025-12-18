@@ -588,10 +588,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
     // Also keep any hints we might have gotten in the rhsQG so they get considered during planning
     val rhsQgWithLhsArguments =
-      context.staticComponents.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph
+      rhsQG
         .addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq)
         .addPredicates(predicates: _*)
-        .addHints(rhsQG.hints)
 
     val contextForRhs = context.withModifiedPlannerState(_
       .withUpdatedLabelInfo(lhsPlanWithPrefetchedProperties, context.staticComponents.planningAttributes.solveds)
