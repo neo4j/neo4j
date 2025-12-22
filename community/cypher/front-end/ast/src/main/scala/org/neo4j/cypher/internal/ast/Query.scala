@@ -559,9 +559,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
               case _: UpdateClause | _: Return | _: Finish | _: CommandClause                                  => None
               case subquery: SubqueryCall if !subquery.innerQuery.isReturning && subquery.reportParams.isEmpty => None
               case call: CallClause if call.returnVariables.explicitVariables.isEmpty && !call.yieldAll        => None
-              case call: CallClause         => Some(SemanticError.queryCannotConcludeWithCall(call.name, call.position))
-              case _ if canOmitReturnClause => None
-              case clause => Some(SemanticError.queryCannotConcludeWithClause(clause.name, clause.position))
+              case _ if canOmitReturnClause                                                                    => None
+              case call: CallClause => Some(SemanticError.queryCannotConcludeWithCall(call.name, call.position))
+              case clause           => Some(SemanticError.queryCannotConcludeWithClause(clause.name, clause.position))
             }
         }
 
