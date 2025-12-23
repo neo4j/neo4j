@@ -44,7 +44,6 @@ Apache Software License, Version 2.0
   @firebase/storage-types
   @firebase/util
   @firebase/webchannel-wrapper
-  aircompressor
   Apache Commons Codec
   Apache Commons Compress
   Apache Commons Configuration
