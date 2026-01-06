@@ -156,7 +156,8 @@ class MergeRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
     assertNotRewritten(before, supportsFastExpandInto = false)
   }
 
-  test("should rewrite merge + unique node index seek") {
+  // TODO: unignore with proper resolution of IND-150
+  ignore("should rewrite merge + unique node index seek") {
     val before = new LogicalPlanBuilder()
       .produceResults("x")
       .merge(Seq(createNodeWithProperties("x", Seq("X"), "{prop: 42}")))

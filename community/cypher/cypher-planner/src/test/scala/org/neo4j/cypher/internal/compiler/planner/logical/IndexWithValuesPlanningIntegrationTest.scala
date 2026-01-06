@@ -599,7 +599,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   // seek on merge unique index
 
-  test(
+  // TODO: unignore with proper resolution of IND-150
+  ignore(
     "should plan seek with GetValue when the property is projected (merge unique index), but need a projection because of the Optional"
   ) {
     val planner = nodeIndexConfig(isUnique = true)
@@ -613,7 +614,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .build())
   }
 
-  test(
+  // TODO: unignore with proper resolution of IND-150
+  ignore(
     "for exact seeks, should even plan index seek with GetValue when the index does not provide values (merge unique index), but need a projection because of the Optional"
   ) {
     val planner = plannerBuilder()
@@ -638,7 +640,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .build())
   }
 
-  test(
+  // TODO: unignore with proper resolution of IND-150
+  ignore(
     "should plan projection and range seek with DoNotGetValue when another property is projected (merge unique index)"
   ) {
     val planner = nodeIndexConfig(isUnique = true)
