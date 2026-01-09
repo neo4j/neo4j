@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.queryapi.exception;
 
+import java.io.IOException;
+import java.util.function.Function;
 import org.neo4j.driver.exceptions.Neo4jException;
 
 /**
@@ -35,5 +37,21 @@ public class ExceptionsUnwrapper {
                 throw queryApiException;
             }
         }
+    }
+
+    public static <T, E extends IOException> T transformNeo4jAndQueryApiExceptions(
+            Function<Neo4jException, T> transformNeo4jException,
+            Function<QueryApiException, T> transformQueryApiException,
+            E throwable)
+            throws IOException {
+        for (Throwable ex = throwable; ex != null; ex = ex.getCause()) {
+            if (ex instanceof Neo4jException neo4jException) {
+                return transformNeo4jException.apply(neo4jException);
+            } else if (ex instanceof QueryApiException queryApiException) {
+                return transformQueryApiException.apply(queryApiException);
+            }
+        }
+
+        throw throwable;
     }
 }

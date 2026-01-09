@@ -138,7 +138,7 @@ public class QueryResourceTxErrorIT {
                 .statement("UNWIND [4, 2, 1, 0] AS i CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i")
                 .build());
 
-        assertThat(res).hasErrorStatus(500, Status.Transaction.TransactionStartFailed);
+        assertThat(res).hasErrorStatus(202, Status.Transaction.TransactionStartFailed);
         assertThat(res).hasNoTransaction();
     }
 

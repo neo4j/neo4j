@@ -238,10 +238,10 @@ class QueryResourceErrorIT {
     void cypherButInAwayThatFieldsCanBeComputedButTheResultNot() throws IOException, InterruptedException {
         var response = QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"RETURN 1/0 AS f\"}");
 
-        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.statusCode()).isEqualTo(202);
         assertThat(response.body())
                 .startsWith(
-                        "{\"errors\":[{\"code\":\"Neo.ClientError.Statement.ArithmeticError\",\"message\":\"/ by zero\"}]}");
+                        "{\"data\":{\"fields\":[\"f\"],\"values\":[]},\"errors\":[{\"code\":\"Neo.ClientError.Statement.ArithmeticError\",\"message\":\"/ by zero\"}]}");
     }
 
     @Test
@@ -284,7 +284,7 @@ class QueryResourceErrorIT {
         var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"UNWIND range(5, 0, -1) as N RETURN 3/N\"}");
 
-        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.statusCode()).isEqualTo(202);
 
         var parsedBody = MAPPER.readTree(response.body());
 

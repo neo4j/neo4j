@@ -26,10 +26,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.queryapi.exception.ExceptionsUnwrapper;
+import org.neo4j.server.queryapi.exception.QueryApiException;
 import org.neo4j.server.queryapi.request.TxManagedResultContainer;
+import org.neo4j.server.queryapi.response.error.HttpErrorResponse;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 
 abstract class AbstractTxManagingResultWriter implements MessageBodyWriter<TxManagedResultContainer> {
@@ -51,6 +53,7 @@ abstract class AbstractTxManagingResultWriter implements MessageBodyWriter<TxMan
     }
 
     public void writeDriverResult(TxManagedResultContainer result, OutputStream outputStream) throws IOException {
+        HttpErrorResponse errorResponse = null;
         var hasFailed = true;
         var jsonGenerator = jsonFactory.createGenerator(outputStream);
         var resultSerializer = new DriverResultSerializer(jsonGenerator);
@@ -72,9 +75,17 @@ abstract class AbstractTxManagingResultWriter implements MessageBodyWriter<TxMan
             }
             hasFailed = false;
         } catch (IOException ex) {
-            ExceptionsUnwrapper.unwrapAndThrowNeo4jAndQueryApiExceptions(ex);
-            throw new ConnectionException("Failed to write to the connection", ex);
+            errorResponse = ExceptionsUnwrapper.transformNeo4jAndQueryApiExceptions(
+                    HttpErrorResponse::fromDriverException, HttpErrorResponse::fromQueryApiException, ex);
+        } catch (Neo4jException neo4jException) {
+            errorResponse = HttpErrorResponse.fromDriverException(neo4jException);
+        } catch (QueryApiException queryApiException) {
+            errorResponse = HttpErrorResponse.fromQueryApiException(queryApiException);
         } finally {
+            if (errorResponse != null) {
+                resultSerializer.writeError(errorResponse);
+            }
+
             if (!result.transaction().isOpen() || hasFailed) {
                 transactionManager.removeTransaction(result.transaction().id());
             } else {

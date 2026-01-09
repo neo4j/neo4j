@@ -140,7 +140,7 @@ public class QueryResourceTxIT {
                 .build());
 
         assertThat(res).hasNoTransaction();
-        assertThat(res).hasErrorStatus(400, Status.Statement.ArithmeticError);
+        assertThat(res).hasErrorStatus(202, Status.Statement.ArithmeticError);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class QueryResourceTxIT {
                 res.body().txId());
 
         assertThat(cont).hasNoTransaction();
-        assertThat(cont).hasErrorStatus(400, Status.Statement.ArithmeticError);
+        assertThat(cont).hasErrorStatus(202, Status.Statement.ArithmeticError);
     }
 
     @Test
@@ -248,7 +248,7 @@ public class QueryResourceTxIT {
                 res.body().txId());
 
         assertThat(commitRes).hasNoTransaction();
-        assertThat(commitRes).hasErrorStatus(400, Status.Statement.ArithmeticError);
+        assertThat(commitRes).hasErrorStatus(202, Status.Statement.ArithmeticError);
 
         // verify node not created
         var newNodeCheck = testClient.autoCommit(QueryRequest.newBuilder()

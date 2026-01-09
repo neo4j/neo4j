@@ -43,6 +43,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.server.queryapi.response.error.HttpErrorResponse;
 
 public class DriverResultSerializer {
 
@@ -55,7 +56,6 @@ public class DriverResultSerializer {
 
     public void writeRecords(Result result) throws IOException {
         jsonGenerator.writeStartObject();
-
         if (result != null) {
             writeFieldNames(result.keys());
 
@@ -82,8 +82,10 @@ public class DriverResultSerializer {
 
     public void writeValue(Record record) throws IOException {
         jsonGenerator.writeStartArray();
+        this.currentState = State.IN_LINES;
         jsonGenerator.writeObject(record);
         jsonGenerator.writeEndArray();
+        this.currentState = State.IN_VALUES;
     }
 
     public void writeError(Neo4jException neo4jException) throws IOException {
@@ -92,6 +94,18 @@ public class DriverResultSerializer {
         jsonGenerator.writeFieldName(ERRORS_KEY);
         jsonGenerator.writeStartArray();
         jsonGenerator.writeObject(neo4jException);
+        jsonGenerator.writeEndArray();
+        jsonGenerator.writeEndObject();
+    }
+
+    public void writeError(HttpErrorResponse errorResponse) throws IOException {
+        ensureResultSetClosedForErrorsWriting();
+
+        jsonGenerator.writeFieldName(ERRORS_KEY);
+        jsonGenerator.writeStartArray();
+        for (var error : errorResponse.errors()) {
+            jsonGenerator.writeObject(error);
+        }
         jsonGenerator.writeEndArray();
         jsonGenerator.writeEndObject();
     }
@@ -169,6 +183,9 @@ public class DriverResultSerializer {
     private void ensureResultSetClosedForErrorsWriting() throws IOException {
         if (currentState == State.IN_VALUES) {
             jsonGenerator.writeEndArray();
+            jsonGenerator.writeEndObject();
+        } else if (currentState == State.IN_LINES) {
+            jsonGenerator.writeEndArray();
             jsonGenerator.writeEndArray();
             jsonGenerator.writeEndObject();
         }
@@ -176,6 +193,7 @@ public class DriverResultSerializer {
 
     private enum State {
         ROOT,
-        IN_VALUES
+        IN_VALUES,
+        IN_LINES
     }
 }

@@ -23,6 +23,7 @@ import static java.util.List.of;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.queryapi.QueryResponseAssertions.assertThat;
 import static org.neo4j.queryapi.testclient.QueryRequest.returnOne;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
 import java.io.IOException;
 import java.util.List;
@@ -221,5 +222,21 @@ class QueryResourceIT {
                 .build());
 
         assertThat(response).wasSuccessful().hasRecords(4, 2, 1, 0);
+    }
+
+    @Test
+    void shouldHandleErrorAfterStreamingStarts() throws IOException, InterruptedException {
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("UNWIND range(10_000, 0, -1) AS n RETURN 10_000/n AS n")
+                .build());
+
+        QueryResponseAssertions.assertThat(response)
+                .hasErrorStatus(202, Status.Statement.ArithmeticError)
+                .hasFieldNames("n");
+
+        var parsedJson = response.body().data();
+
+        // All valid values goes through
+        Assertions.assertThat(parsedJson.get(VALUES_KEY).size()).isEqualTo(10000);
     }
 }
