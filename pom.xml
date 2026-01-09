@@ -121,7 +121,7 @@
     <asm.version>9.2</asm.version>
     <metrics.version>4.2.3</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
-    <jersey.version>2.34</jersey.version>
+    <jersey.version>2.46</jersey.version>
     <junit.version>5.7.2</junit.version>
     <junit.platform.version>1.6.2</junit.platform.version> <!-- Surefire only supports 1.3.1, but 1.6.2 works by luck since the signatures are the same -->
     <mockito.version>3.12.4</mockito.version>
