@@ -97,10 +97,10 @@ trait VariableCheckerUtil {
     scopeContext: ReturnContext,
     variableContext: VariableContext,
     projectionContext: ProjectionContext,
-    errors: Seq[SemanticError]
+    errors: Set[SemanticError]
   ) {
-    def apply(errors: Seq[SemanticError]): Acc = copy(errors = this.errors ++ errors)
-    def apply(errors: SemanticError): Acc = copy(errors = this.errors :+ errors)
+    def apply(errors: Iterable[SemanticError]): Acc = copy(errors = this.errors ++ errors)
+    def apply(errors: SemanticError): Acc = copy(errors = this.errors + errors)
     def inReturnContext(context: ReturnContext): Acc = copy(scopeContext = context)
     def inVariableContext(context: VariableContext): Acc = copy(variableContext = context)
     def inMatchingPattern: Acc = copy(variableContext = variableContext.inMatch)
@@ -120,7 +120,7 @@ trait VariableCheckerUtil {
   }
 
   case object Acc {
-    def init: Acc = Acc(Unopinionated, Default, NonAggregating, Seq.empty)
+    def init: Acc = Acc(Unopinionated, Default, NonAggregating, Set.empty)
 
     object InRelationshipChain {
 

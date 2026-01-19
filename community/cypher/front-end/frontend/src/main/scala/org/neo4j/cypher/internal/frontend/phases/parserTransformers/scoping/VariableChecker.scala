@@ -406,18 +406,21 @@ case class VariableChecker(
             val (inaccessibleVariable, otherErrors) =
               aggregatingItemAcc.errors.partition(_.gqlStatusObject.cause().get().gqlStatus() == "42N44")
 
-            val invalidReference = Option.when(checkAggregations && inaccessibleVariable.nonEmpty) {
-              val variableNames: Seq[String] =
-                inaccessibleVariable.map(
-                  _.gqlStatusObject.cause().get()
-                    .asInstanceOf[ErrorGqlStatusObjectImplementation]
-                    .getParamValue(StringParam.variable)
-                    .asInstanceOf[String]
-                )
-              SemanticError.invalidReferenceToGroupingExpression(variableNames, inaccessibleVariable.head.position)
-            }
-
-            val aggErrors = otherErrors ++ invalidReference
+            val aggErrors = if (checkAggregations) {
+              if (inaccessibleVariable.nonEmpty) {
+                val variableNames: Set[String] =
+                  inaccessibleVariable.map(
+                    _.gqlStatusObject.cause().get()
+                      .asInstanceOf[ErrorGqlStatusObjectImplementation]
+                      .getParamValue(StringParam.variable)
+                      .asInstanceOf[String]
+                  )
+                Seq(SemanticError.invalidReferenceToGroupingExpression(
+                  variableNames.toSeq,
+                  inaccessibleVariable.head.position
+                ))
+              } else Seq.empty
+            } else otherErrors
 
             SkipChildren(_acc(groupingItemAcc.errors ++ aggErrors ++ subclauseAcc.errors ++ subclauseErrors))
           } else {
