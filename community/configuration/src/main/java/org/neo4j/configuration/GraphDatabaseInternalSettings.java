@@ -1499,7 +1499,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Id controller maintenance interval")
     public static final Setting<Duration> id_controller_maintenance_interval = newBuilder(
-                    "internal.db.idcontroller.maintenance_interval", DURATION, ofSeconds(1))
+                    "internal.db.idcontroller.maintenance_interval", DURATION, ofMillis(400))
             .build();
 
     @Internal

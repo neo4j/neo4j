@@ -33,6 +33,11 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 
 public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable {
     /**
+     * Represents the absence of an id in the id cache.
+     */
+    long NO_ID = -1;
+
+    /**
      * Allocates an ID which is available to use. The returned ID can be either of:
      * <ul>
      *     <li>a new ID, allocated as the previously highest allocated plus one, or</li>
@@ -49,12 +54,13 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * Allocates a range of IDs that are guaranteed to be consecutive where the returned id represents the first i.e. lowest of them.
      *
      * @param numberOfIds the number of consecutive IDs to allocate in this range.
-     * @param favorSamePage if {@code true} favors an allocation where all IDs are on the same page (if ID generator has notion about number of IDs per page),
+     * @param flags for controlling behaviour of allocation.
      * otherwise {@code false} if the range is allowed to cross page boundaries.
      * @param cursorContext for tracing page accesses.
      * @return the first id in the consecutive range.
      */
-    long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext);
+    @Override
+    ConsecutiveId nextConsecutiveIdRange(int numberOfIds, int flags, CursorContext cursorContext);
 
     /**
      * Reserve range of ids that cover whole page of the store
@@ -333,8 +339,8 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
-            return delegate.nextConsecutiveIdRange(numberOfIds, favorSamePage, cursorContext);
+        public ConsecutiveId nextConsecutiveIdRange(int numberOfIds, int flags, CursorContext cursorContext) {
+            return delegate.nextConsecutiveIdRange(numberOfIds, flags, cursorContext);
         }
 
         @Override

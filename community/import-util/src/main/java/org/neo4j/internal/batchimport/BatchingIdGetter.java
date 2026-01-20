@@ -48,7 +48,8 @@ public class BatchingIdGetter implements IdSequence {
             return id;
         }
 
-        currentBatchStartId = source.nextConsecutiveIdRange(batchSize, false, cursorContext);
+        currentBatchStartId =
+                source.nextConsecutiveIdRange(batchSize, 0, cursorContext).id();
         currentBatchIndex = 0;
         return nextIdFromCurrentBatch();
     }

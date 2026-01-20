@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -84,11 +84,15 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
         bufferingIdGeneratorFactory.start();
         running = true;
         var monitoringParams = JobMonitoringParams.systemJob(databaseName, "ID generator maintenance");
-        long maintenanceIntervalInSeconds = databaseConfig
+        long maintenanceIntervalInMillis = databaseConfig
                 .get(GraphDatabaseInternalSettings.id_controller_maintenance_interval)
-                .toSeconds();
+                .toMillis();
         jobHandle = scheduler.scheduleRecurring(
-                Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, maintenanceIntervalInSeconds, SECONDS);
+                Group.STORAGE_MAINTENANCE,
+                monitoringParams,
+                this::maintenance,
+                maintenanceIntervalInMillis,
+                MILLISECONDS);
     }
 
     @Override

@@ -210,4 +210,36 @@ class DynamicConcurrentLongQueueTest {
             assertThat(queue.takeOrDefault(-1)).isEqualTo(i);
         }
     }
+
+    @Test
+    void shouldReportCorrectOccupancyOnLowChunkCount() {
+        // given
+        int capacity = 256;
+        var queue = new DynamicConcurrentLongQueue(capacity, capacity);
+        // internally the queue must have at least two chunks
+        assertThat(queue.availableSpace()).isEqualTo(capacity * 2);
+        for (int i = 0; i < capacity; i++) {
+            boolean offered = queue.offer(i);
+            assertThat(offered).isTrue();
+            assertThat(queue.size()).isEqualTo(i + 1);
+        }
+
+        // when
+        for (int i = 0; i < capacity; i++) {
+            assertThat(queue.takeOrDefault(-1)).isEqualTo(i);
+        }
+        assertThat(queue.availableSpace()).isGreaterThan(0);
+
+        // then
+        int offset = capacity;
+        for (int i = 0; i < capacity; i++) {
+            boolean offered = queue.offer(offset + i);
+            assertThat(offered).isTrue();
+            assertThat(queue.size()).isEqualTo(i + 1);
+        }
+        for (int i = 0; i < capacity; i++) {
+            assertThat(queue.takeOrDefault(-1)).isEqualTo(offset + i);
+        }
+        assertThat(queue.takeOrDefault(-1)).isEqualTo(-1L);
+    }
 }

@@ -59,8 +59,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdSequence.ConsecutiveId;
 import org.neo4j.internal.id.IdSlotDistribution.Slot;
 import org.neo4j.internal.id.TestIdType;
+import org.neo4j.internal.id.indexed.IdCache.SlotSizeFallback;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -136,7 +138,7 @@ class FreeIdScannerTest {
         tryLoadFreeIdsIntoCache(scanner, false);
         assertThat(cache.size() > 0).isTrue();
         // take at least one so that scanner wants to load more from the ongoing scan
-        assertThat(cache.takeOrDefault(-1)).isZero();
+        assertThat(cache.takeOrDefault(NO_ID)).isZero();
 
         // then
         assertThat(scanner.hasMoreFreeIds(false)).isTrue();
@@ -197,6 +199,29 @@ class FreeIdScannerTest {
 
         // then
         assertCacheHasIds(ranges);
+    }
+
+    @Test
+    void shouldFindMarkAndCacheMultiSlotIdsFromScan() {
+        // given
+        int generation = 1;
+        int slotCapacity = 8;
+        var idCache = new IdCache(new Slot(slotCapacity, 1), new Slot(slotCapacity, 2), new Slot(slotCapacity, 8));
+        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, idCache, generation, true);
+        Range[] ranges = {range(0, 2), range(167, 175)
+        }; // 0,1 in one entry and 167,168,169,170,171,172,173,174 in another entry
+
+        forEachId(generation, ranges).accept((marker, id) -> {
+            marker.markDeleted(id);
+            marker.markFree(id);
+        });
+
+        // when
+        tryLoadFreeIdsIntoCache(scanner, false);
+
+        // then
+        assertThat(idCache.takeOrDefault(NO_ID, 2, NO_MONITOR, EMPTY_ID_RANGE_CONSUMER, SlotSizeFallback.none))
+                .isEqualTo(new ConsecutiveId(0, 2));
     }
 
     @Test
@@ -784,7 +809,8 @@ class FreeIdScannerTest {
         scanner.tryLoadFreeIdsIntoCache(false, true, NULL_CONTEXT);
 
         // then
-        assertThat(cache.takeOrDefault(NO_ID, size, NO_MONITOR, EMPTY_ID_RANGE_CONSUMER))
+        assertThat(cache.takeOrDefault(NO_ID, size, NO_MONITOR, EMPTY_ID_RANGE_CONSUMER, SlotSizeFallback.none)
+                        .id())
                 .isEqualTo(id);
     }
 
@@ -817,7 +843,8 @@ class FreeIdScannerTest {
         scanner.tryLoadFreeIdsIntoCache(true, true, NULL_CONTEXT);
 
         // then
-        assertThat(cache.takeOrDefault(NO_ID, size, NO_MONITOR, EMPTY_ID_RANGE_CONSUMER))
+        assertThat(cache.takeOrDefault(NO_ID, size, NO_MONITOR, EMPTY_ID_RANGE_CONSUMER, SlotSizeFallback.none)
+                        .id())
                 .isEqualTo(id);
     }
 
@@ -897,7 +924,7 @@ class FreeIdScannerTest {
     void shouldAvoidUnnecessaryReserveAndUncacheWhenScanningMoreThanWhatFitsInCache() throws IOException {
         // given
         int[] slotSizes = {1, 2, 4, 8};
-        int cacheCapacity = 256;
+        int cacheCapacity = 512;
         Slot[] slots = slotDistribution(slotSizes).slots(cacheCapacity);
         var cache = new IdCache(slots);
         long generation = 1;
@@ -953,11 +980,11 @@ class FreeIdScannerTest {
     private void assertCacheHasIds(boolean exhaustive, Range... ranges) {
         for (Range range : ranges) {
             for (long id = range.fromId; id < range.toId; id++) {
-                assertThat(cache.takeOrDefault(-1)).isEqualTo(id);
+                assertThat(cache.takeOrDefault(NO_ID)).isEqualTo(id);
             }
         }
         if (exhaustive) {
-            assertThat(cache.takeOrDefault(-1)).isEqualTo(-1);
+            assertThat(cache.takeOrDefault(NO_ID)).isEqualTo(NO_ID);
         }
     }
 
@@ -1120,13 +1147,14 @@ class FreeIdScannerTest {
         }
 
         @Override
-        long takeOrDefault(
+        ConsecutiveId takeOrDefault(
                 long defaultValue,
                 int numberOfIds,
                 IndexedIdGenerator.Monitor monitor,
-                IdRangeConsumer wastedIdConsumer) {
+                IdRangeConsumer wastedIdConsumer,
+                SlotSizeFallback slotSizeFallback) {
             reachBarrier(QueueMethodControl.TAKE);
-            return super.takeOrDefault(defaultValue, numberOfIds, monitor, wastedIdConsumer);
+            return super.takeOrDefault(defaultValue, numberOfIds, monitor, wastedIdConsumer, slotSizeFallback);
         }
 
         @Override

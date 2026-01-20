@@ -19,8 +19,20 @@
  */
 package org.neo4j.internal.id;
 
+import static org.neo4j.internal.id.IdGenerator.NO_ID;
+
 import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface IdSequence {
+    int FLAG_FAVOR_SAME_PAGE = 0x1;
+    int FLAG_ALLOW_ALLOCATE_SMALLER = 0x2;
+    ConsecutiveId NULL_CONSECUTIVE_ID = new ConsecutiveId(NO_ID, 0);
+
     long nextId(CursorContext cursorContext);
+
+    default ConsecutiveId nextConsecutiveIdRange(int numberOfIds, int flags, CursorContext cursorContext) {
+        throw new UnsupportedOperationException();
+    }
+
+    record ConsecutiveId(long id, int numberOfIds) {}
 }

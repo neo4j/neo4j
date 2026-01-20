@@ -119,6 +119,10 @@ class FreeIdScanner {
     /**
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
+     * @param blocking whether to await the scan lock. If {@code false} then this method will return immediately w/o
+     * doing a scan if the scan lock is not available.
+     * @param maintenance whether this is a maintenance scan. Maintenance scan has lower thresholds in the
+     * condition checks for starting a new scan.
      */
     void tryLoadFreeIdsIntoCache(boolean blocking, boolean maintenance, CursorContext cursorContext) {
         if (!hasMoreFreeIds(maintenance)) {

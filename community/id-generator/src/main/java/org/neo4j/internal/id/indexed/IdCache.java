@@ -22,12 +22,13 @@ package org.neo4j.internal.id.indexed;
 import static java.lang.Integer.min;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.id.indexed.FreeIdScanner.MAX_SLOT_SIZE;
-import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.id.IdSequence.ConsecutiveId;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.io.pagecache.context.CursorContext;
 
@@ -133,14 +134,19 @@ class IdCache {
         return id;
     }
 
-    long takeOrDefault(
-            long defaultValue, int numberOfIds, IndexedIdGenerator.Monitor monitor, IdRangeConsumer wasteNotifier) {
+    ConsecutiveId takeOrDefault(
+            long defaultValue,
+            int numberOfIds,
+            IndexedIdGenerator.Monitor monitor,
+            IdRangeConsumer wasteNotifier,
+            SlotSizeFallback slotSizeFallback) {
         long id = defaultValue;
+        int actualNumberOfIds = numberOfIds;
         for (int slotIndex = lowestSlotIndexCapableOf(numberOfIds);
                 id == defaultValue && slotIndex < slotSizes.length;
                 slotIndex++) {
             id = queues[slotIndex].takeOrDefault(defaultValue);
-            if (id != NO_ID && slotSizes[slotIndex] != numberOfIds) {
+            if (id != defaultValue && slotSizes[slotIndex] != numberOfIds) {
                 var wastedId = id + numberOfIds;
                 var wastedNumberOfIds = slotSizes[slotIndex] - numberOfIds;
                 // We allocated an ID from a slot that was larger than was requested.
@@ -157,10 +163,25 @@ class IdCache {
                 }
             }
         }
+
+        if (id == defaultValue && slotSizeFallback.allowFragmentation()) {
+            int lowThreshold = slotSizeFallback.lowestPossibleFallbackSlotSize(numberOfIds);
+            for (int slotIndex = lowestSlotIndexCapableOf(numberOfIds) - 1;
+                    id == defaultValue && slotIndex >= 0 && slotSizes[slotIndex] >= lowThreshold;
+                    slotIndex--) {
+                id = queues[slotIndex].takeOrDefault(defaultValue);
+                if (id != defaultValue) {
+                    actualNumberOfIds = slotSizes[slotIndex];
+                }
+            }
+        }
+
         if (id != defaultValue) {
             this.size.decrementAndGet();
+            return new ConsecutiveId(id, actualNumberOfIds);
+        } else {
+            return IdSequence.NULL_CONSECUTIVE_ID;
         }
-        return id;
     }
 
     int[] availableSpaceBySlotIndex() {
@@ -253,5 +274,35 @@ class IdCache {
 
     interface IdRangeConsumer {
         void accept(long id, int size);
+    }
+
+    enum SlotSizeFallback {
+        none(false),
+        some(true) {
+            @Override
+            int lowestPossibleFallbackSlotSize(int slotSize) {
+                return slotSize / 4;
+            }
+        },
+        full(true) {
+            @Override
+            int lowestPossibleFallbackSlotSize(int slotSize) {
+                return 1;
+            }
+        };
+
+        private final boolean allowFragmentation;
+
+        SlotSizeFallback(boolean allowFragmentation) {
+            this.allowFragmentation = allowFragmentation;
+        }
+
+        boolean allowFragmentation() {
+            return allowFragmentation;
+        }
+
+        int lowestPossibleFallbackSlotSize(int slotSize) {
+            return slotSize;
+        }
     }
 }

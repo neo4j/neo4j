@@ -192,8 +192,8 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
-            return EMPTY_ID;
+        public ConsecutiveId nextConsecutiveIdRange(int numberOfIds, int flags, CursorContext cursorContext) {
+            return IdSequence.NULL_CONSECUTIVE_ID;
         }
 
         @Override

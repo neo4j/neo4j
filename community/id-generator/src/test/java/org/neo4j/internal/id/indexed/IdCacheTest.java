@@ -21,6 +21,7 @@ package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.internal.id.IdGenerator.NO_ID;
 import static org.neo4j.internal.id.IdSlotDistribution.slotDistribution;
 import static org.neo4j.internal.id.indexed.IdCache.DYNAMIC_CHUNK_SIZE;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.LARGE_CACHE_CAPACITY;
@@ -31,13 +32,17 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.internal.id.IdSequence.ConsecutiveId;
 import org.neo4j.internal.id.IdSlotDistribution;
+import org.neo4j.internal.id.indexed.IdCache.SlotSizeFallback;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -55,9 +60,9 @@ class IdCacheTest {
                 new IdSlotDistribution.Slot(8, 2),
                 new IdSlotDistribution.Slot(4, 4));
         assertThat(cache.slotsByAvailableSpace()).isEqualTo(new IdSlotDistribution.Slot[] {
-            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE, 1),
-            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE, 2),
-            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE, 4)
+            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE * 2, 1),
+            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE * 2, 2),
+            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE * 2, 4)
         });
 
         // when
@@ -66,9 +71,9 @@ class IdCacheTest {
 
         // then
         assertThat(cache.slotsByAvailableSpace()).isEqualTo(new IdSlotDistribution.Slot[] {
-            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE, 1),
-            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE - 1, 2),
-            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE - 2, 4)
+            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE * 2, 1),
+            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE * 2 - 1, 2),
+            new IdSlotDistribution.Slot(DYNAMIC_CHUNK_SIZE * 2 - 2, 4)
         });
     }
 
@@ -92,6 +97,59 @@ class IdCacheTest {
             drained += ids.length;
         } while (ids.length != 0);
         assertThat(drained).isEqualTo(capacity);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldTakeIdFromBiggerSlotIfPossible(boolean allowSmaller) {
+        // given
+        long higherSizeId = 100;
+        int requestedIdSize = 8;
+        int higherSizeIdSize = requestedIdSize * 2;
+        int lowerSizeIdSize = requestedIdSize / 2;
+        var cache = new IdCache(
+                IdSlotDistribution.slotDistribution(new int[] {1, 2, 4, 8, 16}).slots(128));
+        cache.offer(higherSizeId, higherSizeIdSize, NO_MONITOR);
+        cache.offer(higherSizeId + higherSizeIdSize, lowerSizeIdSize, NO_MONITOR);
+
+        // when
+        var remainderId = new MutableLong();
+        var remainderIdSize = new MutableInt();
+        var id = cache.takeOrDefault(
+                NO_ID,
+                requestedIdSize,
+                new IndexedIdGenerator.Monitor.Adapter() {
+                    @Override
+                    public void cached(long cachedId, int numberOfIds) {
+                        remainderId.setValue(cachedId);
+                        remainderIdSize.setValue(numberOfIds);
+                    }
+                },
+                (id1, size) -> {},
+                allowSmaller ? SlotSizeFallback.full : SlotSizeFallback.none);
+
+        // then
+        assertThat(id).isEqualTo(new ConsecutiveId(higherSizeId, requestedIdSize));
+        assertThat(remainderId.longValue()).isEqualTo(higherSizeId + requestedIdSize);
+        assertThat(remainderIdSize.intValue()).isEqualTo(higherSizeIdSize - requestedIdSize);
+    }
+
+    @Test
+    void shouldTakeIdFromSmallerSlotIfToldTo() {
+        // given
+        long lowerSizeId = 100;
+        int lowerSizeIdSize = 2;
+        var cache = new IdCache(
+                IdSlotDistribution.slotDistribution(new int[] {1, 2, 4, 8, 16}).slots(128));
+        cache.offer(lowerSizeId, lowerSizeIdSize, NO_MONITOR);
+
+        // when
+        int requestedIdSize = 8;
+        var id = cache.takeOrDefault(
+                NO_ID, requestedIdSize, NO_MONITOR, (ignore1, ignore2) -> {}, SlotSizeFallback.full);
+
+        // then
+        assertThat(id).isEqualTo(new ConsecutiveId(lowerSizeId, lowerSizeIdSize));
     }
 
     private void assertIdsInSameRange(long[] ids, int rangeSize) {

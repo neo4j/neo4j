@@ -36,7 +36,9 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
 
     DynamicConcurrentLongQueue(int chunkSize, int capacity) {
         this.chunkSize = chunkSize;
-        this.maxNumChunks = MathUtil.ceil(capacity, chunkSize);
+        // The internal chunking has it so that there must be at least two chunks, otherwise the queue
+        // will not report correct occupancy, resulting in inability to sometimes accept offered IDs.
+        this.maxNumChunks = Math.max(2, MathUtil.ceil(capacity, chunkSize));
     }
 
     @Override
