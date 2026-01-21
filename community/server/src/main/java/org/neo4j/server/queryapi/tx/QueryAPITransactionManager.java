@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.queryapi.tx;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
@@ -89,7 +90,9 @@ public class QueryAPITransactionManager implements TransactionManager {
         var tx = transactions.get(transactionId);
 
         if (tx != null) {
-            if (tx.tryAcquire()) {
+            // Just wait a little bit since we might have some
+            // clash with beginTimeoutJob
+            if (tx.tryAcquire(20, MILLISECONDS)) {
                 if (tx.databaseName().equals(requestedDatabase)
                         && tx.authToken().equals(accessingUser)) {
                     return tx;

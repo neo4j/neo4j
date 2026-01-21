@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
@@ -100,6 +101,15 @@ public class QueryAPITransaction implements Transaction {
     @Override
     public boolean tryAcquire() {
         return lock.tryLock();
+    }
+
+    @Override
+    public boolean tryAcquire(long timeout, TimeUnit timeUnit) {
+        try {
+            return tryAcquire() || lock.tryLock(timeout, timeUnit);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

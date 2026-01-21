@@ -22,6 +22,7 @@ package org.neo4j.server.queryapi.tx;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Result;
@@ -48,6 +49,8 @@ public interface Transaction {
      * Lock this transaction
      */
     boolean tryAcquire();
+
+    boolean tryAcquire(long timeout, TimeUnit timeUnit);
 
     void release();
 
