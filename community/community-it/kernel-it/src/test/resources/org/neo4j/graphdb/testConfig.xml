@@ -20,7 +20,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 -->
-<Configuration monitorInterval="5" packages="org.neo4j.logging.log4j">
+<Configuration monitorInterval="5">
     <Appenders>
         <RollingFile name="RollingFile" fileName="${config:server.directories.logs}/debug.log"
                      filePattern="${config:server.directories.logs}/debug.log.%02i"

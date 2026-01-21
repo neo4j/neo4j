@@ -171,7 +171,7 @@
     <awssdk-crt.version>0.38.1</awssdk-crt.version>
     <guava.version>33.3.1-jre</guava.version>
     <awaitility.version>4.2.2</awaitility.version>
-    <log4j.version>2.20.0</log4j.version>
+    <log4j.version>2.25.3</log4j.version>
     <slf4j.version>2.0.9</slf4j.version>
     <neo4j-java-driver.version>5.28.10</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>

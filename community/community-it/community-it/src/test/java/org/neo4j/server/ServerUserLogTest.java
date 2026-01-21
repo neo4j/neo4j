@@ -72,7 +72,7 @@ class ServerUserLogTest {
         try {
             String xml =
                     """
-                    <Configuration packages="org.neo4j.logging.log4j">
+                    <Configuration>
                         <Appenders>
                             <Console name="console" target="SYSTEM_OUT" follow="true">
                                 <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>

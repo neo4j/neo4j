@@ -348,7 +348,7 @@ class LogConfigTest {
     private void useConsoleLogger(boolean daemonMode) throws IOException {
         String xml =
                 """
-                <Configuration packages="org.neo4j.logging.log4j">
+                <Configuration>
                    <Appenders>
                        <File name="Neo4jLog" fileName="${config:server.directories.logs}/neo4j.log">
                            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>

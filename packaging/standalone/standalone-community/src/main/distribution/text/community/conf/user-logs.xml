@@ -29,7 +29,7 @@
     Please consult https://logging.apache.org/log4j/2.x/manual/configuration.html for instructions and
     available configuration options.
 -->
-<Configuration status="ERROR" monitorInterval="30" packages="org.neo4j.logging.log4j">
+<Configuration status="ERROR" monitorInterval="30">
 
     <Appenders>
         <RollingRandomAccessFile name="Neo4jLog" fileName="${config:server.directories.logs}/neo4j.log"

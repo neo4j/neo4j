@@ -319,7 +319,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     void debugLogToSystemOutInConsoleMode() throws IOException {
         String log4jConfig =
                 """
-                <Configuration status="ERROR" packages="org.neo4j.logging.log4j">
+                <Configuration status="ERROR">
                     <Appenders>
                         <Console name="ConsoleAppender" target="SYSTEM_OUT">
                             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>

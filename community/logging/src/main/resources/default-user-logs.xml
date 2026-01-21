@@ -20,7 +20,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 -->
-<Configuration packages="org.neo4j.logging.log4j">
+<Configuration>
     <Appenders>
         <RollingRandomAccessFile name="RollingFile" fileName="${config:server.directories.logs}/neo4j.log"
                                  filePattern="$${config:server.directories.logs}/neo4j.log.%02i">
