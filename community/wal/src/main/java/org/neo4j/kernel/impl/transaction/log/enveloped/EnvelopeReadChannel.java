@@ -289,13 +289,41 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             }
         } else {
             loadSegmentIntoBuffer(newSegment);
-            // Even if we're on offset 0, on the first segment we need to invoke this to make sure
-            // we're skipping the START_OFFSET envelope if it is present.
             if (newBufferOffset != 0 || newSegment == 1) {
+                // Read into envelopes, possibly skipping START_OFFSET entry
+                // also setup checksum values
                 readAllEnvelopesUpToIncluding(newBufferOffset, false);
             } else {
+                // disable checking as we don't want to load previous segment
                 payloadType = null;
                 enforceChecksumChain = false;
+                if (buffer.remaining() > HEADER_SIZE) {
+                    try {
+                        // peek at envelope header
+                        readEnvelopeHeader();
+                        // rollback state ready for client to read into the envelope, but with previousChecksum
+                        // and currentIndex initialised
+                        currentChecksum = previousChecksum;
+                        if (payloadType == EnvelopeType.BEGIN || payloadType == EnvelopeType.FULL) {
+                            --currentIndex;
+                        }
+                    } catch (Exception e) {
+                        // retain old behaviour where the channel will throw on next read
+                        // have to reload segment as checking for preallocation, partial headers, etc may change the
+                        // buffer
+                        loadSegmentIntoBuffer(newSegment);
+                        currentIndex = UNSPECIFIED_INDEX;
+                        previousChecksum = logHeader.getPreviousLogFileChecksum();
+                        currentChecksum = previousChecksum;
+                        enforceChecksumChain = false;
+                    }
+                    // rollback remaining state
+                    payloadType = null;
+                    payloadStartOffset = 0;
+                    payloadEndOffset = 0;
+                    currentTerm = UNSPECIFIED_TERM;
+                    currentContentType = UNSPECIFIED_CONTENT_TYPE;
+                }
             }
         }
         checkState(
