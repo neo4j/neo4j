@@ -96,7 +96,7 @@ object pegStatement {
             val nextQuery = apply(query, previous.last.outgoing)
             val intermediateOutgoing =
               if (nextQuery.result.isTableResult)
-                incoming.replaceWith(nextQuery.outgoing.variables)
+                incoming.replaceWith(nextQuery.result.getColumns.toSet)
               else
                 incoming.replaceWith(ScopeSurveyor.unitVariables)
 

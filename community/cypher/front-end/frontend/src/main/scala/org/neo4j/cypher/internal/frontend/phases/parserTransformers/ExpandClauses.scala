@@ -605,6 +605,9 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
       def expand(ast: PartQuery, incomingLayout: Layout, index: Int, listName: String): SingleQuery = {
         val position = ast.position
         val incomingVariables: Seq[LogicalVariable] = scopeState.getIncomingVariables(ast)
+        val references: Set[LogicalVariable] = scopeState.getReferenced(ast)
+        val isReturning: Boolean = scopeState.getResult(ast).isTableResult
+        val returns: Seq[LogicalVariable] = scopeState.getResultCols(ast)
 
         /**
          * THEN ... QUERY ... --> WITH * WHERE condition = i ... QUERY ...
@@ -622,7 +625,21 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
             AddedInRewriteGeneral
           )(position))
 
-        ensureNoTopLevelBracesSingleQuery(ast, incomingLayout.withIngress(ingress))
+        val nestedQuery =
+          ScopeClauseSubqueryCall(
+            ensureNoTopLevelBracesSingleQuery(ast, incomingLayout.consumeLayout),
+            references.map(_.copyId).toSeq
+          )(ast.position)
+
+        val deanonymizeReturns = returns.map(r =>
+          incomingLayout.resultMapping.getOrElse(r, r).copyId
+        )
+
+        val returningClause = if (isReturning)
+          Return(ReturnItems(FreeProjection, deanonymizeReturns.map(AliasedReturnItem(_)))(ast.position))(ast.position)
+        else Finish()(ast.position)
+
+        SingleQuery(ingress ++ Seq(nestedQuery, returningClause))(ast.position)
       }
     }
 
