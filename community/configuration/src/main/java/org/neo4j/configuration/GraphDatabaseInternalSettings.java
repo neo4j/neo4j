@@ -1632,6 +1632,25 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
+    @Internal
+    @Description("Enables profiling of composite queries. Profiling of composite queries behaves differently "
+            + "than in the case of the non-composite ones. The result of profiling is not returned in the form of "
+            + "a profiled execution plan at the end of the query, but the profiling data are written to a file. "
+            + "A file is created for each profiled query execution and the files are located, by default, in logs/profiles "
+            + "directory. The location can be changed with 'internal.db.composite.query_profiles_output' setting.")
+    public static final Setting<Boolean> composite_query_profiling_enabled = newBuilder(
+                    "internal.db.composite.query_profiling_enabled", BOOL, false)
+            .dynamic()
+            .build();
+
+    @Internal
+    @Description("Output directory of composite query profiling output.")
+    public static final Setting<Path> composite_query_profiles_output = newBuilder(
+                    "internal.db.composite.query_profiles_output", PATH, Path.of("logs", "profiles"))
+            .setDependency(GraphDatabaseSettings.neo4j_home)
+            .dynamic()
+            .build();
+
     // Helper method
     public static HeapEstimatorCacheConfig extractCustomHeapEstimatorCacheConfig(Config config) {
         return new HeapEstimatorCacheConfig(

@@ -58,7 +58,7 @@ case class FabricPlanner(
 
   private[planning] val queryCache = new FabricQueryCache(cacheFactory, CacheSize.Dynamic(cypherConfig.queryCacheSize))
 
-  private val frontend = FabricFrontEnd(cypherConfig, monitors, cacheFactory)
+  private val frontend = FabricFrontEnd(cypherConfig, () => config.getProfiling.enabled, monitors, cacheFactory)
 
   /**
    * Convenience method without cancellation checker or InternalSyntaxUsageStats. Should be used for tests only.
@@ -187,7 +187,8 @@ case class FabricPlanner(
         QueryOptions.default.copy(
           queryOptions = QueryOptions.default.queryOptions.copy(
             runtime = CypherRuntimeOption.slotted,
-            expressionEngine = CypherExpressionEngineOption.interpreted
+            expressionEngine = CypherExpressionEngineOption.interpreted,
+            executionMode = query.options.queryOptions.executionMode
           ),
           materializedEntitiesMode = true
         )

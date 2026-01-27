@@ -85,6 +85,7 @@ abstract class SingleQueryFragmentExecutor {
     private final MergedQueryStatistics statistics;
     private final Tracer tracer;
     private final FragmentExecutor fragmentExecutor;
+    private final ProfilingContext profilingContext;
 
     SingleQueryFragmentExecutor(
             FabricPlanner.PlannerInstance plannerInstance,
@@ -102,7 +103,8 @@ abstract class SingleQueryFragmentExecutor {
             QueryRoutingMonitor queryRoutingMonitor,
             MergedQueryStatistics statistics,
             Tracer tracer,
-            FragmentExecutor fragmentExecutor) {
+            FragmentExecutor fragmentExecutor,
+            ProfilingContext profilingContext) {
         this.plannerInstance = plannerInstance;
         this.fabricWorkerExecutor = fabricWorkerExecutor;
         this.ctx = ctx;
@@ -119,6 +121,7 @@ abstract class SingleQueryFragmentExecutor {
         this.statistics = statistics;
         this.tracer = tracer;
         this.fragmentExecutor = fragmentExecutor;
+        this.profilingContext = profilingContext;
     }
 
     MapValue queryParams() {
@@ -218,10 +221,16 @@ abstract class SingleQueryFragmentExecutor {
                 plan.inCompositeContext() ? new ExecutionOptions(location.graphId()) : new ExecutionOptions();
 
         lifecycle.startExecution(true);
+        var profilingFragment = profilingContext.fragmentStart(location, queryString);
         Mono<StatementResult> statementResult =
                 runRemote(location, executionOptions, queryString, transactionMode, parameters);
         Flux<Record> records = statementResult.flatMapMany(
-                sr -> sr.records().doOnComplete(() -> sr.summary().subscribe(this::updateSummary)));
+                sr -> sr.records().doOnComplete(() -> sr.summary().subscribe(s -> {
+                    if (s != null) {
+                        profilingFragment.finish(s.executionPlanDescription());
+                    }
+                    updateSummary(s);
+                })));
 
         // 'onComplete' signal coming from an inner stream might cause more data being requested from an upstream
         // operator
@@ -261,12 +270,18 @@ abstract class SingleQueryFragmentExecutor {
         ExecutionOptions executionOptions = plan.inCompositeContext() && !targetsComposite
                 ? new ExecutionOptions(location.graphId())
                 : new ExecutionOptions();
+        var profilingFragment = profilingContext.fragmentStart(location, query.description());
 
         StatementResult localStatementResult = runLocal(
                 location, transactionMode, lifecycle, query, parameters, input, executionOptions, targetsComposite);
         Flux<Record> records = localStatementResult
                 .records()
-                .doOnComplete(() -> localStatementResult.summary().subscribe(this::updateSummary));
+                .doOnComplete(() -> localStatementResult.summary().subscribe(s -> {
+                    if (s != null) {
+                        profilingFragment.finish(s.executionPlanDescription());
+                    }
+                    updateSummary(s);
+                }));
 
         Mono<ExecutionPlanDescription> planDescription = localStatementResult
                 .summary()

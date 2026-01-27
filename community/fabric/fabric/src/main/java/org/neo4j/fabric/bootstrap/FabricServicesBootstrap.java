@@ -173,7 +173,8 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
                 statementLifecycles,
                 fabricWorkerExecutor,
                 monitors,
-                internalSyntaxUsageStats);
+                internalSyntaxUsageStats,
+                systemNanoClock);
         register(fabricExecutor, FabricExecutor.class);
         return createBoltDatabaseManagementServiceProvider();
     }

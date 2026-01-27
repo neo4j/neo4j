@@ -90,7 +90,8 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
             QueryRoutingMonitor queryRoutingMonitor,
             MergedQueryStatistics statistics,
             Tracer tracer,
-            FragmentExecutor fragmentExecutor) {
+            FragmentExecutor fragmentExecutor,
+            ProfilingContext profilingContext) {
         super(
                 plannerInstance,
                 fabricWorkerExecutor,
@@ -107,7 +108,8 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
                 queryRoutingMonitor,
                 statistics,
                 tracer,
-                fragmentExecutor);
+                fragmentExecutor,
+                profilingContext);
         this.callInTransactions = callInTransactions;
         this.innerFragment = (Fragment.Exec) callInTransactions.inner();
         this.batchSize = batchSize();

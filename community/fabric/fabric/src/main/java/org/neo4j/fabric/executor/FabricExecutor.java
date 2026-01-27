@@ -22,6 +22,7 @@ package org.neo4j.fabric.executor;
 import static org.neo4j.fabric.stream.StatementResults.withErrorMapping;
 import static scala.jdk.javaapi.CollectionConverters.asJava;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -72,6 +74,7 @@ import reactor.core.publisher.Mono;
 public class FabricExecutor {
     public static final String WRITING_IN_READ_NOT_ALLOWED_MSG = "Writing in read access mode not allowed";
     private final FabricConfig.DataStream dataStreamConfig;
+    private final Supplier<FabricConfig.Profiling> profilingConfig;
     private final FabricPlanner planner;
     private final UseEvaluation useEvaluation;
     private final InternalLog log;
@@ -79,6 +82,7 @@ public class FabricExecutor {
     private final Executor fabricWorkerExecutor;
     private final QueryRoutingMonitor queryRoutingMonitor;
     private final InternalSyntaxUsageStats internalSyntaxUsageStats;
+    private final Clock clock;
 
     public FabricExecutor(
             FabricConfig config,
@@ -88,8 +92,10 @@ public class FabricExecutor {
             QueryStatementLifecycles statementLifecycles,
             Executor fabricWorkerExecutor,
             Monitors monitors,
-            InternalSyntaxUsageStats internalSyntaxUsageStats) {
+            InternalSyntaxUsageStats internalSyntaxUsageStats,
+            Clock clock) {
         this.dataStreamConfig = config.getDataStream();
+        this.profilingConfig = config::getProfiling;
         this.planner = planner;
         this.useEvaluation = useEvaluation;
         this.log = internalLog.getLog(getClass());
@@ -97,6 +103,7 @@ public class FabricExecutor {
         this.fabricWorkerExecutor = fabricWorkerExecutor;
         this.queryRoutingMonitor = monitors.newMonitor(QueryRoutingMonitor.class);
         this.internalSyntaxUsageStats = internalSyntaxUsageStats;
+        this.clock = clock;
     }
 
     public StatementResult run(FabricTransaction fabricTransaction, String statement, MapValue parameters) {
@@ -199,6 +206,7 @@ public class FabricExecutor {
         private final Prefetcher prefetcher;
         private final AccessMode accessMode;
         private final NotificationConfiguration notificationConfiguration;
+        private final ProfilingContext profilingContext;
 
         FabricStatementExecution(
                 FabricPlan plan,
@@ -219,6 +227,13 @@ public class FabricExecutor {
             this.prefetcher = new Prefetcher(dataStreamConfig);
             this.accessMode = accessMode;
             this.notificationConfiguration = notificationConfiguration;
+
+            if (plan.executionType() == FabricPlan.PROFILE()) {
+                profilingContext = new ProfilingContextImpl(
+                        lifecycle.getMonitoredQuery(), profilingConfig.get().outputDir(), clock);
+            } else {
+                profilingContext = ProfilingContext.NO_OP;
+            }
         }
 
         StatementResult run() {
@@ -271,7 +286,7 @@ public class FabricExecutor {
                         records.doOnComplete(lifecycle::endSuccess)
                                 .doOnCancel(lifecycle::endSuccess)
                                 .doOnError(lifecycle::endFailure),
-                        summary,
+                        summary.doFinally(s -> profilingContext.close()),
                         fragmentResult.executionType());
             }
         }
@@ -372,7 +387,8 @@ public class FabricExecutor {
                             queryRoutingMonitor,
                             statistics,
                             tracer(),
-                            FabricStatementExecution.this::run)
+                            FabricStatementExecution.this::run,
+                            profilingContext)
                     .run(argument);
         }
 
@@ -394,7 +410,8 @@ public class FabricExecutor {
                             queryRoutingMonitor,
                             statistics,
                             tracer(),
-                            FabricStatementExecution.this::run)
+                            FabricStatementExecution.this::run,
+                            profilingContext)
                     .run(argument);
 
             Mono<QueryExecutionType> executionType = Mono.just(EffectiveQueryType.queryExecutionType(plan, accessMode));

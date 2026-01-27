@@ -72,7 +72,8 @@ class StandardQueryExecutor extends SingleQueryFragmentExecutor {
             QueryRoutingMonitor queryRoutingMonitor,
             MergedQueryStatistics statistics,
             Tracer tracer,
-            FragmentExecutor fragmentExecutor) {
+            FragmentExecutor fragmentExecutor,
+            ProfilingContext profilingContext) {
         super(
                 plannerInstance,
                 fabricWorkerExecutor,
@@ -89,7 +90,8 @@ class StandardQueryExecutor extends SingleQueryFragmentExecutor {
                 queryRoutingMonitor,
                 statistics,
                 tracer,
-                fragmentExecutor);
+                fragmentExecutor,
+                profilingContext);
         this.fragment = fragment;
     }
 
