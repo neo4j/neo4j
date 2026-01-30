@@ -689,8 +689,8 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         val unionOfBranches =
           branchQueries.tail.foldLeft[Query](branchQueries.head) { case (acc, query) => UnionAll(acc, query)(pos) }
 
-        val incomingItems = referenced.filter(incomingVariables.contains).toSeq.map(lv =>
-          AliasedReturnItem(incomingLayout.incomingMapping.get(lv).fold(lv)(_.incoming), lv.copyId)(lv.position)
+        val incomingItems = referenced.toSeq.map(lv =>
+          AliasedReturnItem(incomingLayout.incomingMapping.get(lv).fold(lv)(_.incoming).copyId, lv.copyId)(lv.position)
         )
 
         /**

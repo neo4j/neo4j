@@ -1085,7 +1085,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  WITH (`  UNNAMED0`[`  UNNAMED2`])[0] AS x
         |  WITH x AS x, 3 AS b
         |  CALL (b,x) {
-        |    WITH CASE
+        |    WITH b, x, CASE
         |  WHEN b > 3 THEN 0
         |  ELSE 1
         |END AS `  UNNAMED6`
@@ -2639,7 +2639,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN *""".stripMargin,
       """MATCH (n)
         |CALL (n) {
-        |  WITH CASE
+        |  WITH n AS n, CASE
         |  WHEN false THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -2660,7 +2660,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  }
         |  RETURN x AS x
         |  UNION
-        |  WITH CASE
+        |  WITH n AS n, CASE
         |  WHEN false THEN 0
         |  ELSE 1
         |END AS `  UNNAMED1`
@@ -2700,7 +2700,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |   RETURN y""".stripMargin,
       """LET x = 1
         |CALL (x) {
-        |  WITH CASE
+        |  WITH x, CASE
         |  WHEN x < 0 THEN 0
         |  WHEN x < 1 THEN 1
         |  ELSE 2
@@ -2738,16 +2738,15 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
   test("when in subquery expression rewritten") {
     assertRewritten(
       CypherVersion.Cypher25,
-      """
-        |   LET x = 1, b = 2
-        |   RETURN EXISTS {
-        |      WHEN x < 0 THEN RETURN 1 + x AS y
-        |      WHEN b < 1 THEN RETURN 2 AS y
-        |      ELSE RETURN 3 + x AS y
-        |   } AS res""".stripMargin,
       """LET x = 1, b = 2
         |RETURN EXISTS {
-        |  WITH CASE
+        |   WHEN x < 0 THEN RETURN 1 + x AS y
+        |   WHEN b < 1 THEN RETURN 2 AS y
+        |   ELSE RETURN 3 + x AS y
+        |} AS res""".stripMargin,
+      """LET x = 1, b = 2
+        |RETURN EXISTS {
+        |  WITH x, b, CASE
         |    WHEN x < 0 THEN 0
         |    WHEN b < 1 THEN 1
         |    ELSE 2
@@ -2849,7 +2848,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  RETURN n AS n
         |}
         |CALL (n) {
-        |  WITH CASE
+        |  WITH n, CASE
         |  WHEN n.age > 40 THEN 0
         |  ELSE 1
         |END AS `  UNNAMED1`
@@ -3063,7 +3062,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  WITH (`  UNNAMED0`[`  UNNAMED2`])[0] AS x
         |  WITH x AS x, 3 AS b
         |  CALL (b,x) {
-        |    WITH CASE
+        |    WITH b, x, CASE
         |  WHEN b > 3 THEN 0
         |  ELSE 1
         |END AS `  UNNAMED6`
@@ -3413,7 +3412,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |WITH count(NULL) AS `  UNNAMED1`
         |WITH 1 AS y
         |CALL (y) {
-        |  WITH CASE
+        |  WITH y, CASE
         |  WHEN true THEN 0
         |  WHEN true THEN 1
         |  ELSE 2
@@ -3841,7 +3840,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN x AS x""".stripMargin,
       """WITH true AS a
         |CALL (a) {
-        |  WITH CASE
+        |  WITH a, CASE
         |  WHEN a THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -3902,7 +3901,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  WITH count(*) AS `  UNNAMED0`
         |  CALL (a,`  UNNAMED0`) {
         |    UNWIND range(0, `  UNNAMED0` - 1) AS `  UNNAMED1`
-        |    WITH CASE
+        |    WITH a, CASE
         |  WHEN a THEN 0
         |  ELSE 1
         |END AS `  UNNAMED3`
@@ -4050,7 +4049,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN x AS x""".stripMargin,
       """WITH true AS a
         |CALL (a) {
-        |  WITH CASE
+        |  WITH a, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -4223,7 +4222,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN x AS x""".stripMargin,
       """WITH true AS a
         |CALL (a) {
-        |  WITH CASE
+        |  WITH a, CASE
         |  WHEN a THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -4449,7 +4448,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN x AS x""".stripMargin,
       """WITH 1 AS a
         |CALL (a) {
-        |  WITH CASE
+        |  WITH a AS a, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -4476,7 +4475,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |    WITH (`  UNNAMED1`[`  UNNAMED3`])[0] AS x
         |    RETURN x + a AS `  UNNAMED4`
         |  }
-        |  WITH `  UNNAMED4` AS x, CASE
+        |  WITH `  UNNAMED4` AS x, a AS a, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED5`
@@ -4504,7 +4503,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |    WITH (`  UNNAMED7`[`  UNNAMED9`])[0] AS x
         |    RETURN x + a AS `  UNNAMED10`
         |  }
-        |  WITH `  UNNAMED10` AS x, CASE
+        |  WITH `  UNNAMED10` AS x, a AS a, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED11`
@@ -4557,7 +4556,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN x, y""".stripMargin,
       """WITH 1 AS a
         |CALL (a) {
-        |  WITH CASE
+        |  WITH a AS a, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -4584,7 +4583,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |    WITH (`  UNNAMED1`[`  UNNAMED3`])[0] AS x
         |    RETURN x + a AS y
         |  }
-        |  WITH y AS y, CASE
+        |  WITH y AS y, a AS a, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED4`
@@ -4629,7 +4628,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |CALL (a,b) {
         |  WITH 7 AS y
         |  WITH 2 AS y, 3 AS z
-        |  WITH z AS z, CASE
+        |  WITH a, b, z AS z, CASE
         |  WHEN a THEN 0
         |  ELSE 1
         |END AS `  UNNAMED0`
@@ -4846,7 +4845,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |    RETURN x AS x""".stripMargin,
       """WITH true AS a
         |CALL (a) {
-        |  WITH CASE
+        |  WITH a AS a, CASE
         |  WHEN a THEN 0
         |  WHEN EXISTS {
         |  RETURN CASE
@@ -4854,7 +4853,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  END AS x
         |  UNION
         |  CALL (a) {
-        |    WITH CASE
+        |    WITH a AS a, CASE
         |    WHEN a THEN 0
         |    WHEN false THEN 1
         |    WHEN EXISTS { RETURN 6 AS x } THEN 2
