@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.CreateOrInsert
+import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
@@ -69,11 +70,14 @@ case class VariableChecker(
     case (acc, Scope.Clause.Declaring(astNode, incoming, Declarations(constants, variables, _), children))
       if !(constants.isEmpty && variables.isEmpty) =>
       // redeclaration of constants
-      val redeclarationOfConstants =
-        incoming.checkIfVariablesAreAlreadyDeclaredAsConstant(
-          (constants ++ variables).toSet,
-          acc.scopeContext.isInstanceOf[SubqueryExpression]
-        )
+      val redeclarationOfConstants = astNode match {
+        case _: Foreach => Seq.empty // historically, the FOREACH iteration variable is allowed to shadow
+        case _ =>
+          incoming.checkIfVariablesAreAlreadyDeclaredAsConstant(
+            (constants ++ variables).toSet,
+            acc.scopeContext.isInstanceOf[SubqueryExpression]
+          )
+      }
       // redeclaration of variables
       val redeclarationOfVariables = astNode match {
         case _: CommandClause =>
@@ -323,7 +327,7 @@ case class VariableChecker(
 
   private def collectSemanticErrors(workingScope: WorkingScope) = workingScope.folder.treeFold(Acc.init) {
     case s @ ExpressionScope(_: IterableExpression, _, _, d, _) => {
-      case acc @ Acc(_, dCtx: DeclaringContext, _, _) if dCtx.declared.nonEmpty =>
+      case acc @ Acc(_, dCtx: DeclaringContext, _, _, _) if dCtx.declared.nonEmpty =>
         updateAccAndTraverse(acc, s)(_acc =>
           TraverseChildrenNewAccForSiblings(
             _acc.inVariableContext(dCtx.updateDeclared(d.constants.toSet)),
@@ -347,6 +351,7 @@ case class VariableChecker(
             tailAcc.scopeContext,
             tailAcc.variableContext,
             tailAcc.projectionContext,
+            tailAcc.foreachContext,
             trunkAcc.errors ++ tailAcc.errors
           ))
         })
@@ -369,6 +374,13 @@ case class VariableChecker(
           TraverseChildrenNewAccForSiblings(
             _acc.inMatchingPattern,
             acc => acc.inVariableContext(_acc.variableContext)
+          )
+        )
+    case s @ StatementScope(f: Foreach, incoming, _, _, _, _, _) => acc =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.withForeachClause(incoming.allSymbols filterNot (_.name == f.variable.name)),
+            acc => acc.inForeachClause(_acc.foreachContext)
           )
         )
     case s @ StatementScope(p: ProjectionClause, incoming, _, _, _, _, children) => acc =>
