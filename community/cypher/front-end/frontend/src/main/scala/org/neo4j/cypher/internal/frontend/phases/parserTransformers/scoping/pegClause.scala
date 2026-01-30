@@ -213,10 +213,14 @@ object pegClause {
               case (true, Some(procedureResult)) =>
                 // concrete YIELD a, b, ...
                 val resultColumns = procedureResult.items.map(_.variable)
+                val outgoing = incoming.amendedWith(resultColumns.toSet)
+                val yieldWhereScopeOpt = declaredResult.flatMap(_.where.map(_.expression)).map(yW =>
+                  pegExpression(yW, outgoing.constantChildContext())
+                )
                 incoming.resultScope(
-                  incoming.amendedWith(resultColumns.toSet),
+                  outgoing,
                   TableResult(resultColumns),
-                  children,
+                  children ++ yieldWhereScopeOpt,
                   referenced,
                   Declarations(Seq.empty, resultColumns)
                 )
@@ -228,9 +232,13 @@ object pegClause {
               case (false, Some(procedureResult)) =>
                 // concrete YIELD a, b, ...
                 val resultColumns = procedureResult.items.map(_.variable)
+                val outgoing = incoming.amendedWith(resultColumns.toSet)
+                val yieldWhereScopeOpt = declaredResult.flatMap(_.where.map(_.expression)).map(yW =>
+                  pegExpression(yW, outgoing.constantChildContext())
+                )
                 incoming.noResultScope(
-                  incoming.amendedWith(resultColumns.toSet),
-                  children,
+                  outgoing,
+                  children ++ yieldWhereScopeOpt,
                   referenced,
                   Declarations(Seq.empty, resultColumns)
                 )
