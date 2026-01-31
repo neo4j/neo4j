@@ -112,6 +112,7 @@ org.neo4j.configuration.GraphDatabaseSettings::lock_acquisition_timeout org.neo4
 org.neo4j.configuration.GraphDatabaseSettings::log_queries org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_annotation_data_format org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.AnnotationDataFormat> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_early_raw_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::log_queries_obfuscate_errors org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_obfuscate_literals org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_parameter_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_query_plan org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final

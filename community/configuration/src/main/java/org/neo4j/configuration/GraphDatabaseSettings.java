@@ -885,6 +885,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
+    @Description("Obfuscates all sensitive information of errors before writing to the log. "
+            + "Note that only some errors are obfuscatable and that other errors will be missing "
+            + "error message and status description, while maintaining GQLSTATUS code. ")
+    public static final Setting<Boolean> log_queries_obfuscate_errors =
+            newBuilder("db.logs.query.obfuscate_errors", BOOL, false).dynamic().build();
+
     @Description("Log query plan description table, useful for debugging purposes.")
     public static final Setting<Boolean> log_queries_query_plan = newBuilder(
                     "db.logs.query.plan_description_enabled", BOOL, false)
