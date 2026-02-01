@@ -849,6 +849,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_obfuscate_literals =
             newBuilder( "dbms.logs.query.obfuscate_literals", BOOL, false ).dynamic().build();
 
+    @Description( "Obfuscates all sensitive information of errors before writing to the log by removing failureReason field." +
+            "Note that this can mean no error information is being logged." )
+    public static final Setting<Boolean> log_queries_obfuscate_errors =
+            newBuilder("db.logs.query.obfuscate_errors", BOOL, false).dynamic().build();
+
     @Description( "Log query plan description table, useful for debugging purposes." )
     @DocumentedDefaultValue( "false" )
     public static final Setting<Boolean> log_queries_query_plan =
