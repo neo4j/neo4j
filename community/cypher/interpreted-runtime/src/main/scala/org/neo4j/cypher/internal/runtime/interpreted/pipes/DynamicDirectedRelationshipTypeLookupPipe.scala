@@ -139,6 +139,13 @@ abstract class DynamicRelationshipTypeLookupBase[A](state: QueryState) {
   protected def seek(descriptor: IndexDescriptor, predicates: Array[PropertyIndexQuery.ExactPredicate]): A
   protected def propertyFilter(scan: A, predicates: Array[PropertyIndexQuery.ExactPredicate]): A
 
+  private def orderedSeek(descriptor: IndexDescriptor, predicates: Array[PropertyIndexQuery.ExactPredicate]): A =
+    seek(
+      descriptor,
+      descriptor.schema().getPropertyIds
+        .map(id => predicates.find(id == _.propertyKeyId()).get)
+    )
+
   private def typeScan(relTypes: Option[Array[Option[Int]]], operator: SetOperator): A = {
     (relTypes, operator) match {
       case (None, _) =>
@@ -179,9 +186,9 @@ abstract class DynamicRelationshipTypeLookupBase[A](state: QueryState) {
           predicates.partition(p => index.schema().getPropertyIds.contains(p.propertyKeyId()))
 
         if (otherProps.nonEmpty) {
-          propertyFilter(seek(index, indexProps), otherProps)
+          propertyFilter(orderedSeek(index, indexProps), otherProps)
         } else {
-          seek(index, indexProps)
+          orderedSeek(index, indexProps)
         }
       }
   }

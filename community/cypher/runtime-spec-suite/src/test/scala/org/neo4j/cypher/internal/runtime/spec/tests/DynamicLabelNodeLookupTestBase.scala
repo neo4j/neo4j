@@ -34,6 +34,8 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 
+import scala.collection.immutable.ListMap
+
 object DynamicLabelNodeLookupTestBase
 
 abstract class DynamicLabelNodeLookupTestBase[CONTEXT <: RuntimeContext](
@@ -762,6 +764,48 @@ abstract class DynamicLabelNodeLookupTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .filter("true")
       .dynamicLabelNodeLookup("x", "['A', 'B']", All, Map("age" -> "21", "name" -> "'bob'"))
+      .build()
+
+    val (res, prof) = executeAndProfile(logicalQuery, runtime)
+
+    res should beColumns("x").withRows(singleColumn(expected))
+      .usingAnyIndexes(2, compositeIndex, ageIndex, nameIndex)
+
+    val profiledIndexes = prof.find("DynamicLabelNodeLookup")
+      .head
+      .arguments
+      .collectFirst { case UsedIndexes(indexes) => indexes }
+
+    profiledIndexes shouldBe defined
+    profiledIndexes.get.values.sum shouldBe 1
+  }
+
+  test("should pass property predicates to the kernel seek in the same order as they are defined in the index") {
+    val compositeIndex = "the_composite_index"
+    val ageIndex = "age_index"
+    val nameIndex = "name_index"
+
+    val expected = givenGraph {
+      nodeIndex("A")(_.withName(compositeIndex).on("age").on("name"))
+
+      // not matched
+      newNode("B", "age" -> 21, "name" -> "bob")
+      newNode("A", "age" -> 22, "name" -> "bob")
+      newNode("A", "B", "age" -> 21)
+      newNode("A", "B", "name" -> "bob")
+
+      // matched
+      Seq(
+        newNode("A", "age" -> 21, "name" -> "bob"),
+        newNode("A", "B", "age" -> 21, "name" -> "bob", "notes" -> "jumentous"),
+        newNode("A", "B", "name" -> "bob", "age" -> 21)
+      )
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("true")
+      .dynamicLabelNodeLookup("x", "'A'", All, ListMap("name" -> "'bob'", "age" -> "21"))
       .build()
 
     val (res, prof) = executeAndProfile(logicalQuery, runtime)

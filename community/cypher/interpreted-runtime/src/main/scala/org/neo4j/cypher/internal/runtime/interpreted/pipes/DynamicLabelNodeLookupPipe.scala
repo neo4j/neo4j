@@ -74,6 +74,16 @@ abstract class DynamicLabelNodeLookupBase[A](state: QueryState) {
   protected def anyLabel(labels: Array[Int]): A
   protected def label(label: Int): A
 
+  private def orderedSeek(
+    index: IndexDescriptor,
+    properties: Seq[PropertyIndexQuery.ExactPredicate]
+  ): A =
+    seek(
+      index,
+      index.schema().getPropertyIds
+        .map(id => properties.find(id == _.propertyKeyId()).get)
+    )
+
   private def getIndexComparator: Comparator[IndexDescriptor] =
     state.indexComparatorFactory.createComparator(state.query.dataRead, state.query.transactionalContext.schemaRead)
 
@@ -136,15 +146,15 @@ abstract class DynamicLabelNodeLookupBase[A](state: QueryState) {
             (otherLabels.nonEmpty, otherProps.nonEmpty) match {
               case (true, true) =>
                 labelFilter(
-                  propertyFilter(seek(index, indexProps), otherProps.toArray),
+                  propertyFilter(orderedSeek(index, indexProps), otherProps.toArray),
                   otherLabels
                 )
               case (true, false) =>
-                labelFilter(seek(index, indexProps), otherLabels)
+                labelFilter(orderedSeek(index, indexProps), otherLabels)
               case (false, true) =>
-                propertyFilter(seek(index, indexProps), otherProps.toArray)
+                propertyFilter(orderedSeek(index, indexProps), otherProps.toArray)
               case (false, false) =>
-                seek(index, indexProps)
+                orderedSeek(index, indexProps)
             }
           }
 

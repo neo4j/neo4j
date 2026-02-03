@@ -1232,4 +1232,47 @@ abstract class DynamicRelationshipTypeLookupTestBase[CONTEXT <: RuntimeContext](
           .usingIndexes(2, indexName)
     }
   }
+
+  test("should pass property predicates to the kernel seek in the same order as they are defined in the index") {
+    val indexName = "R_on_prop_and_prop2"
+    val expected = givenGraph {
+      relationshipIndex("R")(_.on("prop").on("prop2").withName(indexName))
+
+      val relType = RelationshipType.withName("R")
+
+      // MATCHED
+      val n = tx.createNode()
+      val r = n.createRelationshipTo(tx.createNode(), relType)
+      r.setProperty("prop", 1)
+      r.setProperty("prop2", 2)
+
+      // NOT MATCHED
+      tx.createNode().createRelationshipTo(tx.createNode(), relType)
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")).setProperty("prop2", 1)
+
+      Seq(r)
+    }
+
+    Seq(All, Any).foreach { operator =>
+      val dynamicType = operator match {
+        case All => "$('R')"
+        case Any => "$any('R')"
+      }
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r", "x", "y")
+        .filter("true")
+        .dynamicRelationshipTypeLookup(
+          "(x)-[r]-(y)",
+          dynamicType,
+          propertyPredicates = Map("prop2" -> "2", "prop" -> "1")
+        )
+        .build()
+
+      profile(logicalQuery, runtime) should
+        beColumns("r", "x", "y").withRows(expectUndirected(expected))
+          .usingIndexes(2, indexName)
+    }
+  }
 }
