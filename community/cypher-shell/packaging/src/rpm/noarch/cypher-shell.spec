@@ -8,7 +8,7 @@ URL: https://github.com/neo4j/neo4j
 Source0: https://github.com/neo4j/neo4j/archive/%{version}.tar.gz
 
 #Conflicts:
-Requires: which, java-17 >= 17
+Requires: which, (java-21 or java-17)
 BuildArch: noarch
 Prefix: /usr
 

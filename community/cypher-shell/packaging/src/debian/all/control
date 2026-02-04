@@ -8,7 +8,7 @@ Homepage: https://neo4j.com/
 
 Package: cypher-shell
 Architecture: all
-Depends: ${misc:Depends}, java17-runtime | jdk-17
+Depends: ${misc:Depends}, java21-runtime | jdk-21 | java17-runtime | jdk-17
 Replaces: neo4j (<< 3.1.4), neo4j-enterprise (<< 3.1.4)
 Breaks: neo4j (<< 3.1.4), neo4j-enterprise (<< 3.1.4)
 Description: command line shell for neo4j
