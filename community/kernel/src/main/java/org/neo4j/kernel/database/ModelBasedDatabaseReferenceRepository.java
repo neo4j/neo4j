@@ -71,6 +71,7 @@ public class ModelBasedDatabaseReferenceRepository implements DatabaseReferenceR
 
     private String normalizeCatalogName(String databaseAlias) {
         // catalog has been quoted due to a .
+        // TODO: quoted composite name literals need to keep quotation
         if (databaseAlias.matches("`.*\\..*`")) {
             String unquoted = databaseAlias.substring(1, databaseAlias.length() - 1);
             return unquoted.replace("``", "`");
