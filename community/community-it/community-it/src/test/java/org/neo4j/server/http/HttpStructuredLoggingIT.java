@@ -114,8 +114,8 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
         } finally {
             bootstrapper.stop();
 
-            // Make sure the log manager flushes everything.
-            LogManager.shutdown();
+            // Make sure the log manager flushes everything for current and all contexts
+            LogManager.shutdown(true, true);
         }
         assertThat(response.statusCode()).isEqualTo(200);
 
