@@ -55,9 +55,9 @@ public interface WebServer {
 
     void removeFilter(Filter filter, String pathSpec);
 
-    void addStaticContent(String contentLocation, String serverMountPoint);
+    void addStaticContent(StaticContent contentLocation, String serverMountPoint);
 
-    void removeStaticContent(String contentLocation, String serverMountPoint);
+    void removeStaticContent(String serverMountPoint);
 
     void setWadlEnabled(boolean wadlEnabled);
 
