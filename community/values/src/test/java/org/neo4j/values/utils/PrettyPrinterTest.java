@@ -288,26 +288,26 @@ class PrettyPrinterTest {
     void shouldHandleNestedLists() {
         // Given
         PrettyPrinter printer = new PrettyPrinter();
-        ListValue list = list(intValue(1), list(intValue(2), intValue(3)), intValue(4));
+        ListValue list = list(list(intValue(1), intValue(2)), intValue(3), list(list(intValue(4)), intValue(5)));
 
         // When
         list.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("[1, [2, 3], 4]");
+        assertThat(printer.value()).isEqualTo("[[1, 2], 3, [[4], 5]]");
     }
 
     @Test
     void shouldHandleListsWithListsAndMaps() {
         // Given
         PrettyPrinter printer = new PrettyPrinter();
-        ListValue list = list(intValue(1), list(intValue(2), props("k", intValue(3))));
+        ListValue list = list(props("a", intValue(1)), list(intValue(2), props("k", intValue(3))));
 
         // When
         list.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("[1, [2, {k: 3}]]");
+        assertThat(printer.value()).isEqualTo("[{a: 1}, [2, {k: 3}]]");
     }
 
     @Test

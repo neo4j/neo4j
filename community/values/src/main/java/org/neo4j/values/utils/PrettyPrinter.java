@@ -545,6 +545,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
         @Override
         public void nest() {
             write(sep);
+            sep = ", ";
         }
     }
 
