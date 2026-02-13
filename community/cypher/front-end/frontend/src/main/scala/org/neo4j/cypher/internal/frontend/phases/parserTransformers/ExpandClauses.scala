@@ -861,8 +861,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
             clause match {
               case w: With
                 if version != CypherVersion.Cypher5 &&
-                  !clause.isAggregating && w.withType != ParsedAsYield &&
-                  !layout.importingWith.contains(PositionedNode(w)) =>
+                  !clause.isAggregating && w.withType != ParsedAsYield =>
                 scopeState.getOutgoingVariablesAndConstantsReturnItemSeq(clause)
                   .filterNot(i =>
                     returnItems.items.exists(_.name == i.name) || !layout.referencedByQuery.exists(_.name == i.name)

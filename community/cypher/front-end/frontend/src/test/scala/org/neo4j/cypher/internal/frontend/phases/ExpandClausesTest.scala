@@ -1226,7 +1226,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
     )
     assertRewritten(
       "WITH 1 AS a CALL { WITH * WITH * RETURN 1 AS x } RETURN *",
-      "WITH 1 AS a CALL { WITH a AS a RETURN 1 AS x } RETURN a, x"
+      "WITH 1 AS a CALL { RETURN 1 AS x } RETURN a, x"
     )
 
     assertRewritten(
@@ -1331,7 +1331,6 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN *""".stripMargin,
       """UNWIND [1, 2, 3] AS i
         |CALL {
-        |  WITH i AS i
         |  RETURN 1 AS z
         |}
         |RETURN i AS i, z AS z""".stripMargin
@@ -2388,6 +2387,88 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |RETURN 1 AS x, 2 AS y""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
       additionalActualAstCleanup = withUpdate()
+    )
+  }
+
+  test("Importing with after foreach") {
+    assertRewritten(
+      """WITH 1 AS v1
+        |FOREACH ( w1 IN [] |
+        |  CREATE ()
+        |)
+        |WITH *, 1 AS v2
+        |CALL {
+        |  WITH *
+        |  RETURN 1 AS v3
+        |}
+        |RETURN 2 AS v4""".stripMargin,
+      """WITH 1 AS v1
+        |FOREACH ( w1 IN [] |
+        |  CREATE ()
+        |)
+        |WITH 1 AS v2
+        |CALL {
+        |  RETURN 1 AS v3
+        |}
+        |RETURN 2 AS v4""".stripMargin
+    )
+  }
+
+  test("Importing with after foreach correlated") {
+    assertRewritten(
+      """WITH 1 AS v1
+        |FOREACH ( w1 IN [] |
+        |  CREATE ()
+        |)
+        |WITH *, 1 AS v2
+        |CALL {
+        |  WITH *
+        |  RETURN 1 + v1 AS v3
+        |}
+        |RETURN 2 AS v4""".stripMargin,
+      """WITH 1 AS v1
+        |FOREACH ( w1 IN [] |
+        |  CREATE ()
+        |)
+        |WITH v1 AS v1, 1 AS v2
+        |CALL {
+        |  WITH v1 AS v1
+        |  RETURN 1 + v1 AS v3
+        |}
+        |RETURN 2 AS v4""".stripMargin
+    )
+  }
+
+  test("Importing with after foreach correlated nested") {
+    assertRewritten(
+      """WITH 1 AS v1
+        |FOREACH ( w1 IN [] |
+        |  CREATE ()
+        |)
+        |WITH *, 1 AS v2
+        |CALL {
+        |  WITH *
+        |  CALL {
+        |    WITH *
+        |    RETURN 1 + v1 AS v3
+        |  }
+        |  RETURN v3
+        |}
+        |RETURN 2 AS v4""".stripMargin,
+      """WITH 1 AS v1
+        |FOREACH ( w1 IN [] |
+        |  CREATE ()
+        |)
+        |WITH v1 AS v1, 1 AS v2
+        |CALL {
+        |  WITH v1 AS v1
+        |  CALL {
+        |  WITH v1 AS v1
+        |  RETURN 1 + v1 AS v3
+        |  }
+        |  RETURN v3 AS v3
+        |}
+        |RETURN 2 AS v4""".stripMargin
     )
   }
 
