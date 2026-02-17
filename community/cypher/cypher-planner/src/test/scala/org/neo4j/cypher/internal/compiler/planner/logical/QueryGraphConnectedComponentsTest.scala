@@ -34,14 +34,15 @@ import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SelectivePathPattern.CountInteger
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VectorSearchClause
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class QueryGraphConnectedComponentsTest
-    extends CypherFunSuite with LogicalPlanningTestSupport {
+class QueryGraphConnectedComponentsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private val A = v"a"
   private val B = v"b"
@@ -514,5 +515,25 @@ class QueryGraphConnectedComponentsTest
 
     val components = graph.connectedComponents
     components should equal(Seq(graph))
+  }
+
+  test("should place predicates on the score variable in the same component as the search clause") {
+    val qg = QueryGraph.empty
+      .addPatternNodes(v"movie")
+      .addSearchClause(Some(VectorSearchClause(
+        resultVariable = v"movie",
+        indexName = "moviePlots",
+        embedding = listOfInt(1, 2, 3),
+        where = None,
+        limit = literal(10),
+        scoreVariable = Some(v"score")
+      )))
+      .addPredicates(
+        isNotNull(v"score"),
+        greaterThan(v"score", literal(0.5)),
+        lessThan(v"score", parameter("threshold", CTFloat))
+      )
+
+    qg.connectedComponents shouldEqual Seq(qg)
   }
 }

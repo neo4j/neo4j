@@ -344,6 +344,41 @@ class VectorSearchPlanningIntegrationTest extends CypherFunSuite
         .build()
   }
 
+  test("should plan score filter in a query with multiple MATCH clauses") {
+    val planner = plannerBuilder().build()
+
+    val query =
+      """MATCH (movie:Movie)
+        |  SEARCH movie IN (
+        |    VECTOR INDEX moviePlots
+        |    FOR $embedding
+        |    LIMIT 10
+        |  ) SCORE AS similarity
+        |WHERE similarity > 0.8
+        |MATCH (node)
+        |RETURN movie.plot, similarity, node""".stripMargin
+
+    val plan = planner.plan(CypherVersion.Cypher25, query)
+    plan shouldEqual planner.planBuilder()
+      .produceResults("`movie.plot`", "similarity", "node")
+      .projection("cacheN[movie.plot] AS `movie.plot`")
+      .apply()
+      .|.allNodeScan("node", "movie", "similarity")
+      .filter("similarity > 0.8")
+      .nodeVectorIndexSearch(
+        node = "movie",
+        labelNames = Seq("Movie"),
+        properties = Seq("plot", "imdbRating", "releaseYear"),
+        indexName = "moviePlots",
+        vector = "$embedding",
+        limit = "10",
+        score = "similarity",
+        argumentIds = Set(),
+        getValueFromIndex = Map("plot" -> GetValue, "imdbRating" -> DoNotGetValue, "releaseYear" -> DoNotGetValue)
+      )
+      .build()
+  }
+
   // TODO: see Example SQ2 in CIP-224
   //  See PLAN-3087
   ignore("plan node vector index search, where the embedding refers to the binding variable") {

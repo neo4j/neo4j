@@ -34,6 +34,7 @@ sealed trait SearchClause {
   def resultVariable: LogicalVariable
   def dependencies: Set[LogicalVariable]
   def inlinedPredicatesSet: ListSet[Expression]
+  def availableSymbols: Set[LogicalVariable]
 }
 
 case class VectorSearchClause(
@@ -50,6 +51,8 @@ case class VectorSearchClause(
   override def inlinedPredicatesSet: ListSet[Expression] = {
     where.fold(ListSet.empty[Expression])(w => Ands.unwrap(w.expression))
   }
+
+  override def availableSymbols: Set[LogicalVariable] = Set(resultVariable) ++ scoreVariable
 
   override def toString: String = {
     val embeddingStr = SearchClause.stringifier(embedding)

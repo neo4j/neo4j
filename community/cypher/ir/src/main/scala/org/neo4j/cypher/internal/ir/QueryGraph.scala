@@ -468,7 +468,8 @@ final case class QueryGraph private (
   def idsWithoutOptionalMatchesOrUpdates: Set[LogicalVariable] =
     coveredIdsForPatterns ++
       argumentIds ++
-      shortestRelationshipPatterns.flatMap(_.availableSymbols)
+      shortestRelationshipPatterns.flatMap(_.availableSymbols) ++
+      searchClause.fold(Set.empty[LogicalVariable])(_.availableSymbols)
 
   /**
    * All variables that are bound after this QG has been matched
