@@ -22,6 +22,7 @@ package org.neo4j.fabric.bookmark;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.time.Duration;
+import java.util.Optional;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -50,27 +51,19 @@ public class LocalGraphTransactionIdTracker {
     }
 
     public void awaitGraphUpToDate(Location.Local location, long transactionId) {
-        var namedDatabaseId = getNamedDatabaseId(location);
-        awaitGraphUpToDate(namedDatabaseId, transactionId);
+        getNamedDatabaseId(location).ifPresent(databaseId -> awaitGraphUpToDate(databaseId, transactionId));
     }
 
     private void awaitGraphUpToDate(NamedDatabaseId namedDatabaseId, long transactionId) {
         transactionIdTracker.awaitUpToDate(namedDatabaseId, transactionId, bookmarkTimeout);
     }
 
-    public long getTransactionId(Location.Local location) {
-        var namedDatabaseId = getNamedDatabaseId(location);
-        return transactionIdTracker.newestTransactionId(namedDatabaseId);
+    public Optional<Long> getTransactionId(Location.Local location) {
+        return getNamedDatabaseId(location).map(transactionIdTracker::newestTransactionId);
     }
 
-    private NamedDatabaseId getNamedDatabaseId(Location.Local location) {
+    private Optional<NamedDatabaseId> getNamedDatabaseId(Location.Local location) {
         DatabaseId databaseId = DatabaseIdFactory.from(location.getUuid());
-        var namedDatabaseId = databaseIdRepository.getById(databaseId);
-        if (namedDatabaseId.isEmpty()) {
-            // this can only happen when the database has just been deleted or someone tempered with a bookmark
-            throw new IllegalArgumentException("A local graph could not be mapped to a database");
-        }
-
-        return namedDatabaseId.get();
+        return databaseIdRepository.getById(databaseId);
     }
 }

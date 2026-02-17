@@ -78,8 +78,10 @@ public class AutocommitLocalStatementResult implements StatementResult, Compound
     }
 
     private void doCommit() {
-        long transactionId = transactionIdTracker.getTransactionId(location);
         transaction.commit();
-        bookmarkManager.localTransactionCommitted(location, new LocalBookmark(transactionId));
+        transactionIdTracker
+                .getTransactionId(location)
+                .ifPresent(transactionId ->
+                        bookmarkManager.localTransactionCommitted(location, new LocalBookmark(transactionId)));
     }
 }

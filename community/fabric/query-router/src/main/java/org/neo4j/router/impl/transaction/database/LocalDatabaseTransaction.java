@@ -100,8 +100,10 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
             translateLocalError(() -> internalTransaction.commit());
         }
 
-        long transactionId = transactionIdTracker.getTransactionId(location);
-        bookmarkManager.localTransactionCommitted(location, new LocalBookmark(transactionId));
+        transactionIdTracker
+                .getTransactionId(location)
+                .ifPresent(transactionId ->
+                        bookmarkManager.localTransactionCommitted(location, new LocalBookmark(transactionId)));
     }
 
     @Override

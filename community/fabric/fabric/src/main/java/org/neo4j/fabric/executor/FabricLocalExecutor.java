@@ -264,8 +264,10 @@ public class FabricLocalExecutor {
 
         private void doCommit() {
             fabricKernelTransaction.commit();
-            long transactionId = transactionIdTracker.getTransactionId(location);
-            bookmarkManager.localTransactionCommitted(location, new LocalBookmark(transactionId));
+            transactionIdTracker
+                    .getTransactionId(location)
+                    .ifPresent(transactionId ->
+                            bookmarkManager.localTransactionCommitted(location, new LocalBookmark(transactionId)));
         }
 
         private void doRollback() {
