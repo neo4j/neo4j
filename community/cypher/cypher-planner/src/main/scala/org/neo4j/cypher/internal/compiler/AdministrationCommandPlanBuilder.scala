@@ -286,6 +286,43 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case HomeGraphScope()             => plans.HomeScope
     }
 
+    def blockSubqueries(q: SingleQuery) = {
+      q.folder.treeExists {
+        case p: PatternExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
+            "Pattern expression",
+            "You cannot include a pattern expression on a system database",
+            p.position
+          )
+        case p: PatternComprehension =>
+          throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
+            "Pattern comprehension",
+            "You cannot include a pattern comprehension on a system database",
+            p.position
+          )
+        case c: CollectExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
+            "COLLECT expression",
+            "You cannot include a COLLECT expression on a system database",
+            c.position
+          )
+        case c: CountExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
+            "COUNT expression",
+            "You cannot include a COUNT expression on a system database",
+            c.position
+          )
+        case c: ExistsExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
+            "EXISTS expression",
+            "You cannot include an EXISTS expression on a system database",
+            c.position
+          )
+        case c: SubqueryExpression =>
+          throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
+            "Subquery expression",
+            "You cannot include a subquery expression on a system database",
+            c.position
+          )
+      }
+    }
+
     val maybeLogicalPlan: Option[plans.LogicalPlan] = from.statement() match {
       // SHOW USERS
       case su: ShowUsers => Some(plans.ShowUsers(
@@ -1397,67 +1434,37 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         ))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
-      case SingleQuery(Seq(
+      case q @ SingleQuery(Seq(
           resolved @ ResolvedCall(signature, _, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
         )) if signature.systemProcedure =>
+        blockSubqueries(q)
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
-      case SingleQuery(Seq(
+      case q @ SingleQuery(Seq(
           UseGraph(GraphDirectReference(CatalogName(List(SYSTEM_DATABASE_NAME)))),
           resolved @ ResolvedCall(signature, _, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
         )) if signature.systemProcedure =>
+        blockSubqueries(q)
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
-      case SingleQuery(Seq(resolved @ ResolvedCall(signature, _, _, _, _, _, _))) if signature.systemProcedure =>
+      case q @ SingleQuery(Seq(resolved @ ResolvedCall(signature, _, _, _, _, _, _))) if signature.systemProcedure =>
+        blockSubqueries(q)
         Some(planSystemProcedureCall(resolved, None))
 
-      case SingleQuery(
+      case q @ SingleQuery(
           Seq(
             UseGraph(GraphDirectReference(CatalogName(List(SYSTEM_DATABASE_NAME)))),
             resolved @ ResolvedCall(signature, _, _, _, _, _, _)
           )
         ) if signature.systemProcedure =>
+        blockSubqueries(q)
         Some(planSystemProcedureCall(resolved, None))
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
       case q @ SingleQuery(clauses) if checkClausesAllowedOnSystem(clauses) =>
-        q.folder.treeExists {
-          case p: PatternExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
-              "Pattern expression",
-              "You cannot include a pattern expression on a system database",
-              p.position
-            )
-          case p: PatternComprehension =>
-            throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
-              "Pattern comprehension",
-              "You cannot include a pattern comprehension on a system database",
-              p.position
-            )
-          case c: CollectExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
-              "COLLECT expression",
-              "You cannot include a COLLECT expression on a system database",
-              c.position
-            )
-          case c: CountExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
-              "COUNT expression",
-              "You cannot include a COUNT expression on a system database",
-              c.position
-            )
-          case c: ExistsExpression => throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
-              "EXISTS expression",
-              "You cannot include an EXISTS expression on a system database",
-              c.position
-            )
-          case c: SubqueryExpression =>
-            throw context.cypherExceptionFactory.unsupportedRequestOnSystemDatabaseException(
-              "Subquery expression",
-              "You cannot include a subquery expression on a system database",
-              c.position
-            )
-        }
-
+        blockSubqueries(q)
         Some(plans.AllowedNonAdministrationCommands(q))
 
       case q =>
