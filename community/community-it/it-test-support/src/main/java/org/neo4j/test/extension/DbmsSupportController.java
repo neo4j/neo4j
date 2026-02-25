@@ -174,7 +174,9 @@ public class DbmsSupportController {
 
     public void shutdown() {
         var databaseManagementService = getStore(context).remove(DBMS_KEY, DatabaseManagementService.class);
-        databaseManagementService.shutdown();
+        if (databaseManagementService != null) {
+            databaseManagementService.shutdown();
+        }
     }
 
     public DbmsController asDbmsController() {
