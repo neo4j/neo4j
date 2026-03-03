@@ -227,6 +227,20 @@ class MergeRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(before) should equal(after)
   }
 
+  test("should not rewrite merge + unique node index when onMatch depends on merge variable") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("x")
+      .merge(
+        Seq(createNodeWithProperties("x", Seq("X"), "{prop: 42}")),
+        onMatch = Seq(setNodeProperty("x", "onMatch", "x.onCreate + 1")),
+        onCreate = Seq(setNodeProperty("x", "onCreate", "rand()"))
+      )
+      .nodeIndexOperator("x:X(prop=42)", unique = true)
+      .build()
+
+    assertNotRewritten(plan)
+  }
+
   private def assertNotRewritten(p: LogicalPlan, supportsFastExpandInto: Boolean = true): Unit = {
     rewrite(p, supportsFastExpandInto) should equal(p)
   }
