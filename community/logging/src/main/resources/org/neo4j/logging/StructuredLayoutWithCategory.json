@@ -1,0 +1,29 @@
+{
+  "time": {
+    "$resolver": "timestamp",
+    "pattern": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSSZ",
+      "timeZone": "UTC"
+    }
+  },
+  "level": {
+    "$resolver": "level",
+    "field": "name"
+  },
+  "category": {
+    "$resolver": "pattern",
+    "pattern": "%c{1.}",
+    "stackTraceEnabled": false
+  },
+  "includeFullMap": {
+    "$resolver": "map",
+    "flatten": true
+  },
+  "stacktrace": {
+    "$resolver": "exception",
+    "field": "stackTrace",
+    "stackTrace": {
+      "stringified": true
+    }
+  }
+}
