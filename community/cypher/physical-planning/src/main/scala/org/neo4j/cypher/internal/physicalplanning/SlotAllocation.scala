@@ -872,6 +872,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case u: MergeInto =>
         slots.newLong(u.idName, nullable, CTRelationship)
+        recordArgument(lp)
 
       case Optional(_, _) =>
         recordArgument(lp)

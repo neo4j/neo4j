@@ -825,6 +825,40 @@ abstract class MergeIntoTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).rows() shouldBe sizeHint
   }
+
+  test("mergeInto should perform with onMatch and onCreate using") {
+    assume(supportFastExpandInto())
+
+    // given
+    givenGraph {
+      nodeGraph(1, "A")
+      nodeGraph(1, "B")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("r.p AS res")
+      .apply()
+      .|.mergeInto(
+        "(x)-[r:NEXT]->(y)",
+        onCreate = Seq("p" -> "ONE"),
+        onMatch = Seq("p" -> "TWO")
+      )
+      .|.argument("x", "y", "ONE", "TWO")
+      .projection("x AS x", "y AS y", "1 AS ONE", "2 AS TWO")
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "B")
+      .nodeByLabelScan("x", "A")
+      .build(readOnly = false)
+
+    // then
+    execute(
+      logicalQuery,
+      runtime
+    ) should beColumns("res").withSingleRow(1).withStatistics(relationshipsCreated = 1, propertiesSet = 1)
+    execute(logicalQuery, runtime) should beColumns("res").withSingleRow(2).withStatistics(propertiesSet = 1)
+  }
 }
 
 object MergeIntoTestBase
