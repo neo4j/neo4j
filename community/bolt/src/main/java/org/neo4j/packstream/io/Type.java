@@ -21,6 +21,7 @@ package org.neo4j.packstream.io;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public enum Type {
     /**
@@ -54,4 +55,6 @@ public enum Type {
     public static final long INT64_MAX = Long.MAX_VALUE;
 
     public static final Charset STRING_CHARSET = StandardCharsets.UTF_8;
+
+    public static final List<Type> VALID_TYPES = List.of(BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING, STRUCT);
 }
