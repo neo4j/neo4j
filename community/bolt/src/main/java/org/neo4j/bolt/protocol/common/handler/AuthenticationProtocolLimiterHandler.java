@@ -19,17 +19,17 @@
  */
 package org.neo4j.bolt.protocol.common.handler;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.util.Stack;
 import org.neo4j.bolt.protocol.error.ClientRequestComplexityExceeded;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
 
-public class AuthenticationProtocolLimiterHandler extends SimpleChannelInboundHandler<ByteBuf> {
+public class AuthenticationProtocolLimiterHandler extends SimpleChannelInboundHandler<PackstreamBuf> {
 
     public static final long SHALLOW_SIZE =
             HeapEstimator.shallowSizeOfInstance(AuthenticationProtocolLimiterHandler.class);
@@ -46,17 +46,16 @@ public class AuthenticationProtocolLimiterHandler extends SimpleChannelInboundHa
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-        if (!msg.isReadable()) {
-            ctx.fireChannelRead(msg.retain());
+    protected void channelRead0(ChannelHandlerContext ctx, PackstreamBuf buffer) throws Exception {
+        if (!buffer.getTarget().isReadable()) {
+            ctx.fireChannelRead(buffer.retain());
             return;
         }
 
-        msg.markReaderIndex();
-        var buffer = PackstreamBuf.wrap(msg);
+        buffer.getTarget().markReaderIndex();
 
         var rootEncountered = false;
-        while (msg.isReadable()) {
+        while (buffer.getTarget().isReadable()) {
             var type = buffer.peekType();
 
             if (this.levels.isEmpty()) {
@@ -74,6 +73,7 @@ public class AuthenticationProtocolLimiterHandler extends SimpleChannelInboundHa
             switch (type) {
                 case LIST, MAP -> this.pushLevel(type, buffer.readLengthPrefixMarker(type));
                 case STRUCT -> this.pushLevel(type, buffer.readStructHeader().length());
+                case RESERVED -> throw UnexpectedTypeException.reservedType();
                 default -> {
                     buffer.skip(type);
 
@@ -86,8 +86,8 @@ public class AuthenticationProtocolLimiterHandler extends SimpleChannelInboundHa
             }
         }
 
-        msg.resetReaderIndex();
-        ctx.fireChannelRead(msg.retain());
+        buffer.getTarget().resetReaderIndex();
+        ctx.fireChannelRead(buffer.retain());
     }
 
     private boolean flipMapKey(Type type) throws PackstreamReaderException {

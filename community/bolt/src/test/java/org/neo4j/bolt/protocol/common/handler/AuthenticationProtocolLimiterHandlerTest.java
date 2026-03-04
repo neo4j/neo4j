@@ -42,24 +42,24 @@ class AuthenticationProtocolLimiterHandlerTest {
     void shouldPassEmptyMessages() {
         var msg = PackstreamBuf.allocUnpooled().writeStructHeader(new StructHeader(0, (short) 0x42));
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
     void shouldPassEmptyBuffers() {
         var msg = PackstreamBuf.allocUnpooled();
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -71,10 +71,40 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(PackstreamReaderException.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Encountered illegal root element: Expected struct");
+    }
+
+    @Test
+    void shouldRejectDuplicatedRoots() {
+        var msg = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(0, (short) 0x42))
+                .writeStructHeader(new StructHeader(3, (short) 0x42));
+
+        Assertions.assertThatExceptionOfType(PackstreamReaderException.class)
+                .isThrownBy(() -> {
+                    this.channel.writeInbound(msg);
+                    this.channel.checkException();
+                })
+                .withMessage("Encountered illegal secondary root element within message");
+    }
+
+    @Test
+    void shouldRejectNonStringKeyOnMaps() {
+        var msg = PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, (short) 0x42))
+                .writeMapHeader(1)
+                .writeInt(2)
+                .writeString("foo");
+
+        Assertions.assertThatExceptionOfType(PackstreamReaderException.class)
+                .isThrownBy(() -> {
+                    this.channel.writeInbound(msg);
+                    this.channel.checkException();
+                })
+                .withMessage("Encountered illegal map element: Expected string key");
     }
 
     @Test
@@ -88,12 +118,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 .writeInt(42)
                 .writeString("foo");
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -104,12 +134,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 .writeListHeader(0)
                 .writeStructHeader(new StructHeader(0, (short) 0x21));
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -158,12 +188,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 // Struct #2
                 .writeString("fizz");
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -186,12 +216,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 // Struct #1
                 .writeString("fizz");
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -214,12 +244,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 // Struct #1
                 .writeString("fizz");
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -231,12 +261,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 .writeListHeader(1)
                 .writeBoolean(true);
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -247,7 +277,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 64 elements");
@@ -265,7 +295,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 4 levels");
@@ -283,12 +313,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 .writeString("some-key")
                 .writeBoolean(true);
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -299,7 +329,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 64 elements");
@@ -321,7 +351,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 4 levels");
@@ -336,12 +366,12 @@ class AuthenticationProtocolLimiterHandlerTest {
                 .writeStructHeader(new StructHeader(1, (short) 0x45))
                 .writeBoolean(true);
 
-        this.channel.writeInbound(msg.getTarget());
+        this.channel.writeInbound(msg);
         this.channel.checkException();
 
         var received = this.channel.readInbound();
 
-        Assertions.assertThat(received).isSameAs(msg.getTarget());
+        Assertions.assertThat(received).isSameAs(msg);
     }
 
     @Test
@@ -352,7 +382,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 64 elements");
@@ -364,7 +394,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 64 elements");
@@ -382,7 +412,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 4 levels");
@@ -402,7 +432,7 @@ class AuthenticationProtocolLimiterHandlerTest {
 
         Assertions.assertThatExceptionOfType(ClientRequestComplexityExceeded.class)
                 .isThrownBy(() -> {
-                    this.channel.writeInbound(msg.getTarget());
+                    this.channel.writeInbound(msg);
                     this.channel.checkException();
                 })
                 .withMessage("Message has exceeded maximum permitted complexity of 4 levels");

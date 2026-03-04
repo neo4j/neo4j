@@ -353,12 +353,12 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
 
         @Override
         public int maxAuthenticationStructureElements() {
-            return 0;
+            return this.maxAuthenticationStructureElements;
         }
 
         @Override
         public int maxAuthenticationStructureDepth() {
-            return 0;
+            return this.maxAuthenticationStructureDepth;
         }
 
         @Override

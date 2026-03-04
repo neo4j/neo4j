@@ -91,6 +91,15 @@ public class UnexpectedTypeException extends PackstreamReaderException
                 actual);
     }
 
+    public static UnexpectedTypeException reservedType() {
+        return new UnexpectedTypeException(
+                GqlHelper.getGql22G03_22N01(
+                        Type.RESERVED.name(),
+                        Type.VALID_TYPES.stream().map(Enum::name).toList(),
+                        Type.RESERVED.name()),
+                Type.RESERVED);
+    }
+
     @Deprecated
     protected UnexpectedTypeException(String message, Type expected, Type actual) {
         super(message);

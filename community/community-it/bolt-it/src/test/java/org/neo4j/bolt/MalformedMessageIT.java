@@ -134,9 +134,7 @@ public class MalformedMessageIT {
 
         // Then
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(
-                        Status.Request.Invalid,
-                        "Illegal value for field \"statement\": Unexpected type: Expected STRING but got RESERVED");
+                .receivesFailureV40(Status.Request.Invalid, "Unexpected type: RESERVED");
     }
 
     @ProtocolTest
@@ -156,24 +154,18 @@ public class MalformedMessageIT {
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailureWithCause(
                         Status.Request.Invalid,
-                        "Illegal value for field \"statement\": Unexpected type: Expected STRING but got RESERVED",
-                        GqlStatusInfoCodes.STATUS_08N06.getGqlStatus(),
-                        "error: connection exception - protocol error. General network protocol error.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCauseWithInnerCause(
-                                "22G03",
-                                GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
-                                "error: data exception - invalid value type",
-                                // 22G03 has UNKNOWN classification, no parameters and no position, so no diagnostic
-                                // record is sent over Bolt.
-                                // Instead a default diagnostic record is created on driver side.
-                                null,
-                                BoltConnectionAssertions.assertErrorCause(
-                                        "22N01: Expected the value 0 to be of type STRING, but was of type RESERVED.",
-                                        GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
-                                        "error: data exception - invalid type. Expected the value 0 to be of type STRING, but was of type RESERVED.",
-                                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord(
-                                                "CLIENT_ERROR"))));
+                        "Unexpected type: RESERVED",
+                        GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
+                        "error: data exception - invalid value type",
+                        BoltConnectionAssertions.assertErrorCause(
+                                "22N01: Expected the value RESERVED to"
+                                        + " be of type BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING or STRUCT, but was "
+                                        + "of type RESERVED.",
+                                GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
+                                "error: data exception - invalid type. Expected the value RESERVED to "
+                                        + "be of type BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING or STRUCT, but was "
+                                        + "of type RESERVED.",
+                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR")));
     }
 
     @TransportTest
