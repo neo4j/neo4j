@@ -997,7 +997,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val rewritten = query.logicalPlan.endoRewrite(bottomUpWithParent(
       RewriterWithParent.lift {
         case (rhs: LogicalPlan, Some(parent: TransactionApply)) if parent.right == rhs =>
-          rhs.endoRewrite(RussianRoulette(0.0005, 0.25, planBuilder.idGen))
+          rhs.endoRewrite(RussianRoulette(0.0005, 0.25, planBuilder.idGen, random))
       },
       cancellation = CancellationChecker.neverCancelled()
     ))

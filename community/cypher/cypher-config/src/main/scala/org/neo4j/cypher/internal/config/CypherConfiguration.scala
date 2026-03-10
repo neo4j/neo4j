@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeConfigOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
+import org.neo4j.cypher.internal.options.CypherPipelinedBatchReuseOption
 import org.neo4j.cypher.internal.options.CypherPipelinedBatchSizePresetOption
 import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.options.CypherPlannerOption
@@ -141,6 +142,7 @@ class CypherConfiguration private (val config: Config) {
     CypherPipelinedBatchSizePresetOption.fromConfig(config)
   def pipelinedBatchSizeSmall: Int = config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small)
   def pipelinedBatchSizeBig: Int = config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big)
+  def pipelinedBatchReuse: CypherPipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.fromConfig(config)
   val doSchedulerTracing: Boolean = config.get(GraphDatabaseInternalSettings.enable_pipelined_runtime_trace)
   val schedulerTracingFile: File = config.get(GraphDatabaseInternalSettings.pipelined_scheduler_trace_filename).toFile
   val recompilationLimit: Int = config.get(GraphDatabaseInternalSettings.cypher_expression_recompilation_limit)

@@ -47,7 +47,7 @@ case class RussianRoulette(
   bangProbability: Double,
   rouletteProbability: Double,
   idGen: IdGen,
-  random: Random = Random
+  random: Random
 ) extends Rewriter {
 
   private val rouletteRewriter: Rewriter = TestPlanRewriterTemplates.everywhere(

@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
 import org.neo4j.cypher.internal.ast.semantics.CachableSemanticTable
+import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
@@ -66,6 +68,8 @@ class LogicalQueryBuilder(
 
   private val leveragedOrders: LeveragedOrders = new LeveragedOrders
 
+  private var executionModel: Option[ExecutionModel] = None
+
   def withProvidedOrder(order: ProvidedOrder): this.type = {
     providedOrders.set(idOfLastPlan, order)
     this
@@ -78,6 +82,11 @@ class LogicalQueryBuilder(
 
   def withLeveragedOrder(): this.type = {
     leveragedOrders.set(idOfLastPlan, true)
+    this
+  }
+
+  def withMorselSize(morselSize: Int): this.type = {
+    executionModel = Some(BatchedSingleThreaded(morselSize, morselSize))
     this
   }
 
@@ -96,7 +105,7 @@ class LogicalQueryBuilder(
       idGen,
       doProfile = false,
       executionPlanCacheKeyHash = 0,
-      executionModel = None
+      executionModel = executionModel
     )
   }
 

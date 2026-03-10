@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeConfigOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
+import org.neo4j.cypher.internal.options.CypherPipelinedBatchReuseOption
 import org.neo4j.cypher.internal.options.CypherPipelinedBatchSizePresetOption
 import org.neo4j.cypher.internal.options.CypherPlanMode
 import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
@@ -1313,6 +1314,7 @@ class FabricPlannerTest
         statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.default,
         planVarExpandInto = CypherPlanVarExpandInto.default,
         pipelinedBatchSizePresetOption = CypherPipelinedBatchSizePresetOption.default,
+        pipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.default,
         heapEstimatorCacheOption = CypherHeapEstimatorCacheOption.default
       )
       val expectedInner = QueryOptions(

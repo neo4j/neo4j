@@ -490,6 +490,22 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Decides how batches are allowed to be reused in pipelined and parallel runtime.")
+    public static final Setting<CypherPipelinedBatchReuse> cypher_pipelined_batch_reuse = newBuilder(
+                    "internal.cypher.pipelined.batch_reuse",
+                    ofEnum(CypherPipelinedBatchReuse.class),
+                    CypherPipelinedBatchReuse.DEFAULT)
+            .dynamic()
+            .build();
+
+    public enum CypherPipelinedBatchReuse {
+        DEFAULT,
+        DISABLED,
+        PACK,
+        FULL
+    }
+
+    @Internal
     @Description(
             "Maximum number of queries that the Cypher worker threads for the parallel runtime will start working on concurrently. "
                     + "If set to 0, a default value of `server.cypher.parallel.worker_limit` will be chosen.")

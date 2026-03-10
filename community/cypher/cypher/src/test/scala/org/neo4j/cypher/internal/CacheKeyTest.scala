@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeConfigOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
+import org.neo4j.cypher.internal.options.CypherPipelinedBatchReuseOption
 import org.neo4j.cypher.internal.options.CypherPipelinedBatchSizePresetOption
 import org.neo4j.cypher.internal.options.CypherPlanMode
 import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
@@ -84,6 +85,7 @@ class CacheKeyTest extends CypherFunSuite {
       statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.allIfPossible,
       planVarExpandInto = CypherPlanVarExpandInto.minimumCost,
       pipelinedBatchSizePresetOption = CypherPipelinedBatchSizePresetOption.small,
+      pipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.pack,
       heapEstimatorCacheOption = CypherHeapEstimatorCacheOption.disabled
     )
 
@@ -121,6 +123,7 @@ class CacheKeyTest extends CypherFunSuite {
       statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.allIfPossible,
       planVarExpandInto = CypherPlanVarExpandInto.minimumCost,
       pipelinedBatchSizePresetOption = CypherPipelinedBatchSizePresetOption.small,
+      pipelinedBatchReuseOption = CypherPipelinedBatchReuseOption.pack,
       heapEstimatorCacheOption = CypherHeapEstimatorCacheOption.disabled
     )
 

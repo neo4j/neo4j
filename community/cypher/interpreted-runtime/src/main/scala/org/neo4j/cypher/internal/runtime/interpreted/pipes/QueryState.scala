@@ -369,6 +369,10 @@ class QueryState(
       _closed = true
     }
   }
+
+  override def toString: String = {
+    s"${this.getClass.getSimpleName}(interpreted, doProfile=${profileInformation != null}, numberOfParams=${params.length}, prePopulateResults=$prePopulateResults)"
+  }
 }
 
 object QueryState {

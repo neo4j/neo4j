@@ -1104,4 +1104,36 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
     // then
     runtimeResult should beColumns("a").withRows(singleColumn(Seq(1L, 2L)))
   }
+
+  test("should not output prematurely because of accidental upstream back-pressure") {
+    // This is a regression test for a bug that caused it to fail with morsel reuse
+
+    // given
+    val nRows = 10
+    val inputRows = (0 until nRows).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply
+      .|.distinct("x AS x")
+      .|.union()
+      .|.|.selectOrSemiApply("x = 8 AND j = 1").withLeveragedOrder()
+      .|.|.|.filter("j = 2")
+      .|.|.|.argument("x")
+      .|.|.unwind("[1,2,3,4,5] AS j")
+      .|.|.selectOrSemiApply("x = 5").withLeveragedOrder()
+      .|.|.|.argument("x")
+      .|.|.argument()
+      .|.argument()
+      .input(variables = Seq("x"))
+      .withMorselSize(4)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows((0 until nRows).map { i => Array[Any](i.toLong) })
+  }
 }

@@ -835,6 +835,34 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
   }
 
+  test("conditional apply should keep order of lhs - fixed seed") {
+    setInitialSeed(-703062113323468352L)
+
+    val input = Range(0, sizeHint).map { _ =>
+      val x = randomValues.nextDouble()
+      val y = if (randomValues.nextBoolean()) true else null
+      (x, y)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .conditionalApply("y").withLeveragedOrder()
+      .|.unwind("[0] AS z") // Pipeline break
+      .|.filter(s"x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x", "y"))
+      .withMorselSize(3)
+      .build()
+
+    val inputIterator = input.iterator.map { case (x, y) => Array[Any](x, y) }
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(inputIterator))
+
+    val expected = input
+      .filter { case (x, y) => x < 0.5 || y == null }
+      .map { case (x, y) => Array(x, y) }
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
+  }
+
   test("apply with conditional apply on the rhs should keep order of lhs") {
     val input = Range(0, sizeHint).map { _ =>
       val x = randomValues.nextDouble()

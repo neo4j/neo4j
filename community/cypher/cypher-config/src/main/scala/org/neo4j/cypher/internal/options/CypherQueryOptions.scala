@@ -60,6 +60,7 @@ case class CypherQueryOptions(
   statefulShortestPlanningModeOption: CypherStatefulShortestPlanningModeOption,
   planVarExpandInto: CypherPlanVarExpandInto,
   pipelinedBatchSizePresetOption: CypherPipelinedBatchSizePresetOption,
+  pipelinedBatchReuseOption: CypherPipelinedBatchReuseOption,
   heapEstimatorCacheOption: CypherHeapEstimatorCacheOption
 ) {
 
@@ -868,6 +869,38 @@ case class CypherPipelinedBatchSize(small: Int, big: Int) {
       String.format("BatchSize(%s,%s)", small, big)
     }
   }
+}
+
+sealed abstract class CypherPipelinedBatchReuseOption(val preset: String) extends CypherKeyValueOption(preset) {
+  override def companion: CypherPipelinedBatchReuseOption.type = CypherPipelinedBatchReuseOption
+  override def cacheKey: String = "" // Does not affect the cached query
+
+  /** Does not affect the plan we produce. */
+  override def relevantForLogicalPlanCacheKey: Boolean = false
+}
+
+case object CypherPipelinedBatchReuseOption extends CypherOptionCompanion[CypherPipelinedBatchReuseOption](
+      name = "batchReuse",
+      setting = Some(GraphDatabaseInternalSettings.cypher_pipelined_batch_reuse),
+      cypherConfigField = Some(_.pipelinedBatchReuse)
+    ) {
+  case object default extends CypherPipelinedBatchReuseOption("default")
+
+  case object disabled extends CypherPipelinedBatchReuseOption("disabled")
+
+  case object pack extends CypherPipelinedBatchReuseOption("pack")
+
+  case object full extends CypherPipelinedBatchReuseOption("full")
+
+  def values: Set[CypherPipelinedBatchReuseOption] = Set(default, disabled, pack, full)
+
+  implicit val hasDefault: OptionDefault[CypherPipelinedBatchReuseOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherPipelinedBatchReuseOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherPipelinedBatchReuseOption] = OptionCacheKey.create(_.cacheKey)
+
+  implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherPipelinedBatchReuseOption] =
+    OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
+  implicit val reader: OptionReader[CypherPipelinedBatchReuseOption] = singleOptionReader()
 }
 
 sealed abstract class CypherHeapEstimatorCacheOption(val preset: String) extends CypherKeyValueOption(preset) {
