@@ -54,6 +54,7 @@ import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.VectoredPageFaultEvent;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 import org.neo4j.time.Stopwatch;
+import org.neo4j.util.VisibleForTesting;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     static final int UNMAPPED_TTE = -1;
@@ -1019,10 +1020,16 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     private int grabPageFaultLatches(long pageId, int count, LatchMap.Latch[] latches) {
         var latchesToGrab = Math.min(count, pageFaultLatches.size());
         int index = 0;
+        int[][] tt = translationTable;
         while (index < latchesToGrab) {
-            int chunkId = computeChunkId(pageId + index);
             int chunkIndex = computeChunkIndex(pageId + index);
-            int[] chunk = translationTable[chunkId];
+            int chunkId = computeChunkId(pageId + index);
+            if (chunkId >= tt.length) {
+                // it is possible we get here after last page id is updated but before translation table is enlarged by
+                // pin. we don't grow it here
+                break;
+            }
+            int[] chunk = tt[chunkId];
 
             for (; ; ) {
                 int mappedPageId = translationTableGetVolatile(chunk, chunkIndex);
@@ -1114,11 +1121,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         swapper.allocate(newFileSizeInPages * filePageSize);
     }
 
-    private int vectoredPageFault(long filePageId, int count, VectoredPageFaultEvent faultEvent) throws IOException {
+    @VisibleForTesting
+    int vectoredPageFault(long filePageId, int count, VectoredPageFaultEvent faultEvent) throws IOException {
         var latches = new LatchMap.Latch[count];
-        int numberOfPages = grabPageFaultLatches(filePageId, count, latches);
-        long[] pageRefs = new long[numberOfPages];
+        long[] pageRefs = new long[count];
         try {
+            int numberOfPages = grabPageFaultLatches(filePageId, count, latches);
             // Note: It is important that we assign the filePageId after we grabbed it.
             // If the swapping fails, the page will be considered
             // loaded for the purpose of eviction, and will eventually return to
@@ -1157,6 +1165,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 translationTableSetVolatile(translationTable[chunkId], chunkIndex, pageCachePageId);
             }
             faultEvent.addPagesFaulted(numberOfPages, pageRefs, this);
+            return numberOfPages;
         } catch (Throwable throwable) {
             faultEvent.setException(throwable);
             // mark pages as unmapped
@@ -1170,12 +1179,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             for (int i = 0; i < pageRefs.length && pageRefs[i] != 0; i++) {
                 PageList.unlockExclusive(pageRefs[i]);
             }
-            for (int i = 0; i < numberOfPages; i++) {
+            for (int i = 0; i < latches.length; i++) {
                 if (latches[i] != null) {
                     latches[i].release();
                 }
             }
         }
-        return numberOfPages;
     }
 }

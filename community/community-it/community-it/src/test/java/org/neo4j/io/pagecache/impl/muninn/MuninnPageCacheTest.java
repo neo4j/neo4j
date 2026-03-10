@@ -3078,6 +3078,63 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     }
 
     @Test
+    void vectoredPageFaultMustNotFailWhenRaicingWithPin() throws Exception {
+        getPageCache(fs, 1000, NULL);
+        Path file = file("a");
+        var fileSize = 4096;
+        generateFile(file, fileSize);
+
+        var contextFactory = createErrorThrowingCursorContextFactory();
+        try (var pf = (MuninnPagedFile) map(file, filePageSize)) {
+            try (var cursorContext = contextFactory.create("testTouch");
+                    var cursor = pf.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                // pin throwing here emulates race where file last page id is already updated but translation table
+                // isn't enlarged yet
+                assertThatThrownBy(() -> cursor.next(fileSize + 1)).isInstanceOf(RuntimeException.class);
+            }
+            assertThat(pf.vectoredPageFault(fileSize + 1, 1, VectoredPageFaultEvent.NULL))
+                    .isZero();
+            assertThat(pf.pageFaultLatches.isEmpty()).isTrue();
+        }
+    }
+
+    @Test
+    void vectoredPageFaultMustNotFailWhenRaicingWithPinManyPages() throws Exception {
+        getPageCache(fs, 1000, NULL);
+        Path file = file("a");
+        var fileSize = 4096;
+        generateFile(file, fileSize);
+
+        var contextFactory = createErrorThrowingCursorContextFactory();
+        try (var pf = (MuninnPagedFile) map(file, filePageSize)) {
+            try (var cursorContext = contextFactory.create("testTouch");
+                    var cursor = pf.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                // pin throwing here emulates race where file last page id is already updated but translation table
+                // isn't enlarged yet
+                assertThatThrownBy(() -> cursor.next(fileSize + 1)).isInstanceOf(RuntimeException.class);
+            }
+            assertThat(pf.vectoredPageFault(fileSize - 10, 20, VectoredPageFaultEvent.NULL))
+                    .isEqualTo(10);
+            assertThat(pf.pageFaultLatches.isEmpty()).isTrue();
+        }
+    }
+
+    private CursorContextFactory createErrorThrowingCursorContextFactory() {
+        var throwOnPinTracer = new DefaultPageCacheTracer(true) {
+            @Override
+            public PageCursorTracer createPageCursorTracer(String tag) {
+                return new DefaultPageCursorTracer(this, tag) {
+                    @Override
+                    public PinEvent beginPin(boolean writeLock, long filePageId, PageSwapper swapper) {
+                        throw new RuntimeException("Not so fast");
+                    }
+                };
+            }
+        };
+        return new CursorContextFactory(throwOnPinTracer, EMPTY_CONTEXT_SUPPLIER);
+    }
+
+    @Test
     void touchShouldReportFaults() throws Exception {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
         var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);

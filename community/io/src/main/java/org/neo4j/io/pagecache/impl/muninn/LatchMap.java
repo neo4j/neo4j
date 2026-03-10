@@ -108,4 +108,13 @@ final class LatchMap {
     private int index(long identifier) {
         return (int) (identifier & faultLockMask);
     }
+
+    boolean isEmpty() {
+        for (Latch latch : latches) {
+            if (latch != null) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
