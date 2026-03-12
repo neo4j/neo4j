@@ -823,18 +823,20 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
-    @Description("Obfuscates all literals of the query before writing to the log. "
-            + "Note that node labels, relationship types and map property keys are still shown. "
-            + "Changing the setting will not affect queries that are cached. So, if you want the switch "
-            + "to have immediate effect, you must also call `CALL db.clearQueryCaches()`.")
+    @Description("If true, obfuscates all literals in a query before writing the query to the query log. "
+            + "Note that node labels, relationship types, and map property keys remain visible. "
+            + "Changing the setting will not affect queries that are cached. To apply "
+            + "the change immediately, you must also call `CALL db.clearQueryCaches()`. "
+            + "It is recommended to set this setting to `true` in production.")
     public static final Setting<Boolean> log_queries_obfuscate_literals = newBuilder(
                     "db.logs.query.obfuscate_literals", BOOL, false)
             .dynamic()
             .build();
 
-    @Description("Obfuscates all sensitive information of errors before writing to the log. "
-            + "Note that only some errors are obfuscatable and that other errors will be missing "
-            + "error message and status description, while maintaining GQLSTATUS code. ")
+    @Description(
+            "If true, obfuscates all error information that can contain sensitive data before writing it to the query log. "
+                    + "This applies to `failureReason` and `statusDescription` fields when the query log uses JSON format and error messages otherwise. "
+                    + "It is recommended to set this setting to `true` in production.")
     public static final Setting<Boolean> log_queries_obfuscate_errors =
             newBuilder("db.logs.query.obfuscate_errors", BOOL, false).dynamic().build();
 
