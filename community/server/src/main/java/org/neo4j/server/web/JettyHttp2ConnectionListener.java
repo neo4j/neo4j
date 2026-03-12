@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.io.Connection;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 
@@ -28,7 +28,7 @@ public class JettyHttp2ConnectionListener implements Connection.Listener {
 
     private final NetworkConnectionTracker connectionTracker;
     private final String connectorName;
-    private final Map<Connection, String> connectionHashToConnectionId = new HashMap<>();
+    private final Map<Connection, String> connectionHashToConnectionId = new ConcurrentHashMap<>();
 
     public JettyHttp2ConnectionListener(NetworkConnectionTracker connectionTracker, String connectorName) {
         this.connectionTracker = connectionTracker;
@@ -46,5 +46,6 @@ public class JettyHttp2ConnectionListener implements Connection.Listener {
     public void onClosed(Connection connection) {
         var connectionId = connectionHashToConnectionId.get(connection);
         connectionTracker.remove(connectionTracker.get(connectionId));
+        connectionHashToConnectionId.remove(connection);
     }
 }
