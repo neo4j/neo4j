@@ -25,13 +25,27 @@ import org.neo4j.graphdb.QueryStatistics;
  * Extra query statistics collected by the Cypher runtimes that is not yet part of the public API
  */
 public interface ExtendedQueryStatistics extends QueryStatistics {
-    int getTransactionsCommitted();
+    long nodesCreated();
 
-    int getTransactionsStarted();
+    long nodesDeleted();
 
-    int getTransactionsRolledBack();
+    long relationshipsCreated();
 
-    int getFileLinesRead();
+    long relationshipsDeleted();
+
+    long propertiesSet();
+
+    long labelsAdded();
+
+    long labelsRemoved();
+
+    long getTransactionsCommitted();
+
+    long getTransactionsStarted();
+
+    long getTransactionsRolledBack();
+
+    long getFileLinesRead();
 
     ExtendedQueryStatistics EMPTY = new ExtendedQueryStatistics() {
 
@@ -106,23 +120,58 @@ public interface ExtendedQueryStatistics extends QueryStatistics {
         }
 
         @Override
-        public int getTransactionsCommitted() {
-            return 0;
+        public long nodesCreated() {
+            return 0L;
         }
 
         @Override
-        public int getTransactionsStarted() {
-            return 0;
+        public long nodesDeleted() {
+            return 0L;
         }
 
         @Override
-        public int getTransactionsRolledBack() {
-            return 0;
+        public long relationshipsCreated() {
+            return 0L;
         }
 
         @Override
-        public int getFileLinesRead() {
-            return 0;
+        public long relationshipsDeleted() {
+            return 0L;
+        }
+
+        @Override
+        public long propertiesSet() {
+            return 0L;
+        }
+
+        @Override
+        public long labelsAdded() {
+            return 0L;
+        }
+
+        @Override
+        public long labelsRemoved() {
+            return 0L;
+        }
+
+        @Override
+        public long getTransactionsCommitted() {
+            return 0L;
+        }
+
+        @Override
+        public long getTransactionsStarted() {
+            return 0L;
+        }
+
+        @Override
+        public long getTransactionsRolledBack() {
+            return 0L;
+        }
+
+        @Override
+        public long getFileLinesRead() {
+            return 0L;
         }
     };
 }

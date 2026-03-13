@@ -426,17 +426,17 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
             faults += tx.faultsSupplier.getAsLong();
         }
 
+        ExtendedQueryStatistics queryStatistics = null;
+        if (queryStatisticsSupplier != null) {
+            queryStatistics = queryStatisticsSupplier.get();
+        }
+
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
         long compilationTimeNanos =
                 (status.isParsingOrPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
         long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos(currentTimeNanos);
-
-        ExtendedQueryStatistics queryStatistics = null;
-        if (queryStatisticsSupplier != null) {
-            queryStatistics = queryStatisticsSupplier.get();
-        }
 
         return new QuerySnapshot(
                 this,

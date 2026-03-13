@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.Counter
+import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.LongCounter
 import org.neo4j.internal.kernel.api.MutatingEntityCursor
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
@@ -52,13 +53,13 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import scala.collection.immutable.ArraySeq
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
-  private val nodesCreated = new Counter
-  private val relationshipsCreated = new Counter
-  private val propertiesSet = new Counter
-  private val nodesDeleted = new Counter
-  private val relationshipsDeleted = new Counter
-  private val labelsAdded = new Counter
-  private val labelsRemoved = new Counter
+  private val nodesCreated = new LongCounter
+  private val relationshipsCreated = new LongCounter
+  private val propertiesSet = new LongCounter
+  private val nodesDeleted = new LongCounter
+  private val relationshipsDeleted = new LongCounter
+  private val labelsAdded = new LongCounter
+  private val labelsRemoved = new LongCounter
   private val indexesAdded = new Counter
   private val indexesRemoved = new Counter
   private val nodePropUniquenessConstraintsAdded = new Counter
@@ -73,7 +74,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val relSourceLabelConstraintsAdded = new Counter
   private val relTargetLabelConstraintsAdded = new Counter
   private val constraintsRemoved = new Counter
-  private val fileLinesRead = new Counter
 
   def getTrackedStatistics: QueryStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
@@ -96,8 +96,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     nodeLabelExistenceConstraintsAdded = nodeLabelExistenceConstraintsAdded.count,
     relSourceLabelConstraintsAdded = relSourceLabelConstraintsAdded.count,
     relTargetLabelConstraintsAdded = relTargetLabelConstraintsAdded.count,
-    constraintsRemoved = constraintsRemoved.count,
-    fileLinesRead = fileLinesRead.count
+    constraintsRemoved = constraintsRemoved.count
   )
 
   override def addStatistics(statistics: QueryStatistics): Unit = {
@@ -122,7 +121,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     relSourceLabelConstraintsAdded.increase(statistics.relSourceLabelConstraintsAdded)
     relTargetLabelConstraintsAdded.increase(statistics.relTargetLabelConstraintsAdded)
     constraintsRemoved.increase(statistics.constraintsRemoved)
-    fileLinesRead.increase(statistics.fileLinesRead)
     inner.addStatistics(statistics)
   }
 
@@ -447,7 +445,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   override def contextWithNewTransaction(): UpdateCountingQueryContext =
     new UpdateCountingQueryContext(inner.contextWithNewTransaction())
 
-  private class CountingOps[T, CURSOR](inner: Operations[T, CURSOR], deletes: Counter)
+  private class CountingOps[T, CURSOR](inner: Operations[T, CURSOR], deletes: LongCounter)
       extends DelegatingOperations[T, CURSOR](inner) {
 
     override def delete(id: Long): Boolean = {

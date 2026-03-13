@@ -29,13 +29,13 @@ import scala.beans.BeanProperty
 // org.neo4j.cypher.QueryStatisticsTestSupport
 
 case class QueryStatistics(
-  @BeanProperty nodesCreated: Int = 0,
-  @BeanProperty relationshipsCreated: Int = 0,
-  @BeanProperty propertiesSet: Int = 0,
-  @BeanProperty nodesDeleted: Int = 0,
-  @BeanProperty relationshipsDeleted: Int = 0,
-  @BeanProperty labelsAdded: Int = 0,
-  @BeanProperty labelsRemoved: Int = 0,
+  nodesCreated: Long = 0,
+  relationshipsCreated: Long = 0,
+  propertiesSet: Long = 0,
+  nodesDeleted: Long = 0,
+  relationshipsDeleted: Long = 0,
+  labelsAdded: Long = 0,
+  labelsRemoved: Long = 0,
   @BeanProperty indexesAdded: Int = 0,
   @BeanProperty indexesRemoved: Int = 0,
   nodePropUniquenessConstraintsAdded: Int = 0,
@@ -50,10 +50,10 @@ case class QueryStatistics(
   relSourceLabelConstraintsAdded: Int = 0,
   relTargetLabelConstraintsAdded: Int = 0,
   @BeanProperty constraintsRemoved: Int = 0,
-  @BeanProperty transactionsStarted: Int = 0,
-  @BeanProperty transactionsCommitted: Int = 0,
-  @BeanProperty transactionsRolledBack: Int = 0,
-  @BeanProperty fileLinesRead: Int = 0,
+  @BeanProperty transactionsStarted: Long = 0,
+  @BeanProperty transactionsCommitted: Long = 0,
+  @BeanProperty transactionsRolledBack: Long = 0,
+  @BeanProperty fileLinesRead: Long = 0,
   @BeanProperty systemUpdates: Int = 0
 ) extends org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics {
 
@@ -66,19 +66,33 @@ case class QueryStatistics(
     relSourceLabelConstraintsAdded + relTargetLabelConstraintsAdded
 
   override def containsUpdates: Boolean =
-    nodesCreated > 0 ||
-      relationshipsCreated > 0 ||
-      propertiesSet > 0 ||
-      nodesDeleted > 0 ||
-      relationshipsDeleted > 0 ||
-      labelsAdded > 0 ||
-      labelsRemoved > 0 ||
+    nodesCreated > 0L ||
+      relationshipsCreated > 0L ||
+      propertiesSet > 0L ||
+      nodesDeleted > 0L ||
+      relationshipsDeleted > 0L ||
+      labelsAdded > 0L ||
+      labelsRemoved > 0L ||
       indexesAdded > 0 ||
       indexesRemoved > 0 ||
       constraintsAdded > 0 ||
       constraintsRemoved > 0
 
   override def containsSystemUpdates: Boolean = systemUpdates > 0
+
+  override def getNodesCreated: Int = Math.min(nodesCreated, Integer.MAX_VALUE).toInt
+
+  override def getNodesDeleted: Int = Math.min(nodesDeleted, Integer.MAX_VALUE).toInt
+
+  override def getRelationshipsCreated: Int = Math.min(relationshipsCreated, Integer.MAX_VALUE).toInt
+
+  override def getRelationshipsDeleted: Int = Math.min(relationshipsDeleted, Integer.MAX_VALUE).toInt
+
+  override def getPropertiesSet: Int = Math.min(propertiesSet, Integer.MAX_VALUE).toInt
+
+  override def getLabelsAdded: Int = Math.min(labelsAdded, Integer.MAX_VALUE).toInt
+
+  override def getLabelsRemoved: Int = Math.min(labelsRemoved, Integer.MAX_VALUE).toInt
 
   override def toString: String = {
     val builder = new StringBuilder
@@ -203,13 +217,13 @@ object QueryStatistics {
     case q: QueryStatistics => q
     case q: org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics =>
       QueryStatistics(
-        nodesCreated = q.getNodesCreated,
-        nodesDeleted = q.getNodesDeleted,
-        relationshipsCreated = q.getRelationshipsCreated,
-        relationshipsDeleted = q.getRelationshipsDeleted,
-        propertiesSet = q.getPropertiesSet,
-        labelsAdded = q.getLabelsAdded,
-        labelsRemoved = q.getLabelsRemoved,
+        nodesCreated = q.nodesCreated,
+        nodesDeleted = q.nodesDeleted,
+        relationshipsCreated = q.relationshipsCreated,
+        relationshipsDeleted = q.relationshipsDeleted,
+        propertiesSet = q.propertiesSet,
+        labelsAdded = q.labelsAdded,
+        labelsRemoved = q.labelsRemoved,
         indexesAdded = q.getIndexesAdded,
         indexesRemoved = q.getIndexesRemoved,
         nodePropUniquenessConstraintsAdded = q.getConstraintsAdded,

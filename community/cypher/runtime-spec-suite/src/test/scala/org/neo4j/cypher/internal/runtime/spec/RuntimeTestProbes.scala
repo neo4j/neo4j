@@ -43,7 +43,7 @@ class QueryStatisticsProbe(assertion: QueryStatistics => Assertion)(runtimeTestU
 ) extends Prober.Probe {
   private[this] var _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
   private[this] var _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
-  private[this] var _transactionsCommitted = 0
+  private[this] var _transactionsCommitted = 0L
 
   override def onRow(row: AnyRef, state: AnyRef): Unit = {
     val statistics = runtimeTestUtils.queryStatistics(state)

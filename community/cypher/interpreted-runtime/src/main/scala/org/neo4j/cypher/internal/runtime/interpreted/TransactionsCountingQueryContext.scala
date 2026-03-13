@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
-import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.Counter
+import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.LongCounter
 
 class TransactionsCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner)
     with CountingQueryContext {
-  private val transactionsCommitted = new Counter
-  private val transactionsStarted = new Counter
-  private val transactionsRolledBack = new Counter
+  private val transactionsCommitted = new LongCounter
+  private val transactionsStarted = new LongCounter
+  private val transactionsRolledBack = new LongCounter
 
   override def getTrackedStatistics: QueryStatistics = {
     QueryStatistics(

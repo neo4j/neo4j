@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 trait CountingQueryContext {
   this: DelegatingQueryContext =>
@@ -58,6 +59,25 @@ object CountingQueryContext {
 
     def apply(initialValue: Int): Counter = {
       val counter = new Counter
+      counter.counter.set(initialValue)
+      counter
+    }
+  }
+
+  class LongCounter {
+    val counter: AtomicLong = new AtomicLong()
+
+    def count: Long = counter.get()
+
+    def increase(amount: Long = 1): Unit = {
+      counter.addAndGet(amount)
+    }
+  }
+
+  object LongCounter {
+
+    def apply(initialValue: Long): LongCounter = {
+      val counter = new LongCounter
       counter.counter.set(initialValue)
       counter
     }

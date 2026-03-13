@@ -791,15 +791,15 @@ abstract class ConcurrentTransactionApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryStatistics = runtimeResult.runtimeResult.queryStatistics().asInstanceOf[ExtendedQueryStatistics]
     val expectedCommitted =
-      List.fill(queryStatistics.getTransactionsCommitted * batchSize)(Array[Any](true, true, null))
+      List.fill(queryStatistics.getTransactionsCommitted.toInt * batchSize)(Array[Any](true, true, null))
     val expectedFailed = List.fill(batchSize)(Array[Any](false, true, "I hate the number you chose"))
-    val expectedInterrupted = List.fill((queryStatistics.getTransactionsRolledBack - 1) * batchSize)(Array[Any](
+    val expectedInterrupted = List.fill((queryStatistics.getTransactionsRolledBack.toInt - 1) * batchSize)(Array[Any](
       false,
       true,
       "The batch was interrupted and the transaction was rolled back because another batch failed"
     ))
     val expectedNotStarted =
-      List.fill(input.size - queryStatistics.getTransactionsStarted * batchSize)(Array[Any](false, false, null))
+      List.fill(input.size - queryStatistics.getTransactionsStarted.toInt * batchSize)(Array[Any](false, false, null))
     val expected = expectedCommitted ++ expectedFailed ++ expectedInterrupted ++ expectedNotStarted
 
     assert(expectedFailed.nonEmpty, "No transactions failed")

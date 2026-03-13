@@ -79,7 +79,20 @@ case class CSVResource(url: URI, resource: AutoCloseable)
 }
 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {
-  var lastIterator: LoadCsvIterator = null
+  private[this] var accumulatedFileLinesRead: Long = 0L
+  private[this] val activeIterators: java.util.ArrayList[LoadCsvIterator] = new java.util.ArrayList()
+
+  override def getFileLinesRead: Long = {
+    activeIterators.synchronized {
+      var fileLinesRead = accumulatedFileLinesRead
+      var i = 0
+      while (i < activeIterators.size) {
+        fileLinesRead += activeIterators.get(i).lastProcessed
+        i += 1
+      }
+      fileLinesRead
+    }
+  }
 
   override def getCsvIterator(
     urlString: String,
@@ -118,11 +131,17 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     val resource = CSVResource(uri, seeker)
     resourceManager.trace(resource)
 
-    lastIterator = new LoadCsvIterator {
+    val iterator = new LoadCsvIterator {
       var lastProcessed = 0L
       var readAll = false
 
-      override protected[this] def closeMore(): Unit = resource.close()
+      override protected[this] def closeMore(): Unit = {
+        activeIterators.synchronized {
+          accumulatedFileLinesRead += lastProcessed // When we close the iterator update number of lines read
+          activeIterators.remove(this)
+        }
+        resource.close()
+      }
 
       private def readNextRow: Array[Value] = {
         val buffer = new ArrayBuffer[Value]
@@ -158,11 +177,10 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
         row
       }
     }
-    lastIterator
-  }
-
-  override def getLastIterator: Option[LoadCsvIterator] = {
-    Option(lastIterator)
+    activeIterators.synchronized {
+      activeIterators.add(iterator)
+    }
+    iterator
   }
 
   private def checkForUnsecureProtocols(uri: URI, state: QueryState): Unit = {

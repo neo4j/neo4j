@@ -489,19 +489,19 @@ case class ShowTransactionsCommand(
 
   private def getQueryProgress(queryStatistics: ExtendedQueryStatistics): MapValue = {
     val builder = new MapValueBuilder()
-    Map(
-      "nodesCreated" -> queryStatistics.getNodesCreated,
-      "nodesDeleted" -> queryStatistics.getNodesDeleted,
-      "relationshipsCreated" -> queryStatistics.getRelationshipsCreated,
-      "relationshipsDeleted" -> queryStatistics.getRelationshipsDeleted,
-      "propertiesSet" -> queryStatistics.getPropertiesSet,
-      "labelsAdded" -> queryStatistics.getLabelsAdded,
-      "labelsRemoved" -> queryStatistics.getLabelsRemoved,
+    Map[String, Long](
+      "nodesCreated" -> queryStatistics.nodesCreated,
+      "nodesDeleted" -> queryStatistics.nodesDeleted,
+      "relationshipsCreated" -> queryStatistics.relationshipsCreated,
+      "relationshipsDeleted" -> queryStatistics.relationshipsDeleted,
+      "propertiesSet" -> queryStatistics.propertiesSet,
+      "labelsAdded" -> queryStatistics.labelsAdded,
+      "labelsRemoved" -> queryStatistics.labelsRemoved,
       "fileLinesRead" -> queryStatistics.getFileLinesRead,
       "transactionsStarted" -> queryStatistics.getTransactionsStarted,
       "transactionsCommitted" -> queryStatistics.getTransactionsCommitted,
       "transactionsRolledBack" -> queryStatistics.getTransactionsRolledBack
-    ).foreachEntry((k, v) => builder.add(k, ValueUtils.of(v)))
+    ).foreachEntry((k, v) => builder.add(k, Values.longValue(v)))
 
     builder.build()
   }

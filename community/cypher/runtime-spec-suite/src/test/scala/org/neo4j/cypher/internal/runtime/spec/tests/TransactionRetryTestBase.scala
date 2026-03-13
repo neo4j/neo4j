@@ -1231,45 +1231,45 @@ object TransactionRetryTestBase {
   final val DEFAULT_RETRY_TIMEOUT_SECONDS: Double = 0.1
 
   sealed trait ExpectedRange {
-    def assert(value: Int, clue: String = ""): Unit
+    def assert(value: Long, clue: String = ""): Unit
   }
 
   object ExpectedRange {
 
     case object NoExpectation extends ExpectedRange {
-      def assert(value: Int, clue: String = ""): Unit = {}
+      def assert(value: Long, clue: String = ""): Unit = {}
     }
 
-    case class Exactly(n: Int) extends ExpectedRange {
+    case class Exactly(n: Long) extends ExpectedRange {
 
-      def assert(value: Int, clue: String = ""): Unit = {
+      def assert(value: Long, clue: String = ""): Unit = {
         withClue(s"Expected exactly $n, but was $value $clue: ") {
           value shouldBe n
         }
       }
     }
 
-    case class AtLeast(n: Int) extends ExpectedRange {
+    case class AtLeast(n: Long) extends ExpectedRange {
 
-      def assert(value: Int, clue: String = ""): Unit = {
+      def assert(value: Long, clue: String = ""): Unit = {
         withClue(s"Expected at least $n, but was $value $clue: ") {
           value should be >= n
         }
       }
     }
 
-    case class AtMost(n: Int) extends ExpectedRange {
+    case class AtMost(n: Long) extends ExpectedRange {
 
-      def assert(value: Int, clue: String = ""): Unit = {
+      def assert(value: Long, clue: String = ""): Unit = {
         withClue(s"Expected at most $n, but was $value $clue: ") {
           value should be <= n
         }
       }
     }
 
-    case class Between(min: Int, max: Int) extends ExpectedRange {
+    case class Between(min: Long, max: Long) extends ExpectedRange {
 
-      def assert(value: Int, clue: String = ""): Unit = {
+      def assert(value: Long, clue: String = ""): Unit = {
         withClue(s"Expected between $min and $max, but was $value $clue: ") {
           value should (be <= max and be >= min)
         }

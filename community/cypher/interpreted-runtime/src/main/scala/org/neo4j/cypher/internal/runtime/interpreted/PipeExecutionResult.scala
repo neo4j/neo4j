@@ -97,7 +97,7 @@ class PipeExecutionResult(
 
   private def queryStatisticsSnapshot: QueryStatistics = {
     val statisticsSnapshot = state.getStatistics
-    val fileLinesRead = state.resources.getLastIterator.map(_.lastProcessed).getOrElse(0L).toInt
+    val fileLinesRead = state.resources.getFileLinesRead
     if (fileLinesRead > 0L) {
       return new QueryStatistics(fileLinesRead = fileLinesRead) + statisticsSnapshot
     }

@@ -382,19 +382,19 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
         left match {
           case qs: ExtendedQueryStatistics =>
             // FIXME: we currently do not account for the outermost transaction because that is out of cypher's control
-            if (matchFailed(transactionsCommitted, qs.getTransactionsCommitted + 1)) {
+            if (matchFailed(transactionsCommitted, qs.getTransactionsCommitted.toInt + 1)) {
               Some(MatchResult(
                 matches = false,
                 s"expected transactionsCommitted=${transactionsCommitted.get} but was ${qs.getTransactionsCommitted + 1}",
                 ""
               ))
-            } else if (matchFailed(transactionsStarted, qs.getTransactionsStarted + 1)) {
+            } else if (matchFailed(transactionsStarted, qs.getTransactionsStarted.toInt + 1)) {
               Some(MatchResult(
                 matches = false,
                 s"expected transactionsStarted=${transactionsStarted.get} but was ${qs.getTransactionsStarted + 1}",
                 ""
               ))
-            } else if (matchFailed(transactionsRolledBack, qs.getTransactionsRolledBack)) {
+            } else if (matchFailed(transactionsRolledBack, qs.getTransactionsRolledBack.toInt)) {
               Some(MatchResult(
                 matches = false,
                 s"expected transactionsRolledBack=${transactionsRolledBack.get} but was ${qs.getTransactionsRolledBack}",

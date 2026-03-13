@@ -28,13 +28,13 @@ trait QueryStatisticsTestSupport {
 
   def assertStats(
     result: RewindableExecutionResult,
-    nodesCreated: Int = 0,
-    relationshipsCreated: Int = 0,
-    propertiesWritten: Int = 0,
-    nodesDeleted: Int = 0,
-    relationshipsDeleted: Int = 0,
-    labelsAdded: Int = 0,
-    labelsRemoved: Int = 0,
+    nodesCreated: Long = 0L,
+    relationshipsCreated: Long = 0L,
+    propertiesWritten: Long = 0L,
+    nodesDeleted: Long = 0L,
+    relationshipsDeleted: Long = 0L,
+    labelsAdded: Long = 0L,
+    labelsRemoved: Long = 0L,
     indexesAdded: Int = 0,
     indexesRemoved: Int = 0,
     nodePropUniquenessConstraintsAdded: Int = 0,
@@ -49,10 +49,10 @@ trait QueryStatisticsTestSupport {
     relSourceLabelConstraintsAdded: Int = 0,
     relTargetLabelConstraintsAdded: Int = 0,
     constraintsRemoved: Int = 0,
-    transactionsCommitted: Int = 0,
-    transactionsStarted: Int = 0,
-    transactionsRolledBack: Int = 0,
-    fileLinesRead: Int = 0
+    transactionsCommitted: Long = 0L,
+    transactionsStarted: Long = 0L,
+    transactionsRolledBack: Long = 0L,
+    fileLinesRead: Long = 0L
   ): Unit = {
     val expected =
       QueryStatistics(
