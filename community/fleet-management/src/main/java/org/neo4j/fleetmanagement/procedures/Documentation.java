@@ -46,10 +46,19 @@ import org.neo4j.procedure.Procedure;
 
 public class Documentation {
     public static class DocumentationResult {
+        @Description("Name of the message in which the current field appears.")
         public String messageType;
+
+        @Description("The path to the field.")
         public String fieldPath;
+
+        @Description("Description of the field.")
         public String description;
+
+        @Description("The data type of this field.")
         public String fieldType;
+
+        @Description("The current values of fields which are dynamically determined on connection.")
         public List<String> values;
 
         public DocumentationResult(
@@ -71,7 +80,7 @@ public class Documentation {
 
     @Procedure(name = "fleetManagement.reportedData", mode = Mode.READ)
     @SystemProcedure
-    @Description("Generate documentation for the data structures used in Fleet Manager messages")
+    @Description("Generate documentation for the data structures used in Fleet Manager messages.")
     public Stream<DocumentationResult> generateDocumentation() throws Exception {
         List<DocumentationResult> results = new ArrayList<>();
         documentClass(ConnectMessage.class, "ConnectMessage", "", results);

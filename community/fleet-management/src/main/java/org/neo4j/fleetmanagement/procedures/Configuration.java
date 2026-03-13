@@ -54,7 +54,7 @@ public class Configuration {
     public Log log;
 
     public static class Result {
-        @Description("A procedure return value.")
+        @Description("A message indicating the result of the operation.")
         public String result;
 
         public Result(String result) {
@@ -80,13 +80,13 @@ public class Configuration {
     }
 
     public static class TokenInspectResult {
-        @Description("ID of the Aura project the Deployment token belongs to")
+        @Description("ID of the Aura project the Deployment token belongs to.")
         public String projectId;
 
         @Description("Token expiry")
         public String tokenExpires;
 
-        @Description("Error message if token inspection fails")
+        @Description("Error message if token inspection fails.")
         public String errorMessage;
 
         public TokenInspectResult(String projectId, String expiry, String errorMessage) {
@@ -116,7 +116,8 @@ public class Configuration {
     @SystemProcedure
     @Admin
     @Description("Add a token for authenticating to Fleet Manager")
-    public Stream<Result> registerToken(@Name(value = "token") String token) {
+    public Stream<Result> registerToken(
+            @Name(value = "token", description = "A token obtained from Neo4j Aura.") String token) {
         var active = getTokenStatus();
         var connected = state.isConnected();
 
@@ -157,8 +158,14 @@ public class Configuration {
     @Procedure(name = "fleetManagement.inspectToken", mode = Mode.DBMS)
     @SystemProcedure
     @Admin
-    @Description("Inspect a Fleet Manager access token")
-    public Stream<TokenInspectResult> inspectToken(@Name(value = "token", defaultValue = "") String token) {
+    @Description("Inspect a Fleet Manager access token.")
+    public Stream<TokenInspectResult> inspectToken(
+            @Name(
+                            value = "token",
+                            defaultValue = "",
+                            description =
+                                    "(optional) A token obtained from Neo4j Aura. Will use the currently registered token, if not provided.")
+                    String token) {
         if (token == null || token.isEmpty()) {
             ensureSystemDb();
             return withTransactionAndErrorHandling(
@@ -222,7 +229,7 @@ public class Configuration {
     @Procedure(name = "fleetManagement.status", mode = Mode.READ)
     @SystemProcedure
     @Admin
-    @Description("Check the status of Fleet Manager")
+    @Description("Check the status of Fleet Manager.")
     public Stream<StatusResult> status() {
         var active = getTokenStatus();
         var connected = state.isConnected();
@@ -238,7 +245,7 @@ public class Configuration {
     @Procedure(name = "fleetManagement.restart", mode = Mode.DBMS)
     @SystemProcedure
     @Admin
-    @Description("Restart Fleet Manager")
+    @Description("Restart Fleet Manager.")
     public Stream<Result> restart() {
         var hasToken = getTokenStatus();
         var connected = state.isConnected();

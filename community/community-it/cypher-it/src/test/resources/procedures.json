@@ -4101,13 +4101,13 @@
     "argumentDescription": [
       {
         "name": "debugLoggingEnabled",
-        "description": "debugLoggingEnabled :: BOOLEAN",
+        "description": "Enable debug logging for fleet manager on this server.",
         "type": "BOOLEAN",
         "isDeprecated": false
       },
       {
         "name": "payloadLoggingEnabled",
-        "description": "payloadLoggingEnabled :: BOOLEAN",
+        "description": "Enable payload logging for fleet manager on this server.",
         "type": "BOOLEAN",
         "isDeprecated": false
       }
@@ -4115,7 +4115,7 @@
     "returnDescription": [
       {
         "name": "result",
-        "description": "A procedure return value.",
+        "description": "A message indicating the result of the operation.",
         "type": "STRING",
         "isDeprecated": false
       }
@@ -4145,7 +4145,7 @@
     "returnDescription": [
       {
         "name": "result",
-        "description": "A procedure return value.",
+        "description": "A message indicating the result of the operation.",
         "type": "STRING",
         "isDeprecated": false
       }
@@ -4167,14 +4167,14 @@
   },
   {
     "name": "fleetManagement.inspectToken",
-    "description": "Inspect a Fleet Manager access token",
+    "description": "Inspect a Fleet Manager access token.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "fleetManagement.inspectToken(token =  :: STRING) :: (projectId :: STRING, tokenExpires :: STRING, errorMessage :: STRING)",
     "argumentDescription": [
       {
         "name": "token",
-        "description": "token =  :: STRING",
+        "description": "(optional) A token obtained from Neo4j Aura. Will use the currently registered token, if not provided.",
         "type": "STRING",
         "isDeprecated": false,
         "default": "DefaultParameterValue{value=, type=STRING}"
@@ -4183,7 +4183,7 @@
     "returnDescription": [
       {
         "name": "projectId",
-        "description": "ID of the Aura project the Deployment token belongs to",
+        "description": "ID of the Aura project the Deployment token belongs to.",
         "type": "STRING",
         "isDeprecated": false
       },
@@ -4195,7 +4195,7 @@
       },
       {
         "name": "errorMessage",
-        "description": "Error message if token inspection fails",
+        "description": "Error message if token inspection fails.",
         "type": "STRING",
         "isDeprecated": false
       }
@@ -4224,7 +4224,7 @@
     "argumentDescription": [
       {
         "name": "token",
-        "description": "token :: STRING",
+        "description": "A token obtained from Neo4j Aura.",
         "type": "STRING",
         "isDeprecated": false
       }
@@ -4232,7 +4232,7 @@
     "returnDescription": [
       {
         "name": "result",
-        "description": "A procedure return value.",
+        "description": "A message indicating the result of the operation.",
         "type": "STRING",
         "isDeprecated": false
       }
@@ -4254,7 +4254,7 @@
   },
   {
     "name": "fleetManagement.reportedData",
-    "description": "Generate documentation for the data structures used in Fleet Manager messages",
+    "description": "Generate documentation for the data structures used in Fleet Manager messages.",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "fleetManagement.reportedData() :: (messageType :: STRING, fieldPath :: STRING, description :: STRING, fieldType :: STRING, values :: LIST<STRING>)",
@@ -4262,31 +4262,31 @@
     "returnDescription": [
       {
         "name": "messageType",
-        "description": "messageType :: STRING",
+        "description": "Name of the message in which the current field appears.",
         "type": "STRING",
         "isDeprecated": false
       },
       {
         "name": "fieldPath",
-        "description": "fieldPath :: STRING",
+        "description": "The path to the field.",
         "type": "STRING",
         "isDeprecated": false
       },
       {
         "name": "description",
-        "description": "description :: STRING",
+        "description": "Description of the field.",
         "type": "STRING",
         "isDeprecated": false
       },
       {
         "name": "fieldType",
-        "description": "fieldType :: STRING",
+        "description": "The data type of this field.",
         "type": "STRING",
         "isDeprecated": false
       },
       {
         "name": "values",
-        "description": "values :: LIST<STRING>",
+        "description": "The current values of fields which are dynamically determined on connection.",
         "type": "LIST<STRING>",
         "isDeprecated": false
       }
@@ -4309,7 +4309,7 @@
   },
   {
     "name": "fleetManagement.restart",
-    "description": "Restart Fleet Manager",
+    "description": "Restart Fleet Manager.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "fleetManagement.restart() :: (result :: STRING)",
@@ -4317,7 +4317,7 @@
     "returnDescription": [
       {
         "name": "result",
-        "description": "A procedure return value.",
+        "description": "A message indicating the result of the operation.",
         "type": "STRING",
         "isDeprecated": false
       }
@@ -4339,7 +4339,7 @@
   },
   {
     "name": "fleetManagement.status",
-    "description": "Check the status of Fleet Manager",
+    "description": "Check the status of Fleet Manager.",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "fleetManagement.status() :: (active :: BOOLEAN, connected :: BOOLEAN, statusMessage :: STRING)",

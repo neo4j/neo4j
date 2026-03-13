@@ -31,7 +31,7 @@ import org.neo4j.procedure.Procedure;
 public class DebugLogging {
 
     public static class Result {
-        @Description("A procedure return value.")
+        @Description("A message indicating the result of the operation.")
         public String result;
 
         public Result(String result) {
@@ -44,7 +44,12 @@ public class DebugLogging {
     @Admin
     @Description("Enable debug or payload logging for Fleet Manager.")
     public Stream<Result> debugLogging(
-            @Name("debugLoggingEnabled") Boolean enabled, @Name("payloadLoggingEnabled") Boolean payloadLogging) {
+            @Name(value = "debugLoggingEnabled", description = "Enable debug logging for fleet manager on this server.")
+                    Boolean enabled,
+            @Name(
+                            value = "payloadLoggingEnabled",
+                            description = "Enable payload logging for fleet manager on this server.")
+                    Boolean payloadLogging) {
         Logger.setDebugEnabled(enabled);
         Logger.setPayloadLoggingEnabled(payloadLogging);
         Logger.getNeo4jLogger().info("Debug logging enabled: %s, Payload logging enabled: %s", enabled, payloadLogging);
