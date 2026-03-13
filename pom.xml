@@ -169,7 +169,7 @@
     <lucene9.version>9.12.2</lucene9.version>
     <lucene.version>10.3.2</lucene.version>
     <bouncycastle.version>1.83</bouncycastle.version>
-    <jetty.version>12.0.25</jetty.version>
+    <jetty.version>12.0.33</jetty.version>
     <scala-maven-plugin.version>4.9.9</scala-maven-plugin.version>
     <scala.version>2.13.17</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
