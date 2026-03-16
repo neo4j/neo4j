@@ -21,6 +21,12 @@ package org.neo4j.kernel.impl.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_file_urls;
 import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.ERR_ARG;
 import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.ERR_AUTH;
 import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.ERR_FRAGMENT;
@@ -32,14 +38,18 @@ import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationSta
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -47,7 +57,11 @@ import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 
+@TestDirectoryExtension
 class FileURIAccessRuleTest {
 
     private static final Pattern FILE_URI_PATTERN = Pattern.compile("file:///[^/].*");
@@ -59,11 +73,14 @@ class FileURIAccessRuleTest {
     private static final SecurityAuthorizationHandler AUTHORIZATION_HANDLER =
             new SecurityAuthorizationHandler(new CommunitySecurityLog(NullLog.getInstance()));
 
+    @Inject
+    private TestDirectory testDirectory;
+
     @Test
     void shouldThrowWhenFileAccessIsDisabled() {
         final var errorMessage = "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false";
 
-        final var config = Config.defaults(GraphDatabaseSettings.allow_file_urls, false);
+        final var config = Config.defaults(allow_file_urls, false);
         assertThatThrownBy(() -> new FileURIAccessRule(config)
                         .validate(
                                 URI.create("file:///dir/file.csv"),
@@ -113,6 +130,41 @@ class FileURIAccessRuleTest {
     void testWithAndWithoutTrailingSlash(ValidationStatus status, String location, String expected) throws Exception {
         testValidation(status, "/import/", location, expected);
         testValidation(status, "/import", location, expected);
+    }
+
+    @Test
+    void fileSystemClosure() throws Exception {
+        var path = testDirectory.createFile("file.csv");
+        Files.writeString(path, "foo,bar", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+
+        var fs = mock(SchemeFileSystemAbstraction.class);
+        var accessRule = new FileURIAccessRule(() -> fs, Config.defaults(allow_file_urls, true));
+
+        var scheme = "file";
+        var uri = new URI(scheme + ":///dir/file.csv");
+        when(fs.resolvableSchemes()).thenReturn(Set.of());
+        assertThatThrownBy(() -> accessRule.getReader(uri, AUTHORIZATION_HANDLER, SecurityContext.AUTH_DISABLED))
+                .isInstanceOf(URLAccessValidationError.class);
+        // closed the FS on an error
+        verify(fs, times(1)).close();
+
+        when(fs.resolvableSchemes()).thenReturn(Set.of(scheme));
+        when(fs.canResolve(eq(uri))).thenReturn(false);
+        assertThatThrownBy(() -> accessRule.getReader(uri, AUTHORIZATION_HANDLER, SecurityContext.AUTH_DISABLED))
+                .isInstanceOf(URLAccessValidationError.class);
+        // closed the FS on an error
+        verify(fs, times(2)).close();
+
+        when(fs.canResolve(eq(uri))).thenReturn(true);
+        when(fs.resolve(eq(uri))).thenReturn(path);
+        try (var reader = accessRule.getReader(uri, AUTHORIZATION_HANDLER, SecurityContext.AUTH_DISABLED)) {
+            assertThat(reader).isNotNull();
+            // did NOT close the FS when creating the reader
+            verify(fs, times(2)).close();
+        }
+
+        // closing reader closes FS
+        verify(fs, times(3)).close();
     }
 
     /**

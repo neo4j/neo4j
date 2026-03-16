@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Readables;
+import org.neo4j.csv.reader.SectionedCharBuffer;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -80,8 +81,10 @@ public class FileURIAccessRule implements AccessRule<URI> {
     public CharReadable getReader(
             URI uri, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
             throws URLAccessValidationError, IOException {
-        final var scheme = uri.getScheme().toLowerCase(Locale.ROOT);
-        try (var fs = schemeSystemSupplier.get()) {
+        var fs = schemeSystemSupplier.get();
+        CharReadable readable;
+        try {
+            var scheme = uri.getScheme().toLowerCase(Locale.ROOT);
             if (!fs.resolvableSchemes().contains(scheme)) {
                 throw new URLAccessValidationError("Invalid URL '" + uri + "': unknown protocol: " + scheme);
             }
@@ -90,9 +93,51 @@ public class FileURIAccessRule implements AccessRule<URI> {
                 throw new URLAccessValidationError("loading resources via protocol '" + scheme + "' is not permitted");
             }
 
-            final var path = fs.resolve(validate(uri, securityAuthorizationHandler, securityContext));
-            return Readables.files(StandardCharsets.UTF_8, path);
+            var path = fs.resolve(validate(uri, securityAuthorizationHandler, securityContext));
+            readable = Readables.files(StandardCharsets.UTF_8, path);
+        } catch (Exception ex) {
+            fs.close();
+            throw ex;
         }
+
+        return new CharReadable.Adapter() {
+            @Override
+            public SectionedCharBuffer read(SectionedCharBuffer buffer, int from) throws IOException {
+                return readable.read(buffer, from);
+            }
+
+            @Override
+            public int read(char[] into, int offset, int length) throws IOException {
+                return readable.read(into, offset, length);
+            }
+
+            @Override
+            public long length() {
+                return readable.length();
+            }
+
+            @Override
+            public long position() {
+                return readable.position();
+            }
+
+            @Override
+            public String sourceDescription() {
+                return readable.sourceDescription();
+            }
+
+            @Override
+            public String toString() {
+                return sourceDescription();
+            }
+
+            @Override
+            public void close() throws IOException {
+                try (fs) {
+                    readable.close();
+                }
+            }
+        };
     }
 
     private boolean isFileLikeScheme(URI uri) {
