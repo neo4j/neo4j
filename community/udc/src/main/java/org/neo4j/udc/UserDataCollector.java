@@ -194,6 +194,9 @@ public class UserDataCollector extends LifecycleAdapter {
         long labels = 0;
         long dataSize = 0;
         int databaseCount = 0;
+        Map<String, Integer> formatCount = new HashMap<>();
+        long largestDbSize = 0;
+        String formatLargestDb = "";
         for (String database : databases) {
             try {
                 GraphDatabaseAPI db = (GraphDatabaseAPI) databaseManagementService.database(database);
@@ -202,20 +205,33 @@ public class UserDataCollector extends LifecycleAdapter {
                 nodes += storeEntityCounters.estimateNodes();
                 relationships += storeEntityCounters.estimateRelationships();
                 labels += storeEntityCounters.estimateLabels();
-                dataSize += databaseSizeService.getDatabaseDataSize(db.databaseId());
+                long dbSize = databaseSizeService.getDatabaseDataSize(db.databaseId());
+                dataSize += dbSize;
                 if (!db.databaseId().isSystemDatabase()) {
+                    String format =
+                            storageEngine.metadataProvider().getStoreId().getFormatName();
+                    if (dbSize > largestDbSize) {
+                        largestDbSize = dbSize;
+                        formatLargestDb = format;
+                    }
+                    formatCount.merge(format, 1, Integer::sum);
                     databaseCount++;
                 }
             } catch (Exception e) {
                 log.debug("Failed to collect data from database " + database, e);
             }
         }
-        return Map.of(
-                "nodes", String.valueOf(nodes),
-                "relationships", String.valueOf(relationships),
-                "labels", String.valueOf(labels),
-                "storeSize", String.valueOf(dataSize),
-                "databaseCount", String.valueOf(databaseCount));
+        Map<String, String> result = new HashMap<>();
+        result.put("nodes", String.valueOf(nodes));
+        result.put("relationships", String.valueOf(relationships));
+        result.put("labels", String.valueOf(labels));
+        result.put("storeSize", String.valueOf(dataSize));
+        result.put("databaseCount", String.valueOf(databaseCount));
+        result.put("format_largestDb", formatLargestDb);
+        for (Map.Entry<String, Integer> entry : formatCount.entrySet()) {
+            result.put("format_" + entry.getKey(), String.valueOf(entry.getValue()));
+        }
+        return result;
     }
 
     private static String getPackagingInformation(Config config, FileSystemAbstraction fs) {
