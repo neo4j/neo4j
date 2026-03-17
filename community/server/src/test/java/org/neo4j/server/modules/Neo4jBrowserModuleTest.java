@@ -22,7 +22,6 @@ package org.neo4j.server.modules;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,7 +68,7 @@ class Neo4jBrowserModuleTest {
     }
 
     @Test
-    void startShouldNotThrowWhenWebDirCannotBeListed() {
+    void startShouldFallbackToClasspathWhenWebDirDoesNotExist() {
         var webServer = mock(WebServer.class);
         var missingWebDir = tempDir.resolve("does-not-exist");
 
@@ -79,7 +78,7 @@ class Neo4jBrowserModuleTest {
                 GlobbingPattern.create("neo4j-browser*.zip").getFirst());
         module.start();
 
-        verifyNoInteractions(webServer);
+        verify(webServer).addStaticContent(eq(StaticContent.classpathStaticContent("browser")), eq("/browser"));
     }
 
     @Test
