@@ -624,6 +624,7 @@ County, California.
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+  org.locationtech.jts:jts-core
 ------------------------------------------------------------------------------
 
 Eclipse Distribution License - v 1.0

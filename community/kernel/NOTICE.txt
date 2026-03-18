@@ -60,6 +60,7 @@ Common Development and Distribution License Version 1.1
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+  org.locationtech.jts:jts-core
 
 Eclipse Public License - v 1.0
   Eclipse Collections API

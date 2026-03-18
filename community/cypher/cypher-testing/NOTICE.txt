@@ -158,6 +158,7 @@ Eclipse Distribution License - v 1.0
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
+  org.locationtech.jts:jts-core
   TXW2 Runtime
 
 Eclipse Public License - v 1.0
