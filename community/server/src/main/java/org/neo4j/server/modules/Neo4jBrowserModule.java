@@ -49,6 +49,11 @@ public class Neo4jBrowserModule implements ServerModule {
 
     @Override
     public void start() {
+        if (!Files.exists(webDir)) {
+            loadclasspathBrowser();
+            return;
+        }
+
         // Fallback to original loading mechanism if zip not found
         try (var webDirListing = Files.list(webDir)) {
             var matchingFiles = webDirListing
@@ -82,9 +87,7 @@ public class Neo4jBrowserModule implements ServerModule {
                 webServer.addStaticContent(
                         jarStaticContent(browserFile.filePath().toString()), DEFAULT_NEO4J_BROWSER_PATH);
             } else {
-                webServer.addStaticContent(
-                        classpathStaticContent(DEFAULT_NEO4J_BROWSER_STATIC_WEB_CONTENT_LOCATION),
-                        DEFAULT_NEO4J_BROWSER_PATH);
+                loadclasspathBrowser();
             }
         } catch (IOException e) {
             log.warn("Unable to list files in " + webDir + " for serving browser static content.", e);
@@ -94,5 +97,10 @@ public class Neo4jBrowserModule implements ServerModule {
     @Override
     public void stop() {
         webServer.removeStaticContent(DEFAULT_NEO4J_BROWSER_PATH);
+    }
+
+    private void loadclasspathBrowser() {
+        webServer.addStaticContent(
+                classpathStaticContent(DEFAULT_NEO4J_BROWSER_STATIC_WEB_CONTENT_LOCATION), DEFAULT_NEO4J_BROWSER_PATH);
     }
 }
