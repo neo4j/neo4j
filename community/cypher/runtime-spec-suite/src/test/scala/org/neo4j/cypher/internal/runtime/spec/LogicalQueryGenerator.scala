@@ -90,7 +90,8 @@ object LogicalQueryGenerator {
             hasLoadCSV = false,
             state.idGen,
             doProfile = false,
-            executionPlanCacheKeyHash = 0
+            executionPlanCacheKeyHash = 0,
+            executionModel = None
           ),
           planContext
         ),

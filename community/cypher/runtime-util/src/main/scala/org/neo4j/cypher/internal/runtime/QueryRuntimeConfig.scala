@@ -21,15 +21,21 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherHeapEstimatorCacheOption
+import org.neo4j.cypher.internal.options.CypherPipelinedBatchReuseOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.memory.HeapEstimatorCacheConfig
 
 case class QueryRuntimeConfig(
-  heapEstimatorCacheConfig: HeapEstimatorCacheConfig
+  heapEstimatorCacheConfig: HeapEstimatorCacheConfig,
+  morselReuseConfig: MorselReuseConfig = MorselReuseConfig.DEFAULT
 ) {
 
   def withHeapEstimatorCacheConfig(heapEstimatorCacheConfig: HeapEstimatorCacheConfig): QueryRuntimeConfig = {
     copy(heapEstimatorCacheConfig = heapEstimatorCacheConfig)
+  }
+
+  def withMorselReuseConfig(morselReuseConfig: MorselReuseConfig): QueryRuntimeConfig = {
+    copy(morselReuseConfig = morselReuseConfig)
   }
 }
 
@@ -37,11 +43,30 @@ object QueryRuntimeConfig {
 
   def createFrom(queryOptions: CypherQueryOptions, config: CypherConfiguration): QueryRuntimeConfig = {
     QueryRuntimeConfig(
-      CypherHeapEstimatorCacheOption.heapEstimatorCacheConfigFrom(queryOptions.heapEstimatorCacheOption, config)
+      CypherHeapEstimatorCacheOption.heapEstimatorCacheConfigFrom(queryOptions.heapEstimatorCacheOption, config),
+      morselReuseConfig = queryOptions.pipelinedBatchReuseOption match {
+        case CypherPipelinedBatchReuseOption.default =>
+          MorselReuseConfig.DEFAULT
+        case CypherPipelinedBatchReuseOption.full =>
+          MorselReuseConfig.FullReuse
+        case CypherPipelinedBatchReuseOption.pack =>
+          MorselReuseConfig.ReuseRemainingRowsOnly
+        case CypherPipelinedBatchReuseOption.disabled =>
+          MorselReuseConfig.NeverReuse
+      }
     )
   }
 
   final val DEFAULT: QueryRuntimeConfig = QueryRuntimeConfig(
     HeapEstimatorCacheConfig.DEFAULT
   )
+}
+
+sealed trait MorselReuseConfig
+
+object MorselReuseConfig {
+  final val DEFAULT: MorselReuseConfig = MorselReuseConfig.FullReuse
+  case object FullReuse extends MorselReuseConfig
+  case object ReuseRemainingRowsOnly extends MorselReuseConfig
+  case object NeverReuse extends MorselReuseConfig
 }

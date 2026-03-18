@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.RandomValues
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueType
+import org.scalatest.Failed
 import org.scalatest.Outcome
 import org.scalatest.TestSuite
 import org.scalatest.TestSuiteMixin
@@ -32,12 +33,43 @@ import scala.util.Random
 trait RandomValuesTestSupport extends TestSuiteMixin with TestSuite {
   self: CypherFunSuite =>
 
-  private val initialSeed = Random.nextLong()
+  private val initialSeedSeed = Random.nextLong()
 
-  val random = new Random(initialSeed)
+  // Used to seed the random number generator of the individual tests.
+  lazy val seedRandom = new Random(initialSeedSeed)
 
-  val randomValues: RandomValues = {
-    RandomValues.create(new java.util.Random(initialSeed), randomValuesConfiguration())
+  private[this] var _initialSeed: Long = _
+  private[this] var _random: Random = _
+  private[this] var _randomValues: RandomValues = _
+
+  def initialSeed: Long = {
+    while (_initialSeed == 0L) {
+      _initialSeed = seedRandom.nextLong()
+    }
+    _initialSeed
+  }
+
+  def setInitialSeed(seed: Long): Unit = {
+    _initialSeed = seed
+  }
+
+  // Only initialize the test fixtures that are used.
+  def random: Random = {
+    if (_random == null) {
+      _random = new Random(initialSeed)
+    }
+    _random
+  }
+
+  // Not all tests run with a graphDb available. For these tests, just assume that all values are permitted
+  def randomValues: RandomValues = {
+    if (_randomValues == null) {
+      _randomValues = RandomValues.create(
+        new java.util.Random(initialSeed),
+        randomValuesConfiguration()
+      )
+    }
+    _randomValues
   }
 
   def randomValuesConfiguration(): RandomValues.Configuration = {
@@ -56,14 +88,34 @@ trait RandomValuesTestSupport extends TestSuiteMixin with TestSuite {
   def shuffle[T](values: Seq[T]): Seq[T] = random.shuffle(values)
 
   abstract override def withFixture(test: NoArgTest): Outcome = {
-    withClue(
-      s"""
-         |${classOf[RandomValuesTestSupport].getSimpleName} test failed with initial seed:
-         |private val initialSeed = ${initialSeed}L
-         |
-         |""".stripMargin
-    ) {
-      super.withFixture(test)
+    val clue = new { // Trick to defer evaluation since initialSeed is not available before the test is run.
+      override def toString: String =
+        s"""
+           |${classOf[RandomValuesTestSupport].getSimpleName} test failed with initial seed: ${initialSeed}L
+           |To reproduce, put the following line at the top of the test that failed:
+           |setInitialSeed(${initialSeed}L)
+           |
+           |""".stripMargin
+    }
+    withClue(clue) {
+      try {
+        val outcome = super.withFixture(test)
+        outcome match {
+          case Failed(_: org.scalatest.exceptions.ModifiableMessage[_]) =>
+          // Clue will be included in the exception by the wrapping withClue
+          case Failed(_) =>
+            // Print clue to stderr since withClue won't include it
+            System.err.println(clue)
+          case _ =>
+          // Do nothing
+        }
+        outcome
+      } catch {
+        case e: Throwable if !e.isInstanceOf[org.scalatest.exceptions.ModifiableMessage[_]] =>
+          // Print clue to stderr
+          System.err.println(clue)
+          throw e
+      }
     }
   }
 }
