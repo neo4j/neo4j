@@ -101,6 +101,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
     private final InternalLog log;
     private final Config config;
     private final InternalLogProvider logProvider;
+    private final SecureXForwardFilter secureXForwardFilter;
 
     public JettyWebServer(
             InternalLogProvider logProvider,
@@ -114,6 +115,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
         this.contentSecurityPolicyHeader = config.get(ServerSettings.http_static_content_security_policy);
         sslSocketFactory = new SslSocketConnectorFactory(connectionTracker, config, byteBufferPool);
         connectorFactory = new HttpConnectorFactory(connectionTracker, config, byteBufferPool);
+        this.secureXForwardFilter = new SecureXForwardFilter(config, logProvider);
     }
 
     @Override
@@ -230,7 +232,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
         mountPoint = trimTrailingSlashToKeepJettyHappy(mountPoint);
 
         JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.computeIfAbsent(
-                mountPoint, k -> new JaxRsServletHolderFactory(config, logProvider));
+                mountPoint, k -> new JaxRsServletHolderFactory(config, logProvider, secureXForwardFilter));
         factory.addPackages(packageNames, injectables);
 
         log.debug("Adding JAXRS packages %s at [%s]", packageNames, mountPoint);
@@ -243,7 +245,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
         mountPoint = trimTrailingSlashToKeepJettyHappy(mountPoint);
 
         JaxRsServletHolderFactory factory = jaxRsServletHolderFactories.computeIfAbsent(
-                mountPoint, k -> new JaxRsServletHolderFactory(config, logProvider));
+                mountPoint, k -> new JaxRsServletHolderFactory(config, logProvider, secureXForwardFilter));
         factory.addClasses(classNames, injectables);
 
         log.debug("Adding JAXRS classes %s at [%s]", classNames, mountPoint);

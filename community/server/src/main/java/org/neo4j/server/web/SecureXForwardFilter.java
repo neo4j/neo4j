@@ -28,6 +28,7 @@ import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
 
 import java.net.URI;
 import java.util.Set;
+import javax.inject.Provider;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -57,7 +58,7 @@ public class SecureXForwardFilter implements ContainerRequestFilter {
     private final InternalLog log;
 
     @Context
-    private HttpServletRequest httpRequest;
+    private Provider<HttpServletRequest> httpRequestProvider;
 
     public SecureXForwardFilter(Config config, InternalLogProvider logProvider) {
         this.enabled = config.get(http_x_forward_enabled);
@@ -116,13 +117,19 @@ public class SecureXForwardFilter implements ContainerRequestFilter {
     }
 
     private String extractClientIP(ContainerRequestContext requestContext) {
-        // Try to get real client IP from servlet request
-        if (httpRequest != null) {
-            return httpRequest.getRemoteAddr();
+        // Use Provider for request-scoped access so the filter works when shared across mounts
+        if (httpRequestProvider != null) {
+            try {
+                HttpServletRequest httpRequest = httpRequestProvider.get();
+                if (httpRequest != null) {
+                    return httpRequest.getRemoteAddr();
+                }
+            } catch (IllegalStateException e) {
+                // Not inside a request scope (e.g. shared filter instance)
+            }
         }
 
-        // Fallback for unit tests - use a default test IP
-        // In real deployments, httpRequest should never be null
+        // Fallback for unit tests or when request is unavailable
         return "127.0.0.1";
     }
 

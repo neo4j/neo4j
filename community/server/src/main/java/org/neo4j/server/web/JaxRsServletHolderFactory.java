@@ -49,10 +49,13 @@ public class JaxRsServletHolderFactory {
     private final List<Injectable<?>> injectables = new ArrayList<>();
     private final Config config;
     private final InternalLogProvider logProvider;
+    private final SecureXForwardFilter secureXForwardFilter;
 
-    public JaxRsServletHolderFactory(Config config, InternalLogProvider logProvider) {
+    public JaxRsServletHolderFactory(
+            Config config, InternalLogProvider logProvider, SecureXForwardFilter secureXForwardFilter) {
         this.config = config;
         this.logProvider = logProvider;
+        this.secureXForwardFilter = secureXForwardFilter;
 
         // add classes common to all mount points
         classes.add(MediaTypeExceptionMapper.class);
@@ -96,7 +99,7 @@ public class JaxRsServletHolderFactory {
                 .property(WADL_FEATURE_DISABLE, String.valueOf(!wadlEnabled));
 
         // Register secure X-Forward filter instance with configuration
-        resourceConfig.register(new SecureXForwardFilter(config, logProvider));
+        resourceConfig.register(secureXForwardFilter);
 
         ServletContainer container = new ServletContainer(resourceConfig);
         return new ServletHolder(container);
