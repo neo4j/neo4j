@@ -22,7 +22,6 @@ package org.neo4j.bolt;
 
 import java.io.IOException;
 import java.util.Map;
-import org.junit.jupiter.api.Disabled;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
@@ -43,7 +42,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-@Disabled("Disabled since 25/10/24 whilst debugging test framework issues")
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension

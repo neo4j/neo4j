@@ -22,7 +22,6 @@ package org.neo4j.bolt;
 import io.netty.buffer.Unpooled;
 import java.util.EnumSet;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
@@ -44,7 +43,6 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @Neo4jWithSocketExtension
 @BoltTestExtension
 @ExtendWith(OtherThreadExtension.class)
-@Disabled("Disabled since 30/10/24 whilst debugging test framework issues")
 public class ModernNegotiationIT {
 
     @Inject
