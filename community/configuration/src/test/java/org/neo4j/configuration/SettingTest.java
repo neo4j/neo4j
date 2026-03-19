@@ -58,6 +58,7 @@ import static org.neo4j.configuration.SettingValueParsers.NORMALIZED_RELATIVE_UR
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.SECURE_STRING;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
+import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS_ONLY_HOST_NAME;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -323,9 +324,19 @@ class SettingTest {
     void testSocket() {
         var setting = (SettingImpl<SocketAddress>) setting("setting", SOCKET_ADDRESS);
         assertEquals(new SocketAddress("127.0.0.1", 7474), setting.parse("127.0.0.1:7474"));
+        assertEquals(new SocketAddress("127.0.0.1", 7474), setting.parse("[127.0.0.1]:7474"));
         assertEquals(new SocketAddress("127.0.0.1", 7474), setting.parse(" 127.0.0.1:7474 "));
         assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("127.0.0.1"));
+        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("[127.0.0.1]"));
         assertEquals(new SocketAddress(null, 7474), setting.parse(":7474"));
+        assertEquals(
+                new SocketAddress("fd01::9419:4c0e:be04:f0e3", 4332), setting.parse("fd01::9419:4c0e:be04:f0e3:4332"));
+        assertEquals(
+                new SocketAddress("fd01::9419:4c0e:be04:f0e3:4332", -1),
+                setting.parse("[fd01::9419:4c0e:be04:f0e3:4332]"));
+        assertEquals(
+                new SocketAddress("fd01::9419:4c0e:be04:f0e3", 4332),
+                setting.parse("[fd01::9419:4c0e:be04:f0e3]:4332"));
     }
 
     @Test
@@ -348,6 +359,33 @@ class SettingTest {
                 setting.solveDependency(setting.parse("localhost"), setting.parse("127.0.0.1:7474")));
         assertEquals(
                 new SocketAddress("localhost", 7474), setting.solveDependency(null, setting.parse("localhost:7474")));
+    }
+
+    @Test
+    void testSocketOnlyHostname() {
+        var setting = setting("setting", SOCKET_ADDRESS_ONLY_HOST_NAME);
+        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("127.0.0.1"));
+        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse(" 127.0.0.1 "));
+        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("[127.0.0.1]"));
+        assertEquals(
+                new SocketAddress("fd01::9419:4c0e:be04:f0e3:4332", -1),
+                setting.parse("fd01::9419:4c0e:be04:f0e3:4332"));
+    }
+
+    @Test
+    void testSocketOnlyHostnameSolve() {
+        var parent = setting("parent", SOCKET_ADDRESS_ONLY_HOST_NAME);
+        var child = setting("child", SOCKET_ADDRESS);
+        assertEquals(
+                new SocketAddress("localhost", 7473),
+                child.solveDependency(child.parse("localhost:7473"), parent.parse("127.0.0.1")));
+        assertEquals(
+                new SocketAddress("127.0.0.1", 7473),
+                child.solveDependency(child.parse(":7473"), parent.parse("127.0.0.1")));
+        assertEquals(
+                new SocketAddress("localhost", -1),
+                child.solveDependency(child.parse("localhost"), parent.parse("127.0.0.1")));
+        assertEquals(new SocketAddress("localhost", -1), child.solveDependency(null, parent.parse("localhost")));
     }
 
     @Test
@@ -867,24 +905,34 @@ class SettingTest {
         tests.add(dynamicTest(
                 "Test int dependency description",
                 () -> testDescDependency(
-                        INT, "setting.child, an integer. If unset, the value is inherited from setting.parent.")));
+                        INT, INT, "setting.child, an integer. If unset, the value is inherited from setting.parent.")));
         tests.add(dynamicTest(
                 "Test socket dependency description",
                 () -> testDescDependency(
+                        SOCKET_ADDRESS,
+                        SOCKET_ADDRESS,
+                        "setting.child, a socket address in the format of `hostname:port`, `hostname`, or `:port`. "
+                                + "If missing, it is acquired from setting.parent.")));
+        tests.add(dynamicTest(
+                "Test socket only hostname dependency description",
+                () -> testDescDependency(
+                        SOCKET_ADDRESS_ONLY_HOST_NAME,
                         SOCKET_ADDRESS,
                         "setting.child, a socket address in the format of `hostname:port`, `hostname`, or `:port`. "
                                 + "If missing, it is acquired from setting.parent.")));
         tests.add(dynamicTest(
                 "Test path dependency description",
                 () -> testDescDependency(
-                        PATH, "setting.child, a path. If relative, it is resolved from setting.parent.")));
+                        PATH, PATH, "setting.child, a path. If relative, it is resolved from setting.parent.")));
         return tests;
     }
 
-    private static <T> void testDescDependency(SettingValueParser<T> parser, String expectedDescription) {
-        var parent = settingBuilder("setting.parent", parser).immutable().build();
-        var child =
-                settingBuilder("setting.child", parser).setDependency(parent).build();
+    private static <T> void testDescDependency(
+            SettingValueParser<T> parentParser, SettingValueParser<T> childParser, String expectedDescription) {
+        var parent = settingBuilder("setting.parent", parentParser).immutable().build();
+        var child = settingBuilder("setting.child", childParser)
+                .setDependency(parent)
+                .build();
 
         assertEquals(expectedDescription, child.description());
     }

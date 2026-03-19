@@ -45,6 +45,7 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
+import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS_ONLY_HOST_NAME;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
@@ -900,14 +901,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Default network interface to listen for incoming connections. "
             + "To listen for connections on all interfaces, use \"0.0.0.0\". ")
     public static final Setting<SocketAddress> default_listen_address = newBuilder(
-                    "server.default_listen_address", SOCKET_ADDRESS, new SocketAddress("localhost"))
+                    "server.default_listen_address", SOCKET_ADDRESS_ONLY_HOST_NAME, new SocketAddress("localhost"))
             .addConstraint(HOSTNAME_ONLY)
             .immutable()
             .build();
 
     @Description("Default hostname or IP address the server uses to advertise itself.")
     public static final Setting<SocketAddress> default_advertised_address = newBuilder(
-                    "server.default_advertised_address", SOCKET_ADDRESS, new SocketAddress("localhost"))
+                    "server.default_advertised_address", SOCKET_ADDRESS_ONLY_HOST_NAME, new SocketAddress("localhost"))
             .addConstraint(HOSTNAME_ONLY)
             .addConstraint(NO_ALL_INTERFACES_ADDRESS)
             .immutable()

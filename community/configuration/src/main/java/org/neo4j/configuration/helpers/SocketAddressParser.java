@@ -24,6 +24,7 @@ import static java.lang.String.format;
 
 import java.net.URI;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,35 +36,10 @@ public class SocketAddressParser {
     // the lookahead needs to include the end of string anchor ($) to ensure it matches the whole string - although the
     // main regex does not need the trailing $
     private static final Pattern hostnamePattern =
-            Pattern.compile("(?=([^:]+:?|[^:^\\s]*:[^:^\\s]*:[^\\s]*)$)(?<hostname>[^\\s]+)");
+            Pattern.compile("(?=([^:]+:?|[^:^\\s]*:[^:^\\s]*:[^\\s]*)$)(?<hostname>[^\\[\\]\\s]+)");
+    private static final Pattern hostnamePatternExt =
+            Pattern.compile("\\[(?=([^:]+:?|[^:^\\s]*:[^:^\\s]*:[^\\s]*)$)(?<hostname>[^\\s]+)]");
     private static final Pattern portPattern = Pattern.compile(":(?<port>\\d+)");
-
-    public static <T extends SocketAddress> T deriveSocketAddress(
-            String settingName,
-            String settingValue,
-            String defaultHostname,
-            int defaultPort,
-            BiFunction<String, Integer, T> constructor) {
-        if (settingValue == null) {
-            return constructor.apply(defaultHostname, defaultPort);
-        }
-
-        settingValue = settingValue.trim();
-
-        T socketAddress;
-        if ((socketAddress = matchHostnamePort(settingValue, constructor)) != null) {
-            return socketAddress;
-        }
-
-        if ((socketAddress = matchPort(settingValue, defaultHostname, constructor)) != null) {
-            return socketAddress;
-        }
-
-        throw new IllegalArgumentException(format(
-                "Setting \"%s\" must be in the format of "
-                        + "\"hostname:port\" or \":port\". \"%s\" does not conform to these formats",
-                settingName, settingValue));
-    }
 
     public static <T extends SocketAddress> T socketAddress(
             URI uri, int defaultPort, BiFunction<String, Integer, T> constructor) {
@@ -85,7 +61,7 @@ public class SocketAddressParser {
         if (settingValue.contains("://")) {
             throw new IllegalArgumentException(format(
                     "Configured socket address seems to be a URI. The socket address must be in the format of "
-                            + "\"hostname:port\", \"hostname\" or \":port\". \"%s\" does not conform to these formats",
+                            + "\"hostname:port\", \"[hostname]:port\", \"hostname\", \"[hostname]\" or \":port\". \"%s\" does not conform to these formats.",
                     settingValue));
         }
 
@@ -96,7 +72,7 @@ public class SocketAddressParser {
             return socketAddress;
         }
 
-        if ((socketAddress = matchPort(settingValue, null, constructor)) != null) {
+        if ((socketAddress = matchPort(settingValue, constructor)) != null) {
             return socketAddress;
         }
 
@@ -106,12 +82,44 @@ public class SocketAddressParser {
 
         throw new IllegalArgumentException(format(
                 "Configured socket address must be in the format of "
-                        + "\"hostname:port\", \"hostname\" or \":port\". \"%s\" does not conform to these formats",
+                        + "\"hostname:port\", \"[hostname]:port\", \"hostname\", \"[hostname]\" or \":port\". \"%s\" does not conform to these formats.",
+                settingValue));
+    }
+
+    public static <T extends SocketAddress> T socketAddressHostnameOnly(
+            String settingValue, Function<String, T> constructor) {
+        if (settingValue == null) {
+            throw new IllegalArgumentException("Cannot parse socket address from null");
+        }
+
+        if (settingValue.contains("://")) {
+            throw new IllegalArgumentException(format(
+                    "Configured socket address seems to be a URI. The socket address must be in the format of "
+                            + "\"hostname\" (no port). \"%s\" does not conform to this format.",
+                    settingValue));
+        }
+
+        settingValue = settingValue.trim();
+
+        T socketAddress;
+        if ((socketAddress = matchHostname(settingValue, -1, (s, p) -> constructor.apply(s))) != null) {
+            return socketAddress;
+        }
+
+        throw new IllegalArgumentException(format(
+                "Configured socket address must be in the format of "
+                        + "\"hostname\" (no port). \"%s\" does not conform to this format.",
                 settingValue));
     }
 
     private static <T extends SocketAddress> T matchHostname(
             String settingValue, int defaultPort, BiFunction<String, Integer, T> constructor) {
+        Matcher hostnamewithBracketsMatcher = hostnamePatternExt.matcher(settingValue);
+        if (hostnamewithBracketsMatcher.matches()) {
+            String hostname = hostnamewithBracketsMatcher.group("hostname");
+            return constructor.apply(hostname, defaultPort);
+        }
+
         Matcher hostnameMatcher = hostnamePattern.matcher(settingValue);
         if (hostnameMatcher.matches()) {
             String hostname = hostnameMatcher.group("hostname");
@@ -140,11 +148,11 @@ public class SocketAddressParser {
     }
 
     private static <T extends SocketAddress> T matchPort(
-            String settingValue, String defaultHostname, BiFunction<String, Integer, T> constructor) {
+            String settingValue, BiFunction<String, Integer, T> constructor) {
         Matcher portMatcher = portPattern.matcher(settingValue);
         if (portMatcher.matches()) {
             int port = parseInt(portMatcher.group("port"));
-            return constructor.apply(defaultHostname, port);
+            return constructor.apply(null, port);
         }
 
         return null;

@@ -580,6 +580,23 @@ public final class SettingValueParsers {
         }
     };
 
+    public static final SettingValueParser<SocketAddress> SOCKET_ADDRESS_ONLY_HOST_NAME = new SettingValueParser<>() {
+        @Override
+        public SocketAddress parse(String value) {
+            return SocketAddressParser.socketAddressHostnameOnly(value, SocketAddress::new);
+        }
+
+        @Override
+        public String getDescription() {
+            return "a hostname";
+        }
+
+        @Override
+        public Class<SocketAddress> getType() {
+            return SocketAddress.class;
+        }
+    };
+
     public static final SettingValueParser<Long> BYTES = new SettingValueParser<>() {
         @Override
         public Long parse(String value) {
