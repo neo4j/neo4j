@@ -252,7 +252,7 @@ case class VariableChecker(
     case (
         Acc.Aggregation(acc, clause, incomingToClause),
         ExpressionScope(_: FullSubqueryExpression, ctx: ProjectionExpressionContext, refs, _, _)
-      ) if !refs.forall(ctx.projectionItems.containsSubclauseRef) =>
+      ) if !refs.forall(r => ctx.projectionItems.containsSubclauseRef(r) || ctx.constants(r)) =>
       refs.foldLeft(acc) { case (acc, lv) => getVariableNotDefined(acc, clause, incomingToClause, lv) }
     case (acc, Scope.Expr.Variable(variable, incoming)) if !(incoming.constants contains variable) =>
       acc(SemanticError.variableNotDefined(variable.name, variable.position))
