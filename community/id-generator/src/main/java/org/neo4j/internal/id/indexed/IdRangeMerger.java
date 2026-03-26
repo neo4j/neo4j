@@ -29,16 +29,24 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
  * Merges ID state changes for a particular tree entry. Differentiates between recovery/normal mode.
  * Updates to a tree entry of an older generation during normal mode will first normalize states before applying new changes.
  */
-final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange> {
+final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange>, IdRange.FreeIdVisitor {
     private final boolean recoveryMode;
     private final IndexedIdGenerator.Monitor monitor;
     private final AtomicLong numUnusedIds;
-    private int diffNumUnusedIds;
+    private final boolean trackLargestFreeIdsSlotSize;
 
-    IdRangeMerger(boolean recoveryMode, IndexedIdGenerator.Monitor monitor, AtomicLong numUnusedIds) {
+    private int diffNumUnusedIds;
+    private int largestSeenFreeIdsSlotSize;
+
+    IdRangeMerger(
+            boolean recoveryMode,
+            IndexedIdGenerator.Monitor monitor,
+            AtomicLong numUnusedIds,
+            boolean trackLargestFreeIdsSlotSize) {
         this.recoveryMode = recoveryMode;
         this.monitor = monitor;
         this.numUnusedIds = numUnusedIds;
+        this.trackLargestFreeIdsSlotSize = trackLargestFreeIdsSlotSize;
     }
 
     @Override
@@ -50,12 +58,19 @@ final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange> {
         }
 
         diffNumUnusedIds = existingValue.mergeFrom(existingKey, newValue, recoveryMode);
+        spotLargestFreeIdsSlotSize(newKey, existingValue);
         return existingValue.isEmpty() ? REMOVED : MERGED;
     }
 
     @Override
     public void added(IdRangeKey newKey, IdRange newValue) {
         diffNumUnusedIds = newValue.numUnusedIdsForAdded();
+    }
+
+    private void spotLargestFreeIdsSlotSize(IdRangeKey newKey, IdRange newValue) {
+        if (trackLargestFreeIdsSlotSize) {
+            newValue.visitFreeIds(newKey.getIdRangeIdx() * newValue.idsPerEntry(), newValue.getGeneration(), this);
+        }
     }
 
     @Override
@@ -66,5 +81,15 @@ final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange> {
             }
             diffNumUnusedIds = 0;
         }
+    }
+
+    @Override
+    public boolean visitFreeId(long id, int numberOfIds) {
+        largestSeenFreeIdsSlotSize = Math.max(largestSeenFreeIdsSlotSize, numberOfIds);
+        return true;
+    }
+
+    int largestSeenFreeIdsSlotSize() {
+        return largestSeenFreeIdsSlotSize;
     }
 }

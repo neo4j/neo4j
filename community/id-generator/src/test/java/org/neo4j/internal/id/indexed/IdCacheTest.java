@@ -118,7 +118,7 @@ class IdCacheTest {
         var id = cache.takeOrDefault(
                 NO_ID,
                 requestedIdSize,
-                new IndexedIdGenerator.Monitor.Adapter() {
+                new IndexedIdGenerator.Monitor() {
                     @Override
                     public void cached(long cachedId, int numberOfIds) {
                         remainderId.setValue(cachedId);
@@ -178,7 +178,7 @@ class IdCacheTest {
 
         // when
         var actual = new BitSet();
-        var monitor = new IndexedIdGenerator.Monitor.Adapter() {
+        var monitor = new IndexedIdGenerator.Monitor() {
             @Override
             public void cached(long cachedId, int numberOfIds) {
                 for (var i = 0; i < numberOfIds; i++) {

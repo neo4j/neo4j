@@ -26,7 +26,6 @@ import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -51,13 +50,15 @@ class FreeIdScanner {
     private static final IdRangeKey HIGH_KEY = new IdRangeKey(Long.MAX_VALUE);
 
     static final int MAX_SLOT_SIZE = 128;
+    private static final int FAR_SCAN_THRESHOLD = 1_000;
+    private static final int TOO_FAR_SCAN_THRESHOLD = 10_000;
+    private static final int GOOD_ENOUGH_FOUND_THRESHOLD = 10;
 
     private final int idsPerEntry;
     private final GBPTree<IdRangeKey, IdRange> tree;
     private final IdRangeLayout layout;
     private final IdCache cache;
-    private final AtomicInteger freeIdsNotifier;
-    private final AtomicInteger seenFreeIdsNotification = new AtomicInteger();
+    private final FreeIdFindState freeIdFindState;
     private final MarkerProvider markerProvider;
     private final long generation;
     private final ScanLock lock;
@@ -76,10 +77,12 @@ class FreeIdScanner {
     private final ConcurrentLinkedQueue<Long> queuedWastedCachedIds = new ConcurrentLinkedQueue<>();
     /**
      * State for whether there's an ongoing scan, and if so where it should begin from. This is used in
-     * {@link #findSomeIdsToCache(MutableLongList, int[], CursorContext)}  both to know where to initiate a scan from and to
+     * {@link #findSomeIdsToCache(MutableLongList, AvailableSpace, FreeIdFindState.Snapshot, CursorContext)}  both to know where to initiate a scan from and to
      * set it, if the cache got full before scan completed, or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
      */
     private volatile Long ongoingScanRangeIndex;
+
+    private volatile boolean ongoingScanFoundAnything;
 
     private final AtomicLong numQueuedIds = new AtomicLong();
     /**
@@ -94,7 +97,7 @@ class FreeIdScanner {
             GBPTree<IdRangeKey, IdRange> tree,
             IdRangeLayout layout,
             IdCache cache,
-            AtomicInteger freeIdsNotifier,
+            FreeIdFindState freeIdFindState,
             MarkerProvider markerProvider,
             long generation,
             boolean strictlyPrioritizeFreelistOverHighId,
@@ -105,7 +108,7 @@ class FreeIdScanner {
         this.tree = tree;
         this.layout = layout;
         this.cache = cache;
-        this.freeIdsNotifier = freeIdsNotifier;
+        this.freeIdFindState = freeIdFindState;
         this.markerProvider = markerProvider;
         this.generation = generation;
         this.lock = strictlyPrioritizeFreelistOverHighId
@@ -124,8 +127,9 @@ class FreeIdScanner {
      * @param maintenance whether this is a maintenance scan. Maintenance scan has lower thresholds in the
      * condition checks for starting a new scan.
      */
-    void tryLoadFreeIdsIntoCache(boolean blocking, boolean maintenance, CursorContext cursorContext) {
-        if (!hasMoreFreeIds(maintenance)) {
+    void tryLoadFreeIdsIntoCache(
+            boolean blocking, boolean maintenance, int requestedNumberOfIds, CursorContext cursorContext) {
+        if (!hasMoreFreeIds(maintenance, requestedNumberOfIds)) {
             // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't
             // do it.
             return;
@@ -137,14 +141,13 @@ class FreeIdScanner {
                     return;
                 }
                 handleQueuedIds(cursorContext);
-                if (shouldFindFreeIdsByScan()) {
-                    var availableSpace = cache.availableSpaceBySlotIndex();
-                    if (hasAny(availableSpace)) {
-                        var pendingIdQueue = LongLists.mutable.empty();
-                        if (findSomeIdsToCache(pendingIdQueue, availableSpace, cursorContext)) {
-                            // Get a writer and mark the found ids as reserved
-                            reserveAndOfferToCache(pendingIdQueue, cursorContext);
-                        }
+                if (shouldFindFreeIdsByScan(requestedNumberOfIds)) {
+                    var availableSpace = new AvailableSpace(cache, requestedNumberOfIds);
+                    var freeIdStateSnapshot = freeIdFindState.snapshot();
+                    var pendingIdQueue = LongLists.mutable.empty();
+                    if (findSomeIdsToCache(pendingIdQueue, availableSpace, freeIdStateSnapshot, cursorContext)) {
+                        // Get a writer and mark the found ids as reserved
+                        reserveAndOfferToCache(pendingIdQueue, cursorContext);
                     }
                 }
             } catch (IOException e) {
@@ -197,7 +200,7 @@ class FreeIdScanner {
         }
     }
 
-    boolean hasMoreFreeIds(boolean maintenance) {
+    boolean hasMoreFreeIds(boolean maintenance, int requestedNumberOfIds) {
         if (!allocationEnabled) {
             return false;
         }
@@ -206,11 +209,14 @@ class FreeIdScanner {
         // so add a little lee-way so that there has to be a at least a bunch of these "skipped" IDs to make it worth
         // wile.
         int numQueuedIdsThreshold = maintenance ? 1 : 1_000;
-        return shouldFindFreeIdsByScan() || numQueuedIds.get() >= numQueuedIdsThreshold;
+        return shouldFindFreeIdsByScan(requestedNumberOfIds) || numQueuedIds.get() >= numQueuedIdsThreshold;
     }
 
-    private boolean shouldFindFreeIdsByScan() {
-        return ongoingScanRangeIndex != null || seenFreeIdsNotification.get() != freeIdsNotifier.get();
+    private boolean shouldFindFreeIdsByScan(int requestedNumberOfIds) {
+        if (requestedNumberOfIds > freeIdFindState.snapshot().largestPossibleSlotSize()) {
+            return false;
+        }
+        return ongoingScanRangeIndex != null || freeIdFindState.hasSeenMoreFrees();
     }
 
     private boolean scanLock(boolean blocking) {
@@ -234,7 +240,8 @@ class FreeIdScanner {
                     handleQueuedIds(marker);
                     cache.drain(marker::markUncached);
                 }
-                freeIdsNotifier.incrementAndGet();
+                freeIdFindState.notifySeenFreedId(0);
+                freeIdFindState.resetLargestPossibleSlotSize();
             } else {
                 handleQueuedIds(IndexedIdGenerator.NOOP_MARKER);
                 cache.drain((id, size) -> {});
@@ -291,89 +298,59 @@ class FreeIdScanner {
     }
 
     private boolean findSomeIdsToCache(
-            MutableLongList pendingIdQueue, int[] availableSpace, CursorContext cursorContext) throws IOException {
+            MutableLongList pendingIdQueue,
+            AvailableSpace availableSpace,
+            FreeIdFindState.Snapshot freeIdStateSnapshot,
+            CursorContext cursorContext)
+            throws IOException {
         boolean startedNow = ongoingScanRangeIndex == null;
+        monitor.scanStart(startedNow);
         IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey(ongoingScanRangeIndex);
         boolean seekerExhausted = false;
-        int freeIdsNotificationBeforeScan = freeIdsNotifier.get();
         IdRange.FreeIdVisitor visitor = (id, numberOfIds) -> queueId(pendingIdQueue, availableSpace, id, numberOfIds);
 
         try (Seeker<IdRangeKey, IdRange> scanner = tree.seek(from, HIGH_KEY, cursorContext)) {
             // Continue scanning until the cache is full or there's nothing more to scan
-            while (hasAny(availableSpace)) {
+            int numEntriesVisited = 0;
+            ScanEndCondition scanEndCondition;
+            do {
                 if (!scanner.next()) {
                     seekerExhausted = true;
+                    scanEndCondition = ScanEndCondition.EXHAUSTED;
                     break;
                 }
 
+                numEntriesVisited++;
                 var baseId = scanner.key().getIdRangeIdx() * idsPerEntry;
                 scanner.value().visitFreeIds(baseId, generation, visitor);
-            }
+            } while ((scanEndCondition = availableSpace.scanEndConditionMet(numEntriesVisited)) == null);
             // If there's more left to scan "this round" then make a note of it so that we start from this place the
             // next time
             ongoingScanRangeIndex = seekerExhausted ? null : scanner.key().getIdRangeIdx();
+            monitor.scanEnd(numEntriesVisited, availableSpace.foundIds(), scanEndCondition);
         }
 
         boolean somethingWasCached = !pendingIdQueue.isEmpty();
+        ongoingScanFoundAnything |= somethingWasCached;
         if (seekerExhausted) {
-            if (!somethingWasCached && startedNow) {
-                // chill a bit until at least one id gets freed
-                seenFreeIdsNotification.set(freeIdsNotificationBeforeScan);
+            if (!ongoingScanFoundAnything) {
+                // Found nothing during scan, catch up freeIdsNotification to the point where the scan started
+                // to reduce chance of unnecessary scans until new ids are freed
+                freeIdFindState.catchupFreeIdsNotification(freeIdStateSnapshot.freeIdsNotification());
             }
+            freeIdFindState.resetLargestPossibleSlotSize();
+            ongoingScanFoundAnything = false;
         }
         return somethingWasCached;
     }
 
-    private static boolean hasAny(int[] availableSpace) {
-        for (int i : availableSpace) {
-            if (i > 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean queueId(MutableLongList pendingIdQueue, int[] availableSpace, long id, int numberOfIds) {
+    private boolean queueId(MutableLongList pendingIdQueue, AvailableSpace availableSpace, long id, int numberOfIds) {
         assert layout.idRangeIndex(id) == layout.idRangeIndex(id + numberOfIds - 1);
-        if (trackSpaceUsageOfQueuedId(availableSpace, numberOfIds)) {
+        if (availableSpace.trackSpaceUsageOfQueuedId(numberOfIds)) {
             pendingIdQueue.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
             return true;
         }
         return false;
-    }
-
-    /**
-     * Given the {@code availableSpace} array with available space per slot, check if an ID of size {@code numberOfIds}
-     * fits, either partly or entirely. Also the {@code availableSpace} values will decrease equivalent to the size of
-     * {@code numberOfIds} and which slot(s) it fits into.
-     *
-     * @param availableSpace array of number of IDs that can fit into each slot.
-     * @param numberOfIds the size of the ID to try and fit into the cache.
-     * @return {@code true} if there's space for an ID of size {@code numberOfIds}, or at least parts of it and
-     * otherwise {@code false}.
-     */
-    private boolean trackSpaceUsageOfQueuedId(int[] availableSpace, int numberOfIds) {
-        int trackedNumberOfIds = numberOfIds;
-        int slotIndex = cache.largestSlotIndex(trackedNumberOfIds);
-        while (trackedNumberOfIds > 0) {
-            if (availableSpace[slotIndex] > 0) {
-                if (slotIndex == 0) {
-                    availableSpace[slotIndex] = Math.max(0, availableSpace[slotIndex] - trackedNumberOfIds);
-                    trackedNumberOfIds = 0;
-                } else {
-                    availableSpace[slotIndex]--;
-                    trackedNumberOfIds -= cache.slotSizeSlotIndex(slotIndex);
-                }
-                if (trackedNumberOfIds > 0) {
-                    slotIndex = cache.largestSlotIndex(trackedNumberOfIds);
-                }
-            } else if (slotIndex > 0) {
-                slotIndex--;
-            } else {
-                break;
-            }
-        }
-        return trackedNumberOfIds < numberOfIds;
     }
 
     boolean allocationEnabled() {
@@ -382,5 +359,87 @@ class FreeIdScanner {
 
     private interface QueueConsumer {
         void accept(IdGenerator.ContextualMarker marker, long id, int size);
+    }
+
+    private static class AvailableSpace {
+        private final IdCache cache;
+        private final int requestedNumberOfIds;
+        private final int[] availableSpace;
+        private final int[] initialAvailableSpace;
+        private final int findThreshold;
+
+        private int numFoundSuitableIds;
+
+        AvailableSpace(IdCache cache, int requestedNumberOfIds) {
+            this.availableSpace = cache.availableSpaceBySlotIndex();
+            this.initialAvailableSpace = availableSpace.clone();
+            this.cache = cache;
+            this.requestedNumberOfIds = requestedNumberOfIds;
+            this.findThreshold = availableSpace[cache.lowestSlotIndexCapableOf(requestedNumberOfIds)];
+        }
+
+        /**
+         * Given the {@code availableSpace} array with available space per slot, check if an ID of size {@code numberOfIds}
+         * fits, either partly or entirely. Also the {@code availableSpace} values will decrease equivalent to the size of
+         * {@code numberOfIds} and which slot(s) it fits into.
+         *
+         * @param numberOfIds the size of the ID to try and fit into the cache.
+         * @return {@code true} if there's space for an ID of size {@code numberOfIds}, or at least parts of it and
+         * otherwise {@code false}.
+         */
+        boolean trackSpaceUsageOfQueuedId(int numberOfIds) {
+            int trackedNumberOfIds = numberOfIds;
+            int slotIndex = cache.largestSlotIndex(trackedNumberOfIds);
+            while (trackedNumberOfIds > 0) {
+                if (availableSpace[slotIndex] > 0) {
+                    if (slotIndex == 0) {
+                        // We're at the lowest slot (assumed to be 1, right?). We can't continue in this loop
+                        // so just add all remaining IDs as individual IDs and be done with.
+                        int prev = availableSpace[slotIndex];
+                        availableSpace[slotIndex] = Math.max(0, prev - trackedNumberOfIds);
+                        if (requestedNumberOfIds == 1) {
+                            numFoundSuitableIds += prev - availableSpace[slotIndex];
+                        }
+                        trackedNumberOfIds = 0;
+                    } else {
+                        availableSpace[slotIndex]--;
+                        int slotSize = cache.slotSizeSlotIndex(slotIndex);
+                        if (slotSize >= requestedNumberOfIds) {
+                            numFoundSuitableIds++;
+                        }
+                        trackedNumberOfIds -= slotSize;
+                    }
+                    if (trackedNumberOfIds > 0) {
+                        slotIndex = cache.largestSlotIndex(trackedNumberOfIds);
+                    }
+                } else if (slotIndex > 0) {
+                    slotIndex--;
+                } else {
+                    break;
+                }
+            }
+            return trackedNumberOfIds < numberOfIds;
+        }
+
+        int[] foundIds() {
+            int[] counts = initialAvailableSpace.clone();
+            for (int i = 0; i < availableSpace.length; i++) {
+                counts[i] -= availableSpace[i];
+            }
+            return counts;
+        }
+
+        ScanEndCondition scanEndConditionMet(int numEntriesVisited) {
+            if (numFoundSuitableIds >= findThreshold) {
+                return ScanEndCondition.QUOTA_FOUND;
+            }
+            if (numEntriesVisited >= FAR_SCAN_THRESHOLD && numFoundSuitableIds >= GOOD_ENOUGH_FOUND_THRESHOLD) {
+                return ScanEndCondition.ENOUGH_FOUND;
+            }
+            if (numEntriesVisited >= TOO_FAR_SCAN_THRESHOLD) {
+                return numFoundSuitableIds == 0 ? ScanEndCondition.NOTHING_FOUND : ScanEndCondition.ENOUGH_FOUND;
+            }
+            return null;
+        }
     }
 }

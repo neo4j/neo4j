@@ -1078,13 +1078,12 @@ class IndexedIdGeneratorTest {
         // given
         Barrier.Control barrier = new Barrier.Control();
         AtomicBoolean enabled = new AtomicBoolean(false);
-        IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor.Adapter() {
+        IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor() {
             @Override
             public void cached(long cachedId, int numberOfIds) {
                 if (enabled.compareAndSet(true, false)) {
                     barrier.reached();
                 }
-                super.cached(cachedId, numberOfIds);
             }
         };
         open(customization().with(monitor));
@@ -1127,7 +1126,7 @@ class IndexedIdGeneratorTest {
         Barrier.Control barrier = new Barrier.Control();
         AtomicInteger numCached = new AtomicInteger();
         AtomicBoolean enabled = new AtomicBoolean(false);
-        IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor.Adapter() {
+        IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor() {
             @Override
             public void cached(long cachedId, int numberOfIds) {
                 if (enabled.get()) {
@@ -1761,7 +1760,7 @@ class IndexedIdGeneratorTest {
     void shouldAllocateFromHighIdOnContentionAndNonStrict() throws Exception {
         // given
         var barrier = new Barrier.Control();
-        var monitor = new IndexedIdGenerator.Monitor.Adapter() {
+        var monitor = new IndexedIdGenerator.Monitor() {
             @Override
             public void markedAsReserved(long markedId, int numberOfIds) {
                 barrier.reached();
@@ -2081,7 +2080,7 @@ class IndexedIdGeneratorTest {
     void shouldCatchUpOnNumUnusedIdsOnStartupIfMissingFromHeader() throws IOException {
         // given
         var readNumUnusedIds = new MutableLong();
-        var monitor = new IndexedIdGenerator.Monitor.Adapter() {
+        var monitor = new IndexedIdGenerator.Monitor() {
             @Override
             public void opened(long highestWrittenId, long highId, long numUnusedIds) {
                 readNumUnusedIds.setValue(numUnusedIds);

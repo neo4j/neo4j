@@ -28,8 +28,8 @@ import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import org.junit.jupiter.api.Test;
 
 class IdRangeMergerTest {
-    private static final IdRangeMerger DEFAULT = new IdRangeMerger(false, NO_MONITOR, null);
-    private static final IdRangeMerger RECOVERY = new IdRangeMerger(true, NO_MONITOR, null);
+    private static final IdRangeMerger DEFAULT = new IdRangeMerger(false, NO_MONITOR, null, true);
+    private static final IdRangeMerger RECOVERY = new IdRangeMerger(true, NO_MONITOR, null, true);
     private static final IdRangeKey K = new IdRangeKey(1);
 
     @Test

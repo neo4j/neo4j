@@ -242,6 +242,19 @@ class IdCache {
         return size.get();
     }
 
+    int size(int atLeastSlotSize) {
+        if (atLeastSlotSize == 0 || slotSizes.length == 1) {
+            return size.get();
+        } else {
+            int slotIndex = lowestSlotIndexCapableOf(atLeastSlotSize);
+            int size = 0;
+            for (int index = slotIndex; index < slotSizes.length; index++) {
+                size += queues[index].size();
+            }
+            return size;
+        }
+    }
+
     boolean isFull() {
         for (ConcurrentLongQueue queue : queues) {
             if (queue.availableSpace() > 0) {
@@ -251,7 +264,7 @@ class IdCache {
         return true;
     }
 
-    private int lowestSlotIndexCapableOf(int numberOfIds) {
+    int lowestSlotIndexCapableOf(int numberOfIds) {
         for (int slotIndex = 0; slotIndex < slotSizes.length; slotIndex++) {
             if (slotSizes[slotIndex] >= numberOfIds) {
                 return slotIndex;
