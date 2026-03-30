@@ -19,14 +19,15 @@
  */
 package org.neo4j.test.scheduler;
 
-import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -45,11 +46,13 @@ import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
 /**
- * Simple test scheduler implementation that is based on a cached thread pool.
- * All threads created by this scheduler can be identified by <i>ThreadPoolScheduler</i> prefix.
+ * Hybrid test scheduler:
+ * - Cached thread pool for immediate one-off jobs
+ * - Scheduled thread pool for delayed/recurring jobs
  */
 public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobScheduler {
-    private final ExecutorService executor;
+    private final ExecutorService oneOffExecutor;
+    private final ScheduledExecutorService scheduledExecutor;
     private final ThreadFactory threadFactory;
 
     public ThreadPoolJobScheduler() {
@@ -57,12 +60,20 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     public ThreadPoolJobScheduler(String prefix) {
-        this(newCachedThreadPool(new DaemonThreadFactory(prefix)));
+        this(
+                Executors.newCachedThreadPool(new DaemonThreadFactory(prefix + "-oneoff")),
+                Executors.newScheduledThreadPool(
+                        Runtime.getRuntime().availableProcessors(), new DaemonThreadFactory(prefix + "-scheduled")));
     }
 
-    public ThreadPoolJobScheduler(ExecutorService executor) {
-        this.executor = executor;
+    public ThreadPoolJobScheduler(ExecutorService oneOffExecutor, ScheduledExecutorService scheduledExecutor) {
+        this.oneOffExecutor = oneOffExecutor;
+        this.scheduledExecutor = scheduledExecutor;
         this.threadFactory = new DaemonThreadFactory();
+    }
+
+    public ThreadPoolJobScheduler(ExecutorService oneOffExecutor) {
+        this(oneOffExecutor, null);
     }
 
     @Override
@@ -72,7 +83,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     @Override
     public void setParallelism(Group group, int parallelism) {
-        // has no effect
+        // no-op
     }
 
     @Override
@@ -82,12 +93,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     @Override
     public CallableExecutor executor(Group group) {
-        return new CallableExecutorService(executor);
+        return new CallableExecutorService(oneOffExecutor);
     }
 
     @Override
     public MonitoredJobExecutor monitoredJobExecutor(Group group) {
-        return (monitoringParams, command) -> executor.execute(command);
+        return (monitoringParams, command) -> oneOffExecutor.execute(command);
     }
 
     @Override
@@ -95,24 +106,26 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         return threadFactory;
     }
 
+    // -------- One-off jobs --------
     @Override
     public <T> JobHandle<T> schedule(Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job) {
-        return new FutureJobHandle<>(executor.submit(job));
+        return new FutureJobHandle<>(oneOffExecutor.submit(job));
     }
 
     @Override
     public JobHandle<?> schedule(Group group, Runnable job) {
-        return new FutureJobHandle<>(executor.submit(job));
+        return new FutureJobHandle<>(oneOffExecutor.submit(job));
     }
 
     @Override
     public JobHandle<?> schedule(Group group, JobMonitoringParams monitoredJobParams, Runnable job) {
-        return new FutureJobHandle<>(executor.submit(job));
+        return new FutureJobHandle<>(oneOffExecutor.submit(job));
     }
 
+    // -------- Delayed jobs --------
     @Override
     public JobHandle<?> schedule(Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException();
+        return new FutureJobHandle<>(scheduledExecutor.schedule(runnable, initialDelay, timeUnit));
     }
 
     @Override
@@ -122,24 +135,28 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
             Runnable runnable,
             long initialDelay,
             TimeUnit timeUnit) {
-        throw new UnsupportedOperationException();
+        return new FutureJobHandle<>(scheduledExecutor.schedule(runnable, initialDelay, timeUnit));
     }
 
+    // -------- Recurring jobs --------
     @Override
     public JobHandle<?> scheduleRecurring(Group group, Runnable runnable, long period, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException();
+        throwIfScheduledExecutorIsNull();
+        return new FutureJobHandle<>(scheduledExecutor.scheduleAtFixedRate(runnable, period, period, timeUnit));
     }
 
     @Override
     public JobHandle<?> scheduleRecurring(
             Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException();
+        throwIfScheduledExecutorIsNull();
+        return new FutureJobHandle<>(scheduledExecutor.scheduleAtFixedRate(runnable, period, period, timeUnit));
     }
 
     @Override
     public JobHandle<?> scheduleRecurring(
             Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit) {
-        throw new UnsupportedOperationException();
+        throwIfScheduledExecutorIsNull();
+        return new FutureJobHandle<>(scheduledExecutor.scheduleAtFixedRate(runnable, initialDelay, period, timeUnit));
     }
 
     @Override
@@ -150,8 +167,11 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
             long initialDelay,
             long period,
             TimeUnit timeUnit) {
-        throw new UnsupportedOperationException();
+        throwIfScheduledExecutorIsNull();
+        return new FutureJobHandle<>(scheduledExecutor.scheduleAtFixedRate(runnable, initialDelay, period, timeUnit));
     }
+
+    // -------- Unsupported --------
 
     @Override
     public Stream<ActiveGroup> activeGroups() {
@@ -168,6 +188,8 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         throw new UnsupportedOperationException();
     }
 
+    // -------- Lifecycle --------
+
     @Override
     public void close() {
         shutdown();
@@ -175,12 +197,26 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     @Override
     public void shutdown() {
-        executor.shutdown();
-        if (isNotShutdown(executor)) {
-            executor.shutdownNow();
-            if (isNotShutdown(executor)) {
-                throw new IllegalStateException("Executor did not shutdown in time: " + executor);
+        oneOffExecutor.shutdown();
+        ensureExecutorShutDown(oneOffExecutor);
+        if (scheduledExecutor != null) {
+            scheduledExecutor.shutdown();
+            ensureExecutorShutDown(scheduledExecutor);
+        }
+    }
+
+    private void ensureExecutorShutDown(ExecutorService oneOffExecutor) {
+        if (isNotShutdown(oneOffExecutor)) {
+            oneOffExecutor.shutdownNow();
+            if (isNotShutdown(oneOffExecutor)) {
+                throw new IllegalStateException("Executors did not shutdown in time.");
             }
+        }
+    }
+
+    private void throwIfScheduledExecutorIsNull() {
+        if (scheduledExecutor == null) {
+            throw new IllegalStateException("ScheduledExecutorService cannot be null when scheduling recurring tasks");
         }
     }
 
@@ -193,6 +229,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         }
     }
 
+    // -------- JobHandle --------
     private static class FutureJobHandle<V> implements JobHandle<V> {
         private final Future<V> future;
 

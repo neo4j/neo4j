@@ -30,6 +30,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,7 @@ import org.neo4j.adversaries.MethodGuardedAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -47,11 +49,12 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 
 @EphemeralPageCacheExtension
@@ -72,13 +75,25 @@ class BufferedIdControllerTest {
     private BufferingIdGeneratorFactory idGeneratorFactory;
     private BufferedIdController controller;
 
-    void setUp(CursorContextFactory contextFactory, FileSystemAbstraction filesystem) throws IOException {
-        idGeneratorFactory = new BufferingIdGeneratorFactory(
-                new DefaultIdGeneratorFactory(filesystem, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME));
+    void setUp(
+            CursorContextFactory contextFactory,
+            FileSystemAbstraction filesystem,
+            IndexedIdGenerator.Monitor idGeneratorMonitor)
+            throws IOException {
+        idGeneratorFactory = new BufferingIdGeneratorFactory(new DefaultIdGeneratorFactory(
+                filesystem,
+                immediate(),
+                true,
+                PageCacheTracer.NULL,
+                DEFAULT_DATABASE_NAME,
+                true,
+                true,
+                idGeneratorMonitor));
         Config globalConfig = Config.defaults();
+        ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
         controller = new BufferedIdController(
                 idGeneratorFactory,
-                new OnDemandJobScheduler(),
+                scheduler,
                 contextFactory,
                 new DatabaseConfig(globalConfig),
                 "test db",
@@ -93,11 +108,12 @@ class BufferedIdControllerTest {
                 EmptyMemoryTracker.INSTANCE,
                 writable());
         life.add(controller);
+        life.add(scheduler);
     }
 
     @Test
     void shouldStopWhenNotStarted() throws IOException {
-        setUp(new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER), fs);
+        setUp(new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER), fs, null);
 
         assertDoesNotThrow(controller::stop);
     }
@@ -106,7 +122,7 @@ class BufferedIdControllerTest {
     void reportPageCacheMetricsOnMaintenance() throws IOException {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
-        setUp(contextFactory, fs);
+        setUp(contextFactory, fs, null);
 
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
@@ -143,7 +159,7 @@ class BufferedIdControllerTest {
         var race = new Race();
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
-        setUp(contextFactory, fs);
+        setUp(contextFactory, fs, null);
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
@@ -182,7 +198,7 @@ class BufferedIdControllerTest {
     void maintanenceAfterClose() throws Throwable {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
-        setUp(contextFactory, fs);
+        setUp(contextFactory, fs, null);
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
@@ -219,7 +235,7 @@ class BufferedIdControllerTest {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         var adversarialFs = new AdversarialFileSystemAbstraction(adversary, fs);
-        setUp(contextFactory, adversarialFs);
+        setUp(contextFactory, adversarialFs, null);
         life.start();
         try (var idGenerator = idGeneratorFactory.create(
                 pageCache,
@@ -243,6 +259,58 @@ class BufferedIdControllerTest {
             }
 
             controller.maintenance();
+        }
+    }
+
+    @Test
+    void shouldAllowFreeIdsJobToRunUnaffectedByLoadIdsJob() throws Exception {
+        // given
+        var monitorSlownessEnabled = new AtomicBoolean();
+        var monitorSlownessBarrier = new Barrier.Control();
+        var monitor = new IndexedIdGenerator.Monitor() {
+            @Override
+            public void markedAsReserved(long markedId, int numberOfIds) {
+                if (monitorSlownessEnabled.get()) {
+                    monitorSlownessBarrier.reached();
+                    monitorSlownessEnabled.set(false);
+                }
+            }
+        };
+        setUp(CursorContextFactory.NULL_CONTEXT_FACTORY, fs, monitor);
+        try (var idGenerator = idGeneratorFactory.create(
+                pageCache,
+                testDirectory.file("foo"),
+                TestIdType.TEST,
+                0,
+                false,
+                Long.MAX_VALUE,
+                false,
+                Config.defaults(),
+                CursorContextFactory.NULL_CONTEXT_FACTORY,
+                immutable.empty(),
+                SINGLE_IDS)) {
+            idGenerator.start(
+                    (FreeIds) visitor -> {
+                        int numFreeIds = 100;
+                        for (int i = 0; i < numFreeIds; i++) {
+                            visitor.accept(i);
+                        }
+                        return numFreeIds - 1;
+                    },
+                    NULL_CONTEXT);
+            idGenerator.clearCache(true, NULL_CONTEXT);
+
+            monitorSlownessEnabled.set(true);
+            life.start();
+
+            // when
+            monitorSlownessBarrier.await();
+
+            // then
+            for (int i = 0; i < 3; i++) {
+                controller.maintenance(IdController.MAINTENANCE_FREE_IDS);
+            }
+            monitorSlownessBarrier.release();
         }
     }
 }

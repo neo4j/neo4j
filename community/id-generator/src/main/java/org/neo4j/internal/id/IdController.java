@@ -34,6 +34,10 @@ import org.neo4j.memory.MemoryTracker;
  * maintenance, clearing, resetting, generation.
  */
 public interface IdController extends Lifecycle {
+    int MAINTENANCE_FREE_IDS = 0x1;
+    int MAINTENANCE_LOAD_IDS = 0x2;
+    int MAINTENANCE_ALL = MAINTENANCE_LOAD_IDS | MAINTENANCE_FREE_IDS;
+
     /**
      * Essentially a condition to check whether or not the {@link IdController} can free a batch of IDs, in maintenance.
      * For a concrete example it can be a snapshot of ongoing transactions. Then given that snapshot {@link #eligibleForFreeing(TransactionSnapshot)}
@@ -67,9 +71,18 @@ public interface IdController extends Lifecycle {
     }
 
     /**
-     * Perform ids related maintenance.
+     * Perform ids related maintenance - all available tasks.
      */
-    void maintenance();
+    default void maintenance() {
+        maintenance(MAINTENANCE_ALL);
+    }
+
+    /**
+     * Perform ids related maintenance - only the tasks that are specified in {@code flags}.
+     * @param flags which tasks to perform,
+     * see {@link #MAINTENANCE_FREE_IDS}, {@link #MAINTENANCE_LOAD_IDS}, {@link #MAINTENANCE_ALL}.
+     */
+    void maintenance(int flags);
 
     void initialize(
             FileSystemAbstraction fs,

@@ -48,6 +48,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     private final String databaseName;
     private final boolean allocationInitiallyEnabled;
     private final boolean useDirectToCache;
+    private final IndexedIdGenerator.Monitor monitor;
     private final PageCacheTracer pageCacheTracer;
 
     /**
@@ -61,7 +62,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             PageCacheTracer pageCacheTracer,
             String databaseName) {
-        this(fs, recoveryCleanupWorkCollector, false, pageCacheTracer, databaseName, true, true);
+        this(fs, recoveryCleanupWorkCollector, false, pageCacheTracer, databaseName, true, true, null);
     }
 
     /**
@@ -83,7 +84,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             PageCacheTracer pageCacheTracer,
             String databaseName,
             boolean allocationInitiallyEnabled,
-            boolean useDirectToCache) {
+            boolean useDirectToCache,
+            IndexedIdGenerator.Monitor monitor) {
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.allowLargeIdCaches = allowLargeIdCaches;
@@ -91,6 +93,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
         this.databaseName = databaseName;
         this.allocationInitiallyEnabled = allocationInitiallyEnabled;
         this.useDirectToCache = useDirectToCache;
+        this.monitor = monitor;
     }
 
     @Override
@@ -152,7 +155,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 config,
                 databaseName,
                 contextFactory,
-                defaultIdMonitor(fs, fileName, config),
+                monitor != null ? monitor : defaultIdMonitor(fs, fileName, config),
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,
@@ -198,7 +201,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 config,
                 databaseName,
                 contextFactory,
-                defaultIdMonitor(fs, fileName, config),
+                monitor != null ? monitor : defaultIdMonitor(fs, fileName, config),
                 openOptions,
                 slotDistribution,
                 pageCacheTracer,

@@ -24,6 +24,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.id.IdController.MAINTENANCE_ALL;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
@@ -136,12 +137,12 @@ class BufferingIdGeneratorFactoryTest {
         actual.markers.get(TestIdType.TEST).verifyNoMoreMarks();
 
         // after some maintenance and transaction still not closed
-        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        bufferingIdGeneratorFactory.maintenance(MAINTENANCE_ALL, NULL_CONTEXT);
         actual.markers.get(TestIdType.TEST).verifyNoMoreMarks();
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        bufferingIdGeneratorFactory.maintenance(MAINTENANCE_ALL, NULL_CONTEXT);
 
         // THEN
         actual.markers.get(TestIdType.TEST).verifyFreed(7, 2);
@@ -165,7 +166,7 @@ class BufferingIdGeneratorFactoryTest {
         });
         Deque<IdController.TransactionSnapshot> conditions = new ConcurrentLinkedDeque<>();
         race.addContestant(throwing(() -> {
-            bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+            bufferingIdGeneratorFactory.maintenance(MAINTENANCE_ALL, NULL_CONTEXT);
             if (boundaries.mostRecentlyReturned == null) {
                 return;
             }
@@ -195,10 +196,10 @@ class BufferingIdGeneratorFactoryTest {
             boundaries.enable(condition);
         }
         boundaries.automaticallyEnableConditions = true;
-        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        bufferingIdGeneratorFactory.maintenance(MAINTENANCE_ALL, NULL_CONTEXT);
         // the second maintenance call is because the first call will guarantee that the queued buffers will be freed,
         // making room to queue the last deleted IDs from the ID generator in the second call.
-        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        bufferingIdGeneratorFactory.maintenance(MAINTENANCE_ALL, NULL_CONTEXT);
         for (long id = 0; id < nextId.get(); id++) {
             actual.markers.get(TestIdType.TEST).verifyFreed(id, 1);
         }
@@ -220,7 +221,7 @@ class BufferingIdGeneratorFactoryTest {
         assertThat(dbMemoryPool.usedHeap()).isGreaterThan(heapSizeBeforeDeleting);
         // maintenance where transactions are still open. Here the buffered IDs should have been written to the page
         // cache and the heap usage freed
-        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        bufferingIdGeneratorFactory.maintenance(MAINTENANCE_ALL, NULL_CONTEXT);
         if (offHeap) {
             assertThat(dbMemoryPool.usedHeap()).isEqualTo(heapSizeBeforeDeleting);
         } else {
@@ -228,7 +229,7 @@ class BufferingIdGeneratorFactoryTest {
         }
         // maintenance where transactions are closed and i.e. the buffered IDs gets released
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance(NULL_CONTEXT);
+        bufferingIdGeneratorFactory.maintenance(MAINTENANCE_ALL, NULL_CONTEXT);
 
         // then heap usage should go down again
         assertThat(dbMemoryPool.usedHeap()).isEqualTo(heapSizeBeforeDeleting);

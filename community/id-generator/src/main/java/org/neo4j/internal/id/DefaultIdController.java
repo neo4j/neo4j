@@ -36,7 +36,7 @@ public class DefaultIdController extends LifecycleAdapter implements IdControlle
     public DefaultIdController() {}
 
     @Override
-    public void maintenance() {}
+    public void maintenance(int flags) {}
 
     @Override
     public void initialize(

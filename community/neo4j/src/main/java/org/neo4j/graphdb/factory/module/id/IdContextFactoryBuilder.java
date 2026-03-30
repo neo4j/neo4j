@@ -106,7 +106,8 @@ public final class IdContextFactoryBuilder {
                     pageCacheTracer,
                     databaseId.name(),
                     allocationEnabled,
-                    !isMultiVersion);
+                    !isMultiVersion,
+                    null);
         };
     }
 }
