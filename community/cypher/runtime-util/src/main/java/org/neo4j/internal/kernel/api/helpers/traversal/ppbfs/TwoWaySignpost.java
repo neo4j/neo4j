@@ -51,6 +51,11 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     protected int minTargetDistance = NO_TARGET_DISTANCE;
     public final BitSet cycleLengths;
 
+    // The source length assigned during BFS expansion (-1 if none).
+    // Used to identify the BFS-discovered length so we can preserve the node's reachability
+    // when pruning (see pruneSourceLength).
+    private int bfsSourceLength = -1;
+
     protected TwoWaySignpost(NodeState prevNode, NodeState forwardNode, Lengths lengths) {
         this.prevNode = prevNode;
         this.forwardNode = forwardNode;
@@ -61,6 +66,7 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     protected TwoWaySignpost(NodeState prevNode, NodeState forwardNode, int sourceLength, Lengths lengths) {
         this(prevNode, forwardNode, lengths);
         this.lengths.markAsSeen(sourceLength);
+        this.bfsSourceLength = sourceLength;
     }
 
     public static RelSignpost fromRelExpansion(
@@ -174,7 +180,15 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     public void pruneSourceLength(int sourceLength) {
         prevNode.globalState.hooks.pruneSourceLength(this, sourceLength);
         this.lengths.clearSeen(sourceLength);
-        this.forwardNode.synchronizeLengthAfterPrune(sourceLength);
+        // In trail mode, when pruning the BFS-discovered source length, preserve the node's
+        // reachability by skipping synchronizeLengthAfterPrune. The signpost loses the length
+        // (tracer won't retry at the BFS length), but the node keeps it so propagation can
+        // create longer source lengths at downstream signposts. Combined with unconditional
+        // setMinTargetDistance in PathTracer, this allows valid trails to be found at deeper
+        // depths via propagated (longer) source lengths.
+        if (lengths.isWalkMode() || sourceLength != bfsSourceLength) {
+            this.forwardNode.synchronizeLengthAfterPrune(sourceLength);
+        }
     }
 
     public void validate(int sourceLength) {

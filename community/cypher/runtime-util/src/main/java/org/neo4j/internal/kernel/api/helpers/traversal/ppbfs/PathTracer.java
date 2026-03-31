@@ -127,7 +127,10 @@ public final class PathTracer<Row> extends PrefetchingIterator<Row> {
                 popAndPrune();
             } else {
                 var sourceSignpost = stack.headSignpost();
-                if (stack.isValid() && !sourceSignpost.hasBeenTraced()) {
+                // Set minTargetDistance unconditionally — the distance to target is structural
+                // and correct regardless of trail validity. This enables propagation to create
+                // longer source lengths through the chain after BFS lengths are pruned.
+                if (!sourceSignpost.hasBeenTraced()) {
                     sourceSignpost.setMinTargetDistance(stack.lengthToTarget(), PGPathPropagatingBFS.Phase.Tracing);
                 }
 
