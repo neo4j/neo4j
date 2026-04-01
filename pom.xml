@@ -224,6 +224,7 @@
     <sqlite-jdbc.version>3.51.2.0</sqlite-jdbc.version>
     <dependency.analyze.failOnWarning>false</dependency.analyze.failOnWarning>
     <dependency.analyze.skip>false</dependency.analyze.skip>
+    <netty.version>4.2.10.Final</netty.version>
   </properties>
 
   <modules>
@@ -1882,7 +1883,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.10.Final</version>
+        <version>${netty.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
