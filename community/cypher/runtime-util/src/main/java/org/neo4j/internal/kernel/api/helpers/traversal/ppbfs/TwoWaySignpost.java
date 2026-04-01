@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Objects;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
@@ -49,7 +48,6 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
     // targetSignpost
     protected int minTargetDistance = NO_TARGET_DISTANCE;
-    public final BitSet cycleLengths;
 
     // The source length assigned during BFS expansion (-1 if none).
     // Used to identify the BFS-discovered length so we can preserve the node's reachability
@@ -60,7 +58,6 @@ public abstract sealed class TwoWaySignpost implements Measurable {
         this.prevNode = prevNode;
         this.forwardNode = forwardNode;
         this.lengths = lengths;
-        this.cycleLengths = new BitSet();
     }
 
     protected TwoWaySignpost(NodeState prevNode, NodeState forwardNode, int sourceLength, Lengths lengths) {
