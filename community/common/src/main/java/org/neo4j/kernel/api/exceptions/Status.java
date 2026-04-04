@@ -467,6 +467,11 @@ public interface Status {
                 ClientNotification, "`%s` has no effect.", SeverityLevel.INFORMATION, NotificationCategory.SCHEMA),
         IndexOrConstraintDoesNotExist(
                 ClientNotification, "`%s` has no effect.", SeverityLevel.INFORMATION, NotificationCategory.SCHEMA),
+        VectorIndexDimensionsNotSpecified(
+                ClientNotification,
+                "Vector index created without configured dimensions.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.SCHEMA),
 
         // database errors
         ConstraintCreationFailed(DatabaseError, "Creating a requested constraint failed."),

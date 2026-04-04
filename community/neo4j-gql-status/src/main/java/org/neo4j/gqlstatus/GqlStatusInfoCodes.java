@@ -147,6 +147,14 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             Condition.SUCCESSFUL_COMPLETION,
             "index or constraint does not exist",
             NotificationClassification.SCHEMA),
+    STATUS_00NA2(
+            new GqlStatus("00NA2"),
+            "The vector index was created without `vector.dimensions`. This is allowed, but providing dimensions when creating a vector index is recommended, as it ensures that only vectors of that size are indexed and makes dimension mismatches fail clearly at query time. For example, set `OPTIONS { indexConfig: { `vector.dimensions`: 1536 } }` when creating the index.",
+            new GqlParams.GqlParam[] {GqlParams.StringParam.cmd},
+            emptyMap(),
+            Condition.SUCCESSFUL_COMPLETION,
+            "vector index dimensions not specified",
+            NotificationClassification.SCHEMA),
     STATUS_01000(
             new GqlStatus("01000"),
             "",

@@ -96,6 +96,7 @@ object InternalNotifications {
     "RequestedTopologyMatchedCurrentTopology",
     "IndexOrConstraintAlreadyExistsNotification",
     "IndexOrConstraintDoesNotExistNotification",
+    "VectorIndexDimensionsNotSpecifiedNotification",
     "DeprecatedFunctionFieldNotification",
     "DeprecatedProcedureFieldNotification",
     "AuthProviderNotDefined",
@@ -232,6 +233,7 @@ case class RequestedTopologyMatchedCurrentTopology() extends InternalNotificatio
 case class IndexOrConstraintAlreadyExistsNotification(command: String, conflicting: String)
     extends InternalNotification
 case class IndexOrConstraintDoesNotExistNotification(command: String, name: String) extends InternalNotification
+case class VectorIndexDimensionsNotSpecifiedNotification(command: String) extends InternalNotification
 case object AggregationSkippedNull extends InternalNotification
 
 case object DeprecatedBooleanCoercion extends InternalNotification {

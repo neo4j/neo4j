@@ -38,6 +38,7 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.AllIndexProviderDescriptors
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.impl.api.index.IndexingService
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -158,6 +159,44 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
 
     graph.indexExists(indexName) should be(true)
     graph.getIndexTypeByName(indexName) should be(IndexType.VECTOR)
+  }
+
+  test("Create node vector index without dimensions should warn") {
+    // WHEN
+    val result = execute(
+      s"CREATE VECTOR INDEX $indexName FOR (n:$label) ON n.$prop OPTIONS {indexConfig: $$map}",
+      Map("map" -> anyMap(
+        VECTOR_SIMILARITY_FUNCTION.getSettingName -> "COSINE"
+      ))
+    )
+
+    // THEN
+    result.queryStatistics() should be(QueryStatistics(indexesAdded = 1))
+
+    graph.indexExists(indexName) should be(true)
+    graph.getIndexTypeByName(indexName) should be(IndexType.VECTOR)
+    result.notifications.map(_.getCode) should contain(
+      Status.Schema.VectorIndexDimensionsNotSpecified.code.serialize()
+    )
+  }
+
+  test("Create node vector index with dimensions should not warn") {
+    // WHEN
+    val result = execute(
+      s"CREATE VECTOR INDEX $indexName FOR (n:$label) ON n.$prop OPTIONS {indexConfig: $$map}",
+      Map("map" -> anyMap(
+        VECTOR_DIMENSIONS.getSettingName -> 50,
+        VECTOR_SIMILARITY_FUNCTION.getSettingName -> "COSINE"
+      ))
+    )
+
+    // THEN
+    result.queryStatistics() should be(QueryStatistics(indexesAdded = 1))
+
+    graph.indexExists(indexName) should be(true)
+    graph.getIndexTypeByName(indexName) should be(IndexType.VECTOR)
+    result.notifications.map(_.getCode) should not contain
+      Status.Schema.VectorIndexDimensionsNotSpecified.code.serialize()
   }
 
   test("Create relationship vector index") {

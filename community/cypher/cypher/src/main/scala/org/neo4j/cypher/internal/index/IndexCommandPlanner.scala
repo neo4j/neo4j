@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.notification.IndexOrConstraintAlreadyExistsNotification
 import org.neo4j.cypher.internal.notification.IndexOrConstraintDoesNotExistNotification
 import org.neo4j.cypher.internal.notification.InternalNotification
+import org.neo4j.cypher.internal.notification.VectorIndexDimensionsNotSpecifiedNotification
 import org.neo4j.cypher.internal.optionsmap.CreateFulltextIndexOptionsConverter
 import org.neo4j.cypher.internal.optionsmap.CreateIndexProviderOnlyOptions
 import org.neo4j.cypher.internal.optionsmap.CreateIndexWithFullOptions
@@ -62,6 +63,7 @@ import org.neo4j.cypher.internal.procs.SuccessResult
 import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.exceptions.InternalException
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.schema.IndexType.POINT
 import org.neo4j.graphdb.schema.IndexType.RANGE
@@ -213,6 +215,14 @@ object IndexCommandPlanner {
       val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
       val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
       val additionalPropertyKeyIds = additionalProps.map(p => propertyToId(ctx)(p).id)
+      val finalNotifications =
+        if (indexConfig.get(VECTOR_DIMENSIONS.getSettingName) == null) {
+          notifications + VectorIndexDimensionsNotSpecifiedNotification(
+            createVectorIndexInfo(indexName, entityNames, props, additionalProps, options)
+          )
+        } else {
+          notifications
+        }
       ctx.addVectorIndexRule(
         entityIds,
         entityType,
@@ -222,7 +232,7 @@ object IndexCommandPlanner {
         indexProvider,
         indexConfig
       )
-      SuccessResult(notifications)
+      SuccessResult(finalNotifications)
     }
 
   // Drop methods
@@ -523,6 +533,28 @@ object IndexCommandPlanner {
     val additionalPropertiesString =
       if (additionalProperties.nonEmpty) getPrettyPropertyPattern(additionalProperties, " WITH [", "]") else pretty""
     pretty"VECTOR INDEX$name IF NOT EXISTS FOR $pattern ON $propertyString$additionalPropertiesString${prettyOptions(options)}".prettifiedString
+  }
+
+  private def createVectorIndexInfo(
+    nameOption: Option[String],
+    entityNames: Either[List[LabelName], List[RelTypeName]],
+    properties: Seq[PropertyKeyName],
+    additionalProperties: Seq[PropertyKeyName],
+    options: Options
+  ): String = {
+    val name = getPrettyName(nameOption)
+    val pattern = entityNames match {
+      case Left(labels) =>
+        val innerPattern = labels.map(l => asPrettyString(l.name)).mkPrettyString("e:", "|", "")
+        pretty"($innerPattern)"
+      case Right(relTypes) =>
+        val innerPattern = relTypes.map(r => asPrettyString(r.name)).mkPrettyString("e:", "|", "")
+        pretty"()-[$innerPattern]-()"
+    }
+    val propertyString = getPrettyPropertyPattern(properties, "(", ")")
+    val additionalPropertiesString =
+      if (additionalProperties.nonEmpty) getPrettyPropertyPattern(additionalProperties, " WITH [", "]") else pretty""
+    pretty"CREATE VECTOR INDEX$name FOR $pattern ON $propertyString$additionalPropertiesString${prettyOptions(options)}".prettifiedString
   }
 
   private def lookupIndexInfo(

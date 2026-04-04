@@ -144,6 +144,7 @@ org.neo4j.kernel.api.exceptions.Status.Schema::SchemaRuleEntrySizeLimitError org
 org.neo4j.kernel.api.exceptions.Status.Schema::TokenLengthError org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::TokenLimitReached org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::TokenNameError org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::VectorIndexDimensionsNotSpecified org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Schema::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Schema public static
 org.neo4j.kernel.api.exceptions.Status.Schema::values() org.neo4j.kernel.api.exceptions.Status.Schema[] public static

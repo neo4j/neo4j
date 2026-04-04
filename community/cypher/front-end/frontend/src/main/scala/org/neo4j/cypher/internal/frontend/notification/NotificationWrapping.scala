@@ -93,6 +93,7 @@ import org.neo4j.cypher.internal.notification.ShardedPerformanceNotification
 import org.neo4j.cypher.internal.notification.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.notification.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.notification.UnsatisfiableRelationshipTypeExpression
+import org.neo4j.cypher.internal.notification.VectorIndexDimensionsNotSpecifiedNotification
 import org.neo4j.cypher.internal.notification.WaitServerCatchingUp
 import org.neo4j.cypher.internal.notification.WaitServerCaughtUp
 import org.neo4j.cypher.internal.notification.WaitServerFailed
@@ -505,6 +506,12 @@ object NotificationWrapping {
         graphdb.InputPosition.empty,
         command,
         name
+      )
+
+    case VectorIndexDimensionsNotSpecifiedNotification(command) =>
+      NotificationCodeWithDescription.vectorIndexDimensionsNotSpecified(
+        graphdb.InputPosition.empty,
+        command
       )
 
     case ImpossibleRevokeCommandWarning(command, cause) =>

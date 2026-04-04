@@ -97,6 +97,7 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.shadowingI
 import static org.neo4j.notifications.NotificationCodeWithDescription.subqueryVariableShadowing;
 import static org.neo4j.notifications.NotificationCodeWithDescription.unboundedShortestPath;
 import static org.neo4j.notifications.NotificationCodeWithDescription.unsatisfiableRelationshipTypeExpression;
+import static org.neo4j.notifications.NotificationCodeWithDescription.vectorIndexDimensionsNotSpecified;
 import static org.neo4j.notifications.NotificationCodeWithDescription.waitServerCatchingUp;
 import static org.neo4j.notifications.NotificationCodeWithDescription.waitServerCaughtUp;
 import static org.neo4j.notifications.NotificationCodeWithDescription.waitServerFailed;
@@ -1899,6 +1900,37 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_VECTOR_INDEX_DIMENSIONS_NOT_SPECIFIED() {
+        NotificationImplementation notification = vectorIndexDimensionsNotSpecified(InputPosition.empty, """
+                CREATE VECTOR INDEX my_index
+                FOR (n:MyLabel) ON (n.embedding)
+                OPTIONS {
+                  indexConfig: {
+                    `vector.similarity_function`: 'cosine'
+                  }
+                }""");
+
+        verifyNotification(
+                notification,
+                "Vector index created without configured dimensions.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Schema.VectorIndexDimensionsNotSpecified",
+                "The vector index was created without `vector.dimensions`. This is allowed, but providing dimensions when creating a vector index is recommended, as it ensures that only vectors of that size are indexed and makes dimension mismatches fail clearly at query time. For example, set `OPTIONS { indexConfig: { `vector.dimensions`: 1536 } }` when creating the index.",
+                NotificationCategory.SCHEMA,
+                NotificationClassification.SCHEMA,
+                "00NA2",
+                new DiagnosticRecord(info, NotificationClassification.SCHEMA, -1, -1, -1, Map.of("cmd", """
+                                        CREATE VECTOR INDEX my_index
+                                        FOR (n:MyLabel) ON (n.embedding)
+                                        OPTIONS {
+                                          indexConfig: {
+                                            `vector.similarity_function`: 'cosine'
+                                          }
+                                        }""")).asMap(),
+                "note: successful completion - vector index dimensions not specified. The vector index was created without `vector.dimensions`. This is allowed, but providing dimensions when creating a vector index is recommended, as it ensures that only vectors of that size are indexed and makes dimension mismatches fail clearly at query time. For example, set `OPTIONS { indexConfig: { `vector.dimensions`: 1536 } }` when creating the index.");
+    }
+
+    @Test
     void shouldConstructNotificationsFor_INDEX_OR_CONSTRAINT_DOES_NOT_EXIST() {
         NotificationImplementation notification =
                 indexOrConstraintDoesNotExist(InputPosition.empty, "DROP INDEX foo IF EXISTS", "foo");
@@ -2323,8 +2355,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            71, -79, 73, -117, -85, 37, -7, -32, 111, 53, 44, 23, 13, 19, 113, -65, -73, 39, -88, -7, 73, 122, 82, 119,
-            28, 86, 7, -100, 8, 99, -29, 124
+            18, -121, 52, -126, -81, -21, -85, 82, 116, 16, 71, -42, -55, 101, 51, 72, 52, -55, 38, -16, 126, -109,
+            -10, 59, -14, -26, -39, 99, 1, -92, 0, -10
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {
