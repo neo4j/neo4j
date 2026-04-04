@@ -951,8 +951,7 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation vectorIndexDimensionsNotSpecified(InputPosition position, String command) {
-        return VECTOR_INDEX_DIMENSIONS_NOT_SPECIFIED.notificationWithParameters(
-                position, new String[] {}, new String[] {command});
+        return VECTOR_INDEX_DIMENSIONS_NOT_SPECIFIED.notification(position);
     }
 
     public static NotificationImplementation deprecatedOptionInOptionMap(String oldOption, String newOption) {
