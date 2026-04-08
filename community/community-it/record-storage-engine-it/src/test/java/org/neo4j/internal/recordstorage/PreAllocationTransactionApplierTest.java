@@ -178,7 +178,7 @@ class PreAllocationTransactionApplierTest {
             NodeRecord node = new NodeRecord(5).initialize(true, 123, true, 456, 0);
             node.setSecondaryUnitIdOnLoad(6);
             RelationshipRecord relationship =
-                    new RelationshipRecord(12).initialize(true, 1, 2, 3, 4, 5, 6, 7, 8, true, true);
+                    new RelationshipRecord(12).initialize(true, 1, 2, 3, 4, 5, 6, 7, 8, true, true, false, false);
             relationship.setSecondaryUnitIdOnLoad(10);
             RelationshipGroupRecord relationshipGroup =
                     new RelationshipGroupRecord(8).initialize(true, 0, 1, 2, 3, 4, 5);

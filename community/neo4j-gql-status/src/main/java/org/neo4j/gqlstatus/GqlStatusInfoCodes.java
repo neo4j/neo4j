@@ -3958,6 +3958,14 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             Condition.GENERAL_PROCESSING_EXCEPTION,
             "no such schema descriptor",
             ErrorClassification.DATABASE_ERROR),
+    STATUS_50N27(
+            new GqlStatus("50N27"),
+            "The transaction read outdated data and cannot be recovered due to concurrent data modification. Retry the transaction.",
+            new GqlParams.GqlParam[] {},
+            emptyMap(),
+            Condition.GENERAL_PROCESSING_EXCEPTION,
+            "outdated read",
+            ErrorClassification.TRANSIENT_ERROR),
     STATUS_50N42(
             new GqlStatus("50N42"),
             """

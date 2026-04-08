@@ -19,13 +19,25 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -47,7 +59,7 @@ class RelationshipCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
             IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
-            long node = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
             relationship(
                     relationship,
                     nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
@@ -57,8 +69,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
                     NULL,
                     NULL,
                     NULL,
+                    NULL,
                     true,
-                    true);
+                    true,
+                    false,
+                    false);
         }
 
         // when
@@ -74,7 +89,7 @@ class RelationshipCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
             var nodeIdGenerator = nodeStore.getIdGenerator();
-            long node = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
             relationship(
                     relationship,
                     node,
@@ -84,8 +99,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
                     NULL,
                     NULL,
                     NULL,
+                    NULL,
                     true,
-                    true);
+                    true,
+                    false,
+                    false);
         }
 
         // when
@@ -100,9 +118,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
-            long node =
-                    nodePlusCached(nodeStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relationship(relationship, node + 10, node, type, NULL, NULL, NULL, NULL, true, true);
+            long node = nodePlusCached(
+                    nodeStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(relationship, node + 10, node, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         // when
@@ -117,9 +135,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
-            long node =
-                    nodePlusCached(nodeStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relationship(relationship, node, node + 10, type, NULL, NULL, NULL, NULL, true, true);
+            long node = nodePlusCached(
+                    nodeStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(relationship, node, node + 10, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         // when
@@ -138,10 +156,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
             long node1 = nodePlusCached(
                     nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
+                    false,
                     NULL,
                     relIdGenerator.nextId(CursorContext.NULL_CONTEXT));
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         // when
@@ -158,12 +177,13 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
             long node2 = nodePlusCached(
                     nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
+                    false,
                     NULL,
                     relIdGenerator.nextId(CursorContext.NULL_CONTEXT));
-            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         // when
@@ -180,9 +200,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, false, true);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, false, true, false, false);
         }
 
         // when
@@ -199,9 +219,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, false);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, false, false, false);
         }
 
         // when
@@ -218,9 +238,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, NULL);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         // when
@@ -237,9 +257,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
-            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, NULL);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         // when
@@ -256,9 +276,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relationship(relationship, node1, node2, type + 1, NULL, NULL, NULL, NULL, true, true);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(relationship, node1, node2, type + 1, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         // when
@@ -276,9 +296,10 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relId = relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relId = relationship(
+                    relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
 
         markAsDeletedId(relationshipStore, relId);
@@ -298,9 +319,10 @@ class RelationshipCheckerTest extends CheckerTestBase {
             var relIdGenerator = relationshipStore.getIdGenerator();
             var nodeIdGenerator = nodeStore.getIdGenerator();
             long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            relId = relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relId = relationship(
+                    relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         }
         try (AutoCloseable ignored = tx()) {
             try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
@@ -316,6 +338,92 @@ class RelationshipCheckerTest extends CheckerTestBase {
 
         // then
         expect(RelationshipConsistencyReport.class, RelationshipConsistencyReport::idIsNotFreed);
+    }
+
+    static Stream<Arguments> shouldReportSparseNodeSeenAsDenseFromRelationship() {
+        return Stream.of(
+                Arguments.of(true, false, (Consumer<RelationshipConsistencyReport>)
+                        report -> report.sourceNodeDenseFlagMismatch(any())),
+                Arguments.of(false, true, (Consumer<RelationshipConsistencyReport>)
+                        report -> report.targetNodeDenseFlagMismatch(any())));
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void shouldReportSparseNodeSeenAsDenseFromRelationship(
+            boolean sourceDense, boolean targetDense, Consumer<RelationshipConsistencyReport> assertion)
+            throws Exception {
+        // given
+        try (AutoCloseable ignored = tx()) {
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+            relationship(
+                    relationship,
+                    node1,
+                    node2,
+                    type,
+                    NULL,
+                    NULL,
+                    NULL,
+                    NULL,
+                    NULL,
+                    true,
+                    true,
+                    sourceDense,
+                    targetDense);
+        }
+
+        // when
+        check();
+
+        // then
+        expect(RelationshipConsistencyReport.class, assertion);
+    }
+
+    // The flag can only guarantee dense, it cannot guarantee sparse.
+    @ParameterizedTest
+    @CsvSource({
+        "true, false",
+        "false, true",
+    })
+    void shouldNotReportDenseNodeSeenAsSparseFromRelationship(boolean sourceDense, boolean targetDense)
+            throws Exception {
+        // Remove the Relationship Type Index, otherwise we have to add the type to that index to avoid inconsistencies.
+        // This is easier.
+        try (Transaction tx = db.beginTx()) {
+            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+            for (IndexDefinition index : indexes) {
+                if (index.getIndexType() == IndexType.LOOKUP && index.isRelationshipIndex()) {
+                    index.drop();
+                }
+            }
+            tx.commit();
+        }
+
+        // given
+        try (AutoCloseable ignored = tx()) {
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 =
+                    nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), sourceDense, NULL, relationship);
+            long node2 =
+                    nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), targetDense, NULL, relationship);
+            relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
+        }
+
+        // when
+        ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
+        CheckerContext context = context(4, ConsistencyFlags.ALL, inconsistenciesSummary);
+
+        // when
+        check(context);
+
+        // then We should not have found any inconsistencies
+        assertThat(inconsistenciesSummary.isConsistent()).isTrue();
     }
 
     private void check() throws Exception {

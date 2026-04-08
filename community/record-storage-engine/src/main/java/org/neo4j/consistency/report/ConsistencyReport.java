@@ -256,6 +256,12 @@ public interface ConsistencyReport {
         @Documented("The target node does not have a relationship chain.")
         void targetNodeHasNoRelationships(NodeRecord source);
 
+        @Documented("The source node is sparse but this relationship's source node dense flag is set.")
+        void sourceNodeDenseFlagMismatch(NodeRecord source);
+
+        @Documented("The target node is sparse but this relationship's target node dense flag is set.")
+        void targetNodeDenseFlagMismatch(NodeRecord target);
+
         @Documented("The previous record in the source chain is a relationship between two other nodes.")
         void sourcePrevReferencesOtherNodes(RelationshipRecord relationship);
 

@@ -81,7 +81,9 @@ public class RecordBuilders {
                 Record.NO_PREV_RELATIONSHIP.longValue(),
                 Record.NO_NEXT_RELATIONSHIP.longValue(),
                 true,
-                true);
+                true,
+                false,
+                false);
         for (Consumer<RelationshipRecord> modifier : modifiers) {
             modifier.accept(record);
         }
@@ -161,6 +163,10 @@ public class RecordBuilders {
             n.setSecondPrevRel(id);
         };
     }
+
+    public static Consumer<RelationshipRecord> sDense = n -> n.setFirstNodeIsGuaranteedDense(true);
+
+    public static Consumer<RelationshipRecord> tDense = n -> n.setSecondNodeIsGuaranteedDense(true);
 
     public static Consumer<RelationshipRecord> tNext(long id) {
         return n -> n.setSecondNextRel(id);

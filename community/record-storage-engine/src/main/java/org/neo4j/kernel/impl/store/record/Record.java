@@ -62,6 +62,8 @@ public enum Record {
     // not to use within the same byte with IN_USE and CREATED_IN_TX
     public static final byte RELATIONSHIP_FIRST_IN_FIRST_CHAIN = 0b0000_0001;
     public static final byte RELATIONSHIP_FIRST_IN_SECOND_CHAIN = 0b0000_0010;
+    public static final byte RELATIONSHIP_FIRST_NODE_IS_GUARANTEED_DENSE = 0b0000_0100;
+    public static final byte RELATIONSHIP_SECOND_NODE_IS_GUARANTEED_DENSE = 0b0000_1000;
 
     // not to use within the same byte with other flags
     public static final byte RELATIONSHIP_GROUP_EXTERNAL_DEGREES_OUT = 0b0000_0001;

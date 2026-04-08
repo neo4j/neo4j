@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.TransientTransactionFailureException
 import org.neo4j.kernel.DeadlockDetectedException
 
 import java.util.concurrent.Callable
@@ -29,6 +32,67 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
 
   val THREADS = 50
   val UPDATES = 100
+
+  test("should not observe missing/double reads on expand with concurrently turning node dense") {
+    val res1 = execute("CREATE (c:Container {Id: randomUUID()}) RETURN c.Id as Id")
+    val containerId = res1.single("Id")
+
+    // This needs to be < dense threshold.
+    val constituent1Count = graph.config().get(GraphDatabaseSettings.dense_node_threshold) - 10
+    val constituent1Ids = 0 until constituent1Count
+
+    def createConstituentQuery(labelSuffix: Int): String =
+      s"""
+         |MATCH(container:Container { Id: $$container_id })
+         |MERGE (container)-[:Owns]->(constituent:Constituent${labelSuffix}{Id:$$id})
+         |FINISH
+         |""".stripMargin
+
+    for (id <- constituent1Ids) {
+      execute(createConstituentQuery(1), Map("container_id" -> containerId, "id" -> id))
+    }
+
+    val query =
+      """
+        |OPTIONAL MATCH(container:Container {Id: $container_id})
+        |UNWIND $entities AS entity
+        |OPTIONAL MATCH(container)-[:Owns]->(c{Id:entity.id})
+        |WHERE
+        |  (c:Constituent1 AND entity.label = 'Constituent1')
+        |WITH container, {id: entity.id, found: c IS NOT NULL} AS constituentFound
+        |RETURN container IS NOT NULL AS containerFound, collect(constituentFound) as found
+        |""".stripMargin
+    val queryParams = Map(
+      "container_id" -> containerId,
+      "entities" -> constituent1Ids.map(id => Map[String, Any]("id" -> id, "label" -> "Constituent1"))
+    )
+
+    runTestConcurrently(
+      query,
+      createConstituentQuery(2),
+      queryParams,
+      (threadId, runId) => Map("container_id" -> containerId, "id" -> (100 * threadId + runId)),
+      threads = 1,
+      runsPerThread = 50
+    ) { res2 =>
+      val singleRow = res2.single
+      singleRow("containerFound") should equal(true)
+      val constituents = res2.single("found").asInstanceOf[Seq[Map[String, Any]]]
+      val missing = constituents.collect {
+        case c if !c("found").asInstanceOf[Boolean] => c("id")
+      }
+      val duplicates = constituents.map(_("id"))
+        .groupBy(identity)
+        .values
+        .filter(_.size > 1)
+        .flatten
+
+      withClue(s"Duplicates $duplicates, missing ids: $missing\n") {
+        missing shouldBe empty
+        duplicates shouldBe empty
+      }
+    }
+  }
 
   test("Should work around read isolation limitation for simple incremental query") {
     // Given
@@ -129,8 +193,8 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
         |RETURN prev, index
         |""".stripMargin
 
-    def testToRun(res: List[Long]): Unit = {
-      res.sliding(2).foreach {
+    def testToRun(res: RewindableExecutionResult): Unit = {
+      res.columnAs[Long]("x").toList.sliding(2).foreach {
         case List(a, b) =>
           a should be <= b
         case _ =>
@@ -171,29 +235,39 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
         |SET n.x = index
         |RETURN prev, index
         |""".stripMargin
-    def testToRun(res: List[Long]): Unit = res.distinct should equal(res)
+    def testToRun(res: RewindableExecutionResult): Unit = {
+      val list = res.columnAs[Long]("x").toList
+      list.distinct should equal(list)
+    }
     runTestConcurrently(query, scrambler)(testToRun)
   }
 
-  private def runTestConcurrently(query: String, scrambler: String)(testToRun: List[Long] => Unit): Unit = {
+  private def runTestConcurrently(
+    query: String,
+    scrambler: String,
+    queryParams: Map[String, Any] = Map(),
+    // (ThreadId, RunId) => params for the scrambler query.
+    scramblerParams: (Int, Int) => Map[String, Any] = (_, _) => Map(),
     // We need fewer Threads to reproduce the problem
-    val THREADS = 10
+    threads: Int = 10,
+    // Expensive, so let's have fewer runs
+    runsPerThread: Int = 3
+  )(testToRun: RewindableExecutionResult => Unit): Unit = {
     // When
-    val executor = Executors.newFixedThreadPool(THREADS)
+    val executor = Executors.newFixedThreadPool(threads)
     // Run the scrambler concurrently
-    val futures = (1 to THREADS) map { _ =>
+    val futures = (1 to threads) map { threadId =>
       executor.submit(new Callable[Unit] {
         override def call(): Unit = {
-          // Expensive, so let's have fewer runs
-          for (_ <- 1 to 3) {
+          for (runId <- 1 to runsPerThread) {
             var retry = true
             while (retry) {
               try {
-                execute(scrambler)
+                execute(scrambler, scramblerParams(threadId, runId))
                 retry = false
               } catch {
-                case _: DeadlockDetectedException =>
-                case t: Throwable                 => throw new RuntimeException(t)
+                case _: TransientTransactionFailureException =>
+                case t: Throwable                            => throw new RuntimeException(t)
               }
             }
           }
@@ -202,20 +276,22 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     }
 
     // And while waiting for all scrambler futures threads to be done,
-    // execute the read query and assert that results are distinct
+    // execute the read query and assert on the results
     try {
+      var i = 0
       while (futures.exists(!_.isDone)) {
         var retry = true
         while (retry) {
           try {
-            val res = execute(query).columnAs[Long]("x").toList
+            val res = execute(query, queryParams)
             testToRun(res)
             retry = false
           } catch {
-            case _: DeadlockDetectedException =>
-            case t: Throwable                 => throw new RuntimeException(t)
+            case _: TransientTransactionFailureException =>
+            case t: Throwable                            => throw new RuntimeException(t)
           }
         }
+        i += 1
       }
     } finally {
       executor.shutdown()
@@ -228,7 +304,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     val futures = (1 to THREADS) map { x =>
       executor.submit(new Callable[Unit] {
         override def call(): Unit = {
-          for (x <- 1 to UPDATES) {
+          for (_ <- 1 to UPDATES) {
             var retry = true
             while (retry) {
               try {

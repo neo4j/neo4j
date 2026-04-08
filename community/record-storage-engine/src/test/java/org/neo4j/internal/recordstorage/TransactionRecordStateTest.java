@@ -1597,7 +1597,9 @@ class TransactionRecordStateTest {
                                     1,
                                     NULL_REFERENCE.longValue(),
                                     true,
-                                    true),
+                                    true,
+                                    false,
+                                    false),
                     relCursor,
                     NULL_CONTEXT,
                     storeCursors);

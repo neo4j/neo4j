@@ -193,7 +193,7 @@ class RelationshipLockHelperTest {
         idsToDelete.add(1);
 
         RelationshipRecord record = new RelationshipRecord(1);
-        record.initialize(true, 1, 2, 3, 4, 5, 7, 7, 5, false, false);
+        record.initialize(true, 1, 2, 3, 4, 5, 7, 7, 5, false, false, false, false);
         var proxy = mock(RecordAccess.RecordProxy.class);
         when(proxy.forReadingLinkage()).thenAnswer(invocation -> record);
         proxies.put(1, proxy);
@@ -288,7 +288,9 @@ class RelationshipLockHelperTest {
                     -1,
                     -1,
                     firstChain && firstInChain,
-                    !firstChain && firstInChain);
+                    !firstChain && firstInChain,
+                    false,
+                    false);
             if (!firstInChain) {
                 RelationshipRecord prev = chain.get(i - 1);
                 prev.setNextRel(id, nodeId);
@@ -310,7 +312,7 @@ class RelationshipLockHelperTest {
 
         VolatileRelationshipRecord(long id, MutableLongBag usedIds, long maxId) {
             super(id);
-            initialize(true, -1, -1, -1, -1, -1, -1, -1, -1, false, false);
+            initialize(true, -1, -1, -1, -1, -1, -1, -1, -1, false, false, false, false);
 
             this.usedIds = usedIds;
             usedIds.add(id);

@@ -441,8 +441,8 @@ class CheckerTestBase {
                 id, nodeStore.newRecord(), RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
     }
 
-    long node(long id, long nextProp, long nextRel, int... labels) {
-        NodeRecord node = new NodeRecord(id).initialize(true, nextProp, false, NULL, 0);
+    long node(long id, boolean dense, long nextProp, int... labels) {
+        NodeRecord node = new NodeRecord(id).initialize(true, nextProp, dense, NULL, 0);
         InlineNodeLabels.putSorted(
                 node,
                 labels,
@@ -462,28 +462,15 @@ class CheckerTestBase {
             long startNode,
             long endNode,
             int type,
-            long startPrev,
-            long startNext,
-            long endPrev,
-            long endNext,
-            boolean firstInStart,
-            boolean firstInEnd) {
-        return relationship(
-                id, startNode, endNode, type, NULL, startPrev, startNext, endPrev, endNext, firstInStart, firstInEnd);
-    }
-
-    long relationship(
-            long id,
-            long startNode,
-            long endNode,
-            int type,
             long nextProp,
             long startPrev,
             long startNext,
             long endPrev,
             long endNext,
             boolean firstInStart,
-            boolean firstInEnd) {
+            boolean firstInEnd,
+            boolean firstIsGuaranteedDense,
+            boolean secondIsGuaranteedDense) {
         RelationshipRecord relationship = new RelationshipRecord(id)
                 .initialize(
                         true,
@@ -496,7 +483,9 @@ class CheckerTestBase {
                         endPrev,
                         endNext,
                         firstInStart,
-                        firstInEnd);
+                        firstInEnd,
+                        firstIsGuaranteedDense,
+                        secondIsGuaranteedDense);
         try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
             relationshipStore.updateRecord(relationship, storeCursor, CursorContext.NULL_CONTEXT, storeCursors);
         }
@@ -524,8 +513,8 @@ class CheckerTestBase {
         return id;
     }
 
-    long nodePlusCached(long id, long nextProp, long nextRel, int... labels) {
-        long node = node(id, nextProp, NULL, labels);
+    long nodePlusCached(long id, boolean dense, long nextProp, long nextRel, int... labels) {
+        long node = node(id, dense, nextProp, labels);
         CacheAccess.Client client = cacheAccess.client();
         client.putToCacheSingle(id, CacheSlots.NodeLink.SLOT_IN_USE, 1);
         client.putToCacheSingle(id, CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID, nextRel);

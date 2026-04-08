@@ -42,7 +42,7 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
     @Override
     protected RelationshipRecord createNullRecord(long id) {
         RelationshipRecord record = new RelationshipRecord(id);
-        record.initialize(false, 0, 0, 0, 0, 0, 0, 0, 0, false, false);
+        record.initialize(false, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false, false);
         return record;
     }
 
@@ -60,7 +60,9 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
                 SECOND_PREV_REL,
                 SECOND_NEXT_REL,
                 true,
-                true);
+                true,
+                false,
+                false);
         return record;
     }
 

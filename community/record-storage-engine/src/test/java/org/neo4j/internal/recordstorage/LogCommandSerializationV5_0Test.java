@@ -59,8 +59,8 @@ public class LogCommandSerializationV5_0Test extends LogCommandSerializationV5Ba
 
     private Command.RelationshipCommand createRandomRelationship() {
         var id = Math.abs(random.nextLong());
-        var before = createRandomRelationshipRecord(id);
-        var after = createRandomRelationshipRecord(id);
+        var before = createRandomRelationshipRecord(random, id);
+        var after = createRandomRelationshipRecord(random, id);
         return new Command.RelationshipCommand(writer(), before, after);
     }
 

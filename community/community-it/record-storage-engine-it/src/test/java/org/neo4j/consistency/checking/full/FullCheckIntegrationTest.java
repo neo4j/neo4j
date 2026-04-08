@@ -904,7 +904,9 @@ public class FullCheckIntegrationTest {
                         1,
                         NO_NEXT_RELATIONSHIP.intValue(),
                         true,
-                        true);
+                        true,
+                        false,
+                        false);
                 relationship.setNextProp(propId);
 
                 PropertyRecord property = new PropertyRecord(propId, relationship);

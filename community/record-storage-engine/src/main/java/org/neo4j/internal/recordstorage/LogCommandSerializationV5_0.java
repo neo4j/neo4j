@@ -677,9 +677,11 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
                     .putLong(record.getSecondPrevRel())
                     .putLong(record.getSecondNextRel())
                     .putLong(record.getNextProp());
-            var extraByte = bitFlags(
+            byte extraByte = bitFlags(
                     bitFlag(record.isFirstInFirstChain(), Record.RELATIONSHIP_FIRST_IN_FIRST_CHAIN),
-                    bitFlag(record.isFirstInSecondChain(), Record.RELATIONSHIP_FIRST_IN_SECOND_CHAIN));
+                    bitFlag(record.isFirstInSecondChain(), Record.RELATIONSHIP_FIRST_IN_SECOND_CHAIN),
+                    bitFlag(record.firstNodeIsGuaranteedDense(), Record.RELATIONSHIP_FIRST_NODE_IS_GUARANTEED_DENSE),
+                    bitFlag(record.secondNodeIsGuaranteedDense(), Record.RELATIONSHIP_SECOND_NODE_IS_GUARANTEED_DENSE));
             channel.put(extraByte);
         } else {
             channel.putInt(record.getType());
@@ -718,6 +720,10 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
             byte extraByte = channel.get();
             record.setFirstInFirstChain(bitFlag(extraByte, Record.RELATIONSHIP_FIRST_IN_FIRST_CHAIN));
             record.setFirstInSecondChain(bitFlag(extraByte, Record.RELATIONSHIP_FIRST_IN_SECOND_CHAIN));
+            record.setFirstNodeIsGuaranteedDense(
+                    bitFlag(extraByte, Record.RELATIONSHIP_FIRST_NODE_IS_GUARANTEED_DENSE));
+            record.setSecondNodeIsGuaranteedDense(
+                    bitFlag(extraByte, Record.RELATIONSHIP_SECOND_NODE_IS_GUARANTEED_DENSE));
         } else {
             record.setLinks(-1, -1, channel.getInt());
             record.setInUse(false);

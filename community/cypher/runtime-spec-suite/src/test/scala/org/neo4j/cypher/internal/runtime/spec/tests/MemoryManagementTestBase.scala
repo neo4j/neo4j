@@ -687,7 +687,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill pruning-var-expand before it runs out of memory") {
     // given
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(115)), "Test")
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(117)), "Test")
     restartTx()
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
@@ -710,7 +710,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill distinct-pruning-var-expand before it runs out of memory") {
     // given
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(115)), "Test")
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(117)), "Test")
     restartTx()
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")

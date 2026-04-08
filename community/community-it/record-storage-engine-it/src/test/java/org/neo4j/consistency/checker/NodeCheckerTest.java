@@ -81,7 +81,7 @@ class NodeCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             // (N) w/ some labels
-            node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, labels);
+            node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), false, NULL, labels);
         }
 
         // when
@@ -140,7 +140,7 @@ class NodeCheckerTest extends CheckerTestBase {
             IdGenerator idGenerator = nodeStore.getIdGenerator();
             try (IndexUpdater writer = labelIndexWriter()) {
                 for (int i = 0; i < 10; i++) {
-                    long nodeId = node(idGenerator.nextId(NULL_CONTEXT), NULL, NULL, label1);
+                    long nodeId = node(idGenerator.nextId(NULL_CONTEXT), false, NULL, label1);
                     writer.process(IndexEntryUpdate.change(
                             nodeId, IndexDescriptor.NO_INDEX, EMPTY_INT_ARRAY, new int[] {label1}));
                 }
@@ -259,7 +259,7 @@ class NodeCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
-            long nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL);
+            long nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), false, NULL);
             try (IndexUpdater writer = labelIndexWriter()) {
                 writer.process(
                         IndexEntryUpdate.change(nodeId, IndexDescriptor.NO_INDEX, EMPTY_INT_ARRAY, new int[] {label1}));
@@ -279,7 +279,7 @@ class NodeCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
-            node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1);
+            node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), false, NULL, label1);
         }
 
         // when
@@ -295,7 +295,7 @@ class NodeCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             try (IndexUpdater writer = labelIndexWriter()) {
                 for (int i = 0; i < 20; i++) {
-                    long nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1, label2);
+                    long nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), false, NULL, label1, label2);
                     // node 10 missing label2 in index
                     writer.process(IndexEntryUpdate.change(
                             nodeId,
@@ -337,7 +337,7 @@ class NodeCheckerTest extends CheckerTestBase {
         // Given
         long nodeId;
         try (AutoCloseable ignored = tx()) {
-            nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1);
+            nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), false, NULL, label1);
         }
 
         markAsDeletedId(nodeStore, nodeId);
@@ -354,7 +354,7 @@ class NodeCheckerTest extends CheckerTestBase {
         // Given
         long nodeId;
         try (AutoCloseable ignored = tx()) {
-            nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1);
+            nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), false, NULL, label1);
         }
         try (AutoCloseable ignored = tx()) {
             try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {

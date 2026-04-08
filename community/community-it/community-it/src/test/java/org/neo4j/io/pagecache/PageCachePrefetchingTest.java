@@ -102,6 +102,8 @@ class PageCachePrefetchingTest {
                             rng.nextInt(),
                             rng.nextInt(),
                             rng.nextBoolean(),
+                            rng.nextBoolean(),
+                            rng.nextBoolean(),
                             rng.nextBoolean());
                     format.write(record, cursor, recordSize, recordsPerPage);
                 } catch (IOException e) {

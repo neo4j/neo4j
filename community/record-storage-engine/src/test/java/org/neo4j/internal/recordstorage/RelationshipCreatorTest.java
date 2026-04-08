@@ -35,9 +35,11 @@ import static org.neo4j.internal.recordstorage.RecordBuilders.owningNode;
 import static org.neo4j.internal.recordstorage.RecordBuilders.rel;
 import static org.neo4j.internal.recordstorage.RecordBuilders.relGroup;
 import static org.neo4j.internal.recordstorage.RecordBuilders.sCount;
+import static org.neo4j.internal.recordstorage.RecordBuilders.sDense;
 import static org.neo4j.internal.recordstorage.RecordBuilders.sNext;
 import static org.neo4j.internal.recordstorage.RecordBuilders.sPrev;
 import static org.neo4j.internal.recordstorage.RecordBuilders.tCount;
+import static org.neo4j.internal.recordstorage.RecordBuilders.tDense;
 import static org.neo4j.internal.recordstorage.RecordBuilders.tNext;
 import static org.neo4j.internal.recordstorage.RecordBuilders.tPrev;
 import static org.neo4j.internal.recordstorage.RecordBuilders.to;
@@ -151,8 +153,8 @@ class RelationshipCreatorTest {
                 .containsChanges(
                         node(0, group(0)),
                         relGroup(0, owningNode(0), firstLoop(1)),
-                        rel(0, from(0), to(0), sPrev(1), tPrev(1)),
-                        rel(1, from(0), to(0), sCount(2), sNext(0), tCount(2), tNext(0)));
+                        rel(0, from(0), to(0), sPrev(1), tPrev(1), sDense, tDense),
+                        rel(1, from(0), to(0), sCount(2), sNext(0), tCount(2), tNext(0), sDense, tDense));
     }
 
     @Test
@@ -167,8 +169,8 @@ class RelationshipCreatorTest {
                         node(0, group(0)),
                         node(1, nextRel(1)),
                         relGroup(0, owningNode(0), firstLoop(0), firstOut(1)),
-                        rel(0, from(0), to(0), sCount(1), tCount(1)),
-                        rel(1, from(0), to(1), sCount(1), tCount(1)));
+                        rel(0, from(0), to(0), sCount(1), tCount(1), sDense, tDense),
+                        rel(1, from(0), to(1), sCount(1), tCount(1), sDense));
     }
 
     @Test
@@ -183,8 +185,8 @@ class RelationshipCreatorTest {
                         node(0, group(0)),
                         node(1, nextRel(1)),
                         relGroup(0, owningNode(0), firstLoop(0), firstIn(1)),
-                        rel(0, from(0), to(0), sCount(1), tCount(1)),
-                        rel(1, from(1), to(0), sCount(1), tCount(1)));
+                        rel(0, from(0), to(0), sCount(1), tCount(1), sDense, tDense),
+                        rel(1, from(1), to(0), sCount(1), tCount(1), tDense));
     }
 
     private void givenState(AbstractBaseRecord... records) {

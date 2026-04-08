@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
@@ -191,6 +192,9 @@ class RelationshipChecker implements Checker {
                                     reporter.forRelationship(relationship).sourceNodeHasNoRelationships(node),
                             relationship ->
                                     reporter.forRelationship(relationship).illegalSourceNode(),
+                            RelationshipRecord::firstNodeIsGuaranteedDense,
+                            (relationship, node) ->
+                                    reporter.forRelationship(relationship).sourceNodeDenseFlagMismatch(node),
                             storeCursors,
                             memoryTracker);
                 }
@@ -213,6 +217,9 @@ class RelationshipChecker implements Checker {
                                     reporter.forRelationship(relationship).targetNodeHasNoRelationships(node),
                             relationship ->
                                     reporter.forRelationship(relationship).illegalTargetNode(),
+                            RelationshipRecord::secondNodeIsGuaranteedDense,
+                            (relationship, node) ->
+                                    reporter.forRelationship(relationship).targetNodeDenseFlagMismatch(node),
                             storeCursors,
                             memoryTracker);
                 }
@@ -421,6 +428,8 @@ class RelationshipChecker implements Checker {
             BiConsumer<RelationshipRecord, NodeRecord> reportNodeNotFirstInChain,
             BiConsumer<RelationshipRecord, NodeRecord> reportNodeHasNoChain,
             Consumer<RelationshipRecord> reportIllegalNode,
+            Function<RelationshipRecord, Boolean> nodeIsGuaranteedDenseFromRelationshipRecord,
+            BiConsumer<RelationshipRecord, NodeRecord> reportDenseFlagMismatch,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
         // Check validity of node reference
@@ -474,6 +483,11 @@ class RelationshipChecker implements Checker {
             }
             if (!firstInChain && nodeNextRel == relationshipRecord.getId()) {
                 reportNodeNotFirstInChain.accept(
+                        recordLoader.relationship(relationshipRecord.getId(), storeCursors, memoryTracker),
+                        recordLoader.node(node, storeCursors, memoryTracker));
+            }
+            if (nodeIsGuaranteedDenseFromRelationshipRecord.apply(relationshipRecord)) {
+                reportDenseFlagMismatch.accept(
                         recordLoader.relationship(relationshipRecord.getId(), storeCursors, memoryTracker),
                         recordLoader.node(node, storeCursors, memoryTracker));
             }

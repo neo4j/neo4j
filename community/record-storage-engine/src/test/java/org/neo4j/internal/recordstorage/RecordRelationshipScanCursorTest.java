@@ -196,7 +196,7 @@ class RecordRelationshipScanCursorTest {
     private static void createRelationshipRecord(
             long id, int type, RelationshipStore relationshipStore, PageCursor pageCursor, boolean used) {
         relationshipStore.updateRecord(
-                new RelationshipRecord(id).initialize(used, -1, 1, 2, type, -1, -1, -1, -1, true, true),
+                new RelationshipRecord(id).initialize(used, -1, 1, 2, type, -1, -1, -1, -1, true, true, false, false),
                 pageCursor,
                 NULL_CONTEXT,
                 StoreCursors.NULL);

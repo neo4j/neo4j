@@ -102,6 +102,8 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
                 LongReference.NULL,
                 LongReference.NULL,
                 false,
+                false,
+                false,
                 false);
     }
 

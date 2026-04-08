@@ -193,7 +193,7 @@ class LogCommandSerializationV4_2Test {
         RelationshipRecord before = new RelationshipRecord(42);
         before.setLinks(-1, -1, -1);
         RelationshipRecord after = new RelationshipRecord(42);
-        after.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
+        after.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true, false, false);
         after.setCreated();
 
         byte[] bytes = new byte[] {
@@ -217,10 +217,10 @@ class LogCommandSerializationV4_2Test {
     @Test
     void readRelationshipCommandWithSecondaryUnit() throws IOException {
         RelationshipRecord before = new RelationshipRecord(42);
-        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
+        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true, false, false);
         before.setSecondaryUnitIdOnLoad(47);
         RelationshipRecord after = new RelationshipRecord(42);
-        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true);
+        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true, false, false);
 
         byte[] bytes = new byte[] {
             3, 0, 0, 0, 0, 0, 0, 0, 42, 13, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0,
@@ -244,10 +244,10 @@ class LogCommandSerializationV4_2Test {
     @Test
     void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException {
         RelationshipRecord before = new RelationshipRecord(42);
-        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
+        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true, false, false);
         before.setSecondaryUnitIdOnLoad(52);
         RelationshipRecord after = new RelationshipRecord(42);
-        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true);
+        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true, false, false);
 
         byte[] bytes = new byte[] {
             3, 0, 0, 0, 0, 0, 0, 0, 42, 13, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0,
@@ -271,10 +271,10 @@ class LogCommandSerializationV4_2Test {
     @Test
     void readRelationshipCommandWithFixedReferenceFormat() throws IOException {
         RelationshipRecord before = new RelationshipRecord(42);
-        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true);
+        before.initialize(true, 0, 1, 2, 3, 4, 5, 6, 7, true, true, false, false);
         before.setUseFixedReferences(true);
         RelationshipRecord after = new RelationshipRecord(42);
-        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true);
+        after.initialize(true, 0, 1, 8, 3, 4, 5, 6, 7, true, true, false, false);
         after.setUseFixedReferences(true);
 
         byte[] bytes = new byte[] {

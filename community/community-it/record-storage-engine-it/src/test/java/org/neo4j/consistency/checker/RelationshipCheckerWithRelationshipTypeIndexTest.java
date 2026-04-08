@@ -316,9 +316,9 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
         var relIdGenerator = relationshipStore.getIdGenerator();
         var nodeIdGenerator = nodeStore.getIdGenerator();
         long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-        long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-        long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-        relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+        long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+        long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL, relationship);
+        relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, NULL, true, true, false, false);
         return relationship;
     }
 

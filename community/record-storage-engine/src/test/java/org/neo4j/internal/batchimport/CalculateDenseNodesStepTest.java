@@ -86,6 +86,8 @@ class CalculateDenseNodesStepTest {
                         NULL_REFERENCE.longValue(),
                         NULL_REFERENCE.longValue(),
                         false,
+                        false,
+                        false,
                         false);
     }
 }

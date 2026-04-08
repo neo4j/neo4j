@@ -479,6 +479,8 @@ class OnlineIndexUpdatesTest {
                         NO_NEXT_RELATIONSHIP.longValue(),
                         NO_NEXT_RELATIONSHIP.longValue(),
                         true,
+                        false,
+                        false,
                         false);
     }
 

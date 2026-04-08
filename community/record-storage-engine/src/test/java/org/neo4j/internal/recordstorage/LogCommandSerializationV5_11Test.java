@@ -457,6 +457,8 @@ public class LogCommandSerializationV5_11Test extends LogCommandSerializationV5_
                     random.nextLong(),
                     random.nextLong(),
                     random.nextBoolean(),
+                    random.nextBoolean(),
+                    random.nextBoolean(),
                     random.nextBoolean());
         }
 

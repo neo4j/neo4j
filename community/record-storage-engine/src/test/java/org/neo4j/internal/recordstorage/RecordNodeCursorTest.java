@@ -122,6 +122,8 @@ class RecordNodeCursorTest {
                             33,
                             44,
                             true,
+                            false,
+                            false,
                             false);
                     return null;
                 })

@@ -85,11 +85,11 @@ class RelationshipDeleterTest {
         store.write(new NodeRecord(otherNode1).initialize(true, NULL, false, relB, NO_LABELS_FIELD.longValue()));
         store.write(new NodeRecord(otherNode2).initialize(true, NULL, false, relC, NO_LABELS_FIELD.longValue()));
         store.write(new RelationshipRecord(relA)
-                .initialize(true, NULL, startNode, startNode, type, 3, relB, 3, relB, true, true));
+                .initialize(true, NULL, startNode, startNode, type, 3, relB, 3, relB, true, true, false, false));
         store.write(new RelationshipRecord(relB)
-                .initialize(true, NULL, startNode, otherNode1, type, relA, relC, 1, NULL, false, true));
+                .initialize(true, NULL, startNode, otherNode1, type, relA, relC, 1, NULL, false, true, false, false));
         store.write(new RelationshipRecord(relC)
-                .initialize(true, NULL, startNode, otherNode2, type, relB, NULL, 1, NULL, false, true));
+                .initialize(true, NULL, startNode, otherNode2, type, relB, NULL, 1, NULL, false, true, false, false));
 
         // when deleting relB
         deleter.relationshipDelete(
@@ -123,12 +123,12 @@ class RelationshipDeleterTest {
         store.write(new RelationshipGroupRecord(groupG).initialize(true, 0, NULL, NULL, NULL, node, groupH));
         store.write(new RelationshipGroupRecord(groupH).initialize(true, type, NULL, NULL, relA, node, NULL));
         store.write(new NodeRecord(node).initialize(true, NULL, true, groupG, NO_LABELS_FIELD.longValue()));
-        store.write(
-                new RelationshipRecord(relA).initialize(true, NULL, node, node, type, 3, relB, 3, relB, true, true));
+        store.write(new RelationshipRecord(relA)
+                .initialize(true, NULL, node, node, type, 3, relB, 3, relB, true, true, true, true));
         store.write(new RelationshipRecord(relB)
-                .initialize(true, NULL, node, node, type, relA, relC, relA, relC, false, false));
+                .initialize(true, NULL, node, node, type, relA, relC, relA, relC, false, false, true, true));
         store.write(new RelationshipRecord(relC)
-                .initialize(true, NULL, node, node, type, relB, NULL, relB, NULL, false, false));
+                .initialize(true, NULL, node, node, type, relB, NULL, relB, NULL, false, false, true, true));
         MappedNodeDataLookup groupLookup = mock(MappedNodeDataLookup.class);
         when(groupLookup.group(node, type, false))
                 .thenAnswer(

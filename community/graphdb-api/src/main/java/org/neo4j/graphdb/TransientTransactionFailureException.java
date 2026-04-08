@@ -91,6 +91,16 @@ public class TransientTransactionFailureException extends TransientFailureExcept
                 "The procedure registry was modified by another transaction. You may retry this operation.");
     }
 
+    public static TransientTransactionFailureException outdatedRead() {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N27)
+                .build();
+
+        return new TransientTransactionFailureException(
+                gql,
+                Status.Transaction.Outdated,
+                "The transaction read outdated data and cannot be recovered due to concurrent data modification. Retry the transaction.");
+    }
+
     @Override
     public Status status() {
         return status;

@@ -120,9 +120,12 @@ class ConsistencyCheckingApplierTest {
     void shouldNotReportAnythingOnConsistentChanges() throws Exception {
         // when
         apply(
-                create(new RelationshipRecord(0).initialize(true, NULL, 0, 1, TYPE, 1, 1, 1, 2, true, true)),
-                create(new RelationshipRecord(1).initialize(true, NULL, 0, 10, TYPE, 0, NULL, 1, NULL, false, true)),
-                create(new RelationshipRecord(2).initialize(true, NULL, 1, 20, TYPE, 0, NULL, 1, NULL, false, true)));
+                create(new RelationshipRecord(0)
+                        .initialize(true, NULL, 0, 1, TYPE, 1, 1, 1, 2, true, true, false, false)),
+                create(new RelationshipRecord(1)
+                        .initialize(true, NULL, 0, 10, TYPE, 0, NULL, 1, NULL, false, true, false, false)),
+                create(new RelationshipRecord(2)
+                        .initialize(true, NULL, 1, 20, TYPE, 0, NULL, 1, NULL, false, true, false, false)));
 
         // then not throwing exception is wonderful
     }
@@ -132,10 +135,8 @@ class ConsistencyCheckingApplierTest {
     @Test
     void shouldDetectSourcePrevNotInUse() {
         // given
-        Command.RelationshipCommand command = create(
-                new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true));
-        //
-        //      ^                   ^
+        Command.RelationshipCommand command = create(new RelationshipRecord(1)
+                .initialize(true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true, false, false));
 
         // when/then
         IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
@@ -145,10 +146,8 @@ class ConsistencyCheckingApplierTest {
     @Test
     void shouldDetectTargetPrevNotInUse() {
         // given
-        Command.RelationshipCommand command = create(
-                new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false));
-        //
-        //               ^                ^
+        Command.RelationshipCommand command = create(new RelationshipRecord(1)
+                .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false, false, false));
 
         // when/then
         IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
@@ -159,11 +158,12 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectSourcePrevNotReferringBack() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE3, TYPE, 1, 99, 1, NULL, true, true)),
-            //                                                                                 ^
-            create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true)),
-            //                                                                              ^
-            create(new RelationshipRecord(99).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true)),
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE1, NODE3, TYPE, 1, 99, 1, NULL, true, true, false, false)),
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 0, NULL, 1, NULL, false, true, false, false)),
+            create(new RelationshipRecord(99)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then
@@ -175,11 +175,12 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectTargetPrevNotReferringBack() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE2, NODE3, TYPE, 1, 99, 1, NULL, true, true)),
-            //                                                                                 ^
-            create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false)),
-            //                                                                                       ^
-            create(new RelationshipRecord(99).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE2, NODE3, TYPE, 1, 99, 1, NULL, true, true, false, false)),
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 0, NULL, true, false, false, false)),
+            create(new RelationshipRecord(99)
+                    .initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then
@@ -191,10 +192,10 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectSourcePrevHasOtherNodes() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, false, true)),
-            //                                                            ^                 ^
-            create(new RelationshipRecord(1).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
-            //                                                            ^      ^
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, false, true, false, false)),
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then
@@ -206,10 +207,10 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectTargetPrevHasOtherNodes() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, false)),
-            //                                                                   ^                   ^
-            create(new RelationshipRecord(1).initialize(true, NULL, NODE2, NODE1, TYPE, 1, NULL, 1, NULL, true, true)),
-            //                                                            ^      ^
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, false, false, false)),
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE2, NODE1, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then
@@ -222,10 +223,8 @@ class ConsistencyCheckingApplierTest {
     @Test
     void shouldDetectSourceNextNotInUse() {
         // given
-        Command.RelationshipCommand command =
-                create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, 0, 1, NULL, true, true));
-        //
-        //         ^
+        Command.RelationshipCommand command = create(new RelationshipRecord(1)
+                .initialize(true, NULL, NODE1, NODE2, TYPE, 1, 0, 1, NULL, true, true, false, false));
 
         // when/then
         IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
@@ -235,10 +234,8 @@ class ConsistencyCheckingApplierTest {
     @Test
     void shouldDetectTargetNextNotInUse() {
         // given
-        Command.RelationshipCommand command =
-                create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 0, true, true));
-        //
-        //                  ^
+        Command.RelationshipCommand command = create(new RelationshipRecord(1)
+                .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 0, true, true, false, false));
 
         // when/then
         IllegalStateException error = assertThrows(IllegalStateException.class, () -> apply(command));
@@ -249,12 +246,12 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectSourceNextNotReferringBack() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true)),
-            //                                                                                 ^
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true, false, false)),
             create(new RelationshipRecord(1)
-                    .initialize(true, NULL, NODE1, NODE2, TYPE, 99, NULL, 1, NULL, false, true)),
-            //                                                                              ^
-            create(new RelationshipRecord(99).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true)),
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 99, NULL, 1, NULL, false, true, false, false)),
+            create(new RelationshipRecord(99)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then
@@ -266,12 +263,12 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectTargetNextNotReferringBack() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true)),
-            //                                                                                          ^
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true, false, false)),
             create(new RelationshipRecord(1)
-                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 99, NULL, true, false)),
-            //                                                                                       ^
-            create(new RelationshipRecord(99).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 99, NULL, true, false, false, false)),
+            create(new RelationshipRecord(99)
+                    .initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then
@@ -283,10 +280,10 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectSourceNextHasOtherNodes() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true)),
-            //                                                            ^                    ^
-            create(new RelationshipRecord(1).initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
-            //                                                            ^      ^
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, 1, 1, NULL, true, true, false, false)),
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE2, NODE3, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then
@@ -298,10 +295,10 @@ class ConsistencyCheckingApplierTest {
     void shouldDetectTargetNextHasOtherNodes() {
         // given
         Command.RelationshipCommand[] commands = new Command.RelationshipCommand[] {
-            create(new RelationshipRecord(0).initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true)),
-            //                                                                   ^                      ^
-            create(new RelationshipRecord(1).initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, true)),
-            //                                                            ^      ^
+            create(new RelationshipRecord(0)
+                    .initialize(true, NULL, NODE1, NODE2, TYPE, 1, NULL, 1, 1, true, true, false, false)),
+            create(new RelationshipRecord(1)
+                    .initialize(true, NULL, NODE1, NODE3, TYPE, 1, NULL, 1, NULL, true, true, false, false)),
         };
 
         // when/then

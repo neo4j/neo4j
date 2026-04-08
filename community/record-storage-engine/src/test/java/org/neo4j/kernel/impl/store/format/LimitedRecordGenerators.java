@@ -108,7 +108,10 @@ public class LimitedRecordGenerators implements RecordGenerators {
                         randomLongOrOccasionallyNull(entityBits),
                         randomLongOrOccasionallyNull(entityBits),
                         random.nextBoolean(),
-                        random.nextBoolean());
+                        random.nextBoolean(),
+                        // Not supported by high limit format, so we have to set these to false here
+                        false,
+                        false);
     }
 
     @Override

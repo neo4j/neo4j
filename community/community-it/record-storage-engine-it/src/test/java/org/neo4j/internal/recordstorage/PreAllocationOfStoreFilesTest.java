@@ -154,7 +154,7 @@ class PreAllocationOfStoreFilesTest {
                                 LATEST_LOG_SERIALIZATION,
                                 new RelationshipRecord(2000),
                                 new RelationshipRecord(2000)
-                                        .initialize(true, -1, -1, -1, 1, -1, -1, -1, -1, true, true))),
+                                        .initialize(true, -1, -1, -1, 1, -1, -1, -1, -1, true, true, false, false))),
                 UNKNOWN_CONSENSUS_INDEX,
                 1611333951,
                 2,

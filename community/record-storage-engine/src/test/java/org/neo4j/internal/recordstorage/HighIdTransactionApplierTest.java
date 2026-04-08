@@ -188,7 +188,7 @@ class HighIdTransactionApplierTest {
         node.setSecondaryUnitIdOnLoad(6);
 
         RelationshipRecord relationship =
-                new RelationshipRecord(10).initialize(true, 1, 2, 3, 4, 5, 6, 7, 8, true, true);
+                new RelationshipRecord(10).initialize(true, 1, 2, 3, 4, 5, 6, 7, 8, true, true, false, false);
         relationship.setSecondaryUnitIdOnLoad(12);
 
         RelationshipGroupRecord relationshipGroup = new RelationshipGroupRecord(8).initialize(true, 0, 1, 2, 3, 4, 5);

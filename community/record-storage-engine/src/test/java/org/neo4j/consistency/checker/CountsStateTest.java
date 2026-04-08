@@ -334,7 +334,9 @@ class CountsStateTest {
                         NULL_REFERENCE.longValue(),
                         NULL_REFERENCE.longValue(),
                         true,
-                        true);
+                        true,
+                        false,
+                        false);
     }
 
     private class RelationshipIncrementer implements Runnable {

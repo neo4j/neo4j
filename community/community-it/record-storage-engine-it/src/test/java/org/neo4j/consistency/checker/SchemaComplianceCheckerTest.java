@@ -155,14 +155,14 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
             // (N1) indexed w/ property A
             {
                 long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-                nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, propId, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId, value);
             }
             // (N2) indexed w/ property A
             {
                 long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-                long nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                long nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, propId, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId2, value);
             }
@@ -188,7 +188,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             // (N1) w/ property A (NOT indexed)
             long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, propId, label1);
             property(propId, NULL, NULL, propertyValue(propertyKey1, stringValue("a")));
         }
 
@@ -211,8 +211,8 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
             // Rel w/ property (NOT indexed)
             long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
             relId = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
-            long nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relId);
-            relationship(relId, nodeId, nodeId, relType1, propId, NULL, NULL, NULL, NULL, true, true);
+            long nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, NULL);
+            relationship(relId, nodeId, nodeId, relType1, propId, NULL, NULL, NULL, NULL, true, true, false, false);
             property(propId, NULL, NULL, propertyValue(propertyKey1, stringValue("a")));
         }
 
@@ -237,7 +237,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
             // (N1) w/ property
             {
                 long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-                nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, propId, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId, value);
             }
@@ -245,7 +245,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
             // (N2) w/ property
             {
                 long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
-                long nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                long nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), false, propId, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId2, value);
             }

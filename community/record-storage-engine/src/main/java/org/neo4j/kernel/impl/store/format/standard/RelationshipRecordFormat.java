@@ -97,6 +97,10 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
             long nextProp = cursor.getInt() & 0xFFFFFFFFL;
             long nextPropMod = (headerByte & 0xF0L) << 28;
 
+            // [    ,   x] 1:st in start node chain,   0x1
+            // [    ,  x ] 1:st in end node chain,     0x2
+            // [    , x  ] first is guaranteed dense,  0x4
+            // [    ,x   ] second is guaranteed dense, 0x8
             byte extraByte = cursor.getByte();
 
             record.initialize(
@@ -110,7 +114,9 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
                     BaseRecordFormat.longFromIntAndMod(secondPrevRel, secondPrevRelMod),
                     BaseRecordFormat.longFromIntAndMod(secondNextRel, secondNextRelMod),
                     (extraByte & 0x1) != 0,
-                    (extraByte & 0x2) != 0);
+                    (extraByte & 0x2) != 0,
+                    (extraByte & 0x4) != 0,
+                    (extraByte & 0x8) != 0);
         } else {
             int nextOffset = cursor.getOffset() + recordSize - HEADER_SIZE;
             cursor.setOffset(nextOffset);
@@ -164,11 +170,16 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
                     | secondPrevRelMod
                     | secondNextRelMod);
 
-            // [    ,   x] 1:st in start node chain, 0x1
-            // [    ,  x ] 1:st in end node chain,   0x2
+            // [    ,   x] 1:st in start node chain,   0x1
+            // [    ,  x ] 1:st in end node chain,     0x2
+            // [    , x  ] first is guaranteed dense,  0x4
+            // [    ,x   ] second is guaranteed dense, 0x8
             long firstInStartNodeChain = record.isFirstInFirstChain() ? 0x1 : 0;
             long firstInEndNodeChain = record.isFirstInSecondChain() ? 0x2 : 0;
-            byte extraByte = (byte) (firstInEndNodeChain | firstInStartNodeChain);
+            long firstIsGuaranteedDense = record.firstNodeIsGuaranteedDense() ? 0x4 : 0;
+            long secondIsGuaranteedDense = record.secondNodeIsGuaranteedDense() ? 0x8 : 0;
+            byte extraByte = (byte)
+                    (firstInEndNodeChain | firstInStartNodeChain | firstIsGuaranteedDense | secondIsGuaranteedDense);
 
             cursor.putByte((byte) inUseUnsignedByte);
             cursor.putInt((int) firstNode);
