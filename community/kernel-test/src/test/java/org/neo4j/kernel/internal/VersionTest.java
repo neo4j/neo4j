@@ -20,7 +20,6 @@
 package org.neo4j.kernel.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.internal.Version.CUSTOM_VERSION_SETTING;
 
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,29 @@ class VersionTest {
 
         assertThat(version("0").getReleaseVersion()).isEqualTo("0");
         assertThat(version("0").getVersion()).isEqualTo("0");
+
+        assertThat(version("2025.02.1-RC3,abcdef012345").getReleaseVersion()).isEqualTo("2025.02.1-RC3");
+        assertThat(version("2025.02.1-RC3,abcdef012345").getVersion()).isEqualTo("2025.02.1-RC3,abcdef012345");
+        assertThat(version("2025.02.1-RC3,abcdef012345-dirty").getVersion())
+                .isEqualTo("2025.02.1-RC3,abcdef012345-dirty");
+
+        assertThat(version("2025.02.1,abcdef012345").getReleaseVersion()).isEqualTo("2025.02.1");
+        assertThat(version("2025.02.1,abcdef012345").getVersion()).isEqualTo("2025.02.1,abcdef012345");
+        assertThat(version("2025.02.1,abcdef012345-dirty").getVersion()).isEqualTo("2025.02.1,abcdef012345-dirty");
+
+        assertThat(version("2026.03-foo").getReleaseVersion()).isEqualTo("2026.03-foo");
+        assertThat(version("2026.03-foo").getVersion()).isEqualTo("2026.03-foo");
+
+        assertThat(version("2025.02.0,abcdef012345").getReleaseVersion()).isEqualTo("2025.02.0");
+        assertThat(version("2025.02.0,abcdef012345").getVersion()).isEqualTo("2025.02.0,abcdef012345");
+
+        assertThat(version("2025.02,abcdef012345").getReleaseVersion()).isEqualTo("2025.02");
+        assertThat(version("2025.02,abcdef012345").getVersion()).isEqualTo("2025.02,abcdef012345");
+
+        assertThat(version("2026.04.0-SNAPSHOT,abcdef012345").getReleaseVersion())
+                .isEqualTo("2026.04.0-SNAPSHOT");
+        assertThat(version("2026.04.0-SNAPSHOT,abcdef012345").getVersion())
+                .isEqualTo("2026.04.0-SNAPSHOT,abcdef012345");
     }
 
     @Test
@@ -64,10 +86,31 @@ class VersionTest {
         var planetExpress = "planetExpress";
         try {
             System.setProperty(CUSTOM_VERSION_SETTING, planetExpress);
-            assertEquals(planetExpress, Version.selectVersion());
+            assertThat(Version.selectVersion()).isEqualTo(planetExpress);
         } finally {
             System.clearProperty(CUSTOM_VERSION_SETTING);
         }
+    }
+
+    @Test
+    void selectVersionAndKernelVersionUseManifestOrDev() {
+        System.clearProperty(CUSTOM_VERSION_SETTING);
+        var manifestVersion = Version.getManifestVersion();
+        var expected = manifestVersion != null ? manifestVersion : "dev";
+        assertThat(Version.selectVersion()).isEqualTo(expected);
+        assertThat(Version.getKernelVersion()).isEqualTo(expected);
+    }
+
+    @Test
+    void staticAccessorsAreConsistent() {
+        assertThat(Version.getKernelVersion()).isEqualTo(Version.getKernel().getVersion());
+        assertThat(Version.getNeo4jVersion()).isEqualTo(Version.getKernel().getReleaseVersion());
+    }
+
+    @Test
+    void toStringFormat() {
+        var v = version("2025.02.1,abcdef012345");
+        assertThat(v.toString()).isEqualTo("test-component, version: 2025.02.1,abcdef012345");
     }
 
     private static Version version(String version) {

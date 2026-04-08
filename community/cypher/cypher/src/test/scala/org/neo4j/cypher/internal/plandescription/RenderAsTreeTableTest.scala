@@ -1822,9 +1822,18 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
   }
 
-  test("parseMajorMinor") {
-    Arguments.parseMajorMinor("4.1.53") shouldBe "4.1"
-    Arguments.parseMajorMinor("5.1.0-SNAPSHOT") shouldBe "5.1"
-    Arguments.parseMajorMinor("other version") shouldBe "other version"
+  test("parseMajorMinorPatch") {
+    Arguments.parseMajorMinorPatch("4.1") shouldBe "4.1"
+    Arguments.parseMajorMinorPatch("4.1-SNAPSHOT") shouldBe "4.1"
+
+    Arguments.parseMajorMinorPatch("2025.09.14") shouldBe "2025.09.14"
+    Arguments.parseMajorMinorPatch("2025.09.14-SNAPSHOT") shouldBe "2025.09.14"
+    Arguments.parseMajorMinorPatch("2025.12.1-SNAPSHOT-deadbeef") shouldBe "2025.12.1"
+    Arguments.parseMajorMinorPatch("4.1.53") shouldBe "4.1.53"
+    Arguments.parseMajorMinorPatch("5.1.0-SNAPSHOT") shouldBe "5.1.0"
+
+    Arguments.parseMajorMinorPatch("4") shouldBe "4"
+    Arguments.parseMajorMinorPatch("4-SNAPSHOT") shouldBe "4-SNAPSHOT"
+    Arguments.parseMajorMinorPatch("other version") shouldBe "other version"
   }
 }

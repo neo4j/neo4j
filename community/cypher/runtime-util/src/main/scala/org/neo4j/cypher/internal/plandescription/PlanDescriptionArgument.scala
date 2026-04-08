@@ -41,10 +41,10 @@ object PrettyString {
 }
 
 object Arguments {
-  private val VERSION_PATTERN = "(\\d+)\\.{1}(\\d+).*".r
+  private val VERSION_PATTERN = "(\\d+)\\.{1}(\\d+)(?:\\.(\\d+))?.*".r
 
   val CURRENT_VERSION: String =
-    parseMajorMinor(parseMajorMinor(org.neo4j.kernel.internal.Version.getNeo4jVersion))
+    parseMajorMinorPatch(selectVersion)
 
   object Details {
 
@@ -56,6 +56,15 @@ object Arguments {
   // For calling the apply method of EstimatedRows from Java
   def estimatedRows(effectiveCardinality: Double): EstimatedRows = {
     EstimatedRows(effectiveCardinality, Some(effectiveCardinality))
+  }
+
+  private def selectVersion: String = {
+    val manifestVersion = org.neo4j.kernel.internal.Version.getManifestVersion
+    if (manifestVersion != null) {
+      manifestVersion
+    } else {
+      "<unknown>"
+    }
   }
 
   /**
@@ -164,10 +173,14 @@ object Arguments {
     override def name: String = "Id"
   }
 
-  def parseMajorMinor(version: String): String = {
+  def parseMajorMinorPatch(version: String): String = {
     version match {
-      case VERSION_PATTERN(major, minor) => s"$major.$minor"
-      case _                             => version
+      case VERSION_PATTERN(major, minor, patch) if patch != null =>
+        s"$major.$minor.$patch"
+      case VERSION_PATTERN(major, minor, _) =>
+        s"$major.$minor"
+      case _ =>
+        version
     }
   }
 }
