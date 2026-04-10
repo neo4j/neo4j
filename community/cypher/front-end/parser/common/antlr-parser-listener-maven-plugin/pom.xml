@@ -42,6 +42,15 @@
             <artifactId>maven-plugin-api</artifactId>
             <version>${required.maven.version}</version>
             <scope>provided</scope>
+
+            <exclusions>
+                <exclusion>
+                    <!-- The transient dependency is of version 3.6.0 which has a vulnerability.
+                     We do not need it, so it can be excluded. -->
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -56,6 +65,15 @@
             <artifactId>maven-core</artifactId>
             <version>${required.maven.version}</version>
             <scope>provided</scope>
+
+            <exclusions>
+                <exclusion>
+                    <!-- The transient dependency is of version 3.6.0 which has a vulnerability.
+                     We do not need it, so it can be excluded. -->
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
