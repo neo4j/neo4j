@@ -5,11 +5,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>2026.04.0-SNAPSHOT</version>
+    <version>2026.04.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>neo4j-cypher-slotted-runtime</artifactId>
-  <version>2026.04.0-SNAPSHOT</version>
+  <version>2026.04.0</version>
   <packaging>jar</packaging>
   <name>Neo4j - Cypher Slotted Runtime</name>
   <description>Planner for the physical query plans</description>
