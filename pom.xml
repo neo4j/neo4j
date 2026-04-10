@@ -174,7 +174,7 @@
     <awaitility.version>4.2.2</awaitility.version>
     <log4j.version>2.25.3</log4j.version>
     <slf4j.version>2.0.9</slf4j.version>
-    <neo4j-java-driver.version>5.28.11</neo4j-java-driver.version>
+    <neo4j-java-driver.version>5.28.12</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <parquet-floor.version>1.62</parquet-floor.version>
     <picocli.version>4.7.6</picocli.version>

@@ -34,6 +34,7 @@ import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.LoggingProvider;
 import org.neo4j.bolt.connection.NotificationConfig;
 import org.neo4j.bolt.connection.SecurityPlan;
+import org.neo4j.bolt.connection.observation.ImmutableObservation;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -96,10 +97,12 @@ public final class LocalChannelDriverFactory extends DriverFactory {
                 BoltAgent boltAgent,
                 String userAgent,
                 int connectTimeoutMillis,
+                long initialisationTimeoutMillis,
                 SecurityPlan securityPlan,
                 AuthToken authToken,
                 BoltProtocolVersion minVersion,
-                NotificationConfig notificationConfig) {
+                NotificationConfig notificationConfig,
+                ImmutableObservation parentObservation) {
             try {
                 uri = new URI(
                         "neo4j",
@@ -118,10 +121,12 @@ public final class LocalChannelDriverFactory extends DriverFactory {
                     boltAgent,
                     userAgent,
                     connectTimeoutMillis,
+                    initialisationTimeoutMillis,
                     securityPlan,
                     authToken,
                     minVersion,
-                    notificationConfig);
+                    notificationConfig,
+                    parentObservation);
         }
 
         @Override
