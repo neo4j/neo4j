@@ -28,8 +28,13 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 
+import java.io.IOException;
+import java.time.ZoneOffset;
 import java.util.Map;
+import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.csv.reader.CharReadable;
@@ -58,6 +63,20 @@ public class DataFactoriesTest {
 
     private final Groups groups = new Groups();
     private final Group globalGroup = groups.getOrCreate(null);
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldParseRawHeaderCorrectly(boolean commasOrTabs) throws IOException {
+        var config = commasOrTabs ? COMMAS : TABS;
+        var headers = Lists.mutable.of(
+                "ID:ID", "label-one:label", "also-labels:LABEL", "name", "age:long", "location:Point{crs:WGS-84}");
+        var rawHeaders = DataFactories.parseRawHeaderEntries(
+                "",
+                config,
+                () -> ZoneOffset.UTC,
+                String.join(commasOrTabs ? "," : "\t", headers).toCharArray());
+        assertThat(rawHeaders).isEqualTo(headers);
+    }
 
     @Test
     public void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception {

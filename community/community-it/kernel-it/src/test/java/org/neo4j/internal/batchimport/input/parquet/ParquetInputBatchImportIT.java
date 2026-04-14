@@ -23,6 +23,8 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.batchimport.api.input.IdType.INTEGER;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
@@ -36,6 +38,7 @@ import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 import blue.strategic.parquet.Dehydrator;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -99,8 +102,10 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
+import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputEntity;
+import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -135,6 +140,7 @@ class ParquetInputBatchImportIT {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
 
+    private static final long ROW_GROUP_SIZE = 1024;
     private static final int GENERATED_NODE_COUNT = 4096;
     private static final int GENERATED_RELATIONSHIP_COUNT = 4096 * 3;
 
@@ -190,14 +196,81 @@ class ParquetInputBatchImportIT {
         }
     }
 
+    @Test
+    void shouldYieldCorrectGroupWarning() throws Exception {
+        // GIVEN
+        Config dbConfig = Config.newBuilder()
+                .set(db_timezone, LogTimeZone.SYSTEM)
+                .set(dense_node_threshold, 5)
+                .build();
+        try (JobScheduler scheduler = new ThreadPoolJobScheduler();
+                var outputStream = new ByteArrayOutputStream();
+                var badCollector = new BadCollector(outputStream, 0, 20)) {
+
+            BatchImporter importer = new ParallelBatchImporter(
+                    databaseLayout,
+                    fileSystem,
+                    PageCacheTracer.NULL,
+                    smallBatchSizeConfig(),
+                    NullLogService.getInstance(),
+                    ExecutionMonitor.INVISIBLE,
+                    DefaultAdditionalIds.EMPTY,
+                    new EmptyLogTailMetadata(dbConfig),
+                    dbConfig,
+                    Monitor.NO_MONITOR,
+                    scheduler,
+                    badCollector,
+                    TransactionLogInitializer.getLogFilesInitializer(),
+                    new IndexImporterFactoryImpl(),
+                    INSTANCE,
+                    NULL_CONTEXT_FACTORY);
+            Groups groups = new Groups();
+            groups.getOrCreate(null);
+            groups.getOrCreate("EndGroup");
+
+            var message = assertThrows(
+                            InputException.class,
+                            () -> importer.doImport(parquet(
+                                    Path.of(ParquetInputBatchImportIT.class
+                                            .getResource("/org/neo4j/internal/batchimport/nodeGroup1.parquet")
+                                            .toURI()),
+                                    Path.of(ParquetInputBatchImportIT.class
+                                            .getResource("/org/neo4j/internal/batchimport/nodeGroup2.parquet")
+                                            .toURI()),
+                                    Path.of(ParquetInputBatchImportIT.class
+                                            .getResource("/org/neo4j/internal/batchimport/relationships.parquet")
+                                            .toURI()),
+                                    groups)))
+                    .getMessage();
+
+            assertThat(message.contains("123 (StartGroup)-[TYPE]->234 (EndGroup) referring to missing node 234"));
+        }
+    }
+
+    static Input parquet(Path nodeGroup1, Path nodeGroup2, Path relationships, Groups groups) {
+        return new ParquetInput(
+                Map.of(
+                        Set.of("STARTTHING"),
+                        List.<Path[]>of(new Path[] {nodeGroup1}),
+                        Set.of("ENDTHING"),
+                        List.<Path[]>of(new Path[] {nodeGroup2})),
+                Map.of("", List.<Path[]>of(new Path[] {relationships})),
+                List.of(),
+                INTEGER,
+                Configuration.newBuilder().build(),
+                groups,
+                new ParquetMonitor(System.out));
+    }
+
     static Input parquet(Path nodes, Path relationships, IdType idType, Groups groups) {
         Path[] nodeArray = List.of(nodes).toArray(new Path[] {});
         Path[] relationshipArray = List.of(relationships).toArray(new Path[] {});
         return new ParquetInput(
                 Map.of(Set.of(""), Collections.singletonList(nodeArray)),
                 Map.of("", Collections.singletonList(relationshipArray)),
+                List.of(),
                 idType,
-                ';',
+                Configuration.newBuilder().build(),
                 groups,
                 new ParquetMonitor(System.out));
     }
@@ -259,7 +332,7 @@ class ParquetInputBatchImportIT {
                 .as(LogicalTypeAnnotation.stringType())
                 .named(":TYPE");
         var writer = new BasicParquetWriterBuilder<>(new TestOutputFile(file))
-                .withRowGroupSize(1024L)
+                .withRowGroupSize(ROW_GROUP_SIZE)
                 .withType(new MessageType("Some Data", startId, endId, type))
                 .withDehydrator((record, valueWriter) -> {
                     var relationship = (Object[]) record;
@@ -291,7 +364,7 @@ class ParquetInputBatchImportIT {
                 .as(LogicalTypeAnnotation.stringType())
                 .named("name");
         var writer = new BasicParquetWriterBuilder<>(new TestOutputFile(file))
-                .withRowGroupSize(1024L)
+                .withRowGroupSize(ROW_GROUP_SIZE)
                 .withType(new MessageType("Some Data", idType, labelsType, nameType))
                 .withDehydrator((record, valueWriter) -> {
                     var node = (InputEntity) record;

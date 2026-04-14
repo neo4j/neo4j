@@ -125,6 +125,9 @@ class CsvInputBatchImportIT {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
 
+    private static final int GENERATED_NODE_COUNT = 4096;
+    private static final int GENERATED_RELATIONSHIP_COUNT = 4096 * 3;
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -206,7 +209,7 @@ class CsvInputBatchImportIT {
 
     private List<InputEntity> randomNodeData(Group group) {
         List<InputEntity> nodes = new ArrayList<>();
-        for (int i = 0; i < 300; i++) {
+        for (int i = 0; i < GENERATED_NODE_COUNT; i++) {
             InputEntity node = new InputEntity();
             node.id(UUID.randomUUID().toString(), group);
             node.property("name", "Node " + i);
@@ -310,7 +313,7 @@ class CsvInputBatchImportIT {
 
     private List<InputEntity> randomRelationshipData(List<InputEntity> nodeData, Group group) {
         List<InputEntity> relationships = new ArrayList<>();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < GENERATED_RELATIONSHIP_COUNT; i++) {
             InputEntity relationship = new InputEntity();
             relationship.startId(nodeData.get(random.nextInt(nodeData.size())).id(), group);
             relationship.endId(nodeData.get(random.nextInt(nodeData.size())).id(), group);

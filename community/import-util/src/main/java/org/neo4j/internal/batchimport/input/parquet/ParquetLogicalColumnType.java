@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.input.parquet;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 enum ParquetLogicalColumnType {
     // node types
@@ -46,7 +47,7 @@ enum ParquetLogicalColumnType {
         if (logicalColumnTypeValue == null) {
             return PROPERTY;
         }
-        logicalColumnTypeValue = logicalColumnTypeValue.toUpperCase();
+        logicalColumnTypeValue = logicalColumnTypeValue.toUpperCase(Locale.ROOT);
         for (ParquetLogicalColumnType type : values()) {
             if (logicalColumnTypeValue.equals(type.typeName)
                     && (entityTypeFilter == null

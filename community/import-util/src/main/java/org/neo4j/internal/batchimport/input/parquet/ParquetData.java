@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.input.parquet;
 import java.nio.file.Path;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -30,6 +31,7 @@ import java.util.function.Supplier;
  * Represents labels / type and one file that was declared for these labels / type.
  */
 record ParquetData(
+        EntityType entityType,
         Set<String> labelsOrType,
         Path file,
         List<ParquetColumn> columns,
@@ -38,12 +40,21 @@ record ParquetData(
         String relationshipStartIdGroupName,
         String relationshipEndIdGroupName) {
 
+    ParquetData {
+        Objects.requireNonNull(entityType, "entityType must not be null");
+        if (entityType != EntityType.NODE && entityType != EntityType.RELATIONSHIP) {
+            throw new IllegalArgumentException("entityType must be either NODE or RELATIONSHIP");
+        }
+    }
+
     ParquetData(
+            EntityType entityType,
             Set<String> labelsOrType,
             Path file,
             List<ParquetColumn> columns,
             Supplier<ZoneId> defaultTimezoneSupplier) {
         this(
+                entityType,
                 labelsOrType,
                 file,
                 columns,

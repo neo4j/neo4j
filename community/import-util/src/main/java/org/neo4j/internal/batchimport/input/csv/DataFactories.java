@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Arrays.copyOf;
 import static org.neo4j.csv.reader.Readables.individualFiles;
 import static org.neo4j.csv.reader.Readables.iterator;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
@@ -39,10 +40,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.eclipse.collections.api.factory.Lists;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
+import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
@@ -176,6 +179,24 @@ public class DataFactories {
      */
     public static Header.Factory defaultFormatRelationshipFileHeader() {
         return defaultFormatRelationshipFileHeader(DEFAULT_TIME_ZONE, false);
+    }
+
+    public static List<String> parseRawHeaderEntries(
+            String sourceDescription, Configuration config, Supplier<ZoneId> defaultTimeZone, char... data)
+            throws IOException {
+        var chunk = new ChunkImpl(copyOf(data, data.length + 1));
+        chunk.initialize(0, data.length, sourceDescription);
+
+        try (var dataSeeker = CsvInputIterator.seeker(chunk, config)) {
+            var mark = new Mark();
+            var extractors = new Extractors(
+                    config.arrayDelimiter(), config.emptyQuotedStringsAsNull(), config.trimStrings(), defaultTimeZone);
+            var headers = Lists.mutable.<String>empty();
+            while (!mark.isEndOfLine() && dataSeeker.seek(mark, config.delimiter())) {
+                headers.add(dataSeeker.tryExtract(mark, extractors.string()));
+            }
+            return headers;
+        }
     }
 
     public static Entry[] parseHeaderEntries(

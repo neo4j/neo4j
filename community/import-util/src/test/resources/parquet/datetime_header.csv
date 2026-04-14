@@ -1,0 +1,2 @@
+date:DATE,epoch:LOCALDATETIME,datetime:DATETIME,string:STRING,integer:INT,address:STRING
+date_field,epoch_timestamp,datetime_field,string_field,integer_id,address

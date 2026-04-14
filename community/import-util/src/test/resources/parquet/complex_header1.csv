@@ -1,0 +1,2 @@
+commentId:ID(Comment):ID(n@0<p@0_0>){id-type:long},creationDate:datetime:datetime,locationIP:string:string,browserUsed:string:string,content:string:string,length:int:long
+commentId:ID(Comment),creationDate:datetime,locationIP:string,browserUsed:string,content:string,length:int

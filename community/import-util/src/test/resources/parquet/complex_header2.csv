@@ -1,0 +1,2 @@
+personId:ID(Person):ID(n@2<p@2_0>){id-type:long},firstName:string:string,lastName:string:string,gender:string:string,birthday:date:date,creationDate:datetime:datetime,locationIP:string:string,browserUsed:string:string
+personId:ID(Person),firstName:string,lastName:string,gender:string,birthday:date,creationDate:datetime,locationIP:string,browserUsed:string

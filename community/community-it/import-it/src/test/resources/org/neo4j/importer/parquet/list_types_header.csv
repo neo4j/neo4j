@@ -1,0 +1,2 @@
+id:ID(id_uniq),c_list_string:string[],c_list_int32:long[],c_list_int64:long[],c_list_float:double[],c_list_double:double[],c_list_boolean:boolean[]
+id,c_list_string,c_list_int32,c_list_int64,c_list_float,c_list_double,c_list_boolean

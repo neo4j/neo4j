@@ -61,6 +61,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFor
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.storemigration.StoreMigrationTestUtils.getStoreVersion;
 
+import blue.strategic.parquet.ParquetWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -87,6 +88,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Types;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
 import org.junit.jupiter.api.AfterEach;
@@ -2293,7 +2298,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void autoSkipSubsequentHeadersShouldnotBeTrippedUpByWeirdLine() throws Exception {
+    void autoSkipSubsequentHeadersShouldNotBeTrippedUpByWeirdLine() throws Exception {
         // GIVEN
         final var header = ":LABEL,node_id:ID,counter:int";
         var nodeData1 = createAndWriteFile("part0.csv", Charset.defaultCharset(), writer -> {
@@ -2503,6 +2508,178 @@ class ImportCommandTest {
         assertThatThrownBy(() -> runImport("--nodes=s3://boom/time.csv"))
                 .isInstanceOf(ProviderMismatchException.class)
                 .hasMessageContaining("No storage system found for scheme: s3");
+    }
+
+    @Test
+    void shouldHandleParquetInput() throws Exception {
+        // given
+        List<org.apache.parquet.schema.Type> types = List.of(
+                Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":ID"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("name"));
+        var nodes = createParquetFile(
+                "nodes.parquet", types, List.of(new Object[] {1L, "Tom"}, new Object[] {2L, "Jerry"}));
+
+        // when
+        runImport("--input-type=parquet", "--nodes", nodes.toString());
+
+        // then
+        try (var tx = getDatabaseApi().beginTx()) {
+            Set<String> namedNodes = new HashSet<>();
+            tx.getAllNodes().forEach(node -> {
+                boolean added = namedNodes.add(node.getProperty("name").toString());
+                assertThat(added).isTrue();
+            });
+            assertThat(namedNodes).containsExactlyInAnyOrder("Tom", "Jerry");
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithCsvHeaderAndCustomDelimiter() throws Exception {
+        // given;
+        var types = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.INT64).named("ix"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("character"));
+        var header = createAndWriteFile("header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID|name");
+            writer.println("ix|character");
+        });
+
+        var parquet = createParquetFile(
+                "nodes.parquet", types, List.of(new Object[] {1L, "Tom"}, new Object[] {2L, "Jerry"}));
+
+        // when
+        runImport("--delimiter", "|", "--input-type=parquet", "--nodes", header.toString(), parquet.toString());
+
+        // then
+        try (var tx = getDatabaseApi().beginTx()) {
+            var namedNodes = new HashSet<String>();
+            tx.getAllNodes().forEach(node -> assertThat(
+                            namedNodes.add(node.getProperty("name").toString()))
+                    .isTrue());
+            assertThat(namedNodes).containsExactlyInAnyOrder("Tom", "Jerry");
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithLists() throws Exception {
+        // given a parquet file with the schema {id:int32, name: varchar, aList: varcharp[], label:varchar}
+        var nodes = getClass().getResource("/org/neo4j/importer/parquet/listColumns.parquet");
+
+        // when
+        List<String> args = Lists.mutable.of("--nodes", nodes.toString());
+        args.add("--input-type=parquet");
+
+        runImport(args.toArray(new String[0]));
+
+        // then
+        try (var tx = getDatabaseApi().beginTx()) {
+            List<String[]> allArrays = new ArrayList<>();
+            tx.getAllNodes().forEach(node -> {
+                // Verify that strArray property exists and is a String array
+                Object property = node.getProperty("aList");
+                assertThat(property).isInstanceOf(String[].class);
+
+                String[] strArray = (String[]) property;
+                assertThat(strArray).hasSize(3);
+                allArrays.add(strArray);
+            });
+
+            // Verify we have 2 nodes
+            assertThat(allArrays).hasSize(2);
+
+            // Verify one array contains ["1", "2", "3"] and the other contains ["4", "5", "6"]
+            assertThat(allArrays)
+                    .anySatisfy(arr -> assertThat(arr).containsExactlyInAnyOrder("a", "b", "c"))
+                    .anySatisfy(arr -> assertThat(arr).containsExactlyInAnyOrder("d", "e", "f"));
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithVariousListTypes() throws Exception {
+        // given a parquet file with various list types and an associated header file explictly setting the property
+        // type
+        var nodes = getClass().getResource("/org/neo4j/importer/parquet/list_types.parquet");
+        var header = getClass().getResource("/org/neo4j/importer/parquet/list_types_header.csv");
+
+        // when
+        List<String> args = Lists.mutable.of("--nodes", "ParquetList=" + header.toString() + "," + nodes.toString());
+        args.add("--input-type=parquet");
+
+        runImport(args.toArray(new String[0]));
+
+        // then
+        try (var tx = getDatabaseApi().beginTx()) {
+            var importedNode = tx.getAllNodes().stream().findFirst().get();
+
+            assertThat(importedNode.getPropertyKeys()).hasSize(7);
+
+            // Verify c_list_string property
+            var c_list_string = importedNode.getProperty("c_list_string");
+            assertThat(c_list_string).isInstanceOf(String[].class);
+            String[] strArray = (String[]) c_list_string;
+            assertThat(strArray).hasSize(3);
+            assertThat(strArray).containsExactly("a", "b", "c");
+
+            // Verify c_list_int32 property
+            var c_list_int32 = importedNode.getProperty("c_list_int32");
+            assertThat(c_list_int32).isInstanceOf(long[].class);
+            long[] int32Array = (long[]) c_list_int32;
+            assertThat(int32Array).hasSize(3);
+            assertThat(int32Array).containsExactly(123L, 234L, 345L);
+
+            // Verify c_list_int64 property
+            var c_list_int64 = importedNode.getProperty("c_list_int64");
+            assertThat(c_list_int64).isInstanceOf(long[].class);
+            long[] int64Array = (long[]) c_list_int64;
+            assertThat(int64Array).hasSize(3);
+            assertThat(int64Array).containsExactly(123L, 234L, 345L);
+
+            // Verify c_list_float property
+            var c_list_float = importedNode.getProperty("c_list_float");
+            assertThat(c_list_float).isInstanceOf(double[].class);
+            double[] floatArray = (double[]) c_list_float;
+            assertThat(floatArray).hasSize(3);
+            assertThat(floatArray).containsExactly(1.01, 2.21, 3.23);
+
+            // Verify c_list_double property
+            var c_list_double = importedNode.getProperty("c_list_double");
+            assertThat(c_list_double).isInstanceOf(double[].class);
+            double[] doubleArray = (double[]) c_list_double;
+            assertThat(doubleArray).hasSize(3);
+            assertThat(doubleArray).containsExactly(1.01, 2.21, 3.23);
+
+            // Verify c_list_boolean property
+            var c_list_boolean = importedNode.getProperty("c_list_boolean");
+            assertThat(c_list_boolean).isInstanceOf(boolean[].class);
+            boolean[] booleanArray = (boolean[]) c_list_boolean;
+            assertThat(booleanArray).hasSize(3);
+            assertThat(booleanArray).containsExactly(true, false, true);
+        }
+    }
+
+    private Path createParquetFile(String name, List<org.apache.parquet.schema.Type> types, List<Object[]> data)
+            throws Exception {
+        Path path = testDirectory.file(name);
+        try (var writer =
+                ParquetWriter.writeFile(new MessageType("something", types), path.toFile(), (record, valueWriter) -> {
+                    var recordData = (Object[]) record;
+                    for (int i = 0; i < types.size(); i++) {
+                        org.apache.parquet.schema.Type type = types.get(i);
+                        Object value = recordData[i];
+                        if (value != null) {
+                            valueWriter.write(type.getName(), value);
+                        }
+                    }
+                })) {
+            for (Object[] datum : data) {
+                writer.write(datum);
+            }
+        }
+        return path;
     }
 
     private static void assertContains(String linesType, List<String> lines, String string) {

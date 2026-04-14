@@ -197,7 +197,7 @@ class FileImporter {
                     relationshipFiles,
                     schemaCommands,
                     idType,
-                    csvConfig.arrayDelimiter(),
+                    csvConfig,
                     new Groups(),
                     new ParquetMonitor(stdOut));
         };
