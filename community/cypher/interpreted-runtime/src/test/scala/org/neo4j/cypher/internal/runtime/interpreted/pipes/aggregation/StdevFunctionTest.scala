@@ -25,19 +25,25 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.Values
 
 trait StdevTest {
   val state = QueryStateHelper.empty
 
   def createAggregator(inner: Expression): AggregationFunction
 
-  def getStdev(values: List[Any]): Double = {
+  def getStdevResult(values: List[Any]): AnyValue = {
     val func = createAggregator(Variable("x"))
     values.foreach(value => {
       func(CypherRow.from("x" -> ValueUtils.of(value)), QueryStateHelper.empty)
     })
-    func.result(state) match {
+    func.result(state)
+  }
+
+  def getStdev(values: List[Any]): Double = {
+    getStdevResult(values) match {
       case x: DoubleValue => x.doubleValue()
       case _              => -99.0
     }
@@ -46,6 +52,10 @@ trait StdevTest {
 
 class StdevSampleTest extends CypherFunSuite with StdevTest {
   def createAggregator(inner: Expression) = new StdevFunction(inner, false)
+
+  test("empty") {
+    getStdevResult(List.empty) should equal(Values.NO_VALUE)
+  }
 
   test("singleOne") {
     val values = List(1)
@@ -85,6 +95,10 @@ class StdevSampleTest extends CypherFunSuite with StdevTest {
 
 class StdevPopulationTest extends CypherFunSuite with StdevTest {
   def createAggregator(inner: Expression) = new StdevFunction(inner, true)
+
+  test("empty") {
+    getStdevResult(List.empty) should equal(Values.NO_VALUE)
+  }
 
   test("singleOne") {
     val values = List(1)

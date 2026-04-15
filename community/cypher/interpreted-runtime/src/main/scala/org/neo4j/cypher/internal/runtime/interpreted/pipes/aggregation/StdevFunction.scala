@@ -42,7 +42,9 @@ class StdevFunction(val value: Expression, val population: Boolean) extends Nume
   var m2: Double = 0.0
 
   override def result(state: QueryState): AnyValue = {
-    if (count < 2) {
+    if (count == 0) {
+      Values.NO_VALUE
+    } else if (count < 2) {
       Values.ZERO_FLOAT
     } else {
       val variance = if (population) m2 / count else m2 / (count - 1)
