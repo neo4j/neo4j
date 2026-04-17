@@ -49,7 +49,6 @@ public class JettyHttpConnectionFactory extends HttpConnectionFactory {
 
     private JettyHttpConnection createConnection(Connector connector, EndPoint endPoint) {
         String connectionId = connectionTracker.newConnectionId(connector.getName());
-        return new JettyHttpConnection(
-                connectionId, getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations());
+        return new JettyHttpConnection(connectionId, getHttpConfiguration(), connector, endPoint);
     }
 }

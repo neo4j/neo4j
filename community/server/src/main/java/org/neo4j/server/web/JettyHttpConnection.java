@@ -39,13 +39,8 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
     private volatile String username;
     private volatile String userAgent;
 
-    public JettyHttpConnection(
-            String id,
-            HttpConfiguration config,
-            Connector connector,
-            EndPoint endPoint,
-            boolean recordComplianceViolations) {
-        super(config, connector, endPoint, recordComplianceViolations);
+    public JettyHttpConnection(String id, HttpConfiguration config, Connector connector, EndPoint endPoint) {
+        super(config, connector, endPoint);
         this.id = id;
         this.connectTime = System.currentTimeMillis();
     }
@@ -67,12 +62,12 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
 
     @Override
     public SocketAddress serverAddress() {
-        return getEndPoint().getLocalAddress();
+        return getEndPoint().getLocalSocketAddress();
     }
 
     @Override
     public SocketAddress clientAddress() {
-        return getEndPoint().getRemoteAddress();
+        return getEndPoint().getRemoteSocketAddress();
     }
 
     @Override

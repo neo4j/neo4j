@@ -66,7 +66,7 @@ class JettyHttpConnectionTest {
     }
 
     private static JettyHttpConnection newConnection(Connector connector) {
-        return new JettyHttpConnection("http-1", new HttpConfiguration(), connector, mock(EndPoint.class), false);
+        return new JettyHttpConnection("http-1", new HttpConfiguration(), connector, mock(EndPoint.class));
     }
 
     private static Connector connectorMock(String name) {

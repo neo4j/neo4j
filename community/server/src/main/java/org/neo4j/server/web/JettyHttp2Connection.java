@@ -52,12 +52,12 @@ public class JettyHttp2Connection implements TrackedNetworkConnection {
 
     @Override
     public SocketAddress serverAddress() {
-        return connection.getEndPoint().getLocalAddress();
+        return connection.getEndPoint().getLocalSocketAddress();
     }
 
     @Override
     public SocketAddress clientAddress() {
-        return connection.getEndPoint().getRemoteAddress();
+        return connection.getEndPoint().getRemoteSocketAddress();
     }
 
     @Override

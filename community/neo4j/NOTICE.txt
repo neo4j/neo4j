@@ -55,7 +55,7 @@ Apache Software License, Version 2.0
   Caffeine cache
   Core :: ALPN :: Java Server
   Core :: ALPN :: Server
-  Core :: EE Common
+  Core :: EE :: Web Application
   Core :: HTTP
   Core :: HTTP2 :: Common
   Core :: HTTP2 :: HPACK
