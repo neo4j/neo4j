@@ -1221,6 +1221,75 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().maxAllocatedMemory() should be < 200000L
   }
 
+  test("should not fail top memory tracking with morsel reuse") {
+    assume(isPipelined || isParallel)
+
+    // Regression test for a bug where StandardPmtTopTable's totalTopHeapUsage
+    // went negative, crashing close() with "Expected non-negative long value, got <N>".
+    // Only relevant for the pipelined runtime with PMT tracking; other runtimes pass
+    // trivially since they do not share the remaining-rows-reuse mechanism.
+    //
+    // The pipeline is split into two pipelines by placing pipelineBreaker between
+    // projection and filter:
+    //   Pipeline 1: argument -> unwind -> projection -> MorselBuffer output
+    //   Pipeline 2: MorselBuffer -> filter -> topMapper -> topTable
+    //
+    // Top's upstream pipeline is configured for remaining-rows reuse only
+    // (MorselReuseMode.RemainingRowsOnly). createReusableViewFromRemainingRows hands
+    // the next pipeline task a sibling view that SHARES the base longs/refs arrays.
+    // The next task writes into those shared arrays at [oldEndRow..newEndRow).
+    // Top.update() sees views of the *same* baseMorselRef but with progressively-
+    // populated refs, since prepareForReusingRemainingRows bumps each view's inherited
+    // finalRow to maxNumberOfRows regardless of actual populated rows. The old code
+    // allocated heap by scanning refs[0..finalRow) at first insert (mostly null) and
+    // released by re-scanning refs at eviction (fully populated) — producing a
+    // negative delta.
+    //
+    // Ascending i values with LIMIT 1 DESC guarantees the first base morsel is
+    // fully evicted by a later base morsel, triggering the over-release.
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .top(1, "prop DESC")
+      .filter("i % 4 = 0")
+      .pipelineBreaker()
+      .projection("'v' + right('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', i + 1) AS prop")
+      .unwind("range(0, 19) AS i")
+      .argument()
+      .withMorselSize(4)
+      .build()
+
+    consume(execute(logicalQuery, runtime))
+  }
+
+  test("top memory tracking with many evictions across views") {
+    assume(isPipelined || isParallel)
+
+    // Slightly more stress variant of the regression test above. With LIMIT > 1 and a larger input,
+    // the top table accumulates rows from several base morsels, each view of which is a
+    // sibling-reuse view that shares the base longs/refs. As later (larger-prop DESC)
+    // winners arrive, rows originally inserted by earlier views get evicted — so the
+    // PMT bookkeeping must remain consistent across:
+    //   - first-time inserts for a base
+    //   - endRow growth of an already-tracked base across sibling-reused views
+    //   - same-base evictions mid-call (earlier B row evicted by later B row)
+    //   - cross-base evictions (later B row evicts an earlier A row)
+    //   - full drain of a base (last retained row evicted by another base)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .top(3, "prop DESC")
+      .filter("i % 2 = 0")
+      .pipelineBreaker()
+      .projection("'v' + right('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', i + 1) AS prop")
+      .unwind("range(0, 39) AS i")
+      .argument()
+      .withMorselSize(4)
+      .build()
+
+    consume(execute(logicalQuery, runtime))
+  }
+
   protected def assertHeapHighWaterMark(
     logicalQuery: LogicalQuery,
     valueToEstimate: ValueToEstimate,
