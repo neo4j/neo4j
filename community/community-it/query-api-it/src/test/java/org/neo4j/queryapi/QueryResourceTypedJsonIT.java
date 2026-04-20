@@ -137,6 +137,7 @@ class QueryResourceTypedJsonIT {
         var response = testClient.autoCommit(QueryRequest.newBuilder()
                 .statement("RETURN datetime('2015-06-24T12:50:35.556+0100') AS theOffsetDateTime, "
                         + "datetime('2015-11-21T21:40:32.142[Antarctica/Troll]') AS theZonedDateTime,"
+                        + "datetime('2025-10-26T02:30:00+01:00[Europe/Stockholm]') AS theZonedDateTimeOnDSTSwitch,"
                         + "localdatetime('2015185T19:32:24') AS theLocalDateTime,"
                         + "date('+2015-W13-4') AS theDate,"
                         + "time('125035.556+0100') AS theTime,"
@@ -149,6 +150,7 @@ class QueryResourceTypedJsonIT {
                 .hasFieldNames(
                         "theOffsetDateTime",
                         "theZonedDateTime",
+                        "theZonedDateTimeOnDSTSwitch",
                         "theLocalDateTime",
                         "theDate",
                         "theTime",
@@ -157,14 +159,16 @@ class QueryResourceTypedJsonIT {
         var parsedJson = response.body().data();
 
         var results = parsedJson.get(VALUES_KEY).get(0);
-        assertThat(results.size()).isEqualTo(6);
+        assertThat(results.size()).isEqualTo(7);
         QueryAssertions.assertThat(parsedJson).hasTypedResultAt(0, "OffsetDateTime", "2015-06-24T12:50:35.556+01:00");
         QueryAssertions.assertThat(parsedJson)
                 .hasTypedResultAt(1, "ZonedDateTime", "2015-11-21T21:40:32.142Z[Antarctica/Troll]");
-        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(2, "LocalDateTime", "2015-07-04T19:32:24");
-        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(3, "Date", "2015-03-26");
-        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(4, "Time", "12:50:35.556+01:00");
-        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(5, "LocalTime", "12:50:35.556");
+        QueryAssertions.assertThat(parsedJson)
+                .hasTypedResultAt(2, "ZonedDateTime", "2025-10-26T02:30:00+01:00[Europe/Stockholm]");
+        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(3, "LocalDateTime", "2015-07-04T19:32:24");
+        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(4, "Date", "2015-03-26");
+        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(5, "Time", "12:50:35.556+01:00");
+        QueryAssertions.assertThat(parsedJson).hasTypedResultAt(6, "LocalTime", "12:50:35.556");
     }
 
     @Test

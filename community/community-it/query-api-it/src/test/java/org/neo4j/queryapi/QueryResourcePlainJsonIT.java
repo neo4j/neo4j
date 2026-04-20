@@ -97,6 +97,7 @@ class QueryResourcePlainJsonIT {
         var response = testClient.autoCommit(QueryRequest.newBuilder()
                 .statement("RETURN datetime('2015-06-24T12:50:35.556+0100') AS theOffsetDateTime, "
                         + "datetime('2015-11-21T21:40:32.142[Antarctica/Troll]') AS theZonedDateTime,"
+                        + "datetime('2025-10-26T02:30:00+01:00[Europe/Stockholm]') AS theZonedDateTimeOnDSTSwitch,"
                         + "localdatetime('2015185T19:32:24') AS theLocalDateTime,"
                         + "date('+2015-W13-4') AS theDate,"
                         + "time('125035.556+0100') AS theTime,"
@@ -108,19 +109,21 @@ class QueryResourcePlainJsonIT {
                 .hasFieldNames(
                         "theOffsetDateTime",
                         "theZonedDateTime",
+                        "theZonedDateTimeOnDSTSwitch",
                         "theLocalDateTime",
                         "theDate",
                         "theTime",
                         "theLocalTime");
 
         var results = response.body().data().get(VALUES_KEY).get(0);
-        assertThat(results.size()).isEqualTo(6);
+        assertThat(results.size()).isEqualTo(7);
         assertThat(results.get(0).asText()).isEqualTo("2015-06-24T12:50:35.556+01:00");
         assertThat(results.get(1).asText()).isEqualTo("2015-11-21T21:40:32.142Z");
-        assertThat(results.get(2).asText()).isEqualTo("2015-07-04T19:32:24");
-        assertThat(results.get(3).asText()).isEqualTo("2015-03-26");
-        assertThat(results.get(4).asText()).isEqualTo("12:50:35.556+01:00");
-        assertThat(results.get(5).asText()).isEqualTo("12:50:35.556");
+        assertThat(results.get(2).asText()).isEqualTo("2025-10-26T02:30:00+01:00");
+        assertThat(results.get(3).asText()).isEqualTo("2015-07-04T19:32:24");
+        assertThat(results.get(4).asText()).isEqualTo("2015-03-26");
+        assertThat(results.get(5).asText()).isEqualTo("12:50:35.556+01:00");
+        assertThat(results.get(6).asText()).isEqualTo("12:50:35.556");
     }
 
     @Test
