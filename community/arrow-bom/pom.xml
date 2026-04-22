@@ -55,7 +55,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-codec-http2</artifactId>
-        <!-- inherit version from netty-bom in parent/pom.xml -->
+        <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.arrow</groupId>
