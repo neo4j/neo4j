@@ -266,15 +266,19 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         }
 
         @Override
-        public T apply(Context ctx, AnyValue[] args) throws ProcedureException {
+        public AnyValue apply(Context ctx, AnyValue[] args) throws ProcedureException {
             if (args != null && args.length >= 1 && args.length <= 3) {
                 AnyValue unit = args[0];
 
-                AnyValue input = args.length < 2 || args[1].equals(DEFAULT_TEMPORAL_ARGUMENT_VALUE)
+                AnyValue input = args.length < 2 || DEFAULT_TEMPORAL_ARGUMENT_VALUE.equals(args[1])
                         ? function.apply(ctx, new AnyValue[] {DEFAULT_TEMPORAL_ARGUMENT_VALUE})
                         : args[1];
 
-                AnyValue fields = args.length < 3 || args[2] == NO_VALUE ? EMPTY_MAP : args[2];
+                if (input == NO_VALUE || input == null) {
+                    return NO_VALUE;
+                }
+
+                AnyValue fields = args.length < 3 || args[2] == NO_VALUE || args[2] == null ? EMPTY_MAP : args[2];
                 if (unit instanceof TextValue && input instanceof TemporalValue && fields instanceof MapValue) {
                     return function.truncate(
                             unit(((TextValue) unit).stringValue()),
