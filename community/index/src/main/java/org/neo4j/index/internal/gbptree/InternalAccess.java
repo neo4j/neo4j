@@ -49,7 +49,8 @@ public interface InternalAccess<KEY, VALUE> {
             StructurePropagation<KEY> structurePropagation,
             StructureUpdate updateMidChild,
             long stableGeneration,
-            long unstableGeneration)
+            long unstableGeneration,
+            CursorContext cursorContext)
             throws IOException;
 
     void handleStructureChanges(

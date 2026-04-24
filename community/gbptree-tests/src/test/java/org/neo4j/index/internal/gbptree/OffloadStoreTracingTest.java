@@ -61,7 +61,7 @@ class OffloadStoreTracingTest {
         cursorContext = contextFactory.create("testCursorTracer");
         pagedFile = pageCache.map(testDirectory.createFile("file"), pageCache.pageSize(), "neo4j");
         OffloadPageCursorFactory pcFactory = pagedFile::io;
-        idProvider = new FreeListIdProvider(pagedFile.payloadSize());
+        idProvider = new FreeListIdProvider(pagedFile);
         idProvider.initializeAfterCreation(bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext), 10);
         offloadStore = new OffloadStoreImpl<>(layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize());
     }

@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Provide tree node (page) ids which can be used for storing tree node data.
@@ -30,7 +31,11 @@ public interface IdProvider {
 
     IdProvider NO_OP = new IdProvider() {
         @Override
-        public long acquireNewId(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator)
+        public long acquireNewId(
+                long stableGeneration,
+                long unstableGeneration,
+                CursorCreator cursorCreator,
+                CursorContext cursorContext)
                 throws IOException {
             throw new IllegalStateException("No-op provider");
         }
@@ -62,11 +67,13 @@ public interface IdProvider {
      * @return page id guaranteed to current not be used and whose bytes are all zeros.
      * @throws IOException on {@link PageCursor} error.
      */
-    long acquireNewId(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator) throws IOException;
+    long acquireNewId(
+            long stableGeneration, long unstableGeneration, CursorCreator cursorCreator, CursorContext cursorContext)
+            throws IOException;
 
     /**
      * Releases a page id which has previously been used, but isn't anymore, effectively allowing
-     * it to be reused and returned from {@link #acquireNewId(long, long, CursorCreator)}.
+     * it to be reused and returned from {@link #acquireNewId(long, long, CursorCreator, CursorContext)}.
      *
      * @param stableGeneration current stable generation.
      * @param unstableGeneration current unstable generation.

@@ -427,7 +427,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         var didRootStructureChange = false;
         if (structurePropagation.hasRightKeyInsert) {
             // New root
-            long newRootId = freeList.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
+            long newRootId = freeList.acquireNewId(
+                    stableGeneration, unstableGeneration, CursorCreator.bind(cursor), cursorContext);
             PageCursorUtil.goTo(cursor, "new root", newRootId);
 
             structureWriteLog.growTree(unstableGeneration, newRootId);

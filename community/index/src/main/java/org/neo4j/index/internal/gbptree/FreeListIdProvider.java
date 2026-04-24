@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageCursorUtil;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 class FreeListIdProvider implements IdProvider {
     private static final int CACHE_SIZE = 30;
@@ -90,6 +92,7 @@ class FreeListIdProvider implements IdProvider {
      */
     private final AtomicLong lastId = new AtomicLong();
 
+    private final PagedFile pagedFile;
     /**
      * For monitoring internal free-list activity.
      */
@@ -127,13 +130,14 @@ class FreeListIdProvider implements IdProvider {
     private final ConcurrentLinkedDeque<Long> releaseCache = new ConcurrentLinkedDeque<>();
     private volatile boolean mayBeMoreToReadIntoCache;
 
-    FreeListIdProvider(int payloadSize) {
-        this(payloadSize, NO_MONITOR);
+    FreeListIdProvider(PagedFile pagedFile) {
+        this(pagedFile, NO_MONITOR);
     }
 
-    FreeListIdProvider(int payloadSize, Monitor monitor) {
+    FreeListIdProvider(PagedFile pagedFile, Monitor monitor) {
+        this.pagedFile = pagedFile;
         this.monitor = monitor;
-        this.freelistNode = new FreelistNode(payloadSize);
+        this.freelistNode = new FreelistNode(pagedFile.payloadSize());
     }
 
     void initialize(long lastId, long writePageId, long readPageId, int writePos, int readPos) {
@@ -159,13 +163,15 @@ class FreeListIdProvider implements IdProvider {
     }
 
     @Override
-    public long acquireNewId(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator)
+    public long acquireNewId(
+            long stableGeneration, long unstableGeneration, CursorCreator cursorCreator, CursorContext cursorContext)
             throws IOException {
-        try (var cursor = cursorCreator.create()) {
-            long acquiredId = acquireNewIdFromFreelistOrEnd(stableGeneration, cursor);
+        long acquiredId = acquireNewIdFromFreelistOrEnd(stableGeneration, cursorCreator);
+        try (var cursor =
+                pagedFile.io(acquiredId, PagedFile.PF_SHARED_WRITE_LOCK | PagedFile.PF_NO_LOAD, cursorContext)) {
             zapPage(acquiredId, cursor);
-            return acquiredId;
         }
+        return acquiredId;
     }
 
     private static void zapPage(long acquiredId, PageCursor cursor) throws IOException {
@@ -174,7 +180,7 @@ class FreeListIdProvider implements IdProvider {
         cursor.zapPage();
     }
 
-    private synchronized void fillAcquireCache(long stableGeneration, PageCursor cursor) throws IOException {
+    private synchronized void fillAcquireCache(long stableGeneration, CursorCreator cursorCreator) throws IOException {
         if (!mayBeMoreToReadIntoCache) {
             return;
         }
@@ -184,36 +190,39 @@ class FreeListIdProvider implements IdProvider {
         ListHeadMetaData writeMetaDataSnapshot = this.writeMetaData;
         long readPageId = readMetaData.pageId;
         int readPos = readMetaData.pos;
-        while (readPageId != writeMetaDataSnapshot.pageId || readPos < writeMetaDataSnapshot.pos) {
-            // It looks like reader isn't even caught up to the writer page-wise,
-            // or the read pos is < write pos so check if we can grab the next id (generation could still mismatch).
-            goTo(cursor, "Free-list read page ", readPageId);
-            long resultPageId = freelistNode.read(cursor, stableGeneration, readPos, generationKeeper);
-            if (resultPageId != FreelistNode.NO_PAGE_ID) {
-                FreelistEntry entry = new FreelistEntry(readPageId, readPos, resultPageId, generationKeeper.generation);
+        try (var cursor = cursorCreator.create()) {
+            while (readPageId != writeMetaDataSnapshot.pageId || readPos < writeMetaDataSnapshot.pos) {
+                // It looks like reader isn't even caught up to the writer page-wise,
+                // or the read pos is < write pos so check if we can grab the next id (generation could still mismatch).
+                goTo(cursor, "Free-list read page ", readPageId);
+                long resultPageId = freelistNode.read(cursor, stableGeneration, readPos, generationKeeper);
+                if (resultPageId != FreelistNode.NO_PAGE_ID) {
+                    FreelistEntry entry =
+                            new FreelistEntry(readPageId, readPos, resultPageId, generationKeeper.generation);
 
-                // FreelistNode compares generation and so this means that we have an available
-                // id in the free list which we can acquire from a stable generation. Increment readPos
-                readPos++;
-                if (readPos >= freelistNode.maxEntries()) {
-                    // The current reader page is exhausted, go to the next free-list page.
-                    readPos = 0;
-                    readPageId = FreelistNode.next(cursor);
-                }
-                acquireCache.addLast(entry);
-                if (acquireCache.size() >= CACHE_SIZE) {
-                    moreAfterThis = true;
+                    // FreelistNode compares generation and so this means that we have an available
+                    // id in the free list which we can acquire from a stable generation. Increment readPos
+                    readPos++;
+                    if (readPos >= freelistNode.maxEntries()) {
+                        // The current reader page is exhausted, go to the next free-list page.
+                        readPos = 0;
+                        readPageId = FreelistNode.next(cursor);
+                    }
+                    acquireCache.addLast(entry);
+                    if (acquireCache.size() >= CACHE_SIZE) {
+                        moreAfterThis = true;
+                        break;
+                    }
+                } else {
                     break;
                 }
-            } else {
-                break;
             }
         }
         this.readMetaData = new ListHeadMetaData(readPageId, readPos);
         mayBeMoreToReadIntoCache = moreAfterThis;
     }
 
-    private long acquireNewIdFromFreelistOrEnd(long stableGeneration, PageCursor cursor) throws IOException {
+    private long acquireNewIdFromFreelistOrEnd(long stableGeneration, CursorCreator cursorCreator) throws IOException {
         do {
             FreelistEntry entry = acquireCache.poll();
             if (entry != null) {
@@ -222,7 +231,7 @@ class FreeListIdProvider implements IdProvider {
                 }
                 return entry.id;
             }
-            fillAcquireCache(stableGeneration, cursor);
+            fillAcquireCache(stableGeneration, cursorCreator);
         } while (mayBeMoreToReadIntoCache || !acquireCache.isEmpty());
         return nextLastId();
     }
@@ -262,8 +271,11 @@ class FreeListIdProvider implements IdProvider {
 
                 if (writePos >= freelistNode.maxEntries()) {
                     // Current free-list write page is full, allocate a new one.
-                    long nextFreelistPage =
-                            acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
+                    long nextFreelistPage = acquireNewId(
+                            stableGeneration,
+                            unstableGeneration,
+                            CursorCreator.bind(cursor),
+                            CursorContext.NULL_CONTEXT);
                     PageCursorUtil.goTo(cursor, "free-list write page", writePageId);
                     FreelistNode.initialize(cursor);
                     // Link previous --> new writer page

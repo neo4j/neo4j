@@ -148,7 +148,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 long generation = support.generation();
                 long stableGeneration = stableGeneration(generation);
                 long unstableGeneration = unstableGeneration(generation);
-                long rootId = support.idProvider().acquireNewId(stableGeneration, unstableGeneration, cursorCreator);
+                long rootId = support.idProvider()
+                        .acquireNewId(stableGeneration, unstableGeneration, cursorCreator, cursorContext);
                 try {
                     dataRoot = new Root(rootId, unstableGeneration);
                     support.initializeNewRoot(dataRoot, dataLeafNode, DATA_LAYER_FLAG, cursorContext);

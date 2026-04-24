@@ -54,7 +54,7 @@ public class FreeListIdProviderTracersTest {
         assertZeroCursor(cursorContext);
 
         try (var freeListFile = pageCache.map(testDirectory.createFile("init"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize());
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile);
             listIdProvider.initializeAfterCreation(
                     bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext), 0);
         }
@@ -68,10 +68,10 @@ public class FreeListIdProviderTracersTest {
         assertZeroCursor(cursorContext);
 
         try (var freeListFile = pageCache.map(testDirectory.createFile("newId"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize());
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
             listIdProvider.initializeAfterCreation(cursorCreator, 0);
-            listIdProvider.acquireNewId(1, 1, cursorCreator);
+            listIdProvider.acquireNewId(1, 1, cursorCreator, cursorContext);
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
@@ -87,7 +87,7 @@ public class FreeListIdProviderTracersTest {
 
         try (var freeListFile =
                 pageCache.map(testDirectory.createFile("releaseId"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize());
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
             listIdProvider.initializeAfterCreation(cursorCreator, 0);
             listIdProvider.releaseId(1, 1, 42, cursorCreator);
@@ -107,7 +107,7 @@ public class FreeListIdProviderTracersTest {
 
         try (var freeListFile =
                 pageCache.map(testDirectory.createFile("differentReleaseId"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize());
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile);
             listIdProvider.initialize(0, 1, 0, listIdProvider.entriesPerPage() - 1, 0);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
             listIdProvider.releaseId(1, 1, 42, cursorCreator);
@@ -116,9 +116,9 @@ public class FreeListIdProviderTracersTest {
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(3);
-        assertThat(cursorTracer.unpins()).isEqualTo(3);
-        assertThat(cursorTracer.hits()).isEqualTo(1);
+        assertThat(cursorTracer.pins()).isEqualTo(2);
+        assertThat(cursorTracer.unpins()).isEqualTo(2);
+        assertThat(cursorTracer.hits()).isEqualTo(0);
         assertThat(cursorTracer.faults()).isEqualTo(2);
     }
 
@@ -129,7 +129,7 @@ public class FreeListIdProviderTracersTest {
 
         try (var freeListFile =
                 pageCache.map(testDirectory.createFile("traversal"), pageCache.pageSize(), DATABASE_NAME)) {
-            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile.payloadSize());
+            FreeListIdProvider listIdProvider = new FreeListIdProvider(freeListFile);
             listIdProvider.initialize(100, 0, 1, listIdProvider.entriesPerPage() - 1, 0);
             var cursorCreator = bind(freeListFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
             listIdProvider.releaseId(1, 1, 42, cursorCreator);
@@ -139,8 +139,8 @@ public class FreeListIdProviderTracersTest {
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(6);
-        assertThat(cursorTracer.unpins()).isEqualTo(6);
+        assertThat(cursorTracer.pins()).isEqualTo(5);
+        assertThat(cursorTracer.unpins()).isEqualTo(5);
         assertThat(cursorTracer.hits()).isEqualTo(3);
     }
 
