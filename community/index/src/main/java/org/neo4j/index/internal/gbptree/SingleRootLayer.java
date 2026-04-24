@@ -29,6 +29,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.OptionalLong;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -254,6 +255,11 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
         @Override
         public boolean exists(CursorContext cursorContext) {
             return true;
+        }
+
+        @Override
+        public OptionalLong rootTreeNodeId(CursorContext cursorContext) {
+            return OptionalLong.of(getRoot(cursorContext).id());
         }
     }
 }

@@ -36,6 +36,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
@@ -614,6 +615,16 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         @Override
         public boolean exists(CursorContext cursorContext) {
             return rootMappingInteraction.exists(cursorContext);
+        }
+
+        @Override
+        public OptionalLong rootTreeNodeId(CursorContext cursorContext) {
+            try {
+                return OptionalLong.of(
+                        rootMappingInteraction.getRoot(cursorContext).id());
+            } catch (DataTreeNotFoundException e) {
+                return OptionalLong.empty();
+            }
         }
     }
 

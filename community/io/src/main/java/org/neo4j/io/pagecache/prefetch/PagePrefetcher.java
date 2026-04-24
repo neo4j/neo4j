@@ -19,14 +19,15 @@
  */
 package org.neo4j.io.pagecache.prefetch;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Component that can load pages into page cache in background
  */
 public interface PagePrefetcher extends Lifecycle {
-
     PagePrefetcher DISABLED = new PagePrefetcher() {
         @Override
         public void init() {}
@@ -41,13 +42,27 @@ public interface PagePrefetcher extends Lifecycle {
         public void shutdown() {}
 
         @Override
-        public void submit(Path path, long[] pages) {}
+        public void submit(Path path, PagesSupplier pages) {}
     };
 
     /**
-     * Ask prefetcher to load file pages for specific file. Sorted array is prefered.
+     * Ask prefetcher to load file pages for specific file. Sorted array is preferred.
      * @param path file path
      * @param pages page numbers
      */
-    void submit(Path path, long[] pages);
+    default void submit(Path path, long[] pages) {
+        submit(path, ctx -> pages);
+    }
+
+    /**
+     * Ask prefetcher to load file pages for specific file. Sorted array is preferred.
+     * @param path file path
+     * @param pages supplier of page numbers
+     */
+    void submit(Path path, PagesSupplier pages);
+
+    @FunctionalInterface
+    interface PagesSupplier {
+        long[] pageIds(CursorContext context) throws IOException;
+    }
 }

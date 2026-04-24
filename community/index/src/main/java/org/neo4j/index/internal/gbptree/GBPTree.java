@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.OptionalLong;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EmptyDependencyResolver;
@@ -182,5 +183,10 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
     @Override
     public boolean exists(CursorContext cursorContext) {
         return true;
+    }
+
+    @Override
+    public OptionalLong rootTreeNodeId(CursorContext cursorContext) {
+        return access.rootTreeNodeId(cursorContext);
     }
 }

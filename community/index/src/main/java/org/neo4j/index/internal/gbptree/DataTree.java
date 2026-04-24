@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
+import java.util.OptionalLong;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
@@ -64,4 +65,10 @@ public interface DataTree<KEY, VALUE> extends Seeker.Factory<KEY, VALUE> {
     long estimateNumberOfEntriesInTree(CursorContext cursorContext) throws IOException;
 
     boolean exists(CursorContext cursorContext);
+
+    /**
+     * @param cursorContext the context with which to do this lookup.
+     * @return the root node (page) ID for the root of this data tree.
+     */
+    OptionalLong rootTreeNodeId(CursorContext cursorContext);
 }
