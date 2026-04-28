@@ -27,7 +27,8 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +59,12 @@ class ProfilingContextImpl implements ProfilingContext {
             throw new UncheckedIOException(e);
         }
         while (true) {
-            var fileNameCandidate = ZonedDateTime.now(clock) + "-" + query.id();
+            // Let's use a format that does not use any characters that are problematic as filenames.
+            // Especially Windows are quite restrictive. Since Windows disallow almost all reasonable
+            // delimiters, let's play it safe with hyphens.
+            var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss-SSS");
+            var now = LocalDateTime.now(clock);
+            var fileNameCandidate = formatter.format(now) + "-" + query.id();
             var path = outputDirectory.resolve(fileNameCandidate);
             try {
                 return Files.createFile(path);
