@@ -2318,9 +2318,17 @@ case class LogicalPlanProducer(
       case fi: FunctionInvocation => fi.function == Collect || fi.function == UnresolvedFunction
       case _                      => false
     }
+    def hasOrderedAggregation = aggregation.values.exists {
+      case fi: FunctionInvocation => fi.isOrdered
+      case _                      => false
+    }
     // Aggregation functions may leverage the order of a preceding ORDER BY, if no other clause is inbetween.
-    // In practice, this is only collect and potentially user defined aggregations
-    if (previousInterestingOrder.exists(_.requiredOrderCandidate.nonEmpty) && hasCollectOrUDF) {
+    // Collect and potentially user defined aggregations need this.
+    // Also ordered aggregation functions (e.g. count(DISTINCT x) ASC) will need
+    // a leveragedOrder hint to ensure rows are sent through in argument order.
+    if (
+      (previousInterestingOrder.exists(_.requiredOrderCandidate.nonEmpty) && hasCollectOrUDF) || hasOrderedAggregation
+    ) {
       markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
     }
 

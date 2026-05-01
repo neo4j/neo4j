@@ -27,13 +27,18 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
+import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
@@ -1214,7 +1219,97 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         (
           "Collect with previous required order",
           lpp.planAggregation(plan(), Map.empty, foo_collect, Map.empty, foo_collect, Some(interesting_vx), context)
-        ),
+        ), {
+          val countDistinctAsc = Map[LogicalVariable, Expression](
+            v"c" -> FunctionInvocation(FunctionName(Count.name)(pos), distinct = true, IndexedSeq(vx))(pos)
+              .withOrder(ArgumentAsc)
+          )
+          (
+            "Aggregation with ordered distinct",
+            lpp.planAggregation(
+              plan(),
+              Map.empty,
+              countDistinctAsc,
+              Map.empty,
+              countDistinctAsc,
+              None,
+              context
+            )
+          )
+        }, {
+          val sumDistinctAsc = Map[LogicalVariable, Expression](
+            v"s" -> FunctionInvocation(FunctionName(Sum.name)(pos), distinct = true, IndexedSeq(vx))(pos)
+              .withOrder(ArgumentAsc)
+          )
+          (
+            "Aggregation with ordered sum distinct",
+            lpp.planAggregation(
+              plan(),
+              Map.empty,
+              sumDistinctAsc,
+              Map.empty,
+              sumDistinctAsc,
+              None,
+              context
+            )
+          )
+        }, {
+          val collectDistinctAsc = Map[LogicalVariable, Expression](
+            v"l" -> FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(vx))(pos)
+              .withOrder(ArgumentAsc)
+          )
+          (
+            "Aggregation with ordered collect distinct",
+            lpp.planAggregation(
+              plan(),
+              Map.empty,
+              collectDistinctAsc,
+              Map.empty,
+              collectDistinctAsc,
+              None,
+              context
+            )
+          )
+        }, {
+          val avgDistinctAsc = Map[LogicalVariable, Expression](
+            v"a" -> FunctionInvocation(FunctionName(Avg.name)(pos), distinct = true, IndexedSeq(vx))(pos)
+              .withOrder(ArgumentAsc)
+          )
+          (
+            "Aggregation with ordered avg distinct",
+            lpp.planAggregation(
+              plan(),
+              Map.empty,
+              avgDistinctAsc,
+              Map.empty,
+              avgDistinctAsc,
+              None,
+              context
+            )
+          )
+        }, {
+          // percentileDisc triggers hasInterestingOrder via the function-name branch,
+          // not via the distinct flag. Covers the non-DISTINCT code path.
+          val percentileDiscAsc = Map[LogicalVariable, Expression](
+            v"p" -> FunctionInvocation(
+              FunctionName(PercentileDisc.name)(pos),
+              distinct = false,
+              IndexedSeq(vx, literalFloat(0.5))
+            )(pos).withOrder(ArgumentAsc)
+          )
+          (
+            "Aggregation with ordered percentileDisc",
+            lpp.planAggregation(
+              plan(),
+              Map.empty,
+              percentileDiscAsc,
+              Map.empty,
+              percentileDiscAsc,
+              None,
+              context
+            )
+          )
+        },
         ("ProduceResult", lpp.planProduceResult(plan(), Seq(v"x"), Some(interesting_vx), context))
       )
 
@@ -1292,6 +1387,74 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.staticComponents.planningAttributes.leveragedOrders.get(sort2.id) should be(true)
       context.staticComponents.planningAttributes.leveragedOrders.get(leaf1.id) should be(false)
       context.staticComponents.planningAttributes.leveragedOrders.get(leaf2.id) should be(false)
+    }
+  }
+
+  // Regression test for the topology that caused COUNT(DISTINCT) over-count:
+  // an intermediate SelectOrSemiApply between an order-providing plan and an
+  // ordered-distinct Aggregation must itself be marked as leveraged so the
+  // pipelined runtime chooses order-preserving buffers.
+  test("should mark leveraged order through SelectOrSemiApply when aggregating ordered distinct") {
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
+
+      val initialOrder = DefaultProvidedOrderFactory.asc(v"x")
+
+      val outerLeaf = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
+      val sort = lpp.planSort(outerLeaf, Seq(Ascending(v"x")), initialOrder.columns, InterestingOrder.empty, context)
+
+      val innerLeaf = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
+
+      val selectOrSemi = lpp.planSelectOrSemiApply(sort, innerLeaf, v"x", context)
+
+      val vx = v"x"
+      val countDistinctAsc = Map[LogicalVariable, Expression](
+        v"c" -> FunctionInvocation(FunctionName(Count.name)(pos), distinct = true, IndexedSeq(vx))(pos)
+          .withOrder(ArgumentAsc)
+      )
+      val result = lpp.planAggregation(
+        selectOrSemi,
+        Map.empty,
+        countDistinctAsc,
+        Map.empty,
+        countDistinctAsc,
+        None,
+        context
+      )
+
+      context.staticComponents.planningAttributes.leveragedOrders.get(result.id) should be(true)
+      context.staticComponents.planningAttributes.leveragedOrders.get(selectOrSemi.id) should be(true)
+      context.staticComponents.planningAttributes.leveragedOrders.get(sort.id) should be(true)
+      context.staticComponents.planningAttributes.leveragedOrders.get(outerLeaf.id) should be(false)
+      context.staticComponents.planningAttributes.leveragedOrders.get(innerLeaf.id) should be(false)
+    }
+  }
+
+  test("should not mark leveraged order when aggregation function has no argument order") {
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
+
+      val initialOrder = DefaultProvidedOrderFactory.asc(v"x")
+
+      val leaf = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
+      context.staticComponents.planningAttributes.providedOrders.set(leaf.id, initialOrder)
+
+      val vx = v"x"
+      val countDistinctUnordered = Map[LogicalVariable, Expression](
+        v"c" -> FunctionInvocation(FunctionName(Count.name)(pos), distinct = true, IndexedSeq(vx))(pos)
+      )
+      val result = lpp.planAggregation(
+        leaf,
+        Map.empty,
+        countDistinctUnordered,
+        Map.empty,
+        countDistinctUnordered,
+        None,
+        context
+      )
+
+      context.staticComponents.planningAttributes.leveragedOrders.get(result.id) should be(false)
+      context.staticComponents.planningAttributes.leveragedOrders.get(leaf.id) should be(false)
     }
   }
 
