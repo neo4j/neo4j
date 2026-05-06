@@ -66,7 +66,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
     @Override
     public void close() {
         closed = true;
-        IOUtils.closeAllUnchecked(writer);
+        IOUtils.closeUnchecked(writer);
     }
 
     private void assertOpen() {

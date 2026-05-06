@@ -493,7 +493,8 @@ public class Database extends AbstractDatabase {
                 cursorContextFactory,
                 tracers.getPageCacheTracer(),
                 versionStorage,
-                pagePrefetcher);
+                pagePrefetcher,
+                mode == HostedOnMode.RAFT || mode == HostedOnMode.REPLICA);
 
         var metadataProvider = databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
 

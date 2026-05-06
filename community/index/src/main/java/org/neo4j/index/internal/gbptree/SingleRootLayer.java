@@ -231,18 +231,11 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
 
         @Override
         public Writer<KEY, VALUE> writer(int flags, CursorContext cursorContext) throws IOException {
-            double splitRatio = splitRatio(flags);
             if ((flags & DataTree.W_BATCHED_SINGLE_THREADED) != 0) {
-                return support.initializeWriter(batchedWriter, splitRatio, cursorContext);
+                return support.initializeWriter(batchedWriter, flags, cursorContext);
             } else {
-                return support.internalParallelWriter(
-                        layout,
-                        leafNode,
-                        internalNode,
-                        splitRatio,
-                        cursorContext,
-                        SingleRootLayer.this,
-                        DATA_LAYER_FLAG);
+                return support.newInitializedWriter(
+                        layout, SingleRootLayer.this, leafNode, internalNode, cursorContext, flags, DATA_LAYER_FLAG);
             }
         }
 

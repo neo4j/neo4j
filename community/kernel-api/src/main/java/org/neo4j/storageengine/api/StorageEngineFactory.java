@@ -174,7 +174,8 @@ public interface StorageEngineFactory {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             VersionStorage versionStorage,
-            PagePrefetcher pagePrefetcher)
+            PagePrefetcher pagePrefetcher,
+            boolean singleThreadedApply)
             throws IOException;
 
     /**

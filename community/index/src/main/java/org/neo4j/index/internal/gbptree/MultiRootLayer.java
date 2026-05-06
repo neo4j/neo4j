@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
-import static org.neo4j.index.internal.gbptree.InternalTreeLogic.DEFAULT_SPLIT_RATIO;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
@@ -136,14 +135,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         try {
             var cursorCreator = bind(support, PF_SHARED_WRITE_LOCK, cursorContext);
             Root dataRoot;
-            try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                    rootLayout,
-                    rootLeafNode,
-                    rootInternalNode,
-                    DEFAULT_SPLIT_RATIO,
-                    cursorContext,
-                    this,
-                    ROOT_LAYER_FLAG)) {
+            try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.newInitializedWriter(
+                    rootLayout, this, rootLeafNode, rootInternalNode, cursorContext, 0, ROOT_LAYER_FLAG)) {
                 dataRootKey = rootLayout.copyKey(dataRootKey);
                 long generation = support.generation();
                 long stableGeneration = stableGeneration(generation);
@@ -176,14 +169,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     @Override
     void delete(ROOT_KEY dataRootKey, CursorContext cursorContext) throws IOException {
         try (var rootMappingMerger = new RootDeleteValueMerger(cursorContext, dataRootKey)) {
-            try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                    rootLayout,
-                    rootLeafNode,
-                    rootInternalNode,
-                    DEFAULT_SPLIT_RATIO,
-                    cursorContext,
-                    this,
-                    ROOT_LAYER_FLAG)) {
+            try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.newInitializedWriter(
+                    rootLayout, this, rootLeafNode, rootInternalNode, cursorContext, 0, ROOT_LAYER_FLAG)) {
                 dataRootKey = rootLayout.copyKey(dataRootKey);
                 while (true) {
                     rootMappingMerger.reset();
@@ -533,14 +520,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         @Override
         public void setRoot(Root newRoot, CursorContext context) {
             rootMappingCache.compute(dataRootKey, (key, ignored) -> {
-                try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
-                        rootLayout,
-                        rootLeafNode,
-                        rootInternalNode,
-                        DEFAULT_SPLIT_RATIO,
-                        context,
-                        MultiRootLayer.this,
-                        DATA_LAYER_FLAG)) {
+                try (Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.newInitializedWriter(
+                        rootLayout, MultiRootLayer.this, rootLeafNode, rootInternalNode, context, 0, DATA_LAYER_FLAG)) {
                     TrackingValueMerger<ROOT_KEY, RootMappingValue> merger = new TrackingValueMerger<>(overwrite());
                     rootMappingWriter.mergeIfExists(key, new RootMappingValue().initialize(newRoot), merger);
                     if (!merger.wasMerged()) {
@@ -563,13 +544,13 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         @Override
         public Writer<DATA_KEY, DATA_VALUE> writer(int flags, CursorContext cursorContext) throws IOException {
-            return support.internalParallelWriter(
+            return support.newInitializedWriter(
                     dataLayout,
+                    rootMappingInteraction,
                     dataLeafNode,
                     dataInternalNode,
-                    splitRatio(flags),
                     cursorContext,
-                    rootMappingInteraction,
+                    flags,
                     DATA_LAYER_FLAG);
         }
 

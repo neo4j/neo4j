@@ -602,6 +602,7 @@ public final class Recovery {
                 memoryTracker,
                 emptyLogsFallbackKernelVersion));
         MetadataCache recoveryMetaDataCache = new MetadataCache(logTailMetadata);
+        boolean doParallelRecovery = config.get(GraphDatabaseInternalSettings.do_parallel_recovery);
         StorageEngine storageEngine = storageEngineFactory.instantiate(
                 fs,
                 clock,
@@ -625,7 +626,8 @@ public final class Recovery {
                 cursorContextFactory,
                 tracers.getPageCacheTracer(),
                 recoveryVersionStorage,
-                PagePrefetcher.DISABLED);
+                PagePrefetcher.DISABLED,
+                !doParallelRecovery);
 
         // multi versioned stores recovery does not support format mode atm
         if (storageEngine.getOpenOptions().contains(MULTI_VERSIONED)) {
@@ -716,7 +718,6 @@ public final class Recovery {
         schemaLife.add(storageEngine.schemaAndTokensLifecycle());
         schemaLife.add(indexingService);
 
-        var doParallelRecovery = config.get(GraphDatabaseInternalSettings.do_parallel_recovery);
         RecoveryMonitor recoveryMonitor = monitors.newMonitor(RecoveryMonitor.class);
         TransactionLogsRecovery transactionLogsRecovery = transactionLogRecovery(
                 fs,

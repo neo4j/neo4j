@@ -163,7 +163,8 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             VersionStorage versionStorage,
-            PagePrefetcher pagePrefetcher)
+            PagePrefetcher pagePrefetcher,
+            boolean singleThreadedApply)
             throws IOException {
         return delegate.instantiate(
                 fs,
@@ -187,7 +188,8 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
                 contextFactory,
                 pageCacheTracer,
                 versionStorage,
-                pagePrefetcher);
+                pagePrefetcher,
+                singleThreadedApply);
     }
 
     @Override

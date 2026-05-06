@@ -265,7 +265,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             VersionStorage versionStorage,
-            PagePrefetcher pagePrefetcher) {
+            PagePrefetcher pagePrefetcher,
+            boolean singleThreadedApply) {
         return new RecordStorageEngine(
                 formatSpecificDatabaseLayout(databaseLayout),
                 config,

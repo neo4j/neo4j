@@ -219,20 +219,22 @@ class RootLayerSupport {
                 .partition(splitterKeysInRange, fromInclusive, toExclusive, desiredNumberOfPartitions);
     }
 
-    <K, V> Writer<K, V> internalParallelWriter(
+    <K, V> Writer<K, V> newInitializedWriter(
             Layout<K, V> layout,
+            TreeRootExchange rootChangeMonitor,
             LeafNodeBehaviour<K, V> leafNode,
             InternalNodeBehaviour<K> internalNode,
-            double ratioToKeepInLeftOnSplit,
             CursorContext cursorContext,
-            TreeRootExchange rootChangeMonitor,
+            int flags,
             byte layerType)
             throws IOException {
-        TreeWriterCoordination traversalMonitor =
-                new LatchCrabbingCoordination(latchService, leafNode.underflowThreshold(), DEFAULT_RESET_FREQUENCY);
+        boolean parallel = (flags & DataTree.W_BATCHED_SINGLE_THREADED) == 0;
+        TreeWriterCoordination traversalMonitor = parallel
+                ? new LatchCrabbingCoordination(latchService, leafNode.underflowThreshold(), DEFAULT_RESET_FREQUENCY)
+                : TreeWriterCoordination.NO_COORDINATION;
         GBPTreeWriter<K, V> writer =
-                newWriter(layout, rootChangeMonitor, leafNode, internalNode, traversalMonitor, true, layerType);
-        return initializeWriter(writer, ratioToKeepInLeftOnSplit, cursorContext);
+                newWriter(layout, rootChangeMonitor, leafNode, internalNode, traversalMonitor, parallel, layerType);
+        return initializeWriter(writer, flags, cursorContext);
     }
 
     <K, V> GBPTreeWriter<K, V> newWriter(
@@ -262,14 +264,13 @@ class RootLayerSupport {
                 structureWriteLog.newSession());
     }
 
-    <K, V> GBPTreeWriter<K, V> initializeWriter(
-            GBPTreeWriter<K, V> writer, double ratioToKeepInLeftOnSplit, CursorContext cursorContext)
+    <K, V> GBPTreeWriter<K, V> initializeWriter(GBPTreeWriter<K, V> writer, int flags, CursorContext cursorContext)
             throws IOException {
         if (readOnly) {
             throw new IllegalStateException(String.format("'%s' is read-only", pagedFile.path()));
         }
         cleanCheck.apply();
-        writer.initialize(ratioToKeepInLeftOnSplit, cursorContext);
+        writer.initialize(RootLayer.splitRatio(flags), cursorContext);
         changesSinceLastCheckpoint.set(true);
         return writer;
     }
