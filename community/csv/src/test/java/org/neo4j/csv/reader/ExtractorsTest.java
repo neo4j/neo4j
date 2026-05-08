@@ -276,6 +276,39 @@ class ExtractorsTest {
 
     @MethodSource("extractorTypes")
     @ParameterizedTest(name = "{0}")
+    void extractedClassMatchesActualExtractedType(ExtractorTypeTestCase testCase) {
+        // given
+        var extractors = new Extractors(';', '§');
+        var extractor = testCase.extractorSelector.apply(extractors);
+        var input = testCase.input;
+
+        // when
+        var extractedValue = testCase.optionalCSVHeaders != null
+                ? extractor.extract(input, 0, input.length, false, testCase.optionalCSVHeaders)
+                : extractor.extract(input, 0, input.length, false);
+
+        // then
+        assertThat(extractedValue).isNotNull();
+        assertThat(extractedValue).isInstanceOf(box(extractor.extractedClass()));
+    }
+
+    private static Class<?> box(Class<?> cls) {
+        if (!cls.isPrimitive()) {
+            return cls;
+        }
+        if (cls == int.class) return Integer.class;
+        if (cls == long.class) return Long.class;
+        if (cls == short.class) return Short.class;
+        if (cls == byte.class) return Byte.class;
+        if (cls == float.class) return Float.class;
+        if (cls == double.class) return Double.class;
+        if (cls == boolean.class) return Boolean.class;
+        if (cls == char.class) return Character.class;
+        throw new IllegalArgumentException("Unknown primitive class: " + cls);
+    }
+
+    @MethodSource("extractorTypes")
+    @ParameterizedTest(name = "{0}")
     void shouldExtractEmptyField(ExtractorTypeTestCase testCase) {
         // given
         var extractors = new Extractors(';', '§');

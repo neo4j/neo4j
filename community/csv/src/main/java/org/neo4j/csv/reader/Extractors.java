@@ -69,9 +69,9 @@ import org.neo4j.values.storable.LocalTimeArray;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeArray;
 import org.neo4j.values.storable.TimeValue;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.storable.VectorValue;
 
@@ -362,7 +362,7 @@ public final class Extractors {
         return duration;
     }
 
-    public Extractor<Value> textValue() {
+    public Extractor<TextValue> textValue() {
         return textValue;
     }
 
@@ -447,6 +447,11 @@ public final class Extractors {
         }
 
         @Override
+        public Class<?> extractedClass() {
+            return String.class;
+        }
+
+        @Override
         public String extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             if (length == 0 && (!hadQuotes || emptyStringsAsNull)) {
@@ -462,6 +467,11 @@ public final class Extractors {
         }
 
         @Override
+        public Class<?> extractedClass() {
+            return long.class;
+        }
+
+        @Override
         public Long extract(char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             return length == 0 ? null : extractLong(data, offset, length);
         }
@@ -470,6 +480,11 @@ public final class Extractors {
     private static final class IntExtractor extends AbstractExtractor<Integer> {
         IntExtractor(LongExtractor longExtractor) {
             super(int.class.getSimpleName(), longExtractor);
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return int.class;
         }
 
         @Override
@@ -489,6 +504,11 @@ public final class Extractors {
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             return length == 0 ? null : safeCastLongToShort(extractLong(data, offset, length));
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return short.class;
+        }
     }
 
     private static final class ByteExtractor extends AbstractExtractor<Byte> {
@@ -499,6 +519,11 @@ public final class Extractors {
         @Override
         public Byte extract(char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             return length == 0 ? null : safeCastLongToByte(extractLong(data, offset, length));
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return byte.class;
         }
     }
 
@@ -511,6 +536,11 @@ public final class Extractors {
         public Boolean extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             return length == 0 ? null : extractBoolean(data, offset, length);
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return boolean.class;
         }
     }
 
@@ -526,6 +556,11 @@ public final class Extractors {
                 throw new IllegalStateException("Was told to extract a character, but length:" + length);
             }
             return length == 0 ? null : data[offset];
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return char.class;
         }
     }
 
@@ -548,6 +583,11 @@ public final class Extractors {
                 throw new NumberFormatException("Not a number: \"" + String.valueOf(data, offset, length) + "\"");
             }
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return float.class;
+        }
     }
 
     private static final class DoubleExtractor extends AbstractExtractor<Double> {
@@ -568,6 +608,11 @@ public final class Extractors {
             } catch (NumberFormatException ignored) {
                 throw new NumberFormatException("Not a number: \"" + String.valueOf(data, offset, length) + "\"");
             }
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return double.class;
         }
     }
 
@@ -699,6 +744,11 @@ public final class Extractors {
         protected String[] convertListToArrayValue(String[] values) {
             return values;
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return String[].class;
+        }
     }
 
     private static final class ByteArrayExtractor extends ArrayExtractor<byte[], byte[]> {
@@ -731,6 +781,11 @@ public final class Extractors {
         @Override
         protected byte[] convertListToArrayValue(byte[] values) {
             return values;
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return byte[].class;
         }
     }
 
@@ -779,6 +834,11 @@ public final class Extractors {
         protected Int8Vector convertListToArrayValue(byte[] values) {
             return Values.int8Vector(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return Int8Vector.class;
+        }
     }
 
     private static final class Int16VectorExtractor extends ArrayExtractor<short[], Int16Vector>
@@ -826,6 +886,11 @@ public final class Extractors {
         protected Int16Vector convertListToArrayValue(short[] values) {
             return Values.int16Vector(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return Int16Vector.class;
+        }
     }
 
     private static final class Int32VectorExtractor extends ArrayExtractor<int[], Int32Vector>
@@ -850,6 +915,11 @@ public final class Extractors {
         @Override
         protected int[] createInternalArray(int size) {
             return new int[size];
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return Int32Vector.class;
         }
 
         @Override
@@ -900,6 +970,11 @@ public final class Extractors {
         }
 
         @Override
+        public Class<?> extractedClass() {
+            return Int64Vector.class;
+        }
+
+        @Override
         public boolean isEmpty(Object value) {
             return VectorExtractor.super.isEmpty(value);
         }
@@ -947,6 +1022,11 @@ public final class Extractors {
         }
 
         @Override
+        public Class<?> extractedClass() {
+            return Float32Vector.class;
+        }
+
+        @Override
         public boolean isEmpty(Object value) {
             return VectorExtractor.super.isEmpty(value);
         }
@@ -991,6 +1071,11 @@ public final class Extractors {
         @Override
         protected double[] createInternalArray(int size) {
             return new double[size];
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return Float64Vector.class;
         }
 
         @Override
@@ -1061,6 +1146,11 @@ public final class Extractors {
         }
 
         @Override
+        public Class<?> extractedClass() {
+            return delegate.extractedClass();
+        }
+
+        @Override
         public boolean isEmpty(Object value) {
             return delegate.isEmpty(value);
         }
@@ -1097,6 +1187,11 @@ public final class Extractors {
         protected short[] convertListToArrayValue(short[] values) {
             return values;
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return short[].class;
+        }
     }
 
     private static final class IntArrayExtractor extends ArrayExtractor<int[], int[]> {
@@ -1130,6 +1225,11 @@ public final class Extractors {
         protected int[] convertListToArrayValue(int[] values) {
             return values;
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return int[].class;
+        }
     }
 
     private static final class LongArrayExtractor extends ArrayExtractor<long[], long[]> {
@@ -1162,6 +1262,11 @@ public final class Extractors {
         @Override
         protected long[] convertListToArrayValue(long[] values) {
             return values;
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return long[].class;
         }
     }
 
@@ -1197,6 +1302,11 @@ public final class Extractors {
         @Override
         protected float[] convertListToArrayValue(float[] values) {
             return values;
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return float[].class;
         }
     }
 
@@ -1234,6 +1344,11 @@ public final class Extractors {
         protected double[] convertListToArrayValue(double[] values) {
             return values;
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return double[].class;
+        }
     }
 
     private static final class BooleanArrayExtractor extends ArrayExtractor<boolean[], boolean[]> {
@@ -1267,6 +1382,11 @@ public final class Extractors {
         protected boolean[] convertListToArrayValue(boolean[] values) {
             return values;
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return boolean[].class;
+        }
     }
 
     private abstract static class ArrayAnyValueExtractor<E, T extends ArrayValue> extends ArrayExtractor<E, T> {
@@ -1294,6 +1414,11 @@ public final class Extractors {
                 return null;
             }
             return PointValue.parse(CharBuffer.wrap(data, offset, length), optionalData);
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return PointValue.class;
         }
     }
 
@@ -1330,6 +1455,11 @@ public final class Extractors {
         protected PointArray convertListToArrayValue(PointValue[] values) {
             return Values.pointArray(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return PointArray.class;
+        }
     }
 
     private static final class DateExtractor extends AbstractExtractor<DateValue> {
@@ -1346,6 +1476,11 @@ public final class Extractors {
                 return null;
             }
             return DateValue.parse(CharBuffer.wrap(data, offset, length));
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return DateValue.class;
         }
     }
 
@@ -1383,6 +1518,11 @@ public final class Extractors {
         protected DateArray convertListToArrayValue(LocalDate[] values) {
             return Values.dateArray(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return DateArray.class;
+        }
     }
 
     private static final class TimeExtractor extends AbstractExtractor<TimeValue> {
@@ -1402,6 +1542,11 @@ public final class Extractors {
                 return null;
             }
             return TimeValue.parse(CharBuffer.wrap(data, offset, length), defaultTimeZone, optionalData);
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return TimeValue.class;
         }
     }
 
@@ -1443,6 +1588,11 @@ public final class Extractors {
         protected TimeArray convertListToArrayValue(OffsetTime[] values) {
             return Values.timeArray(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return TimeArray.class;
+        }
     }
 
     private static final class DateTimeExtractor extends AbstractExtractor<DateTimeValue> {
@@ -1462,6 +1612,11 @@ public final class Extractors {
                 return null;
             }
             return DateTimeValue.parse(CharBuffer.wrap(data, offset, length), defaultTimeZone, optionalData);
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return DateTimeValue.class;
         }
     }
 
@@ -1503,6 +1658,11 @@ public final class Extractors {
         protected DateTimeArray convertListToArrayValue(ZonedDateTime[] values) {
             return Values.dateTimeArray(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return DateTimeArray.class;
+        }
     }
 
     private static final class LocalTimeExtractor extends AbstractExtractor<LocalTimeValue> {
@@ -1519,6 +1679,11 @@ public final class Extractors {
                 return null;
             }
             return LocalTimeValue.parse(CharBuffer.wrap(data, offset, length));
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return LocalTimeValue.class;
         }
     }
 
@@ -1556,6 +1721,11 @@ public final class Extractors {
         protected LocalTimeArray convertListToArrayValue(LocalTime[] values) {
             return Values.localTimeArray(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return LocalTimeArray.class;
+        }
     }
 
     private static final class LocalDateTimeExtractor extends AbstractExtractor<LocalDateTimeValue> {
@@ -1572,6 +1742,11 @@ public final class Extractors {
                 return null;
             }
             return LocalDateTimeValue.parse(CharBuffer.wrap(data, offset, length));
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return LocalDateTimeValue.class;
         }
     }
 
@@ -1610,6 +1785,11 @@ public final class Extractors {
         protected LocalDateTimeArray convertListToArrayValue(LocalDateTime[] values) {
             return Values.localDateTimeArray(values);
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return LocalDateTimeArray.class;
+        }
     }
 
     private static final class DurationExtractor extends AbstractExtractor<DurationValue> {
@@ -1627,9 +1807,14 @@ public final class Extractors {
             }
             return DurationValue.parse(CharBuffer.wrap(data, offset, length));
         }
+
+        @Override
+        public Class<?> extractedClass() {
+            return DurationValue.class;
+        }
     }
 
-    private static final class TextValueExtractor extends AbstractExtractor<Value> {
+    private static final class TextValueExtractor extends AbstractExtractor<TextValue> {
         public static final String NAME = "TextValue";
 
         private final boolean emptyStringsAsNull;
@@ -1640,12 +1825,17 @@ public final class Extractors {
         }
 
         @Override
-        public Value extract(
+        public TextValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
             if (length == 0 && (!hadQuotes || emptyStringsAsNull)) {
-                return Values.NO_VALUE;
+                return null;
             }
             return Values.utf8Value(new String(data, offset, length));
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return TextValue.class;
         }
     }
 
@@ -1681,6 +1871,11 @@ public final class Extractors {
         @Override
         protected DurationArray convertListToArrayValue(DurationValue[] values) {
             return Values.durationArray(values);
+        }
+
+        @Override
+        public Class<?> extractedClass() {
+            return DurationArray.class;
         }
     }
 

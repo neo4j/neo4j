@@ -62,6 +62,12 @@ public interface Extractor<T> extends Cloneable {
     String name();
 
     /**
+     * @return the class of the value produced by {@link #extract}. For primitive-typed extractors this is the
+     *         primitive class (e.g. {@code int.class} for an extractor returning {@link Integer}).
+     */
+    Class<?> extractedClass();
+
+    /**
      * Normalizes this extractor to that of a broader type, if possible. E.g. an extractor for {@code int} becomes {@code long}.
      * This normalization should match higher levels of type systems, like Cypher.
      *
