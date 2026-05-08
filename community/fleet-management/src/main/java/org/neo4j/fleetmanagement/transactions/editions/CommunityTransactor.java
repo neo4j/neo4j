@@ -66,17 +66,17 @@ public class CommunityTransactor extends AbstractTransactor implements ITransact
     public Map<String, List<Database>> getDatabases() {
         return withSystemTransaction(databaseManagementService, tx -> {
             Map<String, List<Database>> databasesByInstance = new HashMap<>();
-            Result r = tx.execute("SHOW DATABASES YIELD *");
-            tx.commit();
-            while (r.hasNext()) {
-                var instanceDatabases = new ResultMap(r.next());
-                var serverId = instanceDatabases.getString("serverID");
-                var dbArray = databasesByInstance.computeIfAbsent(serverId, k -> new ArrayList<>());
+            try (Result r = tx.execute("SHOW DATABASES YIELD *")) {
+                while (r.hasNext()) {
+                    var instanceDatabases = new ResultMap(r.next());
+                    var serverId = instanceDatabases.getString("serverID");
+                    var dbArray = databasesByInstance.computeIfAbsent(serverId, k -> new ArrayList<>());
 
-                var oneDb = Shared.getDatabase(instanceDatabases);
-                dbArray.add(oneDb);
+                    var oneDb = Shared.getDatabase(instanceDatabases);
+                    dbArray.add(oneDb);
+                }
+                return databasesByInstance;
             }
-            return databasesByInstance;
         });
     }
 

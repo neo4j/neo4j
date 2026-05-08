@@ -45,39 +45,40 @@ public class EnterpriseTransactor extends AbstractTransactor implements ITransac
 
     public Map<String, Server> getServers() {
         return withSystemTransaction(databaseManagementService, tx -> {
-            Map<String, Server> instanceMap = new HashMap<>();
-            Result r = tx.execute("SHOW SERVERS YIELD name, state, serverId, address, health, modeConstraint, version");
-            tx.commit();
-            while (r.hasNext()) {
-                var result = new ResultMap(r.next());
-                var server = new Server();
-                server.serverId = result.getString("serverId");
-                server.name = result.getString("name", null);
-                server.address = result.getString("address", "unknown");
-                server.health = result.getString("health");
-                server.modeConstraint = result.getString("modeConstraint");
-                server.version = result.getString("version", "unknown");
-                server.state = result.getString("state", null);
-                instanceMap.put(server.serverId, server);
+            try (Result r =
+                    tx.execute("SHOW SERVERS YIELD name, state, serverId, address, health, modeConstraint, version")) {
+                Map<String, Server> instanceMap = new HashMap<>();
+                while (r.hasNext()) {
+                    var result = new ResultMap(r.next());
+                    var server = new Server();
+                    server.serverId = result.getString("serverId");
+                    server.name = result.getString("name", null);
+                    server.address = result.getString("address", "unknown");
+                    server.health = result.getString("health");
+                    server.modeConstraint = result.getString("modeConstraint");
+                    server.version = result.getString("version", "unknown");
+                    server.state = result.getString("state", null);
+                    instanceMap.put(server.serverId, server);
+                }
+                return instanceMap;
             }
-            return instanceMap;
         });
     }
 
     public Map<String, List<Database>> getDatabases() {
         return withSystemTransaction(databaseManagementService, tx -> {
-            Map<String, List<Database>> databasesByInstance = new HashMap<>();
-            Result r = tx.execute("SHOW DATABASES YIELD *");
-            tx.commit();
-            while (r.hasNext()) {
-                var instanceDatabases = new ResultMap(r.next());
-                var serverId = instanceDatabases.getString("serverID");
-                var dbArray = databasesByInstance.computeIfAbsent(serverId, k -> new ArrayList<>());
+            try (Result r = tx.execute("SHOW DATABASES YIELD *")) {
+                Map<String, List<Database>> databasesByInstance = new HashMap<>();
+                while (r.hasNext()) {
+                    var instanceDatabases = new ResultMap(r.next());
+                    var serverId = instanceDatabases.getString("serverID");
+                    var dbArray = databasesByInstance.computeIfAbsent(serverId, k -> new ArrayList<>());
 
-                var oneDb = Shared.getDatabase(instanceDatabases);
-                dbArray.add(oneDb);
+                    var oneDb = Shared.getDatabase(instanceDatabases);
+                    dbArray.add(oneDb);
+                }
+                return databasesByInstance;
             }
-            return databasesByInstance;
         });
     }
 
@@ -87,12 +88,12 @@ public class EnterpriseTransactor extends AbstractTransactor implements ITransac
             license.type = Server.License.LicenseType.COMMERCIAL;
 
             String status = withSystemTransaction(databaseManagementService, tx -> {
-                Result r = tx.execute("CALL dbms.licenseAgreementDetails()");
-                tx.commit();
-                var result = new ResultMap(r.next());
-                license.daysLeftOnTrial = result.getInteger("daysLeftOnTrial", null);
-                license.totalTrialDays = result.getInteger("totalTrialDays", null);
-                return result.getString("status");
+                try (Result r = tx.execute("CALL dbms.licenseAgreementDetails()")) {
+                    var result = new ResultMap(r.next());
+                    license.daysLeftOnTrial = result.getInteger("daysLeftOnTrial", null);
+                    license.totalTrialDays = result.getInteger("totalTrialDays", null);
+                    return result.getString("status");
+                }
             });
 
             switch (status) {

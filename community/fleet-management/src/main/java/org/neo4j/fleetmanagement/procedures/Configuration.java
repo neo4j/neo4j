@@ -96,16 +96,6 @@ public class Configuration {
         }
     }
 
-    public static class TokenRegistrationResult extends TokenInspectResult {
-        @Description("Token registration status")
-        public String status;
-
-        public TokenRegistrationResult(String projectId, String expiry, String errorMessage, String status) {
-            super(projectId, expiry, errorMessage);
-            this.status = status;
-        }
-    }
-
     private void ensureSystemDb() {
         if (!Objects.equals(db.databaseName(), "system")) {
             throw new RuntimeException("This procedure can only be run on the system database");
@@ -125,21 +115,21 @@ public class Configuration {
         return withTransactionAndErrorHandling(
                 db,
                 tx -> {
-                    Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                            .findFirst();
-                    if (maybeNode.isPresent() && maybeNode.get().hasProperty("token")) {
-                        if (active) {
-                            state.setActive(false);
-                        }
+                    try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                        Optional<Node> maybeNode = rs.stream().findFirst();
+                        if (maybeNode.isPresent() && maybeNode.get().hasProperty("token")) {
+                            if (active) {
+                                state.setActive(false);
+                            }
 
-                        if (connected) {
-                            state.setDisconnected("Disconnecting before registering a new token");
+                            if (connected) {
+                                state.setDisconnected("Disconnecting before registering a new token");
+                            }
                         }
+                        Node node =
+                                maybeNode.orElseGet(() -> tx.createNode(Label.label("FleetManagementConfiguration")));
+                        node.setProperty("token", token);
                     }
-
-                    Node node = maybeNode.orElseGet(() -> tx.createNode(Label.label("FleetManagementConfiguration")));
-
-                    node.setProperty("token", token);
                     tx.commit();
 
                     state.setActive(true);
@@ -171,18 +161,20 @@ public class Configuration {
             return withTransactionAndErrorHandling(
                     db,
                     tx -> {
-                        Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                                .findFirst();
-                        if (maybeNode.isEmpty()) {
-                            return Stream.of(new TokenInspectResult(null, null, "Provide a token input to inspect"));
+                        try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                            Optional<Node> maybeNode = rs.stream().findFirst();
+                            if (maybeNode.isEmpty()) {
+                                return Stream.of(
+                                        new TokenInspectResult(null, null, "Provide a token input to inspect"));
+                            }
+
+                            Node node = maybeNode.get();
+
+                            var registeredToken = (String) node.getProperty("token");
+                            var apiKey = TokenUtils.parseToken(registeredToken);
+                            return Stream.of(new TokenInspectResult(
+                                    apiKey.projectId(), apiKey.expiryTime().toString(), null));
                         }
-
-                        Node node = maybeNode.get();
-
-                        var registeredToken = (String) node.getProperty("token");
-                        var apiKey = TokenUtils.parseToken(registeredToken);
-                        return Stream.of(new TokenInspectResult(
-                                apiKey.projectId(), apiKey.expiryTime().toString(), null));
                     },
                     e -> {
                         String message = "An error occurred while inspecting the token: " + e.getMessage();
@@ -269,10 +261,7 @@ public class Configuration {
                 tx -> {
                     Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
                             .findFirst();
-                    Boolean status =
-                            maybeNode.map(node -> node.hasProperty("token")).orElse(false);
-                    tx.commit();
-                    return status;
+                    return maybeNode.map(node -> node.hasProperty("token")).orElse(false);
                 },
                 e -> {
                     String message = "An error occurred while fetching Fleet Manager token status: " + e.getMessage();

@@ -45,8 +45,6 @@ public abstract class AbstractTransactor {
     protected Log log;
     protected final State state;
 
-    private VersionAndEdition versionAndEdition;
-
     private final CachedMethod<Server.License> bloomLicenseCache = new CachedMethod<>();
     private final CachedMethod<Server.License> gdsLicenseCache = new CachedMethod<>();
 
@@ -61,80 +59,77 @@ public abstract class AbstractTransactor {
 
     public boolean getTokenStatus() {
         return withSystemTransaction(databaseManagementService, tx -> {
-            Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                    .findFirst();
-            Boolean status = maybeNode.map(node -> node.hasProperty("token")).orElse(false);
-            tx.commit();
-            return status;
+            try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                Optional<Node> maybeNode = rs.stream().findFirst();
+                return maybeNode.map(node -> node.hasProperty("token")).orElse(false);
+            }
         });
     }
 
     public boolean getTokenRotationStatus() {
         return withSystemTransaction(databaseManagementService, tx -> {
-            Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                    .findFirst();
-            Boolean status = maybeNode
-                    .map(node -> node.hasProperty("token")
-                            && node.getProperty("token").equals(TOKEN_ROTATION_STATE_INDICATOR))
-                    .orElse(false);
-            tx.commit();
-            return status;
+            try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                Optional<Node> maybeNode = rs.stream().findFirst();
+                return maybeNode
+                        .map(node -> node.hasProperty("token")
+                                && node.getProperty("token").equals(TOKEN_ROTATION_STATE_INDICATOR))
+                        .orElse(false);
+            }
         });
     }
 
     public String getToken() {
         return withSystemTransaction(databaseManagementService, tx -> {
-            Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                    .findFirst();
-            String token =
-                    maybeNode.map(node -> node.getProperty("token").toString()).orElse(null);
-            tx.commit();
-            return token;
+            try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                Optional<Node> maybeNode = rs.stream().findFirst();
+                return maybeNode
+                        .map(node -> node.getProperty("token").toString())
+                        .orElse(null);
+            }
         });
     }
 
     public VersionAndEdition getVersionAndEdition() {
         return withSystemTransaction(databaseManagementService, tx -> {
             var versionAndEdition = new VersionAndEdition();
-            Result r = tx.execute("CALL dbms.components() YIELD name, versions, edition");
-            tx.commit();
-            while (r.hasNext()) {
-                Map<String, Object> resultMap = r.next();
-                var name = resultMap.get("name").toString();
-                if (!name.equals("Neo4j Kernel")) {
-                    continue;
-                }
+            try (var r = tx.execute("CALL dbms.components() YIELD name, versions, edition")) {
+                while (r.hasNext()) {
+                    Map<String, Object> resultMap = r.next();
+                    var name = resultMap.get("name").toString();
+                    if (!name.equals("Neo4j Kernel")) {
+                        continue;
+                    }
 
-                versionAndEdition.edition = resultMap.get("edition").toString();
-                try {
-                    var versions = (List<String>) resultMap.get("versions");
-                    versionAndEdition.version = versions.get(0);
-                } catch (ClassCastException e) {
-                    this.log.error("Type casting failed: " + e.getMessage());
+                    versionAndEdition.edition = resultMap.get("edition").toString();
+                    try {
+                        var versions = (List<String>) resultMap.get("versions");
+                        versionAndEdition.version = versions.getFirst();
+                    } catch (ClassCastException e) {
+                        this.log.error("Type casting failed: " + e.getMessage());
+                    }
+                    return versionAndEdition;
                 }
-                this.versionAndEdition = versionAndEdition;
-                return versionAndEdition;
             }
-            this.versionAndEdition = versionAndEdition;
             return versionAndEdition;
         });
     }
 
     public GraphCount getGraphCount(String databaseName) {
         return withTransaction(databaseManagementService, databaseName, tx -> {
-            Result r = tx.execute("CALL db.stats.retrieve(\"GRAPH COUNTS\")");
-            while (r.hasNext()) {
-                var result = r.next();
-                if (result.get("section").equals("GRAPH COUNTS")) {
-                    var graphCount = new GraphCount();
-                    var data = result.get("data");
-                    if (data != null) {
-                        if (data instanceof Map) {
-                            graphCount.relationshipCount = getCount(((Map<?, ?>) data).get("relationships"));
-                            graphCount.nodeCount = getCount(((Map<?, ?>) data).get("nodes"));
+            try (var r = tx.execute("CALL db.stats.retrieve(\"GRAPH COUNTS\")")) {
+                while (r.hasNext()) {
+                    var result = r.next();
+                    if (result.get("section").equals("GRAPH COUNTS")) {
+                        var graphCount = new GraphCount();
+                        var data = result.get("data");
+                        if (data != null) {
+                            if (data instanceof Map) {
+                                graphCount.relationshipCount = getCount(((Map<?, ?>) data).get("relationships"));
+                                graphCount.nodeCount = getCount(((Map<?, ?>) data).get("nodes"));
+                            }
                         }
+                        return graphCount;
                     }
-                    return graphCount;
                 }
             }
             return null;
@@ -162,29 +157,32 @@ public abstract class AbstractTransactor {
 
     protected void setToken(String token) {
         withSystemTransaction(databaseManagementService, tx -> {
-            Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                    .findFirst();
-            Node node = maybeNode.orElseGet(() -> tx.createNode(Label.label("FleetManagementConfiguration")));
+            try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                Optional<Node> maybeNode = rs.stream().findFirst();
+                Node node = maybeNode.orElseGet(() -> tx.createNode(Label.label("FleetManagementConfiguration")));
 
-            node.setProperty("token", token);
+                node.setProperty("token", token);
+            }
             tx.commit();
         });
     }
 
     protected void rotateToken() {
         withSystemTransaction(databaseManagementService, tx -> {
-            Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                    .findFirst();
-            maybeNode.ifPresent(node -> node.setProperty("token", TOKEN_ROTATION_STATE_INDICATOR));
+            try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                Optional<Node> maybeNode = rs.stream().findFirst();
+                maybeNode.ifPresent(node -> node.setProperty("token", TOKEN_ROTATION_STATE_INDICATOR));
+            }
             tx.commit();
         });
     }
 
     protected void deleteToken() {
         withSystemTransaction(databaseManagementService, tx -> {
-            Optional<Node> maybeNode = tx.findNodes(Label.label("FleetManagementConfiguration")).stream()
-                    .findFirst();
-            maybeNode.ifPresent(Node::delete);
+            try (var rs = tx.findNodes(Label.label("FleetManagementConfiguration"))) {
+                Optional<Node> maybeNode = rs.stream().findFirst();
+                maybeNode.ifPresent(Node::delete);
+            }
             tx.commit();
 
             this.state.setActive(false);
@@ -194,9 +192,9 @@ public abstract class AbstractTransactor {
     public Server.License getBloomLicense() {
         return bloomLicenseCache.GetCachedOrRun(() -> {
             Boolean bloomInstalled = withSystemTransaction(databaseManagementService, tx -> {
-                Result r = tx.execute("SHOW PROCEDURES YIELD name WHERE name = 'bloom.checkLicenseCompliance'");
-                tx.commit();
-                return r.hasNext();
+                try (var r = tx.execute("SHOW PROCEDURES YIELD name WHERE name = 'bloom.checkLicenseCompliance'")) {
+                    return r.hasNext();
+                }
             });
             if (!bloomInstalled) {
                 return null;
@@ -207,37 +205,36 @@ public abstract class AbstractTransactor {
             license.type = Server.License.LicenseType.UNSUPPORTED;
 
             return withSystemTransaction(databaseManagementService, tx -> {
-                Result r = tx.execute("call bloom.checkLicenseCompliance() yield message, status, daysLeft");
-                tx.commit();
+                try (var r = tx.execute("call bloom.checkLicenseCompliance() yield message, status, daysLeft")) {
+                    if (r.hasNext()) {
+                        var result = new ResultMap(r.next());
+                        String status = result.getString("status");
+                        license.daysLeftOnTrial = result.getInteger("daysLeft", null);
 
-                if (r.hasNext()) {
-                    var result = new ResultMap(r.next());
-                    String status = result.getString("status");
-                    license.daysLeftOnTrial = result.getInteger("daysLeft", null);
-
-                    switch (status.toLowerCase()) {
-                        case "valid":
-                            license.state = Server.License.LicenseState.VALID;
-                            license.type = Server.License.LicenseType.COMMERCIAL;
-                            break;
-                        case "missing":
-                            license.state = Server.License.LicenseState.NOT_ACCEPTED;
-                            license.type = Server.License.LicenseType.COMMERCIAL;
-                            break;
-                        case "expired":
-                            license.state = Server.License.LicenseState.EXPIRED;
-                            license.type = Server.License.LicenseType.COMMERCIAL;
-                            break;
-                        case "not_accepted":
-                            license.state = Server.License.LicenseState.NOT_ACCEPTED;
-                            license.type = Server.License.LicenseType.COMMERCIAL;
-                            break;
-                        default:
-                            break;
+                        switch (status.toLowerCase()) {
+                            case "valid":
+                                license.state = Server.License.LicenseState.VALID;
+                                license.type = Server.License.LicenseType.COMMERCIAL;
+                                break;
+                            case "missing":
+                                license.state = Server.License.LicenseState.NOT_ACCEPTED;
+                                license.type = Server.License.LicenseType.COMMERCIAL;
+                                break;
+                            case "expired":
+                                license.state = Server.License.LicenseState.EXPIRED;
+                                license.type = Server.License.LicenseType.COMMERCIAL;
+                                break;
+                            case "not_accepted":
+                                license.state = Server.License.LicenseState.NOT_ACCEPTED;
+                                license.type = Server.License.LicenseType.COMMERCIAL;
+                                break;
+                            default:
+                                break;
+                        }
                     }
-                }
 
-                return license;
+                    return license;
+                }
             });
         });
     }
@@ -245,9 +242,9 @@ public abstract class AbstractTransactor {
     public Server.License getGdsLicense() {
         return gdsLicenseCache.GetCachedOrRun(() -> {
             Boolean gdsInstalled = withSystemTransaction(databaseManagementService, tx -> {
-                Result r = tx.execute("SHOW PROCEDURES YIELD name WHERE name = 'gds.debug.sysInfo'");
-                tx.commit();
-                return r.hasNext();
+                try (var r = tx.execute("SHOW PROCEDURES YIELD name WHERE name = 'gds.debug.sysInfo'")) {
+                    return r.hasNext();
+                }
             });
             if (!gdsInstalled) {
                 return null;
@@ -258,60 +255,60 @@ public abstract class AbstractTransactor {
             license.type = Server.License.LicenseType.UNSUPPORTED;
 
             return withSystemTransaction(databaseManagementService, tx -> {
-                Result r = tx.execute("CALL gds.debug.sysInfo() YIELD key, value");
-                tx.commit();
+                try (Result r = tx.execute("CALL gds.debug.sysInfo() YIELD key, value")) {
 
-                String edition = "Unlicensed";
-                String errorMsg = "";
-                ZonedDateTime expirationTime = null;
+                    String edition = "Unlicensed";
+                    String errorMsg = "";
+                    ZonedDateTime expirationTime = null;
 
-                while (r.hasNext()) {
-                    var result = new ResultMap(r.next());
-                    String key = result.getString("key");
+                    while (r.hasNext()) {
+                        var result = new ResultMap(r.next());
+                        String key = result.getString("key");
 
-                    switch (key) {
-                        case "gdsLicenseError":
-                            errorMsg = result.getString("value");
-                            break;
-                        case "gdsEdition":
-                            edition = result.getString("value");
-                            break;
-                        case "gdsLicenseExpirationTime":
-                            try {
-                                expirationTime = result.getZonedDateTime("value");
-                            } catch (Exception e) {
-                                log.error("Unable to parse gdsLicenseExpirationTime: " + e.getMessage());
-                            }
-                            break;
+                        switch (key) {
+                            case "gdsLicenseError":
+                                errorMsg = result.getString("value");
+                                break;
+                            case "gdsEdition":
+                                edition = result.getString("value");
+                                break;
+                            case "gdsLicenseExpirationTime":
+                                try {
+                                    expirationTime = result.getZonedDateTime("value");
+                                } catch (Exception e) {
+                                    log.error("Unable to parse gdsLicenseExpirationTime: " + e.getMessage());
+                                }
+                                break;
+                        }
                     }
-                }
 
-                // Set license properties based on the retrieved information
-                if (!errorMsg.isEmpty()) {
-                    log.warn("GDS license error: " + errorMsg);
-                }
-                if (edition.equalsIgnoreCase("licensed")) {
-                    license.type = Server.License.LicenseType.COMMERCIAL;
-                    license.state = Server.License.LicenseState.VALID;
-                } else if (edition.equalsIgnoreCase("unlicensed")) {
-                    license.type = Server.License.LicenseType.FREE;
-                    license.state = Server.License.LicenseState.VALID;
-                } else if (edition.equalsIgnoreCase("invalid")) {
-                    license.type = Server.License.LicenseType.COMMERCIAL;
-                    license.state = Server.License.LicenseState.INVALID;
-                }
-
-                if (expirationTime != null) {
-                    java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
-                    long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(now, expirationTime);
-                    license.daysLeftOnTrial = (int) daysLeft;
-
-                    if (daysLeft <= 0) {
-                        license.state = Server.License.LicenseState.EXPIRED;
+                    // Set license properties based on the retrieved information
+                    if (!errorMsg.isEmpty()) {
+                        log.warn("GDS license error: " + errorMsg);
                     }
-                }
+                    if (edition.equalsIgnoreCase("licensed")) {
+                        license.type = Server.License.LicenseType.COMMERCIAL;
+                        license.state = Server.License.LicenseState.VALID;
+                    } else if (edition.equalsIgnoreCase("unlicensed")) {
+                        license.type = Server.License.LicenseType.FREE;
+                        license.state = Server.License.LicenseState.VALID;
+                    } else if (edition.equalsIgnoreCase("invalid")) {
+                        license.type = Server.License.LicenseType.COMMERCIAL;
+                        license.state = Server.License.LicenseState.INVALID;
+                    }
 
-                return license;
+                    if (expirationTime != null) {
+                        java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
+                        long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(now, expirationTime);
+                        license.daysLeftOnTrial = (int) daysLeft;
+
+                        if (daysLeft <= 0) {
+                            license.state = Server.License.LicenseState.EXPIRED;
+                        }
+                    }
+
+                    return license;
+                }
             });
         });
     }
