@@ -141,7 +141,14 @@ object EagerWhereNeededRewriter {
      * Tests whether the plan is nested on the RHS of a binary plan that might not have initialized the rhs
      * before yielding a row.
      */
-    def readMightNotBeInitialized(plan: LogicalPlan): Boolean
+    def cursorMightNotBeInitialized(plan: LogicalPlan): Boolean
+
+    /**
+     * Returns true if both plans are on the RHS of the same ApplyPlan.
+     * Used to determine whether a ReadWriteConflict is self-contained within one subquery
+     * invocation, allowing Eager elimination.
+     */
+    def sameApplyRhsScope(plan1: LogicalPlan, plan2: LogicalPlan): Boolean
   }
 
   private[eager] class ChildrenIds extends Attribute[LogicalPlan, BitSet] with PlanChildrenLookup {
@@ -156,6 +163,13 @@ object EagerWhereNeededRewriter {
      */
     private val yieldBeforeInitRhs = mutable.BitSet.empty
 
+    /**
+     * Maps each plan ID on the RHS of an ApplyPlan to the ID of the innermost enclosing ApplyPlan.
+     * Used to detect when two plans are in the same subquery invocation.
+     * First-write-wins semantics ensure the innermost scope is recorded for nested Apply plans.
+     */
+    private val applyByRhsPlanId = mutable.HashMap[Int, Int]()
+
     override def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean = {
       get(plan.id).contains(child.id.x)
     }
@@ -167,7 +181,13 @@ object EagerWhereNeededRewriter {
 
     override def isInTransactionalApply(plan: LogicalPlan): Boolean = transactionalApplyNestedPlans.contains(plan.id.x)
 
-    override def readMightNotBeInitialized(plan: LogicalPlan): Boolean = yieldBeforeInitRhs.contains(plan.id.x)
+    override def cursorMightNotBeInitialized(plan: LogicalPlan): Boolean = yieldBeforeInitRhs.contains(plan.id.x)
+
+    override def sameApplyRhsScope(plan1: LogicalPlan, plan2: LogicalPlan): Boolean =
+      (applyByRhsPlanId.get(plan1.id.x), applyByRhsPlanId.get(plan2.id.x)) match {
+        case (Some(id1), Some(id2)) => id1 == id2
+        case _                      => false
+      }
 
     /**
      * This method must be called with the plans in execution order.
@@ -189,6 +209,17 @@ object EagerWhereNeededRewriter {
             val lhsBits = get(lhs).incl(lhs.x)
             val rhsBits = get(rhs).incl(rhs.x)
             val res = lhsBits union rhsBits
+            // Track RHS plans of all ApplyPlan types for scope-aware conflict elimination.
+            // First-write-wins: the innermost enclosing ApplyPlan is recorded (bottom-up traversal
+            // processes inner plans first).
+            plan match {
+              case _: ApplyPlan =>
+                rhsBits.foreach { id =>
+                  if (!applyByRhsPlanId.contains(id))
+                    applyByRhsPlanId(id) = plan.id.x
+                }
+              case _ =>
+            }
             // Update transactionalApplyNestedPlans
             plan match {
               case _: TransactionApply | _: TransactionForeach => transactionalApplyNestedPlans |= res

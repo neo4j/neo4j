@@ -635,15 +635,14 @@ sealed trait ConflictFinder {
    * and if that variable is distinct when reading.
    */
   private def distinctConflictOnSameSymbol(
-    read: PlanWithAccessor,
-    write: PlanWithAccessor
+    upstream: PlanWithAccessor,
+    downstream: PlanWithAccessor
   )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
-    read.accessor match {
+    upstream.accessor match {
       case Some(variable) =>
-        write.accessor.contains(variable) && isGloballyUniqueAndCursorInitialized(
-          variable,
-          read.plan.value,
-          write.plan.value
+        downstream.accessor.contains(variable) && (
+          isGloballyUniqueAndCursorInitialized(variable, upstream.plan.value, downstream.plan.value) ||
+            isApplyScopedDistinctAndIdempotent(variable, upstream.plan.value, downstream.plan.value)
         )
       case None => false
     }
@@ -703,27 +702,46 @@ sealed trait ConflictFinder {
     conflictsWithUnstablePlan
   }
 
-  private def isDistinctLeafPlan(readPlan: LogicalPlan): Boolean = readPlan match {
+  private def isDistinctLeafPlan(upstream: LogicalPlan): Boolean = upstream match {
     case _: NodeLogicalLeafPlan           => true
     case rlp: RelationshipLogicalLeafPlan => rlp.directed
     case _                                => false
   }
 
-  private def isSimpleDeleteAndDistinctLeaf(readPlan: LogicalPlan, writePlan: LogicalPlan): Boolean =
-    simpleDeletingPlan(writePlan) && isDistinctLeafPlan(readPlan)
+  private def isSimpleDeleteAndDistinctLeaf(upstream: LogicalPlan, downstream: LogicalPlan): Boolean =
+    simpleDeletingPlan(downstream) && isDistinctLeafPlan(upstream)
 
   private def isGloballyUniqueAndCursorInitialized(
     variable: LogicalVariable,
-    readPlan: LogicalPlan,
-    writePlan: LogicalPlan
+    upstream: LogicalPlan,
+    downstream: LogicalPlan
   )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
-    // plan.distinctness is "per argument"
-    // In order to make sure a column is "globally unique", i.e. over multiple invocations,
-    // we need to make sure the operator does only execute once.
-    // Also, we must make sure that the cursor performing the read will be initialized at the point in
-    // time the write for the same variable happens.
-    (isSimpleDeleteAndDistinctLeaf(readPlan, writePlan) || readPlan.distinctness.covers(Seq(variable))) &&
-    !planChildrenLookup.readMightNotBeInitialized(readPlan)
+    // plan.distinctness is "per argument" on the RHS of an apply plan.
+    // In order to make sure a column is "globally unique", i.e. over multiple invocations, we need to make sure
+    //   (a) the operator does only execute once
+    (isSimpleDeleteAndDistinctLeaf(upstream, downstream) || upstream.distinctness.covers(Seq(variable))) &&
+    //   (b) that the upstream's cursor is initialized by the time the downstream operator runs.
+    !planChildrenLookup.cursorMightNotBeInitialized(upstream)
+  }
+
+  private def isApplyScopedDistinctAndIdempotent(
+    variable: LogicalVariable,
+    upstream: LogicalPlan,
+    downstream: LogicalPlan
+  )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
+    // Within a single Apply RHS invocation, the upstream's per-invocation distinctness is
+    // sufficient to discard the conflict, even though the upstream is re-invoked across invocations.
+    // We can discard the conflict if these three conditions hold:
+    //   (a) the upstream is locally distinct on the variable (within one invocation),
+    upstream.distinctness.covers(Seq(variable)) &&
+    //   (b) the downstream is idempotent.
+    //       This is the case for delete for which it does not have any effect to be called on a deleted entity.
+    //       Property writes, on the other hand, are NOT idempotent: a property write can shift an entity's position in
+    //       an index, causing the index to re-yield the same entity.
+    simpleDeletingPlan(downstream) &&
+    //   (c) both plans are in the same Apply RHS, so cursor initialisation is structurally
+    //       guaranteed (upstream runs first within the invocation).
+    planChildrenLookup.sameApplyRhsScope(upstream, downstream)
   }
 
   /**

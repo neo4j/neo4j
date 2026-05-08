@@ -3362,6 +3362,130 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
       .build())
   }
 
+  test("inserts no eager for directed Expand -> DeleteRelationship inside TransactionForeach") {
+    // Expand on Argument (AtMostOneRow) produces DistinctColumns(r).
+    // Both expand and delete are on the RHS of the same TransactionForeach, so
+    // sameApplyRhsScope = true → subqueryCase eliminates the Eager.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.deleteRelationship("r")
+      .|.expand("(n)-[r:T]->(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result shouldEqual plan
+  }
+
+  test("inserts no eager for directed Expand -> DeleteRelationship inside TransactionApply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.deleteRelationship("r")
+      .|.expand("(n)-[r:T]->(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result shouldEqual plan
+  }
+
+  test("inserts eager for undirected Expand -> DeleteRelationship inside TransactionForeach") {
+    // BOTH direction: self-loops cause the same r to appear twice per invocation → NotDistinct.
+    // r is not distinct, so subqueryCase does not apply → Eager is inserted.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.deleteRelationship("r")
+      .|.expand("(n)-[r:T]-(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result shouldEqual new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.deleteRelationship("r")
+      .|.eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(3), Id(4)))))
+      .|.expand("(n)-[r:T]-(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+      .build()
+  }
+
+  test("inserts no eager for directed Expand -> DeleteRelationship inside Apply") {
+    // Expand on Argument (AtMostOneRow) produces DistinctColumns(r).
+    // Both expand and delete are on the RHS of the same Apply, so sameApplyRhsScope = true
+    // → subqueryCase eliminates the Eager.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .apply()
+      .|.deleteRelationship("r")
+      .|.expand("(n)-[r:T]->(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result shouldEqual plan
+  }
+
+  test("inserts no eager for directed Expand -> DeleteRelationship inside nested Apply") {
+    // Both Expand and Delete are on the RHS of the innermost Apply.
+    // Bottom-up traversal processes Apply_inner first → Expand and Delete map to Apply_inner.id.
+    // When Apply_outer is processed, first-write-wins skips already-mapped IDs.
+    // sameApplyRhsScope(expand, delete) = true → subqueryCase eliminates the Eager.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .apply()
+      .|.apply()
+      .|.|.deleteRelationship("r")
+      .|.|.expand("(n)-[r:T]->(m)")
+      .|.|.argument("n")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result shouldEqual plan
+  }
+
+  test("inserts eager for undirected Expand -> DeleteRelationship inside Apply") {
+    // BOTH direction: self-loops cause the same r to appear twice per invocation → NotDistinct.
+    // r is not distinct so subqueryCase does not apply → Eager is inserted.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .apply()
+      .|.deleteRelationship("r")
+      .|.expand("(n)-[r:T]-(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result shouldEqual new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .apply()
+      .|.deleteRelationship("r")
+      .|.eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(3), Id(4)))))
+      .|.expand("(n)-[r:T]-(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+      .build()
+  }
+
   test("inserts no eager for Distinct Read -> DETACH DELETE same node in transactions") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("one")
@@ -4610,6 +4734,33 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
         .apply()
         .|.allNodeScan("m")
         .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "should not insert an eager between hasDegree and deleteRelationship if the hasDegree is on a relationship of a different type than the one being deleted"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .deleteRelationship("r")
+      .expandAll("(n)-[r:DIRECT_FLOW]->(m)")
+      .filter(hasDegreeGreater("n", "HAS_PARENT", OUTGOING, literalInt(0)))
+      .nodeByLabelScan("n", "Asset")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults()
+        .emptyResult()
+        .deleteRelationship("r")
+        // we can avoid planning an Eager here because n is distinct before the Expand and therefore r is also distinct after it.
+        .expandAll("(n)-[r:DIRECT_FLOW]->(m)")
+        .filter(hasDegreeGreater("n", "HAS_PARENT", OUTGOING, literalInt(0)))
+        .nodeByLabelScan("n", "Asset")
         .build()
     )
   }

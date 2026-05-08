@@ -41,10 +41,10 @@ import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 class ConflictFinderTest extends CypherPlannerTestSuite with AstConstructionTestSupport {
 
   // -------------------------
-  // readMightNotBeInitialized
+  // cursorMightNotBeInitialized
   // -------------------------
 
-  test("readMightNotBeInitialized for unary plan is always false") {
+  test("cursorMightNotBeInitialized for unary plan is always false") {
     val wholePlan = new LogicalPlanBuilder()
       .produceResults("x")
       .distinct("x AS x")
@@ -58,12 +58,12 @@ class ConflictFinderTest extends CypherPlannerTestSuite with AstConstructionTest
       case _                   => None
     }).foreach { p =>
       withClue(p) {
-        childrenIds.readMightNotBeInitialized(p) should be(false)
+        childrenIds.cursorMightNotBeInitialized(p) should be(false)
       }
     }
   }
 
-  test("readMightNotBeInitialized going left in a plan is always false") {
+  test("cursorMightNotBeInitialized going left in a plan is always false") {
     val wholePlan = new LogicalPlanBuilder()
       .produceResults("x")
       .apply()
@@ -81,12 +81,12 @@ class ConflictFinderTest extends CypherPlannerTestSuite with AstConstructionTest
       case _                    => None
     }).foreach { p =>
       withClue(p) {
-        childrenIds.readMightNotBeInitialized(p) should be(false)
+        childrenIds.cursorMightNotBeInitialized(p) should be(false)
       }
     }
   }
 
-  test("readMightNotBeInitialized is true right of some binary plans") {
+  test("cursorMightNotBeInitialized is true right of some binary plans") {
     val wholePlan = new LogicalPlanBuilder()
       .produceResults("x")
       .apply()
@@ -109,19 +109,19 @@ class ConflictFinderTest extends CypherPlannerTestSuite with AstConstructionTest
     wholePlan.folder.treeFold(()) {
       case p @ Argument(SetExtractor(Variable("here"))) =>
         withClue(p) {
-          childrenIds.readMightNotBeInitialized(p) should be(true)
+          childrenIds.cursorMightNotBeInitialized(p) should be(true)
         }
         acc => SkipChildren(acc)
 
       case p @ NodeHashJoin(SetExtractor(Variable("here")), _, _) =>
         withClue(p) {
-          childrenIds.readMightNotBeInitialized(p) should be(true)
+          childrenIds.cursorMightNotBeInitialized(p) should be(true)
         }
         acc => SkipChildren(acc)
 
       case p: LogicalPlan =>
         withClue(p) {
-          childrenIds.readMightNotBeInitialized(p) should be(false)
+          childrenIds.cursorMightNotBeInitialized(p) should be(false)
         }
         acc => TraverseChildren(acc)
 

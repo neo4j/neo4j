@@ -2616,6 +2616,109 @@ class EagerPlanningIntegrationTest extends CypherPlannerTestSuite
     )
   }
 
+  test("currently is eager between READ and DELETE for relationships on unstable entity") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setLabelCardinality("A", 50)
+        .setRelationshipCardinality("()-[:T]->()", 50)
+        .setRelationshipCardinality("()-[:T2]->()", 50)
+        .build()
+
+    val query =
+      """MATCH (x:A)
+        |SKIP 0
+        |MATCH (a)-[t:T]->(b)
+        |DELETE t
+        |RETURN count(*) as c""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(*) AS c"))
+        .deleteRelationship("t")
+        // This eager could probably also be argued away, but we currently do not do that because the delete is moved out from the apply.
+        .eager(ListSet(readDeleteConflict("t", 2, 5)))
+        .apply()
+        .|.relationshipTypeScan("()-[t:T]->()", IndexOrderNone, "x")
+        .skip(0)
+        .nodeByLabelScan("x", "A", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test(
+    "should not plan an eager between EXISTS and DELETE if the EXISTS contains a relationship of a different type than the one being deleted - sequential clauses"
+  ) {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("Asset", 500)
+        .setRelationshipCardinality("()-[:DIRECT_FLOW]->()", 2000)
+        .setRelationshipCardinality("(:Asset)-[:DIRECT_FLOW]->()", 1000)
+        .setRelationshipCardinality("()-[:HAS_PARENT]->()", 5000)
+        .setRelationshipCardinality("(:Asset)-[:HAS_PARENT]->()", 2000)
+        .build()
+
+    val plan = planner.plan(
+      s"""MATCH (n:Asset)
+         |WHERE EXISTS {
+         |  (n)-[:HAS_PARENT]->()
+         |}
+         |
+         |MATCH (n)-[r:DIRECT_FLOW]->()
+         |DELETE r""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .deleteRelationship("r")
+        .expandAll("(n)-[r:DIRECT_FLOW]->()")
+        .filter(hasDegreeGreater("n", "HAS_PARENT", OUTGOING, literalInt(0)))
+        .nodeByLabelScan("n", "Asset", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test(
+    "should not plan an eager between EXISTS and DELETE if the EXISTS contains a relationship of a different type than the one being deleted - call in transaction case"
+  ) {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("Asset", 500)
+        .setRelationshipCardinality("()-[:DIRECT_FLOW]->()", 2000)
+        .setRelationshipCardinality("(:Asset)-[:DIRECT_FLOW]->()", 1000)
+        .setRelationshipCardinality("()-[:HAS_PARENT]->()", 5000)
+        .setRelationshipCardinality("(:Asset)-[:HAS_PARENT]->()", 2000)
+        .build()
+
+    val plan = planner.plan(
+      CypherVersion.Cypher25,
+      s"""MATCH (n:Asset)
+         |CALL (n) {
+         |  FILTER EXISTS { (n)-[:HAS_PARENT]->() }
+         |  MATCH (n)-[r:DIRECT_FLOW]->()
+         |  DELETE r
+         |} IN TRANSACTIONS OF 1000 ROWS""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .transactionForeach(1000)
+        .|.deleteRelationship("r")
+        .|.expandAll("(n)-[r:DIRECT_FLOW]->()")
+        .|.filter(hasDegreeGreater("n", "HAS_PARENT", OUTGOING, literalInt(0)))
+        .|.argument("n")
+        .nodeByLabelScan("n", "Asset", IndexOrderNone)
+        .build()
+    )
+  }
+
   test("insert eager between MATCH with dynamic relationship type and DELETE - using dynamic relationship filter") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -3276,6 +3379,70 @@ class EagerPlanningIntegrationTest extends CypherPlannerTestSuite
         .emptyResult()
         .deleteRelationship("r")
         .expandAll("(n)-[r:T]->()")
+        .nodeByLabelScan("n", "N", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test(
+    "should not plan eager when deleting a relationship expanded inside CALL IN TRANSACTIONS"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 100)
+      .setRelationshipCardinality("()-[:T]->()", 200)
+      .setRelationshipCardinality("(:N)-[:T]->()", 200)
+      .build()
+
+    val query =
+      """MATCH (n:N)
+        |CALL (n) {
+        |  MATCH (n)-[r:T]->()
+        |  DELETE r
+        |} IN TRANSACTIONS OF 1000 ROWS""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .transactionForeach(1000)
+        .|.deleteRelationship("r")
+        .|.expandAll("(n)-[r:T]->()")
+        .|.argument("n")
+        .nodeByLabelScan("n", "N", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test(
+    "should not plan eager when deleting a relationship expanded inside non-transactional CALL subquery"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .setRelationshipCardinality("()-[:T]->()", 100)
+      .setRelationshipCardinality("(:N)-[:T]->()", 10)
+      .build()
+
+    val query =
+      """MATCH (n:N)
+        |CALL (n) {
+        |  MATCH (n)-[r:T]->()
+        |  DELETE r
+        |}""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .subqueryForeach()
+        .|.deleteRelationship("r")
+        .|.expandAll("(n)-[r:T]->()")
+        .|.argument("n")
         .nodeByLabelScan("n", "N", IndexOrderNone)
         .build()
     )

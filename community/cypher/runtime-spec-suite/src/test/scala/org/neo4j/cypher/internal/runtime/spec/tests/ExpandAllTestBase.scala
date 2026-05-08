@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.values.storable.LongValue
 
 object ExpandAllTestBase {
 
@@ -63,6 +65,80 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  test("needs an eager if there is an expand on a non-distinct node and relationship is deleted afterwards") {
+    assume(!isParallel) // DeleteRelationship is not yet supported by the parallel runtime
+    // given
+    val flowCount = 3
+    val parentCount = 4
+
+    givenGraph {
+      val n = runtimeTestSupport.tx.createNode(Label.label("Asset"))
+      for (_ <- 1 to flowCount) {
+        n.createRelationshipTo(runtimeTestSupport.tx.createNode(), RelationshipType.withName("DIRECT_FLOW"))
+      }
+      for (_ <- 1 to parentCount) {
+        n.createRelationshipTo(runtimeTestSupport.tx.createNode(), RelationshipType.withName("HAS_PARENT"))
+      }
+    }
+
+    // We would need an .eager() between the delete and the first expand of HAS_PARENT:
+    // What happens is that we expand one HAS_PARENT relationship and then delete all DIRECT_FLOW relationships,
+    // such that when we expand the next HAS_PARENT relationship, the DIRECT_FLOW relationships are already deleted,
+    // not adding to the number of rows that are counted in the aggregation.
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteRelationship("r")
+      .expandAll("(n)-[r:DIRECT_FLOW]->()")
+      .expandAll("(n)-[:HAS_PARENT]->()")
+      .nodeByLabelScan("n", "Asset")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("count")
+      .withRows(matching {
+        // From Cypher Semantics, we would expect parentCount, but the value that we get is not.
+        case Seq(Array(l: LongValue)) if l.value() != parentCount =>
+      })
+  }
+
+  test("should not need eager between expand on distinct and delete of relationship, even if an aggregation follows") {
+    assume(!isParallel) // DeleteRelationship is not yet supported by the parallel runtime
+    // given
+    val assetCount = 10
+    val flowCount = 3
+    val parentCount = 4
+
+    givenGraph {
+      for (_ <- 1 to assetCount) {
+        val n = runtimeTestSupport.tx.createNode(Label.label("Asset"))
+        for (_ <- 1 to flowCount) {
+          n.createRelationshipTo(runtimeTestSupport.tx.createNode(), RelationshipType.withName("DIRECT_FLOW"))
+        }
+        for (_ <- 1 to parentCount) {
+          n.createRelationshipTo(runtimeTestSupport.tx.createNode(), RelationshipType.withName("HAS_PARENT"))
+        }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteRelationship("r")
+      // n is distinct until before the expand, so r is distinct after the expand, so no eager is needed before the delete
+      .expandAll("(n)-[r:DIRECT_FLOW]->()")
+      .filter(hasDegreeGreater("n", "HAS_PARENT", OUTGOING, literalInt(0)))
+      .nodeByLabelScan("n", "Asset", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("count").withRows(singleRow(assetCount * flowCount))
+  }
 
   test("should expand and provide variables for relationship and end node - outgoing") {
     // given
