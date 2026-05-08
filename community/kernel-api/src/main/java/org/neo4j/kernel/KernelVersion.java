@@ -72,7 +72,6 @@ public enum KernelVersion {
     V2025_11(27), // 2025_11. Before state serialization for block commands
     V2026_01(28), // 2026_01. Introduce label existence and endpoint constraints
     V2026_02(29), // 2026_02. SPD property shards keeps only relevant commands in tx log
-    V2026_05(30), // 2026_05. Binary quantization for vector indexes
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -83,7 +82,7 @@ public enum KernelVersion {
     public static final KernelVersion EARLIEST = V4_2;
     // The latest version should be kept private to be able to override it from tests.
     // getLatestVersion should be used when the latest version is required.
-    private static final KernelVersion LATEST = V2026_05;
+    private static final KernelVersion LATEST = V2026_02;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED = V4_4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
