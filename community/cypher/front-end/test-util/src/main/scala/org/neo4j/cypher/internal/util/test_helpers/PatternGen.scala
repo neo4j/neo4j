@@ -2,28 +2,20 @@
  * Copyright (c) "Neo4j"
  * Neo4j Sweden AB [https://neo4j.com]
  *
- * This file is part of Neo4j.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package org.neo4j.cypher.internal.compiler.test_helpers
+package org.neo4j.cypher.internal.util.test_helpers
 
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Gen
 import org.scalacheck.Gen.alphaLowerChar
 import org.scalacheck.Gen.alphaUpperChar
@@ -132,8 +124,8 @@ trait PatternGen extends CypherScalaCheckDrivenPropertyChecks {
   sealed trait Node extends Element
 
   sealed trait Relationship extends Element {
-    def direction: SemanticDirection
-    def withDirection(direction: SemanticDirection): Relationship
+    def direction: Direction
+    def withDirection(direction: Direction): Relationship
   }
 
   case class NodeWithRelationship(node: Node, rel: Relationship) extends Element {
@@ -164,74 +156,82 @@ trait PatternGen extends CypherScalaCheckDrivenPropertyChecks {
     val string = s"($name ${label.map(":" + _).mkString("")} {${property.mkString(",")}})"
   }
 
-  case class EmptyRelationship(direction: SemanticDirection) extends Relationship {
+  sealed trait Direction
+
+  object Direction {
+    case object Incoming extends Direction
+    case object Outgoing extends Direction
+    case object Both extends Direction
+  }
+
+  case class EmptyRelationship(direction: Direction) extends Relationship {
     val string = formatRelationship("", direction)
 
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  case class EmptyRelationshipWithLength(length: String, direction: SemanticDirection) extends Relationship {
+  case class EmptyRelationshipWithLength(length: String, direction: Direction) extends Relationship {
     val string = formatRelationship(s"[$length]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  case class NamedRelationship(name: String, direction: SemanticDirection) extends Relationship {
+  case class NamedRelationship(name: String, direction: Direction) extends Relationship {
     val string = formatRelationship(s"[$name]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  case class NamedRelationshipWithLength(name: String, length: String, direction: SemanticDirection)
+  case class NamedRelationshipWithLength(name: String, length: String, direction: Direction)
       extends Relationship {
     val string = formatRelationship(s"[$name $length]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  case class TypedRelationship(relType: String, direction: SemanticDirection) extends Relationship {
+  case class TypedRelationship(relType: String, direction: Direction) extends Relationship {
     val string = formatRelationship(s"[:$relType]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  case class TypedWithPropertiesRelationship(relType: String, direction: SemanticDirection, properties: Seq[String])
+  case class TypedWithPropertiesRelationship(relType: String, direction: Direction, properties: Seq[String])
       extends Relationship {
     val string = formatRelationship(s"[:$relType {${properties.mkString(",")}}]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  case class TypedRelationshipWithLength(relType: String, length: String, direction: SemanticDirection)
+  case class TypedRelationshipWithLength(relType: String, length: String, direction: Direction)
       extends Relationship {
     val string = formatRelationship(s"[:$relType $length]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  case class NamedTypedRelationship(name: String, relType: String, direction: SemanticDirection) extends Relationship {
+  case class NamedTypedRelationship(name: String, relType: String, direction: Direction) extends Relationship {
     val string = formatRelationship(s"[$name:$relType]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
   case class NamedTypedWithPropertiesRelationship(
     name: String,
     relType: String,
-    direction: SemanticDirection,
+    direction: Direction,
     properties: Seq[String]
   ) extends Relationship {
     val string = formatRelationship(s"[$name :$relType {${properties.mkString(",")}}]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
   case class NamedTypedRelationshipWithLength(
     name: String,
     relType: String,
     length: String,
-    direction: SemanticDirection
+    direction: Direction
   ) extends Relationship {
     val string = formatRelationship(s"[$name:$relType $length]", direction)
-    override def withDirection(direction: SemanticDirection) = copy(direction = direction)
+    override def withDirection(direction: Direction) = copy(direction = direction)
   }
 
-  def formatRelationship(definition: String, direction: SemanticDirection) = direction match {
-    case BOTH     => s"-$definition-"
-    case INCOMING => s"<-$definition-"
-    case OUTGOING => s"-$definition->"
+  def formatRelationship(definition: String, direction: Direction) = direction match {
+    case Direction.Both     => s"-$definition-"
+    case Direction.Incoming => s"<-$definition-"
+    case Direction.Outgoing => s"-$definition->"
   }
 
   def patterns = Gen.choose(minPatternLength, maxPatternLength).flatMap(patternGen)
@@ -366,5 +366,5 @@ trait PatternGen extends CypherScalaCheckDrivenPropertyChecks {
 
   def relLengthBound = Gen.choose(1, 10)
 
-  def relDirection = Gen.oneOf(BOTH, INCOMING, OUTGOING)
+  def relDirection: Gen[Direction] = Gen.oneOf(Direction.Both, Direction.Incoming, Direction.Outgoing)
 }
