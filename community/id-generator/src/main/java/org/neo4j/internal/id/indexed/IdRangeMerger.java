@@ -36,7 +36,7 @@ final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange>, IdRange.F
     private final boolean trackLargestFreeIdsSlotSize;
 
     private int diffNumUnusedIds;
-    private int largestSeenFreeIdsSlotSize = 1;
+    private int largestSeenFreeIdsSlotSize;
 
     IdRangeMerger(
             boolean recoveryMode,

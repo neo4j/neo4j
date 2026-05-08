@@ -36,8 +36,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
@@ -332,90 +334,113 @@ class FreeIdScannerTest {
     }
 
     @Test
-    void shouldLetMultipleThreadsPerformScanOfDifferentPartitionsConcurrently() throws Exception {
+    void shouldOnlyLetOneThreadAtATimePerformAScanNonStrict() throws Exception {
         // given
         int generation = 1;
         Barrier.Control barrier = new Barrier.Control();
-        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.OFFER, barrier, new Slot(256, 1));
+        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.OFFER, barrier, new Slot(8, 1));
         FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, false);
 
-        forEachId(generation, range(0, 20_000)).accept((marker, id) -> {
+        forEachId(generation, range(0, 2)).accept((marker, id) -> {
             marker.markDeleted(id);
             marker.markFree(id);
         });
-        scanner.clearCache(true, NULL_CONTEXT);
 
         // when
-        try (var t2 = new OtherThreadExecutor("T2")) {
-            cache.setBarrierEnabled(true);
-            var t2Scan = t2.executeDontWait(() -> tryLoadFreeIdsIntoCache(scanner, true, 1));
+        try (ExecutorService executorService = Executors.newSingleThreadExecutor()) {
+            Future<?> scanFuture = executorService.submit(() -> tryLoadFreeIdsIntoCache(scanner, false));
             barrier.await();
-            int numPartitionsCreated = recordingMonitor.getAndResetNumPartitionsCreated();
-            assertThat(numPartitionsCreated).isGreaterThan(1);
-            // now T2 stuck in trying to offer to the cache
+            // now it's stuck in trying to offer to the cache
 
-            cache.setBarrierEnabled(false);
-            long foundId = tryLoadFreeIdsIntoCache(scanner, true, 1);
-            assertThat(foundId).isNotEqualTo(NO_ID);
-            barrier.release();
-            Long t2FoundId = t2Scan.get();
-            assertThat(t2FoundId).isNotEqualTo(NO_ID);
-        }
-    }
-
-    @Test
-    void shouldCreateNewPartitionsOnFullyExhausted() {
-        // given
-        int generation = 1;
-        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, 20_000, generation, false);
-        forEachId(generation, range(0, 20_000)).accept((marker, id) -> {
-            marker.markDeleted(id);
-            marker.markFree(id);
-        });
-        // this test, when it scans, will find big clumps of larger IDs and will therefore exhaust
-        // each partition it scans
-        tryLoadFreeIdsIntoCache(scanner, false);
-        assertThat(recordingMonitor.getAndResetNumPartitionsCreated()).isEqualTo(2);
-
-        // when
-        tryLoadFreeIdsIntoCache(scanner, false);
-        assertThat(recordingMonitor.getAndResetNumPartitionsCreated()).isEqualTo(0);
-
-        // then
-        tryLoadFreeIdsIntoCache(scanner, false);
-        assertThat(recordingMonitor.getAndResetNumPartitionsCreated()).isEqualTo(2);
-    }
-
-    @Test
-    void shouldNotCreateNewPartitionsIfStillUsed() throws Exception {
-        // given
-        int generation = 1;
-        Barrier.Control barrier = new Barrier.Control();
-        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.OFFER, barrier, new Slot(20_000, 1));
-        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, false);
-        forEachId(generation, range(0, 20_000)).accept((marker, id) -> {
-            marker.markDeleted(id);
-            marker.markFree(id);
-        });
-        cache.setBarrierEnabled(false);
-        tryLoadFreeIdsIntoCache(scanner, false);
-        assertThat(recordingMonitor.getAndResetNumPartitionsCreated()).isEqualTo(2);
-
-        // when
-        try (var t2 = new OtherThreadExecutor("T2")) {
-            cache.setBarrierEnabled(true);
-            Future<Object> scanFuture = t2.executeDontWait(() -> {
-                tryLoadFreeIdsIntoCache(scanner, false);
-                return null;
-            });
-            barrier.await();
-
-            // then
+            // then a scan call from another thread should complete but not do anything
+            assertThat(recordingMonitor.cached).isEmpty();
             tryLoadFreeIdsIntoCache(scanner, false);
-            assertThat(recordingMonitor.getAndResetNumPartitionsCreated()).isEqualTo(0);
+            assertThat(recordingMonitor.cached).isEmpty();
+
+            // clean up
             barrier.release();
             scanFuture.get();
         }
+    }
+
+    @Test
+    void shouldOnlyLetOneThreadAtATimePerformAScanStrict() throws Exception {
+        // given
+        int generation = 1;
+        Barrier.Control barrier = new Barrier.Control();
+        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.OFFER, barrier, new Slot(8, 1));
+        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, false);
+
+        forEachId(generation, range(0, 2)).accept((marker, id) -> {
+            marker.markDeleted(id);
+            marker.markFree(id);
+        });
+
+        // when
+        try (ExecutorService executorService = Executors.newSingleThreadExecutor()) {
+            Future<?> scanFuture = executorService.submit(() -> tryLoadFreeIdsIntoCache(scanner, false));
+            barrier.await();
+            // now it's stuck in trying to offer to the cache
+
+            // then a scan call from another thread should block too
+            try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2")) {
+                Future<Void> t2Completion = t2.executeDontWait(() -> {
+                    tryLoadFreeIdsIntoCache(scanner, true);
+                    return null;
+                });
+                t2.waitUntilWaiting(details -> details.isAt(FreeIdScanner.class, "tryLoadFreeIdsIntoCache"));
+                barrier.release();
+                t2Completion.get();
+            }
+
+            // clean up
+            scanFuture.get();
+        }
+
+        // and then
+        assertThat(recordingMonitor.hasCached(0, 1)).isTrue();
+        assertThat(recordingMonitor.hasCached(1, 1)).isTrue();
+    }
+
+    @Test
+    void shouldLetSecondThreadWaitIfForcedToEvenInNonStrictMode() throws Exception {
+        // given
+        int generation = 1;
+        Barrier.Control barrier = new Barrier.Control();
+        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.OFFER, barrier, new Slot(8, 1));
+        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, false);
+
+        forEachId(generation, range(0, 2)).accept((marker, id) -> {
+            marker.markDeleted(id);
+            marker.markFree(id);
+        });
+
+        // when
+        try (ExecutorService executorService = Executors.newSingleThreadExecutor()) {
+            Future<?> scanFuture = executorService.submit(() -> tryLoadFreeIdsIntoCache(scanner, false));
+            barrier.await();
+            // now it's stuck in trying to offer to the cache
+
+            // then a scan call from another thread should complete but not do anything
+            assertThat(recordingMonitor.cached).isEmpty();
+            try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2")) {
+                Future<Void> t2Completion = t2.executeDontWait(() -> {
+                    tryLoadFreeIdsIntoCache(scanner, true);
+                    return null;
+                });
+                t2.waitUntilWaiting(details -> details.isAt(FreeIdScanner.class, "tryLoadFreeIdsIntoCache"));
+                assertThat(recordingMonitor.cached).isEmpty();
+                barrier.release();
+                t2Completion.get();
+            }
+
+            // clean up
+            scanFuture.get();
+        }
+
+        // and then
+        assertThat(recordingMonitor.hasCached(0, 1)).isTrue();
+        assertThat(recordingMonitor.hasCached(1, 1)).isTrue();
     }
 
     @Test
@@ -426,7 +451,7 @@ class FreeIdScannerTest {
         FreeIdScanner scanner = scanner(IDS_PER_ENTRY, 32, currentGeneration, true);
         forEachId(oldGeneration, range(0, 8), range(64, 72)).accept(IdRangeMarker::markDeleted);
         // explicitly set to true because the usage pattern in this test is not quite
-        freeIdFindState.recordFreedIds(Integer.MAX_VALUE);
+        freeIdFindState.notifySeenFreedId(Integer.MAX_VALUE);
 
         // when
         tryLoadFreeIdsIntoCache(scanner, false);
@@ -485,13 +510,15 @@ class FreeIdScannerTest {
         // given
         long generation = 1;
         Barrier.Control barrier = new Barrier.Control();
-        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.DRAIN, barrier, new Slot(32, 1));
-        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, false);
+        FreeIdScanner scanner = scanner(
+                IDS_PER_ENTRY,
+                new ControlledIdCache(QueueMethodControl.DRAIN, barrier, new Slot(32, 1)),
+                generation,
+                false);
         forEachId(generation, range(0, 5)).accept((marker, id) -> {
             marker.markDeleted(id);
             marker.markFree(id);
         });
-        cache.setBarrierEnabled(true);
 
         // when
         try (OtherThreadExecutor clearThread = new OtherThreadExecutor("clear")) {
@@ -500,8 +527,7 @@ class FreeIdScannerTest {
             barrier.awaitUninterruptibly();
 
             // Attempt trigger a scan
-            long foundId = tryLoadFreeIdsIntoCache(scanner, false, 1);
-            assertThat(foundId).isEqualTo(NO_ID);
+            tryLoadFreeIdsIntoCache(scanner, false);
 
             // Let clear finish
             barrier.release();
@@ -509,7 +535,7 @@ class FreeIdScannerTest {
         }
 
         // then
-        assertThat(this.cache.size()).isZero();
+        assertThat(cache.size()).isZero();
     }
 
     @Test
@@ -517,14 +543,15 @@ class FreeIdScannerTest {
         // given
         long generation = 1;
         Barrier.Control barrier = new Barrier.Control();
-        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.DRAIN, barrier, new Slot(8, 1));
-        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, true);
-        int numFreeIds = 5;
-        forEachId(generation, range(0, numFreeIds)).accept((marker, id) -> {
+        FreeIdScanner scanner = scanner(
+                IDS_PER_ENTRY,
+                new ControlledIdCache(QueueMethodControl.DRAIN, barrier, new Slot(8, 1)),
+                generation,
+                true);
+        forEachId(generation, range(0, 5)).accept((marker, id) -> {
             marker.markDeleted(id);
             marker.markFree(id);
         });
-        cache.setBarrierEnabled(true);
 
         // when
         try (OtherThreadExecutor clearThread = new OtherThreadExecutor("clear");
@@ -534,27 +561,33 @@ class FreeIdScannerTest {
             barrier.awaitUninterruptibly();
 
             // Attempt trigger a scan
-            Future<Long> scan = scanThread.executeDontWait(() -> tryLoadFreeIdsIntoCache(scanner, true, 1));
+            Future<Void> scan = scanThread.executeDontWait(() -> {
+                tryLoadFreeIdsIntoCache(scanner, false);
+                return null;
+            });
             scanThread.waitUntilWaiting(details -> details.isAt(FreeIdScanner.class, "tryLoadFreeIdsIntoCache"));
+            assertThat(cache.size()).isEqualTo(0);
 
             // Let them finish
             barrier.release();
-            Long foundId = scan.get();
-            assertThat(foundId).isNotEqualTo(NO_ID);
+            scan.get();
             clear.get();
         }
 
         // then
-        assertThat(this.cache.size()).isEqualTo(numFreeIds - 1); // 1 ID is returned from tryLoadFreeIds
+        assertThat(cache.size()).isEqualTo(5);
     }
 
     @Test
-    void shouldLetClearCacheWaitForConcurrentScan() throws Exception {
+    void shouldLetClearCacheWaitForConcurrentScan() throws ExecutionException, InterruptedException, TimeoutException {
         // given
         long generation = 1;
         Barrier.Control barrier = new Barrier.Control();
-        ControlledIdCache cache = new ControlledIdCache(QueueMethodControl.OFFER, barrier, new Slot(32, 1));
-        FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, true);
+        FreeIdScanner scanner = scanner(
+                IDS_PER_ENTRY,
+                new ControlledIdCache(QueueMethodControl.OFFER, barrier, new Slot(32, 1)),
+                generation,
+                true);
         forEachId(generation, range(0, 1)).accept((marker, id) -> {
             marker.markDeleted(id);
             marker.markFree(id);
@@ -564,7 +597,6 @@ class FreeIdScannerTest {
         try (OtherThreadExecutor scanThread = new OtherThreadExecutor("scan");
                 OtherThreadExecutor clearThread = new OtherThreadExecutor("clear")) {
             // Wait for the offer call
-            cache.setBarrierEnabled(true);
             Future<Object> scan = scanThread.executeDontWait(command(() -> tryLoadFreeIdsIntoCache(scanner, false)));
             barrier.awaitUninterruptibly();
 
@@ -579,7 +611,7 @@ class FreeIdScannerTest {
         }
 
         // then
-        assertThat(this.cache.size()).isZero();
+        assertThat(cache.size()).isZero();
     }
 
     @ParameterizedTest
@@ -748,12 +780,12 @@ class FreeIdScannerTest {
             assertThat(cursorTracer.unpins()).isZero();
             assertThat(cursorTracer.hits()).isZero();
 
-            freeIdFindState.recordFreedIds(Integer.MAX_VALUE);
+            freeIdFindState.notifySeenFreedId(Integer.MAX_VALUE);
             scanner.tryLoadFreeIdsIntoCache(false, false, 0, cursorContext);
 
-            assertThat(cursorTracer.pins()).isEqualTo(2);
-            assertThat(cursorTracer.unpins()).isEqualTo(2);
-            assertThat(cursorTracer.hits()).isEqualTo(2);
+            assertThat(cursorTracer.pins()).isOne();
+            assertThat(cursorTracer.unpins()).isOne();
+            assertThat(cursorTracer.hits()).isOne();
         }
     }
 
@@ -846,7 +878,6 @@ class FreeIdScannerTest {
 
         // when
         scanner.tryLoadFreeIdsIntoCache(true, false, 0, NULL_CONTEXT);
-        scanner.tryLoadFreeIdsIntoCache(true, false, 0, NULL_CONTEXT);
 
         // then
         assertThat(scanner.hasMoreFreeIds(false, 1)).isFalse();
@@ -865,6 +896,21 @@ class FreeIdScannerTest {
         // when
         scanner.clearCache(true, NULL_CONTEXT);
         scanner.tryLoadFreeIdsIntoCache(true, false, 0, NULL_CONTEXT);
+
+        // then
+        assertThat(scanner.hasMoreFreeIds(false, 1)).isFalse();
+        assertThat(scanner.hasMoreFreeIds(true, 1)).isFalse();
+    }
+
+    @Test
+    void shouldKeepCorrectQueuedIdsCountForWastedIdsAfterLoad() {
+        // given
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        for (int i = 0; i < 1_000; i++) {
+            scanner.queueWastedCachedId(i, 1);
+        }
+
+        // when
         scanner.tryLoadFreeIdsIntoCache(true, false, 0, NULL_CONTEXT);
 
         // then
@@ -883,7 +929,6 @@ class FreeIdScannerTest {
 
         // when
         scanner.clearCache(true, NULL_CONTEXT);
-        scanner.tryLoadFreeIdsIntoCache(true, false, 0, NULL_CONTEXT);
         scanner.tryLoadFreeIdsIntoCache(true, false, 0, NULL_CONTEXT);
 
         // then
@@ -1064,7 +1109,7 @@ class FreeIdScannerTest {
                         TestIdType.TEST,
                         IDS_PER_ENTRY,
                         layout,
-                        tree.writer(NULL_CONTEXT),
+                        tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                         null,
                         MERGER,
                         true,
@@ -1110,7 +1155,6 @@ class FreeIdScannerTest {
     private static class ControlledIdCache extends IdCache {
         private final QueueMethodControl method;
         private final Barrier.Control barrier;
-        private final AtomicBoolean barrierEnabled = new AtomicBoolean();
 
         ControlledIdCache(QueueMethodControl method, Barrier.Control barrier, Slot... slots) {
             super(slots);
@@ -1141,12 +1185,8 @@ class FreeIdScannerTest {
             super.drain(consumer);
         }
 
-        void setBarrierEnabled(boolean enabled) {
-            barrierEnabled.set(enabled);
-        }
-
-        private void reachBarrier(QueueMethodControl method) {
-            if (barrierEnabled.get() && this.method == method) {
+        private void reachBarrier(QueueMethodControl offer) {
+            if (method == offer) {
                 barrier.reached();
             }
         }
@@ -1154,27 +1194,15 @@ class FreeIdScannerTest {
 
     private static class RecordingMonitor implements IndexedIdGenerator.Monitor {
         private final ConcurrentHashMap<Integer, MutableLongList> cached = new ConcurrentHashMap<>();
-        private volatile int numPartitionsCreated;
 
         @Override
         public void cached(long cachedId, int numberOfIds) {
             cached.computeIfAbsent(numberOfIds, n -> LongLists.mutable.empty()).add(cachedId);
         }
 
-        @Override
-        public void scanPartitionsCreated(int numPartitions) {
-            numPartitionsCreated = numPartitions;
-        }
-
         boolean hasCached(long cachedId, int numberOfIds) {
             MutableLongList list = cached.get(numberOfIds);
             return list != null && list.contains(cachedId);
-        }
-
-        int getAndResetNumPartitionsCreated() {
-            int result = numPartitionsCreated;
-            numPartitionsCreated = 0;
-            return result;
         }
     }
 }

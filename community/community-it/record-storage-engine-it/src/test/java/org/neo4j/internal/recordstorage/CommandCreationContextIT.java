@@ -107,7 +107,7 @@ public class CommandCreationContextIT {
                         ResourceLocker.IGNORE,
                         () -> LockTracer.NONE);
                 idReservation.applyAsLong(creationContext);
-                assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(2);
+                assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(1);
             }
         }
     }

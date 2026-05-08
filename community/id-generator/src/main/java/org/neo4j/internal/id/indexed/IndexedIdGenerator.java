@@ -128,11 +128,9 @@ public class IndexedIdGenerator implements IdGenerator {
 
         default void skippedIdsAtAllocation(long firstWastedId, int numberOfIds) {}
 
-        default void scanStart() {}
+        default void scanStart(boolean startFromScratch) {}
 
         default void scanEnd(int numEntriesVisited, int[] numFoundIds, ScanEndCondition endCondition) {}
-
-        default void scanPartitionsCreated(int numPartitions) {}
     }
 
     public static final Monitor NO_MONITOR = new Monitor() {};
@@ -348,7 +346,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     idsPerEntry);
             // Let's optimistically assume that there may be some free ids in here. This will ensure that a scan
             // is triggered on first request
-            this.freeIdFindState.bumpNotificationCount();
+            this.freeIdFindState.notifySeenFreedId(Integer.MAX_VALUE);
             this.numUnusedIds.set(header.numUnusedIds);
         } else {
             // We're creating this file, so set initial values

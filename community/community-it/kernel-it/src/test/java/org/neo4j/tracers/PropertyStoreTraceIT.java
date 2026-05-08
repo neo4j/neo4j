@@ -118,9 +118,9 @@ class PropertyStoreTraceIT {
                     "db-format-2000");
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.pins()).isEqualTo(2);
-            assertThat(cursorTracer.unpins()).isEqualTo(2);
-            assertThat(cursorTracer.hits()).isEqualTo(2);
+            assertThat(cursorTracer.pins()).isOne();
+            assertThat(cursorTracer.unpins()).isOne();
+            assertThat(cursorTracer.hits()).isOne();
         }
     }
 

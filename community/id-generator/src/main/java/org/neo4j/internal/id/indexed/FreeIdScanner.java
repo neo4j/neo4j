@@ -26,17 +26,9 @@ import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.eclipse.collections.api.factory.primitive.LongLists;
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -50,7 +42,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  */
 class FreeIdScanner {
     /**
-     * Used as low bound of a partitioning scan.
+     * Used as low bound of a new scan. Continuing a scan makes use of {@link #ongoingScanRangeIndex}.
      */
     private static final IdRangeKey LOW_KEY = new IdRangeKey(0);
     /**
@@ -61,7 +53,6 @@ class FreeIdScanner {
     private static final int FAR_SCAN_THRESHOLD = 1_000;
     private static final int TOO_FAR_SCAN_THRESHOLD = 10_000;
     private static final int GOOD_ENOUGH_FOUND_THRESHOLD = 10;
-    private static final int DESIRED_NUMBER_OF_PARTITIONS = Runtime.getRuntime().availableProcessors();
 
     private final int idsPerEntry;
     private final GBPTree<IdRangeKey, IdRange> tree;
@@ -70,7 +61,7 @@ class FreeIdScanner {
     private final FreeIdFindState freeIdFindState;
     private final MarkerProvider markerProvider;
     private final long generation;
-    private final ReentrantReadWriteLock clearCacheLock = new ReentrantReadWriteLock();
+    private final ScanLock lock;
     private final IndexedIdGenerator.Monitor monitor;
     /**
      * Manages IDs (ranges of IDs, really) that gets skipped when allocations are made from high ID.
@@ -84,6 +75,14 @@ class FreeIdScanner {
      * will be queued in this queue and consumed by the thread getting the scan lock at a later point.
      */
     private final ConcurrentLinkedQueue<Long> queuedWastedCachedIds = new ConcurrentLinkedQueue<>();
+    /**
+     * State for whether there's an ongoing scan, and if so where it should begin from. This is used in
+     * {@link #findSomeIdsToCache(MutableLongList, AvailableSpace, FreeIdFindState.Snapshot, CursorContext)}  both to know where to initiate a scan from and to
+     * set it, if the cache got full before scan completed, or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
+     */
+    private volatile Long ongoingScanRangeIndex;
+
+    private volatile boolean ongoingScanFoundAnything;
 
     private final AtomicLong numQueuedIds = new AtomicLong();
     /**
@@ -92,9 +91,6 @@ class FreeIdScanner {
     private volatile boolean allocationEnabled;
 
     private final boolean useDirectToCache;
-
-    private final ScanLock partitionsLock;
-    private volatile Partitions partitions;
 
     FreeIdScanner(
             int idsPerEntry,
@@ -115,7 +111,7 @@ class FreeIdScanner {
         this.freeIdFindState = freeIdFindState;
         this.markerProvider = markerProvider;
         this.generation = generation;
-        this.partitionsLock = strictlyPrioritizeFreelistOverHighId
+        this.lock = strictlyPrioritizeFreelistOverHighId
                 ? ScanLock.lockyAndPessimistic()
                 : ScanLock.lockFreeAndOptimistic();
         this.monitor = monitor;
@@ -126,9 +122,8 @@ class FreeIdScanner {
     /**
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
-     * @param blocking whether to await the partition lock. If {@code false} then this method will return immediately w/o
-     * doing a scan if the lock is not available. The partition lock is only held by a thread either when
-     * selecting a partition to scan, or when creating new partitions - not actual scanning.
+     * @param blocking whether to await the scan lock. If {@code false} then this method will return immediately w/o
+     * doing a scan if the scan lock is not available.
      * @param maintenance whether this is a maintenance scan. Maintenance scan has lower thresholds in the
      * condition checks for starting a new scan.
      * @param requestedNumberOfIds the number of IDs that the requester wants to find as a side effect of this scan.
@@ -146,122 +141,28 @@ class FreeIdScanner {
             return NO_ID;
         }
 
-        clearCacheLock.readLock().lock();
-        try {
-            if (!allocationEnabled) {
-                return NO_ID;
-            }
-            handleQueuedIds(cursorContext);
-            Partition partition = acquirePartition(blocking, requestedNumberOfIds, cursorContext);
-
-            if (partition != null) {
-                boolean somethingWasCached = false;
-                Partition remainingPartition = null;
-                try {
-                    MutableLongList pendingIdQueue = LongLists.mutable.empty();
-                    AvailableSpace availableSpace = new AvailableSpace(
-                            cache, requestedNumberOfIds, maintenance ? 1 : partitions.numNonExhausted());
-                    remainingPartition = findSomeIdsToCache(pendingIdQueue, availableSpace, partition, cursorContext);
-                    somethingWasCached = !pendingIdQueue.isEmpty();
-                    if (somethingWasCached) {
+        if (scanLock(blocking)) {
+            try {
+                if (!allocationEnabled) {
+                    return NO_ID;
+                }
+                handleQueuedIds(cursorContext);
+                if (shouldFindFreeIdsByScan(requestedNumberOfIds)) {
+                    var availableSpace = new AvailableSpace(cache, requestedNumberOfIds);
+                    var freeIdStateSnapshot = freeIdFindState.snapshot();
+                    var pendingIdQueue = LongLists.mutable.empty();
+                    if (findSomeIdsToCache(pendingIdQueue, availableSpace, freeIdStateSnapshot, cursorContext)) {
                         // Get a writer and mark the found ids as reserved
-                        long foundId = reserveAndOfferToCache(pendingIdQueue, requestedNumberOfIds, cursorContext);
-                        if (foundId != NO_ID && !maintenance) {
-                            return foundId;
-                        }
+                        return reserveAndOfferToCache(pendingIdQueue, requestedNumberOfIds, cursorContext);
                     }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                } finally {
-                    partitions.leave(remainingPartition, somethingWasCached);
                 }
-            }
-
-            return NO_ID;
-        } finally {
-            clearCacheLock.readLock().unlock();
-        }
-    }
-
-    private Partition acquirePartition(boolean blocking, int requestedNumberOfIds, CursorContext cursorContext) {
-        // Optimistically try to grab a partition if there's on in the queue
-        Partitions partitions = this.partitions;
-        if (partitions != null) {
-            Partition partition = partitions.next(requestedNumberOfIds);
-            if (partition != null) {
-                return partition;
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } finally {
+                lock.unlock();
             }
         }
-
-        // Optimistically try to grab the lock
-        if (!partitionsLock.tryLock()) {
-            if (!blocking) {
-                return null; // If we don't allow blocking we have to wait for the next iteration
-            }
-            partitionsLock.lock();
-        }
-        try {
-            // We must check this allocationEnabled when having the lock, since clearCache() is the method
-            // that can change allocationEnabled and that method does so having this same lock.
-            if (!allocationEnabled) {
-                return null;
-            }
-
-            if (!tryBeginNextScanRound(cursorContext)) {
-                return null; // No observed frees, no need to scan
-            }
-            return this.partitions.next(requestedNumberOfIds);
-        } finally {
-            partitionsLock.unlock();
-        }
-    }
-
-    /**
-     * Prepares a fresh set of scan partitions if the current set has been fully consumed,
-     * and signals whether scanning should proceed.
-     * <p>
-     * When all partitions from the previous round came up empty, this method checks whether
-     * any IDs have been freed since that round began. If not, there is no point starting another scan and
-     * {@code false} is returned so the caller can bail out early.
-     * <p>
-     * Must be called while holding the partition lock.
-     *
-     * @return {@code true} if scanning should proceed (partitions are ready),
-     *         {@code false} if the evidence suggests a new scan would find nothing.
-     */
-    private boolean tryBeginNextScanRound(CursorContext cursorContext) {
-        if (partitions == null || partitions.isExhausted()) {
-            if (partitions != null && partitions.allCameUpEmpty()) {
-                freeIdFindState.setAcknowledgedNotificationCount(partitions.lowestNotificationCountAtScanStart());
-                if (!freeIdFindState.hasPendingFrees()) {
-                    // All partitions came up empty, and we have not seen more free IDs since the last scan
-                    // started, so a new scan won't find anything.
-                    partitions = null;
-                    return false;
-                }
-            }
-            List<Partition> newPartitions = partitionIdSpace(tree, cursorContext);
-            partitions = new Partitions(freeIdFindState, newPartitions);
-            freeIdFindState.beginNewScanRound();
-            monitor.scanPartitionsCreated(newPartitions.size());
-        }
-        return true;
-    }
-
-    private static List<Partition> partitionIdSpace(GBPTree<IdRangeKey, IdRange> tree, CursorContext cursorContext) {
-        try {
-            List<IdRangeKey> idRangeKeys =
-                    tree.partitionedSeek(LOW_KEY, HIGH_KEY, DESIRED_NUMBER_OF_PARTITIONS, cursorContext);
-            List<Partition> partitions = new ArrayList<>(idRangeKeys.size() - 1);
-            for (int i = 0; i < idRangeKeys.size() - 1; i++) {
-                partitions.add(new Partition(
-                        idRangeKeys.get(i).getIdRangeIdx(),
-                        idRangeKeys.get(i + 1).getIdRangeIdx()));
-            }
-            return partitions;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return NO_ID;
     }
 
     private void handleQueuedIds(CursorContext cursorContext) {
@@ -312,50 +213,49 @@ class FreeIdScanner {
         }
 
         // For the case when this is a tx allocating IDs we don't want to force a scan for every little added ID,
-        // so add a little lee-way so that there has to be at least a bunch of these "skipped" IDs to make it worth
+        // so add a little lee-way so that there has to be a at least a bunch of these "skipped" IDs to make it worth
         // wile.
         int numQueuedIdsThreshold = maintenance ? 1 : 1_000;
         return shouldFindFreeIdsByScan(requestedNumberOfIds) || numQueuedIds.get() >= numQueuedIdsThreshold;
     }
 
     private boolean shouldFindFreeIdsByScan(int requestedNumberOfIds) {
-        FreeIdFindState.Snapshot snapshot = freeIdFindState.snapshot();
-        if (snapshot.hasObservedFrees() && requestedNumberOfIds > snapshot.largestObservedSlotSize()) {
+        if (requestedNumberOfIds > freeIdFindState.snapshot().largestPossibleSlotSize()) {
             return false;
         }
-        Partitions partitions = this.partitions;
-        boolean canIContinueScan = partitions != null && !partitions.isExhausted();
-        return canIContinueScan || freeIdFindState.hasPendingFrees();
+        return ongoingScanRangeIndex != null || freeIdFindState.hasSeenMoreFrees();
+    }
+
+    private boolean scanLock(boolean blocking) {
+        if (blocking) {
+            lock.lock();
+            return true;
+        }
+        return lock.tryLock();
     }
 
     void clearCache(boolean allocationWillBeEnabled, CursorContext cursorContext) {
-        clearCacheLock.writeLock().lock();
+        lock.lock();
         try {
-            partitionsLock.lock();
-            try {
-                // Restart scan from the beginning after cache is cleared
-                partitions = null;
+            // Restart scan from the beginning after cache is cleared
+            ongoingScanRangeIndex = null;
 
-                if (allocationEnabled) {
-                    // Since placing an id into the cache marks it as reserved, here when taking the ids out from the
-                    // cache revert that by marking them as unreserved
-                    try (var marker = markerProvider.getMarker(cursorContext)) {
-                        handleQueuedIds(marker);
-                        cache.drain(marker::markUncached);
-                    }
-
-                    freeIdFindState.beginNewScanRound();
-                    freeIdFindState.bumpNotificationCount();
-                } else {
-                    handleQueuedIds(IndexedIdGenerator.NOOP_MARKER);
-                    cache.drain((id, size) -> {});
+            if (allocationEnabled) {
+                // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache
+                // revert that by marking them as unreserved
+                try (var marker = markerProvider.getMarker(cursorContext)) {
+                    handleQueuedIds(marker);
+                    cache.drain(marker::markUncached);
                 }
-                allocationEnabled = allocationWillBeEnabled;
-            } finally {
-                partitionsLock.unlock();
+                freeIdFindState.notifySeenFreedId(0);
+                freeIdFindState.resetLargestPossibleSlotSize();
+            } else {
+                handleQueuedIds(IndexedIdGenerator.NOOP_MARKER);
+                cache.drain((id, size) -> {});
             }
+            allocationEnabled = allocationWillBeEnabled;
         } finally {
-            clearCacheLock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -373,11 +273,11 @@ class FreeIdScanner {
             MutableLongList pendingIdQueue, int requestedNumberOfIds, CursorContext cursorContext) {
         long pocketedId = NO_ID;
         try (var marker = markerProvider.getMarker(cursorContext)) {
-            LongIterator iterator = pendingIdQueue.longIterator();
+            var iterator = pendingIdQueue.longIterator();
             while (iterator.hasNext()) {
-                long combinedId = iterator.next();
-                long id = idFromCombinedId(combinedId);
-                int numberOfIds = numberOfIdsFromCombinedId(combinedId);
+                var combinedId = iterator.next();
+                var id = idFromCombinedId(combinedId);
+                var numberOfIds = numberOfIdsFromCombinedId(combinedId);
 
                 // Mark as reserved before placing into cache. This prevents a race which could otherwise allow
                 // the ID to be allocated, used and (again) deleted and freed before marked as reserved here,
@@ -389,9 +289,9 @@ class FreeIdScanner {
 
             iterator = pendingIdQueue.longIterator();
             while (iterator.hasNext()) {
-                long combinedId = iterator.next();
-                long id = idFromCombinedId(combinedId);
-                int numberOfIds = numberOfIdsFromCombinedId(combinedId);
+                var combinedId = iterator.next();
+                var id = idFromCombinedId(combinedId);
+                var numberOfIds = numberOfIdsFromCombinedId(combinedId);
                 if (requestedNumberOfIds > 0 && numberOfIds >= requestedNumberOfIds && pocketedId == NO_ID) {
                     pocketedId = id;
                     id += requestedNumberOfIds;
@@ -400,7 +300,7 @@ class FreeIdScanner {
                         continue;
                     }
                 }
-                int accepted = cache.offer(id, numberOfIds, monitor);
+                var accepted = cache.offer(id, numberOfIds, monitor);
                 if (accepted < numberOfIds) {
                     long idToUndo = id + accepted;
                     int numberOfIdsToUndo = numberOfIds - accepted;
@@ -415,56 +315,60 @@ class FreeIdScanner {
         return pocketedId;
     }
 
-    /**
-     * Scans a partition until it meets an end condition.
-     * @param pendingIdQueue to add found IDs into.
-     * @param availableSpace amount of cache space available to find IDs for.
-     * @param partition partition boundaries to scan.
-     * @param cursorContext cursor context.
-     * @return if the scan didn't fully exhaust the partition then a new {@link Partition} instance is returned
-     * with the {@link Partition#fromRangeIdx()} where this scan stopped, and w/ same {@link Partition#toRangeIdx().
-     * If exhausted then {@code null} is returned.
-     * @throws IOException on I/O error.
-     */
-    private Partition findSomeIdsToCache(
+    private boolean findSomeIdsToCache(
             MutableLongList pendingIdQueue,
             AvailableSpace availableSpace,
-            Partition partition,
+            FreeIdFindState.Snapshot freeIdStateSnapshot,
             CursorContext cursorContext)
             throws IOException {
-        IdRangeKey startingPoint = partition.from();
-        monitor.scanStart();
+        boolean startedNow = ongoingScanRangeIndex == null;
+        monitor.scanStart(startedNow);
+        IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey(ongoingScanRangeIndex);
+        boolean seekerExhausted = false;
+        IdRange.FreeIdVisitor visitor = (id, numberOfIds) -> queueId(pendingIdQueue, availableSpace, id, numberOfIds);
 
-        IdRange.FreeIdVisitor visitor = (id, numberOfIds) -> {
-            assert layout.idRangeIndex(id) == layout.idRangeIndex(id + numberOfIds - 1);
-            if (availableSpace.trackSpaceUsageOfQueuedId(numberOfIds)) {
-                pendingIdQueue.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
-                return true;
-            }
-            return false;
-        };
-
-        long currentRangeIdx;
-        try (Seeker<IdRangeKey, IdRange> scanner = tree.seek(startingPoint, partition.to(), cursorContext)) {
+        try (Seeker<IdRangeKey, IdRange> scanner = tree.seek(from, HIGH_KEY, cursorContext)) {
             // Continue scanning until the cache is full or there's nothing more to scan
             int numEntriesVisited = 0;
             ScanEndCondition scanEndCondition;
             do {
                 if (!scanner.next()) {
-                    currentRangeIdx = NO_ID;
+                    seekerExhausted = true;
                     scanEndCondition = ScanEndCondition.EXHAUSTED;
                     break;
                 }
 
                 numEntriesVisited++;
-                currentRangeIdx = scanner.key().getIdRangeIdx();
-                long baseId = scanner.key().getIdRangeIdx() * idsPerEntry;
+                var baseId = scanner.key().getIdRangeIdx() * idsPerEntry;
                 scanner.value().visitFreeIds(baseId, generation, visitor);
             } while ((scanEndCondition = availableSpace.scanEndConditionMet(numEntriesVisited)) == null);
-
+            // If there's more left to scan "this round" then make a note of it so that we start from this place the
+            // next time
+            ongoingScanRangeIndex = seekerExhausted ? null : scanner.key().getIdRangeIdx();
             monitor.scanEnd(numEntriesVisited, availableSpace.foundIds(), scanEndCondition);
         }
-        return currentRangeIdx != NO_ID ? partition.subPartition(currentRangeIdx) : null;
+
+        boolean somethingWasCached = !pendingIdQueue.isEmpty();
+        ongoingScanFoundAnything |= somethingWasCached;
+        if (seekerExhausted) {
+            if (!ongoingScanFoundAnything) {
+                // Found nothing during scan, catch up freeIdsNotification to the point where the scan started
+                // to reduce chance of unnecessary scans until new ids are freed
+                freeIdFindState.catchupFreeIdsNotification(freeIdStateSnapshot.freeIdsNotification());
+            }
+            freeIdFindState.resetLargestPossibleSlotSize();
+            ongoingScanFoundAnything = false;
+        }
+        return somethingWasCached;
+    }
+
+    private boolean queueId(MutableLongList pendingIdQueue, AvailableSpace availableSpace, long id, int numberOfIds) {
+        assert layout.idRangeIndex(id) == layout.idRangeIndex(id + numberOfIds - 1);
+        if (availableSpace.trackSpaceUsageOfQueuedId(numberOfIds)) {
+            pendingIdQueue.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
+            return true;
+        }
+        return false;
     }
 
     boolean allocationEnabled() {
@@ -484,8 +388,8 @@ class FreeIdScanner {
 
         private int numFoundSuitableIds;
 
-        AvailableSpace(IdCache cache, int requestedNumberOfIds, int desiredNumPartitions) {
-            this.availableSpace = cache.availableSpaceBySlotIndex(desiredNumPartitions);
+        AvailableSpace(IdCache cache, int requestedNumberOfIds) {
+            this.availableSpace = cache.availableSpaceBySlotIndex();
             this.initialAvailableSpace = availableSpace.clone();
             this.cache = cache;
             this.requestedNumberOfIds = requestedNumberOfIds;
@@ -494,7 +398,7 @@ class FreeIdScanner {
 
         /**
          * Given the {@code availableSpace} array with available space per slot, check if an ID of size {@code numberOfIds}
-         * fits, either partly or entirely. Also, the {@code availableSpace} values will decrease equivalent to the size of
+         * fits, either partly or entirely. Also the {@code availableSpace} values will decrease equivalent to the size of
          * {@code numberOfIds} and which slot(s) it fits into.
          *
          * @param numberOfIds the size of the ID to try and fit into the cache.
@@ -554,72 +458,6 @@ class FreeIdScanner {
                 return numFoundSuitableIds == 0 ? ScanEndCondition.NOTHING_FOUND : ScanEndCondition.ENOUGH_FOUND;
             }
             return null;
-        }
-    }
-
-    private static class Partitions {
-        private final Deque<Partition> partitions;
-        private final FreeIdFindState freeIdFindState;
-        private final AtomicInteger numNonExhausted;
-        private final AtomicBoolean somethingWasCached = new AtomicBoolean();
-        private final int notificationCountAtScanStart;
-
-        Partitions(FreeIdFindState freeIdFindState, List<Partition> partitions) {
-            this.freeIdFindState = freeIdFindState;
-            this.partitions = new ConcurrentLinkedDeque<>((partitions));
-            this.numNonExhausted = new AtomicInteger(partitions.size());
-            this.notificationCountAtScanStart = freeIdFindState.snapshot().notificationCount();
-        }
-
-        boolean isExhausted() {
-            return numNonExhausted.get() == 0;
-        }
-
-        int numNonExhausted() {
-            return numNonExhausted.get();
-        }
-
-        Partition next(int requestedNumberOfIds) {
-            FreeIdFindState.Snapshot snapshot = freeIdFindState.snapshot();
-            if (requestedNumberOfIds > 0
-                    && snapshot.hasObservedFrees()
-                    && requestedNumberOfIds > snapshot.largestObservedSlotSize()) {
-                return null;
-            }
-            return partitions.poll();
-        }
-
-        void leave(Partition partition, boolean somethingWasCached) {
-            if (somethingWasCached) {
-                this.somethingWasCached.set(true);
-            }
-            if (partition != null) {
-                partitions.offer(partition);
-            } else {
-                numNonExhausted.decrementAndGet();
-            }
-        }
-
-        boolean allCameUpEmpty() {
-            return !somethingWasCached.get();
-        }
-
-        int lowestNotificationCountAtScanStart() {
-            return notificationCountAtScanStart;
-        }
-    }
-
-    private record Partition(long fromRangeIdx, long toRangeIdx) {
-        IdRangeKey from() {
-            return new IdRangeKey(fromRangeIdx);
-        }
-
-        IdRangeKey to() {
-            return new IdRangeKey(toRangeIdx);
-        }
-
-        Partition subPartition(long fromRangeIdx) {
-            return new Partition(fromRangeIdx, toRangeIdx);
         }
     }
 }

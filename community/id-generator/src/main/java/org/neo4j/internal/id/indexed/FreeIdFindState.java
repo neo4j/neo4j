@@ -19,112 +19,52 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import static java.lang.Math.max;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Tracks two pieces of state used by {@link FreeIdScanner} to decide whether and how to scan for free IDs.
- * <p>
- * <b>Notification counter</b>: incremented each time one or more IDs are freed. The scanner records the
- * counter value at the start of each scan round and, if a round ends with nothing found, checks whether
- * the counter has advanced since then via {@link #hasPendingFrees()}. If it has, new IDs may have been
- * freed during the scan, and another round is warranted; if not, scanning is suspended until new IDs are
- * freed.
- * <p>
- * <b>Largest-observed slot size</b>: an upper bound on the slot size of free IDs currently in the tree.
- * Updated whenever IDs are freed with a known slot size, and reset to zero at the start of each scan
- * round. Allows allocation requests that are larger than any known free slot to skip the scan entirely.
+ * Captures whether there have been freed IDs since last exhausted seek (I'd guess) and also the size
+ * of the largest possible ID slotSize that a seek can find (actual largest can be lower though).
  */
 class FreeIdFindState {
-    private final AtomicReference<Snapshot> state = new AtomicReference<>(new Snapshot(0, 0));
+    private static final int UNDECIDED_LARGEST_POSSIBLE_SLOT_SIZE = Integer.MAX_VALUE;
 
-    /**
-     * The notification count acknowledged by the scanner — the counter value at the start of the most
-     * recently completed (or abandoned) scan round. Updated via {@link #setAcknowledgedNotificationCount}.
-     */
-    private final AtomicInteger acknowledgedNotificationCount = new AtomicInteger();
+    private final AtomicReference<Snapshot> freeIdsNotifier =
+            new AtomicReference<>(new Snapshot(0, UNDECIDED_LARGEST_POSSIBLE_SLOT_SIZE));
+    private final AtomicInteger seenFreeIdsNotification = new AtomicInteger();
 
-    /**
-     * Returns {@code true} if IDs have been freed since the scanner last acknowledged them,
-     * meaning a new scan round may find free IDs.
-     */
-    boolean hasPendingFrees() {
-        return acknowledgedNotificationCount.get() != state.get().notificationCount();
+    boolean hasSeenMoreFrees() {
+        return seenFreeIdsNotification.get() != freeIdsNotifier.get().freeIdsNotification;
     }
 
-    /**
-     * Records that one or more IDs of the given slot size have been freed.
-     * Increments the notification counter and updates the largest-observed-slot-size hint.
-     */
-    void recordFreedIds(int largestObservedSlotSize) {
-        assert largestObservedSlotSize > 0;
-        state.updateAndGet(s -> s.next(largestObservedSlotSize));
+    void notifySeenFreedId(int largestPossibleSlotSize) {
+        freeIdsNotifier.updateAndGet(current -> new Snapshot(
+                current.freeIdsNotification + 1,
+                largestPossibleSlotSize(current.largestPossibleSlotSize, largestPossibleSlotSize)));
     }
 
-    /**
-     * Marks the start of a new scan round: resets the largest-observed-slot-size hint to 0 so the scan
-     * considers all slot sizes.
-     */
-    void beginNewScanRound() {
-        state.updateAndGet(Snapshot::beginNewScanRound);
+    private int largestPossibleSlotSize(int currentValue, int newValue) {
+        if (newValue == 0) {
+            return currentValue;
+        }
+        if (currentValue == UNDECIDED_LARGEST_POSSIBLE_SLOT_SIZE) {
+            return newValue;
+        }
+        return Math.max(currentValue, newValue);
     }
 
-    /**
-     * Increments the notification counter so that any frees arriving
-     * during this round will be detected by {@link #hasPendingFrees()} afterward.
-     */
-    void bumpNotificationCount() {
-        state.updateAndGet(Snapshot::bumpNotificationCount);
+    void resetLargestPossibleSlotSize() {
+        freeIdsNotifier.updateAndGet(
+                current -> new Snapshot(current.freeIdsNotification, UNDECIDED_LARGEST_POSSIBLE_SLOT_SIZE));
     }
 
-    /**
-     * Returns a consistent snapshot of the current notification count and slot-size hint.
-     */
     Snapshot snapshot() {
-        return state.get();
+        return freeIdsNotifier.get();
     }
 
-    /**
-     * Records that a scan round which started at {@code notificationCount} has completed without finding
-     * any free IDs. {@link #hasPendingFrees()} will return {@code false} until the next
-     * {@link #recordFreedIds} call increments the counter past this value.
-     */
-    void setAcknowledgedNotificationCount(int notificationCount) {
-        acknowledgedNotificationCount.set(notificationCount);
+    void catchupFreeIdsNotification(int freeIdsNotificationBeforeScan) {
+        seenFreeIdsNotification.updateAndGet(operand -> Math.max(operand, freeIdsNotificationBeforeScan));
     }
 
-    record Snapshot(int notificationCount, int largestObservedSlotSize) {
-        /**
-         * Update the snapshot with a new observation.
-         * @param observedSlotSize the newly observed slot size.
-         */
-        Snapshot next(int observedSlotSize) {
-            return new Snapshot(notificationCount + 1, max(largestObservedSlotSize, observedSlotSize));
-        }
-
-        /**
-         * Begins a new scan round by resetting {@code largestObservedSlotSize} to zero.
-         */
-        Snapshot beginNewScanRound() {
-            return new Snapshot(notificationCount, 0);
-        }
-
-        /**
-         * Increments the notification counter so that frees arriving during the round are detectable afterward.
-         */
-        Snapshot bumpNotificationCount() {
-            return new Snapshot(notificationCount + 1, largestObservedSlotSize);
-        }
-
-        /**
-         * Returns {@code true} if any freed IDs have been observed since the last scan round began,
-         * meaning {@link #largestObservedSlotSize()} is a meaningful upper bound. When {@code false},
-         * the slot-size constraint should not be applied.
-         */
-        boolean hasObservedFrees() {
-            return largestObservedSlotSize != 0;
-        }
-    }
+    record Snapshot(int freeIdsNotification, int largestPossibleSlotSize) {}
 }

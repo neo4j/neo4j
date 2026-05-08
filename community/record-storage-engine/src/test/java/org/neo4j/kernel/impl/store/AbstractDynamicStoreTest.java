@@ -101,7 +101,7 @@ class AbstractDynamicStoreTest {
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnRecordsAllocation");
                 var store = newTestableDynamicStore()) {
-            assertCursorTracing(cursorContext, 0);
+            assertZeroCursor(cursorContext);
             prepareDirtyGenerator(store);
 
             store.getIdGenerator().maintenance(cursorContext, EMPTY_OLDEST_HORIZON_FACTORY);
@@ -112,7 +112,7 @@ class AbstractDynamicStoreTest {
                     cursorContext,
                     INSTANCE);
 
-            assertCursorTracing(cursorContext, 2);
+            assertOneCursor(cursorContext);
         }
     }
 
@@ -121,7 +121,7 @@ class AbstractDynamicStoreTest {
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         try (var cursorContext = contextFactory.create("noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree");
                 var store = newTestableDynamicStore()) {
-            assertCursorTracing(cursorContext, 0);
+            assertZeroCursor(cursorContext);
 
             store.allocateRecordsFromBytes(
                     new ArrayList<>(),
@@ -130,7 +130,7 @@ class AbstractDynamicStoreTest {
                     cursorContext,
                     INSTANCE);
 
-            assertCursorTracing(cursorContext, 0);
+            assertZeroCursor(cursorContext);
         }
     }
 
@@ -207,10 +207,16 @@ class AbstractDynamicStoreTest {
         idGenerator.clearCache(true, NULL_CONTEXT);
     }
 
-    private static void assertCursorTracing(CursorContext cursorContext, int count) {
-        assertThat(cursorContext.getCursorTracer().hits()).isEqualTo(count);
-        assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(count);
-        assertThat(cursorContext.getCursorTracer().unpins()).isEqualTo(count);
+    private static void assertOneCursor(CursorContext cursorContext) {
+        assertThat(cursorContext.getCursorTracer().hits()).isOne();
+        assertThat(cursorContext.getCursorTracer().pins()).isOne();
+        assertThat(cursorContext.getCursorTracer().unpins()).isOne();
+    }
+
+    private static void assertZeroCursor(CursorContext cursorContext) {
+        assertThat(cursorContext.getCursorTracer().hits()).isZero();
+        assertThat(cursorContext.getCursorTracer().pins()).isZero();
+        assertThat(cursorContext.getCursorTracer().unpins()).isZero();
     }
 
     private DynamicRecord createDynamicRecord(long id, AbstractDynamicStore store, int dataSize) {
