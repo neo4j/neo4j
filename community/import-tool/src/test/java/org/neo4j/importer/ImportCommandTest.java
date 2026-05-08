@@ -22,6 +22,7 @@ package org.neo4j.importer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.importer.ImportCommand.Base.DEFAULT_CSV_CONFIG;
 import static org.neo4j.io.fs.FileSystemAbstraction.PatternStyle.REGEX;
 
 import java.io.File;
@@ -64,6 +65,17 @@ class ImportCommandTest {
         // Incremental should not be shown in community
         var expectedSubcommands = Set.of("full", "help");
         assertThat(subcommands).hasSameElementsAs(expectedSubcommands);
+    }
+
+    @Test
+    void readBufferSizeDefaultShouldBeSet() {
+        // We want "--help" to print the default value that is applied when we don't use
+        // "--super-fast", for now. This will have to be changed later.
+        final var command = new ImportCommand.Full(getExecutionContext());
+        final var help = getUsageHelp(command);
+        Object readBufferSizeDefault =
+                help.commandSpec().optionsMap().get("--read-buffer-size").initialValue();
+        assertThat(readBufferSizeDefault).isEqualTo((long) DEFAULT_CSV_CONFIG.bufferSize());
     }
 
     @Test

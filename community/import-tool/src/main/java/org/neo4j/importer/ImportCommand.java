@@ -129,7 +129,7 @@ public class ImportCommand {
          */
         private static final Function<String, Character> CHARACTER_CONVERTER = new CharacterConverter();
 
-        private static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
+        public static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
         private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
 
         enum OnOffAuto {
@@ -368,7 +368,7 @@ public class ImportCommand {
                 description = "Size of each buffer for reading input data. "
                         + "It has to be at least large enough to hold the biggest single value in the input data. "
                         + "The value can be a plain number or a byte units string, e.g. 128k, 1m.")
-        private long bufferSize;
+        private long bufferSize = DEFAULT_CSV_CONFIG.bufferSize();
 
         @Option(
                 names = "--max-off-heap-memory",
@@ -944,7 +944,7 @@ public class ImportCommand {
                     .withTrimStrings(trimStrings)
                     .withLegacyStyleQuoting(legacyStyleQuoting);
 
-            if (bufferSize == 0L) {
+            if (bufferSize == DEFAULT_CSV_CONFIG.bufferSize()) {
                 // Use default value
                 if (superFast) {
                     builder.withBufferSize(
