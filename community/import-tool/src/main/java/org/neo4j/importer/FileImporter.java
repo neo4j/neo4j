@@ -475,12 +475,12 @@ public class FileImporter {
     }
 
     private static boolean isEmptyKey(Object k) {
-        if (k instanceof String) {
-            return ((String) k).isEmpty();
-        } else if (k instanceof Set) {
-            return ((Set<?>) k).isEmpty();
-        }
-        return false;
+        return switch (k) {
+            case null -> true;
+            case String s -> s.isEmpty();
+            case Set<?> set -> set.isEmpty();
+            default -> false;
+        };
     }
 
     private static void printIndented(Object value, PrintStream out) {
