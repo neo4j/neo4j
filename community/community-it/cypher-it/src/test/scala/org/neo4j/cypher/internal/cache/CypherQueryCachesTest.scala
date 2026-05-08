@@ -27,6 +27,7 @@ import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.CacheCountsTestSupport
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N02
 import org.neo4j.graphdb.QueryExecutionException
@@ -38,6 +39,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.CallableUserFunction
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.notifications.StandardGqlStatusObject
+import org.neo4j.test.extension.SkipOnSpd.Note
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.scalatest.LoneElement
@@ -454,7 +456,7 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     result2.gqlStatusObjects should be(List(StandardGqlStatusObject.OMITTED_RESULT))
   }
 
-  test("query language") {
+  test("query language", SkipOnSpd(note = Note.temporary)) {
     val query1 = "return 1 as x"
     val query2 = "return 2 as x"
     val systemDefaultLanguages = GraphDatabaseSettings.CypherVersion.values()

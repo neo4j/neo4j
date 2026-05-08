@@ -22,8 +22,10 @@ package org.neo4j.internal.collector
 import org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.GraphIcing
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.test.extension.SkipOnSpd.Note
 import org.neo4j.token.TokenHolders
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -206,7 +208,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     )
   }
 
-  test("retrieve complex graph") {
+  test("retrieve complex graph", SkipOnSpd(note = Note.temporary)) {
     // given
     createSteelfaceGraph()
 
@@ -220,7 +222,7 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     )
   }
 
-  test("retrieve anonymized complex graph") {
+  test("retrieve anonymized complex graph", SkipOnSpd(note = Note.temporary)) {
     // given
     createSteelfaceGraph()
 

@@ -54,10 +54,12 @@ import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
+@SkipOnSpd(reason = "Temporarily skipped on SPD", notes = SkipOnSpd.Note.temporary)
 class EagerResultIT {
     @Inject
     private TestDirectory testDirectory;

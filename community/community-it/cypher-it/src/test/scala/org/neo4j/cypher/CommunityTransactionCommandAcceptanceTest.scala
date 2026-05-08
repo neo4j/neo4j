@@ -24,11 +24,13 @@ import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.InvalidSyntaxStatus
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.kernel.impl.api.KernelTransactions
 import org.neo4j.test.DoubleLatch
+import org.neo4j.test.extension.SkipOnSpd.Note
 
 class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAcceptanceTestSupport {
 
@@ -38,7 +40,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
 
   // SHOW TRANSACTIONS (don't test exact id as it might change)
 
-  test("Should show current transaction") {
+  test("Should show current transaction", SkipOnSpd(note = Note.temporary)) {
     eventually {
       // WHEN
       val result = execute("SHOW TRANSACTIONS").toList
@@ -49,7 +51,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     }
   }
 
-  test("Should show all transactions") {
+  test("Should show all transactions", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -69,7 +71,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(sortedRes(1), "neo4j-transaction-", "", "SHOW TRANSACTIONS")
   }
 
-  test("Should show system transactions") {
+  test("Should show system transactions", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     createUser()
     val latch = new DoubleLatch(2)
@@ -101,7 +103,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     )
   }
 
-  test("Should only show given transactions") {
+  test("Should only show given transactions", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -115,7 +117,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(result.head, unwindId, username, unwindQuery)
   }
 
-  test("Should only show given transactions once") {
+  test("Should only show given transactions once", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -161,7 +163,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     }
   }
 
-  test("Should show all transactions when executing on system database") {
+  test("Should show all transactions when executing on system database", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -187,7 +189,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     )
   }
 
-  test("Should only show given transactions when executing on system database") {
+  test("Should only show given transactions when executing on system database", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -208,7 +210,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(sortedRes(1), user1Id, username, user1Query)
   }
 
-  test("Should show given transactions with string parameter") {
+  test("Should show given transactions with string parameter", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -222,7 +224,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(result.head, unwindId, username, unwindQuery)
   }
 
-  test("Should show given transactions with list parameter") {
+  test("Should show given transactions with list parameter", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -236,7 +238,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(result.head, unwindId, username, unwindQuery)
   }
 
-  test("Should always show all transactions in community") {
+  test("Should always show all transactions in community", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val showUser = "baz"
     createUser(showUser)
@@ -273,7 +275,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(sortedRes(3), "neo4j-transaction-", username, user1Query)
   }
 
-  test("show transactions with Cypher versions") {
+  test("show transactions with Cypher versions", SkipOnSpd(note = Note.temporary)) {
     cypherVersions.foreach { case (cypherVersionString, cypherVersion) =>
       val query = cypherVersionString + "SHOW TRANSACTIONS"
 
@@ -312,7 +314,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
 
   // yield/where/return tests
 
-  test("Should show transactions with WHERE") {
+  test("Should show transactions with WHERE", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (_, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -327,7 +329,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(result.head, "neo4j-transaction-", username2, user2Query)
   }
 
-  test("Should show given transactions with WHERE") {
+  test("Should show given transactions with WHERE", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -344,7 +346,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectDefaultMap(result.head, "neo4j-transaction-", username2, user2Query)
   }
 
-  test("Should show given transactions filtered with WHERE on transactionId") {
+  test("Should show given transactions filtered with WHERE on transactionId", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(4)
     val (user1Query, user2Query1) = setupTwoUsersAndOneTransactionEach(latch)
@@ -380,7 +382,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     )))
   }
 
-  test("Should show current transaction with YIELD *") {
+  test("Should show current transaction with YIELD *", SkipOnSpd(note = Note.temporary)) {
     eventually {
       // WHEN
       val result = execute("SHOW TRANSACTIONS YIELD *").toList
@@ -391,7 +393,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     }
   }
 
-  test("Should show all transactions with YIELD *") {
+  test("Should show all transactions with YIELD *", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     createUser()
     val userQuery = "SHOW DATABASES"
@@ -427,7 +429,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     ) // we don't track queryAllocatedBytes for system queries
   }
 
-  test("Should show given transactions with YIELD *") {
+  test("Should show given transactions with YIELD *", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -447,7 +449,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query, runtime = "slotted")
   }
 
-  test("Should show all transactions with specific YIELD") {
+  test("Should show all transactions with specific YIELD", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
@@ -472,7 +474,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     ))
   }
 
-  test("Should show given transactions with specific YIELD") {
+  test("Should show given transactions with specific YIELD", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -494,7 +496,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     ).sortBy(m => m("transactionId")))
   }
 
-  test("Should show transactions with YIELD and ORDER BY ASC") {
+  test("Should show transactions with YIELD and ORDER BY ASC", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
@@ -516,7 +518,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     ))
   }
 
-  test("Should show transactions with YIELD and ORDER BY DESC") {
+  test("Should show transactions with YIELD and ORDER BY DESC", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
@@ -538,7 +540,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     ))
   }
 
-  test("Should show transactions with YIELD * and WHERE") {
+  test("Should show transactions with YIELD * and WHERE", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -558,7 +560,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query, runtime = "slotted")
   }
 
-  test("Should show transactions with specific YIELD and WHERE") {
+  test("Should show transactions with specific YIELD and WHERE", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -581,7 +583,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     ).sortBy(m => m("transactionId")))
   }
 
-  test("Should show transactions with YIELD, WHERE and RETURN") {
+  test("Should show transactions with YIELD, WHERE and RETURN", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -610,7 +612,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     ).sortBy(m => m("transactionId")))
   }
 
-  test("Should show transactions with full yield") {
+  test("Should show transactions with full yield", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
@@ -630,7 +632,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     result.head("txId") should be(expected)
   }
 
-  test("Should show transactions with multiple ORDER BY") {
+  test("Should show transactions with multiple ORDER BY", SkipOnSpd(note = Note.temporary)) {
     def assertCorrectMap(resultMap: Map[String, AnyRef], transactionId: String, database: String) = {
       resultMap("transactionId").asInstanceOf[String] should startWith(transactionId)
       resultMap("database") should be(database)
@@ -669,7 +671,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     assertCorrectMap(resultList(2), "system-transaction-", SYSTEM_DATABASE_NAME)
   }
 
-  test("Should show transactions with aggregation") {
+  test("Should show transactions with aggregation", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
     val unwindId = getTransactionIdExecutingQuery(unwindQuery)
@@ -938,7 +940,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     }
   }
 
-  test("Should always terminate transaction in community") {
+  test("Should always terminate transaction in community", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
     createUser(username2)
@@ -1125,7 +1127,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     }
   }
 
-  test("Should terminate transactions with full yield") {
+  test("Should terminate transactions with full yield", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(4)
     val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
@@ -1170,7 +1172,7 @@ class CommunityTransactionCommandAcceptanceTest extends TransactionCommandAccept
     }
   }
 
-  test("Should terminate transactions with multiple ORDER BY") {
+  test("Should terminate transactions with multiple ORDER BY", SkipOnSpd(note = Note.temporary)) {
     // GIVEN
     val latch = new DoubleLatch(4)
     val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)

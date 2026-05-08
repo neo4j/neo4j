@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunction
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.options.CypherVersionOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N00
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N01
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N02
@@ -64,6 +65,7 @@ import org.neo4j.notifications.NotificationCodeWithDescription.procedureWarning
 import org.neo4j.notifications.NotificationDetail
 import org.neo4j.notifications.NotificationDetail.deprecatedName
 import org.neo4j.notifications.NotificationDetail.deprecationNotificationDetail
+import org.neo4j.test.extension.SkipOnSpd.Note
 import org.scalatest.BeforeAndAfterAll
 
 abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeAndAfterAll
@@ -406,7 +408,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   // DEPRECATIONS in 5.X
 
-  test("deprecated legacy reltype separator") {
+  test("deprecated legacy reltype separator", SkipOnSpd(note = Note.temporary)) {
 
     val queries = Seq(
       "MATCH (a)-[:A|:B|:C]-() RETURN a"
@@ -549,7 +551,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNoDeprecations(Seq(query))
   }
 
-  test("deprecate fixed length relationships in shortestPath and allShortestPaths") {
+  test("deprecate fixed length relationships in shortestPath and allShortestPaths", SkipOnSpd(note = Note.temporary)) {
     assertNotification(
       Seq("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b"),
       shouldContainNotification = true,
@@ -744,7 +746,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     )
 
   test(
-    "deprecate using unescaped variable named \"where\" in node pattern if directly followed by a property key-value expression only"
+    "deprecate using unescaped variable named \"where\" in node pattern if directly followed by a property key-value expression only",
+    SkipOnSpd(note = Note.temporary)
   ) {
     val queries = Seq(
       ("MATCH (", ") RETURN *"),
@@ -808,7 +811,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test(
-    "deprecate using unescaped variable named \"where\" in relationship pattern if directly followed by a property key-value expression only"
+    "deprecate using unescaped variable named \"where\" in relationship pattern if directly followed by a property key-value expression only",
+    SkipOnSpd(note = Note.temporary)
   ) {
     val queries = Seq(
       ("MATCH ()-[", "]->() RETURN *"),
@@ -936,7 +940,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     )
 
   test(
-    "deprecate unparenthesized label expression predicate as right-hand side operators of `+`"
+    "deprecate unparenthesized label expression predicate as right-hand side operators of `+`",
+    SkipOnSpd(note = Note.temporary)
   ) {
     /*
      * Format: ((labelExpr, labelExprOffset), Seq((label1, label1Offset), (label2, label2Offset))
@@ -1012,7 +1017,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test(
-    "do not warn about parenthesized label expression predicate as right-hand side operators of \"+\""
+    "do not warn about parenthesized label expression predicate as right-hand side operators of \"+\"",
+    SkipOnSpd(note = Note.temporary)
   ) {
     val labelExpressions = Seq(
       ("n:A", Seq(("A", 2))),

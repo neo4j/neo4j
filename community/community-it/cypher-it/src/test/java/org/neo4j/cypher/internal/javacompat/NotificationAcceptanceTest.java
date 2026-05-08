@@ -46,10 +46,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.notifications.NotificationCodeWithDescription;
 import org.neo4j.notifications.NotificationDetail;
+import org.neo4j.test.extension.SkipOnSpd;
 
 class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
+    @SkipOnSpd(reason = "Temporarily skipped on SPD", notes = SkipOnSpd.Note.temporary)
     void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery() {
         shouldNotifyInStream(
                 "EXPLAIN CYPHER runtime=pipelined RETURN 1",

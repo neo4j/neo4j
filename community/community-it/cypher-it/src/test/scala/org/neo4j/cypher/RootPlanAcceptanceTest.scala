@@ -21,8 +21,10 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.query.RuntimeName
+import org.neo4j.test.extension.SkipOnSpd.Note
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -31,7 +33,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("slotted should be default runtime") {
+  test("slotted should be default runtime", SkipOnSpd(note = Note.temporary)) {
     givenQuery("match (n) return n")
       .shouldHaveRuntime(RuntimeName.SLOTTED)
   }

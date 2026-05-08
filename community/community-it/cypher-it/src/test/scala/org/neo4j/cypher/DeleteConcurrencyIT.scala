@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.KernelException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.test.extension.SkipOnSpd.Note
 
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -141,7 +143,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     }
   }
 
-  test("detach delete should be atomic") {
+  test("detach delete should be atomic", SkipOnSpd(note = Note.temporary)) {
     val NUM_NODES = 13
     val NUM_EXECUTIONS = 10
 

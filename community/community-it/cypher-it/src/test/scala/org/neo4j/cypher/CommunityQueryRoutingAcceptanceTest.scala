@@ -31,11 +31,13 @@ import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.cypher.testing.api.CypherExecutorException
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService.TestApiKind
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.driver.exceptions.Neo4jException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
+import org.neo4j.test.extension.SkipOnSpd.Note
 import org.scalatest.BeforeAndAfterAll
 
 class CommunityQueryRoutingBoltAcceptanceTest extends CommunityQueryRoutingAcceptanceTest
@@ -199,7 +201,10 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
     }
   }
 
-  test("should route show database command to System database when it's the only command") {
+  test(
+    "should route show database command to System database when it's the only command",
+    SkipOnSpd(note = Note.temporary)
+  ) {
     val query = "SHOW DATABASES YIELD name RETURN name"
     val query2 = "SHOW DATABASES YIELD name"
     val query3 = "SHOW DATABASES"
@@ -224,7 +229,10 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
     }
   }
 
-  test("should not route show database command to System database when it's part of a larger query") {
+  test(
+    "should not route show database command to System database when it's part of a larger query",
+    SkipOnSpd(note = Note.temporary)
+  ) {
     val prefix = "CYPHER 25 "
     val query1 =
       "SHOW DATABASES YIELD name CALL db.index.fulltext.listAvailableAnalyzers() YIELD analyzer RETURN DISTINCT name"

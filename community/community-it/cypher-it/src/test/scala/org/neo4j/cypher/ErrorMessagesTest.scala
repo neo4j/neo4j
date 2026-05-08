@@ -21,8 +21,10 @@ package org.neo4j.cypher
 
 import org.assertj.core.api.Assertions.assertThat
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
+import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
+import org.neo4j.test.extension.SkipOnSpd.Note
 
 class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
 
@@ -203,7 +205,10 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
     gqlCause.statusDescription() shouldBe "error: syntax error or access rule violation - invalid number of statements. Expected exactly one statement per query but got: 2."
   }
 
-  test("should give proper error message when trying to use Node Key constraint on community") {
+  test(
+    "should give proper error message when trying to use Node Key constraint on community",
+    SkipOnSpd(note = Note.temporary)
+  ) {
     expectError(
       "CREATE CONSTRAINT FOR (n:Person) REQUIRE (n.firstname) IS NODE KEY",
       String.format("Unable to create Constraint( type='NODE KEY', schema=(:Person {firstname}) ):%n" +
