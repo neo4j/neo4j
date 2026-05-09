@@ -83,15 +83,15 @@
     <apache.directory.server.version>2.0.0.AM27</apache.directory.server.version>
     <asm.version>9.9.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
-    <awssdk-crt.version>0.44.0</awssdk-crt.version>
-    <awssdk.version>2.42.32</awssdk.version>
+    <awssdk-crt.version>0.45.2</awssdk-crt.version>
+    <awssdk.version>2.44.3</awssdk.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <build-resources.version>2026.02.5</build-resources.version>
-    <caffeine.version>3.2.3</caffeine.version>
+    <caffeine.version>3.2.4</caffeine.version>
     <cucumber.scala.version>8.36.0</cucumber.scala.version>
     <cucumber.version>7.34.3</cucumber.version>
     <cursor.counters.check>true</cursor.counters.check>
-    <cypherdsl.version>2025.2.6</cypherdsl.version>
+    <cypherdsl.version>2025.2.7</cypherdsl.version>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
     <dependency.analyze.failOnWarning>false</dependency.analyze.failOnWarning>
@@ -103,18 +103,18 @@
     <excludedTestGroups />
     <forkCounts>1</forkCounts>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
-    <grpc.version>1.80.0</grpc.version>
-    <gson.version>2.13.2</gson.version>
-    <guava.version>33.5.0-jre</guava.version>
+    <grpc.version>1.81.0</grpc.version>
+    <gson.version>2.14.0</gson.version>
+    <guava.version>33.6.0-jre</guava.version>
     <!-- no more patch releases for jackson-annotations so different versioning from jackson -->
     <jackson.annotations.version>2.21</jackson.annotations.version>
-    <jackson.version>2.21.2</jackson.version>
+    <jackson.version>2.21.3</jackson.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.inject.version>2.0.1</jakarta.inject.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
 
     <jamm.version>0.4.0</jamm.version>
-    <java-jwt.version>4.5.1</java-jwt.version>
+    <java-jwt.version>4.5.2</java-jwt.version>
     <javapoet.version>1.13.0</javapoet.version>
     <jdk.custom.options>--add-opens=java.base/java.nio=ALL-UNNAMED
       --add-opens=java.base/java.io=ALL-UNNAMED
@@ -151,8 +151,9 @@
      -->
     <netty.version>4.2.12.Final</netty.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
+    <oshi-common.version>7.1.0</oshi-common.version>
     <parallel.tests>false</parallel.tests>
-    <parquet-floor.version>1.64</parquet-floor.version>
+    <parquet-floor.version>1.65</parquet-floor.version>
     <parquet.version>1.17.0</parquet.version>
     <picocli.version>4.7.7</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -169,8 +170,8 @@
     <shiro.version>2.1.0</shiro.version>
     <skip-scalastyle>false</skip-scalastyle>
     <slf4j.version>2.0.17</slf4j.version>
-    <sqlite-jdbc.version>3.51.3.0</sqlite-jdbc.version>
-    <teavm.version>0.13.1</teavm.version>
+    <sqlite-jdbc.version>3.53.1.0</sqlite-jdbc.version>
+    <teavm.version>0.14.0</teavm.version>
     <test.runner.jvm />
     <test.runner.jvm.settings>${test.runner.mockito.agent}
       -Xmx${test.vm.heap.size}
@@ -233,7 +234,7 @@
     <test.vm.heap.size>2G</test.vm.heap.size>
     <test.vm.maxmetaspace>550m</test.vm.maxmetaspace>
     <test.vm.netty.leakDetection.level>PARANOID</test.vm.netty.leakDetection.level>
-    <testcontainers.version>2.0.4</testcontainers.version>
+    <testcontainers.version>2.0.5</testcontainers.version>
     <vm.target.version>21</vm.target.version>
   </properties>
 
@@ -337,7 +338,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.7-7</version>
+        <version>1.5.7-8</version>
       </dependency>
       <dependency>
         <groupId>com.github.seancfoley</groupId>
@@ -403,7 +404,7 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.21.0</version>
+        <version>1.22.0</version>
       </dependency>
       <dependency>
         <groupId>commons-io</groupId>

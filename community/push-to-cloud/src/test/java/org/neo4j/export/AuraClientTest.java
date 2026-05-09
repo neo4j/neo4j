@@ -616,7 +616,8 @@ public class AuraClientTest {
         wireMock.verify(
                 51,
                 new RequestPatternBuilder(
-                        RequestMethod.ANY, UrlPattern.fromOneOf("/v2/databases/deadbeef/import", null, null, null)));
+                        RequestMethod.ANY,
+                        UrlPattern.fromOneOf("/v2/databases/deadbeef/import", null, null, null, null)));
     }
 
     @Test
