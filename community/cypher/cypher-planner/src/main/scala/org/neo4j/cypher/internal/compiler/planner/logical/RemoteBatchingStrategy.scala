@@ -854,7 +854,8 @@ object RemoteBatchingStrategy {
               newVar -> (renamedVariablesFromPrevHorizons.getOriginalVariables(oldVar) + oldVar)
           })
 
-        case CallSubqueryHorizon(subqueryPlannerQuery, _, _, _, _, importedVariables) if importedVariables.nonEmpty =>
+        case CallSubqueryHorizon(subqueryPlannerQuery, _, _, _, _, importedVariables, _)
+          if importedVariables.nonEmpty =>
           findEntityAliasesInSubquery(renamedVariablesFromPrevHorizons, subqueryPlannerQuery)
 
         case _ => EntityAliases.empty

@@ -19,19 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CountStar
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -67,6 +70,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.AddElementUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.AddVarLengthBoundPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizePredicates
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -137,7 +141,7 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
 
   private def makeAnonymousVariableNameGenerator(): AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator
 
-  private def rewrite(e: Expression, semanticTable: SemanticTable = new SemanticTable()): Expression = {
+  private def rewrite(e: ASTNode, semanticTable: SemanticTable = new SemanticTable()): ASTNode = {
     val anonymousVariableNameGenerator = makeAnonymousVariableNameGenerator()
     val rewriter = inSequence(
       AddElementUniquenessPredicates.rewriter,
@@ -1122,7 +1126,124 @@ class CreateIrExpressionsTest extends CypherPlannerTestSuite with AstConstructio
           yielding = true,
           inTransactionsParameters = None,
           optional = false,
-          importedVariables = Set(n)
+          importedVariables = Set(n),
+          importedSymbolsFromLastCallSubquery = Set.empty
+        )),
+        tail = Some(
+          RegularSinglePlannerQuery(
+            horizon = AggregatingQueryProjection(
+              aggregationExpressions = Map(countVariable -> CountStar()(pos)),
+              importedExposedSymbols = Set(n)
+            )
+          )
+        )
+      )
+    )
+
+    countIRExpression.countVariable shouldBe countVariable
+    countIRExpression.solvedExpressionAsString should equal(
+      """COUNT {
+        |  MATCH (n)-[r]-(m)
+        |  RETURN n AS n
+        |  UNION
+        |  MATCH (n)-[r]-(m)
+        |  RETURN n AS n
+        |}""".stripMargin
+    )
+  }
+
+  test("Rewrites CountExpression with Union within a Scoped Call Subquery") {
+    // Similar as the previous test, but now wrapped in a scoped call subquery: CALL (m) { ... }
+    // CALL (m) {
+    //   RETURN COUNT {
+    //     MATCH (n)-[r]-(m)
+    //     RETURN n AS n
+    //     UNION
+    //     MATCH (n)-[r]-(m)
+    //     RETURN n AS n
+    //   } AS n
+    // }
+    val unionQuery = union(
+      singleQuery(
+        match_(n_r_m_chain),
+        return_(
+          aliasedReturnItem(n)
+        )
+      ),
+      singleQuery(
+        match_(n_r_m_chain),
+        return_(
+          aliasedReturnItem(n)
+        )
+      )
+    )
+
+    val rewrittenQuery: Query = unionQuery.endoRewrite(Namespacer.projectUnions)
+
+    val ce = CountExpression(rewrittenQuery)(pos, Some(Set(r, m)), Some(Set(n)))
+    val returnCe = return_(items = aliasedReturnItem(ce, "n"))
+    val scopedCallSubqueryWithCe = scopeClauseSubqueryCall(false, Seq(m), singleQuery(returnCe))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariable = varFor(nameGenerator.nextName)
+
+    val semanticTable = new SemanticTable().addNode(varFor("n", InputPosition(16, 1, 17)))
+
+    val rewritten = rewrite(scopedCallSubqueryWithCe, semanticTable)
+    val rewrittenScopeCallSubQueryWithCE = rewritten.asInstanceOf[ScopeClauseSubqueryCall]
+
+    val countIRExpression = rewrittenScopeCallSubQueryWithCE.innerQuery.asInstanceOf[SingleQuery]
+      .clauses.head.asInstanceOf[Return]
+      .returnItems.items.head.asInstanceOf[AliasedReturnItem]
+      .expression.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          argumentIds = Set(n)
+        ),
+        horizon = Some(CallSubqueryHorizon(
+          callSubquery = UnionQuery(
+            RegularSinglePlannerQuery(
+              QueryGraph(
+                patternNodes = Set(n, m),
+                argumentIds = Set(n),
+                patternRelationships =
+                  Set(
+                    PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
+                  )
+              ),
+              horizon = RegularQueryProjection(
+                Map(n -> n),
+                position = QueryProjection.Position.Final,
+                importedExposedSymbols = Set(n)
+              )
+            ),
+            RegularSinglePlannerQuery(
+              QueryGraph(
+                patternNodes = Set(n, m),
+                argumentIds = Set(n),
+                patternRelationships =
+                  Set(
+                    PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
+                  )
+              ),
+              horizon = RegularQueryProjection(
+                Map(n -> n),
+                position = QueryProjection.Position.Final,
+                importedExposedSymbols = Set(n)
+              )
+            ),
+            distinct = true,
+            List(UnionMapping(n, n, n))
+          ),
+          correlated = true,
+          yielding = true,
+          inTransactionsParameters = None,
+          optional = false,
+          importedVariables = Set(m, n),
+          // importedSymbolsFromLastCallSubquery: was obtained from its surrounding CALL (m) { ... }
+          importedSymbolsFromLastCallSubquery = Set(m)
         )),
         tail = Some(
           RegularSinglePlannerQuery(

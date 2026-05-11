@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.ir.AbstractProcedureCallProjection
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
-case class ProcedureCallProjection(call: ResolvedNonLocalCall) extends AbstractProcedureCallProjection {
+case class ProcedureCallProjection(
+  call: ResolvedNonLocalCall,
+  importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
+) extends AbstractProcedureCallProjection {
 
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] =
     coveredIds ++ call.callResults.map { result =>

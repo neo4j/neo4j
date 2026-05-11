@@ -97,7 +97,7 @@ class PlanEventHorizonTest extends CypherPlannerTestSuite with LogicalPlanningTe
       val callResults = IndexedSeq(ProcedureResultItem(v"x")(pos), ProcedureResultItem(v"y")(pos))
 
       val call = ResolvedNonLocalCall(signature, Seq.empty, callResults)(pos)
-      val pq = RegularSinglePlannerQuery(horizon = ProcedureCallProjection(call))
+      val pq = RegularSinglePlannerQuery(horizon = ProcedureCallProjection(call, Set.empty))
       val inputPlan = Argument()
 
       // When
@@ -124,7 +124,8 @@ class PlanEventHorizonTest extends CypherPlannerTestSuite with LogicalPlanningTe
           yielding = true,
           inTransactionsParameters = None,
           optional = false,
-          importedVariables = Set.empty
+          importedVariables = Set.empty,
+          importedSymbolsFromLastCallSubquery = Set.empty
         )
       )
       val inputPlan = Argument()
@@ -156,7 +157,8 @@ class PlanEventHorizonTest extends CypherPlannerTestSuite with LogicalPlanningTe
           yielding = true,
           inTransactionsParameters = None,
           optional = false,
-          importedVariables = Set.empty
+          importedVariables = Set.empty,
+          importedSymbolsFromLastCallSubquery = Set.empty
         )
       )
       val inputPlan = Argument()

@@ -30,34 +30,28 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
-import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
-import org.neo4j.cypher.internal.util.topDownWithParent
+import org.neo4j.cypher.internal.util.topDown
 
 case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
-  override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = topDownWithParent(
-    RewriterWithParent.lift {
-      case (
-          RegularSinglePlannerQuery(
-            queryGraph,
-            interestingOrder,
-            horizon,
-            tail,
-            queryInput
-          ),
-          parent
+  override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = topDown(
+    Rewriter.lift {
+      case RegularSinglePlannerQuery(
+          queryGraph,
+          interestingOrder,
+          horizon,
+          tail,
+          queryInput
         ) if isUnfulfillable(queryGraph) =>
         val second = RegularSinglePlannerQuery(
           QueryGraph.apply(argumentIds = queryGraph.argumentIds),
@@ -72,15 +66,7 @@ case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSeq
         val projection = RegularQueryProjection(
           projectionMap,
           queryPagination = QueryPagination(limit = Some(SignedDecimalIntegerLiteral("0")(InputPosition.NONE))),
-          importedExposedSymbols = horizon match {
-            case projection: QueryProjection => projection.importedExposedSymbols
-            case _ =>
-              parent match {
-                // If we are coming from a call subquery horizon then we need to provide the new projection with the parents imported variables.
-                case Some(csh: CallSubqueryHorizon) => csh.importedVariables
-                case _                              => Set.empty
-              }
-          }
+          importedExposedSymbols = horizon.importedSymbolsFromLastCallSubquery
         )
         RegularSinglePlannerQuery(
           QueryGraph.apply(argumentIds = queryGraph.argumentIds),

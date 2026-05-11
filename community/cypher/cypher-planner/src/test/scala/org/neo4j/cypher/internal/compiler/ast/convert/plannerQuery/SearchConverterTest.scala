@@ -273,6 +273,7 @@ abstract class SearchConverterTestBase extends CypherPlannerTestSuite with Logic
         inTransactionsParameters = None,
         optional = false,
         importedVariables = Set(v"n"),
+        importedSymbolsFromLastCallSubquery = Set.empty,
         callSubquery = SinglePlannerQuery.empty
           .withQueryGraph(
             QueryGraph.empty

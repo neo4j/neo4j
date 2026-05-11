@@ -198,7 +198,8 @@ case class CompositeQueryConverter(statementConverters: StatementConverters) {
             yielding = subQuery.isYielding,
             inTransactionsParameters = subQuery.inTransactionsParameters,
             optional = subQuery.optional,
-            importedVariables = Set.empty
+            importedVariables = Set.empty,
+            importedSymbolsFromLastCallSubquery = builder.importedVariables
           )
       }
     }

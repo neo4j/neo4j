@@ -480,17 +480,28 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           planWhere(distinctProjection.selections)
         ))(rewrittenPlan)
 
-      case UnwindProjection(variable, expression) =>
+      case UnwindProjection(variable, expression, importedSymbolsFromLastCallSubquery) =>
         val projected =
-          context.staticComponents.logicalPlanProducer.planUnwind(plan, variable, expression, context)
+          context.staticComponents.logicalPlanProducer.planUnwind(
+            plan,
+            variable,
+            expression,
+            context,
+            importedSymbolsFromLastCallSubquery
+          )
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case callProjection: AbstractProcedureCallProjection =>
         val projected =
-          context.staticComponents.logicalPlanProducer.planProcedureCall(plan, callProjection.call, context)
+          context.staticComponents.logicalPlanProducer.planProcedureCall(
+            plan,
+            callProjection.call,
+            context,
+            callProjection.importedSymbolsFromLastCallSubquery
+          )
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
-      case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
+      case LoadCSVProjection(variableName, url, format, fieldTerminator, importedSymbolsFromLastCallSubquery) =>
         val projected =
           context.staticComponents.logicalPlanProducer.planLoadCSV(
             plan,
@@ -498,12 +509,14 @@ case object PlanEventHorizon extends EventHorizonPlanner {
             url,
             format,
             fieldTerminator,
-            context
+            context,
+            importedSymbolsFromLastCallSubquery
           )
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
-      case PassthroughAllHorizon() =>
-        val projected = context.staticComponents.logicalPlanProducer.planPassAll(plan, context)
+      case PassthroughAllHorizon(importedSymbolsFromLastCallSubquery) =>
+        val projected =
+          context.staticComponents.logicalPlanProducer.planPassAll(plan, context, importedSymbolsFromLastCallSubquery)
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case CallSubqueryHorizon(
@@ -512,7 +525,8 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           yielding,
           inTransactionsParameters,
           optional,
-          importedVariables
+          importedVariables,
+          importedSymbolsFromLastCallSubquery
         ) =>
         (plan, context)
           .pipe { case (plan, context) =>
@@ -555,13 +569,19 @@ case object PlanEventHorizon extends EventHorizonPlanner {
               yielding,
               inTransactionsParameters,
               optional,
-              importedVariables
+              importedVariables,
+              importedSymbolsFromLastCallSubquery
             )
             SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
           }
 
-      case CommandProjection(clause) =>
-        val commandPlan = context.staticComponents.logicalPlanProducer.planCommand(plan, clause, context)
+      case CommandProjection(clause, importedSymbolsFromLastCallSubquery) =>
+        val commandPlan = context.staticComponents.logicalPlanProducer.planCommand(
+          plan,
+          clause,
+          context,
+          importedSymbolsFromLastCallSubquery
+        )
         SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderConfig, context, updateSolvedOrdering)
 
       case RunQueryAtProjection(graphReference, queryString, parameters, importsAsParameters, columns, _) =>

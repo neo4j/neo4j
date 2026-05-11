@@ -562,7 +562,8 @@ class VerifyBestPlanTest extends CypherPlannerTestSuite with LogicalPlanningTest
           yielding = true,
           inTransactionsParameters = None,
           optional = false,
-          importedVariables = Set.empty
+          importedVariables = Set.empty,
+          importedSymbolsFromLastCallSubquery = Set.empty
         )
       )
     }
@@ -593,7 +594,8 @@ class VerifyBestPlanTest extends CypherPlannerTestSuite with LogicalPlanningTest
           yielding = true,
           inTransactionsParameters = None,
           optional = false,
-          importedVariables = Set.empty
+          importedVariables = Set.empty,
+          importedSymbolsFromLastCallSubquery = Set.empty
         )
       )
     }

@@ -27,16 +27,28 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Null
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.NoHeaders
+import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -45,7 +57,8 @@ class SubqueryCallPlanningIntegrationTest
     extends CypherPlannerTestSuite
     with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport
-    with LogicalPlanningAttributesTestSupport {
+    with LogicalPlanningAttributesTestSupport
+    with LogicalPlanningTestSupport {
 
   private def planFor(query: String): LogicalPlan = {
     plannerBuilder()
@@ -2782,5 +2795,89 @@ class SubqueryCallPlanningIntegrationTest
         .|.argument("r")
         .allRelationshipsScan("(x)-[r]->(y)")
         .build()
+  }
+
+  test(
+    "Projection of unfulfillable SinglePlannerQuery should include the imported variables from its CALL subquery"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(2000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("C", 100)
+      .setRelationshipCardinality("()-[:R]->()", 200)
+      .setRelationshipCardinality("(:C)-[:R]->()", 100)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A)
+        |CALL (a) {
+        |  CREATE (c:C)
+        |  WITH c
+        |  MATCH (d) WHERE false
+        |  MERGE (c)-[:R]->(d)
+        |  RETURN c
+        |}
+        |RETURN 1 as r
+        |""".stripMargin
+
+    val plannerQuery = planner.planState(query).query
+
+    object Unfulfillable {
+      object Projection {
+        def unapply(projections: Map[LogicalVariable, Expression]): Boolean = {
+          val dVar = Variable("d")(InputPosition.NONE, false)
+          projections.size == 1 && projections.contains(dVar) && projections(dVar) == Null()(InputPosition.NONE)
+        }
+      }
+      object QueryPagination {
+        def unapply(pagination: QueryPagination): Boolean = {
+          pagination.limit match {
+            case Some(SignedDecimalIntegerLiteral("0")) => true
+            case _                                      => false
+          }
+        }
+      }
+    }
+
+    plannerQuery match {
+      case RegularSinglePlannerQuery( // MATCH (a:A)
+          _,
+          _,
+          CallSubqueryHorizon( // CALL (a) { ... }
+            RegularSinglePlannerQuery( // CREATE (c:C)
+              _,
+              _,
+              _,
+              Some(RegularSinglePlannerQuery( // MATCH (d) WHERE false
+                _,
+                _,
+                RegularQueryProjection(
+                  Unfulfillable.Projection(), // Must be { 'd' -> Null}
+                  Unfulfillable.QueryPagination(), // Must have LIMIT 0
+                  _,
+                  _,
+                  SetExtractor(Variable("a")) // Must be {'a'}
+                ),
+                _, // MERGE (c)-[:R]->(d)
+                _
+              )),
+              _
+            ),
+            _,
+            _,
+            _,
+            _,
+            SetExtractor(Variable("a")), // Must be {'a'}
+            _
+          ),
+          _, // RETURN 1 as r
+          _
+        ) => true
+      case _ => fail(
+          "The projection of the unfulfillable planner query should contain the imported variable from the CALL subquery"
+        )
+    }
   }
 }

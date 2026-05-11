@@ -172,7 +172,7 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
       val expectedSecond =
         SinglePlannerQuery
           .empty
-          .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3)))
+          .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3), Set.empty))
           .withTail(
             SinglePlannerQuery
               .empty
@@ -298,7 +298,7 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
       val expected =
         SinglePlannerQuery
           .empty
-          .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3)))
+          .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3), Set.empty))
           .withTail(
             SinglePlannerQuery
               .empty
@@ -335,7 +335,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
                 yielding = true,
                 inTransactionsParameters = None,
                 optional = false,
-                importedVariables = Set.empty
+                importedVariables = Set.empty,
+                importedSymbolsFromLastCallSubquery = Set.empty
               )).withTail(
                 SinglePlannerQuery
                   .empty
@@ -398,7 +399,7 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
                                   rhs =
                                     SinglePlannerQuery
                                       .empty
-                                      .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3)))
+                                      .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3), Set.empty))
                                       .withTail(
                                         SinglePlannerQuery
                                           .empty
@@ -456,7 +457,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
                               yielding = true,
                               inTransactionsParameters = None,
                               optional = false,
-                              importedVariables = Set.empty
+                              importedVariables = Set.empty,
+                              importedSymbolsFromLastCallSubquery = Set.empty
                             )
                           ).withTail(
                             SinglePlannerQuery
@@ -501,7 +503,7 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
       val expected =
         SinglePlannerQuery
           .empty
-          .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3)))
+          .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3), Set.empty))
           .withTail(
             SinglePlannerQuery
               .empty
@@ -534,7 +536,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
                 yielding = true,
                 inTransactionsParameters = None,
                 optional = false,
-                importedVariables = Set.empty
+                importedVariables = Set.empty,
+                importedSymbolsFromLastCallSubquery = Set.empty
               )).withTail(
                 SinglePlannerQuery
                   .empty
@@ -711,7 +714,8 @@ class CompositeStatementConvertersTest extends CypherPlannerTestSuite with Logic
             yielding = true,
             inTransactionsParameters = None,
             optional = false,
-            importedVariables = Set.empty
+            importedVariables = Set.empty,
+            importedSymbolsFromLastCallSubquery = Set.empty
           )).withTail(
             SinglePlannerQuery
               .empty
@@ -837,7 +841,8 @@ object StandardFixtures extends AstConstructionTestSupport {
             yielding = true,
             inTransactionsParameters = None,
             optional = false,
-            importedVariables = Set.empty
+            importedVariables = Set.empty,
+            importedSymbolsFromLastCallSubquery = Set.empty
           )).withTail(
             SinglePlannerQuery
               .empty

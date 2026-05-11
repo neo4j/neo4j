@@ -373,7 +373,7 @@ class LimitSelectivityTest extends CypherPlannerTestSuite with LogicalPlanningTe
     }.withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set(v"n", v"m")),
-        horizon = ProcedureCallProjection(resolvedCall),
+        horizon = ProcedureCallProjection(resolvedCall, Set.empty),
         tail = Some(RegularSinglePlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set(v"n", v"m")),
           horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
@@ -409,7 +409,7 @@ class LimitSelectivityTest extends CypherPlannerTestSuite with LogicalPlanningTe
     }.withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set(v"n", v"m")),
-        horizon = ProcedureCallProjection(resolvedCall),
+        horizon = ProcedureCallProjection(resolvedCall, Set.empty),
         tail = Some(RegularSinglePlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set(v"n", v"m")),
           horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
@@ -444,7 +444,7 @@ class LimitSelectivityTest extends CypherPlannerTestSuite with LogicalPlanningTe
     }.withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set(v"n", v"m")),
-        horizon = ProcedureCallProjection(resolvedCall),
+        horizon = ProcedureCallProjection(resolvedCall, Set.empty),
         tail = Some(RegularSinglePlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set(v"n", v"m")),
           horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))

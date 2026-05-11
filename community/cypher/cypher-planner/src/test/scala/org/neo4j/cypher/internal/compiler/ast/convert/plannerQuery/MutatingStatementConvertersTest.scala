@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -53,6 +54,7 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.scalatest.AppendedClues
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -150,7 +152,7 @@ class MutatingStatementConvertersTest extends CypherPlannerTestSuite with Logica
   test("Read write and read again Cypher 25") {
     val query =
       buildSinglePlannerQueryWithVersion(CypherVersion.Cypher25, "MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
-    query.horizon should equal(PassthroughAllHorizon())
+    query.horizon should equal(PassthroughAllHorizon(Set.empty))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
     query.queryGraph.mutatingPatterns should equal(Seq(CreatePattern(nodes("m"))))
@@ -163,7 +165,7 @@ class MutatingStatementConvertersTest extends CypherPlannerTestSuite with Logica
 
   test("Unwind, read write and read again") {
     val query = buildSinglePlannerQuery("UNWIND [1] as i MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
-    query.horizon should equal(UnwindProjection(v"i", listOfInt(1)))
+    query.horizon should equal(UnwindProjection(v"i", listOfInt(1), Set.empty))
     query.queryGraph.isEmpty shouldBe true
 
     val second = query.tail.get
@@ -198,7 +200,7 @@ class MutatingStatementConvertersTest extends CypherPlannerTestSuite with Logica
             IndexedSeq(CreatePattern(nodes("a")))
           ),
           InterestingOrder.empty,
-          PassthroughAllHorizon(),
+          PassthroughAllHorizon(Set.empty),
           None
         )
       ))
@@ -285,7 +287,8 @@ class MutatingStatementConvertersTest extends CypherPlannerTestSuite with Logica
         )
       ),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     )
   }
 
@@ -305,7 +308,8 @@ class MutatingStatementConvertersTest extends CypherPlannerTestSuite with Logica
         )
       ),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     )
   }
 
@@ -423,5 +427,58 @@ class MutatingStatementConvertersTest extends CypherPlannerTestSuite with Logica
       OUTGOING,
       None
     ))
+  }
+
+  test("PassthroughAllHorizon should have access to the imported variable from the CALL subquery") {
+    val plannerQuery =
+      buildSinglePlannerQueryWithVersion(
+        CypherVersion.Cypher25,
+        """
+          |MATCH (a:A)
+          |CALL (a) {
+          |  CREATE (c:C)
+          |  WITH c
+          |  MATCH (d) WHERE false
+          |  MERGE (c)-[:R]->(d)
+          |  RETURN c
+          |}
+          |RETURN 1 as r
+          |""".stripMargin
+      )
+
+    plannerQuery match {
+      case _ @RegularSinglePlannerQuery( // MATCH (a:A)
+          _,
+          _,
+          CallSubqueryHorizon( // CALL (a) { ... }
+            RegularSinglePlannerQuery( // CREATE (c:C)
+              _,
+              _,
+              _,
+              Some(RegularSinglePlannerQuery( // MATCH (d) WHERE false
+                _,
+                _,
+                PassthroughAllHorizon(
+                  SetExtractor(Variable("a")) // Must be {'a'}
+                ),
+                _, // MERGE (c)-[:R]->(d)
+                _
+              )),
+              _
+            ),
+            _,
+            _,
+            _,
+            _,
+            SetExtractor(Variable("a")), // Must be {'a'}
+            _
+          ),
+          _, // RETURN 1 as r
+          _
+        ) => true
+      case _ => fail(
+          "The projection of the unfulfillable planner query should contain the imported variable from the CALL subquery"
+        )
+    }
   }
 }

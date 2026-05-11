@@ -183,7 +183,7 @@ class StatisticsBackedCardinalityModel(
       )
 
     // Unwind
-    case UnwindProjection(_, expression) =>
+    case UnwindProjection(_, expression, _) =>
       val multiplier = expression match {
         case ListLiteral(expressions) => Multiplier(expressions.size)
         case FunctionInvocation(
@@ -235,7 +235,7 @@ class StatisticsBackedCardinalityModel(
     case _: PassthroughAllHorizon =>
       cardinalityAndInput
 
-    case CallSubqueryHorizon(subquery, _, true, _, _, _) =>
+    case CallSubqueryHorizon(subquery, _, true, _, _, _, _) =>
       val subQueryCardinality = apply(
         subquery,
         cardinalityAndInput.labelInfo,
@@ -248,7 +248,7 @@ class StatisticsBackedCardinalityModel(
       // Cardinality of the subquery times current cardinality is the result
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * subQueryCardinality)
 
-    case CallSubqueryHorizon(_, _, false, _, _, _) =>
+    case CallSubqueryHorizon(_, _, false, _, _, _, _) =>
       // Unit subquery call does not affect the driving table
       cardinalityAndInput
   }

@@ -172,7 +172,8 @@ class SinglePlannerQueryTest extends CypherFunSuite3 with AstConstructionTestSup
         yielding = true,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
 
@@ -191,7 +192,8 @@ class SinglePlannerQueryTest extends CypherFunSuite3 with AstConstructionTestSup
           yielding = true,
           inTransactionsParameters = None,
           optional = false,
-          importedVariables = Set.empty
+          importedVariables = Set.empty,
+          importedSymbolsFromLastCallSubquery = Set.empty
         )
       )
     )

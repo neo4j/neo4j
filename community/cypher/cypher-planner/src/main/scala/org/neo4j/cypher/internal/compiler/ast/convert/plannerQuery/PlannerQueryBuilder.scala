@@ -67,7 +67,8 @@ case class PlannerQueryBuilder(
     yielding: Boolean,
     inTransactionsParameters: Option[InTransactionsParameters],
     optional: Boolean,
-    importedVariables: Set[LogicalVariable]
+    importedVariables: Set[LogicalVariable],
+    importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
   ): PlannerQueryBuilder = {
     withHorizon(CallSubqueryHorizon(
       subquery,
@@ -75,7 +76,8 @@ case class PlannerQueryBuilder(
       yielding,
       inTransactionsParameters,
       optional,
-      importedVariables
+      importedVariables,
+      importedSymbolsFromLastCallSubquery
     ))
       .withTail(emptySinglePlannerQuery)
   }

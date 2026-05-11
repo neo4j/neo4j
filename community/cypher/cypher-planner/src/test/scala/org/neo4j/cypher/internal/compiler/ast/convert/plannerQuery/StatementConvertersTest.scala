@@ -104,7 +104,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = true,
       inTransactionsParameters = None,
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     query.tail should not be empty
@@ -126,7 +127,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = false,
       inTransactionsParameters = None,
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     query.tail should not be empty
@@ -156,7 +158,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
           horizon = RegularQueryProjection(Map(v"y" -> v"x"))
         ),
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
 
@@ -184,7 +187,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
           horizon = QueryProjection.empty
         ),
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
 
@@ -207,7 +211,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = true,
       inTransactionsParameters = None,
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     query.tail should not be empty
@@ -233,7 +238,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = true,
       inTransactionsParameters = None,
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     query.tail should not be empty
@@ -262,7 +268,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = false,
       inTransactionsParameters = None,
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     query.tail should not be empty
@@ -299,7 +306,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
         List(UnionMapping(v"y", v"y", v"y"))
       ),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     subquery.tail should not be empty
@@ -333,7 +341,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
         List()
       ),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     subquery.tail should not be empty
@@ -362,7 +371,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = true,
       inTransactionsParameters = None,
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     ))
 
     query.tail should not be empty
@@ -381,7 +391,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = false,
       inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     )
 
     query.tail should not be empty
@@ -411,7 +422,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = false,
       inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     )
 
     subQuery.tail should not be empty
@@ -434,7 +446,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = true,
       inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     )
 
     query.tail should not be empty
@@ -465,7 +478,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
       yielding = true,
       inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)),
       optional = false,
-      importedVariables = Set.empty
+      importedVariables = Set.empty,
+      importedSymbolsFromLastCallSubquery = Set.empty
     )
 
     subQuery.tail should not be empty
@@ -1528,7 +1542,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
 
     query.horizon should equal(UnwindProjection(
       v"x",
-      listOfInt(1, 2, 3)
+      listOfInt(1, 2, 3),
+      Set.empty
     ))
 
     val tail = query.tail.get
@@ -1548,7 +1563,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("CALL foo() YIELD all RETURN all", procedureLookup = Some(_ => signature))
 
     query.horizon match {
-      case ProcedureCallProjection(call) =>
+      case ProcedureCallProjection(call, _) =>
         call.signature should equal(signature)
       case _ =>
         fail("Built wrong query horizon")
@@ -1566,7 +1581,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
 
     tail.horizon should equal(UnwindProjection(
       v"x",
-      v"xes"
+      v"xes",
+      Set.empty
     ))
 
     val tailOfTail = tail.tail.get
@@ -1580,7 +1596,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
 
     query.horizon should equal(UnwindProjection(
       v"x",
-      listOfInt(1, 2, 3)
+      listOfInt(1, 2, 3),
+      Set.empty
     ))
 
     val tail = query.tail.get
@@ -1599,7 +1616,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
 
     query.horizon should equal(UnwindProjection(
       v"x",
-      nProp
+      nProp,
+      Set.empty
     ))
 
     val tail = query.tail.get
@@ -1624,7 +1642,8 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
     tail.queryGraph.patternNodes should equal(Set.empty)
     tail.horizon should equal(UnwindProjection(
       v"node",
-      v"rows"
+      v"rows",
+      Set.empty
     ))
 
     val tailOfTail = tail.tail.get
@@ -2975,6 +2994,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("WITH 1 AS x CALL (x) { RETURN x AS y } RETURN y AS z")
     query.tail.value.horizon shouldEqual CallSubqueryHorizon(
       importedVariables = Set(v"x"),
+      importedSymbolsFromLastCallSubquery = Set.empty,
       callSubquery = RegularSinglePlannerQuery(
         queryGraph =
           QueryGraph.empty
@@ -2983,6 +3003,52 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
           QueryProjection.empty
             .withImportedExposedSymbols(Set(v"x"))
             .withAddedProjections(Map(v"y" -> v"x"))
+      ),
+      correlated = true,
+      yielding = true,
+      inTransactionsParameters = None,
+      optional = false
+    )
+  }
+
+  test("nested CALL () should record imported variables and variables from last CALL ()") {
+    val query =
+      buildSinglePlannerQuery("WITH 1 AS x, 2 AS a CALL (x, a) { CALL (a) { RETURN a AS y } RETURN y } RETURN y AS z")
+    query.tail.value.horizon shouldEqual CallSubqueryHorizon(
+      importedVariables = Set(v"x", v"a"),
+      importedSymbolsFromLastCallSubquery = Set.empty,
+      callSubquery = RegularSinglePlannerQuery(
+        queryGraph =
+          QueryGraph.empty
+            .withArgumentIds(Set(v"x", v"a")),
+        horizon =
+          CallSubqueryHorizon(
+            importedVariables = Set(v"a"),
+            // Variable `x` goes out of scope, since it is not included in `importedVariables`
+            importedSymbolsFromLastCallSubquery = Set(v"x", v"a"),
+            callSubquery = RegularSinglePlannerQuery(
+              queryGraph =
+                QueryGraph.empty
+                  .withArgumentIds(Set(v"a")),
+              horizon =
+                QueryProjection.empty
+                  .withImportedExposedSymbols(Set(v"a"))
+                  .withAddedProjections(Map(v"y" -> v"a"))
+            ),
+            correlated = true,
+            yielding = true,
+            inTransactionsParameters = None,
+            optional = false
+          ),
+        tail = Some(RegularSinglePlannerQuery(
+          queryGraph =
+            QueryGraph.empty
+              .withArgumentIds(Set(v"x", v"a", v"y")),
+          horizon =
+            QueryProjection.empty
+              .withImportedExposedSymbols(Set(v"x", v"a"))
+              .withAddedProjections(Map(v"y" -> v"y"))
+        ))
       ),
       correlated = true,
       yielding = true,
@@ -3127,7 +3193,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("OPTIONAL MATCH (a) MATCH (b) RETURN a, b")
     query shouldEqual RegularSinglePlannerQuery(
       queryGraph = QueryGraph.empty.addOptionalMatch(QueryGraph.empty.addPatternNodes(v"a")),
-      horizon = PassthroughAllHorizon(),
+      horizon = PassthroughAllHorizon(Set.empty),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph.empty.addPatternNodes(v"b").addArgumentId(v"a"),
         horizon = RegularQueryProjection(Map(v"a" -> v"a", v"b" -> v"b")).markAsFinal
@@ -3142,7 +3208,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
         QueryGraph.empty
           .addPatternNodes(v"a")
           .addOptionalMatch(QueryGraph.empty.addPatternNodes(v"b")),
-      horizon = PassthroughAllHorizon(),
+      horizon = PassthroughAllHorizon(Set.empty),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph.empty.addPatternNodes(v"c").withArgumentIds(Set(v"a", v"b")),
         horizon = RegularQueryProjection(Map(v"a" -> v"a", v"b" -> v"b", v"c" -> v"c")).markAsFinal
@@ -3157,7 +3223,7 @@ class StatementConvertersTest extends CypherPlannerTestSuite with LogicalPlannin
         QueryGraph.empty
           .addOptionalMatch(QueryGraph.empty.addPatternNodes(v"a"))
           .addOptionalMatch(QueryGraph.empty.addPatternNodes(v"b")),
-      horizon = PassthroughAllHorizon(),
+      horizon = PassthroughAllHorizon(Set.empty),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph.empty.addPatternNodes(v"c").withArgumentIds(Set(v"a", v"b")),
         horizon = RegularQueryProjection(Map(v"a" -> v"a", v"b" -> v"b", v"c" -> v"c")).markAsFinal

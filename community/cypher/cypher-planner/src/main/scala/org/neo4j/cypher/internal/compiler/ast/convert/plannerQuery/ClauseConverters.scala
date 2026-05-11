@@ -240,7 +240,8 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
         variable = clause.variable,
         url = clause.urlString,
         format = if (clause.withHeaders) HasHeaders else NoHeaders,
-        clause.fieldTerminator
+        clause.fieldTerminator,
+        importedSymbolsFromLastCallSubquery = acc.importedVariables
       )
     ).withTail(acc.emptySinglePlannerQuery)
 
@@ -632,7 +633,7 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
 
     def addHorizon(acc: PlannerQueryBuilder): PlannerQueryBuilder =
       acc
-        .withHorizon(PassthroughAllHorizon())
+        .withHorizon(PassthroughAllHorizon(acc.importedVariables))
         .withTail(acc.emptySinglePlannerQuery)
 
     val selections = asSelections(clause.where)
@@ -719,7 +720,8 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
       subquery.isReturning,
       clause.inTransactionsParameters,
       clause.optional,
-      importedVariables = importedVariables
+      importedVariables = importedVariables,
+      importedSymbolsFromLastCallSubquery = acc.importedVariables
     )
   }
 
@@ -728,7 +730,7 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
     clause: CommandClause
   ): PlannerQueryBuilder = {
     acc
-      .withHorizon(CommandProjection(clause))
+      .withHorizon(CommandProjection(clause, acc.importedVariables))
       .withTail(acc.emptySinglePlannerQuery)
   }
 
@@ -853,9 +855,9 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
           .addMutatingPatterns(mergePattern)
 
         builder
-          .withHorizon(PassthroughAllHorizon())
+          .withHorizon(PassthroughAllHorizon(builder.importedVariables))
           .withTail(builder.emptySinglePlannerQuery.withQueryGraph(queryGraph = queryGraph))
-          .withHorizon(PassthroughAllHorizon())
+          .withHorizon(PassthroughAllHorizon(builder.importedVariables))
           .withTail(builder.emptySinglePlannerQuery)
 
       // MERGE (n)-[r: R]->(m) / MERGE (n)-[r: $('R')]->(m)
@@ -940,9 +942,9 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
             onMatch
           ))
 
-        builder.withHorizon(PassthroughAllHorizon())
+        builder.withHorizon(PassthroughAllHorizon(builder.importedVariables))
           .withTail(builder.emptySinglePlannerQuery.withQueryGraph(queryGraph = queryGraph))
-          .withHorizon(PassthroughAllHorizon())
+          .withHorizon(PassthroughAllHorizon(builder.importedVariables))
           .withTail(builder.emptySinglePlannerQuery)
 
       case x => throw InternalException.internalError(
@@ -1050,7 +1052,8 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
     builder.withHorizon(
       UnwindProjection(
         variable = clause.variable,
-        exp = clause.expression
+        exp = clause.expression,
+        importedSymbolsFromLastCallSubquery = builder.importedVariables
       )
     ).withTail(builder.emptySinglePlannerQuery)
 
@@ -1059,7 +1062,7 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
     call: ResolvedNonLocalCall
   ): PlannerQueryBuilder = {
     builder
-      .withHorizon(ProcedureCallProjection(call))
+      .withHorizon(ProcedureCallProjection(call, builder.importedVariables))
       .withTail(builder.emptySinglePlannerQuery)
   }
 
@@ -1077,7 +1080,7 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
       builder.copy(q = builder.emptySinglePlannerQuery)
         // First, set all available symbols as arguments. Will be fixed a little further down.
         .amendQueryGraph(_.withArgumentIds(availableToInnerClauses))
-        .withHorizon(PassthroughAllHorizon()),
+        .withHorizon(PassthroughAllHorizon(builder.importedVariables)),
       anonymousVariableNameGenerator,
       cancellationChecker,
       position = QueryProjection.Position.Intermediate
@@ -1106,9 +1109,10 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
     // Since foreach can contain reads (via inner merge) we put it in its own separate planner query
     // to maintain the strict ordering of reads followed by writes within a single planner query
     builder
-      .withHorizon(PassthroughAllHorizon())
+      .withHorizon(PassthroughAllHorizon(builder.importedVariables))
       .withTail(builder.emptySinglePlannerQuery.withQueryGraph(queryGraph = foreachGraph))
-      .withHorizon(PassthroughAllHorizon()) // NOTE: We do not expose anything from foreach itself
+      // We do not expose anything from foreach itself
+      .withHorizon(PassthroughAllHorizon(builder.importedVariables))
       .withTail(builder.emptySinglePlannerQuery)
   }
 

@@ -741,7 +741,12 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
       id = 0
     )
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planProcedureCall(ctx.lhs, ResolvedNonLocalCall(writer, Seq(), IndexedSeq())(pos), ctx.context)
+      ctx.producer.planProcedureCall(
+        ctx.lhs,
+        ResolvedNonLocalCall(writer, Seq(), IndexedSeq())(pos),
+        ctx.context,
+        Set.empty
+      )
     )
   }
 
@@ -756,7 +761,12 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
     )
 
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planProcedureCall(ctx.lhs, ResolvedNonLocalCall(reader, Seq(), IndexedSeq())(pos), ctx.context)
+      ctx.producer.planProcedureCall(
+        ctx.lhs,
+        ResolvedNonLocalCall(reader, Seq(), IndexedSeq())(pos),
+        ctx.context,
+        Set.empty
+      )
     )
   }
 
@@ -794,7 +804,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = true,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -809,7 +820,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = true,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -824,7 +836,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = true,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -839,7 +852,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = true,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -854,7 +868,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = false,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -869,7 +884,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = false,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -884,7 +900,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = false,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -899,7 +916,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = false,
         inTransactionsParameters = None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -2162,7 +2180,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
         yielding = false,
         None,
         optional = false,
-        importedVariables = Set.empty
+        importedVariables = Set.empty,
+        importedSymbolsFromLastCallSubquery = Set.empty
       )
     )
   }
@@ -2601,7 +2620,7 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
 
   test("should reset cached properties for planLoadCSV") {
     shouldResetCachedPropertiesToEmpty((ctx: PlanCreationContext) =>
-      ctx.producer.planLoadCSV(ctx.lhs, v"x", literal("foo"), NoHeaders, None, ctx.context)
+      ctx.producer.planLoadCSV(ctx.lhs, v"x", literal("foo"), NoHeaders, None, ctx.context, Set.empty)
     )
   }
 
@@ -2647,7 +2666,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
           callArguments = Seq.empty,
           callResults = IndexedSeq.empty
         )(InputPosition.NONE),
-        ctx.context
+        ctx.context,
+        Set.empty
       )
     )
   }
@@ -2668,7 +2688,8 @@ class LogicalPlanProducerTest extends CypherPlannerTestSuite with LogicalPlannin
           callArguments = Seq.empty,
           callResults = IndexedSeq.empty
         )(InputPosition.NONE),
-        ctx.context
+        ctx.context,
+        Set.empty
       )
     )
   }

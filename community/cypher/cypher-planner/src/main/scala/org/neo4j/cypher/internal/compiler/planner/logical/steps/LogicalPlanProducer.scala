@@ -1240,7 +1240,8 @@ case class LogicalPlanProducer(
     yielding: Boolean,
     inTransactionsParameters: Option[InTransactionsParameters],
     optional: Boolean,
-    importedVariables: Set[LogicalVariable]
+    importedVariables: Set[LogicalVariable],
+    importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
   ): LogicalPlan = {
     val solvedLeft = solveds.get(left.id)
     val solvedRight = solveds.get(right.id)
@@ -1250,7 +1251,8 @@ case class LogicalPlanProducer(
       yielding,
       inTransactionsParameters,
       optional,
-      importedVariables
+      importedVariables,
+      importedSymbolsFromLastCallSubquery
     )))
 
     val plan =
@@ -3054,13 +3056,15 @@ case class LogicalPlanProducer(
     url: Expression,
     format: CSVFormat,
     fieldTerminator: Option[StringLiteral],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(LoadCSVProjection(
       variable,
       url,
       format,
-      fieldTerminator
+      fieldTerminator,
+      importedSymbolsFromLastCallSubquery
     )))
     val (rewrittenUrl, rewrittenInner) = SubqueryExpressionSolver.ForSingle.solve(inner, url, context)
     annotate(
@@ -3094,10 +3098,12 @@ case class LogicalPlanProducer(
     inner: LogicalPlan,
     variable: LogicalVariable,
     expression: Expression,
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
   ): LogicalPlan = {
     val solved =
-      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(UnwindProjection(variable, expression)))
+      solveds.get(inner.id).asSinglePlannerQuery
+        .updateTailOrSelf(_.withHorizon(UnwindProjection(variable, expression, importedSymbolsFromLastCallSubquery)))
     val (rewrittenExpression, rewrittenInner) = SubqueryExpressionSolver.ForSingle.solve(inner, expression, context)
     val RemoteBatchingResult(
       rewrittenExpressionsWithCachedProperties,
@@ -3124,10 +3130,12 @@ case class LogicalPlanProducer(
   def planProcedureCall(
     inner: LogicalPlan,
     call: ResolvedNonLocalCall,
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
   ): LogicalPlan = {
     val solved =
-      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(ProcedureCallProjection(call)))
+      solveds.get(inner.id).asSinglePlannerQuery
+        .updateTailOrSelf(_.withHorizon(ProcedureCallProjection(call, importedSymbolsFromLastCallSubquery)))
     val solver = SubqueryExpressionSolver.solverFor(inner, context)
     val rewrittenCall = call.mapCallArguments(solver.solve(_))
     val rewrittenInner = solver.rewrittenPlan()
@@ -3152,8 +3160,15 @@ case class LogicalPlanProducer(
     if (call.optional) planOptional(_call, inner.availableSymbols, context) else _call
   }
 
-  def planCommand(inner: LogicalPlan, clause: CommandClause, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CommandProjection(clause)))
+  def planCommand(
+    inner: LogicalPlan,
+    clause: CommandClause,
+    context: LogicalPlanningContext,
+    importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
+  ): LogicalPlan = {
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
+      CommandProjection(clause, importedSymbolsFromLastCallSubquery)
+    ))
 
     def removeUnneededVariables(columns: List[ShowColumn], yieldItems: List[CommandResultItem]) = {
       val relevantVariables =
@@ -3248,8 +3263,13 @@ case class LogicalPlanProducer(
     annotate(apply, solved, ProvidedOrder.empty, cachedPropertiesPerPlan.get(annotatedPlan.id), context)
   }
 
-  def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(PassthroughAllHorizon()))
+  def planPassAll(
+    inner: LogicalPlan,
+    context: LogicalPlanningContext,
+    importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
+  ): LogicalPlan = {
+    val solved = solveds.get(inner.id)
+      .asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(PassthroughAllHorizon(importedSymbolsFromLastCallSubquery)))
     // Keep some attributes, but change solved
     val keptAttributes =
       Attributes(idGen, cardinalities, leveragedOrders, providedOrders, labelAndRelTypeInfos, cachedPropertiesPerPlan)

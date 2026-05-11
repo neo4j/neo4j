@@ -40,6 +40,8 @@ sealed trait QueryHorizon extends Foldable {
 
   def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable]
 
+  def importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
+
   def dependingExpressions: Iterable[Expression]
 
   def dependencies: Set[LogicalVariable] = dependingExpressions.folder.findAllByClass[LogicalVariable].toSet
@@ -73,7 +75,7 @@ sealed trait QueryHorizon extends Foldable {
   }
 }
 
-final case class PassthroughAllHorizon() extends QueryHorizon {
+final case class PassthroughAllHorizon(importedSymbolsFromLastCallSubquery: Set[LogicalVariable]) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
@@ -85,7 +87,11 @@ final case class PassthroughAllHorizon() extends QueryHorizon {
   override def withoutImpliedExpressions: QueryHorizon = this
 }
 
-case class UnwindProjection(variable: LogicalVariable, exp: Expression) extends QueryHorizon {
+case class UnwindProjection(
+  variable: LogicalVariable,
+  exp: Expression,
+  importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
+) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(exp)
@@ -102,7 +108,8 @@ case class LoadCSVProjection(
   variable: LogicalVariable,
   url: Expression,
   format: CSVFormat,
-  fieldTerminator: Option[StringLiteral]
+  fieldTerminator: Option[StringLiteral],
+  importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
 ) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds + variable
 
@@ -116,13 +123,17 @@ case class LoadCSVProjection(
 
 }
 
+/**
+ * @param importedSymbolsFromLastCallSubquery Variables like a,b,c that the previous `CALL(a,b,c) {}` imported. These will go out of scope unless they are also in `importedVariables`.
+ */
 case class CallSubqueryHorizon(
   callSubquery: PlannerQuery,
   correlated: Boolean,
   yielding: Boolean,
   inTransactionsParameters: Option[InTransactionsParameters],
   optional: Boolean,
-  importedVariables: Set[LogicalVariable]
+  importedVariables: Set[LogicalVariable],
+  importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
 ) extends QueryHorizon {
 
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = {
@@ -185,6 +196,8 @@ sealed abstract class QueryProjection extends QueryHorizon {
   override def withoutHints(hintsToIgnore: ListSet[IrHint]): QueryHorizon = this
 
   override def withoutImpliedExpressions: QueryHorizon = this
+
+  override def importedSymbolsFromLastCallSubquery: Set[LogicalVariable] = importedExposedSymbols
 }
 
 object QueryProjection {
@@ -404,7 +417,10 @@ case class RunQueryAtProjection(
     copy(importedExposedSymbols = symbols)
 }
 
-case class CommandProjection(clause: CommandClause) extends QueryHorizon {
+case class CommandProjection(
+  clause: CommandClause,
+  importedSymbolsFromLastCallSubquery: Set[LogicalVariable]
+) extends QueryHorizon {
 
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = {
     val columns = clause match {
