@@ -29,6 +29,7 @@
     <module>slf4j-logging-it</module>
     <module>query-api-it</module>
     <module>cypher-it</module>
+    <module>cypher-it-test-util</module>
   </modules>
 
   <profiles>

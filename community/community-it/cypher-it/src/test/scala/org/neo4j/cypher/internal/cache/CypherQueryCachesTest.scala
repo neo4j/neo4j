@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.cache
 import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.ExecutionEngineTestSupport
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.CacheCountsTestSupport
 import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.SyntaxException
@@ -44,7 +44,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.scalatest.LoneElement
 
-class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
+class CypherQueryCachesTest extends CypherITTestSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
     with CacheCountsTestSupport
     with LoneElement {
 

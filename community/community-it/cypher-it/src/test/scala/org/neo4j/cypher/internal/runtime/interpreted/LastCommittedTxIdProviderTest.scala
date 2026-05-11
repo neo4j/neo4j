@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -31,7 +31,7 @@ import org.neo4j.kernel.database.Database
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.scalatest.BeforeAndAfterAll
 
-class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
+class LastCommittedTxIdProviderTest extends CypherITTestSuite with BeforeAndAfterAll {
 
   var managementService: DatabaseManagementService = _
   var graph: GraphDatabaseService = _

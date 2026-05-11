@@ -21,16 +21,16 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
-class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
+class ExecutionEngineIT extends CypherITTestSuite with GraphIcing {
 
   private var db: GraphDatabaseService = _
   private var managementService: DatabaseManagementService = _

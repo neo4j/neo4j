@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.kernel.api.helpers
 
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.PGNode
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.PGRelationship
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.SinglePGRelationship
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.equalProductGraph
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -42,7 +42,7 @@ import org.neo4j.memory.EmptyMemoryTracker
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.language.implicitConversions
 
-class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseTestSupport {
+class ProductGraphTraversalCursorTest extends CypherITTestSuite with GraphDatabaseTestSupport {
 
   test("should traverse two hops") {
     runTest { fx =>

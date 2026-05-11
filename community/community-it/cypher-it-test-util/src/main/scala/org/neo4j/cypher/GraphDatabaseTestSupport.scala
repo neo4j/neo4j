@@ -28,7 +28,6 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.GraphDatabaseCypherTestService
 import org.neo4j.dbms.api.DatabaseExistsException
 import org.neo4j.dbms.api.DatabaseManagementService
@@ -90,7 +89,7 @@ import scala.util.Try
 
 trait GraphDatabaseTestSupport
     extends GraphIcing with BeforeAndAfterEach {
-  self: CypherFunSuite =>
+  self: CypherITTestSuite =>
 
   private val shardCount = java.lang.Integer.valueOf(3)
   var graphOps: GraphDatabaseService = _

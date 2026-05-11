@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.IndexType
@@ -33,7 +32,7 @@ import java.nio.file.Path
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class ExecutionEngineFunSuite
-    extends CypherFunSuite
+    extends CypherITTestSuite
     with GraphDatabaseTestSupport
     with ExecutionEngineTestSupport
     with QueryPlanTestSupport {

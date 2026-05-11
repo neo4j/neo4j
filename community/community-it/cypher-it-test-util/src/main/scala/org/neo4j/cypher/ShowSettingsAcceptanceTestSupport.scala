@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.SettingImpl
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 
 import java.lang.Boolean.TRUE
@@ -30,7 +29,7 @@ import java.lang.Boolean.TRUE
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 trait ShowSettingsAcceptanceTestSupport extends GraphDatabaseTestSupport {
-  self: CypherFunSuite =>
+  self: CypherITTestSuite =>
 
   abstract override def databaseConfig(): Map[Setting[?], Object] = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.auth_enabled -> TRUE

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.options.CypherVersionOption
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -30,7 +30,7 @@ import org.neo4j.server.security.auth.AuthProcedures
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class CypherQueryObfuscatorIT extends CypherFunSuite {
+class CypherQueryObfuscatorIT extends CypherITTestSuite {
 
   private val obfuscatorFactory = new CypherQueryObfuscatorFactory {
     // required by procedure compiler

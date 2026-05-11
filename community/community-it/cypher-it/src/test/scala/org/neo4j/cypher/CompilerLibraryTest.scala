@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.CommunityCompilerFactory
 import org.neo4j.cypher.internal.Compiler
 import org.neo4j.cypher.internal.CompilerLibrary
@@ -41,11 +42,10 @@ import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.preparser.PreParsedQuery
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.logging.NullLogProvider
 import org.neo4j.values.virtual.MapValue
 
-class CompilerLibraryTest extends CypherFunSuite with GraphDatabaseTestSupport {
+class CompilerLibraryTest extends CypherITTestSuite with GraphDatabaseTestSupport {
 
   private def newCompilerLibrary = {
     val resolver = graph.getDependencyResolver

@@ -23,8 +23,8 @@ import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.cypher.messages.MessageUtilProvider
@@ -46,7 +46,7 @@ class CommunityQueryRoutingBoltAcceptanceTest extends CommunityQueryRoutingAccep
 class CommunityQueryRoutingHttpAcceptanceTest extends CommunityQueryRoutingAcceptanceTest
     with FeatureDatabaseManagementService.TestUsingHttp
 
-abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
+abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
     with FeatureDatabaseManagementService.TestBase
     with BeforeAndAfterAll {
 

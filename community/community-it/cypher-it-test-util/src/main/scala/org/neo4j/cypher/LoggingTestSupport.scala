@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.mockito.ArgumentMatcher
 import org.mockito.ArgumentMatchers.argThat
 import org.neo4j.collection.Dependencies
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.internal.LogService
@@ -33,7 +32,7 @@ import org.scalatest.Assertion
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 trait LoggingTestSupport extends GraphDatabaseTestSupport {
-  self: CypherFunSuite =>
+  self: CypherITTestSuite =>
 
   protected val securityLogProvider: AssertableLogProvider = new AssertableLogProvider()
   protected val userLogProvider: AssertableLogProvider = new AssertableLogProvider()

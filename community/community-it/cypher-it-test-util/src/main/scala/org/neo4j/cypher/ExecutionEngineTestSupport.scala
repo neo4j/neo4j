@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.GraphDatabaseCypherTestService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
@@ -65,7 +64,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 trait ExecutionEngineTestSupport extends ExecutionEngineHelper {
-  self: CypherFunSuite & GraphDatabaseTestSupport =>
+  self: CypherITTestSuite & GraphDatabaseTestSupport =>
 
   var eengine: ExecutionEngine = _
 

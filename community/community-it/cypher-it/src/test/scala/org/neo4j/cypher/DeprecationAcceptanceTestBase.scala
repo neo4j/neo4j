@@ -20,10 +20,10 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunctions
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.options.CypherVersionOption
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N00
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N01
@@ -68,7 +68,7 @@ import org.neo4j.notifications.NotificationDetail.deprecationNotificationDetail
 import org.neo4j.test.extension.SkipOnSpd.Note
 import org.scalatest.BeforeAndAfterAll
 
-abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeAndAfterAll
+abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with BeforeAndAfterAll
     with DeprecationTestSupport {
 
   override def beforeAll(): Unit = {

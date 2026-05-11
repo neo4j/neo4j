@@ -23,10 +23,10 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.GraphDatabaseCypherTestService
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.Result.ResultRow
@@ -41,7 +41,7 @@ import org.neo4j.values.virtual.MapValue
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.implicitConversions
 
-class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with GraphDatabaseTestSupport
+class QueryExecutionMonitorTest extends CypherITTestSuite with GraphIcing with GraphDatabaseTestSupport
     with ExecutionEngineTestSupport {
   implicit def contextQuery(context: TransactionalContext): ExecutingQuery = context.executingQuery()
 

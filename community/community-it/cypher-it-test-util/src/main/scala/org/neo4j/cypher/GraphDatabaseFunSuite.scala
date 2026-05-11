@@ -19,20 +19,4 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-
-trait TxCountsTrackingTestSupport {
-  self: CypherFunSuite & GraphDatabaseTestSupport & ExecutionEngineTestSupport =>
-
-  def prepareAndTrackTxCounts[T](f: => T): (T, TxCounts) = {
-    // prepare
-    f
-    deleteAllEntities()
-
-    val initialTxCounts = graph.txCounts
-    val result = f
-    val txCounts = graph.txCounts - initialTxCounts
-
-    (result, txCounts)
-  }
-}
+abstract class GraphDatabaseFunSuite extends CypherITTestSuite with GraphDatabaseTestSupport

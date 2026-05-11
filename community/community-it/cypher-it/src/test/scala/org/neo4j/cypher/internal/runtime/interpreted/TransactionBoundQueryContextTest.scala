@@ -30,6 +30,7 @@ import org.mockito.Mockito.when
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.HttpServerTestSupportBuilder
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.javacompat
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
@@ -100,7 +100,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.jdk.CollectionConverters.IteratorHasAsJava
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFileTestSupport {
+class TransactionBoundQueryContextTest extends CypherITTestSuite with CreateTempFileTestSupport {
 
   var managementService: DatabaseManagementService = _
   var graphOps: GraphDatabaseService = null

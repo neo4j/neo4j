@@ -17,8 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.util
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.CypherITTestSuite
+import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER
+import org.scalatest
+import org.scalatest.Args
+import org.scalatest.Status
 
-abstract class GraphDatabaseFunSuite extends CypherFunSuite with GraphDatabaseTestSupport
+trait DontRunOnSpdBuild extends CypherITTestSuite {
+
+  override protected def runTests(testName: Option[String], args: Args): Status = {
+    if ("spd".equals(FACTORY_SUPPLIER)) scalatest.SucceededStatus
+    else super.runTests(testName, args)
+  }
+}

@@ -21,8 +21,8 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.testing.api.CypherExecutorException
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
@@ -44,7 +44,7 @@ class TransactionalQueryErrorHttpAcceptanceTest extends TransactionalQueryErrorA
     with FeatureDatabaseManagementService.TestUsingHttp
 
 abstract class TransactionalQueryErrorAcceptanceTestBase
-    extends CypherFunSuite
+    extends CypherITTestSuite
     with FeatureDatabaseManagementService.TestBase
     with CreateTempFileTestSupport
     with BeforeAndAfterAll {

@@ -19,10 +19,9 @@
  */
 package org.neo4j.internal.collector
 
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
+import org.neo4j.cypher.CypherITTestSuite
 
-class DataCollectorMatchersTest extends AnyFunSuite with Matchers {
+class DataCollectorMatchersTest extends CypherITTestSuite {
 
   test("arraySafeEquals") {
     DataCollectorMatchers.arraySafeEquals(Array.empty[Any], Seq.empty) shouldEqual true

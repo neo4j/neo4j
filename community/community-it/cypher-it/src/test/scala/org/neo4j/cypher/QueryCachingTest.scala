@@ -21,9 +21,9 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_00001
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N60
 import org.neo4j.graphdb.Label
@@ -40,7 +40,7 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 abstract class QueryCachingTest(executionPlanCacheSize: Int =
-  GraphDatabaseInternalSettings.query_execution_plan_cache_size.defaultValue()) extends CypherFunSuite
+  GraphDatabaseInternalSettings.query_execution_plan_cache_size.defaultValue()) extends CypherITTestSuite
     with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
   override def databaseConfig(): Map[Setting[?], Object] = super.databaseConfig() ++ Map(
