@@ -2202,7 +2202,12 @@ class AstGenerator(
     default <- option(_expression)
   } yield LocalFieldSignature(name, typ, default)(pos)
 
-  def _query: Gen[Query] = {
+  def _query: Gen[Query] = Gen.sized { size =>
+    if (size <= 0) _singleQuery
+    else Gen.resize(size - 1, _anyQuery)
+  }
+
+  private def _anyQuery: Gen[Query] = {
     if (usesCypher5) frequency(
       5 -> lzy(_singleQuery),
       1 -> lzy(_union)
