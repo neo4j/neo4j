@@ -67,6 +67,7 @@ public final class LocalChannelDriverFactory extends DriverFactory implements Au
                 Config.builder()
                         .withLogging(new DriverToInternalLogProvider(internalLogProvider))
                         .withUserAgent("neo4j-query-api/v2")
+                        .withAutoCommitRetriesDisabled(true)
                         .build(),
                 null,
                 localGroup,

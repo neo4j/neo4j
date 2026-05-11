@@ -684,7 +684,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 .withTelemetryDisabled(true)
                 .withUserAgent(USER_AGENT)
                 .withConnectionTimeout(30, TimeUnit.SECONDS)
-                .withMaxConnectionPoolSize(32);
+                .withMaxConnectionPoolSize(32)
+                .withAutoCommitRetriesDisabled(true);
         switch (connectionConfig.encryption()) {
             case TRUE -> configBuilder = configBuilder.withEncryption();
             case FALSE -> configBuilder = configBuilder.withoutEncryption();

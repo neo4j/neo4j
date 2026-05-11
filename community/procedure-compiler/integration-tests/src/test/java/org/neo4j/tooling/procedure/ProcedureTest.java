@@ -153,6 +153,7 @@ class ProcedureTest {
                 .withTelemetryDisabled(true)
                 .withLogging(Logging.none())
                 .withConnectionTimeout(10, TimeUnit.SECONDS)
+                .withAutoCommitRetriesDisabled(true)
                 .build();
     }
 }
