@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AmbiguousAgg
 import org.neo4j.cypher.internal.frontend.scoping.E42I18
 import org.neo4j.cypher.internal.frontend.scoping.Passes
 import org.neo4j.cypher.internal.frontend.scoping.Versioned.ignoreBeforeCypher25
+import org.neo4j.cypher.internal.frontend.scoping.checker.CompositionRestriction.NoLocalCallableBody
 
 /**
  * Test for 42I18 - Reference To Non-grouping Sub-expression
@@ -183,7 +184,8 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
         |MATCH (n)
         |RETURN m AS w, n, {f: m, q: SUM(n.age)} ORDER BY {f: m, q:SUM(n.age)}""".stripMargin,
       Passes,
-      Seq("w", "n", "`{f: m, q: SUM(n.age)}`")
+      Seq("w", "n", "`{f: m, q: SUM(n.age)}`"),
+      NoLocalCallableBody
     ),
     TestQuery(
       """WITH 1 AS g
