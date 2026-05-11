@@ -621,7 +621,7 @@ public class VectorEmbeddingTest implements GenAITestExtension {
         assertThatThrownBy(() -> db.executeTransactionally(
                         query, Map.of(), r -> r.stream().toList()))
                 .isExactlyInstanceOf(QueryExecutionException.class)
-                .hasMessageMatching(".*Only one of either 'token' or ' apiKey' is expected to have been set");
+                .hasMessageMatching(".*Only one of either 'token' or 'apiKey' is expected to have been set");
     }
 
     @ParameterizedTest
@@ -637,6 +637,34 @@ public class VectorEmbeddingTest implements GenAITestExtension {
                 .isExactlyInstanceOf(QueryExecutionException.class)
                 .hasMessageMatching(
                         ".*'(token|accessKeyId|secretAccessKey|token or apiKey)' is expected to have been set");
+    }
+
+    @Test
+    void vertexAiMultimodalTextEmbedRetry() {
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding@001', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.text.embed('Hello!', 'vertexai', conf) IS :: VECTOR<FLOAT32> AS result
+                """;
+        assertThat(db.executeTransactionally(query, Map.of(), consume()))
+                .as("Query:%n```%n%s%n```%n", query)
+                .singleElement(resultMap())
+                .containsEntry("result", true);
+    }
+
+    @Test
+    void vertexAiMultimodalTextEmbedBatchRetry() {
+        final var query = """
+                CALL ai.text.embedBatch(
+                  ['Hello!'],
+                  'vertexai',
+                  { token: 'dummy-vertex-token', model: 'multimodalembedding@001', region: 'tasman', project: 'gem', publisher: 'google' }
+                )
+                YIELD index, vector, resource
+                RETURN index, resource, vector IS :: VECTOR<FLOAT32> AS vector
+                """;
+        assertThat(db.executeTransactionally(query, Map.of(), consume()))
+                .as("Query:%n```%n%s%n```%n", query)
+                .containsExactly(Map.of("vector", true, "index", 0L, "resource", "Hello!"));
     }
 
     @Test

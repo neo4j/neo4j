@@ -1,0 +1,38 @@
+{
+  "request": {
+    "urlPath": "/v1/projects/gem/locations/tasman/publishers/google/models/multimodalembedding@001:predict",
+    "method": "POST",
+    "headers": {
+      "Content-Type": {
+        "equalTo": "application/json; charset=UTF-8"
+      },
+      "Authorization": {
+        "equalTo": "Bearer dummy-vertex-token"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "equalToJson": {
+          "instances": [
+            {
+              "content": "Hello!"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "error": {
+        "code": 400,
+        "message": "No embedding input is provided.",
+        "status": "INVALID_ARGUMENT"
+      }
+    }
+  }
+}

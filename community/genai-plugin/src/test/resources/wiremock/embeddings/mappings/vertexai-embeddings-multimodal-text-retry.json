@@ -1,0 +1,38 @@
+{
+  "request": {
+    "urlPath": "/v1/projects/gem/locations/tasman/publishers/google/models/multimodalembedding@001:predict",
+    "method": "POST",
+    "headers": {
+      "Content-Type": {
+        "equalTo": "application/json; charset=UTF-8"
+      },
+      "Authorization": {
+        "equalTo": "Bearer dummy-vertex-token"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "equalToJson": {
+          "instances": [
+            {
+              "text": "Hello!"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "predictions": [
+        {
+          "textEmbedding": [0.1, 0.2, 0.3]
+        }
+      ]
+    }
+  }
+}

@@ -26,33 +26,22 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.ai.text.embed.VectorEmbedding;
 import org.neo4j.genai.ai.text.tokenChunking.TextChunkConfig;
+import org.neo4j.genai.util.ResourceLoader;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
-import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.QueryLanguage;
 import org.neo4j.kernel.api.procedure.QueryLanguageScope;
-import org.neo4j.kernel.impl.security.FileURIAccessRule;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -67,8 +56,6 @@ public class FileVectorEmbedding {
             "Provider specific configuration, use `CALL ai.text.embed.providers()` to find the configuration needed for each provider. You can specify additional vendor options by adding `vendorOptions` with a map of values that will be passed along in the request.";
     private static final String PROVIDER_DESC =
             "The identifier of the provider: 'Azure-OpenAI', 'Bedrock-Titan', 'OpenAI', 'VertexAI'.";
-    private static final Set<String> WEB_PROTOCOLS = Set.of("http", "https", "ftp");
-    private static final int MAX_REDIRECTS = 10;
 
     @Context
     public URLAccessChecker urlAccessChecker;
@@ -136,69 +123,7 @@ public class FileVectorEmbedding {
     }
 
     private InputStream openFile(String file) throws IOException, URLAccessValidationError {
-        URI uri;
-        try {
-            uri = new URI(file);
-            if (uri.getScheme() == null) {
-                throw new URLAccessValidationError(
-                        "Missing protocol: `" + file + "`. Files must be prepended with `file:///");
-            }
-        } catch (URISyntaxException e) {
-            // Not valid URI syntax: treat as a local file path
-            uri = Path.of(file).toUri();
-        }
-
-        String scheme = uri.getScheme().toLowerCase(Locale.ROOT);
-        if ("file".equals(scheme)) {
-            return openLocalFile(uri);
-        } else if (WEB_PROTOCOLS.contains(scheme)) {
-            return openRemoteFile(uri.toURL());
-        } else {
-            throw new IllegalArgumentException("Unsupported protocol: " + scheme);
-        }
-    }
-
-    // Validates and opens a file:// URI using the same security rules as LOAD CSV FileURIAccessRule
-    private InputStream openLocalFile(URI uri) throws IOException, URLAccessValidationError {
-        var rule = new FileURIAccessRule(genAIConfig.getNeo4jConfig());
-        var handler = new SecurityAuthorizationHandler(CommunitySecurityLog.NULL_LOG);
-        URI validated = rule.validate(uri, handler, securityContext);
-        return Files.newInputStream(Path.of(validated));
-    }
-
-    private InputStream openRemoteFile(URL url) throws IOException, URLAccessValidationError {
-        URL checked = urlAccessChecker.checkURL(url);
-        return openFileContentWithRedirects(checked, 0).getInputStream();
-    }
-
-    private URLConnection openFileContentWithRedirects(URL url, int redirectCount)
-            throws IOException, URLAccessValidationError {
-        if (redirectCount > MAX_REDIRECTS) {
-            throw new IOException("Too many redirects");
-        }
-
-        URLConnection connection = url.openConnection();
-        if (connection instanceof HttpURLConnection httpConnection) {
-            httpConnection.setInstanceFollowRedirects(false);
-            int status = httpConnection.getResponseCode();
-            if (status == HttpURLConnection.HTTP_NOT_FOUND) {
-                throw new FileNotFoundException(url.toString());
-            }
-            if (status >= 300 && status <= 307 && status != 306) {
-                String location = httpConnection.getHeaderField("Location");
-                if (location != null) {
-                    URL newUrl = new URL(url, location);
-                    if (!url.getProtocol().equalsIgnoreCase(newUrl.getProtocol())) {
-                        throw new SecurityException(
-                                "Protocol change during redirect is not allowed for security reasons.");
-                    }
-                    URL checkedUrl = urlAccessChecker.checkURL(newUrl);
-                    return openFileContentWithRedirects(checkedUrl, redirectCount + 1);
-                }
-            }
-        }
-
-        return connection;
+        return ResourceLoader.openResource(file, urlAccessChecker, genAIConfig, securityContext);
     }
 
     private Stream<VectorEmbedding.InternalBatchRow> readFile(

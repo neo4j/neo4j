@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.genai.ai.text.embed.provider.bedrock;
+package org.neo4j.genai.ai.image.embed.provider.bedrock;
 
 import static org.neo4j.genai.util.JsonUtils.TYPE_REF_FLOAT_VECTOR;
 import static org.neo4j.genai.util.JsonUtils.getExpectedFrom;
@@ -31,7 +31,8 @@ import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.collections.api.factory.Maps;
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.genai.ai.text.embed.VectorEmbedding;
+import org.neo4j.genai.ai.image.embed.ImageVectorEmbedding;
+import org.neo4j.genai.ai.text.embed.provider.bedrock.BedrockBase;
 import org.neo4j.genai.util.JsonUtils;
 import org.neo4j.genai.util.MalformedGenAIResponseException;
 import org.neo4j.util.VisibleForTesting;
@@ -39,11 +40,11 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.storable.VectorValue;
 
 @ServiceProvider
-public class BedrockTitan extends BedrockBase implements VectorEmbedding.Provider {
-    public BedrockTitan() {}
+public class BedrockTitanImage extends BedrockBase implements ImageVectorEmbedding.Provider {
+    public BedrockTitanImage() {}
 
     @VisibleForTesting
-    public BedrockTitan(Function<Parameters, URI> baseUriResolver) {
+    public BedrockTitanImage(Function<BedrockBase.Parameters, URI> baseUriResolver) {
         super(baseUriResolver);
     }
 
@@ -54,14 +55,14 @@ public class BedrockTitan extends BedrockBase implements VectorEmbedding.Provide
 
     @Override
     protected RequestHandler requestHandler() {
-        return new TitanRequestHandler();
+        return new TitanImageRequestHandler();
     }
 }
 
-final class TitanRequestHandler implements BedrockBase.RequestHandler {
+final class TitanImageRequestHandler implements BedrockBase.RequestHandler {
     @Override
     public Map<String, Object> payload(String resource) {
-        return Maps.mutable.of("inputText", resource);
+        return Maps.mutable.of("inputImage", resource);
     }
 
     @Override

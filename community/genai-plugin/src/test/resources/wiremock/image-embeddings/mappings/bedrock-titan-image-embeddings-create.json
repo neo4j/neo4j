@@ -1,0 +1,36 @@
+{
+  "request": {
+    "urlPath": "/model/amazon.titan-embed-image-v1/invoke",
+    "method": "POST",
+    "headers": {
+      "Authorization": {
+        "matches": "^AWS4-HMAC-SHA256 Credential=bedrock-key/\\d{8}/eu-north-1/bedrock/aws4_request, SignedHeaders=host;user-agent;x-amz-content-sha256;x-amz-date, Signature=.{64}$"
+      },
+      "X-Amz-Date": {
+        "matches": "^\\d{8}T\\d{6}Z$"
+      },
+      "X-Amz-Content-Sha256": {
+        "matches": "^.{64}$"
+      },
+      "User-Agent": {
+        "equalTo": "Neo4j-GenAIProcedures/1.2.0"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "equalToJson": {
+          "inputImage": "dGVzdA=="
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "embedding": [0.1, 0.2, 0.3]
+    }
+  }
+}

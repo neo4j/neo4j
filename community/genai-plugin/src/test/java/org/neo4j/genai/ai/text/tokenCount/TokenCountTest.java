@@ -214,7 +214,7 @@ public class TokenCountTest implements GenAITestExtension {
         assertThatThrownBy(() -> db.executeTransactionally(
                         query, Map.of(), r -> r.stream().toList()))
                 .isExactlyInstanceOf(QueryExecutionException.class)
-                .hasMessageMatching(".*Only one of either 'token' or ' apiKey' is expected to have been set");
+                .hasMessageMatching(".*Only one of either 'token' or 'apiKey' is expected to have been set");
     }
 
     @Test

@@ -45,7 +45,9 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.VectorValue;
 import org.neo4j.values.virtual.MapValue;
 
-public abstract class BedrockBase implements VectorEmbedding.Provider {
+public abstract class BedrockBase {
+    public abstract String name();
+
     protected static final String DEFAULT_BASE_URL_TEMPLATE = "https://bedrock-runtime.%s.amazonaws.com";
     private static final String DEFAULT_API_PATH_TEMPLATE = "/model/%s/invoke";
     private final Function<Parameters, URI> baseUriResolver;
@@ -67,12 +69,10 @@ public abstract class BedrockBase implements VectorEmbedding.Provider {
         public Map<String, Object> vendorOptions = Map.of();
     }
 
-    @Override
     public final String metricsName() {
         return "Bedrock";
     }
 
-    @Override
     public final Class<?> paramType() {
         // Bedrock models currently share the same parameters, but there is nothing preventing us from changing that.
         return Parameters.class;
@@ -80,15 +80,15 @@ public abstract class BedrockBase implements VectorEmbedding.Provider {
 
     protected abstract RequestHandler requestHandler();
 
-    @Override
-    public final Implementation configure(HttpService httpService, MapValue configuration, GenAIConfig genAIConfig) {
+    public final VectorEmbedding.Provider.Implementation configure(
+            HttpService httpService, MapValue configuration, GenAIConfig genAIConfig) {
         final var params = parse(Parameters.class, configuration);
         final var encodedModel = URLEncoder.encode(params.model);
         final var uri = baseUriResolver.apply(params).resolve(DEFAULT_API_PATH_TEMPLATE.formatted(encodedModel));
         return new BedrockImplementation(name(), metricsName(), uri, httpService, params, requestHandler());
     }
 
-    interface RequestHandler {
+    public interface RequestHandler {
         Map<String, Object> payload(String resource);
 
         VectorValue parseResponse(InputStream stream);

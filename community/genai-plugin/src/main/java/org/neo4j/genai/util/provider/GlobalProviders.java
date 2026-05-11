@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.neo4j.genai.ai.image.embed.ImageVectorEmbedding;
 import org.neo4j.genai.ai.text.chat.TextChat;
 import org.neo4j.genai.ai.text.completion.TextCompletion;
 import org.neo4j.genai.ai.text.embed.VectorEmbedding;
@@ -70,6 +71,7 @@ public interface GlobalProviders {
         if (provider instanceof TextChat.Provider) return TextChat.Provider.class;
         if (provider instanceof TextTokenCount.Provider) return TextTokenCount.Provider.class;
         if (provider instanceof VectorEmbedding.Provider) return VectorEmbedding.Provider.class;
+        if (provider instanceof ImageVectorEmbedding.Provider) return ImageVectorEmbedding.Provider.class;
         throw new IllegalArgumentException("Unknown provider type: " + provider.getClass());
     }
 

@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 
 public final class UrlPath {
     private static final Predicate<String> URI_SAFE =
-            Pattern.compile("^[a-zA-Z0-9-_.]+$").asMatchPredicate();
+            Pattern.compile("^[a-zA-Z0-9-_@.]+$").asMatchPredicate();
 
     private UrlPath() {}
 

@@ -56,6 +56,88 @@
   },
   {
     "isDeprecated": false,
+    "signature": "ai.image.embed.providers() :: (name :: STRING, requiredConfigType :: STRING, optionalConfigType :: STRING, defaultConfig :: MAP)",
+    "name": "ai.image.embed.providers",
+    "description": "Lists the available image vector embedding providers.",
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "Provider name.",
+        "isDeprecated": false,
+        "type": "STRING"
+      },
+      {
+        "name": "requiredConfigType",
+        "description": "The signature of the required config map.",
+        "isDeprecated": false,
+        "type": "STRING"
+      },
+      {
+        "name": "optionalConfigType",
+        "description": "The signature of the optional config map.",
+        "isDeprecated": false,
+        "type": "STRING"
+      },
+      {
+        "name": "defaultConfig",
+        "description": "The default values for the GenAI provider.",
+        "isDeprecated": false,
+        "type": "MAP"
+      }
+    ],
+    "deprecatedBy": null,
+    "argumentDescription": []
+  },
+  {
+    "isDeprecated": false,
+    "signature": "ai.image.embedBatch(resources :: LIST<STRING>, provider :: STRING, configuration = {} :: MAP) :: (index :: INTEGER, resource :: STRING, vector :: VECTOR)",
+    "name": "ai.image.embedBatch",
+    "description": "Encode a given batch of images as vectors using the named provider.\nFor each element in the given resource LIST this returns:\n    * the corresponding 'index' within that LIST,\n    * the resolved 'resource' element (base64 bytes),\n    * and the encoded 'vector'.\n",
+    "returnDescription": [
+      {
+        "name": "index",
+        "description": "The index of the corresponding element in the input list.",
+        "isDeprecated": false,
+        "type": "INTEGER"
+      },
+      {
+        "name": "resource",
+        "description": "The name of the input resource.",
+        "isDeprecated": false,
+        "type": "STRING"
+      },
+      {
+        "name": "vector",
+        "description": "The generated vector embedding for the resource.",
+        "isDeprecated": false,
+        "type": "VECTOR"
+      }
+    ],
+    "deprecatedBy": null,
+    "argumentDescription": [
+      {
+        "name": "resources",
+        "description": "The images to transform into embeddings: base64-encoded image bytes, local file paths (file:///path/to/image), or remote URLs (http/https/ftp).",
+        "isDeprecated": false,
+        "type": "LIST<STRING>"
+      },
+      {
+        "name": "provider",
+        "description": "The identifier of the provider: 'Bedrock-Titan', 'VertexAI'.",
+        "isDeprecated": false,
+        "type": "STRING"
+      },
+      {
+        "name": "configuration",
+        "description": "Provider specific configuration, use `CALL ai.image.embed.providers()` to find the configuration needed for each provider. You can specify additional vendor options by adding `vendorOptions` with a map of values that will be passed along in the request.",
+        "isDeprecated": false,
+        "default": "DefaultParameterValue{value={}, type=MAP}",
+        "type": "MAP"
+      }
+    ]
+  },
+  {
+    "isDeprecated": false,
     "signature": "ai.text.chat.providers() :: (name :: STRING, requiredConfigType :: STRING, optionalConfigType :: STRING, defaultConfig :: MAP)",
     "name": "ai.text.chat.providers",
     "description": "Lists the available text chat providers.",

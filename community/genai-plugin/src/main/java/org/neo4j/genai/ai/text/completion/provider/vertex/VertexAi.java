@@ -85,7 +85,7 @@ public class VertexAi implements TextCompletion.Provider {
         if (params.token.isEmpty() && params.apiKey.isEmpty()) {
             throw new IllegalArgumentException("'token or apiKey' is expected to have been set");
         } else if (params.token.isPresent() && params.apiKey.isPresent()) {
-            throw new IllegalArgumentException("Only one of either 'token' or ' apiKey' is expected to have been set");
+            throw new IllegalArgumentException("Only one of either 'token' or 'apiKey' is expected to have been set");
         }
         return new Implementation(name(), endpoint(params), httpService, params);
     }

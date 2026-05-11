@@ -1,6 +1,38 @@
 [
   {
     "isDeprecated": false,
+    "aggregating": false,
+    "signature": "ai.image.embed(resource :: STRING, provider :: STRING, configuration = {} :: MAP) :: VECTOR",
+    "name": "ai.image.embed",
+    "description": "Encode a given image as a vector using the named provider.",
+    "returnDescription": "VECTOR",
+    "deprecatedBy": null,
+    "category": "",
+    "isBuiltIn": false,
+    "argumentDescription": [
+      {
+        "name": "resource",
+        "description": "The image to transform into an embedding: either base64-encoded image bytes, a local file path (file:///path/to/image), or a remote URL (http/https/ftp).",
+        "isDeprecated": false,
+        "type": "STRING"
+      },
+      {
+        "name": "provider",
+        "description": "The identifier of the provider: 'Bedrock-Titan', 'VertexAI'.",
+        "isDeprecated": false,
+        "type": "STRING"
+      },
+      {
+        "name": "configuration",
+        "description": "Provider specific configuration, use `CALL ai.image.embed.providers()` to find the configuration needed for each provider. You can specify additional vendor options by adding `vendorOptions` with a map of values that will be passed along in the request.",
+        "isDeprecated": false,
+        "default": "DefaultParameterValue{value={}, type=MAP}",
+        "type": "MAP"
+      }
+    ]
+  },
+  {
+    "isDeprecated": false,
     "aggregating": true,
     "signature": "ai.text.aggregateCompletion(value :: STRING, prompt :: STRING, provider :: STRING, configuration = {} :: MAP) :: STRING",
     "name": "ai.text.aggregateCompletion",

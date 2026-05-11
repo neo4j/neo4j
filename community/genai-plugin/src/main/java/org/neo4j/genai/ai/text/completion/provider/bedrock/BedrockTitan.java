@@ -27,13 +27,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.genai.ai.text.completion.TextCompletion;
 import org.neo4j.genai.util.JsonUtils;
 import org.neo4j.genai.util.MalformedGenAIResponseException;
 import org.neo4j.util.VisibleForTesting;
 
 @Deprecated
 @ServiceProvider
-public class BedrockTitan extends BedrockBase {
+public class BedrockTitan extends BedrockBase implements TextCompletion.Provider {
     public BedrockTitan() {}
 
     @VisibleForTesting

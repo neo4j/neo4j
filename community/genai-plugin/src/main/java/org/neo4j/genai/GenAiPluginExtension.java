@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.genai.ai.image.embed.ImageVectorEmbedding;
 import org.neo4j.genai.ai.text.chat.TextChat;
 import org.neo4j.genai.ai.text.completion.TextCompletion;
 import org.neo4j.genai.ai.text.embed.VectorEmbedding;
@@ -74,6 +75,7 @@ public class GenAiPluginExtension extends ExtensionFactory<GenAiPluginExtension.
                 registerSafe(TextTokenCount.Providers.class, TxtTokenCountProv.from(httpService, providers));
                 registerSafe(TextStructuredCompletion.Providers.class, TxtCompStructProv.from(httpService, providers));
                 registerSafe(VectorEmbedding.Providers.class, VectorEmbeddingProv.from(httpService, providers));
+                registerSafe(ImageVectorEmbedding.Providers.class, ImgVectorEmbeddingProv.from(httpService, providers));
 
                 // This component is used by metrics, can't use context.
                 // It is registered without a context, so it can be accessed by the metrics module.
@@ -161,5 +163,16 @@ record VectorEmbeddingProv(HttpServiceProvider httpService, ImmutableList<Vector
 
     public static VectorEmbeddingProv from(HttpServiceProvider httpService, GlobalProviders globalProviders) {
         return new VectorEmbeddingProv(httpService, globalProviders.providers(VectorEmbedding.Provider.class));
+    }
+}
+
+record ImgVectorEmbeddingProv(HttpServiceProvider httpService, ImmutableList<ImageVectorEmbedding.Provider> providers)
+        implements ProcedureProvider<ImageVectorEmbedding.Providers> {
+    public ImageVectorEmbedding.Providers apply(Context context) throws ProcedureException {
+        return new ImageVectorEmbedding.Providers.Impl(providers, httpService.apply(context));
+    }
+
+    public static ImgVectorEmbeddingProv from(HttpServiceProvider httpService, GlobalProviders globalProviders) {
+        return new ImgVectorEmbeddingProv(httpService, globalProviders.providers(ImageVectorEmbedding.Provider.class));
     }
 }

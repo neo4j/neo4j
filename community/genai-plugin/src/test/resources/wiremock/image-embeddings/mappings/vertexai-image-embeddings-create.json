@@ -1,0 +1,58 @@
+{
+  "request": {
+    "urlPath": "/v1/projects/gem/locations/tasman/publishers/google/models/multimodalembedding:predict",
+    "method": "POST",
+    "headers": {
+      "Content-Type": {
+        "equalTo": "application/json; charset=UTF-8"
+      },
+      "Authorization": {
+        "equalTo": "Bearer dummy-vertex-token"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "or": [
+          {
+            "equalToJson": {
+              "instances": [
+                {
+                  "image": {
+                    "bytesBase64Encoded": "dGVzdA=="
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "equalToJson": {
+              "instances": [
+                {
+                  "image": {
+                    "bytesBase64Encoded": "dGVzdA=="
+                  }
+                }
+              ],
+              "parameters": {
+                "autoTruncate": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "predictions": [
+        {
+          "imageEmbedding": [0.1, 0.2, 0.3]
+        }
+      ]
+    }
+  }
+}
