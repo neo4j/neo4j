@@ -40,7 +40,7 @@ class AnnotatedLogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver 
   private val annotations = Map.newBuilder[String, Id]
 
   def fakeLeafPlan(args: String*): AnnotatedLogicalPlanBuilder =
-    appendAtCurrentIndent(LeafOperator(FakeLeafPlan(args.toSet)(_)))
+    appendAtCurrentIndent(new LeafOperator(FakeLeafPlan(args.toSet)(_)))
 
   def annotate(tag: String): AnnotatedLogicalPlanBuilder = {
     annotations.addOne(tag -> idOfLastPlan)

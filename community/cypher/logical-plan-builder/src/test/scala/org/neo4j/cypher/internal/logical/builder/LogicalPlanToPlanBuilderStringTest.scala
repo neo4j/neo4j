@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import dotty.tools.repl.ReplDriver
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -89,7 +90,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.schema.IndexType
@@ -99,15 +100,13 @@ import java.lang.reflect.Modifier
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.MILLISECONDS
-import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.IMain
-import scala.tools.nsc.interpreter.shell.ReplReporterImpl
+import scala.util.DynamicVariable
 
 /**
  * If you reference something new and a type was not found an import needs to be added to [[interpretPlanBuilder]]
  */
 class LogicalPlanToPlanBuilderStringTest
-    extends CypherFunSuite
+    extends CypherFunSuite3
     with TestName
     with AstConstructionTestSupport
     with QueryExpressionConstructionTestSupport {
@@ -3491,107 +3490,116 @@ class LogicalPlanToPlanBuilderStringTest
       s"""
          |new org.neo4j.cypher.internal.logical.builder.TestPlanBuilder()
          |$code""".stripMargin
+
+    val imports =
+      """import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+        |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.cachedNodePropFromStore
+        |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.labelName
+        |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
+        |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalFloat
+        |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.parameter
+        |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.propName
+        |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
+        |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
+        |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+        |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+        |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenContinue
+        |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenBreak
+        |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.between
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.gt
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.gte
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.lte
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.lt
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchAll
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchEntities
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.rangeExpression
+        |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.single
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeFull
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipWithDynamicType
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperties
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperties
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setPropertyFromMap
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.AcyclicParameters
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.WalkParameters
+        |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.PushdownOperators
+        |import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+        |import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+        |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
+        |import org.neo4j.cypher.internal.expressions.LabelName
+        |import org.neo4j.cypher.internal.expressions.RelTypeName
+        |import org.neo4j.cypher.internal.expressions.PropertyKeyName
+        |import org.neo4j.cypher.internal.logical.plans.*
+        |import org.neo4j.cypher.internal.logical.plans.Expand.*
+        |import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
+        |import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Serial
+        |import org.neo4j.cypher.internal.logical.builder.TestException
+        |import org.neo4j.cypher.internal.ir.HasHeaders
+        |import org.neo4j.cypher.internal.ir.NoHeaders
+        |import org.neo4j.cypher.internal.ir.EagernessReason
+        |import org.neo4j.cypher.internal.ir.SelectivePathPattern.CountInteger
+        |import org.neo4j.cypher.internal.util.attribution.Id
+        |import org.neo4j.cypher.internal.util.InputPosition
+        |import org.neo4j.cypher.internal.util.UpperBound.Limited
+        |import org.neo4j.cypher.internal.util.Repetition
+        |// For Cypher types CT...
+        |import org.neo4j.cypher.internal.util.symbols.*
+        |import org.neo4j.cypher.internal.util.UpperBound.Unlimited
+        |import org.neo4j.graphdb.schema.IndexType
+        |import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.*
+        |import org.neo4j.cypher.internal.logical.plans.TraversalPathMode.*
+        |""".stripMargin
+
     val res = Array[AnyRef](null)
+    val errStream = new java.io.ByteArrayOutputStream()
 
-    val settings = new Settings()
-    settings.usejavacp.value = true
-    // neo4j-util is compiled with Scala 3; the REPL compiler must read TASTy APIs from the test classpath.
-    settings.processArguments(List("-Ytasty-reader"), processAll = true)
-
-    val reporter = new ReplReporterImpl(settings)
-
-    val interpreter = new IMain(settings, reporter)
-
-    try {
-      interpreter.beQuietDuring {
-        // imports
-        interpreter.interpret(
-          """import org.neo4j.cypher.internal.util.collection.immutable.ListSet
-            |
-            |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.cachedNodePropFromStore
-            |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.labelName
-            |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
-            |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalFloat
-            |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.parameter
-            |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.propName
-            |import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
-            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
-            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
-            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
-            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenContinue
-            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenBreak
-            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.between
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.gt
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.gte
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.lte
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.lt
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchAll
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchEntities
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.rangeExpression
-            |import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.single
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeFull
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipWithDynamicType
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperties
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperties
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setPropertyFromMap
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.AcyclicParameters
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.WalkParameters
-            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.PushdownOperators
-            |import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
-            |import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
-            |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
-            |import org.neo4j.cypher.internal.expressions.LabelName
-            |import org.neo4j.cypher.internal.expressions.RelTypeName
-            |import org.neo4j.cypher.internal.expressions.PropertyKeyName
-            |import org.neo4j.cypher.internal.logical.plans._
-            |import org.neo4j.cypher.internal.logical.plans.Expand._
-            |import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
-            |import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Serial
-            |import org.neo4j.cypher.internal.logical.builder.TestException
-            |import org.neo4j.cypher.internal.ir.HasHeaders
-            |import org.neo4j.cypher.internal.ir.NoHeaders
-            |import org.neo4j.cypher.internal.ir.EagernessReason
-            |import org.neo4j.cypher.internal.ir.SelectivePathPattern.CountInteger
-            |import org.neo4j.cypher.internal.util.attribution.Id
-            |import org.neo4j.cypher.internal.util.InputPosition
-            |import org.neo4j.cypher.internal.util.UpperBound.Limited
-            |import org.neo4j.cypher.internal.util.Repetition
-            |// For Cypher types CT...
-            |import org.neo4j.cypher.internal.util.symbols._
-            |import org.neo4j.cypher.internal.util.UpperBound.Unlimited
-            |import org.neo4j.graphdb.schema.IndexType
-            |import org.neo4j.cypher.internal.logical.plans.FindShortestPaths._
-            |import org.neo4j.cypher.internal.logical.plans.TraversalPathMode._
-            |""".stripMargin
-        )
-        interpreter.bind("result", "Array[AnyRef]", res)
+    LogicalPlanToPlanBuilderStringTest.RESULT_ARRAY.withValue(res) {
+      try {
+        // The Scala 3 REPL creates a fresh URLClassLoader (child of the system classloader) for
+        // generated code, so without an explicit parent it would load a second copy of
+        // LogicalPlanToPlanBuilderStringTest with a different RESULT_ARRAY instance.
+        // Passing the test classloader as parent ensures both sides share the same instance.
+        val repl = new ReplDriver(
+          Array("-usejavacp", "-color:never"),
+          out = new java.io.PrintStream(errStream),
+          classLoader = Some(Thread.currentThread().getContextClassLoader)
+        ) {
+          override protected def redirectOutput: Boolean =
+            false // don't redirect output, ScalaTest uses it for communicating test results
+        }
+        repl.run(
+          s"""$imports
+             |org.neo4j.cypher.internal.logical.builder.LogicalPlanToPlanBuilderStringTest.RESULT_ARRAY.value(0) = $completeCode
+             |""".stripMargin
+        )(using repl.initialState)
+      } catch {
+        case t: Throwable =>
+          fail("Failed to interpret generated code: ", t)
       }
-      interpreter.interpret(s"result(0) = $completeCode")
-    } catch {
-      case t: Throwable =>
-        fail("Failed to interpret generated code: ", t)
-    } finally {
-      interpreter.close()
     }
-    res(0).asInstanceOf[LogicalPlan]
+
+    val plan: AnyRef = res.head
+    if (plan == null) {
+      throw new RuntimeException(s"This code did not produce a plan:\n$code\nREPL output:\n$errStream")
+    }
+    plan.asInstanceOf[LogicalPlan]
   }
 
   /**
@@ -3680,6 +3688,11 @@ class LogicalPlanToPlanBuilderStringTest
       }
     }
   }
+}
+
+object LogicalPlanToPlanBuilderStringTest {
+  // Passes the result array into the REPL's generated code via a thread-local storage.
+  val RESULT_ARRAY: DynamicVariable[Array[AnyRef]] = new DynamicVariable[Array[AnyRef]](null)
 }
 
 case class TestException() extends RuntimeException()

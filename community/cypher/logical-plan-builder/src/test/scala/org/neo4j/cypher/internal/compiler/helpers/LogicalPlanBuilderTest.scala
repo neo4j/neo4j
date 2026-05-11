@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher3.beLike
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasAnyLabel
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -36,11 +36,11 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.Extractors3.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
 
-class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupport {
+class LogicalPlanBuilderTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("should correctly insert HasLabels/HasTypes/HasLabelsOrTypes in .filter after .input") {
     val plan = new LogicalPlanBuilder()

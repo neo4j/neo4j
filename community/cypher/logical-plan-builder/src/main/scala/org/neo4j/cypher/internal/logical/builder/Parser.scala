@@ -105,7 +105,6 @@ trait Parser {
             else ArgumentUnordered
           f.withOrder(order)
         case e: Expression => e
-        case e             => throw new IllegalArgumentException(s"Unexpected aggregation expression: $e")
       }
     case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as an aggregation expression")
   }

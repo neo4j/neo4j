@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class AbstractLogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupport {
+class AbstractLogicalPlanBuilderTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("should allocate sequential logical plan ids") {
     // when

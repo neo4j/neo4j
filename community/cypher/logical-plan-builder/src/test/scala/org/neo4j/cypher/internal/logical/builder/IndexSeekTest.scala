@@ -75,10 +75,10 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.graphdb.schema.IndexType
 
-class IndexSeekTest extends CypherFunSuite {
+class IndexSeekTest extends CypherFunSuite3 {
 
   implicit val idGen: IdGen = SameId(Id(42))
   private val pos = InputPosition.NONE

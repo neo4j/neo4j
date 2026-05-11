@@ -133,6 +133,8 @@ class CompressPlanIDsTest extends CypherPlannerTestSuite with AstConstructionTes
 
   private def logicalPlanBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder() {
     override val idGen: IdGen = new GapIdGen
+
+    override def build(readOnly: Boolean = true): LogicalPlan = super.build(readOnly)
   }
 }
 

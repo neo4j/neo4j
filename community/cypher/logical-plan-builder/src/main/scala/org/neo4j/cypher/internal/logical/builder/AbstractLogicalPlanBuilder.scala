@@ -371,21 +371,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   sealed protected trait OperatorBuilder
 
-  protected case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder {
+  protected class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
 
     def planConstructor(): LogicalPlan = planToIdConstructor(SameId(id))
   }
 
-  protected case class UnaryOperator(planToIdConstructor: LogicalPlan => IdGen => LogicalPlan) extends OperatorBuilder {
+  protected class UnaryOperator(planToIdConstructor: LogicalPlan => IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
 
     def planConstructor: LogicalPlan => LogicalPlan = planToIdConstructor(_)(SameId(id))
   }
 
-  protected case class BinaryOperator(planToIdConstructor: (LogicalPlan, LogicalPlan) => IdGen => LogicalPlan)
+  protected class BinaryOperator(planToIdConstructor: (LogicalPlan, LogicalPlan) => IdGen => LogicalPlan)
       extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
@@ -4116,7 +4116,7 @@ object AbstractLogicalPlanBuilder {
   // Note! Parses with default language.
   def coerceToPredicate(expression: String) = CoerceToPredicate(Parser.Latest.parseExpression(expression))
 
-  case class PushdownOperators private (
+  case class PushdownOperators(
     filter: Seq[Expression] = Seq.empty,
     distinct: Option[Expression] = None,
     orderBy: Seq[(Expression, PropertyKeyNameOrder)] = Seq.empty,
