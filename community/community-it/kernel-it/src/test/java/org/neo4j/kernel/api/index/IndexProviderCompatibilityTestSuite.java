@@ -51,14 +51,14 @@ abstract class IndexProviderCompatibilityTestSuite {
     }
 
     @Nested
-    class ReadOnlyMinimalIndexAccessor extends MinimalIndexAccessorCompatibility.ReadOnly {
+    class ReadOnlyMinimalIndexAccessor extends MinimalIndexAccessorCompatibilityTest.ReadOnly {
         ReadOnlyMinimalIndexAccessor() {
             super(IndexProviderCompatibilityTestSuite.this);
         }
     }
 
     @Nested
-    class GeneralMinimalIndexAccessor extends MinimalIndexAccessorCompatibility.General {
+    class GeneralMinimalIndexAccessor extends MinimalIndexAccessorCompatibilityTest.General {
         GeneralMinimalIndexAccessor() {
             super(IndexProviderCompatibilityTestSuite.this);
         }

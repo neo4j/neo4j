@@ -41,12 +41,13 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 
-class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBase {
-    MinimalIndexAccessorCompatibility(IndexProviderCompatibilityTestSuite testSuite, IndexPrototype indexPrototype) {
+abstract class MinimalIndexAccessorCompatibilityTest extends IndexProviderCompatabilityTestBase {
+    MinimalIndexAccessorCompatibilityTest(
+            IndexProviderCompatibilityTestSuite testSuite, IndexPrototype indexPrototype) {
         super(testSuite, indexPrototype);
     }
 
-    abstract static class General extends MinimalIndexAccessorCompatibility {
+    abstract static class General extends MinimalIndexAccessorCompatibilityTest {
         private MinimalIndexAccessor minimalIndexAccessor;
 
         General(IndexProviderCompatibilityTestSuite testSuite) {
@@ -96,7 +97,7 @@ class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBa
         }
     }
 
-    abstract static class ReadOnly extends MinimalIndexAccessorCompatibility {
+    abstract static class ReadOnly extends MinimalIndexAccessorCompatibilityTest {
         ReadOnly(IndexProviderCompatibilityTestSuite testSuite) {
             super(testSuite, testSuite.indexPrototype());
         }
