@@ -35,7 +35,10 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.VectorQuantizationType;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.SkipOnSpd;
+import org.neo4j.test.extension.SkipOnSpd.Note;
 
+@SkipOnSpd(reason = "doubles are currently not supported via the block serialization SPD uses", notes = Note.temporary)
 public class VectorQuantizationTest extends VectorSSFTestBase {
 
     public static final int DIMENSION = 8;
