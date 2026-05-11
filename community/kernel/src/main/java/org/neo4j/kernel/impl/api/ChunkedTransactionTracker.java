@@ -41,6 +41,10 @@ public class ChunkedTransactionTracker {
         registry.remove(transactionId);
     }
 
+    public void clear() {
+        registry.clear();
+    }
+
     public record TransactionInfo(
             long transactionId, long lastBatchAppendIndex, long chunkId, KernelVersion kernelVersion, long leaseId) {}
 }

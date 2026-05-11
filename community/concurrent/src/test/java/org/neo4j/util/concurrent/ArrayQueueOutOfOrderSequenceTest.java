@@ -21,6 +21,7 @@ package org.neo4j.util.concurrent;
 
 import static java.lang.Integer.max;
 import static java.lang.Thread.sleep;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -331,6 +332,88 @@ class ArrayQueueOutOfOrderSequenceTest {
                 throw thrown.get();
             }
         }
+    }
+
+    @Test
+    void setWithMissingNumbersShouldRestoreState() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, EMPTY_META);
+        sequence.offer(1, EMPTY_META);
+        sequence.offer(2, EMPTY_META);
+        sequence.offer(3, EMPTY_META);
+        sequence.offer(6, simpleMeta(6));
+        sequence.offer(8, simpleMeta(8));
+
+        var reverseSnapshot = sequence.reverseSnapshot();
+        assertThat(reverseSnapshot.highestGapFree()).isEqualTo(3);
+        assertThat(reverseSnapshot.highestEverSeen()).isEqualTo(8);
+        assertThat(reverseSnapshot.missingIds()).containsExactly(4, 5, 7);
+
+        var restored = new ArrayQueueOutOfOrderSequence(0, 8, EMPTY_META);
+        restored.set(reverseSnapshot.highestEverSeen(), EMPTY_META, reverseSnapshot.missingIds());
+
+        assertGet(restored, 3, EMPTY_META);
+        assertThat(restored.highestEverSeen()).isEqualTo(8);
+        var restoredReverse = restored.reverseSnapshot();
+        assertThat(restoredReverse.highestGapFree()).isEqualTo(3);
+        assertThat(restoredReverse.missingIds()).containsExactly(4, 5, 7);
+    }
+
+    @Test
+    void setWithMissingNumbersThenOfferMissing() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, EMPTY_META);
+        Meta setMeta = simpleMeta(3);
+        sequence.set(8, setMeta, new long[] {4, 5, 7});
+
+        assertGet(sequence, 3, setMeta);
+
+        sequence.offer(4, simpleMeta(4));
+        sequence.offer(5, simpleMeta(5));
+        assertGet(sequence, 6, setMeta);
+
+        sequence.offer(7, simpleMeta(7));
+        assertGet(sequence, 8, setMeta);
+    }
+
+    @Test
+    void setWithMissingNumbersThenOfferNewNumbers() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, EMPTY_META);
+        sequence.set(8, EMPTY_META, new long[] {7});
+
+        assertGet(sequence, 6, EMPTY_META);
+
+        sequence.offer(9, simpleMeta(9));
+        assertGet(sequence, 6, EMPTY_META); // still blocked by gap at 7
+
+        sequence.offer(7, simpleMeta(7));
+        assertGet(sequence, 9, simpleMeta(9));
+    }
+
+    @Test
+    void setWithEmptyMissingNumbers() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, EMPTY_META);
+        sequence.set(5, simpleMeta(5), EMPTY_LONG_ARRAY);
+
+        assertGet(sequence, 5, simpleMeta(5));
+        assertThat(sequence.highestEverSeen()).isEqualTo(5);
+        assertThat(sequence.reverseSnapshot().missingIds()).isEmpty();
+
+        sequence.offer(6, simpleMeta(6));
+        assertGet(sequence, 6, simpleMeta(6));
+    }
+
+    @Test
+    void setWithMissingNumbersSnapshotConsistency() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, EMPTY_META);
+        sequence.set(9, EMPTY_META, new long[] {4, 6});
+
+        var snapshot = sequence.snapshot();
+        assertThat(snapshot.highestGapFree()).isEqualTo(3);
+        assertThat(snapshot.idsOutOfOrder()).containsExactly(5, 7, 8, 9);
+
+        var reverseSnapshot = sequence.reverseSnapshot();
+        assertThat(reverseSnapshot.highestGapFree()).isEqualTo(3);
+        assertThat(reverseSnapshot.highestEverSeen()).isEqualTo(9);
+        assertThat(reverseSnapshot.missingIds()).containsExactly(4, 6);
     }
 
     @Test

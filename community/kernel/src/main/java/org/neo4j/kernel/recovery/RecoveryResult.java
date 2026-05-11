@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-public enum TransactionStatus {
-    ROLLED_BACK,
-    INCOMPLETE,
-    INCOMPLETE_RECOVERABLE,
-    RECOVERABLE,
-}
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
+
+public record RecoveryResult(boolean recoveryPerformed, RecoveryOutcome outcome) {}

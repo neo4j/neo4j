@@ -68,6 +68,8 @@ public interface OutOfOrderSequence {
 
     void set(long number, Meta meta);
 
+    void set(long highestObserved, Meta meta, long[] missingNumbers);
+
     Snapshot snapshot();
 
     ReverseSnapshot reverseSnapshot();

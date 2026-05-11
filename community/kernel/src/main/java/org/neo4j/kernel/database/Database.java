@@ -20,6 +20,7 @@
 package org.neo4j.kernel.database;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -28,6 +29,8 @@ import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.pickLogFormatOnUpgrade;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.APPLY;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.ROLLBACK;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
@@ -94,6 +97,7 @@ import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.MultiVersionRollbackAvailabilityService;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -141,6 +145,7 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
@@ -172,6 +177,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.RecoveryResult;
 import org.neo4j.kernel.recovery.RecoveryStartupChecker;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
@@ -270,7 +276,7 @@ public class Database extends AbstractDatabase {
     private TransactionCommitmentFactory commitmentFactory;
     private VersionStorage versionStorage;
     private LeaseMonitor leaseMonitor;
-    private ChunkedTransactionTracker chunkedTransactionTracker;
+    private final ChunkedTransactionTracker chunkedTransactionTracker;
     private MultiVersionDatabaseRollbackService multiVersionDatabaseRollbackService;
     private volatile RecoveryPredicateSupplier recoveryPredicate = RecoveryPredicateSupplier.ALL;
 
@@ -329,6 +335,7 @@ public class Database extends AbstractDatabase {
         this.vectorStoreCreator = context.getVectorStoreCreator();
         this.databaseCreationOptions = context.getDatabaseCreationOptions();
         this.logPruneStrategyFactory = context.logPruneStrategyFactory();
+        this.chunkedTransactionTracker = new ChunkedTransactionTracker();
     }
 
     /**
@@ -343,7 +350,6 @@ public class Database extends AbstractDatabase {
         var storageLockManager = storageEngineFactory.createLockManager(databaseConfig, this.clock, transactionStats);
         this.databaseLockManager =
                 multiVersioned ? new MultiVersionLockManager(storageLockManager) : storageLockManager;
-        this.chunkedTransactionTracker = new ChunkedTransactionTracker();
         this.lockService = createLockService(storageEngineFactory, getNamedDatabaseId());
         this.databaseLayout = storageEngineFactory.formatSpecificDatabaseLayout(databaseLayout);
         new DatabaseDirectoriesCreator(fs, databaseLayout).createDirectories();
@@ -426,7 +432,7 @@ public class Database extends AbstractDatabase {
     /**
      * Start the database and make it ready for transaction processing.
      * A database will automatically recover itself, if necessary, when started.
-     * If the store files are obsolete (older than oldest supported version), then start will throw an exception.
+     * If the store files are obsolete (older than the oldest supported version), then start will throw an exception.
      */
     @Override
     protected void specificStart() throws IOException {
@@ -443,7 +449,7 @@ public class Database extends AbstractDatabase {
                 databaseConfig, databasePageCache, otherDatabaseMemoryTracker);
 
         // Check the tail of transaction logs and validate version
-        LogFiles logFiles = getLogFiles();
+        LogFiles logFiles = getLogFiles(RecoveryOutcome.EMPTY_OUTCOME);
         LogTailMetadata tailMetadata = logFiles.getTailMetadata();
         long lastClosedTxId = tailMetadata.getLastCommittedTransaction().id();
         initialiseContextFactory(() -> new TransactionIdSnapshot(lastClosedTxId), () -> lastClosedTxId);
@@ -451,7 +457,7 @@ public class Database extends AbstractDatabase {
         storageExists = storageEngineFactory.storageExists(fs, databaseLayout);
         validateStoreAndTxLogs(tailMetadata, cursorContextFactory, storageExists);
 
-        if (Recovery.performRecovery(context(
+        RecoveryResult recoveryResult = Recovery.performRecovery(context(
                         fs,
                         globalPageCache,
                         tracers,
@@ -465,14 +471,31 @@ public class Database extends AbstractDatabase {
                 .monitors(databaseMonitors)
                 .extensionFactories(extensionFactories)
                 .rollbackRegistry(chunkedTransactionTracker)
+                .incompleteTransactionAction(HostedOnMode.SINGLE == mode ? ROLLBACK : APPLY)
                 .startupChecker(new RecoveryStartupChecker(startupController, namedDatabaseId))
-                .clock(clock))) {
+                .clock(clock));
+        if (recoveryResult.recoveryPerformed()) {
             // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the
             // latest info
-            logFiles = getLogFiles();
+            logFiles = getLogFiles(recoveryResult.outcome());
             tailMetadata = logFiles.getTailMetadata();
-            long recoveredTxId = tailMetadata.getLastCommittedTransaction().id();
-            initialiseContextFactory(() -> new TransactionIdSnapshot(recoveredTxId), () -> recoveredTxId);
+
+            RecoveryOutcome recoveryOutcome = recoveryResult.outcome();
+            long recoveredTxId;
+            long[] notClosedTransactionIds;
+            long highestEverObserved;
+            if (recoveryOutcome.isEmpty()) {
+                notClosedTransactionIds = EMPTY_LONG_ARRAY;
+                recoveredTxId = tailMetadata.getLastCommittedTransaction().id();
+                highestEverObserved = recoveredTxId;
+            } else {
+                recoveredTxId = recoveryOutcome.lastClosedGapFree().number();
+                notClosedTransactionIds = recoveryOutcome.notClosedTransactionIds();
+                highestEverObserved = recoveryOutcome.lastCommittingTransactionId();
+            }
+            initialiseContextFactory(
+                    () -> new TransactionIdSnapshot(recoveredTxId, highestEverObserved, notClosedTransactionIds),
+                    () -> recoveredTxId);
         }
 
         LogMetadataProvider logMetadataProvider =
@@ -660,6 +683,10 @@ public class Database extends AbstractDatabase {
                 clock);
         databaseDependencies.satisfyDependency(multiVersionDatabaseRollbackService);
 
+        var rollBackAvailabilityService =
+                new MultiVersionRollbackAvailabilityService(databaseAvailabilityGuard, chunkedTransactionTracker);
+        databaseDependencies.satisfyDependency(rollBackAvailabilityService);
+        life.add(rollBackAvailabilityService);
         life.add(onStop(() -> {
             this.executionEngine.clearQueryCaches();
             this.executionEngine.close();
@@ -754,7 +781,7 @@ public class Database extends AbstractDatabase {
         tx.schemaWrite().indexCreate(prototype);
     }
 
-    private LogFiles getLogFiles() throws IOException {
+    private LogFiles getLogFiles(RecoveryOutcome recoveryOutcome) throws IOException {
         DbmsRuntimeFallbackKernelVersionProvider kernelVersionProvider = new DbmsRuntimeFallbackKernelVersionProvider(
                 databaseDependencies, databaseLayout.getDatabaseName(), databaseConfig);
         return LogFilesBuilder.writeableBuilder(databaseLayout, fs, kernelVersionProvider, kernelVersionProvider)
@@ -766,6 +793,7 @@ public class Database extends AbstractDatabase {
                 .withMonitors(databaseMonitors)
                 .withClock(clock)
                 .withStorageEngineFactory(storageEngineFactory)
+                .withRecoveryOutcome(recoveryOutcome)
                 .withTailReadingMaxPosition(recoveryPredicate.get().maxPosition())
                 .build();
     }
@@ -1353,6 +1381,11 @@ public class Database extends AbstractDatabase {
     @Override
     public CursorContextFactory getCursorContextFactory() {
         return cursorContextFactory;
+    }
+
+    @Override
+    public ChunkedTransactionTracker getChunkedTransactionTracker() {
+        return chunkedTransactionTracker;
     }
 
     @Override

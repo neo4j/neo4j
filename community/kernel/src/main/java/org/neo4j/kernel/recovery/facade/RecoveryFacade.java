@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery.facade;
 
 import java.io.IOException;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
 import org.neo4j.kernel.recovery.RecoveryMode;
 
 public interface RecoveryFacade {
@@ -31,11 +32,13 @@ public interface RecoveryFacade {
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode,
+            ChunkedTransactionTracker chunkedTransactionTracker,
             boolean rollbackIncompleteTransactions,
             boolean forceFailOnCorruptedLogs)
             throws IOException;
 
-    void performRecovery(DatabaseLayout databaseLayout) throws IOException;
+    void performRecovery(DatabaseLayout databaseLayout, ChunkedTransactionTracker chunkedTransactionTracker)
+            throws IOException;
 
     void performRecovery(
             DatabaseLayout databaseLayout,

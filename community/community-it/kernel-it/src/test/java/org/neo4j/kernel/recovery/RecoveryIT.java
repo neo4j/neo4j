@@ -52,6 +52,7 @@ import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_F
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.BIGGEST_HEADER;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.STOP;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLogFile;
@@ -2412,7 +2413,7 @@ class RecoveryIT {
                 .monitors(monitors)
                 .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
                 .clock(fakeClock)
-                .rollbackIncompleteTransactions(false));
+                .incompleteTransactionAction(STOP));
 
         // Verify where we recovered to by checking the checkpoint created by recovery
         LogTailMetadata tailMetadata = new LogTailExtractor(fileSystem, config, storageEngineFactory, EMPTY)
@@ -2450,20 +2451,21 @@ class RecoveryIT {
         assertFalse(isRecoveryRequired(databaseLayout, config, predicate));
 
         assertFalse(performRecovery(Recovery.contextWithNoLogTail(
-                        fileSystem,
-                        pageCache,
-                        EMPTY,
-                        config,
-                        databaseLayout,
-                        INSTANCE,
-                        IOController.DISABLED,
-                        logProvider,
-                        LATEST_KERNEL_VERSION_PROVIDER)
-                .recoveryPredicate(predicate)
-                .monitors(monitors)
-                .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
-                .clock(fakeClock)
-                .rollbackIncompleteTransactions(false)));
+                                fileSystem,
+                                pageCache,
+                                EMPTY,
+                                config,
+                                databaseLayout,
+                                INSTANCE,
+                                IOController.DISABLED,
+                                logProvider,
+                                LATEST_KERNEL_VERSION_PROVIDER)
+                        .recoveryPredicate(predicate)
+                        .monitors(monitors)
+                        .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
+                        .clock(fakeClock)
+                        .incompleteTransactionAction(STOP))
+                .recoveryPerformed());
     }
 
     @Test
@@ -2515,20 +2517,21 @@ class RecoveryIT {
         assertFalse(isRecoveryRequired(databaseLayout, config, predicate));
 
         assertFalse(performRecovery(Recovery.contextWithNoLogTail(
-                        fileSystem,
-                        pageCache,
-                        EMPTY,
-                        config,
-                        databaseLayout,
-                        INSTANCE,
-                        IOController.DISABLED,
-                        logProvider,
-                        LATEST_KERNEL_VERSION_PROVIDER)
-                .recoveryPredicate(predicate)
-                .monitors(monitors)
-                .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
-                .clock(fakeClock)
-                .rollbackIncompleteTransactions(false)));
+                                fileSystem,
+                                pageCache,
+                                EMPTY,
+                                config,
+                                databaseLayout,
+                                INSTANCE,
+                                IOController.DISABLED,
+                                logProvider,
+                                LATEST_KERNEL_VERSION_PROVIDER)
+                        .recoveryPredicate(predicate)
+                        .monitors(monitors)
+                        .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
+                        .clock(fakeClock)
+                        .incompleteTransactionAction(STOP))
+                .recoveryPerformed());
     }
 
     @Test
@@ -2600,20 +2603,21 @@ class RecoveryIT {
         assertTrue(isRecoveryRequired(databaseLayout, config, predicate));
 
         assertTrue(performRecovery(context(
-                        fileSystem,
-                        pageCache,
-                        EMPTY,
-                        config,
-                        databaseLayout,
-                        INSTANCE,
-                        IOController.DISABLED,
-                        logProvider,
-                        tailMetadata)
-                .recoveryPredicate(predicate)
-                .monitors(monitors)
-                .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
-                .clock(fakeClock)
-                .rollbackIncompleteTransactions(false)));
+                                fileSystem,
+                                pageCache,
+                                EMPTY,
+                                config,
+                                databaseLayout,
+                                INSTANCE,
+                                IOController.DISABLED,
+                                logProvider,
+                                tailMetadata)
+                        .recoveryPredicate(predicate)
+                        .monitors(monitors)
+                        .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
+                        .clock(fakeClock)
+                        .incompleteTransactionAction(STOP))
+                .recoveryPerformed());
     }
 
     @Test
@@ -2663,20 +2667,21 @@ class RecoveryIT {
         assertTrue(isRecoveryRequired(databaseLayout, config, predicate));
 
         assertTrue(performRecovery(Recovery.contextWithNoLogTail(
-                        fileSystem,
-                        pageCache,
-                        EMPTY,
-                        config,
-                        databaseLayout,
-                        INSTANCE,
-                        IOController.DISABLED,
-                        logProvider,
-                        LATEST_KERNEL_VERSION_PROVIDER)
-                .recoveryPredicate(predicate)
-                .monitors(monitors)
-                .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
-                .clock(fakeClock)
-                .rollbackIncompleteTransactions(false)));
+                                fileSystem,
+                                pageCache,
+                                EMPTY,
+                                config,
+                                databaseLayout,
+                                INSTANCE,
+                                IOController.DISABLED,
+                                logProvider,
+                                LATEST_KERNEL_VERSION_PROVIDER)
+                        .recoveryPredicate(predicate)
+                        .monitors(monitors)
+                        .startupChecker(RecoveryStartupChecker.EMPTY_CHECKER)
+                        .clock(fakeClock)
+                        .incompleteTransactionAction(STOP))
+                .recoveryPerformed());
     }
 
     @Test

@@ -44,6 +44,8 @@ import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointLogSeri
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.ROLLBACK;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.STOP;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
@@ -331,7 +333,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
-                    false,
+                    ROLLBACK,
                     contextFactory,
                     Clocks.systemClock(),
                     LatestVersions.BINARY_VERSIONS,
@@ -434,7 +436,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
-                    false,
+                    STOP,
                     contextFactory,
                     Clocks.systemClock(),
                     LatestVersions.BINARY_VERSIONS,
@@ -579,7 +581,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
-                    false,
+                    STOP,
                     contextFactory,
                     Clocks.systemClock(),
                     LatestVersions.BINARY_VERSIONS,
@@ -681,7 +683,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
-                    false,
+                    STOP,
                     contextFactory,
                     Clocks.systemClock(),
                     LatestVersions.BINARY_VERSIONS,
@@ -983,7 +985,7 @@ class TransactionLogsRecoveryTest {
                 false,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
-                false,
+                STOP,
                 contextFactory,
                 Clocks.systemClock(),
                 LatestVersions.BINARY_VERSIONS,
@@ -1093,7 +1095,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     startupChecker,
                     RecoveryPredicate.ALL,
-                    true,
+                    ROLLBACK,
                     contextFactory,
                     Clocks.systemClock(),
                     LatestVersions.BINARY_VERSIONS,

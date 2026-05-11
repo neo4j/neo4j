@@ -19,21 +19,57 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.APPLY;
+
+import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation.BatchInformation;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.OpenTransactionMetadata;
+import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 class RecoveryContextTracker {
+    private final IncompleteTransactionAction incompleteTransactionAction;
     private BatchInformation lastHighestTransactionBatchInfo = null;
     private BatchInformation lastBatchInfo = null;
     private LogPosition recoveryToPosition;
     private LogPosition lastTransactionPosition;
+    private OpenTransactionMetadata earliestOpenTransactionMetadata;
     private long recoveredBatches;
+    private ArrayQueueOutOfOrderSequence closedTxTracker;
+    private final MutableLongLongMap transactionIdFirstAppendIndexMap = LongLongMaps.mutable.empty();
 
-    RecoveryContextTracker(LogPosition recoveryStartPosition, CheckpointInfo checkpointInfo) {
+    RecoveryContextTracker(
+            LogPosition recoveryStartPosition,
+            CheckpointInfo checkpointInfo,
+            IncompleteTransactionAction incompleteTransactionAction) {
+        this.incompleteTransactionAction = incompleteTransactionAction;
         updatePositions(recoveryStartPosition);
         initInitialInfo(checkpointInfo);
+        closedTxTracker = initClosedTxTracker(checkpointInfo, incompleteTransactionAction);
+    }
+
+    private ArrayQueueOutOfOrderSequence initClosedTxTracker(
+            CheckpointInfo checkpointInfo, IncompleteTransactionAction incompleteTransactionAction) {
+        if (APPLY != incompleteTransactionAction || checkpointInfo == null) {
+            return null;
+        }
+        TransactionId transactionId = checkpointInfo.transactionId();
+        return new ArrayQueueOutOfOrderSequence(
+                transactionId.id(),
+                128,
+                new OutOfOrderSequence.Meta(
+                        checkpointInfo.transactionLogPosition().getLogVersion(),
+                        checkpointInfo.transactionLogPosition().getByteOffset(),
+                        transactionId.kernelVersion().version(),
+                        transactionId.checksum(),
+                        transactionId.commitTimestamp(),
+                        transactionId.consensusIndex(),
+                        transactionId.appendIndex()));
     }
 
     private void initInitialInfo(CheckpointInfo checkpointInfo) {
@@ -55,8 +91,39 @@ class RecoveryContextTracker {
         }
         lastBatchInfo = batchInfo;
 
+        offerClosedTx(nextCommandBatch, position);
         updatePositions(position);
+
         recoveredBatches++;
+    }
+
+    private void offerClosedTx(CommittedCommandBatchRepresentation nextCommandBatch, LogPosition position) {
+        if (APPLY != incompleteTransactionAction) {
+            return;
+        }
+        if (nextCommandBatch.commandBatch().isFirst()) {
+            transactionIdFirstAppendIndexMap.put(nextCommandBatch.txId(), nextCommandBatch.appendIndex());
+        }
+        if (nextCommandBatch.commandBatch().isLast()) {
+            long firstAppendIndex = transactionIdFirstAppendIndexMap.removeKeyIfAbsent(nextCommandBatch.txId(), -1);
+            if (firstAppendIndex == -1) {
+                throw new IllegalStateException(
+                        "Transaction " + nextCommandBatch.txId() + " first append index is missing.");
+            }
+            OutOfOrderSequence.Meta meta = new OutOfOrderSequence.Meta(
+                    position.getLogVersion(),
+                    position.getByteOffset(),
+                    nextCommandBatch.batchInformation().kernelVersion().version(),
+                    nextCommandBatch.batchInformation().checksum(),
+                    -1,
+                    nextCommandBatch.batchInformation().consensusIndex(),
+                    firstAppendIndex);
+            if (closedTxTracker != null) {
+                closedTxTracker.offer(nextCommandBatch.txId(), meta);
+                return;
+            }
+            closedTxTracker = new ArrayQueueOutOfOrderSequence(nextCommandBatch.txId(), 128, meta);
+        }
     }
 
     void rollbackBatch(RollbackTransactionInfo rollbackTransactionInfo, LogPosition position) {
@@ -83,6 +150,10 @@ class RecoveryContextTracker {
         return lastHighestTransactionBatchInfo;
     }
 
+    public OutOfOrderSequence.NumberWithMeta gapFreeClosedTransactionInfo() {
+        return closedTxTracker.get();
+    }
+
     BatchInformation getLastBatchInfo() {
         return lastBatchInfo;
     }
@@ -97,5 +168,16 @@ class RecoveryContextTracker {
 
     boolean hasRecoveredBatches() {
         return recoveredBatches > 0;
+    }
+
+    public void unrecoverableBatch(OpenTransactionMetadata openTransactionMetadata) {
+        if (earliestOpenTransactionMetadata != null) {
+            return;
+        }
+        this.earliestOpenTransactionMetadata = openTransactionMetadata;
+    }
+
+    public OpenTransactionMetadata getEarliestOpenTransactionMetadata() {
+        return earliestOpenTransactionMetadata;
     }
 }

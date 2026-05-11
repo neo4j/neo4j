@@ -20,6 +20,7 @@
 package org.neo4j.util.concurrent;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.isSorted;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,6 +41,20 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
         this.outOfOrderQueue = new SequenceArray(Numbers.ceilingPowerOfTwo(initialArraySize));
         this.reverseSnapshot =
                 new AtomicReference<>(new ReverseSnapshot(startingNumber, startingNumber, EMPTY_LONG_ARRAY));
+    }
+
+    public ArrayQueueOutOfOrderSequence(
+            long startingNumber, int initialArraySize, Meta initialMeta, long[] missingNumbers) {
+        this(startingNumber, initialArraySize, initialMeta);
+
+        if (missingNumbers == null || missingNumbers.length == 0) {
+            return;
+        }
+        assert isSorted(missingNumbers);
+
+        long base = missingNumbers[0] - 1;
+        outOfOrderQueue.set(base, startingNumber, missingNumbers, initialMeta);
+        highestGapFreeNumber.setRelease(new NumberWithMeta(base, initialMeta));
     }
 
     @Override
@@ -82,6 +97,24 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
         highestEverSeen.setRelease(number);
         highestGapFreeNumber.setRelease(new NumberWithMeta(number, meta));
         outOfOrderQueue.clear();
+    }
+
+    @Override
+    public synchronized void set(long highestSeen, Meta meta, long[] missingNumbers) {
+        reverseSnapshot.setRelease(null);
+        highestEverSeen.setRelease(highestSeen);
+
+        if (missingNumbers.length == 0) {
+            highestGapFreeNumber.setRelease(new NumberWithMeta(highestSeen, meta));
+            outOfOrderQueue.clear();
+            return;
+        }
+
+        assert isSorted(missingNumbers);
+
+        long base = missingNumbers[0] - 1;
+        outOfOrderQueue.set(base, highestSeen, missingNumbers, meta);
+        highestGapFreeNumber.setRelease(new NumberWithMeta(base, meta));
     }
 
     @Override

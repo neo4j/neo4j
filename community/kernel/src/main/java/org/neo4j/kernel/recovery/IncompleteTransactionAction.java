@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.recovery;
 
-public enum TransactionStatus {
-    ROLLED_BACK,
-    INCOMPLETE,
-    INCOMPLETE_RECOVERABLE,
-    RECOVERABLE,
+public enum IncompleteTransactionAction {
+    // we rollback incomplete transactions as part of recovery
+    ROLLBACK,
+    // we try to apply incomplete transactions without rolling them back
+    APPLY,
+    // we stop when first incomplete tx chunk is encountered
+    STOP
 }

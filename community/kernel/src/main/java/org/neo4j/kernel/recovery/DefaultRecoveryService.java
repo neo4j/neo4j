@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.recovery.Recovery.StoreFileChecker;
@@ -165,22 +166,48 @@ public class DefaultRecoveryService implements RecoveryService {
             AppendIndexProvider recoverAppendIndexProvider,
             LogPosition lastRecoveredTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
-            LogPosition checkpointPosition) {
+            LogPosition checkpointPosition,
+            RecoveryOutcome recoveryOutcome) {
         if (highestTransactionRecoveredBatch != null) {
-            transactionIdStore.setLastCommittedAndClosedTransactionId(
-                    highestTransactionRecoveredBatch.txId(),
-                    highestTransactionRecoveredBatch.appendIndex(),
-                    highestTransactionRecoveredBatch.kernelVersion(),
-                    // TODO: misha this checksum is from the first batch while usually its from the last one
-                    highestTransactionRecoveredBatch.checksum(),
-                    highestTransactionRecoveredBatch.timeWritten(),
-                    highestTransactionRecoveredBatch.consensusIndex(),
-                    lastRecoveredTransactionPosition.getByteOffset(),
-                    lastRecoveredTransactionPosition.getLogVersion(),
-                    recoverAppendIndexProvider.getLastAppendIndex());
-            var lastRecoveredTxId = highestTransactionRecoveredBatch.txId();
-            // if there will be index population after that, it will have proper visibility
-            contextFactory.init(() -> new TransactionIdSnapshot(lastRecoveredTxId), () -> lastRecoveredTxId);
+            if (recoveryOutcome.isEmpty()) {
+                transactionIdStore.setLastCommittedAndClosedTransactionId(
+                        highestTransactionRecoveredBatch.txId(),
+                        highestTransactionRecoveredBatch.appendIndex(),
+                        highestTransactionRecoveredBatch.kernelVersion(),
+                        // TODO: misha this checksum is from the first batch while usually its from the last one
+                        highestTransactionRecoveredBatch.checksum(),
+                        highestTransactionRecoveredBatch.timeWritten(),
+                        highestTransactionRecoveredBatch.consensusIndex(),
+                        lastRecoveredTransactionPosition.getByteOffset(),
+                        lastRecoveredTransactionPosition.getLogVersion(),
+                        recoverAppendIndexProvider.getLastAppendIndex());
+                var lastRecoveredTxId = highestTransactionRecoveredBatch.txId();
+                // if there will be index population after that, it will have proper visibility
+                contextFactory.init(() -> new TransactionIdSnapshot(lastRecoveredTxId), () -> lastRecoveredTxId);
+            } else {
+                transactionIdStore.setLastCommittedAndClosedTransactionId(
+                        recoveryOutcome.lastCommittingTransactionId(),
+                        recoveryOutcome.lastClosedGapFree().number(),
+                        recoveryOutcome.notClosedTransactionIds(),
+                        highestTransactionRecoveredBatch.appendIndex(),
+                        // TODO: misha this checksum is from the first batch while usually its from the last one
+                        highestTransactionRecoveredBatch.kernelVersion(),
+                        highestTransactionRecoveredBatch.checksum(),
+                        highestTransactionRecoveredBatch.timeWritten(),
+                        highestTransactionRecoveredBatch.consensusIndex(),
+                        lastRecoveredTransactionPosition.getByteOffset(),
+                        lastRecoveredTransactionPosition.getLogVersion(),
+                        recoverAppendIndexProvider.getLastAppendIndex(),
+                        recoveryOutcome.earliestOpenTransaction(),
+                        recoveryOutcome.lastClosedGapFree());
+                // if there will be index population after that, it will have proper visibility
+                contextFactory.init(
+                        () -> new TransactionIdSnapshot(
+                                recoveryOutcome.lastClosedGapFree().number(),
+                                recoveryOutcome.lastCommittingTransactionId(),
+                                recoveryOutcome.notClosedTransactionIds()),
+                        () -> recoveryOutcome.lastClosedGapFree().number());
+            }
         } else {
             // we do not have last recovered transaction but recovery was still triggered
             // this happens when we read past end of the log file or can't read it at all but recovery was enforced

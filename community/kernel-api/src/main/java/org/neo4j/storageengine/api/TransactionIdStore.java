@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
@@ -210,6 +211,36 @@ public interface TransactionIdStore {
             long byteOffset,
             long logVersion,
             long logsAppendIndex);
+
+    /**
+     * Used by recovery, where last committed/closed transaction ids are set.
+     *
+     * @param lastCommitedTxId                transaction id that will be the last committed id.
+     * @param lastClosedTxId                  transaction id that will be the last closed
+     * @param transactionAppendIndex          append index to set sequence to
+     * @param kernelVersion                   kernel version of transaction that was last closed/committed
+     * @param checksum                        checksum of the transaction.
+     * @param commitTimestamp                 the timestamp of the transaction commit.
+     * @param consensusIndex                  consensus index of the transaction.
+     * @param byteOffset                      offset in the log file where the committed entry has been written.
+     * @param logVersion                      version of log the committed entry has been written into.
+     * @param earliestOpenTransactionMetadata metadata about earliest still open transaction if any
+     * @param lastClosedTxIdInfo              last closed tx id info
+     */
+    void setLastCommittedAndClosedTransactionId(
+            long lastCommitedTxId,
+            long lastClosedTxId,
+            long[] notClosedTransactions,
+            long transactionAppendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion,
+            long logsAppendIndex,
+            OpenTransactionMetadata earliestOpenTransactionMetadata,
+            OutOfOrderSequence.NumberWithMeta lastClosedTxIdInfo);
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method

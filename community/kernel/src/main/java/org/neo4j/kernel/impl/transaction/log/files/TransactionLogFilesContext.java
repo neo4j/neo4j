@@ -30,6 +30,7 @@ import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -60,4 +61,5 @@ public record TransactionLogFilesContext(
         BinarySupportedKernelVersions binarySupportedKernelVersions,
         boolean readOnly,
         int envelopeSegmentBlockSizeBytes,
-        int bufferSizeBytes) {}
+        int bufferSizeBytes,
+        RecoveryOutcome recoveryOutcome) {}

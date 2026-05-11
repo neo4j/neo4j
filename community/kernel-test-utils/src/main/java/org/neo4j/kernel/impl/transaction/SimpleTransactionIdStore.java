@@ -139,6 +139,37 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
+            long lastCommitedTxId,
+            long lastClosedTxId,
+            long[] notClosedTransactions,
+            long transactionAppendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion,
+            long logsAppendIndex,
+            OpenTransactionMetadata earliestOpenTransactionMetadata,
+            OutOfOrderSequence.NumberWithMeta lastClosedTxIdInfo) {
+        committingTransactionId.set(lastCommitedTxId);
+        committedTransactionId.set(new TransactionId(
+                lastCommitedTxId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex));
+        var meta = new Meta(
+                logVersion,
+                byteOffset,
+                kernelVersion.version(),
+                checksum,
+                commitTimestamp,
+                consensusIndex,
+                transactionAppendIndex);
+        lastClosedBatch.set(logsAppendIndex, meta);
+        closedTransactionId.set(lastCommitedTxId, meta);
+        appendBatchInfo.set(logsAppendIndex, LogPosition.UNSPECIFIED);
+    }
+
+    @Override
+    public void setLastCommittedAndClosedTransactionId(
             long transactionId,
             long transactionAppendIndex,
             KernelVersion kernelVersion,

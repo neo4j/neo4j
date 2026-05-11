@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.recovery.facade;
 
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.ROLLBACK;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.STOP;
 import static org.neo4j.kernel.recovery.facade.RecoveryFacadeMonitor.EMPTY_MONITOR;
 
 import java.io.IOException;
@@ -29,6 +31,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryMode;
 import org.neo4j.logging.InternalLogProvider;
@@ -66,6 +69,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode,
+            ChunkedTransactionTracker chunkedTransactionTracker,
             boolean rollbackIncompleteTransactions,
             boolean forceFailOnCorruptedLogs)
             throws IOException {
@@ -76,12 +80,21 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                 recoveryMode,
                 false,
                 rollbackIncompleteTransactions,
-                forceFailOnCorruptedLogs);
+                forceFailOnCorruptedLogs,
+                chunkedTransactionTracker);
     }
 
     @Override
-    public void performRecovery(DatabaseLayout databaseLayout) throws IOException {
-        performRecovery(databaseLayout, EMPTY_MONITOR, RecoveryMode.FULL, false);
+    public void performRecovery(DatabaseLayout databaseLayout, ChunkedTransactionTracker chunkedTransactionTracker)
+            throws IOException {
+        performRecovery(
+                databaseLayout,
+                RecoveryCriteria.ALL,
+                EMPTY_MONITOR,
+                RecoveryMode.FULL,
+                chunkedTransactionTracker,
+                false,
+                false);
     }
 
     @Override
@@ -91,7 +104,14 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             RecoveryMode mode,
             boolean forceFailOnCorruptedLogs)
             throws IOException {
-        performRecovery(databaseLayout, RecoveryCriteria.ALL, monitor, mode, true, forceFailOnCorruptedLogs);
+        performRecovery(
+                databaseLayout,
+                RecoveryCriteria.ALL,
+                monitor,
+                mode,
+                new ChunkedTransactionTracker(),
+                true,
+                forceFailOnCorruptedLogs);
     }
 
     @Override
@@ -102,7 +122,13 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             boolean rollbackIncompleteTransactions)
             throws IOException {
         performRecovery(
-                databaseLayout, recoveryCriteria, monitor, RecoveryMode.FULL, rollbackIncompleteTransactions, false);
+                databaseLayout,
+                recoveryCriteria,
+                monitor,
+                RecoveryMode.FULL,
+                new ChunkedTransactionTracker(),
+                rollbackIncompleteTransactions,
+                false);
     }
 
     @Override
@@ -119,7 +145,8 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                 RecoveryMode.FULL,
                 true,
                 rollbackIncompleteTransactions,
-                false);
+                false,
+                new ChunkedTransactionTracker());
     }
 
     private void recovery(
@@ -129,7 +156,8 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             RecoveryMode mode,
             boolean force,
             boolean rollbackIncompleteTransactions,
-            boolean forceFailOnCorruptedLogs)
+            boolean forceFailOnCorruptedLogs,
+            ChunkedTransactionTracker chunkedTransactionTracker)
             throws IOException {
         monitor.recoveryStarted();
         var recoveryContext = Recovery.contextWithNoLogTail(
@@ -152,7 +180,8 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
         }
         Recovery.performRecovery(recoveryContext
                 .recoveryPredicate(recoveryCriteria.toPredicate())
-                .rollbackIncompleteTransactions(rollbackIncompleteTransactions)
+                .incompleteTransactionAction(rollbackIncompleteTransactions ? ROLLBACK : STOP)
+                .rollbackRegistry(chunkedTransactionTracker)
                 .recoveryMode(mode));
         monitor.recoveryCompleted();
     }

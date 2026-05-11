@@ -171,6 +171,31 @@ public class SequenceArray {
         return missingItems;
     }
 
+    void set(long baseNumber, long highestEverSeen, long[] missingNumbers, Meta meta) {
+        clear();
+        int diff = (int) (highestEverSeen - baseNumber);
+        if (diff <= 0) {
+            return;
+        }
+        ensureArrayCapacity(diff);
+        itemsAhead = diff;
+        missingCount = missingNumbers.length;
+
+        int missingIdx = 0;
+        for (int i = 0; i < itemsAhead; i++) {
+            long number = baseNumber + i + 1;
+            int absIndex = index(cursor + i);
+            if (missingIdx < missingNumbers.length && missingNumbers[missingIdx] == number) {
+                array[absIndex] = UNSET;
+                metas[absIndex] = null;
+                missingIdx++;
+            } else {
+                array[absIndex] = number;
+                metas[absIndex] = meta;
+            }
+        }
+    }
+
     long[] snapshot() {
         int snapshotSize = itemsAhead - missingCount;
         if (snapshotSize == 0) {

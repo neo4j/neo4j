@@ -40,6 +40,8 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
 
     private static final AvailabilityRequirement UNAVAILABILITY_REQUIREMENT =
             new AvailabilityRequirement("Database unavailable");
+    public static final AvailabilityRequirement ROLLBACK_REQUIREMENT =
+            new AvailabilityRequirement("Multiversion transactions recovery");
     private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement '%s' makes database %s available.";
     private static final String DATABASE_UNAVAILABLE_MSG = "Requirement `%s` makes database %s unavailable.";
 

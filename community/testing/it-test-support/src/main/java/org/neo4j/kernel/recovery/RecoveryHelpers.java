@@ -114,15 +114,16 @@ public final class RecoveryHelpers {
         try (JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler(Clocks.nanoClock());
                 PageCache pageCache = createPageCache(fileSystem, config, jobScheduler, PageCacheTracer.NULL)) {
             return Recovery.performRecovery(Recovery.contextWithNoLogTail(
-                    fileSystem,
-                    pageCache,
-                    DatabaseTracers.EMPTY,
-                    config,
-                    layout,
-                    EmptyMemoryTracker.INSTANCE,
-                    IOController.DISABLED,
-                    NullLogProvider.getInstance(),
-                    KernelVersionProvider.THROWING_PROVIDER));
+                            fileSystem,
+                            pageCache,
+                            DatabaseTracers.EMPTY,
+                            config,
+                            layout,
+                            EmptyMemoryTracker.INSTANCE,
+                            IOController.DISABLED,
+                            NullLogProvider.getInstance(),
+                            KernelVersionProvider.THROWING_PROVIDER))
+                    .recoveryPerformed();
         }
     }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.neo4j.kernel.impl.transaction.log.RecoveryOutcome.EMPTY_OUTCOME;
+
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
@@ -26,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.storageengine.util.ChunkedTransactionRegistry;
 import org.neo4j.storageengine.util.HighestAppendBatch;
@@ -53,33 +56,77 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
     private volatile LogFormat logFormat;
 
     public LogMetadataProviderImpl(
-            LogTailLogVersionsMetadata logTailMetadata, LogFormat logFormat, KernelVersion kernelVersion) {
-        checkpointLogVersion = new AtomicLong(logTailMetadata.getCheckpointLogVersion());
-        logVersion = new AtomicLong(logTailMetadata.getLogVersion());
-        var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
-        lastCommittingTx = new AtomicLong(lastCommittedTx.id());
-        highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
-        highestClosedTransaction = new HighestTransactionId(lastCommittedTx);
-        var logPosition = logTailMetadata.getLastTransactionLogPosition();
-        AppendBatchInfo lastBatch = logTailMetadata.lastBatch();
-        lastCommittedBatch = new HighestAppendBatch(lastBatch);
-        appendIndex = new AtomicLong(lastBatch.appendIndex());
-        var initialMeta = new Meta(
-                logPosition.getLogVersion(),
-                logPosition.getByteOffset(),
-                lastCommittedTx.kernelVersion().version(),
-                lastCommittedTx.checksum(),
-                lastCommittedTx.commitTimestamp(),
-                lastCommittedTx.consensusIndex(),
-                lastCommittedTx.appendIndex());
-        lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.id(), 128, initialMeta);
-        lastClosedBatch = new ArrayQueueOutOfOrderSequence(lastBatch.appendIndex(), 128, initialMeta);
+            LogTailLogVersionsMetadata logTailMetadata,
+            LogFormat logFormat,
+            KernelVersion kernelVersion,
+            RecoveryOutcome recoveryOutcome) {
+        this.checkpointLogVersion = new AtomicLong(logTailMetadata.getCheckpointLogVersion());
+        this.logVersion = new AtomicLong(logTailMetadata.getLogVersion());
         this.logFormat = logFormat;
         this.kernelVersion = kernelVersion;
+        AppendBatchInfo lastBatch = logTailMetadata.lastBatch();
+        this.lastCommittedBatch = new HighestAppendBatch(lastBatch);
+        this.appendIndex = new AtomicLong(lastBatch.appendIndex());
+
+        var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
+        highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
+        highestClosedTransaction = new HighestTransactionId(lastCommittedTx);
+
+        if (recoveryOutcome.isEmpty()) {
+            lastCommittingTx = new AtomicLong(lastCommittedTx.id());
+            var logPosition = logTailMetadata.getLastTransactionLogPosition();
+            var initialMeta = new Meta(
+                    logPosition.getLogVersion(),
+                    logPosition.getByteOffset(),
+                    lastCommittedTx.kernelVersion().version(),
+                    lastCommittedTx.checksum(),
+                    lastCommittedTx.commitTimestamp(),
+                    lastCommittedTx.consensusIndex(),
+                    lastCommittedTx.appendIndex());
+            lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.id(), 128, initialMeta);
+            lastClosedBatch = new ArrayQueueOutOfOrderSequence(lastBatch.appendIndex(), 128, initialMeta);
+            return;
+        }
+
+        lastClosedBatch = new ArrayQueueOutOfOrderSequence(
+                lastBatch.appendIndex(),
+                128,
+                new Meta(
+                        lastBatch.logPositionAfter().getLogVersion(),
+                        lastBatch.logPositionAfter().getByteOffset(),
+                        kernelVersion.version(),
+                        UNKNOWN_TX_CHECKSUM,
+                        UNKNOWN_TX_COMMIT_TIMESTAMP,
+                        UNKNOWN_CONSENSUS_INDEX,
+                        lastBatch.appendIndex()));
+
+        long[] notClosedTransactionIds = recoveryOutcome.notClosedTransactionIds();
+        long lastCommittingTransactionId = recoveryOutcome.lastCommittingTransactionId();
+        var numberWithMeta = recoveryOutcome.lastClosedGapFree();
+        var earliestOpenTxMetadata = recoveryOutcome.earliestOpenTransaction();
+        lastCommittingTx = new AtomicLong(lastCommittingTransactionId);
+        lastClosedTx = new ArrayQueueOutOfOrderSequence(
+                numberWithMeta.number(), 128, numberWithMeta.meta(), notClosedTransactionIds);
+
+        if (earliestOpenTxMetadata != null) {
+            this.chunkedTransactionRegistry.registerTransaction(
+                    earliestOpenTxMetadata.txId(),
+                    earliestOpenTxMetadata.appendIndex(),
+                    earliestOpenTxMetadata.logPosition());
+        }
+    }
+
+    public LogMetadataProviderImpl(
+            LogTailLogVersionsMetadata logTailMetadata, LogFormat logFormat, KernelVersion kernelVersion) {
+        this(logTailMetadata, logFormat, kernelVersion, EMPTY_OUTCOME);
+    }
+
+    public LogMetadataProviderImpl(LogTailMetadata logTailMetadata, RecoveryOutcome recoveryOutcome) {
+        this(logTailMetadata, logTailMetadata.getCurrentLogFormat(), logTailMetadata.kernelVersion(), recoveryOutcome);
     }
 
     public LogMetadataProviderImpl(LogTailMetadata logTailMetadata) {
-        this(logTailMetadata, logTailMetadata.getCurrentLogFormat(), logTailMetadata.kernelVersion());
+        this(logTailMetadata, EMPTY_OUTCOME);
     }
 
     @Override
@@ -105,6 +152,60 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
     @Override
     public long incrementAndGetCheckpointLogVersion() {
         return checkpointLogVersion.incrementAndGet();
+    }
+
+    @Override
+    public void setLastCommittedAndClosedTransactionId(
+            long lastCommitedTxId,
+            long lastClosedTxId,
+            long[] notClosedTransactions,
+            long transactionAppendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion,
+            long appendIndex,
+            OpenTransactionMetadata earliestOpenTransactionMetadata,
+            OutOfOrderSequence.NumberWithMeta lastClosedTxIdInfo) {
+        this.lastCommittingTx.set(lastCommitedTxId);
+        var meta = new Meta(
+                logVersion,
+                byteOffset,
+                kernelVersion.version(),
+                checksum,
+                commitTimestamp,
+                consensusIndex,
+                transactionAppendIndex);
+        lastClosedBatch.set(appendIndex, meta);
+
+        if (lastClosedTxIdInfo != null) {
+            Meta txMeta = lastClosedTxIdInfo.meta();
+            lastClosedTx.set(lastClosedTxIdInfo.number(), txMeta, notClosedTransactions);
+            highestClosedTransaction.set(
+                    lastClosedTxIdInfo.number(),
+                    txMeta.appendIndex(),
+                    KernelVersion.getForVersion(txMeta.kernelVersion()),
+                    txMeta.checksum(),
+                    txMeta.commitTimestamp(),
+                    txMeta.consensusIndex());
+        } else {
+            lastClosedTx.set(appendIndex, meta);
+            highestClosedTransaction.set(
+                    lastClosedTxId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
+        }
+
+        highestCommittedTransaction.set(
+                lastClosedTxId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
+        this.appendIndex.set(appendIndex);
+        this.lastCommittedBatch.set(appendIndex, LogPosition.UNSPECIFIED);
+        if (earliestOpenTransactionMetadata != null) {
+            this.chunkedTransactionRegistry.registerTransaction(
+                    earliestOpenTransactionMetadata.txId(),
+                    earliestOpenTransactionMetadata.appendIndex(),
+                    earliestOpenTransactionMetadata.logPosition());
+        }
     }
 
     @Override

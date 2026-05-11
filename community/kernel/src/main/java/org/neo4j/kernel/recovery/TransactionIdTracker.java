@@ -20,6 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import static org.neo4j.kernel.recovery.TransactionStatus.INCOMPLETE;
+import static org.neo4j.kernel.recovery.TransactionStatus.INCOMPLETE_RECOVERABLE;
 import static org.neo4j.kernel.recovery.TransactionStatus.RECOVERABLE;
 import static org.neo4j.kernel.recovery.TransactionStatus.ROLLED_BACK;
 
@@ -39,9 +40,18 @@ public class TransactionIdTracker {
     private final MutableLongObjectMap<PartialLastTransactionChunk> notCompletedTransactionChunks =
             LongObjectMaps.mutable.empty();
 
+    private final IncompleteTransactionAction incompleteTransactionAction;
+
+    public TransactionIdTracker(IncompleteTransactionAction incompleteTransactionAction) {
+        this.incompleteTransactionAction = incompleteTransactionAction;
+    }
+
     TransactionStatus transactionStatus(long transactionId) {
         if (notCompletedTransactionChunks.containsKey(transactionId)) {
-            return INCOMPLETE;
+            return switch (incompleteTransactionAction) {
+                case ROLLBACK, STOP -> INCOMPLETE;
+                case APPLY -> INCOMPLETE_RECOVERABLE;
+            };
         }
         if (rollbackTransactions.contains(transactionId)) {
             return ROLLED_BACK;

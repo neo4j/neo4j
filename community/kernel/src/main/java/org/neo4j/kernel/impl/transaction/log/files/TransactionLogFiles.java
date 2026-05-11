@@ -56,7 +56,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles {
         this.overrides = overrides;
         if (!overrides.noInit()) {
             LogTailMetadata tailMetadata = checkpointLogFile.getTailMetadata();
-            logMetadataProvider = new LogMetadataProviderImpl(tailMetadata);
+            logMetadataProvider = new LogMetadataProviderImpl(tailMetadata, context.recoveryOutcome());
             TransactionLogFilesProviders transactionLogFilesProviders =
                     new TransactionLogFilesProviders(logMetadataProvider, this.overrides);
             checkpointLogFile.initialize(transactionLogFilesProviders);

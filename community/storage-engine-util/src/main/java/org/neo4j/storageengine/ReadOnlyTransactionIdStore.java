@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.OpenTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     private final LogPosition logPosition;
@@ -89,7 +90,9 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
-            long transactionId,
+            long lastCommitedTxId,
+            long lastClosedTxId,
+            long[] notClosedTransactions,
             long transactionAppendIndex,
             KernelVersion kernelVersion,
             int checksum,
@@ -97,7 +100,9 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
             long consensusIndex,
             long logByteOffset,
             long logVersion,
-            long appendIndex) {
+            long appendIndex,
+            OpenTransactionMetadata earliestOpenTransactionMetadata,
+            OutOfOrderSequence.NumberWithMeta lastClosedTxIdInfo) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
@@ -122,6 +127,20 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
             boolean lastBatch,
             KernelVersion kernelVersion,
             LogPosition logPositionAfter) {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
+    }
+
+    @Override
+    public void setLastCommittedAndClosedTransactionId(
+            long transactionId,
+            long transactionAppendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion,
+            long logsAppendIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 

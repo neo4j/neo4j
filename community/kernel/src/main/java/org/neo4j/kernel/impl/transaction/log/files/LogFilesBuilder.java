@@ -47,6 +47,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -108,6 +109,7 @@ public class LogFilesBuilder {
     private boolean noInit;
     private boolean turnOffPreallocation;
     private LogPosition tailReadingMaxPosition = LogPosition.UNSPECIFIED;
+    private RecoveryOutcome recoveryOutcome = RecoveryOutcome.EMPTY_OUTCOME;
 
     private LogFilesBuilder() {}
 
@@ -295,6 +297,11 @@ public class LogFilesBuilder {
         return this;
     }
 
+    public LogFilesBuilder withRecoveryOutcome(RecoveryOutcome recoveryOutcome) {
+        this.recoveryOutcome = recoveryOutcome;
+        return this;
+    }
+
     /**
      * If the logfiles have a moving tail and should only be evaluated up to a specific position.
      */
@@ -371,7 +378,8 @@ public class LogFilesBuilder {
                 new BinarySupportedKernelVersions(config),
                 readOnlyLogs,
                 envelopeSegmentBlockSizeBytes,
-                getBufferSizeBytes());
+                getBufferSizeBytes(),
+                recoveryOutcome);
     }
 
     private CommandReaderFactory commandReaderFactory() {

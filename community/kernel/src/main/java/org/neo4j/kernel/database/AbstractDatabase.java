@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.api.ChunkedTransactionTracker;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -310,6 +311,8 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
     public abstract IOController getIoController();
 
     public abstract CursorContextFactory getCursorContextFactory();
+
+    public abstract ChunkedTransactionTracker getChunkedTransactionTracker();
 
     public abstract ElementIdMapper getElementIdMapper();
 

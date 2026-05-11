@@ -28,6 +28,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.STOP;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
@@ -112,7 +113,7 @@ class RecoveryProgressIndicatorTest {
                 false,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
-                false,
+                STOP,
                 contextFactory,
                 Clocks.systemClock(),
                 LatestVersions.BINARY_VERSIONS,

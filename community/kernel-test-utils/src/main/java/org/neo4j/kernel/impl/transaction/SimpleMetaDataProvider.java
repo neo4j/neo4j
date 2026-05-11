@@ -41,6 +41,7 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.util.HighestAppendBatch;
 import org.neo4j.test.LatestVersions;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 public class SimpleMetaDataProvider implements MetadataProvider, LogMetadataProvider {
     private final SimpleTransactionIdStore transactionIdStore;
@@ -146,6 +147,39 @@ public class SimpleMetaDataProvider implements MetadataProvider, LogMetadataProv
     @Override
     public ClosedBatchMetadata getLastClosedBatch() {
         return transactionIdStore.getLastClosedBatch();
+    }
+
+    @Override
+    public void setLastCommittedAndClosedTransactionId(
+            long transactionId,
+            long lastClosedTxId,
+            long[] notClosedTransactions,
+            long transactionAppendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion,
+            long appendIndex,
+            OpenTransactionMetadata earliestOpenTransactionMetadata,
+            OutOfOrderSequence.NumberWithMeta lastClosedTxIdInfo) {
+        transactionIdStore.setLastCommittedAndClosedTransactionId(
+                transactionId,
+                lastClosedTxId,
+                notClosedTransactions,
+                transactionAppendIndex,
+                kernelVersion,
+                checksum,
+                commitTimestamp,
+                consensusIndex,
+                byteOffset,
+                logVersion,
+                appendIndex,
+                earliestOpenTransactionMetadata,
+                lastClosedTxIdInfo);
+        appendIndexProvider.setAppendIndex(appendIndex);
+        this.appendBatchInfo.set(appendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override

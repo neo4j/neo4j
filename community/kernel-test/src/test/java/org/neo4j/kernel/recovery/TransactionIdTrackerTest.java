@@ -23,7 +23,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.APPLY;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.ROLLBACK;
 import static org.neo4j.kernel.recovery.TransactionStatus.INCOMPLETE;
+import static org.neo4j.kernel.recovery.TransactionStatus.INCOMPLETE_RECOVERABLE;
 import static org.neo4j.kernel.recovery.TransactionStatus.RECOVERABLE;
 import static org.neo4j.kernel.recovery.TransactionStatus.ROLLED_BACK;
 
@@ -34,7 +37,7 @@ import org.neo4j.storageengine.api.CommandBatch;
 class TransactionIdTrackerTest {
     @Test
     void completeTransactionTracking() {
-        var transactionIdTracker = new TransactionIdTracker();
+        var transactionIdTracker = new TransactionIdTracker(ROLLBACK);
         var commandBatch1 = createCommandBatch(1, true, true, false);
         var commandBatch3 = createCommandBatch(3, true, true, false);
         var commandBatch2 = createCommandBatch(2, true, true, false);
@@ -53,7 +56,7 @@ class TransactionIdTrackerTest {
 
     @Test
     void trackMultiChunkedCompletedTransactions() {
-        var transactionIdTracker = new TransactionIdTracker();
+        var transactionIdTracker = new TransactionIdTracker(ROLLBACK);
         // chain of 2
         var commandBatch11 = createCommandBatch(1, true, false, false);
         var commandBatch12 = createCommandBatch(1, false, true, false);
@@ -82,7 +85,7 @@ class TransactionIdTrackerTest {
 
     @Test
     void trackMultiChunkedNonCompleteTransactions() {
-        var transactionIdTracker = new TransactionIdTracker();
+        var transactionIdTracker = new TransactionIdTracker(ROLLBACK);
         // non completed chain of 1
         var commandBatch11 = createCommandBatch(1, true, false, false);
         // non completed chain of 1
@@ -105,7 +108,7 @@ class TransactionIdTrackerTest {
 
     @Test
     void trackCombinationOfTransactions() {
-        var transactionIdTracker = new TransactionIdTracker();
+        var transactionIdTracker = new TransactionIdTracker(ROLLBACK);
         // completed chain of 1
         var commandBatch11 = createCommandBatch(1, true, true, false);
         // completed chain of 2
@@ -153,7 +156,7 @@ class TransactionIdTrackerTest {
 
     @Test
     void trackRollbacksOfTransactions() {
-        var transactionIdTracker = new TransactionIdTracker();
+        var transactionIdTracker = new TransactionIdTracker(ROLLBACK);
 
         // chain of 2
         var commandBatch11 = createCommandBatch(1, true, false, false);
@@ -191,7 +194,7 @@ class TransactionIdTrackerTest {
 
     @Test
     void trackNonCompletedTransactions() {
-        var transactionIdTracker = new TransactionIdTracker();
+        var transactionIdTracker = new TransactionIdTracker(ROLLBACK);
 
         // chain of 2
         var commandBatch11 = createCommandBatch(1, true, false, false);
@@ -227,7 +230,7 @@ class TransactionIdTrackerTest {
 
     @Test
     void trackNonCompletedTransactionsChunks() {
-        var transactionIdTracker = new TransactionIdTracker();
+        var transactionIdTracker = new TransactionIdTracker(ROLLBACK);
 
         // chain of 2
         var commandBatch11 = createCommandBatch(1, 1, true, false, false);
@@ -262,6 +265,58 @@ class TransactionIdTrackerTest {
 
         assertEquals(2, transactionIdTracker.lastNotCompletedTransactionChunk(2));
         assertEquals(1, transactionIdTracker.lastNotCompletedTransactionChunk(5));
+    }
+
+    @Test
+    void incompleteTransactionsAreReplayableWhenRollbackDisabled() {
+        var transactionIdTracker = new TransactionIdTracker(APPLY);
+
+        var commandBatch11 = createCommandBatch(1, true, false, false);
+        var commandBatch21 = createCommandBatch(2, true, false, false);
+        var commandBatch31 = createCommandBatch(3, true, false, false);
+        var commandBatch32 = createCommandBatch(3, false, false, false);
+
+        transactionIdTracker.trackBatch(commandBatch21);
+        transactionIdTracker.trackBatch(commandBatch11);
+        transactionIdTracker.trackBatch(commandBatch32);
+        transactionIdTracker.trackBatch(commandBatch31);
+
+        assertEquals(INCOMPLETE_RECOVERABLE, transactionIdTracker.transactionStatus(1));
+        assertEquals(INCOMPLETE_RECOVERABLE, transactionIdTracker.transactionStatus(2));
+        assertEquals(INCOMPLETE_RECOVERABLE, transactionIdTracker.transactionStatus(3));
+    }
+
+    @Test
+    void incompleteReplayCombinedWithCompleteAndRolledBackTransactions() {
+        var transactionIdTracker = new TransactionIdTracker(APPLY);
+
+        var commandBatch11 = createCommandBatch(1, true, true, false);
+        var commandBatch21 = createCommandBatch(2, true, false, false);
+        var commandBatch22 = createCommandBatch(2, false, true, false);
+        var commandBatch31 = createCommandBatch(3, true, false, false);
+        var commandBatch32 = createCommandBatch(3, false, false, false);
+        var commandBatch41 = createCommandBatch(4, true, false, false);
+        var commandBatch42 = createCommandBatch(4, false, true, true);
+        var commandBatch51 = createCommandBatch(5, true, true, false);
+        var commandBatch61 = createCommandBatch(6, true, false, false);
+
+        transactionIdTracker.trackBatch(commandBatch42);
+        transactionIdTracker.trackBatch(commandBatch41);
+        transactionIdTracker.trackBatch(commandBatch32);
+        transactionIdTracker.trackBatch(commandBatch31);
+        transactionIdTracker.trackBatch(commandBatch22);
+        transactionIdTracker.trackBatch(commandBatch21);
+        transactionIdTracker.trackBatch(commandBatch11);
+        transactionIdTracker.trackBatch(commandBatch51);
+        transactionIdTracker.trackBatch(commandBatch61);
+
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(1));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(2));
+        assertEquals(ROLLED_BACK, transactionIdTracker.transactionStatus(4));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(5));
+
+        assertEquals(INCOMPLETE_RECOVERABLE, transactionIdTracker.transactionStatus(3));
+        assertEquals(INCOMPLETE_RECOVERABLE, transactionIdTracker.transactionStatus(6));
     }
 
     private static CommittedCommandBatchRepresentation createCommandBatch(

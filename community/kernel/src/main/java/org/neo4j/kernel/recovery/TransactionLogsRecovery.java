@@ -20,6 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.ROLLBACK;
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
 import static org.neo4j.kernel.recovery.RecoveryMode.FULL;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
@@ -34,6 +35,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.time.Clock;
+import java.util.Arrays;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
@@ -49,8 +51,10 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PartialRecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -62,6 +66,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.TransactionIdTracker.PartialLastTransactionChunk;
 import org.neo4j.storageengine.AppendIndexProvider;
+import org.neo4j.storageengine.api.OpenTransactionMetadata;
 
 /**
  * This is the process of doing a recovery on the transaction log and store, and is executed
@@ -82,7 +87,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private final boolean failOnCorruptedLogFiles;
     private final boolean treatBrokenLastEntryAsCorruption;
     private final RecoveryStartupChecker recoveryStartupChecker;
-    private final boolean rollbackIncompleteTransactions;
+    private final IncompleteTransactionAction incompleteTransactionAction;
     private final CursorContextFactory contextFactory;
     private final RecoveryPredicate recoveryPredicate;
     private final Clock clock;
@@ -92,6 +97,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private final boolean parallelRecovery;
 
     private ProgressListener progressListener;
+    private RecoveryOutcome recoveryOutcome = RecoveryOutcome.EMPTY_OUTCOME;
 
     public TransactionLogsRecovery(
             LogFiles logFiles,
@@ -106,7 +112,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             boolean treatBrokenLastEntryAsCorruption,
             RecoveryStartupChecker recoveryStartupChecker,
             RecoveryPredicate recoveryPredicate,
-            boolean rollbackIncompleteTransactions,
+            IncompleteTransactionAction incompleteTransactionAction,
             CursorContextFactory contextFactory,
             Clock clock,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
@@ -124,7 +130,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.treatBrokenLastEntryAsCorruption = treatBrokenLastEntryAsCorruption;
         this.recoveryStartupChecker = recoveryStartupChecker;
-        this.rollbackIncompleteTransactions = rollbackIncompleteTransactions;
+        this.incompleteTransactionAction = incompleteTransactionAction;
         this.contextFactory = contextFactory;
         this.recoveryPredicate = recoveryPredicate;
         this.clock = clock;
@@ -149,33 +155,44 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             recoveryService.checkMissingStoreFiles();
             recoveryService.missingLogs();
             logFiles.getLogFile().initializeMissingLogFile();
-        } else {
-            performRecovery(recoveryStartInformation);
+            return;
         }
+        performRecovery(recoveryStartInformation);
     }
 
     private void performRecovery(RecoveryStartInformation recoveryStartInformation)
             throws DatabaseStartAbortedException, RecoveryPredicateException, IOException {
         try {
             var recoveryStartPosition = recoveryStartInformation.transactionLogPosition();
-            var recoveryContextTracker =
-                    new RecoveryContextTracker(recoveryStartPosition, recoveryStartInformation.checkpointInfo());
-            var transactionIdTracker = new TransactionIdTracker();
+            var recoveryContextTracker = new RecoveryContextTracker(
+                    recoveryStartPosition, recoveryStartInformation.checkpointInfo(), incompleteTransactionAction);
+            var transactionIdTracker = new TransactionIdTracker(incompleteTransactionAction);
             reverseAndForwardRecovery(
                     recoveryStartInformation, transactionIdTracker, recoveryStartPosition, recoveryContextTracker);
 
             var appendIndexProvider =
                     new RecoveryRollbackAppendIndexProvider(recoveryContextTracker.getLastBatchInfo());
-            if (rollbackIncompleteTransactions && recoveryPredicate.changingTheLogAllowed()) {
+            if (ROLLBACK == incompleteTransactionAction && recoveryPredicate.changingTheLogAllowed()) {
                 logsTruncator.truncate(
                         recoveryContextTracker.getRecoveryToPosition(), recoveryStartInformation.checkpointInfo());
             }
+
             var rollbackTransactionInfo = rollbackTransactions(
                     recoveryContextTracker.getRecoveryToPosition(), transactionIdTracker, appendIndexProvider, monitor);
             if (rollbackTransactionInfo != null) {
                 recoveryContextTracker.rollbackBatch(rollbackTransactionInfo, rollbackTransactionInfo.position());
             }
+
+            recoveryOutcome = createOutcome(recoveryContextTracker, chunkedTransactionTracker);
+
             recoveryService.transactionsRecovered(
+                    recoveryContextTracker.getLastHighestTransactionBatchInfo(),
+                    appendIndexProvider,
+                    recoveryContextTracker.getLastTransactionPosition(),
+                    recoveryContextTracker.getRecoveryToPosition(),
+                    recoveryStartInformation.getCheckpointPosition(),
+                    recoveryOutcome);
+            monitor.transactionsRecovered(
                     recoveryContextTracker.getLastHighestTransactionBatchInfo(),
                     appendIndexProvider,
                     recoveryContextTracker.getLastTransactionPosition(),
@@ -184,6 +201,29 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         } finally {
             closeProgress();
         }
+    }
+
+    private RecoveryOutcome createOutcome(
+            RecoveryContextTracker recoveryContextTracker, ChunkedTransactionTracker chunkedTransactionTracker) {
+        // we create outcome only if we need to apply those partial transactions
+        if (incompleteTransactionAction != IncompleteTransactionAction.APPLY) {
+            return RecoveryOutcome.EMPTY_OUTCOME;
+        }
+        var transactionInfos = chunkedTransactionTracker.transactionsToRollback();
+        if (transactionInfos.isEmpty()) {
+            return RecoveryOutcome.EMPTY_OUTCOME;
+        }
+        long[] notClosedTransactionIds = new long[transactionInfos.size()];
+        int index = 0;
+        for (ChunkedTransactionTracker.TransactionInfo transactionInfo : transactionInfos) {
+            notClosedTransactionIds[index++] = transactionInfo.transactionId();
+        }
+        Arrays.sort(notClosedTransactionIds);
+        return new PartialRecoveryOutcome(
+                notClosedTransactionIds,
+                recoveryContextTracker.getLastHighestTransactionBatchInfo().txId(),
+                recoveryContextTracker.gapFreeClosedTransactionInfo(),
+                recoveryContextTracker.getEarliestOpenTransactionMetadata());
     }
 
     private void reverseAndForwardRecovery(
@@ -251,6 +291,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         try (var transactionsToRecover = recoveryService.getCommandBatches(
                         recoveryStartPosition, recoveryPredicate.maxPosition(), treatBrokenLastEntryAsCorruption);
                 var recoveryVisitor = recoveryService.getRecoveryApplier(RECOVERY, contextFactory, RECOVERY_TAG)) {
+            LogPosition previousBatchStatePosition = transactionsToRecover.position();
             while (transactionsToRecover.next()) {
                 var nextCommandBatch = transactionsToRecover.get();
                 if (!recoveryPredicate.test(nextCommandBatch)) {
@@ -258,22 +299,29 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     return;
                 }
                 recoveryStartupChecker.checkIfCanceled();
-                if (processCommandBatch(transactionIdTracker, nextCommandBatch, recoveryVisitor)) {
+                if (processCommandBatch(
+                        transactionIdTracker,
+                        nextCommandBatch,
+                        recoveryVisitor,
+                        recoveryContextTracker,
+                        previousBatchStatePosition)) {
                     recoveryContextTracker.completeRecovery(recoveryContextTracker.getLastTransactionPosition());
                     return;
                 }
                 recoveryContextTracker.commitedBatch(nextCommandBatch, transactionsToRecover.position());
                 reportProgress();
+                previousBatchStatePosition = transactionsToRecover.position();
             }
             recoveryContextTracker.completeRecovery(transactionsToRecover.position());
         }
     }
 
-    /*
-     * returns true if encountered incomplete transaction *and* requires recovery to stop
-     */
     private boolean processCommandBatch(
-            TransactionIdTracker idTracker, CommittedCommandBatchRepresentation commandBatch, RecoveryApplier visitor)
+            TransactionIdTracker idTracker,
+            CommittedCommandBatchRepresentation commandBatch,
+            RecoveryApplier visitor,
+            RecoveryContextTracker recoveryContextTracker,
+            LogPosition previousBatchStatePosition)
             throws Exception {
         switch (idTracker.transactionStatus(commandBatch.txId())) {
             case RECOVERABLE -> {
@@ -283,7 +331,13 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             case ROLLED_BACK -> monitor.batchApplySkipped(commandBatch);
             case INCOMPLETE -> {
                 monitor.batchApplySkipped(commandBatch);
-                return !rollbackIncompleteTransactions;
+                return ROLLBACK != incompleteTransactionAction;
+            }
+            case INCOMPLETE_RECOVERABLE -> {
+                recoveryContextTracker.unrecoverableBatch(new OpenTransactionMetadata(
+                        commandBatch.txId(), commandBatch.appendIndex(), previousBatchStatePosition));
+                visitor.visit(commandBatch);
+                monitor.batchRecovered(commandBatch);
             }
         }
         return false;
@@ -356,6 +410,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             AppendIndexProvider appendIndexProvider,
             RecoveryMonitor monitor)
             throws IOException {
+
+        chunkedTransactionTracker.clear();
         long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
 
         if (notCompletedTransactions.length == 0) {
@@ -363,7 +419,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         }
 
         KernelVersion kernelVersion = versionProvider.kernelVersion();
-        if (rollbackIncompleteTransactions) {
+        if (ROLLBACK == incompleteTransactionAction) {
             LogFile logFile = logFiles.getLogFile();
             try (ChannelWithPartialLogRotationAbility channelAllocator = new ChannelWithPartialLogRotationAbility(
                     logFile, versionProvider, logFormatVersionProvider, logFile.rotationSize(), writePosition)) {
@@ -660,6 +716,10 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     @Override
     public void shutdown() throws Exception {
         schemaLife.shutdown();
+    }
+
+    public RecoveryOutcome getRecoveryOutcome() {
+        return recoveryOutcome;
     }
 
     private static class RecoveryRollbackAppendIndexProvider implements AppendIndexProvider {

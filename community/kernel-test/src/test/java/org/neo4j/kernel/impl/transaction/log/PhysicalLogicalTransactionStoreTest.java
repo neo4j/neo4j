@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.STOP;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -246,7 +247,7 @@ class PhysicalLogicalTransactionStoreTest {
                 false,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
-                false,
+                STOP,
                 contextFactory,
                 Clock.systemUTC(),
                 LatestVersions.BINARY_VERSIONS,
@@ -530,7 +531,8 @@ class PhysicalLogicalTransactionStoreTest {
                 AppendIndexProvider appendIndexProvider,
                 LogPosition lastTransactionPosition,
                 LogPosition positionAfterLastRecoveredTransaction,
-                LogPosition checkpointPosition) {
+                LogPosition checkpointPosition,
+                RecoveryOutcome recoveryOutcome) {
             recoveryPerformed.set(true);
         }
 

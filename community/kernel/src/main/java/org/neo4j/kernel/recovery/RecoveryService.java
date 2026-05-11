@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation.BatchInformation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
@@ -51,5 +52,6 @@ public interface RecoveryService {
             AppendIndexProvider recoverAppendIndexProvider,
             LogPosition lastTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
-            LogPosition checkpointPosition);
+            LogPosition checkpointPosition,
+            RecoveryOutcome recoveryOutcome);
 }

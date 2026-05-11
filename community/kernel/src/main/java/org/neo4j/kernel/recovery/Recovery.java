@@ -30,6 +30,7 @@ import static org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory.EMPTY_
 import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
+import static org.neo4j.kernel.recovery.IncompleteTransactionAction.ROLLBACK;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
@@ -107,6 +108,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.RecoveryThreshold;
@@ -327,7 +329,7 @@ public final class Recovery {
         private final Config config;
         private final DatabaseTracers tracers;
         private final InternalLogProvider logProvider;
-        private boolean rollbackIncompleteTransactions = true;
+        private IncompleteTransactionAction incompleteTransactionAction = IncompleteTransactionAction.STOP;
         private boolean forceRunRecovery;
         private Monitors globalMonitors = new Monitors();
         private Iterable<ExtensionFactory<?>> extensionFactories;
@@ -435,8 +437,8 @@ public final class Recovery {
             return this;
         }
 
-        public Context rollbackIncompleteTransactions(boolean rollbackIncompleteTransactions) {
-            this.rollbackIncompleteTransactions = rollbackIncompleteTransactions;
+        public Context incompleteTransactionAction(IncompleteTransactionAction incompleteTransactionAction) {
+            this.incompleteTransactionAction = incompleteTransactionAction;
             return this;
         }
 
@@ -466,7 +468,7 @@ public final class Recovery {
      * @param context The context to use
      * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
-    public static boolean performRecovery(Context context) throws IOException {
+    public static RecoveryResult performRecovery(Context context) throws IOException {
         requireNonNull(context);
         StorageEngineFactory storageEngineFactory =
                 selectStorageEngine(context.fs, context.databaseLayout, context.config);
@@ -495,7 +497,7 @@ public final class Recovery {
                     context.ioController,
                     context.recoveryPredicate,
                     context.chunkedTransactionTracker,
-                    context.rollbackIncompleteTransactions,
+                    context.incompleteTransactionAction,
                     context.awaitIndexesOnlineMillis,
                     context.emptyLogsFallbackKernelVersion,
                     context.mode,
@@ -516,7 +518,7 @@ public final class Recovery {
                 .build();
     }
 
-    private static boolean performRecovery(
+    private static RecoveryResult performRecovery(
             FileSystemAbstraction fs,
             PageCache pageCache,
             DatabaseTracers tracers,
@@ -534,7 +536,7 @@ public final class Recovery {
             IOController ioController,
             RecoveryPredicate recoveryPredicate,
             ChunkedTransactionTracker chunkedTransactionTracker,
-            boolean rollbackIncompleteTransactions,
+            IncompleteTransactionAction incompleteTransactionAction,
             long awaitIndexesOnlineMillis,
             KernelVersionProvider emptyLogsFallbackKernelVersion,
             RecoveryMode mode,
@@ -564,7 +566,7 @@ public final class Recovery {
                         memoryTracker,
                         tracers,
                         recoveryPredicate)) {
-            return false;
+            return new RecoveryResult(false, RecoveryOutcome.EMPTY_OUTCOME);
         }
         var recoveryStartTime = Stopwatch.start();
         StoreFileChecker storageFilesState = isDirty ->
@@ -710,7 +712,7 @@ public final class Recovery {
         if (recoveryBehavior.forceFullRecovery()) {
             mode = RecoveryMode.FULL;
         } else {
-            rollbackIncompleteTransactions = true;
+            incompleteTransactionAction = ROLLBACK;
         }
 
         // Schema indexes
@@ -789,7 +791,7 @@ public final class Recovery {
                 clock,
                 doParallelRecovery,
                 recoveryPredicate,
-                rollbackIncompleteTransactions,
+                incompleteTransactionAction,
                 cursorContextFactory,
                 mode,
                 chunkedTransactionTracker,
@@ -860,7 +862,7 @@ public final class Recovery {
         if (!databaseHealth.hasNoPanic()) {
             throw new IllegalStateException(databaseHealth.causeOfPanic());
         }
-        return true;
+        return new RecoveryResult(true, transactionLogsRecovery.getRecoveryOutcome());
     }
 
     private static void awaitIndexesOnline(IndexingService indexingService, long awaitIndexesOnlineMillis) {
@@ -960,7 +962,7 @@ public final class Recovery {
             Clock clock,
             boolean doParallelRecovery,
             RecoveryPredicate recoveryPredicate,
-            boolean rollbackIncompleteTransactions,
+            IncompleteTransactionAction incompleteTransactionAction,
             CursorContextFactory contextFactory,
             RecoveryMode mode,
             ChunkedTransactionTracker chunkedTransactionTracker,
@@ -997,7 +999,7 @@ public final class Recovery {
                 treatBrokenLastEntryAsCorruption,
                 startupChecker,
                 recoveryPredicate,
-                rollbackIncompleteTransactions,
+                incompleteTransactionAction,
                 contextFactory,
                 clock,
                 binarySupportedKernelVersions,

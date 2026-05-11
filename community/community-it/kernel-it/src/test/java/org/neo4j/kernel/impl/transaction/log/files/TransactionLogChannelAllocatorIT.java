@@ -59,6 +59,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.RecoveryOutcome;
 import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
@@ -258,7 +259,8 @@ class TransactionLogChannelAllocatorIT {
                 LatestVersions.BINARY_VERSIONS,
                 false,
                 LogSegments.DEFAULT_LOG_SEGMENT_SIZE,
-                256);
+                256,
+                RecoveryOutcome.EMPTY_OUTCOME);
     }
 
     private static class AdviseCountingChannelNativeAccessor extends AbsentNativeAccess {
