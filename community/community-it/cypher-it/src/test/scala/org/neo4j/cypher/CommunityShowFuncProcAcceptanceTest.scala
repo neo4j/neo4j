@@ -28,7 +28,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
 import org.neo4j.cypher.CommunityShowFuncProcAcceptanceTest.readAll
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.util.SkipOnSpd
+import org.neo4j.cypher.util.DontRunOnSpdBuild
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -42,7 +42,6 @@ import org.neo4j.procedure.UserAggregationResult
 import org.neo4j.procedure.UserAggregationUpdate
 import org.neo4j.procedure.UserFunction
 import org.neo4j.server.security.auth.SecurityTestUtils
-import org.neo4j.test.extension.SkipOnSpd.Note
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
@@ -56,7 +55,8 @@ import java.nio.file.Paths
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
+class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport
+    with DontRunOnSpdBuild {
   private val username = "foo"
   private val password = "secretpassword"
 
@@ -210,7 +210,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
 
   // Tests
 
-  test("should show functions", SkipOnSpd(note = Note.temporary)) {
+  test("should show functions") {
     // GIVEN
     selectDatabase(DEFAULT_DATABASE_NAME)
 
@@ -221,7 +221,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allFunctionsBrief)
   }
 
-  test("should show built-in functions", SkipOnSpd(note = Note.temporary)) {
+  test("should show built-in functions") {
     // GIVEN
     selectDatabase(DEFAULT_DATABASE_NAME)
 
@@ -243,7 +243,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(userDefinedFunctionsBrief)
   }
 
-  test("should show functions with yield", SkipOnSpd(note = Note.temporary)) {
+  test("should show functions with yield") {
     // GIVEN
     selectDatabase(DEFAULT_DATABASE_NAME)
 
@@ -254,7 +254,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allFunctionsVerbose)
   }
 
-  test("should show functions executable by current user", SkipOnSpd(note = Note.temporary)) {
+  test("should show functions executable by current user") {
     // GIVEN
     createUser()
 
@@ -265,7 +265,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allFunctionsBrief)
   }
 
-  test("should show functions executable by current user with yield", SkipOnSpd(note = Note.temporary)) {
+  test("should show functions executable by current user with yield") {
     // GIVEN
     createUser()
 
@@ -278,7 +278,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     ))
   }
 
-  test("should show functions executable by specified user", SkipOnSpd(note = Note.temporary)) {
+  test("should show functions executable by specified user") {
     // GIVEN
     createUser()
 
@@ -289,7 +289,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allFunctionsBrief)
   }
 
-  test("should show functions executable by specified user with yield", SkipOnSpd(note = Note.temporary)) {
+  test("should show functions executable by specified user with yield") {
     // GIVEN
     createUser()
 
@@ -300,7 +300,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allFunctionsVerbose)
   }
 
-  test("should show functions on system", SkipOnSpd(note = Note.temporary)) {
+  test("should show functions on system") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
 
@@ -311,7 +311,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allFunctionsBrief)
   }
 
-  test("show functions with Cypher versions", SkipOnSpd(note = Note.temporary)) {
+  test("show functions with Cypher versions") {
     cypherVersions.foreach { case (cypherVersionString, usesCypher5) =>
       selectDatabase(DEFAULT_DATABASE_NAME)
       withClue(cypherVersionString + "user database") {
@@ -378,7 +378,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
   private val allProceduresBriefDefault: List[Map[String, Any]] =
     if (defaultsToCypher5) allProceduresBriefCypher5 else allProceduresBriefCypher25
 
-  test("should show procedures", SkipOnSpd(note = Note.temporary)) {
+  test("should show procedures") {
     // GIVEN
     selectDatabase(DEFAULT_DATABASE_NAME)
 
@@ -389,7 +389,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allProceduresBriefDefault)
   }
 
-  test("should show procedures with yield", SkipOnSpd(note = Note.temporary)) {
+  test("should show procedures with yield") {
     // GIVEN
     selectDatabase(DEFAULT_DATABASE_NAME)
 
@@ -400,7 +400,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allProceduresVerboseDefault)
   }
 
-  test("should show procedures executable by current user", SkipOnSpd(note = Note.temporary)) {
+  test("should show procedures executable by current user") {
     // GIVEN
     createUser()
 
@@ -411,7 +411,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allProceduresBriefDefault)
   }
 
-  test("should show procedures executable by current user with yield", SkipOnSpd(note = Note.temporary)) {
+  test("should show procedures executable by current user with yield") {
     // GIVEN
     createUser()
 
@@ -424,7 +424,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     ))
   }
 
-  test("should show procedures executable by specified user", SkipOnSpd(note = Note.temporary)) {
+  test("should show procedures executable by specified user") {
     // GIVEN
     createUser()
 
@@ -435,7 +435,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allProceduresBriefDefault)
   }
 
-  test("should show procedures executable by specified user with yield", SkipOnSpd(note = Note.temporary)) {
+  test("should show procedures executable by specified user with yield") {
     // GIVEN
     createUser()
 
@@ -446,7 +446,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allProceduresVerboseDefault)
   }
 
-  test("should show procedures on system", SkipOnSpd(note = Note.temporary)) {
+  test("should show procedures on system") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
 
@@ -457,7 +457,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     result.toList should be(allProceduresBriefDefault)
   }
 
-  test("show procedures with Cypher versions", SkipOnSpd(note = Note.temporary)) {
+  test("show procedures with Cypher versions") {
     cypherVersions.foreach { case (cypherVersionString, usesCypher5) =>
       val expected = if (usesCypher5) allProceduresBriefCypher5 else allProceduresBriefCypher25
 
