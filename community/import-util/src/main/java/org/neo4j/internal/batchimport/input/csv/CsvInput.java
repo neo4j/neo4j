@@ -233,6 +233,9 @@ public class CsvInput implements Input {
         delimiters.put(config.delimiter(), "delimiter");
         checkUniqueCharacter(delimiters, config.arrayDelimiter(), "array delimiter");
         checkUniqueCharacter(delimiters, config.quotationCharacter(), "quotation character");
+        // Vector delimiter may equal array delimiter, so drop array before checking vector.
+        delimiters.remove(config.arrayDelimiter());
+        checkUniqueCharacter(delimiters, config.vectorDelimiter(), "vector delimiter");
     }
 
     private static void checkUniqueCharacter(

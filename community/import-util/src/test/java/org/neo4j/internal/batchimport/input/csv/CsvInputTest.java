@@ -24,6 +24,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Percentage.withPercentage;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -1124,6 +1125,72 @@ class CsvInputTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("array delimiter")
                 .hasMessageContaining("quotation");
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultilineSetting.class)
+    void shouldFailOnVectorDelimiterBeingSameAsDelimiter(MultilineSetting setting) {
+        // WHEN
+        assertThatThrownBy(() -> new CsvInput(
+                        null,
+                        null,
+                        null,
+                        null,
+                        INTEGER,
+                        config(setting).toBuilder()
+                                .withDelimiter(',')
+                                .withVectorDelimiter(',')
+                                .build(),
+                        false,
+                        NO_MONITOR,
+                        groups,
+                        INSTANCE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("vector delimiter")
+                .hasMessageContaining("delimiter");
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultilineSetting.class)
+    void shouldFailOnVectorDelimiterBeingSameAsQuotationCharacter(MultilineSetting setting) {
+        // WHEN
+        assertThatThrownBy(() -> new CsvInput(
+                        null,
+                        null,
+                        null,
+                        null,
+                        INTEGER,
+                        config(setting).toBuilder()
+                                .withQuotationCharacter('"')
+                                .withVectorDelimiter('"')
+                                .build(),
+                        false,
+                        NO_MONITOR,
+                        groups,
+                        INSTANCE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("vector delimiter")
+                .hasMessageContaining("quotation");
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultilineSetting.class)
+    void shouldAllowVectorDelimiterToEqualArrayDelimiter(MultilineSetting setting) {
+        assertThatCode(() -> new CsvInput(
+                        datas(),
+                        defaultFormatNodeFileHeader(),
+                        datas(),
+                        defaultFormatRelationshipFileHeader(),
+                        INTEGER,
+                        config(setting).toBuilder()
+                                .withArrayDelimiter(';')
+                                .withVectorDelimiter(';')
+                                .build(),
+                        false,
+                        NO_MONITOR,
+                        groups,
+                        INSTANCE))
+                .doesNotThrowAnyException();
     }
 
     @ParameterizedTest
