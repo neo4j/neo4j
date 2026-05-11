@@ -47,7 +47,7 @@ public final class MultiVersionTransactionRollbackProcess implements Transaction
         long transactionIdToRollback = chunkedTransaction.transactionId();
         long chunksToRollback = chunkedTransaction.chunkId() - 1;
         int rolledbackBatches = 0;
-        long nextBatchToRollbackIndex = chunkedTransaction.lastBatchAppendIndex();
+        long nextBatchToRollbackIndex = chunkedTransaction.previousBatchAppendIndex();
         var rollbackChunkedTransaction = new ChunkedTransaction(
                 transactionIdToRollback,
                 chunkedTransaction.getTransactionSequenceNumber(),
