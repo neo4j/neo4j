@@ -586,4 +586,12 @@ class PreParserTest extends CypherFunSuite {
         runtime = CypherRuntimeOption.slotted
       )
   }
+
+  test("invalid Cypher option") {
+    val query = "CYPHER x=1 RETURN 1 AS x"
+
+    the[InvalidCypherOption] thrownBy {
+      preParse(query)
+    } should have message "Unsupported options: x"
+  }
 }

@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal
 
 import org.antlr.v4.runtime.BailErrorStrategy
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.InputMismatchException
+import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.neo4j.cypher.internal.PreParser.queryOptions
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.CacheStrategy
 import org.neo4j.cypher.internal.cache.LFUCache
@@ -228,7 +230,22 @@ class PreParser(
       preparser.setErrorHandler(new BailErrorStrategy)
       preparser.removeErrorListeners()
 
-      preparser.preparserOptions()
+      try {
+        preparser.preparserOptions()
+      } catch {
+        case ex: ParseCancellationException =>
+          ex.getCause match {
+            case exx: InputMismatchException =>
+              exx.getCtx match {
+                case ctx: CypherPreparserParser.SettingContext if !ctx.IDENTIFIER.isEmpty =>
+                  throw InvalidCypherOption.unsupportedOptions(ctx.IDENTIFIER(0).getText)
+                case _ =>
+                  throw InvalidCypherOption.unsupportedOptions("")
+              }
+            case _ =>
+              throw InvalidCypherOption.unsupportedOptions("")
+          }
+      }
 
       if (statefulPreparserListener.queryPosition.isEmpty) {
         throw exceptionFactory.syntaxException(
