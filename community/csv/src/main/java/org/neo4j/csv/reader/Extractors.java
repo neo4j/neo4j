@@ -644,9 +644,16 @@ public final class Extractors {
                 return emptyElement();
             }
 
+            var hasStartBracket = false;
+            var charIndex = 0;
+            if (allowBracketsToBeStripped() && data[offset] == '[') {
+                hasStartBracket = true;
+                charIndex++;
+            }
+
             E values = createInternalArray(numberOfValues);
-            for (int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
-                int numberOfChars = charsToNextDelimiter(data, offset + charIndex, length - charIndex);
+            for (int arrayIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++) {
+                int numberOfChars = charsToNextDelimiter(data, hasStartBracket, offset + charIndex, length - charIndex);
                 parseAndStoreElement(data, offset, charIndex, numberOfChars, optionalData, values, arrayIndex);
                 charIndex += numberOfChars;
             }
@@ -671,11 +678,23 @@ public final class Extractors {
 
         protected abstract T convertListToArrayValue(E values);
 
-        private int charsToNextDelimiter(char[] data, int offset, int length) {
+        public boolean allowBracketsToBeStripped() {
+            return false;
+        }
+
+        private int charsToNextDelimiter(char[] data, boolean hasStartBracket, int offset, int length) {
             for (int i = 0; i < length; i++) {
                 if (data[offset + i] == arrayDelimiter) {
                     return i;
                 }
+            }
+
+            if (hasStartBracket) {
+                if (data[offset + length - 1] != ']') {
+                    throw new IllegalStateException(
+                            "Array content expected between '[' and ']' but no terminal ']' character found");
+                }
+                return length - 1;
             }
             return length;
         }
@@ -757,6 +776,11 @@ public final class Extractors {
         }
 
         @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
+        }
+
+        @Override
         protected byte[] emptyElement() {
             return EMPTY_BYTE_ARRAY;
         }
@@ -801,6 +825,11 @@ public final class Extractors {
         @Override
         public Extractor<Int8Vector> getDimensionVerifyingExtractor(int expectedDimensions) {
             return new DimensionVerifyingVectorExtractorWrapper<>(this, expectedDimensions);
+        }
+
+        @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
         }
 
         @Override
@@ -861,6 +890,11 @@ public final class Extractors {
         }
 
         @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
+        }
+
+        @Override
         protected short[] createInternalArray(int size) {
             return new short[size];
         }
@@ -910,6 +944,11 @@ public final class Extractors {
         @Override
         protected Int32Vector emptyElement() {
             return null;
+        }
+
+        @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
         }
 
         @Override
@@ -965,6 +1004,11 @@ public final class Extractors {
         }
 
         @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
+        }
+
+        @Override
         protected long[] createInternalArray(int size) {
             return new long[size];
         }
@@ -1014,6 +1058,11 @@ public final class Extractors {
         @Override
         protected Float32Vector emptyElement() {
             return null;
+        }
+
+        @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
         }
 
         @Override
@@ -1069,6 +1118,11 @@ public final class Extractors {
         }
 
         @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
+        }
+
+        @Override
         protected double[] createInternalArray(int size) {
             return new double[size];
         }
@@ -1116,6 +1170,11 @@ public final class Extractors {
         @Override
         protected T emptyElement() {
             return delegate.emptyElement();
+        }
+
+        @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
         }
 
         @Override
@@ -1167,6 +1226,11 @@ public final class Extractors {
         }
 
         @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
+        }
+
+        @Override
         protected short[] createInternalArray(int size) {
             return new short[size];
         }
@@ -1202,6 +1266,11 @@ public final class Extractors {
         @Override
         protected int[] emptyElement() {
             return EMPTY_INT_ARRAY;
+        }
+
+        @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
         }
 
         @Override
@@ -1243,6 +1312,11 @@ public final class Extractors {
         }
 
         @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
+        }
+
+        @Override
         protected long[] createInternalArray(int size) {
             return new long[size];
         }
@@ -1278,6 +1352,11 @@ public final class Extractors {
         @Override
         protected float[] emptyElement() {
             return EMPTY_FLOAT_ARRAY;
+        }
+
+        @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
         }
 
         @Override
@@ -1322,6 +1401,11 @@ public final class Extractors {
         }
 
         @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
+        }
+
+        @Override
         protected double[] createInternalArray(int size) {
             return new double[size];
         }
@@ -1359,6 +1443,11 @@ public final class Extractors {
         @Override
         protected boolean[] emptyElement() {
             return EMPTY_BOOLEAN_ARRAY;
+        }
+
+        @Override
+        public boolean allowBracketsToBeStripped() {
+            return true;
         }
 
         @Override
