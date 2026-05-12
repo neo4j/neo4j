@@ -20,7 +20,7 @@
 package org.neo4j.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.cli.CommandGroup.DATABASE;
 import static org.neo4j.cli.CommandType.DUMP;
 import static org.neo4j.cli.CommandType.LOAD;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 class AdminToolTest {
     @Test
-    public void filterShouldKeepAllProvidersThatCreateUniqueCommands() {
+    void filterShouldKeepAllProvidersThatCreateUniqueCommands() {
         // given
         List<CommandProvider> commandProvider = List.of(createCommandProvider(LOAD, 1), createCommandProvider(DUMP, 2));
 
@@ -44,7 +44,7 @@ class AdminToolTest {
     }
 
     @Test
-    public void filterShouldKeepTheProviderWithHigherPriorityIfBothOfThemCreateTheCommandWithSameType() {
+    void filterShouldKeepTheProviderWithHigherPriorityIfBothOfThemCreateTheCommandWithSameType() {
         // given
         List<CommandProvider> commandProvider = List.of(createCommandProvider(LOAD, 1), createCommandProvider(LOAD, 2));
 
@@ -57,7 +57,7 @@ class AdminToolTest {
     }
 
     @Test
-    public void filterShouldThrowExceptionIfTwoProvidersWithSameTypeCreateSameCommand() {
+    void filterShouldThrowExceptionIfTwoProvidersWithSameTypeCreateSameCommand() {
         // given
         List<CommandProvider> enterpriseProviders =
                 List.of(createCommandProvider(LOAD, 1), createCommandProvider(LOAD, 1));
@@ -65,10 +65,10 @@ class AdminToolTest {
                 List.of(createCommandProvider(LOAD, 2), createCommandProvider(LOAD, 2));
 
         // when
-        assertThrows(
-                IllegalArgumentException.class, () -> AdminTool.filterCommandProviders(communityProviders, DATABASE));
-        assertThrows(
-                IllegalArgumentException.class, () -> AdminTool.filterCommandProviders(enterpriseProviders, DATABASE));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> AdminTool.filterCommandProviders(communityProviders, DATABASE));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> AdminTool.filterCommandProviders(enterpriseProviders, DATABASE));
     }
 
     private CommandProvider createCommandProvider(CommandType commandType, int priority) {
