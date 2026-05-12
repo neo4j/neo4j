@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.distributed;
 
 import static org.neo4j.kernel.impl.transaction.log.distributed.BatchType.STORAGE_ENGINE_ID_ONLY_HEADER;
 import static org.neo4j.kernel.impl.transaction.log.distributed.BatchType.STORAGE_ENGINE_ID_ONLY_HEADER_CHUNKED;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.DISTRIBUTED_OPERATION_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.REPLICATED_TX_CONTENT_TYPE;
 
 import java.io.IOException;
@@ -39,15 +38,18 @@ public class ReplicatedTransactionHelper {
         LogPositionMarker parseProgress = new LogPositionMarker();
         channel.getCurrentLogPosition(parseProgress);
         if (channel.isAtStartOfFullEntry()) {
-            byte contentCode = channel.get();
-            if (contentCode != DISTRIBUTED_OPERATION_CONTENT_TYPE) { // ContentCode.DISTRIBUTED_OPERATION
-                throw new IllegalStateException("Parsing error on DISTRIBUTED_OPERATION_CONTENT_TYPE at position="
-                        + parseProgress.newPosition() + " unexpected contentCode=" + contentCode);
+            // The replication metadata block is length-prefixed by the cluster marshaller so we can
+            // step past it here without depending on its internal tag layout.
+            int metadataBytes = channel.getInt();
+            if (metadataBytes < 0) {
+                channel.getCurrentLogPosition(parseProgress);
+                throw new IllegalStateException("Negative replication metadata length at position="
+                        + parseProgress.newPosition() + " length=" + metadataBytes);
             }
-            DistributedOperationInfo.parse(channel);
+            skipForward(channel, metadataBytes);
             channel.getCurrentLogPosition(parseProgress);
-            contentCode = channel.get();
-            if (contentCode != REPLICATED_TX_CONTENT_TYPE) { // Inner content type
+            byte contentCode = channel.get();
+            if (contentCode != REPLICATED_TX_CONTENT_TYPE) {
                 throw new IllegalStateException("Parsing error on REPLICATED_TX_CONTENT_TYPE at position="
                         + parseProgress.newPosition() + " unexpected contentCode=" + contentCode);
             }
@@ -68,5 +70,9 @@ public class ReplicatedTransactionHelper {
             }
             channel.getCurrentLogPosition(parseProgress);
         }
+    }
+
+    private static void skipForward(ReadableLogPositionAwareChannel channel, int metadataBytes) throws IOException {
+        channel.get(new byte[metadataBytes], metadataBytes);
     }
 }

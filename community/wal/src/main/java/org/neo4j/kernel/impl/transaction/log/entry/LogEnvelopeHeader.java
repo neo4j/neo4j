@@ -50,8 +50,6 @@ public class LogEnvelopeHeader {
     public static final byte UNSPECIFIED_TERM = -1;
     public static final byte KERNEL_CONTENT_TYPE = 64;
     public static final byte REPLICATED_TX_CONTENT_TYPE = 0; // Must be same as ContentCodes.TX_CONTENT_TYPE
-    public static final byte DISTRIBUTED_OPERATION_CONTENT_TYPE =
-            7; // Must be same as ContentCodes.DISTRIBUTED_OPERATION
 
     /**
      * Describes the type of envelope data written within the log file

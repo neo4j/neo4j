@@ -31,6 +31,9 @@ public class UUIDLogSerializer {
     private static final byte NO_UUID = (byte) 0;
     private static final byte UUID_PRESENT = (byte) 1;
 
+    /** Number of bytes written by {@link #write(WritableChannel, UUID)}. */
+    public static final int UUID_BYTES = Long.BYTES + Long.BYTES;
+
     private UUIDLogSerializer() {}
 
     /**
@@ -70,6 +73,13 @@ public class UUIDLogSerializer {
             channel.put(UUID_PRESENT);
             write(channel, uuid);
         }
+    }
+
+    /**
+     * @return the number of bytes written by {@link #writeNullable(WritableChannel, UUID)} for the given UUID.
+     */
+    public static int nullableByteSize(UUID uuid) {
+        return uuid == null ? Byte.BYTES : Byte.BYTES + UUID_BYTES;
     }
 
     /**
