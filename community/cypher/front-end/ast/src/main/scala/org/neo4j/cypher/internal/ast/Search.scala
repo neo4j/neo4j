@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.semantics.*
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
@@ -25,7 +26,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.ast.semantics._
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
@@ -40,10 +40,12 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.VectorFilterExpression
+import org.neo4j.cypher.internal.expressions.VectorFilterExpression.InSet
 import org.neo4j.cypher.internal.expressions.VectorFilterExpression.VectorFilterExpressionRange
 import org.neo4j.cypher.internal.notification.IdentifierShadowsVariableNotification
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
@@ -190,10 +192,16 @@ case class Search(
       rhs: Expression,
       filterExpression: VectorFilterExpression
     ): CheckedVectorFilterExpression = {
-      CheckedVectorFilterExpression(
-        checkWhereVariable(variable) chain checkRhs(rhs),
-        Seq(filterExpression)
-      )
+      filterExpression match {
+        case InSet(_, _) => CheckedVectorFilterExpression(
+            checkWhereVariable(variable) chain expectType(CTList(CTAny).covariant, rhs),
+            Seq(filterExpression)
+          )
+        case _ => CheckedVectorFilterExpression(
+            checkWhereVariable(variable) chain checkRhs(rhs),
+            Seq(filterExpression)
+          )
+      }
     }
 
     def apply(error: SemanticError): CheckedVectorFilterExpression =

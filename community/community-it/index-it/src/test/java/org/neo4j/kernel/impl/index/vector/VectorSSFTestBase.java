@@ -24,11 +24,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,28 +53,9 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.Preconditions;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.ByteValue;
-import org.neo4j.values.storable.CharValue;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.DateValue;
-import org.neo4j.values.storable.DoubleValue;
-import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.FloatValue;
-import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.IntegralValue;
-import org.neo4j.values.storable.LocalDateTimeValue;
-import org.neo4j.values.storable.LocalTimeValue;
-import org.neo4j.values.storable.LongValue;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.ShortValue;
-import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 @ImpermanentDbmsExtension(configurationCallback = "configure")
 abstract class VectorSSFTestBase {
@@ -95,6 +71,15 @@ abstract class VectorSSFTestBase {
 
     @Inject
     protected GraphDatabaseAPI db;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        configureSSFTest(builder);
+    }
+
+    protected void configureSSFTest(TestDatabaseManagementServiceBuilder builder) {
+        // no configuration necessary in the most subclasses, so make this concrete.
+    }
 
     private static final int EF_CONSTRUCTION = 1000;
     private static final int K_NEAREST_NEIGHBORS = 10;
@@ -121,88 +106,16 @@ abstract class VectorSSFTestBase {
         return tokenRead -> PropertyIndexQuery.exact(tokenRead.propertyKey(propertyKey), propertyValue);
     }
 
-    static Function<TokenRead, PropertyIndexQuery> inSetQuery(String propertyKey, ArrayValue propertyValues) {
+    static Function<TokenRead, PropertyIndexQuery> inSetQuery(String propertyKey, Value[] propertyValues) {
         return tokenRead -> PropertyIndexQuery.inSet(tokenRead.propertyKey(propertyKey), propertyValues);
     }
 
-    private static class GeneralisedArray extends ArrayValue {
-
-        Value[] values;
-
-        GeneralisedArray(Value... values) {
-            this.values = values;
-        }
-
-        @Override
-        public boolean hasCompatibleType(AnyValue value) {
-            return false;
-        }
-
-        @Override
-        public ArrayValue copyWithAppended(AnyValue added) {
-            return null;
-        }
-
-        @Override
-        public ArrayValue copyWithPrepended(AnyValue prepended) {
-            return null;
-        }
-
-        @Override
-        public AnyValue value(int offset) {
-            return values[offset];
-        }
-
-        @Override
-        public int intSize() {
-            return values.length;
-        }
-    }
-
     static Function<TokenRead, PropertyIndexQuery> genericInSetQuery(String propertyKey, Value... values) {
-        var array = new GeneralisedArray(values);
-        return tokenRead -> PropertyIndexQuery.inSet(tokenRead.propertyKey(propertyKey), array);
-    }
-
-    static Function<TokenRead, PropertyIndexQuery> nullQuery() {
-        return tokenRead -> null;
-    }
-
-    private static ArrayValue singletonValueAsArray(Value value) {
-        Object[] javaArray =
-                switch (value) {
-                    // boolean
-                    case BooleanValue booleanValue -> new Boolean[] {booleanValue.booleanValue()};
-                    // fixed point
-                    case ByteValue byteValue -> new Byte[] {byteValue.byteValue()};
-                    case ShortValue shortValue -> new Short[] {shortValue.shortValue()};
-                    case IntValue intValue -> new Integer[] {intValue.value()};
-                    case LongValue longValue -> new Long[] {longValue.value()};
-                    // floating point
-                    case FloatValue floatValue -> new Float[] {floatValue.value()};
-                    case DoubleValue doubleValue -> new Double[] {doubleValue.value()};
-                    //
-                    case StringValue stringValue -> new String[] {stringValue.stringValue()};
-                    case CharValue charValue -> new Character[] {charValue.value()};
-                    // geometric
-                    case PointValue pointValue -> new PointValue[] {pointValue};
-                    // time
-                    case DateTimeValue dateTimeValue -> new ZonedDateTime[] {dateTimeValue.asObjectCopy()};
-                    case LocalDateTimeValue localDateTimeValue ->
-                        new LocalDateTime[] {localDateTimeValue.asObjectCopy()};
-                    case DateValue dateValue -> new LocalDate[] {dateValue.asObjectCopy()};
-                    case TimeValue timeValue -> new OffsetTime[] {timeValue.asObjectCopy()};
-                    case LocalTimeValue localTimeValue -> new LocalTime[] {localTimeValue.asObjectCopy()};
-                    // duration
-                    case DurationValue durationValue -> new DurationValue[] {durationValue};
-                    default -> null;
-                };
-        return Values.arrayValue(javaArray, false);
+        return tokenRead -> PropertyIndexQuery.inSet(tokenRead.propertyKey(propertyKey), values);
     }
 
     static Function<TokenRead, PropertyIndexQuery> inSetQuerySingleton(String propertyKey, Value propertyValue) {
-        return tokenRead ->
-                PropertyIndexQuery.inSet(tokenRead.propertyKey(propertyKey), singletonValueAsArray(propertyValue));
+        return tokenRead -> PropertyIndexQuery.inSet(tokenRead.propertyKey(propertyKey), new Value[] {propertyValue});
     }
 
     static Function<TokenRead, PropertyIndexQuery> rangeQuery(
@@ -262,9 +175,6 @@ abstract class VectorSSFTestBase {
             return embeddings.length;
         }
     }
-
-    @ExtensionCallback
-    protected void configure(TestDatabaseManagementServiceBuilder builder) {}
 
     protected void createNodeVectorIndex(String name, int vectorDimension, String... onProperties) {
         createNodeVectorIndex(name, vectorDimension, config -> {}, onProperties);

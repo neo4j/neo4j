@@ -28,12 +28,10 @@ import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.Equality;
-import org.neo4j.values.SequenceValue;
-import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -101,8 +99,17 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         return new ExactPredicate(propertyKeyId, exactValue);
     }
 
-    public static InSetPredicate inSet(int propertyKeyId, ArrayValue values) {
+    public static InSetPredicate inSet(int propertyKeyId, Value[] values) {
+        if (values.length > InSetPredicate.MAX_SIZE) {
 
+            throw InvalidArgumentException.integerNonNullOutOfBounds(
+                    "Expected an integer between %d and %d, but got: %d"
+                            .formatted(0, InSetPredicate.MAX_SIZE, values.length),
+                    "size-of-predicate-list",
+                    0,
+                    InSetPredicate.MAX_SIZE,
+                    Values.longValue(values.length).prettyPrint());
+        }
         return new InSetPredicate(propertyKeyId, values);
     }
 
@@ -1044,33 +1051,40 @@ public abstract class PropertyIndexQuery implements IndexQuery {
     }
 
     public static final class InSetPredicate extends PropertyIndexQuery {
+        private static final int MAX_SIZE = 1024;
+        private final Value[] values;
 
-        private final ArrayValue values;
-
-        private InSetPredicate(int propertyKeyId, ArrayValue values) {
+        private InSetPredicate(int propertyKeyId, Value[] values) {
             super(propertyKeyId);
             this.values = values;
         }
 
         @Override
-        public boolean acceptsValue(Value value) {
-            if (value instanceof SequenceValue sequenceValue) {
-                for (AnyValue anyValue : sequenceValue) {
-                    if (anyValue.ternaryEquals(value) == Equality.TRUE) {
-                        return true;
-                    }
-                }
+        public boolean equals(Object o) {
+            if (!super.equals(o)) {
                 return false;
             }
-            return false;
+            InSetPredicate that = (InSetPredicate) o;
+            return Objects.deepEquals(values, that.values);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), Arrays.hashCode(values));
+        }
+
+        @Override
+        public boolean acceptsValue(Value value) {
+            throw new UnsupportedOperationException("EntityFilterPredicates do not know how to evaluate themselves.");
         }
 
         @Override
         public ValueGroup valueGroup() {
-            return values.valueGroup();
+
+            return ValueGroup.UNKNOWN;
         }
 
-        public ArrayValue values() {
+        public Value[] values() {
             return values;
         }
 

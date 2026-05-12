@@ -58,8 +58,6 @@ import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.SingleInte
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.TemporalOffsetWithId;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.TemporalWithZone;
 import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatingPointValue;
@@ -197,14 +195,12 @@ final class Lucene10FilterQueryBuilder {
 
     private Query queryForInSet(int propertyIndex, InSetPredicate predicate) {
 
-        ArrayValue values = predicate.values();
-        List<Query> queries = new ArrayList<>(values.intSize());
-        for (AnyValue anyValue : values) {
-            if (anyValue instanceof Value value) {
-                Query valueQuery = singleValueQuery(propertyIndex, value);
-                if (!(valueQuery instanceof MatchNoDocsQuery)) {
-                    queries.add(valueQuery);
-                }
+        Value[] values = predicate.values();
+        List<Query> queries = new ArrayList<>(values.length);
+        for (Value value : values) {
+            Query valueQuery = singleValueQuery(propertyIndex, value);
+            if (!(valueQuery instanceof MatchNoDocsQuery)) {
+                queries.add(valueQuery);
             }
         }
         return switch (queries.size()) {

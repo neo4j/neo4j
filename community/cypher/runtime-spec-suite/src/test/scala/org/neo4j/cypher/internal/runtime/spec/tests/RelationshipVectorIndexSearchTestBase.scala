@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchEntities
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.AllQueryExpression
@@ -95,7 +96,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](
       edition,
       runtime
-    ) {
+    ) with QueryExpressionConstructionTestSupport {
 
   private val seed: Long = System.currentTimeMillis()
   println(s"initial seed: $seed")
@@ -1038,7 +1039,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
           indexName = "VectorIndex",
           vector = "$vector",
           limit = "13",
-          propertyFilter = Some(equal(param("seekValue")))
+          propertyFilter = Some(single(param("seekValue")))
         ).build()
 
       val runtimeResult =
@@ -1073,7 +1074,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
           indexName = "VectorIndex",
           vector = "$vector",
           limit = "13",
-          propertyFilter = Some(equal(param("seekValue")))
+          propertyFilter = Some(single(param("seekValue")))
         ).build()
 
       val runtimeResult =
@@ -2516,7 +2517,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         case 2 => (rangeExpression(lt(param("min"))), s"n.prop < $min")
         case 3 => (rangeExpression(lte(param("min"))), s"n.prop <= $min")
         case 4 => (between(gte(param("min")), lte(param("max"))), s"$min <= n.prop <= $max")
-        case 5 => (equal(param("min")), s"n.prop = $min")
+        case 5 => (single(param("min")), s"n.prop = $min")
         case _ => throw new IllegalStateException
       }
     }
@@ -2619,7 +2620,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(equal(param("p")))
+        propertyFilter = Some(single(param("p")))
       )
       .build()
 
@@ -2667,7 +2668,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(equal(param("p")))
+        propertyFilter = Some(single(param("p")))
       )
       .build()
 
@@ -2717,7 +2718,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(composite(equal(param("p1")), equal(param("p2"))))
+        propertyFilter = Some(composite(single(param("p1")), single(param("p2"))))
       )
       .build()
 
@@ -2777,7 +2778,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(composite(equal(param("p1")), equal(param("p2"))))
+        propertyFilter = Some(composite(single(param("p1")), single(param("p2"))))
       )
       .build()
 
@@ -2838,7 +2839,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(composite(equal(param("p1")), equal(param("p2")), AllQueryExpression))
+        propertyFilter = Some(composite(single(param("p1")), single(param("p2")), AllQueryExpression))
       )
       .build()
 
@@ -2921,7 +2922,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(composite(equal(param("p1")), equal(param("p2")), AllQueryExpression))
+        propertyFilter = Some(composite(single(param("p1")), single(param("p2")), AllQueryExpression))
       )
       .build()
 
@@ -3004,7 +3005,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(composite(AllQueryExpression, AllQueryExpression, equal(param("p"))))
+        propertyFilter = Some(composite(AllQueryExpression, AllQueryExpression, single(param("p"))))
       )
       .build()
 
@@ -3065,7 +3066,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(composite(AllQueryExpression, AllQueryExpression, equal(param("p"))))
+        propertyFilter = Some(composite(AllQueryExpression, AllQueryExpression, single(param("p"))))
       )
       .build()
 
@@ -3422,7 +3423,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         limit = s"10000000",
         propertyFilter = Some(composite(
           between(gte(param("from")), lte(param("to"))),
-          equal(param("exact"))
+          single(param("exact"))
         ))
       )
       .build()
@@ -3507,7 +3508,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         limit = s"10000000",
         propertyFilter = Some(composite(
           between(gte(param("from")), lte(param("to"))),
-          equal(param("exact"))
+          single(param("exact"))
         ))
       )
       .build()
@@ -4247,8 +4248,8 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     }
 
     // then
-    executeDurationQuery(equal(param("d1"))) should beColumns("dur").withSingleRow(d1)
-    executeDurationQuery(equal(param("d2"))) should beColumns("dur").withSingleRow(d2)
+    executeDurationQuery(single(param("d1"))) should beColumns("dur").withSingleRow(d1)
+    executeDurationQuery(single(param("d2"))) should beColumns("dur").withSingleRow(d2)
     executeDurationQuery(rangeExpression(gte(param("d1")))) should beColumns("dur").withSingleRow(d1)
     executeDurationQuery(rangeExpression(gt(param("d1")))) should beColumns("dur").withNoRows()
     executeDurationQuery(rangeExpression(lte(param("d1")))) should beColumns("dur").withSingleRow(d1)
@@ -4395,6 +4396,101 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
+  // IN/OR queries
+  test("simple OR/IN query") {
+    // given
+    givenGraph {
+      relationshipIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
+      relationshipGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.relationshipSetProperty(n.getId, idToken, longValue(i))
+          write.relationshipSetProperty(
+            n.getId,
+            vectorToken,
+            randomVector
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("r.id AS id")
+      .relationshipVectorIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Foo"),
+        properties = Seq("v", "id"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(many(listOfInt(0, sizeHint / 2, sizeHint - 1, sizeHint)))
+      )
+      .build()
+
+    val runtimeResult =
+      execute(
+        logicalQuery,
+        runtime,
+        parameters =
+          Map(
+            "vector" -> randomVector
+          )
+      )
+
+    // then
+    runtimeResult should beColumns("id").withRows(singleColumn(Seq(0, sizeHint / 2, sizeHint - 1)))
+  }
+
+  test("composite OR/IN query") {
+    // given
+    givenGraph {
+      relationshipIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id1", "id2")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val id1Token = tx.kernelTransaction().tokenRead().propertyKey("id1")
+      val id2Token = tx.kernelTransaction().tokenRead().propertyKey("id2")
+      relationshipGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.relationshipSetProperty(n.getId, vectorToken, randomVector)
+          write.relationshipSetProperty(n.getId, id1Token, longValue(i))
+          write.relationshipSetProperty(n.getId, id2Token, longValue(i))
+      })
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id1", "id2")
+      .projection("r.id1 AS id1", "r.id2 AS id2")
+      .relationshipVectorIndexSearch(
+        "()-[r]->()",
+        typeNames = Seq("Foo"),
+        properties = Seq("v", "id1", "id2"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(composite(
+          many(listOfInt(0, sizeHint / 2, sizeHint - 1, sizeHint)),
+          many(listOfInt(sizeHint / 2, sizeHint))
+        ))
+      )
+      .build()
+
+    val runtimeResult =
+      execute(
+        logicalQuery,
+        runtime,
+        parameters =
+          Map(
+            "vector" -> randomVector
+          )
+      )
+
+    // then
+    runtimeResult should beColumns("id1", "id2").withSingleRow(sizeHint / 2, sizeHint / 2)
+  }
+
   private def booleanVectorGraph(size: Int): Unit = {
     relationshipIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "bool")
     val write = tx.kernelTransaction().dataWrite
@@ -4441,26 +4537,6 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
-  private def between(gt: RangeGreaterThan[Expression], lt: RangeLessThan[Expression]) = {
-    rangeExpression(
-      RangeBetween(
-        gt,
-        lt
-      )
-    )
-  }
-
-  private def rangeExpression(e: InequalitySeekRange[Expression]): RangeQueryExpression[InequalitySeekRangeWrapper] = {
-    RangeQueryExpression(
-      InequalitySeekRangeWrapper(e)(pos)
-    )
-  }
-  private def composite(es: QueryExpression[Expression]*) = CompositeQueryExpression(es)
-  private def equal(e: Expression) = SingleQueryExpression(e)
-  private def gt(e: Expression) = RangeGreaterThan(NonEmptyList(ExclusiveBound(e)))
-  private def gte(e: Expression) = RangeGreaterThan(NonEmptyList(InclusiveBound(e)))
-  private def lt(e: Expression) = RangeLessThan(NonEmptyList(ExclusiveBound(e)))
-  private def lte(e: Expression) = RangeLessThan(NonEmptyList(InclusiveBound(e)))
   private def param(name: String) = parameter(name, CTAny)
 
   private def vectorAsCypherList(v: VectorValue): String = {

@@ -26,9 +26,7 @@ import static org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.field;
 import static org.neo4j.test.extension.SkipOnSpd.Note.temporary;
 import static org.neo4j.values.storable.DurationValue.duration;
 
-import java.time.OffsetTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,11 +46,11 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.test.extension.SkipOnSpd;
-import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 @SkipOnSpd(notes = temporary, reason = "IN [...] filtering not supported via CYPHER")
@@ -80,44 +78,45 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         indexMethods.createTestEntity(Map.of("id", 40, "name", "Ted", EMBEDDING_NAME, EMBEDDINGS.get(4)));
         indexMethods.createTestEntity(Map.of("id", 50, "name", "Bob", EMBEDDING_NAME, EMBEDDINGS.get(5)));
 
-        assertThat(indexMethods.queryTestIndex(inSetQuery("id", Values.intArray(new int[] {10, 20}))))
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(10, 20))))
                 .hasSize(2)
                 .extracting(extractor("name"), extractor("id"))
                 .containsExactlyInAnyOrder(tuple("Alice", 10), tuple("Bob", 20));
 
-        assertThat(indexMethods.queryTestIndex(inSetQuery("id", Values.intArray(new int[] {10}))))
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(10))))
                 .singleElement()
                 .has(field("name", "Alice"));
 
-        assertThat(indexMethods.queryTestIndex(inSetQuery("id", Values.intArray(new int[] {}))))
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of()))).isEmpty();
+
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(8)))).isEmpty();
+
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(8, 12, 15, 16, 17, 18, 500))))
                 .isEmpty();
 
-        assertThat(indexMethods.queryTestIndex(inSetQuery("id", Values.intArray(new int[] {8}))))
-                .isEmpty();
-
-        assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("id", Values.intArray(new int[] {8, 12, 15, 16, 17, 18, 500}))))
-                .isEmpty();
-
-        assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("id", Values.intArray(new int[] {8, 10, 12, 15, 16, 17, 18, 500}))))
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(8, 10, 12, 15, 16, 17, 18, 500))))
                 .singleElement()
                 .has(field("name", "Alice"));
 
-        assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("id", Values.intArray(new int[] {10, 8, 12, 15, 16, 17, 18, 500}))))
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(10, 8, 12, 15, 16, 17, 18, 500))))
                 .singleElement()
                 .has(field("name", "Alice"));
 
-        assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("id", Values.intArray(new int[] {8, 12, 15, 16, 17, 18, 10, 500}))))
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(8, 12, 15, 16, 17, 18, 10, 500))))
                 .singleElement()
                 .has(field("name", "Alice"));
 
-        assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("id", Values.intArray(new int[] {10, 8, 12, 10, 15, 16, 17, 18, 10, 500}))))
+        assertThat(indexMethods.queryTestIndex(inSetQuery("id", of(10, 8, 12, 10, 15, 16, 17, 18, 10, 500))))
                 .singleElement()
                 .has(field("name", "Alice"));
+    }
+
+    private Value[] of(Object... objects) {
+        Value[] values = new Value[objects.length];
+        for (int i = 0; i < objects.length; i++) {
+            values[i] = Values.of(objects[i]);
+        }
+        return values;
     }
 
     @Test
@@ -151,7 +150,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
 
         // order of exact queries consistent with the index
         assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("name", Values.stringArray("Bob", "Alice")),
+                        inSetQuery("name", of("Bob", "Alice")),
                         exactQuery("age", Values.of(45)),
                         exactQuery("shoesize", Values.of(8.5))))
                 .singleElement()
@@ -159,25 +158,23 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
                 .has(field("age", 45));
 
         assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("name", Values.stringArray("Bob", "Alice")),
-                        inSetQuery("age", Values.intArray(new int[] {45, 24})),
+                        inSetQuery("name", of("Bob", "Alice")),
+                        inSetQuery("age", of(45, 24)),
                         exactQuery("shoesize", Values.of(8.5))))
                 .singleElement()
                 .has(field("name", "Bob"))
                 .has(field("age", 45));
 
         assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("name", Values.stringArray("Bob", "Alice")),
-                        inSetQuery("age", Values.intArray(new int[] {45, 24})),
-                        inSetQuery("shoesize", Values.floatArray(new float[] {8.5f, 11.5f}))))
+                        inSetQuery("name", of("Bob", "Alice")),
+                        inSetQuery("age", of(45, 24)),
+                        inSetQuery("shoesize", of(8.5f, 11.5f))))
                 .singleElement()
                 .has(field("name", "Bob"))
                 .has(field("age", 45));
 
         assertThat(indexMethods.queryTestIndex(
-                        inSetQuery("name", Values.stringArray("Ted", "Carol")),
-                        existsQuery("age"),
-                        existsQuery("shoesize")))
+                        inSetQuery("name", of("Ted", "Carol")), existsQuery("age"), existsQuery("shoesize")))
                 .hasSize(2)
                 .extracting(extractor("id"))
                 .containsExactlyInAnyOrder(30, 40);
@@ -210,6 +207,32 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
                         allQuery("id"), genericInSetQuery("name", Values.of(15), Values.of("Carol"), Values.of(3.141))))
                 .extracting(extractor("id"))
                 .containsExactlyInAnyOrder(30);
+    }
+
+    @Test
+    void emptyValueListForNodes() throws Exception {
+        emptyValueList(new NodeVectorIndexMethods());
+    }
+
+    @Test
+    void emptyValueListForRelationships() throws Exception {
+        emptyValueList(new RelationshipVectorIndexMethods());
+    }
+
+    void emptyValueList(VectorIndexMethods indexMethods) throws Exception {
+        indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "id", "name");
+        indexMethods.createTestEntity(Map.of("id", 10, "name", "Alice", EMBEDDING_NAME, EMBEDDINGS.get(1)));
+        indexMethods.createTestEntity(Map.of("id", 20, "name", "Bob", EMBEDDING_NAME, EMBEDDINGS.get(2)));
+        indexMethods.createTestEntity(Map.of("id", 30, "name", "Carol", EMBEDDING_NAME, EMBEDDINGS.get(3)));
+        indexMethods.createTestEntity(Map.of("id", 40, "name", "Ted", EMBEDDING_NAME, EMBEDDINGS.get(4)));
+        indexMethods.createTestEntity(Map.of("id", 50, "name", "Bob", EMBEDDING_NAME, EMBEDDINGS.get(5)));
+
+        assertThat(indexMethods.queryTestIndex(genericInSetQuery("id", Values.of(10)), allQuery("name")))
+                .extracting(extractor("name"))
+                .containsExactlyInAnyOrder("Alice");
+
+        assertThat(indexMethods.queryTestIndex(genericInSetQuery("id"), allQuery("name")))
+                .isEmpty();
     }
 
     @Test
@@ -467,9 +490,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         temporalInSetFuzzTest(
                 new NodeVectorIndexMethods(),
                 VectorSSFTemporalTestHelper::generateTestZonedDateTimeStrings,
-                DateTimeValue::parse,
-                Values::dateTimeArray,
-                ZonedDateTime[]::new);
+                DateTimeValue::parse);
     }
 
     @Test
@@ -477,9 +498,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         temporalInSetFuzzTest(
                 new NodeVectorIndexMethods(),
                 VectorSSFTemporalTestHelper::generateTestZonedTimeStrings,
-                TimeValue::parse,
-                Values::timeArray,
-                OffsetTime[]::new);
+                TimeValue::parse);
     }
 
     @Test
@@ -487,9 +506,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         temporalInSetFuzzTest(
                 new RelationshipVectorIndexMethods(),
                 VectorSSFTemporalTestHelper::generateTestZonedDateTimeStrings,
-                DateTimeValue::parse,
-                Values::dateTimeArray,
-                ZonedDateTime[]::new);
+                DateTimeValue::parse);
     }
 
     @Test
@@ -497,17 +514,13 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         temporalInSetFuzzTest(
                 new RelationshipVectorIndexMethods(),
                 VectorSSFTemporalTestHelper::generateTestZonedTimeStrings,
-                TimeValue::parse,
-                Values::timeArray,
-                OffsetTime[]::new);
+                TimeValue::parse);
     }
 
     <TEMPORAL extends Temporal, TValue extends TemporalValue<TEMPORAL, TValue>> void temporalInSetFuzzTest(
             VectorIndexMethods indexMethods,
             Supplier<List<String>> generator,
-            BiFunction<String, Supplier<ZoneId>, TValue> parser,
-            Function<TEMPORAL[], ArrayValue> valueArray,
-            Function<Integer, TEMPORAL[]> arrayGenerator)
+            BiFunction<String, Supplier<ZoneId>, TValue> parser)
             throws Exception {
 
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "time");
@@ -545,13 +558,11 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
                     expected.add(key);
                 }
             }
-            Object[] objectsToQuery =
-                    list.stream().map(map::get).map(TValue::asObjectCopy).toArray(Object[]::new);
-            TEMPORAL[] valuesToQuery = arrayGenerator.apply(objectsToQuery.length);
-            for (int i = 0; i < objectsToQuery.length; i++) {
-                valuesToQuery[i] = (TEMPORAL) objectsToQuery[i];
+            Value[] valuesToQuery = new Value[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                valuesToQuery[i] = map.get(list.get(i));
             }
-            var result = indexMethods.queryTestIndex(inSetQuery("time", valueArray.apply(valuesToQuery)));
+            var result = indexMethods.queryTestIndex(inSetQuery("time", valuesToQuery));
             assertThat(result)
                     .hasSize(expected.size())
                     .extracting(extractor("id"))

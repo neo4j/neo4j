@@ -698,6 +698,50 @@ class SearchSemanticAnalysisTest extends CypherFunSuite with NameBasedSemanticAn
       )
     }
 
+    test(
+      s"""MATCH (m:Movie {title:'Matrix, The'})
+         |${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    VECTOR INDEX moviePlots
+         |    FOR m.embedding
+         |    WHERE movie.year IN 2000
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasErrors(
+        SemanticError(
+          GqlHelper.getGql42001_22NB1(
+            java.util.List.of("LIST"),
+            "INTEGER",
+            151 + optionalLength,
+            6,
+            25
+          ),
+          "Type mismatch: expected List<T> but was Integer",
+          InputPosition.withLength(151 + optionalLength, 6, 25, 4)
+        )
+      )
+    }
+
+    test(
+      s"""MATCH (m:Movie {title:'Matrix, The'})
+         |${maybeOptional}MATCH (movie: Movie)
+         |  SEARCH movie IN (
+         |    VECTOR INDEX moviePlots
+         |    FOR m.embedding
+         |    WHERE movie.year IN [2000, 2001]
+         |    LIMIT 5
+         |  )
+         |RETURN movie.title AS title
+         |// complexPatternAllowed = $complexPatternAllowed
+         |""".stripMargin
+    ) {
+      runSearch(complexPatternAllowed).hasNoErrors
+    }
+
     // Tests for single-stage filtering - Rule 2 from CIP-240
 
     /*

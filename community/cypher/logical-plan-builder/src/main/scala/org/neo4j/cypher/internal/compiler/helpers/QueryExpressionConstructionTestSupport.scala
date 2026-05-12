@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
 import org.neo4j.cypher.internal.logical.plans.InclusiveBound
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRange
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.MatchAllQueryExpression
 import org.neo4j.cypher.internal.logical.plans.MatchEntitySetQueryExpression
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
@@ -59,6 +60,7 @@ trait QueryExpressionConstructionTestSupport {
   }
   def composite(es: QueryExpression[Expression]*): CompositeQueryExpression[Expression] = CompositeQueryExpression(es)
   def single(e: ToExpression): SingleQueryExpression[Expression] = SingleQueryExpression(toExpression(e))
+  def many(list: ToExpression): ManyQueryExpression[Expression] = ManyQueryExpression(toExpression(list))
 
   def gt(e: ToExpression): RangeGreaterThan[Expression] =
     RangeGreaterThan(NonEmptyList(ExclusiveBound(toExpression(e))))

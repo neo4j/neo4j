@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.EntityFilterQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.MatchAllQueryExpression
 import org.neo4j.cypher.internal.logical.plans.MatchEntitySetQueryExpression
 import org.neo4j.cypher.internal.logical.plans.NonExistenceQueryExpression
@@ -236,6 +237,9 @@ object NodeVectorIndexSearchPipe {
             Array.empty
         }
 
+      case Some(ManyQueryExpression(expression)) =>
+        Array(nearestPredicate, entityPredicate, PropertyIndexQueries.inSetQuery(properties(1), expression(row, state)))
+
       case Some(RangeQueryExpression(rangeWrapper)) =>
         checkOnlyWhenAssertionsAreEnabled(properties.length == 2)
         rangeWrapper match {
@@ -301,6 +305,9 @@ object NodeVectorIndexSearchPipe {
             case _ =>
               return Array.empty
           }
+
+        case ManyQueryExpression(expression) =>
+          predicates(i + 1) = PropertyIndexQueries.inSetQuery(properties(i), expression(row, state))
 
         case RangeQueryExpression(rangeWrapper) =>
           rangeWrapper match {

@@ -2708,6 +2708,300 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
+  // IN/OR queries
+  test("simple OR/IN query") {
+    // given
+    givenGraph {
+      nodeIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
+      nodeGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            vectorToken,
+            randomVector
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .nodeVectorIndexSearch(
+        node = "n",
+        labelNames = Seq("Foo"),
+        properties = Seq("v", "id"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(many(listOfInt(0, sizeHint / 2, sizeHint - 1, sizeHint)))
+      )
+      .build()
+
+    val runtimeResult =
+      execute(
+        logicalQuery,
+        runtime,
+        parameters =
+          Map(
+            "vector" -> randomVector
+          )
+      )
+
+    // then
+    runtimeResult should beColumns("id").withRows(singleColumn(Seq(0, sizeHint / 2, sizeHint - 1)))
+  }
+
+  test("IN query with empty predicate with empty list") {
+    // given
+    givenGraph {
+      nodeIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
+      nodeGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            vectorToken,
+            randomVector
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .nodeVectorIndexSearch(
+        node = "n",
+        labelNames = Seq("Foo"),
+        properties = Seq("v", "id"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(many(listOfInt()))
+      )
+      .build()
+
+    val runtimeResult =
+      execute(
+        logicalQuery,
+        runtime,
+        parameters =
+          Map(
+            "vector" -> randomVector
+          )
+      )
+
+    // then
+    runtimeResult should beColumns("id").withNoRows()
+  }
+
+  test("IN query with empty predicate with non list") {
+    // given
+    givenGraph {
+      nodeIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
+      nodeGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            vectorToken,
+            randomVector
+          )
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .nodeVectorIndexSearch(
+        node = "n",
+        labelNames = Seq("Foo"),
+        properties = Seq("v", "id"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(many(literalInt(2)))
+      )
+      .build()
+
+    // then
+    the[CypherTypeException] thrownBy consume(execute(
+      logicalQuery,
+      runtime,
+      parameters =
+        Map(
+          "vector" -> randomVector
+        )
+    )) shouldBe gqlStatus(
+      GqlStatusInfoCodes.STATUS_22G03,
+      "error: data exception - invalid value type"
+    ).withCause(
+      GqlStatusInfoCodes.STATUS_22N01,
+      "error: data exception - invalid type. Expected the value 2 to be of type LIST, but was of type INTEGER NOT NULL."
+    )
+  }
+
+  test("composite OR/IN query") {
+    // given
+    givenGraph {
+      nodeIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id1", "id2")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val id1Token = tx.kernelTransaction().tokenRead().propertyKey("id1")
+      val id2Token = tx.kernelTransaction().tokenRead().propertyKey("id2")
+      nodeGraph(sizeHint, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, vectorToken, randomVector)
+          write.nodeSetProperty(n.getId, id1Token, longValue(i))
+          write.nodeSetProperty(n.getId, id2Token, longValue(i))
+      })
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id1", "id2")
+      .projection("n.id1 AS id1", "n.id2 AS id2")
+      .nodeVectorIndexSearch(
+        node = "n",
+        labelNames = Seq("Foo"),
+        properties = Seq("v", "id1", "id2"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(composite(
+          many(listOfInt(0, sizeHint / 2, sizeHint - 1, sizeHint)),
+          many(listOfInt(sizeHint / 2, sizeHint))
+        ))
+      )
+      .build()
+
+    val runtimeResult =
+      execute(
+        logicalQuery,
+        runtime,
+        parameters =
+          Map(
+            "vector" -> randomVector
+          )
+      )
+
+    // then
+    runtimeResult should beColumns("id1", "id2").withSingleRow(sizeHint / 2, sizeHint / 2)
+  }
+
+  test("IN query with many, but not too many items") {
+    // given
+    val totalSize = 5000
+    givenGraph {
+      nodeIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
+      nodeGraph(totalSize, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            vectorToken,
+            randomVector
+          )
+      })
+    }
+
+    // when
+    val propFilter = 1L to 1024
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .nodeVectorIndexSearch(
+        node = "n",
+        labelNames = Seq("Foo"),
+        properties = Seq("v", "id"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(many(listOfInt(propFilter: _*)))
+      )
+      .build()
+
+    val runtimeResult =
+      execute(
+        logicalQuery,
+        runtime,
+        parameters =
+          Map(
+            "vector" -> randomVector
+          )
+      )
+
+    // then
+    runtimeResult should beColumns("id").withRows(singleColumn(propFilter))
+  }
+
+  test("IN query with too many items") {
+    // given
+    val totalSize = 5000
+    givenGraph {
+      nodeIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "id")
+      val write = tx.kernelTransaction().dataWrite
+      val vectorToken = tx.kernelTransaction().tokenRead().propertyKey("v")
+      val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
+      nodeGraph(totalSize, "Foo").zipWithIndex.foreach({
+        case (n, i) =>
+          write.nodeSetProperty(n.getId, idToken, longValue(i))
+          write.nodeSetProperty(
+            n.getId,
+            vectorToken,
+            randomVector
+          )
+      })
+    }
+
+    // when
+    val propFilter = 1L to 1025
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("id")
+      .projection("n.id AS id")
+      .nodeVectorIndexSearch(
+        node = "n",
+        labelNames = Seq("Foo"),
+        properties = Seq("v", "id"),
+        indexName = "VectorIndex",
+        vector = "$vector",
+        limit = s"10000000",
+        propertyFilter = Some(many(listOfInt(propFilter: _*)))
+      )
+      .build()
+
+    // then
+    the[InvalidArgumentException] thrownBy consume(execute(
+      logicalQuery,
+      runtime,
+      parameters =
+        Map(
+          "vector" -> randomVector
+        )
+    )) shouldBe gqlStatus(
+      GqlStatusInfoCodes.STATUS_22003,
+      "error: data exception - numeric value out of range. The numeric value 1025 is outside the required range."
+    ).withCause(
+      GqlStatusInfoCodes.STATUS_22N03,
+      "error: data exception - specified numeric value out of range. Expected 'size-of-predicate-list' to be of type INTEGER NOT NULL and in the range 0 to 1024 but found 1025.",
+      fuzzyStatusDescr = true
+    )
+  }
+
   private def booleanVectorGraph(size: Int): Unit = {
     val random = new Random()
     nodeIndex("VectorIndex", IndexType.VECTOR, Seq("Foo"), "v", "bool")
