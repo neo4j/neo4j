@@ -22,9 +22,11 @@ package org.neo4j.kernel.api.impl.index.lucene.v10;
 import static org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory.TRIGRAM_VALUE_KEY;
 
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -33,14 +35,23 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FilterDocIdSetIterator;
+import org.apache.lucene.search.FilterWeight;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RescoreTopNQuery;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -49,10 +60,12 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryParseException;
 import org.neo4j.kernel.api.impl.schema.TextDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 public class Lucene10QueryContext implements LuceneQueryContext {
@@ -181,6 +194,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         String field = documentStructure.vectorValueKeyFor(query.length);
         Query vectorQuery = new KnnFloatVectorQuery(field, query, efSearch, filter);
         if (efSearch > k) {
+            vectorQuery = new NonEmptyQuery(vectorQuery);
             vectorQuery = RescoreTopNQuery.createFullPrecisionRescorerQuery(vectorQuery, query, field, k);
         }
         return vectorQuery;
@@ -418,6 +432,198 @@ public class Lucene10QueryContext implements LuceneQueryContext {
             @Override
             protected AcceptStatus accept(BytesRef term) {
                 return StringHelper.endsWith(term, suffix) ? AcceptStatus.YES : AcceptStatus.NO;
+            }
+        }
+    }
+
+    // needs to be in (LuceneIndexWriter.MAX_DOCS, DocIdSetIterator.NO_MORE_DOCS)
+    // which is a range of docs that can't exist
+    static final int FAKE_DOC = DocIdSetIterator.NO_MORE_DOCS - 1;
+
+    static {
+        Preconditions.requireBetween(FAKE_DOC, LuceneIndexWriter.MAX_DOCS + 1, DocIdSetIterator.NO_MORE_DOCS);
+    }
+
+    private static final class NonEmptyQuery extends Query {
+        private final Query delegate;
+
+        private NonEmptyQuery(Query delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+            return new NonEmptyWeight(searcher.createWeight(delegate, scoreMode, boost));
+        }
+
+        @Override
+        public Query rewrite(IndexSearcher indexSearcher) throws IOException {
+            Query inner = indexSearcher.rewrite(delegate);
+            return inner != delegate ? new NonEmptyQuery(inner) : this;
+        }
+
+        @Override
+        public String toString(String field) {
+            return delegate.toString(field);
+        }
+
+        @Override
+        public void visit(QueryVisitor visitor) {
+            delegate.visit(visitor);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof NonEmptyQuery that && delegate.equals(that.delegate);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(classHash(), delegate);
+        }
+
+        private static final class NonEmptyWeight extends FilterWeight {
+
+            private NonEmptyWeight(Weight delegate) {
+                super(delegate);
+            }
+
+            @Override
+            public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+                ScorerSupplier inner = in.scorerSupplier(context);
+                return inner == null
+                        ? new DefaultScorerSupplier(new FakeEntryScorer(context.docBase))
+                        : new NonEmptyScorerSupplier(inner, context.docBase);
+            }
+        }
+
+        private static final class NonEmptyScorerSupplier extends ScorerSupplier {
+            private final ScorerSupplier delegate;
+            private final int docIdBase;
+
+            private NonEmptyScorerSupplier(ScorerSupplier delegate, int docIdBase) {
+                this.delegate = delegate;
+                this.docIdBase = docIdBase;
+            }
+
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+                return new NonEmptyScorer(delegate.get(leadCost), docIdBase);
+            }
+
+            @Override
+            public long cost() {
+                return delegate.cost();
+            }
+
+            @Override
+            public BulkScorer bulkScorer() throws IOException {
+                return delegate.bulkScorer();
+            }
+
+            @Override
+            public void setTopLevelScoringClause() throws IOException {
+                delegate.setTopLevelScoringClause();
+            }
+        }
+
+        private static final class NonEmptyScorer extends Scorer {
+            private final DocIdSetIterator iterator;
+
+            private NonEmptyScorer(Scorer delegate, int docIdBase) {
+                iterator = new NonEmptyDocIdSetIterator(delegate.iterator(), docIdBase);
+            }
+
+            @Override
+            public int docID() {
+                return iterator.docID();
+            }
+
+            @Override
+            public DocIdSetIterator iterator() {
+                return iterator;
+            }
+
+            @Override
+            public float getMaxScore(int upTo) {
+                return 0f;
+            }
+
+            @Override
+            public float score() {
+                return 0f;
+            }
+        }
+
+        private static final class FakeEntryScorer extends Scorer {
+            private final DocIdSetIterator iterator;
+
+            private FakeEntryScorer(int docIdBase) {
+                int fake = FAKE_DOC - docIdBase;
+                iterator = DocIdSetIterator.range(fake, fake + 1);
+            }
+
+            @Override
+            public int docID() {
+                return iterator.docID();
+            }
+
+            @Override
+            public DocIdSetIterator iterator() {
+                return iterator;
+            }
+
+            @Override
+            public float getMaxScore(int upTo) {
+                return 0f;
+            }
+
+            @Override
+            public float score() {
+                return 0f;
+            }
+        }
+
+        private static final class NonEmptyDocIdSetIterator extends FilterDocIdSetIterator {
+            private static final int NOT_STARTED = -1;
+
+            private final DocIdSetIterator delegate;
+            private final int docIdBase;
+
+            private int doc = NOT_STARTED;
+
+            private NonEmptyDocIdSetIterator(DocIdSetIterator delegate, int docIdBase) {
+                super(delegate);
+                this.delegate = delegate;
+                this.docIdBase = docIdBase;
+            }
+
+            @Override
+            public int docID() {
+                return doc;
+            }
+
+            @Override
+            public int nextDoc() throws IOException {
+                // guard against calling inner again after it's been exhausted
+                if (this.doc == NO_MORE_DOCS) {
+                    return NO_MORE_DOCS;
+                }
+
+                int doc = delegate.nextDoc();
+                // inner returns a value
+                if (doc != NO_MORE_DOCS) {
+                    return this.doc = doc;
+                }
+
+                // we had set at least one doc before, so it's already non-empty
+                if (this.doc != NOT_STARTED) {
+                    return this.doc = NO_MORE_DOCS;
+                }
+
+                // make up fake doc
+                this.doc = NO_MORE_DOCS;
+                return FAKE_DOC - docIdBase;
             }
         }
     }
