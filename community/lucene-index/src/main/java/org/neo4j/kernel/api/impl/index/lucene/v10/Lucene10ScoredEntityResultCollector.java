@@ -25,11 +25,10 @@ import java.util.NoSuchElementException;
 import java.util.function.LongPredicate;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.eclipse.collections.api.block.procedure.primitive.LongFloatProcedure;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -43,12 +42,17 @@ import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
  *
  * This collector doesn't track total number of hits.
  */
-abstract class Lucene10ScoredEntityResultCollector implements Collector {
+abstract class Lucene10ScoredEntityResultCollector extends SimpleCollector {
     private static final int NO_LIMIT = -1;
 
     private final long limit;
     private final ScoredEntityPriorityQueue pq;
     private final LongPredicate exclusionFilter;
+
+    // per segment
+    private NumericDocValues values;
+    private Scorable scorer;
+    private float minCompetitiveScore;
 
     protected Lucene10ScoredEntityResultCollector(IndexQueryConstraints constraints, LongPredicate exclusionFilter) {
         this.exclusionFilter = exclusionFilter;
@@ -59,13 +63,6 @@ abstract class Lucene10ScoredEntityResultCollector implements Collector {
 
     public ValuesIterator iterator() {
         return pq.iterator();
-    }
-
-    protected abstract String entityIdFieldKey();
-
-    @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-        return new ScoredEntityLeafCollector(context, entityIdFieldKey(), pq, limit, exclusionFilter);
     }
 
     @Override
@@ -82,80 +79,63 @@ abstract class Lucene10ScoredEntityResultCollector implements Collector {
         return limit < Integer.MAX_VALUE ? limit : NO_LIMIT;
     }
 
-    private static class ScoredEntityLeafCollector implements LeafCollector {
-        private final ScoredEntityPriorityQueue pq;
-        private final long limit;
-        private final LongPredicate exclusionFilter;
-        private final NumericDocValues values;
-        private Scorable scorer;
+    protected abstract String entityIdFieldKey();
 
-        private float minCompetitiveScore;
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+        this.values = context.reader().getNumericDocValues(entityIdFieldKey());
+    }
 
-        ScoredEntityLeafCollector(
-                LeafReaderContext context,
-                String entityIdFieldKey,
-                ScoredEntityPriorityQueue pq,
-                long limit,
-                LongPredicate exclusionFilter)
-                throws IOException {
-            this.pq = pq;
-            this.limit = limit;
-            this.exclusionFilter = exclusionFilter;
-            final var reader = context.reader();
-            values = reader.getNumericDocValues(entityIdFieldKey);
-        }
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
+        this.scorer = scorer;
+        minCompetitiveScore = 0f;
+        updateMinCompetitiveScore(scorer);
+    }
 
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-            this.scorer = scorer;
-            minCompetitiveScore = 0f;
-            updateMinCompetitiveScore(scorer);
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-            assert !(scorer instanceof final Scorer s && s.docID() != doc);
-            if (values.advanceExact(doc)) {
-                long entityId = values.longValue();
-                float score = scorer.score();
-                if (exclusionFilter.test(entityId)) {
-                    return;
-                }
-                if (limit == NO_LIMIT) {
-                    pq.insert(entityId, score);
-                } else {
-                    if (pq.size() < limit) {
-                        pq.insert(entityId, score);
-                        updateMinCompetitiveScore(scorer);
-                    } else if (pq.peekTopScore()
-                            < score) // when limit is set pq is min-queue, if new score is better use it
-                    {
-                        pq.removeTop();
-                        pq.insert(entityId, score);
-                        updateMinCompetitiveScore(scorer);
-                    }
-                    // Otherwise, don't bother inserting this entry.
-                }
-            } else {
-                throw new RuntimeException("No document value for document id " + doc + ".");
+    @Override
+    public void collect(int doc) throws IOException {
+        assert !(scorer instanceof final Scorer s && s.docID() != doc);
+        if (values.advanceExact(doc)) {
+            long entityId = values.longValue();
+            float score = scorer.score();
+            if (exclusionFilter.test(entityId)) {
+                return;
             }
-        }
-
-        /**
-         * Update minimum competitive score for scorer, so it can skip documents with lower score, to improve search performance with limit.
-         * This score is updated only if limit is specified. In this case pq is min-queue and top element contains lowest collected score,
-         * we are not interested in documents with score lower then that.
-         */
-        private void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-            // limit is set and enough elements have already collected, we can start skipping low scored documents
-            if (limit != NO_LIMIT && pq.size() >= limit) {
-                // since we tie-break on doc id and collect in doc id order, we can require
-                // the next float
-                var localMinScore = Math.nextUp(pq.peekTopScore());
-                if (localMinScore > minCompetitiveScore) {
-                    scorer.setMinCompetitiveScore(localMinScore);
-                    minCompetitiveScore = localMinScore;
+            if (limit == NO_LIMIT) {
+                pq.insert(entityId, score);
+            } else {
+                if (pq.size() < limit) {
+                    pq.insert(entityId, score);
+                    updateMinCompetitiveScore(scorer);
+                } else if (pq.peekTopScore()
+                        < score) // when limit is set pq is min-queue, if new score is better use it
+                {
+                    pq.removeTop();
+                    pq.insert(entityId, score);
+                    updateMinCompetitiveScore(scorer);
                 }
+                // Otherwise, don't bother inserting this entry.
+            }
+        } else {
+            throw new RuntimeException("No document value for document id " + doc + ".");
+        }
+    }
+
+    /**
+     * Update minimum competitive score for scorer, so it can skip documents with lower score, to improve search performance with limit.
+     * This score is updated only if limit is specified. In this case pq is min-queue and top element contains lowest collected score,
+     * we are not interested in documents with score lower then that.
+     */
+    private void updateMinCompetitiveScore(Scorable scorer) throws IOException {
+        // limit is set and enough elements have already collected, we can start skipping low scored documents
+        if (limit != NO_LIMIT && pq.size() >= limit) {
+            // since we tie-break on doc id and collect in doc id order, we can require
+            // the next float
+            var localMinScore = Math.nextUp(pq.peekTopScore());
+            if (localMinScore > minCompetitiveScore) {
+                scorer.setMinCompetitiveScore(localMinScore);
+                minCompetitiveScore = localMinScore;
             }
         }
     }
