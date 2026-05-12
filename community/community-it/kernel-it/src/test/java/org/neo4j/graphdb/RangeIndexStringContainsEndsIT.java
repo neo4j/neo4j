@@ -36,6 +36,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.SkipOnSpd;
 
 @Neo4jLayoutExtension
 public class RangeIndexStringContainsEndsIT {
@@ -52,6 +53,7 @@ public class RangeIndexStringContainsEndsIT {
     }
 
     @Test
+    @SkipOnSpd(reason = "Number of index accesses is different in spd")
     void shouldFindNodesUsingRangeIndexIfNoTextIndex() {
         var person = label("PERSON");
         var monitor = new IndexAccessMonitor();
@@ -92,6 +94,7 @@ public class RangeIndexStringContainsEndsIT {
     }
 
     @Test
+    @SkipOnSpd(reason = "Number of index accesses is different in spd")
     void shouldFindRelationshipsUsingRangeIndexIfNoTextIndex() {
         var person = label("PERSON");
         var relation = RelationshipType.withName("FRIEND");
