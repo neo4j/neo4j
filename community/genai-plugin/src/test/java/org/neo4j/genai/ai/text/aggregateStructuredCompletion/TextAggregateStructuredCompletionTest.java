@@ -88,7 +88,7 @@ public class TextAggregateStructuredCompletionTest implements GenAITestExtension
     }
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         GenAIConfig.instance()
                 .setProperty(GenAIConfig.GENAI_AZURE_OPENAI_BASE_URL, this.wireMock.baseUrl() + "/openai/v1");
     }

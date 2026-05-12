@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.parser.v5.ast.factory;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -40,7 +39,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 
 @RandomSupportExtension
-public class Cypher5AstLexerTest {
+class Cypher5AstLexerTest {
     @Inject
     private RandomSupport rand;
 
@@ -137,10 +136,10 @@ public class Cypher5AstLexerTest {
         for (int i = 0; i < Q1_offset.length; i++) {
             final var c = read.result[i];
             final var pos = tokens.create(src, -1, null, -1, i, -1, -1, 1).position();
-            assertEquals(Q1_offset[i], pos.offset());
+            assertThat(pos.offset()).isEqualTo(Q1_offset[i]);
             if (pos.offset() != i) {
-                assertEquals(Q1_line[i], pos.line());
-                assertEquals(Q1_column[i], pos.column());
+                assertThat(pos.line()).isEqualTo(Q1_line[i]);
+                assertThat(pos.column()).isEqualTo(Q1_column[i]);
             }
         }
     }

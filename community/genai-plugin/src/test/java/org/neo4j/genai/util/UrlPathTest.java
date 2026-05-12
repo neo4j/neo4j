@@ -19,8 +19,8 @@
  */
 package org.neo4j.genai.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Test;
 
@@ -28,18 +28,18 @@ class UrlPathTest {
 
     @Test
     void shouldAllowSafeCharacters() {
-        assertEquals("valid-name_1.0", UrlPath.pathSafe("valid-name_1.0"));
+        assertThat(UrlPath.pathSafe("valid-name_1.0")).isEqualTo("valid-name_1.0");
     }
 
     @Test
     void shouldRejectUnsafeCharacters() {
-        assertThrows(IllegalArgumentException.class, () -> UrlPath.pathSafe("invalid/name"));
-        assertThrows(IllegalArgumentException.class, () -> UrlPath.pathSafe("invalid name"));
-        assertThrows(IllegalArgumentException.class, () -> UrlPath.pathSafe("invalid?name"));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> UrlPath.pathSafe("invalid/name"));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> UrlPath.pathSafe("invalid name"));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> UrlPath.pathSafe("invalid?name"));
     }
 
     @Test
     void shouldAllowAtSymbol() {
-        assertEquals("multimodalembedding@001", UrlPath.pathSafe("multimodalembedding@001"));
+        assertThat(UrlPath.pathSafe("multimodalembedding@001")).isEqualTo("multimodalembedding@001");
     }
 }

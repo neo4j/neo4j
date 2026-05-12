@@ -51,7 +51,7 @@ class RecursiveTokenSplitterTest {
         List<String> chunks = splitter.splitText(text);
 
         assertThat(chunks).hasSize(1);
-        assertThat(chunks.getFirst()).isEqualTo(text);
+        assertThat(chunks).first().isEqualTo(text);
     }
 
     @Test
@@ -80,7 +80,7 @@ class RecursiveTokenSplitterTest {
 
         List<String> chunks = splitter.splitText(text);
 
-        assertThat(chunks.size()).isGreaterThanOrEqualTo(1);
+        assertThat(chunks).hasSizeGreaterThanOrEqualTo(1);
 
         // If it split, check overlap
         if (chunks.size() > 1) {
@@ -97,7 +97,7 @@ class RecursiveTokenSplitterTest {
 
         List<String> chunks = splitter.splitText(text);
 
-        assertThat(chunks.size()).isGreaterThan(1);
+        assertThat(chunks).hasSizeGreaterThan(1);
         // Ensure no chunk exceeds the limit
         for (String chunk : chunks) {
             assertThat(encoding.countTokens(chunk.trim())).isLessThanOrEqualTo(5);
@@ -113,7 +113,7 @@ class RecursiveTokenSplitterTest {
 
         List<String> chunks = splitter.splitText(unbreakable);
 
-        assertThat(chunks.size()).isGreaterThan(1);
+        assertThat(chunks).hasSizeGreaterThan(1);
         assertThat(encoding.countTokens(chunks.getFirst())).isEqualTo(10);
         assertThat(String.join("", chunks)).isEqualTo(unbreakable);
     }
@@ -127,7 +127,7 @@ class RecursiveTokenSplitterTest {
 
         List<String> chunks = splitter.splitText(unbreakable);
 
-        assertThat(chunks.size()).isGreaterThan(1);
+        assertThat(chunks).hasSizeGreaterThan(1);
         assertThat(encoding.countTokens(chunks.getFirst())).isEqualTo(10);
         assertThat(String.join("", chunks).length()).isGreaterThan(100);
     }

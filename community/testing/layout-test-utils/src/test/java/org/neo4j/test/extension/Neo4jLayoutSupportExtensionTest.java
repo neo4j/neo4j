@@ -19,13 +19,10 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 
-import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -49,20 +46,20 @@ class Neo4jLayoutSupportExtensionTest {
 
     @Test
     void shouldInjectLayouts() {
-        assertNotNull(neo4jLayout);
-        assertNotNull(databaseLayout);
-        assertNotNull(fs);
-        assertNotNull(databaseLayout);
+        assertThat(neo4jLayout).isNotNull();
+        assertThat(databaseLayout).isNotNull();
+        assertThat(fs).isNotNull();
+        assertThat(databaseLayout).isNotNull();
     }
 
     @Test
     void shouldCreateDirectories() {
-        assertTrue(Files.exists(neo4jLayout.homeDirectory()));
-        assertTrue(Files.exists(neo4jLayout.databasesDirectory()));
-        assertTrue(Files.exists(neo4jLayout.transactionLogsRootDirectory()));
+        assertThat(neo4jLayout.homeDirectory()).exists();
+        assertThat(neo4jLayout.databasesDirectory()).exists();
+        assertThat(neo4jLayout.transactionLogsRootDirectory()).exists();
 
-        assertTrue(fs.fileExists(databaseLayout.databaseDirectory()));
-        assertTrue(fs.fileExists(databaseLayout.getTransactionLogsDirectory()));
+        assertThat(fs.fileExists(databaseLayout.databaseDirectory())).isTrue();
+        assertThat(fs.fileExists(databaseLayout.getTransactionLogsDirectory())).isTrue();
     }
 
     @Test
@@ -72,11 +69,13 @@ class Neo4jLayoutSupportExtensionTest {
         DatabaseLayout defaultDatabaseLayout =
                 defaultNeo4jLayout.databaseLayout(defaultConfig.get(initial_default_database));
 
-        assertEquals(defaultNeo4jLayout.homeDirectory(), neo4jLayout.homeDirectory());
-        assertEquals(defaultNeo4jLayout.databasesDirectory(), neo4jLayout.databasesDirectory());
-        assertEquals(defaultNeo4jLayout.transactionLogsRootDirectory(), neo4jLayout.transactionLogsRootDirectory());
+        assertThat(neo4jLayout.homeDirectory()).isEqualTo(defaultNeo4jLayout.homeDirectory());
+        assertThat(neo4jLayout.databasesDirectory()).isEqualTo(defaultNeo4jLayout.databasesDirectory());
+        assertThat(neo4jLayout.transactionLogsRootDirectory())
+                .isEqualTo(defaultNeo4jLayout.transactionLogsRootDirectory());
 
-        assertEquals(defaultDatabaseLayout.databaseDirectory(), databaseLayout.databaseDirectory());
-        assertEquals(defaultDatabaseLayout.getTransactionLogsDirectory(), databaseLayout.getTransactionLogsDirectory());
+        assertThat(databaseLayout.databaseDirectory()).isEqualTo(defaultDatabaseLayout.databaseDirectory());
+        assertThat(databaseLayout.getTransactionLogsDirectory())
+                .isEqualTo(defaultDatabaseLayout.getTransactionLogsDirectory());
     }
 }

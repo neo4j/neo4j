@@ -20,8 +20,6 @@
 package org.neo4j.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
@@ -108,7 +106,8 @@ public class BasicSystemGraphRealmTestHelper {
     public static void assertAuthenticationSucceeds(
             SecurityGraphHelper realmHelper, String username, String password, boolean changeRequired) {
         var user = realmHelper.getUserByName(username);
-        assertTrue(user.credential().value().matchesPassword(password(password)));
+        assertThat(user.credential().value().matchesPassword(password(password)))
+                .isTrue();
         assertThat(user.passwordChangeRequired())
                 .withFailMessage(
                         "Expected change required to be %s, but was %s", changeRequired, user.passwordChangeRequired())
@@ -117,7 +116,8 @@ public class BasicSystemGraphRealmTestHelper {
 
     public static void assertAuthenticationFails(SecurityGraphHelper realmHelper, String username, String password) {
         var user = realmHelper.getUserByName(username);
-        assertFalse(user.credential().value().matchesPassword(password(password)));
+        assertThat(user.credential().value().matchesPassword(password(password)))
+                .isFalse();
     }
 
     public static User createUser(String userName, String password, boolean pwdChangeRequired) {

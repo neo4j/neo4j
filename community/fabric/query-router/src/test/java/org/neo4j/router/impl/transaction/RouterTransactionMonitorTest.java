@@ -115,16 +115,16 @@ class RouterTransactionMonitorTest {
     }
 
     @Test
-    void testTransactionMonitorInteraction() {
+    void transactionMonitorInteraction() {
         var tx1 = queryRouter.beginTransaction(createTransactionInfo(Duration.ofSeconds(5)));
         // tx with the default timeout 10s
         var tx2 = queryRouter.beginTransaction(createTransactionInfo(null));
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
 
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.routerTransaction().getReasonIfTerminated()).isEmpty();
         assertThat(tx2.routerTransaction().getReasonIfTerminated()).isEmpty();
 
@@ -132,14 +132,14 @@ class RouterTransactionMonitorTest {
         transactionMonitor.run();
         verify(log, never()).warn(any(String.class), ArgumentMatchers.<Object>any());
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.routerTransaction().getReasonIfTerminated()).isEmpty();
         assertThat(tx2.routerTransaction().getReasonIfTerminated()).isEmpty();
 
         clock.forward(Duration.ofSeconds(4));
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.routerTransaction().getReasonIfTerminated()).isPresent();
         assertThat(tx2.routerTransaction().getReasonIfTerminated()).isEmpty();
 
@@ -150,12 +150,12 @@ class RouterTransactionMonitorTest {
         verify(log, times(1)).warn(any(String.class), ArgumentMatchers.<Object>any());
 
         tx1.routerTransaction().rollback();
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(1);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(1);
 
         clock.forward(Duration.ofSeconds(5));
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(1);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(1);
         assertThat(tx1.routerTransaction().getReasonIfTerminated()).isPresent();
         assertThat(tx2.routerTransaction().getReasonIfTerminated()).isPresent();
 
@@ -166,28 +166,28 @@ class RouterTransactionMonitorTest {
         verify(log, times(2)).warn(any(String.class), ArgumentMatchers.<Object>any());
 
         tx2.routerTransaction().rollback();
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(0);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(0);
     }
 
     @Test
-    void testChangeTimeoutAtRuntime() {
+    void changeTimeoutAtRuntime() {
         config.setDynamic(transaction_timeout, Duration.ofSeconds(20), "test");
         var tx1 = queryRouter.beginTransaction(createTransactionInfo(Duration.ofSeconds(5)));
         var tx2 = queryRouter.beginTransaction(createTransactionInfo(null));
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
 
         clock.forward(Duration.ofSeconds(11));
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.routerTransaction().getReasonIfTerminated()).isPresent();
         assertThat(tx2.routerTransaction().getReasonIfTerminated()).isEmpty();
 
         clock.forward(Duration.ofSeconds(10));
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.routerTransaction().getReasonIfTerminated()).isPresent();
         assertThat(tx2.routerTransaction().getReasonIfTerminated()).isPresent();
     }

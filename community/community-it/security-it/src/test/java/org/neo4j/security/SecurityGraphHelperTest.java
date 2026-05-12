@@ -49,7 +49,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 @ImpermanentDbmsExtension()
-public class SecurityGraphHelperTest {
+class SecurityGraphHelperTest {
     @Inject
     private DatabaseManagementService dbms;
 
@@ -91,7 +91,7 @@ public class SecurityGraphHelperTest {
         // THEN
         assertThat(result.id()).isEqualTo("userId");
         assertThat(result.name()).isEqualTo("alice");
-        assertThat(result.auth()).isEqualTo(Set.of(new User.Auth(NATIVE_AUTH, "userId")));
+        assertThat(result.auth()).hasSameElementsAs(Set.of(new User.Auth(NATIVE_AUTH, "userId")));
         verify(securityLog).debug("Looking up user 'alice'");
         verify(securityLog)
                 .debug(
@@ -111,7 +111,7 @@ public class SecurityGraphHelperTest {
         // THEN
         assertThat(result.id()).isEqualTo("userId");
         assertThat(result.name()).isEqualTo("alice");
-        assertThat(result.auth()).isEqualTo(Set.of());
+        assertThat(result.auth()).hasSameElementsAs(Set.of());
         verify(securityLog).debug("Looking up user 'alice'");
         verify(securityLog)
                 .debug(

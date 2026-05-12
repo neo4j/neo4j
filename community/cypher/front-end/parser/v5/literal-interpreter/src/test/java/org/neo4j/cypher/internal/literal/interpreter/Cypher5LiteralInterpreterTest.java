@@ -20,12 +20,9 @@
 package org.neo4j.cypher.internal.literal.interpreter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.cypher.internal.literal.interpreter.Cypher5LiteralInterpreter.parseExpression;
 
 import java.time.Instant;
@@ -56,147 +53,144 @@ public class Cypher5LiteralInterpreterTest {
     RandomSupport rand;
 
     @Test
-    void testLiteralZero() {
-        assertEquals(0L, parseExpression("0"));
+    void literalZero() {
+        assertThat(parseExpression("0")).isEqualTo(0L);
     }
 
     @Test
     void randomLong() {
         var val = rand.nextLong();
-        assertEquals(val, parseExpression(String.valueOf(val)));
+        assertThat(parseExpression(String.valueOf(val))).isEqualTo(val);
     }
 
     @Test
     void shouldInterpretNumbers() {
 
-        assertEquals(0L, parseExpression("0"));
-        assertEquals(12345L, parseExpression("12345"));
-        assertEquals(-12345L, parseExpression("-12345"));
-        assertEquals(Long.MAX_VALUE, parseExpression(Long.toString(Long.MAX_VALUE)));
-        assertEquals(Long.MIN_VALUE, parseExpression(Long.toString(Long.MIN_VALUE)));
+        assertThat(parseExpression("0")).isEqualTo(0L);
+        assertThat(parseExpression("12345")).isEqualTo(12345L);
+        assertThat(parseExpression("-12345")).isEqualTo(-12345L);
+        assertThat(parseExpression(Long.toString(Long.MAX_VALUE))).isEqualTo(Long.MAX_VALUE);
+        assertThat(parseExpression(Long.toString(Long.MIN_VALUE))).isEqualTo(Long.MIN_VALUE);
 
         // old syntax
-        assertEquals(8L, parseExpression("010"));
-        assertEquals(-8L, parseExpression("-010"));
-        assertEquals(
-                Long.MIN_VALUE,
-                parseExpression("-0" + Long.toString(Long.MIN_VALUE, 8).substring(1)));
+        assertThat(parseExpression("010")).isEqualTo(8L);
+        assertThat(parseExpression("-010")).isEqualTo(-8L);
+        assertThat(parseExpression("-0" + Long.toString(Long.MIN_VALUE, 8).substring(1)))
+                .isEqualTo(Long.MIN_VALUE);
 
-        assertEquals(8L, parseExpression("0o10"));
-        assertEquals(-8L, parseExpression("-0o10"));
-        assertEquals(
-                Long.MIN_VALUE,
-                parseExpression("-0o" + Long.toString(Long.MIN_VALUE, 8).substring(1)));
+        assertThat(parseExpression("0o10")).isEqualTo(8L);
+        assertThat(parseExpression("-0o10")).isEqualTo(-8L);
+        assertThat(parseExpression("-0o" + Long.toString(Long.MIN_VALUE, 8).substring(1)))
+                .isEqualTo(Long.MIN_VALUE);
 
-        assertEquals(255L, parseExpression("0xff"));
-        assertEquals(-255L, parseExpression("-0xff"));
-        assertEquals(
-                Long.MIN_VALUE,
-                parseExpression("-0x" + Long.toString(Long.MIN_VALUE, 16).substring(1)));
+        assertThat(parseExpression("0xff")).isEqualTo(255L);
+        assertThat(parseExpression("-0xff")).isEqualTo(-255L);
+        assertThat(parseExpression("-0x" + Long.toString(Long.MIN_VALUE, 16).substring(1)))
+                .isEqualTo(Long.MIN_VALUE);
 
-        assertEquals(0.0d, parseExpression("0.0"));
-        assertEquals(0.0d, parseExpression("0.0e0"));
-        assertEquals(-0.0d, parseExpression("-0.0e0"));
-        assertEquals(1.0d, parseExpression("1.0e0"));
-        assertEquals(98723.0e31d, parseExpression("98723.0e31"));
-        assertEquals(Double.MAX_VALUE, parseExpression(Double.toString(Double.MAX_VALUE)));
-        assertEquals(Double.MIN_VALUE, parseExpression(Double.toString(Double.MIN_VALUE)));
+        assertThat(parseExpression("0.0")).isEqualTo(0.0d);
+        assertThat(parseExpression("0.0e0")).isEqualTo(0.0d);
+        assertThat(parseExpression("-0.0e0")).isEqualTo(-0.0d);
+        assertThat(parseExpression("1.0e0")).isEqualTo(1.0d);
+        assertThat(parseExpression("98723.0e31")).isEqualTo(98723.0e31d);
+        assertThat(parseExpression(Double.toString(Double.MAX_VALUE))).isEqualTo(Double.MAX_VALUE);
+        assertThat(parseExpression(Double.toString(Double.MIN_VALUE))).isEqualTo(Double.MIN_VALUE);
     }
 
     @Test
     void shouldInterpretString() {
-        assertEquals("a string", parseExpression("\"a string\""));
-        assertEquals("ÅÄü", parseExpression("'ÅÄü'"));
-        assertEquals("Ελληνικά", parseExpression("\"Ελληνικά\""));
-        assertEquals("\uD83D\uDCA9", parseExpression("'\uD83D\uDCA9'"));
+        assertThat(parseExpression("\"a string\"")).isEqualTo("a string");
+        assertThat(parseExpression("'ÅÄü'")).isEqualTo("ÅÄü");
+        assertThat(parseExpression("\"Ελληνικά\"")).isEqualTo("Ελληνικά");
+        assertThat(parseExpression("'\uD83D\uDCA9'")).isEqualTo("\uD83D\uDCA9");
     }
 
     @Test
     void shouldInterpretNull() {
-        assertNull(parseExpression("null"));
+        assertThat(parseExpression("null")).isNull();
     }
 
     @Test
     void shouldHandleNullMap() {
-        assertEquals(Maps.newHashMap("hello", null), parseExpression("{hello:null}"));
+        assertThat(parseExpression("{hello:null}")).isEqualTo(Maps.newHashMap("hello", null));
     }
 
     @Test
     void shouldInterpretBoolean() {
-        assertEquals(true, parseExpression("true"));
-        assertEquals(false, parseExpression("false"));
+        assertThat(parseExpression("true")).isEqualTo(true);
+        assertThat(parseExpression("false")).isEqualTo(false);
     }
 
     @Test
     void shouldInterpretInfinity() {
-        assertEquals(Double.POSITIVE_INFINITY, parseExpression("Infinity"));
+        assertThat(parseExpression("Infinity")).isEqualTo(Double.POSITIVE_INFINITY);
     }
 
     @Test
     void shouldInterpretNaN() {
-        assertEquals(Double.NaN, parseExpression("NaN"));
+        assertThat(parseExpression("NaN")).isEqualTo(Double.NaN);
     }
 
     @Test
     void shouldInterpretList() {
-        assertEquals(List.of(1L, 2L, 3L), parseExpression("[1, 2, 3]"));
+        assertThat(parseExpression("[1, 2, 3]")).isEqualTo(List.of(1L, 2L, 3L));
     }
 
     @Test
     void shouldInterpretMap() {
-        assertEquals(Map.of(), parseExpression("{}"));
-        assertEquals(Map.of("1", 1L), parseExpression("{`1`:1}"));
-        assertEquals(Map.of("1", 2L, "3", 4L, "5", 6L), parseExpression("{`1`:2, `3`:4, `5`:6}"));
+        assertThat(parseExpression("{}")).isEqualTo(Map.of());
+        assertThat(parseExpression("{`1`:1}")).isEqualTo(Map.of("1", 1L));
+        assertThat(parseExpression("{`1`:2, `3`:4, `5`:6}")).isEqualTo(Map.of("1", 2L, "3", 4L, "5", 6L));
     }
 
     @Test
     void shouldInterpretNumbers2() {
-        assertEquals(0L, parseExpression("0"));
-        assertEquals(12345L, parseExpression("12345"));
-        assertEquals(-12345L, parseExpression("-12345"));
-        assertEquals(Long.MAX_VALUE, parseExpression(Long.toString(Long.MAX_VALUE)));
-        assertEquals(Long.MIN_VALUE, parseExpression(Long.toString(Long.MIN_VALUE)));
+        assertThat(parseExpression("0")).isEqualTo(0L);
+        assertThat(parseExpression("12345")).isEqualTo(12345L);
+        assertThat(parseExpression("-12345")).isEqualTo(-12345L);
+        assertThat(parseExpression(Long.toString(Long.MAX_VALUE))).isEqualTo(Long.MAX_VALUE);
+        assertThat(parseExpression(Long.toString(Long.MIN_VALUE))).isEqualTo(Long.MIN_VALUE);
 
-        assertEquals(8L, parseExpression("010"));
-        assertEquals(-8L, parseExpression("-010"));
-        assertEquals(Long.MIN_VALUE, parseExpression("-01000000000000000000000"));
+        assertThat(parseExpression("010")).isEqualTo(8L);
+        assertThat(parseExpression("-010")).isEqualTo(-8L);
+        assertThat(parseExpression("-01000000000000000000000")).isEqualTo(Long.MIN_VALUE);
 
-        assertEquals(8L, parseExpression("0o10"));
-        assertEquals(-8L, parseExpression("-0o10"));
-        assertEquals(-8L, parseExpression("-0o10"));
-        assertEquals(Long.MIN_VALUE, parseExpression("-0o1000000000000000000000"));
+        assertThat(parseExpression("0o10")).isEqualTo(8L);
+        assertThat(parseExpression("-0o10")).isEqualTo(-8L);
+        assertThat(parseExpression("-0o10")).isEqualTo(-8L);
+        assertThat(parseExpression("-0o1000000000000000000000")).isEqualTo(Long.MIN_VALUE);
 
-        assertEquals(255L, parseExpression("0xff"));
-        assertEquals(-255L, parseExpression("-0xff"));
-        assertEquals(Long.MIN_VALUE, parseExpression("-0x8000000000000000"));
+        assertThat(parseExpression("0xff")).isEqualTo(255L);
+        assertThat(parseExpression("-0xff")).isEqualTo(-255L);
+        assertThat(parseExpression("-0x8000000000000000")).isEqualTo(Long.MIN_VALUE);
 
-        assertEquals(0L, parseExpression("0"));
-        assertEquals(0.0d, parseExpression("0.0"));
-        assertEquals(-0.0d, parseExpression("-0.0"));
-        assertEquals(1.0d, parseExpression("1.0"));
-        assertEquals(98723.0e31d, parseExpression("98723.0e31"));
-        assertEquals(Double.MAX_VALUE, parseExpression(Double.toString(Double.MAX_VALUE)));
-        assertEquals(Double.MIN_VALUE, parseExpression(Double.toString(Double.MIN_VALUE)));
+        assertThat(parseExpression("0")).isEqualTo(0L);
+        assertThat(parseExpression("0.0")).isEqualTo(0.0d);
+        assertThat(parseExpression("-0.0")).isEqualTo(-0.0d);
+        assertThat(parseExpression("1.0")).isEqualTo(1.0d);
+        assertThat(parseExpression("98723.0e31")).isEqualTo(98723.0e31d);
+        assertThat(parseExpression(Double.toString(Double.MAX_VALUE))).isEqualTo(Double.MAX_VALUE);
+        assertThat(parseExpression(Double.toString(Double.MIN_VALUE))).isEqualTo(Double.MIN_VALUE);
     }
 
     @Test
     void shouldInterpretString2() {
-        assertEquals("a string", parseExpression("'a string'"));
+        assertThat(parseExpression("'a string'")).isEqualTo("a string");
 
-        assertEquals("ÅÄü", parseExpression("'ÅÄü'"));
-        assertEquals("Ελληνικά", parseExpression("'Ελληνικά'"));
-        assertEquals("\uD83D\uDCA9", parseExpression("'\uD83D\uDCA9'"));
+        assertThat(parseExpression("'ÅÄü'")).isEqualTo("ÅÄü");
+        assertThat(parseExpression("'Ελληνικά'")).isEqualTo("Ελληνικά");
+        assertThat(parseExpression("'\uD83D\uDCA9'")).isEqualTo("\uD83D\uDCA9");
     }
 
     @Test
     void shouldInterpretNull2() {
-        assertNull(parseExpression("null"));
+        assertThat(parseExpression("null")).isNull();
     }
 
     @Test
     void shouldInterpretBoolean2() {
-        assertEquals(true, parseExpression("true"));
-        assertEquals(false, parseExpression("false"));
+        assertThat(parseExpression("true")).isEqualTo(true);
+        assertThat(parseExpression("false")).isEqualTo(false);
     }
 
     @Test
@@ -274,24 +268,24 @@ public class Cypher5LiteralInterpreterTest {
 
     @Test
     void shouldParseEscapeCodes() {
-        assertEquals("\"\"", parseExpression("\"\\\"\\\"\""));
-        assertEquals("\"\"", parseExpression("'\\\"\\\"'"));
-        assertEquals("''", parseExpression("'\\'\\''"));
-        assertEquals("\t", parseExpression("'\\t'"));
-        assertEquals("\b", parseExpression("'\\b'"));
-        assertEquals("\n", parseExpression("'\\n'"));
-        assertEquals("\r", parseExpression("'\\r'"));
-        assertEquals("\f", parseExpression("'\\f'"));
-        assertEquals("\\", parseExpression("\"\\\\\""));
-        assertEquals("\t", parseExpression("\"\\t\""));
-        assertEquals("\b", parseExpression("\"\\b\""));
-        assertEquals("\n", parseExpression("\"\\n\""));
-        assertEquals("\r", parseExpression("\"\\r\""));
-        assertEquals("\f", parseExpression("\"\\f\""));
-        assertEquals("\\", parseExpression("\"\\\\\""));
-        assertEquals("!", parseExpression("'\\u0021'"));
-        assertEquals("!?=", parseExpression("'\\u0021\\u003F\\u003D'"));
-        assertEquals("\uD83C\uDF1E", parseExpression("\"\\uD83C\\uDF1E\""));
+        assertThat(parseExpression("\"\\\"\\\"\"")).isEqualTo("\"\"");
+        assertThat(parseExpression("'\\\"\\\"'")).isEqualTo("\"\"");
+        assertThat(parseExpression("'\\'\\''")).isEqualTo("''");
+        assertThat(parseExpression("'\\t'")).isEqualTo("\t");
+        assertThat(parseExpression("'\\b'")).isEqualTo("\b");
+        assertThat(parseExpression("'\\n'")).isEqualTo("\n");
+        assertThat(parseExpression("'\\r'")).isEqualTo("\r");
+        assertThat(parseExpression("'\\f'")).isEqualTo("\f");
+        assertThat(parseExpression("\"\\\\\"")).isEqualTo("\\");
+        assertThat(parseExpression("\"\\t\"")).isEqualTo("\t");
+        assertThat(parseExpression("\"\\b\"")).isEqualTo("\b");
+        assertThat(parseExpression("\"\\n\"")).isEqualTo("\n");
+        assertThat(parseExpression("\"\\r\"")).isEqualTo("\r");
+        assertThat(parseExpression("\"\\f\"")).isEqualTo("\f");
+        assertThat(parseExpression("\"\\\\\"")).isEqualTo("\\");
+        assertThat(parseExpression("'\\u0021'")).isEqualTo("!");
+        assertThat(parseExpression("'\\u0021\\u003F\\u003D'")).isEqualTo("!?=");
+        assertThat(parseExpression("\"\\uD83C\\uDF1E\"")).isEqualTo("\uD83C\uDF1E");
     }
 
     @Test
@@ -313,16 +307,17 @@ public class Cypher5LiteralInterpreterTest {
     @Test
     void shouldInterpretDate() {
         DateValue date = DateValue.date(2020, 12, 10);
-        assertEquals(date, parseExpression("date('2020-12-10')"));
-        assertEquals(date, parseExpression("date({year:2020, month:12, day:10})"));
+        assertThat(parseExpression("date('2020-12-10')")).isEqualTo(date);
+        assertThat(parseExpression("date({year:2020, month:12, day:10})")).isEqualTo(date);
 
-        assertNotNull(parseExpression("date()")); // should not throw
+        assertThat(parseExpression("date()")).isNotNull(); // should not throw
 
-        assertThrows(IllegalArgumentException.class, () -> parseExpression("date(2020, 12, 10)"));
-        assertThrows(
-                UnsupportedTemporalUnitException.class,
-                () -> parseExpression("date({year:2020, month:12, day:10, timezone: 'America/Los Angeles'})"));
-        assertNull(parseExpression("date(null)"));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> parseExpression("date(2020, 12, 10)"));
+        assertThatExceptionOfType(UnsupportedTemporalUnitException.class)
+                .isThrownBy(
+                        () -> parseExpression("date({year:2020, month:12, day:10, timezone: 'America/Los Angeles'})"));
+        assertThat(parseExpression("date(null)")).isNull();
     }
 
     @Test
@@ -330,17 +325,19 @@ public class Cypher5LiteralInterpreterTest {
         DateTimeValue date = DateTimeValue.datetime(2020, 12, 10, 6, 41, 23, 0, DEFAULT_ZONE_ID);
         DateTimeValue dateTimeZone =
                 DateTimeValue.datetime(2020, 12, 10, 6, 41, 23, 0, ZoneId.of("America/Los_Angeles"));
-        assertEquals(date, parseExpression("datetime('2020-12-10T6:41:23.0')"));
-        assertEquals(date, parseExpression("datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23})"));
-        assertEquals(
-                dateTimeZone,
-                parseExpression(
-                        "datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23, timezone: 'America/Los Angeles'})"));
-        assertNotNull(parseExpression("datetime()")); // should not throw
+        assertThat(parseExpression("datetime('2020-12-10T6:41:23.0')")).isEqualTo(date);
+        assertThat(parseExpression("datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23})"))
+                .isEqualTo(date);
+        assertThat(
+                        parseExpression(
+                                "datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23, timezone: 'America/Los Angeles'})"))
+                .isEqualTo(dateTimeZone);
+        assertThat(parseExpression("datetime()")).isNotNull(); // should not throw
 
-        assertThrows(IllegalArgumentException.class, () -> parseExpression("datetime(2020, 12, 10, 6, 41, 23, 0)"));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> parseExpression("datetime(2020, 12, 10, 6, 41, 23, 0)"));
 
-        assertNull(parseExpression("datetime(null)"));
+        assertThat(parseExpression("datetime(null)")).isNull();
     }
 
     @Test
@@ -348,55 +345,59 @@ public class Cypher5LiteralInterpreterTest {
         Instant instant = Instant.now();
         ZoneOffset currentOffsetForMyZone = DEFAULT_ZONE_ID.getRules().getOffset(instant);
         TimeValue date = TimeValue.time(6, 41, 23, 0, currentOffsetForMyZone);
-        assertEquals(date, parseExpression("time('6:41:23.0')"));
-        assertEquals(date, parseExpression("time({hour: 6, minute: 41, second: 23})"));
-        assertNotNull(parseExpression("time()")); // should not throw
+        assertThat(parseExpression("time('6:41:23.0')")).isEqualTo(date);
+        assertThat(parseExpression("time({hour: 6, minute: 41, second: 23})")).isEqualTo(date);
+        assertThat(parseExpression("time()")).isNotNull(); // should not throw
 
-        assertThrows(IllegalArgumentException.class, () -> parseExpression("time(6, 41, 23, 0)"));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> parseExpression("time(6, 41, 23, 0)"));
 
-        assertNull(parseExpression("time(null)"));
+        assertThat(parseExpression("time(null)")).isNull();
     }
 
     @Test
     void shouldInterpretLocalTime() {
         LocalTimeValue date = LocalTimeValue.localTime(6, 41, 23, 0);
-        assertEquals(date, parseExpression("localtime('6:41:23.0')"));
-        assertEquals(date, parseExpression("localtime({hour: 6, minute: 41, second: 23})"));
-        assertNotNull(parseExpression("localtime()")); // should not throw
+        assertThat(parseExpression("localtime('6:41:23.0')")).isEqualTo(date);
+        assertThat(parseExpression("localtime({hour: 6, minute: 41, second: 23})"))
+                .isEqualTo(date);
+        assertThat(parseExpression("localtime()")).isNotNull(); // should not throw
 
-        assertThrows(IllegalArgumentException.class, () -> parseExpression("localtime(6, 41, 23, 0)"));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> parseExpression("localtime(6, 41, 23, 0)"));
 
-        assertNull(parseExpression("localtime(null)"));
+        assertThat(parseExpression("localtime(null)")).isNull();
     }
 
     @Test
     void shouldInterpretLocalDateTime() {
         LocalDateTimeValue date = LocalDateTimeValue.localDateTime(2020, 12, 10, 6, 41, 23, 0);
-        assertEquals(date, parseExpression("localdatetime('2020-12-10T6:41:23.0')"));
-        assertEquals(
-                date, parseExpression("localdatetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23})"));
-        assertNotNull(parseExpression("localdatetime()")); // should not throw
+        assertThat(parseExpression("localdatetime('2020-12-10T6:41:23.0')")).isEqualTo(date);
+        assertThat(parseExpression("localdatetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23})"))
+                .isEqualTo(date);
+        assertThat(parseExpression("localdatetime()")).isNotNull(); // should not throw
 
-        assertThrows(
-                IllegalArgumentException.class, () -> parseExpression("localdatetime(2020, 12, 10, 6, 41, 23, 0)"));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> parseExpression("localdatetime(2020, 12, 10, 6, 41, 23, 0)"));
 
-        assertNull(parseExpression("localdatetime(null)"));
+        assertThat(parseExpression("localdatetime(null)")).isNull();
     }
 
     @Test
     void shouldInterpretPoint() {
         PointValue point = PointValue.parse("{ x:3, y:0 }");
-        assertEquals(point, parseExpression("point({ x:3, y:0 })"));
+        assertThat(parseExpression("point({ x:3, y:0 })")).isEqualTo(point);
 
         PointValue point3d = PointValue.parse("{ x:0, y:4, z:1 }");
-        assertEquals(point3d, parseExpression("point({ x:0, y:4, z:1 })"));
+        assertThat(parseExpression("point({ x:0, y:4, z:1 })")).isEqualTo(point3d);
 
         PointValue pointWGS84 = PointValue.parse("{ longitude: 56.7, latitude: 12.78 }");
-        assertEquals(pointWGS84, parseExpression("point({ longitude: 56.7, latitude: 12.78 })"));
-        assertEquals(pointWGS84.getCoordinateReferenceSystem().getName(), "wgs-84");
+        assertThat(parseExpression("point({ longitude: 56.7, latitude: 12.78 })"))
+                .isEqualTo(pointWGS84);
+        assertThat(pointWGS84.getCoordinateReferenceSystem().getName()).isEqualTo("wgs-84");
 
-        assertThrows(IllegalArgumentException.class, () -> parseExpression("point(2020)"));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> parseExpression("point(2020)"));
 
-        assertNull(parseExpression("point(null)"));
+        assertThat(parseExpression("point(null)")).isNull();
     }
 }

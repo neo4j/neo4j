@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import java.io.IOException;
@@ -44,12 +44,12 @@ class InMemoryClosableChannelTest {
             channel.read(buffer);
             buffer.flip();
 
-            assertEquals(0, buffer.get());
-            assertEquals(1, buffer.get());
-            assertEquals(2, buffer.get());
-            assertEquals(3, buffer.get());
+            assertThat(buffer.get()).isEqualTo(0);
+            assertThat(buffer.get()).isEqualTo(1);
+            assertThat(buffer.get()).isEqualTo(2);
+            assertThat(buffer.get()).isEqualTo(3);
 
-            assertThrows(ReadPastEndException.class, () -> channel.read(buffer));
+            assertThatExceptionOfType(ReadPastEndException.class).isThrownBy(() -> channel.read(buffer));
         }
     }
 }

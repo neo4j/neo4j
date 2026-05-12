@@ -439,7 +439,7 @@ class CommunityTopologyGraphComponentTest {
                                 .isEqualTo(CypherVersion.Cypher5.persistedValue);
                     } else {
                         assertThat(node.getProperty(DATABASE_DEFAULT_LANGUAGE_PROPERTY, null))
-                                .isEqualTo(null);
+                                .isNull();
                     }
                 });
             }

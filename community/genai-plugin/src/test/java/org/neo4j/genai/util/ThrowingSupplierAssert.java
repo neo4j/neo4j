@@ -19,7 +19,7 @@
  */
 package org.neo4j.genai.util;
 
-import static org.assertj.core.api.Fail.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.neo4j.function.ThrowingSupplier;

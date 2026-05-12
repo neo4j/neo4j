@@ -19,7 +19,7 @@
  */
 package org.neo4j.notifications;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.gqlstatus.Condition;
@@ -33,49 +33,49 @@ class StandardGqlStatusObjectTest {
     @Test
     void successShouldHaveExpectedFields() {
         StandardGqlStatusObject success = StandardGqlStatusObject.SUCCESS;
-        assertEquals("00000", success.gqlStatus());
-        assertEquals(Condition.SUCCESSFUL_COMPLETION, success.getCondition());
-        assertEquals(new DiagnosticRecord().asMap(), success.diagnosticRecord());
-        assertEquals(InputPosition.empty, success.getPosition());
-        assertEquals(SeverityLevel.UNKNOWN, success.getSeverity());
-        assertEquals(NotificationClassification.UNKNOWN, success.getClassification());
-        assertEquals("note: successful completion", success.statusDescription());
+        assertThat(success.gqlStatus()).isEqualTo("00000");
+        assertThat(success.getCondition()).isEqualTo(Condition.SUCCESSFUL_COMPLETION);
+        assertThat(success.diagnosticRecord()).containsExactlyInAnyOrderEntriesOf(new DiagnosticRecord().asMap());
+        assertThat(success.getPosition()).isEqualTo(InputPosition.empty);
+        assertThat(success.getSeverity()).isEqualTo(SeverityLevel.UNKNOWN);
+        assertThat(success.getClassification()).isEqualTo(NotificationClassification.UNKNOWN);
+        assertThat(success.statusDescription()).isEqualTo("note: successful completion");
     }
 
     @Test
     void omittedResultShouldHaveExpectedFields() {
         StandardGqlStatusObject omittedResult = StandardGqlStatusObject.OMITTED_RESULT;
-        assertEquals("00001", omittedResult.gqlStatus());
-        assertEquals(Condition.SUCCESSFUL_COMPLETION, omittedResult.getCondition());
-        assertEquals(new DiagnosticRecord().asMap(), omittedResult.diagnosticRecord());
-        assertEquals(InputPosition.empty, omittedResult.getPosition());
-        assertEquals(SeverityLevel.UNKNOWN, omittedResult.getSeverity());
-        assertEquals(NotificationClassification.UNKNOWN, omittedResult.getClassification());
-        assertEquals("note: successful completion - omitted result", omittedResult.statusDescription());
+        assertThat(omittedResult.gqlStatus()).isEqualTo("00001");
+        assertThat(omittedResult.getCondition()).isEqualTo(Condition.SUCCESSFUL_COMPLETION);
+        assertThat(omittedResult.diagnosticRecord()).containsExactlyInAnyOrderEntriesOf(new DiagnosticRecord().asMap());
+        assertThat(omittedResult.getPosition()).isEqualTo(InputPosition.empty);
+        assertThat(omittedResult.getSeverity()).isEqualTo(SeverityLevel.UNKNOWN);
+        assertThat(omittedResult.getClassification()).isEqualTo(NotificationClassification.UNKNOWN);
+        assertThat(omittedResult.statusDescription()).isEqualTo("note: successful completion - omitted result");
     }
 
     @Test
     void noDataShouldHaveExpectedFields() {
         StandardGqlStatusObject noData = StandardGqlStatusObject.NO_DATA;
-        assertEquals("02000", noData.gqlStatus());
-        assertEquals(Condition.NO_DATA, noData.getCondition());
-        assertEquals(new DiagnosticRecord().asMap(), noData.diagnosticRecord());
-        assertEquals(InputPosition.empty, noData.getPosition());
-        assertEquals(SeverityLevel.UNKNOWN, noData.getSeverity());
-        assertEquals(NotificationClassification.UNKNOWN, noData.getClassification());
-        assertEquals("note: no data", noData.statusDescription());
+        assertThat(noData.gqlStatus()).isEqualTo("02000");
+        assertThat(noData.getCondition()).isEqualTo(Condition.NO_DATA);
+        assertThat(noData.diagnosticRecord()).containsExactlyInAnyOrderEntriesOf(new DiagnosticRecord().asMap());
+        assertThat(noData.getPosition()).isEqualTo(InputPosition.empty);
+        assertThat(noData.getSeverity()).isEqualTo(SeverityLevel.UNKNOWN);
+        assertThat(noData.getClassification()).isEqualTo(NotificationClassification.UNKNOWN);
+        assertThat(noData.statusDescription()).isEqualTo("note: no data");
     }
 
     @Test
     void unknownNoDataShouldHaveExpectedFields() {
         StandardGqlStatusObject noData = StandardGqlStatusObject.UNKNOWN_NO_DATA;
-        assertEquals("02N42", noData.gqlStatus());
-        assertEquals(Condition.NO_DATA, noData.getCondition());
-        assertEquals(new DiagnosticRecord().asMap(), noData.diagnosticRecord());
-        assertEquals(InputPosition.empty, noData.getPosition());
-        assertEquals(SeverityLevel.UNKNOWN, noData.getSeverity());
-        assertEquals(NotificationClassification.UNKNOWN, noData.getClassification());
-        assertEquals(
-                "note: no data - unknown subcondition. Unknown GQLSTATUS from old server.", noData.statusDescription());
+        assertThat(noData.gqlStatus()).isEqualTo("02N42");
+        assertThat(noData.getCondition()).isEqualTo(Condition.NO_DATA);
+        assertThat(noData.diagnosticRecord()).containsExactlyInAnyOrderEntriesOf(new DiagnosticRecord().asMap());
+        assertThat(noData.getPosition()).isEqualTo(InputPosition.empty);
+        assertThat(noData.getSeverity()).isEqualTo(SeverityLevel.UNKNOWN);
+        assertThat(noData.getClassification()).isEqualTo(NotificationClassification.UNKNOWN);
+        assertThat(noData.statusDescription())
+                .isEqualTo("note: no data - unknown subcondition. Unknown GQLSTATUS from old server.");
     }
 }

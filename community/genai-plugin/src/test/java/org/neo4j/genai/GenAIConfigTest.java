@@ -36,13 +36,13 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
-public class GenAIConfigTest {
+class GenAIConfigTest {
 
     private GenAIConfig genAIConfig;
     private File genAIConfigFile;
 
     @BeforeEach
-    public void setup() throws Exception {
+    void setup() throws Exception {
         InternalLogProvider logProvider = new AssertableLogProvider();
 
         Config neo4jConfig = mock(Config.class);
@@ -60,12 +60,12 @@ public class GenAIConfigTest {
     }
 
     @Test
-    public void testDetermineNeo4jConfFolderDefault() {
+    void testDetermineNeo4jConfFolderDefault() {
         assertThat(genAIConfig.determineNeo4jConfFolder()).isEqualTo(genAIConfigFile.getParent());
     }
 
     @Test
-    public void testApocConfFileBeingLoaded() {
+    void testApocConfFileBeingLoaded() {
         genAIConfig.init();
 
         assertThat(genAIConfig.getStringProperty("foo")).isEqualTo("bar");

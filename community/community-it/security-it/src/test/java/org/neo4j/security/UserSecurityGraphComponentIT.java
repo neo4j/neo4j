@@ -194,11 +194,11 @@ class UserSecurityGraphComponentIT {
                 COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
                 FLEET_MANAGEMENT_COMPONENT,
                 overallStatus);
-        assertThat(componentStatuses.keySet()).containsExactlyInAnyOrderElementsOf(expectedComponents);
+        assertThat(componentStatuses.keySet()).hasSameElementsAs(expectedComponents);
         for (SystemGraphComponent.Name component : expectedComponents) {
-            assertThat(componentStatuses.get(component))
+            assertThat(componentStatuses)
                     .as("Component status should all be current")
-                    .isEqualTo(CURRENT);
+                    .containsEntry(component, CURRENT);
         }
     }
 
@@ -469,7 +469,7 @@ class UserSecurityGraphComponentIT {
             systemGraphComponents.forEach(component -> statuses.put(component.componentName(), component.detect(tx)));
             statuses.put(testComponent, systemGraphComponents.detect(tx));
         });
-        assertThat(statuses).isEqualTo(expected);
+        assertThat(statuses).containsExactlyInAnyOrderEntriesOf(expected);
     }
 
     private boolean hasSingleNativeAuthWithUserId(String username) {

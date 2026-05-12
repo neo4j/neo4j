@@ -19,7 +19,7 @@
  */
 package org.neo4j.assembly;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -67,7 +67,7 @@ class DistributedConfigTest {
         // Check the settings without values
         Map<String, Setting<Object>> availableSettings = config.getDeclaredSettings();
         for (String mentionedSetting : mentionedSettings) {
-            assertTrue(availableSettings.containsKey(mentionedSetting));
+            assertThat(availableSettings).containsKey(mentionedSetting);
         }
     }
 
