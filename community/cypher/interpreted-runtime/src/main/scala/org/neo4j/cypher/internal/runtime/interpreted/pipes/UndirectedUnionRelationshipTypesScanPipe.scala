@@ -37,13 +37,12 @@ case class UndirectedUnionRelationshipTypesScanPipe(
 ) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
-
     val relIterator = unionTypeIterator(
       state,
       types,
       indexOrder,
       state.relTypeTokenReadSession.get,
-      callReadFromStore = fromNode.nonEmpty || toNode.nonEmpty
+      callReadFromStore = true
     )
     new UndirectedRelationshipTypeScanPipe.UndirectedIterator(relIterator, ident, fromNode, toNode, rowFactory, state)
   }

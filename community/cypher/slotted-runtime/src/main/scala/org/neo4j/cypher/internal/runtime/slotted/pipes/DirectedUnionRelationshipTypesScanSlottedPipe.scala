@@ -45,7 +45,7 @@ case class DirectedUnionRelationshipTypesScanSlottedPipe(
       types,
       indexOrder,
       state.relTypeTokenReadSession.get,
-      callReadFromStore = fromOffset.nonEmpty || types.nonEmpty
+      callReadFromStore = fromOffset.nonEmpty || toOffset.nonEmpty
     )
     PrimitiveLongHelper.map(
       relIterator,

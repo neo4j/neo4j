@@ -43,7 +43,7 @@ case class UndirectedUnionRelationshipTypesScanSlottedPipe(
         types,
         indexOrder,
         state.relTypeTokenReadSession.get,
-        callReadFromStore = fromOffset.nonEmpty || toOffset.nonEmpty
+        callReadFromStore = true
       ),
       relOffset,
       fromOffset,

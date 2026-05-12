@@ -79,6 +79,92 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r").withRows(singleColumn(rels.flatMap(r => Seq(r, r))))
   }
 
+  test("undirected union scan with anonymous endpoints, only relationship projected") {
+    val rels = givenGraph {
+      val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
+      val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
+      val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
+      aRels ++ bRels ++ cRels
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .unionRelationshipTypesScan("()-[r:A|B|C]-()", IndexOrderNone)
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("r")
+      .withRows(singleColumn(rels.flatMap(r => Seq(r, r))))
+  }
+
+  test("undirected union scan with anonymous endpoints, count aggregation") {
+    val rels = givenGraph {
+      val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
+      val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
+      val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
+      aRels ++ bRels ++ cRels
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(r) AS count"))
+      .unionRelationshipTypesScan("()-[r:A|B|C]-()", IndexOrderNone)
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("count")
+      .withSingleRow(2L * rels.size)
+  }
+
+  test("undirected union scan with anonymous endpoints emits self-loops only once") {
+    val (loopRel, nonLoopRel) = givenGraph {
+      val a = tx.createNode()
+      val b = tx.createNode()
+      val loop = a.createRelationshipTo(a, RelationshipType.withName("A"))
+      val regular = a.createRelationshipTo(b, RelationshipType.withName("B"))
+      (loop, regular)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .unionRelationshipTypesScan("()-[r:A|B|C]-()", IndexOrderNone)
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("r")
+      .withRows(singleColumn(Seq(loopRel, nonLoopRel, nonLoopRel)))
+  }
+
+  test("undirected union scan with anonymous endpoints, ascending order") {
+    val rels = givenGraph {
+      val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
+      val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
+      val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
+      aRels ++ bRels ++ cRels
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .unionRelationshipTypesScan("()-[r:A|B|C]-()", IndexOrderAscending).withLeveragedOrder()
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("r")
+      .withRows(singleColumnInOrder(rels.sortBy(_.getId).flatMap(r => Seq(r, r))))
+  }
+
+  test("directed union scan with anonymous endpoints, only relationship projected") {
+    val rels = givenGraph {
+      val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
+      val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
+      val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
+      aRels ++ bRels ++ cRels
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .unionRelationshipTypesScan("()-[r:A|B|C]->()", IndexOrderNone)
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("r").withRows(singleColumn(rels))
+  }
+
   test("should do directed scan of all relationships of a label in ascending order") {
 
     // given
