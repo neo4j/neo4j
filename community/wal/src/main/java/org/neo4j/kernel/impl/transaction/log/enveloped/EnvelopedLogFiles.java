@@ -139,6 +139,10 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         return null;
     }
 
+    public long getMaxFileSize() {
+        return maxFileSize;
+    }
+
     private long getFileVersion(long entryIndex) throws IOException {
         var longRange = logsRepository.logVersionsRange();
         if (!longRange.isEmpty()) {

@@ -1237,7 +1237,7 @@ class EnvelopedLogFilesTest {
     }
 
     @Test
-    void shouldFailIfToIsOutsideExistinRange() throws IOException {
+    void shouldFailIfToIsOutsideExistingRange() throws IOException {
         envelopedLogFiles.initialise();
 
         var writeChannel = envelopedLogFiles.currentWriteChannel();

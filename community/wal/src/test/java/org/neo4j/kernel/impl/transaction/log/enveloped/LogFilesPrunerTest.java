@@ -99,7 +99,7 @@ class LogFilesPrunerTest {
         createFile(3);
         createFile(4);
 
-        var prunedVersion = new LogFilesPruner(logsRepository, NEVER_PRUNE).pruneUpTo(3, 0, 0, 0);
+        var prunedVersion = new LogFilesPruner(logsRepository, NEVER_PRUNE).pruneUpTo(2, 0, 0, 0);
 
         assertThat(prunedVersion).isEqualTo(-1);
         assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(3, 4));
