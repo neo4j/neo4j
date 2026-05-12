@@ -34,6 +34,8 @@ org.neo4j.cypher.cucumber.glue.regular.TestConf$CommunityDefaultBolt$Cypher5$Obj
 org.neo4j.cypher.cucumber.glue.regular.TestConf$Planner$InferLabels$ObjectFactory
 org.neo4j.cypher.cucumber.glue.regular.TestConf$Planner$SmallIdpTableSize$ObjectFactory
 org.neo4j.cypher.cucumber.glue.regular.TestConf$Planner$UpdateStrategyEager$ObjectFactory
+org.neo4j.cypher.cucumber.glue.regular.TestConf$PlannerVersion$Experimental$Cypher25$ObjectFactory
+org.neo4j.cypher.cucumber.glue.regular.TestConf$PlannerVersion$Experimental$Cypher5$ObjectFactory
 
 org.neo4j.cypher.cucumber.glue.prettifier.PrettifierSteps$ObjectFactory
 

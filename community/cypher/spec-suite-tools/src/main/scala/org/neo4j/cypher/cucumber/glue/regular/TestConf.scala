@@ -550,6 +550,32 @@ object TestConf {
     }
   }
 
+  object PlannerVersion {
+
+    object Experimental {
+
+      private def baseConf: TestConf = TestConf(
+        preparserOptions = Map("plannerVersion" -> "experimental")
+      )
+
+      object Cypher25 extends InjectedTestConf {
+
+        final val FactoryName =
+          "org.neo4j.cypher.cucumber.glue.regular.TestConf$PlannerVersion$Experimental$Cypher25$ObjectFactory"
+        final override val conf: TestConf = TestConf.withCypher25(baseConf)
+        final class ObjectFactory extends SingletonInjector(injector)
+      }
+
+      object Cypher5 extends InjectedTestConf {
+
+        final val FactoryName =
+          "org.neo4j.cypher.cucumber.glue.regular.TestConf$PlannerVersion$Experimental$Cypher5$ObjectFactory"
+        final override val conf: TestConf = TestConf.withCypher5(baseConf)
+        final class ObjectFactory extends SingletonInjector(injector)
+      }
+    }
+  }
+
   private def preParserPrefix(options: Map[String, String]): String = {
     if (options.isEmpty) ""
     else options

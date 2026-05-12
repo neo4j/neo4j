@@ -40,6 +40,8 @@ import org.neo4j.cypher.cucumber.glue.regular.SingletonInjector
 import org.neo4j.cypher.cucumber.glue.regular.TestConf
 import org.neo4j.cypher.cucumber.steps.CypherCucumberSteps
 import org.neo4j.cypher.cucumber.synthesise.read.ScenarioReader
+import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations
+import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.LoneElement
 
@@ -345,6 +347,8 @@ class CypherCucumberTest extends CypherFunSuite with LoneElement {
       TestConf.Planner.SmallIdpTableSize.FactoryName -> TestConf.Planner.SmallIdpTableSize.conf,
       TestConf.Planner.InferLabels.FactoryName -> TestConf.Planner.InferLabels.conf,
       TestConf.Planner.UpdateStrategyEager.FactoryName -> TestConf.Planner.UpdateStrategyEager.conf,
+      TestConf.PlannerVersion.Experimental.Cypher25.FactoryName -> TestConf.PlannerVersion.Experimental.Cypher25.conf,
+      TestConf.PlannerVersion.Experimental.Cypher5.FactoryName -> TestConf.PlannerVersion.Experimental.Cypher5.conf,
       ObfuscatorSteps.Conf.FactoryName -> ObfuscatorSteps.Conf.conf
     )
 
@@ -392,6 +396,29 @@ class CypherCucumberTest extends CypherFunSuite with LoneElement {
     )
     expectedPrefix.foreach { case (className, prefix) =>
       withClue(className)(testConfs.get(className).map(_.preparserPrefix.trim) shouldBe Some(prefix))
+    }
+  }
+
+  test("all planner versions introducing optimisations have corresponding PlannerVersion configs", Tags.NoSpdOverride) {
+    val registeredFactoryNames = ServiceLoader.load(classOf[ObjectFactory]).stream().toList.asScala
+      .map(p => p.`type`().getName)
+      .toSet
+
+    val versionsWithOptimisations = CypherPlannerVersionOption.supportedValues
+      .filter(v => CypherPlannerVersionWithOptimisations.fromQueryOption(v).introducedOptimisations.nonEmpty)
+
+    versionsWithOptimisations.foreach { version =>
+      val objectName = version.toString.capitalize
+      val pkg = "org.neo4j.cypher.cucumber.glue.regular"
+      Seq("Cypher25", "Cypher5").foreach { cypherVariant =>
+        val expectedName = s"$pkg.TestConf$$PlannerVersion$$$objectName$$$cypherVariant$$ObjectFactory"
+        withClue(
+          s"Missing feature test config for plannerVersion=$version ($cypherVariant). " +
+            s"Add object $objectName to TestConf.PlannerVersion and register $expectedName in META-INF/services."
+        ) {
+          registeredFactoryNames should contain(expectedName)
+        }
+      }
     }
   }
 

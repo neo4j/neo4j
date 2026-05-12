@@ -350,6 +350,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-planner</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
       <scope>test</scope>
