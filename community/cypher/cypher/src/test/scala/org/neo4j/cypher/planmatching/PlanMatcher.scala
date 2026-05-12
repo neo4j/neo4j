@@ -149,6 +149,10 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher
 
+  def withNoRhs(): PlanMatcher
+
+  def withNoChildren(): PlanMatcher
+
   def onTopOf(plan: PlanMatcher): PlanMatcher = withLHS(plan)
 
   def ignoringPlan(planName: String): PlanMatcher
@@ -234,6 +238,10 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
   override def withRHS(rhs: PlanMatcher): PlanMatcher = copy(inner = inner.withRHS(rhs))
 
   override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = copy(inner = inner.withChildren(a, b))
+
+  override def withNoRhs(): PlanMatcher = copy(inner = inner.withNoRhs())
+
+  override def withNoChildren(): PlanMatcher = copy(inner = inner.withNoChildren())
 
   override def ignoringPlan(planName: String): PlanMatcher = copy(inner = inner.ignoringPlan(planName))
 }
@@ -326,6 +334,10 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 
   override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = copy(inner = inner.withChildren(a, b))
 
+  override def withNoRhs(): PlanMatcher = copy(inner = inner.withNoRhs())
+
+  override def withNoChildren(): PlanMatcher = copy(inner = inner.withNoChildren())
+
   override def ignoringPlan(planName: String): PlanMatcher = copy(inner = inner.ignoringPlan(planName))
 }
 
@@ -345,9 +357,9 @@ case class ExactPlan(
   order: Option[OrderArgumentMatcher] = None,
   variables: Option[VariablesMatcher] = None,
   other: Option[StringArgumentsMatcher] = None,
-  lhs: Option[PlanMatcher] = None,
-  rhs: Option[PlanMatcher] = None,
-  children: Option[(PlanMatcher, PlanMatcher)] = None,
+  lhs: ChildCheck = NoCheck,
+  rhs: ChildCheck = NoCheck,
+  children: (ChildCheck, ChildCheck) = (NoCheck, NoCheck),
   skipPlans: Set[String] = Set.empty
 ) extends PlanMatcher {
 
@@ -379,55 +391,110 @@ case class ExactPlan(
       case _               => None
     }
 
-    val lhsResult = lhs.map { matcher =>
-      maybeLhsPlan match {
-        case None => MatchResult(
-            matches = false,
-            rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a LHS.",
-            rawNegatedFailureMessage = ""
-          )
-        case Some(lhsPlan) => matcher(lhsPlan)
-      }
-    }
-    val rhsResult = rhs.map { matcher =>
-      maybeRhsPlan match {
-        case None => MatchResult(
-            matches = false,
-            rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a RHS.",
-            rawNegatedFailureMessage = ""
-          )
-        case Some(rhsPlan) => matcher(rhsPlan)
-      }
-    }
-    val childrenResult = children.map { case (aMatcher, bMatcher) =>
-      (maybeLhsPlan, maybeRhsPlan) match {
-        case (Some(lhs), Some(rhs)) =>
-          val res1a = aMatcher(lhs)
-          val res1b = bMatcher(rhs)
-          if (res1a.matches && res1b.matches) {
-            res1a
-          } else {
-            val res2a = aMatcher(rhs)
-            val res2b = bMatcher(lhs)
-            if (res2a.matches && res2b.matches) {
-              res2a
-            } else {
-              MatchResult(
-                matches = false,
-                rawFailureMessage =
-                  s"Expected $toPlanDescription\n but ${plan.name} does not have the expected children.",
-                rawNegatedFailureMessage = ""
-              )
-            }
-          }
-
-        case (_, _) =>
+    val lhsResult = lhs match {
+      case NoCheck => None
+      case NoChild =>
+        // We can't really get here, but it feels more correct to still have the case
+        val result = maybeLhsPlan.map(lhsPlan =>
           MatchResult(
             matches = false,
-            rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have two children.",
+            rawFailureMessage = s"Expected no LHS but found $lhsPlan.",
             rawNegatedFailureMessage = ""
           )
-      }
+        ).getOrElse(
+          MatchResult(
+            matches = true,
+            rawFailureMessage = s"Expected no LHS but found $maybeLhsPlan.",
+            rawNegatedFailureMessage = "Expected LHS plan but found none."
+          )
+        )
+        Some(result)
+      case ChildMatching(matcher) =>
+        val result = maybeLhsPlan match {
+          case None => MatchResult(
+              matches = false,
+              rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a LHS.",
+              rawNegatedFailureMessage = ""
+            )
+          case Some(lhsPlan) => matcher(lhsPlan)
+        }
+        Some(result)
+    }
+
+    val rhsResult = rhs match {
+      case NoCheck => None
+      case NoChild =>
+        val result = maybeRhsPlan.map(rhsPlan =>
+          MatchResult(
+            matches = false,
+            rawFailureMessage = s"Expected no RHS but found $rhsPlan.",
+            rawNegatedFailureMessage = ""
+          )
+        ).getOrElse(
+          MatchResult(
+            matches = true,
+            rawFailureMessage = s"Expected no RHS but found $maybeRhsPlan.",
+            rawNegatedFailureMessage = "Expected RHS plan but found none."
+          )
+        )
+        Some(result)
+      case ChildMatching(matcher) =>
+        val result = maybeRhsPlan match {
+          case None => MatchResult(
+              matches = false,
+              rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have a RHS.",
+              rawNegatedFailureMessage = ""
+            )
+          case Some(rhsPlan) => matcher(rhsPlan)
+        }
+        Some(result)
+    }
+
+    val childrenResult = children match {
+      case (NoChild, NoChild) if maybeLhsPlan.nonEmpty || maybeRhsPlan.nonEmpty =>
+        Some(MatchResult(
+          matches = false,
+          rawFailureMessage = s"Expected no children but found LHS: $maybeLhsPlan, RHS: $maybeRhsPlan.",
+          rawNegatedFailureMessage = ""
+        ))
+      case (NoChild, NoChild) =>
+        Some(MatchResult(
+          matches = true,
+          rawFailureMessage = s"Expected no children but found LHS: $maybeLhsPlan, RHS: $maybeRhsPlan.",
+          rawNegatedFailureMessage = "Expected children but found none."
+        ))
+      case (ChildMatching(aMatcher), ChildMatching(bMatcher)) =>
+        val result = (maybeLhsPlan, maybeRhsPlan) match {
+          case (Some(actualLhs), Some(actualRhs)) =>
+            val res1a = aMatcher(actualLhs)
+            val res1b = bMatcher(actualRhs)
+            if (res1a.matches && res1b.matches) {
+              res1a
+            } else {
+              val res2a = aMatcher(actualRhs)
+              val res2b = bMatcher(actualLhs)
+              if (res2a.matches && res2b.matches) {
+                res2a
+              } else {
+                MatchResult(
+                  matches = false,
+                  rawFailureMessage =
+                    s"Expected $toPlanDescription\n but ${plan.name} does not have the expected children.",
+                  rawNegatedFailureMessage = ""
+                )
+              }
+            }
+
+          case (_, _) =>
+            MatchResult(
+              matches = false,
+              rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have two children.",
+              rawNegatedFailureMessage = ""
+            )
+        }
+        Some(result)
+      case (NoCheck, NoCheck) => None
+      case _ => throw new IllegalArgumentException("Both sides of the children matchers should be of the same type")
     }
 
     val allResults = Seq(
@@ -467,8 +534,6 @@ case class ExactPlan(
   override def toPlanDescription: InternalPlanDescription = {
     val nameDesc = name.fold("???")(_.expectedName)
     val variablesDesc = variables.fold(Set.empty[PrettyString])(_.expected.map(asPrettyString.raw))
-    val lhsDesc = lhs.map(_.toPlanDescription)
-    val rhsDesc = rhs.map(_.toPlanDescription)
     val estRowArg = estimatedRows.map(m => EstimatedRows(m.expectedValue.toDouble, None)).toSeq
     val rowArg = rows.map(m => Rows(m.expectedValue)).toSeq
     val timeArg = time.map(m => Time(m.expectedValue)).toSeq
@@ -482,11 +547,14 @@ case class ExactPlan(
       .map(arg => Seq(Details(arg.expected.toSeq.map(str => asPrettyString(JustForToStringExpression(str))))))
       .getOrElse(Seq.empty)
 
-    val children = (lhsDesc, rhsDesc) match {
-      case (None, None)       => Seq.empty
-      case (Some(l), None)    => Seq(l)
-      case (Some(l), Some(r)) => Seq(l, r)
-      case (None, Some(r))    => Seq(PlanDescriptionImpl(Id(0), "???", Seq.empty, Seq.empty, Set.empty), r)
+    val children = (lhs, rhs) match {
+      case (ChildMatching(lhsMatcher), ChildMatching(rhsMatcher)) =>
+        Seq(lhsMatcher.toPlanDescription, rhsMatcher.toPlanDescription)
+      case (ChildMatching(lhsMatcher), _) =>
+        Seq(lhsMatcher.toPlanDescription)
+      case (_, ChildMatching(rhsMatcher)) =>
+        Seq(PlanDescriptionImpl(Id(0), "???", Seq.empty, Seq.empty, Set.empty), rhsMatcher.toPlanDescription)
+      case _ => Seq.empty
     }
 
     PlanDescriptionImpl(
@@ -600,17 +668,32 @@ case class ExactPlan(
       throw new IllegalArgumentException("cannot have more than one assertion on order")
     )
 
-  override def withLHS(lhs: PlanMatcher): PlanMatcher = this.lhs.fold(copy(lhs = Some(lhs)))(_ =>
-    throw new IllegalArgumentException("cannot have more than one assertion on lhs")
-  )
+  override def withLHS(lhs: PlanMatcher): PlanMatcher =
+    if (this.lhs != NoCheck || this.children != (NoCheck, NoCheck))
+      throw new IllegalArgumentException("cannot have more than one assertion on lhs")
+    else copy(lhs = ChildMatching(lhs))
 
-  override def withRHS(rhs: PlanMatcher): PlanMatcher = this.rhs.fold(copy(rhs = Some(rhs)))(_ =>
-    throw new IllegalArgumentException("cannot have more than one assertion on rhs")
-  )
+  override def withRHS(rhs: PlanMatcher): PlanMatcher =
+    if (this.rhs != NoCheck || this.children != (NoCheck, NoCheck))
+      throw new IllegalArgumentException("cannot have more than one assertion on rhs")
+    else copy(rhs = ChildMatching(rhs))
 
-  override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = this.rhs.fold(copy(children = Some((a, b))))(
-    _ => throw new IllegalArgumentException("cannot have more than one assertion on children")
-  )
+  override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher =
+    if (this.children != (NoCheck, NoCheck) || this.lhs != NoCheck || this.rhs != NoCheck)
+      throw new IllegalArgumentException("cannot have more than one assertion on children")
+    else copy(children = (ChildMatching(a), ChildMatching(b)))
+
+  override def withNoRhs(): PlanMatcher = {
+    if (this.rhs != NoCheck || this.children != (NoCheck, NoCheck))
+      throw new IllegalArgumentException("cannot have more than one assertion on rhs")
+    else copy(rhs = NoChild)
+  }
+
+  override def withNoChildren(): PlanMatcher = {
+    if (this.children != (NoCheck, NoCheck) || this.lhs != NoCheck || this.rhs != NoCheck)
+      throw new IllegalArgumentException("cannot have more than one assertion on children")
+    else copy(children = (NoChild, NoChild))
+  }
 
   override def ignoringPlan(planName: String): PlanMatcher =
     copy(skipPlans = skipPlans + planName)
@@ -633,3 +716,8 @@ case class JustForToStringExpression(str: String) extends Expression {
 
   override def isConstantForQuery: Boolean = true
 }
+
+sealed trait ChildCheck
+object NoCheck extends ChildCheck // Don't check anything
+object NoChild extends ChildCheck // Check there is no child plan
+case class ChildMatching(matcher: PlanMatcher) extends ChildCheck // Check so the child plan matches the given matcher
