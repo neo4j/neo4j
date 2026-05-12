@@ -344,6 +344,9 @@ public enum VectorIndexVersion {
         return UNKNOWN;
     }
 
+    private static final KernelVersion LATEST_DEFAULT_KERNEL_VERSION =
+            KernelVersion.getLatestVersion(Config.defaults());
+
     private final KernelVersion minimumRequiredKernelVersion;
     private final IndexProviderDescriptor descriptor;
     private final int maxDimensions;
@@ -353,6 +356,7 @@ public enum VectorIndexVersion {
     private final int maxHnswM;
     private final int maxHnswEfConstruction;
     private final SortedMap<KernelVersion, TypedIndexSettingsValidator<VectorIndexConfig>> validators;
+    private final TypedIndexSettingsValidator<VectorIndexConfig> defaultLatestIndexSettingValidator;
 
     VectorIndexVersion(
             IndexProviderDescriptor providerDescriptor,
@@ -389,6 +393,8 @@ public enum VectorIndexVersion {
             validators.putAll(configureValidators());
             this.validators = Collections.unmodifiableSortedMap(validators);
         }
+        this.defaultLatestIndexSettingValidator =
+                findIndexSettingValidator(KernelVersion.getLatestVersion(Config.defaults()));
     }
 
     public KernelVersion minimumRequiredKernelVersion() {
@@ -466,19 +472,7 @@ public enum VectorIndexVersion {
     /// If no validators is found for the given `kernelVersion`, the returned validator will throw an
     /// [InvalidArgumentException] for any method that is called on it.
     public TypedIndexSettingsValidator<VectorIndexConfig> indexSettingValidator(KernelVersion kernelVersion) {
-        if (kernelVersion == null) {
-            kernelVersion = KernelVersion.getLatestVersion(Config.defaults());
-        }
-        for (final Entry<KernelVersion, TypedIndexSettingsValidator<VectorIndexConfig>> entry : validators.entrySet()) {
-            if (kernelVersion.isAtLeast(entry.getKey())) {
-                return entry.getValue();
-            }
-        }
-        return new NotFoundTypedIndexSettingsValidator<>(
-                descriptor,
-                InvalidArgumentException.internalError(
-                        "Validator Not Found",
-                        "Validator not found for '%s' on '%s'.".formatted(descriptor.name(), kernelVersion)));
+        return kernelVersion != null ? findIndexSettingValidator(kernelVersion) : defaultLatestIndexSettingValidator;
     }
 
     private static class VersionedValidator extends TypedIndexSettingsValidator<VectorIndexConfig> {
@@ -497,5 +491,18 @@ public enum VectorIndexVersion {
         protected VectorIndexConfig toTypedConfig(Iterable<Valid> records) {
             return new VectorIndexConfig(version, acceptedSettings(), records);
         }
+    }
+
+    private TypedIndexSettingsValidator<VectorIndexConfig> findIndexSettingValidator(KernelVersion kernelVersion) {
+        for (Entry<KernelVersion, TypedIndexSettingsValidator<VectorIndexConfig>> entry : validators.entrySet()) {
+            if (kernelVersion.isAtLeast(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return new NotFoundTypedIndexSettingsValidator<>(
+                descriptor,
+                InvalidArgumentException.internalError(
+                        "Validator Not Found",
+                        "Validator not found for '%s' on '%s'.".formatted(descriptor.name(), kernelVersion)));
     }
 }
