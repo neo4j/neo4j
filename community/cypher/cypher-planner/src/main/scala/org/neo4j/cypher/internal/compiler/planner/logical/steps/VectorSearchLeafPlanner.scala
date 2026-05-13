@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.VectorSearchExceptionHandler
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.EntityType
@@ -62,43 +63,15 @@ import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.planner.spi.VectorIndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.VectorIndexError
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.exceptions.InternalException
-import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.VectorIndexSearchException
-import org.neo4j.graphdb.schema.IndexType
-
-import java.util.Locale
 
 /**
  * Plans ANN vector search leaf plans for nodes or relationships in SEARCH sub-clauses.
  */
 case object VectorSearchLeafPlanner extends LeafPlanner {
-
-  private def handleErrors(indexDescriptorError: VectorIndexError, indexName: String, bindingVariableName: String) = {
-    indexDescriptorError match {
-      case VectorIndexError.NotFound =>
-        throw VectorIndexSearchException.indexNotFound(indexName)
-      case VectorIndexError.Populating =>
-        throw VectorIndexSearchException.indexInPopulatingState(indexName)
-      case VectorIndexError.WrongIndexType(wrongIndexType) =>
-        throw InvalidArgumentException.wrongIndexType(
-          indexName,
-          IndexType.VECTOR.name().toLowerCase(Locale.ROOT), // must be a VECTOR index
-          wrongIndexType.name().toLowerCase(Locale.ROOT) // the index type of the index name that was provided
-        )
-      case VectorIndexError.WrongEntityType(variableType, indexType) =>
-        throw VectorIndexSearchException.wrongBindingVariableType(
-          bindingVariableName,
-          // the required type (for the binding variable) for the index name that was provided
-          indexType.name(),
-          // the actual type of the binding variable
-          variableType.name()
-        )
-    }
-  }
 
   override def apply(
     queryGraph: QueryGraph,
@@ -165,7 +138,7 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
                 )
               Set(nodeVectorIndexSearch)
 
-            case Left(vectorIndexError) => handleErrors(
+            case Left(vectorIndexError) => VectorSearchExceptionHandler.handleErrors(
                 vectorIndexError,
                 indexName,
                 resultVariable.name
@@ -234,7 +207,7 @@ case object VectorSearchLeafPlanner extends LeafPlanner {
                 )
               Set(relationshipVectorIndexSearch)
 
-            case Left(vectorIndexError) => handleErrors(
+            case Left(vectorIndexError) => VectorSearchExceptionHandler.handleErrors(
                 vectorIndexError,
                 indexName,
                 resultVariable.name

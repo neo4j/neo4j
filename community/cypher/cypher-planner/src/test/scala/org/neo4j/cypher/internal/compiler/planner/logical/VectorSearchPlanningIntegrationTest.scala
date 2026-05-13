@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.AllQueryExpression
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
@@ -70,6 +71,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
       .setLabelCardinality("Movie", movieLabelCardinality)
       .setLabelCardinality("Actor", 40)
       .setLabelCardinality("Person", 10)
+      .setLabelCardinality("Director", 5)
       .setRelationshipCardinality("()-[]->()", 100)
       .setRelationshipCardinality("()-[:ACTS_IN]->()", 50)
       .setRelationshipCardinality("(:Person)-[:ACTS_IN]->(:Movie)", 50)
@@ -134,6 +136,15 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
       plannerBuilder()
         // This hopefully mixes up the order of label ids
         .setLabelCardinality("C", 5)
+        .setLabelCardinality("D", 5)
+        .setLabelCardinality("E", 5)
+        .setLabelCardinality("F", 5)
+        .setLabelCardinality("G", 5)
+        .setLabelCardinality("H", 5)
+        .setLabelCardinality("I", 5)
+        .setLabelCardinality("J", 5)
+        .setLabelCardinality("A", 5)
+        .setLabelCardinality("B", 5)
         .addNodeVectorIndex("lotsOfLabels", Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"), "prop")
         .build()
 
@@ -828,9 +839,8 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
     plan shouldEqual
       planner.planBuilder()
         .produceResults("`r.plot`")
-        .projection("cacheR[r.plot] AS `r.plot`")
+        .projection("r.plot AS `r.plot`")
         .filter(hasTypes("r", "CONTRIBUTED"))
-        .cacheProperties("cacheRFromStore[r.plot]")
         .relationshipVectorIndexSearch(
           "()-[r]-()",
           Seq("ACTS_IN"),
@@ -865,7 +875,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
       planner.planBuilder()
         .produceResults("`r.plot`")
         .projection("cacheR[r.plot] AS `r.plot`")
-        .filter(andsReorderableAst(hasTypes("r", "ACTS_IN"), hasTypes("r", "CONTRIBUTED")))
+        .filter(andsReorderable("r:ACTS_IN", "r:CONTRIBUTED"))
         .cacheProperties("cacheRFromStore[r.plot]")
         .relationshipVectorIndexSearch(
           pattern = "()-[r]-()",
@@ -1350,9 +1360,8 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
     val expectedPlan =
       planner.planBuilder()
         .produceResults("`r.plot`")
-        .projection("cacheR[r.plot] AS `r.plot`")
+        .projection("r.plot AS `r.plot`")
         .filter(hasTypes("r", "CONTRIBUTED"))
-        .cacheProperties("cacheRFromStore[r.plot]")
         .relationshipVectorIndexSearch(
           "()-[r]->()",
           Seq("ACTS_IN"),
@@ -1648,6 +1657,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
         releaseYearPred.map(_.searchQuery).getOrElse(AllQueryExpression)
       )
 
+      val limit = 10
       val query =
         s"""MATCH (movie:Movie)
            |${if (inlinePredicates) "" else whereClause}
@@ -1655,12 +1665,12 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
            |  VECTOR INDEX moviePlots
            |  FOR $$embedding
            |  ${if (inlinePredicates) whereClause else ""}
-           |  LIMIT 10
+           |  LIMIT $limit
            |)
            |RETURN movie.plot AS result""".stripMargin
 
       val expectedCardinality =
-        movieLabelCardinality *
+        limit *
           Seq(imdbRatingPred, releaseYearPred)
             .flatten
             .map(_.selectivity.factor)
@@ -1685,7 +1695,7 @@ abstract class VectorSearchPlanningIntegrationTestBase extends CypherPlannerTest
           limit = "10",
           getValueFromIndex = getValueFromIndex,
           propertyFilter = Option.when(inlinePredicates)(searchFilter)
-        ).withCardinality(if (inlinePredicates) expectedCardinality else movieLabelCardinality)
+        ).withCardinality(if (inlinePredicates) expectedCardinality else limit)
 
       val actualPlanState = planner.planState(CypherVersion.Cypher25, query)
 
@@ -1815,9 +1825,10 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .projection("cacheN[movie.plot] AS plot")
-      .filter("NOT q = r")
-      .valueHashJoin("movie.year = otherMovie.year")
+      .filter("NOT q = r", "cacheN[movie.year] = otherMovie.year")
+      .cartesianProduct()
       .|.relationshipTypeScan("()-[r:ACTS_IN]->(otherMovie)")
+      .cacheProperties("cacheNFromStore[movie.year]")
       .filter("NOT q = p")
       .expandAll("(movie)-[q]->()")
       .expandAll("(movie)<-[p:CONTRIBUTED]-()")
@@ -1963,7 +1974,7 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
     val (plan, costComparisonCandidates) = planner.planAndRecordCostComparisonCandidates(CypherVersion.Cypher25, query)
 
     plan.stripProduceResults shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "cacheN[director.name] AS name")
+      .projection("movie.plot AS plot", "director.name AS name")
       .filter("`  movie@0` = movie")
       .apply()
       .|.nodeVectorIndexSearch(
@@ -1977,7 +1988,7 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
       )
       .filter("movie:Movie")
       .expandAll("(director)-[:DIRECTED]->(movie)")
-      .cacheProperties("cacheNFromStore[director.embedding]", "cacheNFromStore[director.name]")
+      .cacheProperties("cacheNFromStore[director.embedding]")
       .nodeByLabelScan("director", "Person")
       .build()
 
@@ -2016,22 +2027,22 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
 
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "director.name AS name")
-      .filter("`  movie@0` = movie")
+      .projection("cacheN[movie.plot] AS plot", "director.name AS name")
+      .filter("NOT rel = otherRel")
+      .expandInto("(otherMovie)<-[rel:DIRECTED]-(director)")
+      .expandAll("(movie)<-[otherRel]-(otherMovie)")
       .apply()
       .|.nodeVectorIndexSearch(
-        node = "  movie@0",
+        node = "movie",
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
         vector = prop("director", "embedding"),
         limit = "10",
-        argumentIds = Set("director", "movie")
+        argumentIds = Set("director"),
+        getValueFromIndex = Map("plot" -> GetValue, "imdbRating" -> DoNotGetValue, "releaseYear" -> DoNotGetValue)
       )
-      .filter("NOT rel = otherRel", "director:Person")
-      .expandAll("(otherMovie)<-[rel:DIRECTED]-(director)")
-      .expandAll("(movie)<-[otherRel]-(otherMovie)")
-      .nodeByLabelScan("movie", "Movie")
+      .nodeByLabelScan("director", "Person")
       .build()
   }
 
@@ -2088,23 +2099,23 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
     val plan = planner.plan(CypherVersion.Cypher25, query).stripProduceResults
     plan.printLogicalPlanBuilderString()
     plan shouldEqual planner.subPlanBuilder()
-      .projection("movie.plot AS plot", "director.name AS name")
-      .filter("`  movie@0` = movie")
+      .projection("cacheN[movie.plot] AS plot", "director.name AS name")
+      .filter("NOT rel = otherRel")
+      .expandInto("(otherMovie)<-[rel:DIRECTED]-(director)")
+      .expandAll("(movie)<-[otherRel]-(otherMovie)")
       .apply()
       .|.nodeVectorIndexSearch(
-        node = "  movie@0",
+        node = "movie",
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
         vector = parameter("vector", CTAny),
         limit = "10",
-        argumentIds = Set("director", "movie"),
-        propertyFilter = Some(composite(AllQueryExpression, rangeExpression(lt(prop("director", "birthYear")))))
+        argumentIds = Set("director"),
+        propertyFilter = Some(composite(AllQueryExpression, rangeExpression(lt(prop("director", "birthYear"))))),
+        getValueFromIndex = Map("plot" -> GetValue, "imdbRating" -> DoNotGetValue, "releaseYear" -> DoNotGetValue)
       )
-      .filter("NOT rel = otherRel", "director:Person")
-      .expandAll("(otherMovie)<-[rel:DIRECTED]-(director)")
-      .expandAll("(movie)<-[otherRel]-(otherMovie)")
-      .nodeByLabelScan("movie", "Movie")
+      .nodeByLabelScan("director", "Person")
       .build()
   }
 
@@ -2163,23 +2174,23 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
     plan shouldEqual planner.subPlanBuilder()
       .projection("cacheN[movie.plot] AS plot")
       .cartesianProduct()
-      .|.filter("`  movie@0` = movie")
-      .|.apply()
-      .|.|.nodeVectorIndexSearch(
+      .|.nodeByLabelScan("m", "Person")
+      .cacheProperties("cacheNFromStore[movie.plot]")
+      .filter("`  movie@0` = movie")
+      .apply()
+      .|.nodeVectorIndexSearch(
         node = "  movie@0",
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
         indexName = "moviePlots",
         vector = cachedNodeProp("n", "embedding"),
         limit = "10",
-        argumentIds = Set("movie", "n")
+        argumentIds = Set("n", "movie")
       )
-      .|.cartesianProduct()
-      .|.|.cacheProperties("cacheNFromStore[movie.plot]")
-      .|.|.nodeByLabelScan("movie", "Movie")
-      .|.cacheProperties("cacheNFromStore[n.embedding]")
-      .|.allNodeScan("n")
-      .nodeByLabelScan("m", "Person")
+      .cartesianProduct()
+      .|.nodeByLabelScan("movie", "Movie")
+      .cacheProperties("cacheNFromStore[n.embedding]")
+      .allNodeScan("n")
       .build()
   }
 
@@ -2206,9 +2217,12 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
       .projection("cacheN[movie.plot] AS plot")
       .filter("cacheN[m.prop] < score")
       .cartesianProduct()
-      .|.filter("`  movie@0` = movie")
-      .|.apply()
-      .|.|.nodeVectorIndexSearch(
+      .|.cacheProperties("cacheNFromStore[m.prop]")
+      .|.nodeByLabelScan("m", "Person")
+      .cacheProperties("cacheNFromStore[movie.plot]")
+      .filter("`  movie@0` = movie")
+      .apply()
+      .|.nodeVectorIndexSearch(
         node = "  movie@0",
         labelNames = Seq("Movie"),
         properties = moviePlotsProperties,
@@ -2218,13 +2232,10 @@ abstract class VectorSearchWithComplexPatternPlanningIntegrationTestBase
         score = "score",
         argumentIds = Set("movie", "n")
       )
-      .|.cartesianProduct()
-      .|.|.cacheProperties("cacheNFromStore[movie.plot]")
-      .|.|.nodeByLabelScan("movie", "Movie")
-      .|.cacheProperties("cacheNFromStore[n.embedding]")
-      .|.allNodeScan("n")
-      .cacheProperties("cacheNFromStore[m.prop]")
-      .nodeByLabelScan("m", "Person")
+      .cartesianProduct()
+      .|.nodeByLabelScan("movie", "Movie")
+      .cacheProperties("cacheNFromStore[n.embedding]")
+      .allNodeScan("n")
       .build()
   }
 

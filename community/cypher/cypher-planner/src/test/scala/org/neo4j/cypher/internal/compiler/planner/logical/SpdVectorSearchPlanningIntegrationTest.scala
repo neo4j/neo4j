@@ -51,7 +51,9 @@ class SpdVectorSearchPlanningIntegrationTest extends CypherPlannerTestSuite
     .addRelationshipVectorIndex("knowsOrThinksDescr", Seq("KNOWS", "THINKS"), "description")
     .setAllNodesCardinality(3181725)
     .setLabelCardinality("Message", 3055774)
+    .setLabelCardinality("Info", 3055774)
     .setRelationshipCardinality("()-[:KNOWS]->()", 180623)
+    .setRelationshipCardinality("()-[:THINKS]->()", 50000)
 
   test("should get the property value from node vector index when the property is used later in the horizon") {
     val planner = planBuilder.build()

@@ -72,19 +72,24 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       queryGraph.argumentIds,
       graphSchemaOptimizations
     )
+
+    val (searchSelectivity, queryGraphWithIndexLabelPredicate, updatedContext) =
+      SearchClauseCardinalityModel.searchClauseSelectivity(queryGraph, context, planContext)
+
     // First calculate the cardinality of the "top-level" match query graph while keeping track of newly encountered node labels
-    val (moreLabelInfo, matchCardinality) = getBaseQueryGraphCardinality(context, previousLabelInfo, queryGraph)
+    val (moreLabelInfo, matchCardinality) =
+      getBaseQueryGraphCardinality(updatedContext, previousLabelInfo, queryGraphWithIndexLabelPredicate)
     val optionalMatchesCardinality =
-      queryGraph
+      queryGraphWithIndexLabelPredicate
         .optionalMatches
         .toVector
         // calculate the cardinality of each optional match, accumulating labels and threading them through
-        .foldMap(moreLabelInfo)(getBaseQueryGraphCardinality(context, _, _))
+        .foldMap(moreLabelInfo)(getBaseQueryGraphCardinality(updatedContext, _, _))
         ._2 // we only care about cardinality, we can ditch the accumulated labels at this point
         .filter(_ >= Cardinality.SINGLE) // we only want to modify the total cardinality if the optional match at hands increases it, we ignore it otherwise
         .product(NumericCardinality)
 
-    matchCardinality * optionalMatchesCardinality
+    matchCardinality * optionalMatchesCardinality * searchSelectivity
   }
 
   /**
