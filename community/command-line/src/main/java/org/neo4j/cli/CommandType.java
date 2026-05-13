@@ -27,6 +27,7 @@ public enum CommandType {
     CHECK(DATABASE),
     INFO(DATABASE),
     IMPORT(DATABASE),
+    SPD_IMPORT(DATABASE),
     COPY(DATABASE),
     DUMP(DATABASE),
     LOAD(DATABASE),

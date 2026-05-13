@@ -1896,6 +1896,53 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     }
 
     @Internal
+    @Description("")
+    public static final Setting<Integer> spd_import_segment_buffer_size = newBuilder(
+                    "internal.db.spd_import.segment_buffer_size", INT, 8 * 1024 * 1024)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Integer> spd_import_max_segment_records = newBuilder(
+                    "internal.db.spd_import.max_segment_records", INT, 100_000)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Double> spd_import_heap_for_segment_records = newBuilder(
+                    "internal.db.spd_import.heap_for_segment_records", DOUBLE, 0.1)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Integer> spd_import_io_buffer_size = newBuilder(
+                    "internal.db.spd_import.io_buffer_size", INT, 2 * 1024 * 1024)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Long> spd_import_max_memory = newBuilder(
+                    "internal.db.spd_import.max_memory", LONG, 10L * Integer.MAX_VALUE)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Integer> spd_import_merge_step =
+            newBuilder("internal.db.spd_import.merge_step", INT, 50).build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Double> spd_import_heap_for_entity_tasks = newBuilder(
+                    "internal.db.spd_import.heap_for_entity_tasks", DOUBLE, 0.05)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Duration> spd_import_rpc_poll_interval = newBuilder(
+                    "internal.db.spd_import.rpc.poll_interval", DURATION, ofSeconds(1))
+            .build();
+
+    @Internal
     @Description("Select how eagerly procedure loader will class load procedures")
     public static final Setting<ProcedureClassPreloading> preload = newBuilder(
                     "internal.dbms.procedures.preload",
