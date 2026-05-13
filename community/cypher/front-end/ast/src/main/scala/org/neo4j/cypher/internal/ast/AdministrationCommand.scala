@@ -927,8 +927,10 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
 
   protected def checkAllowlist(functionInvocation: FunctionInvocation): SemanticCheck = {
     val allowListedFunctions = Seq(
-      // ABAC oidc user metadata function
+      // ABAC oidc user attributes function
       "abac.oidc.user_attribute",
+      // ABAC local user tags function
+      "abac.local.user_tags",
       // List functions
       "range",
       "reduce",
