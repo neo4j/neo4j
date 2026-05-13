@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.NormalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -213,6 +214,8 @@ trait RewritePhaseTest extends CypherVersionTestSupport {
     compareStatements(expectedStatement, actualStatement, fromOutState, semanticTableExpressions)
   }
 
+  protected def canonicalizeForComparison(stmt: Statement): Statement = stmt
+
   private def compareStatements(
     expectedStatement: Statement,
     actualStatement: Statement,
@@ -220,7 +223,9 @@ trait RewritePhaseTest extends CypherVersionTestSupport {
     semanticTableExpressions: List[Expression]
   ): Unit = {
 
-    StatementPrettifier(actualStatement) should equal(StatementPrettifier(expectedStatement))
+    StatementPrettifier(canonicalizeForComparison(actualStatement)) should equal(
+      StatementPrettifier(canonicalizeForComparison(expectedStatement))
+    )
 
     semanticTableExpressions.foreach { e =>
       state.semanticTable().types.keys.map(_.node) should contain(e)
@@ -228,7 +233,7 @@ trait RewritePhaseTest extends CypherVersionTestSupport {
   }
 
   private def checkSemanticsTransformer: Transformer[BaseContext, BaseState, BaseState] =
-    Parse andThen PreparatoryRewriting andThen SemanticAnalysis(Some(false))
+    Parse andThen PreparatoryRewriting andThen SemanticAnalysis(Some(false)) andThen ScopeSurveyor
 
   def prepareFrom(
     version: CypherVersion,

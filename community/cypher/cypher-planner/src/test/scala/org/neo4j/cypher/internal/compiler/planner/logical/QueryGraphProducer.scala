@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -134,6 +135,7 @@ trait QueryGraphProducer {
     val output = (
       RewriteProcedureCalls andThen
         SemanticAnalysis(warn = Some(false)) andThen
+        ScopeSurveyor andThen
         Namespacer andThen
         rewriteEqualityToInPredicate andThen
         cnfNormalizerTransformer andThen

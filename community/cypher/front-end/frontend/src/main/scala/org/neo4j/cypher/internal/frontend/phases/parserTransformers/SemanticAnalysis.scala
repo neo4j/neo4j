@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -123,9 +124,9 @@ case class SemanticAnalysis(warn: Option[Boolean])
           from.statement().endoRewrite(
             topDown(Rewriter.lift {
               case x: ExpressionWithComputedDependencies =>
-                val scope = upToDateScopes.scopeState().recordedScopes(x)
-                x.withComputedIntroducedVariables(scope.declared.allSymbols)
-                  .withComputedScopeDependencies(scope.referenced)
+                val scope = upToDateScopes.scopeState().recordedScopes(Ref(x))
+                x.withComputedIntroducedVariables(scope.declared.allSymbols.toSet)
+                  .withComputedScopeDependencies(scope.referenced.getVariables.toSet)
             })
           )
         } else {

@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.PatternIncomingContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.PatternScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
@@ -48,11 +49,22 @@ import scala.annotation.tailrec
 
 object pegPattern {
 
-  def apply(pattern: Pattern, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    c.getRecordScopeOrElse[Pattern](pattern, incoming, inImportingWith = false, applyUncached(_, _))
+  def apply(pattern: Pattern, incoming: RegularContext, foreachIterVar: Option[LogicalVariable])(implicit
+    c: PegContext): WorkingScope = {
+    c.getRecordScopeOrElse[Pattern](
+      pattern,
+      incoming,
+      inImportingWith = false,
+      foreachIterVar,
+      applyUncached(_, _, foreachIterVar)
+    )
   }
 
-  private def applyUncached(pattern: Pattern, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
+  private def applyUncached(
+    pattern: Pattern,
+    incoming: RegularContext,
+    foreachIterVar: Option[LogicalVariable]
+  )(implicit c: PegContext): WorkingScope = {
     implicit val astNode: ASTNode = pattern
     val ctx: PegContext = c
     val patternIncomingContext = PatternIncomingContext(
@@ -68,6 +80,10 @@ object pegPattern {
       groupConstants = Set.empty,
       localCallables = incoming.localCallables
     )
+    val partForeachIter: Option[LogicalVariable] = pattern match {
+      case _: ForUpdate => foreachIterVar
+      case _: ForMatch  => None
+    }
     val children =
       pattern.patternParts.scanLeft(WorkingScope.aprioriPattern(patternIncomingContext, RegularContext.unit)) {
         case (precedingPartsScope, currentPart) =>
@@ -76,23 +92,37 @@ object pegPattern {
               precedingPartsScope.outgoing.variables,
               ctx.language
             )
-          scopePatternPart(currentPart, newIncoming)
+          scopePatternPart(currentPart, newIncoming, partForeachIter)
       }.tail
-    if (children.size == 1) {
-      children.head
-    } else {
-      val declared = collectDeclaredFromChildren(children)
-      val columns = collectColumnsFromChildren(children)
-      patternIncomingContext.resultScope(TableResult(columns), children, declared = declared)
-    }
+    val result =
+      if (children.size == 1) {
+        children.head
+      } else {
+        val declared = collectDeclaredFromChildren(children)
+        val columns = collectColumnsFromChildren(children)
+        patternIncomingContext.resultScope(TableResult(columns), children, declared = declared)
+      }
+    result.tagForCache(inImportingWith = false, foreachIterVar)
   }
 
-  def apply(patternPart: PatternPart, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    c.getRecordScopeOrElse[PatternPart](patternPart, incoming, inImportingWith = false, applyUncached(_, _))
-  }
-
-  private def applyUncached(patternPart: PatternPart, incoming: RegularContext)(implicit
+  def apply(patternPart: PatternPart, incoming: RegularContext, foreachIterVar: Option[LogicalVariable])(implicit
     c: PegContext): WorkingScope = {
+    c.getRecordScopeOrElse[PatternPart](
+      patternPart,
+      incoming,
+      inImportingWith = false,
+      foreachIterVar,
+      applyUncached(_, _, foreachIterVar)
+    )
+  }
+
+  private def applyUncached(
+    patternPart: PatternPart,
+    incoming: RegularContext,
+    foreachIterVar: Option[LogicalVariable]
+  )(
+    implicit c: PegContext
+  ): WorkingScope = {
     val patternIncomingContext = PatternIncomingContext(
       topologicalConstants = incoming.constants,
       predicateConstants = incoming.constants,
@@ -100,15 +130,29 @@ object pegPattern {
       groupConstants = Set.empty,
       localCallables = incoming.localCallables
     )
-    scopePatternPart(patternPart, patternIncomingContext)
+    scopePatternPart(patternPart, patternIncomingContext, foreachIterVar)
+      .tagForCache(inImportingWith = false, foreachIterVar)
   }
 
-  def apply(patternElement: PatternElement, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    c.getRecordScopeOrElse[PatternElement](patternElement, incoming, inImportingWith = false, applyUncached(_, _))
+  def apply(
+    patternElement: PatternElement,
+    incoming: RegularContext,
+    foreachIterVar: Option[LogicalVariable]
+  )(implicit c: PegContext): WorkingScope = {
+    c.getRecordScopeOrElse[PatternElement](
+      patternElement,
+      incoming,
+      inImportingWith = false,
+      foreachIterVar,
+      applyUncached(_, _, foreachIterVar)
+    )
   }
 
-  private def applyUncached(patternElement: PatternElement, incoming: RegularContext)(implicit
-    c: PegContext): WorkingScope = {
+  private def applyUncached(
+    patternElement: PatternElement,
+    incoming: RegularContext,
+    foreachIterVar: Option[LogicalVariable]
+  )(implicit c: PegContext): WorkingScope = {
     val patternIncomingContext = PatternIncomingContext(
       topologicalConstants = incoming.constants,
       predicateConstants =
@@ -117,22 +161,24 @@ object pegPattern {
       groupConstants = Set.empty,
       localCallables = incoming.localCallables
     )
-    scopePatternElement(patternElement, patternIncomingContext)
+    scopePatternElement(patternElement, patternIncomingContext, foreachIterVar)
+      .tagForCache(inImportingWith = false, foreachIterVar)
   }
 
   private def scopePatternPart(
     patternPart: PatternPart,
-    incoming: PatternIncomingContext
+    incoming: PatternIncomingContext,
+    foreachIterVar: Option[LogicalVariable]
   )(implicit c: PegContext): PatternScope = {
     implicit val astNode: ASTNode = patternPart
     patternPart match {
       case PrefixedPatternPart(selector, _, patternPart) =>
         selector match {
-          case AllPaths() => scopePatternPart(patternPart, incoming)
+          case AllPaths() => scopePatternPart(patternPart, incoming, foreachIterVar)
           case _ =>
             val newPathConstants = collectPathVariablesOfPatternPart(patternPart)
             val patternPartIncoming = incoming.removePathConstants().addPathConstants(newPathConstants)
-            val patternPartScope = scopePatternPart(patternPart, patternPartIncoming)
+            val patternPartScope = scopePatternPart(patternPart, patternPartIncoming, foreachIterVar)
             val children = Seq(patternPartScope)
             incoming.resultScope(
               patternPartScope.result,
@@ -141,19 +187,22 @@ object pegPattern {
             )
         }
       case NamedPatternPart(variable, patternPart) =>
-        val child = scopePatternPart(patternPart, incoming)
+        val child = scopePatternPart(patternPart, incoming, foreachIterVar)
         val declared = Declarations(Seq.empty, variable +: child.declared.variables)
         val columns = variable +: child.result.columns
         incoming.resultScope(TableResult(columns), Seq(child), declared)
-      case PathPatternPart(element) => scopePatternElement(element, incoming)
+      case PathPatternPart(np: NodePattern) =>
+        scopePatternAtom(np, incoming, forceFreshExceptIter = foreachIterVar)
+      case PathPatternPart(element) => scopePatternElement(element, incoming, foreachIterVar)
       case sppp @ ShortestPathsPatternPart(element, _) =>
-        scopePatternElement(element, incoming).withAstNode(sppp)
+        scopePatternElement(element, incoming, foreachIterVar).withAstNode(sppp)
     }
   }
 
   private def scopePatternElement(
     patternElement: PatternElement,
-    incoming: PatternIncomingContext
+    incoming: PatternIncomingContext,
+    foreachIterVar: Option[LogicalVariable]
   )(implicit c: PegContext): PatternScope = {
     implicit val astNode: ASTNode = patternElement
     patternElement match {
@@ -164,7 +213,7 @@ object pegPattern {
               precedingFactorsScope.patternIncoming.amendedWithTopologicalConstants(
                 precedingFactorsScope.outgoing.variables
               )
-            scopePatternElement(currentFactor, newIncoming)
+            scopePatternElement(currentFactor, newIncoming, foreachIterVar)
         }.tail
         val declared = collectDeclaredFromChildren(children)
         val columns = collectColumnsFromChildren(children)
@@ -175,7 +224,7 @@ object pegPattern {
       case parenthesizedPath: ParenthesizedPath =>
         scopeParenthesizedPath(parenthesizedPath, incoming)
       case nodePattern: NodePattern =>
-        scopePatternAtom(nodePattern, incoming)
+        scopePatternAtom(nodePattern, incoming, forceFreshExceptIter = None)
       case relationshipChain: RelationshipChain =>
         val patternAtoms = collectPatternAtoms(relationshipChain)
         val children =
@@ -184,12 +233,17 @@ object pegPattern {
               val newIncoming = precedingAtomsScope.patternIncoming.amendedWithTopologicalConstants(
                 precedingAtomsScope.outgoing.variables
               )
-              scopePatternAtom(currentAtom, newIncoming)
+              scopePatternAtom(currentAtom, newIncoming, forceFreshExceptIter = None)
+            case (precedingAtomsScope, currentAtom: RelationshipPattern) =>
+              val newIncoming = precedingAtomsScope.patternIncoming.amendedWithTopologicalConstants(
+                precedingAtomsScope.outgoing.variables
+              )
+              scopePatternAtom(currentAtom, newIncoming, forceFreshExceptIter = foreachIterVar)
             case (precedingAtomsScope, currentAtom) =>
               val newIncoming = precedingAtomsScope.patternIncoming.amendedWithTopologicalConstants(
                 precedingAtomsScope.outgoing.variables
               )
-              scopePatternAtom(currentAtom, newIncoming)
+              scopePatternAtom(currentAtom, newIncoming, forceFreshExceptIter = None)
           }.tail
         val declared = collectDeclaredFromChildren(children)
         val columns = collectColumnsFromChildren(children)
@@ -199,7 +253,8 @@ object pegPattern {
 
   private def scopePatternAtom(
     patternAtom: PatternAtom,
-    incoming: PatternIncomingContext
+    incoming: PatternIncomingContext,
+    forceFreshExceptIter: Option[LogicalVariable]
   )(implicit c: PegContext): PatternScope = {
     implicit val astNode: ASTNode = patternAtom
     patternAtom match {
@@ -211,14 +266,23 @@ object pegPattern {
         val propertiesScopeOpt =
           propertiesOpt.map(expression => scopePredicate(expression, predicateIncoming))
         val predicateScopeOpt = predicateOpt.map(predicate => scopePredicate(predicate, predicateIncoming))
-        val (boundVariables, newVariables) = variableOpt.partition(v => incoming.topologicalConstants contains v)
+        val matchesIter = variableOpt.exists(v => forceFreshExceptIter.exists(_.name == v.name))
+        val effectivelyForceFresh = forceFreshExceptIter.isDefined && !matchesIter
+        val (boundVariables, newVariables) =
+          if (effectivelyForceFresh) (None, variableOpt)
+          else variableOpt.partition(v => incoming.topologicalConstants contains v)
         val newVariablesWithAnon =
           if (variableOpt.isEmpty) Seq(Variable(c.anonVarGen.nextName)(patternAtom.position, isIsolated = false))
           else newVariables.toSeq
         val columns = variableOpt.toSeq
         val children = Seq(labelExpressionScopeOpt, propertiesScopeOpt, predicateScopeOpt).flatten
         val declared = Declarations(Seq.empty, newVariablesWithAnon)
-        incoming.resultScope(TableResult(columns), children, declared, boundVariables)
+        incoming.resultScope(
+          TableResult(columns),
+          children,
+          declared,
+          References.connect(boundVariables.toSeq, incoming.allSymbols)
+        )
 
       case RelationshipPattern(variableOpt, labelExpressionOpt, _, propertiesOpt, predicateOpt, _) =>
         val predicateIncoming =
@@ -227,14 +291,23 @@ object pegPattern {
           labelExpressionOpt.map(labelExpression => scopePredicate(labelExpression, predicateIncoming))
         val propertiesScopeOpt = propertiesOpt.map(expression => scopePredicate(expression, predicateIncoming))
         val predicateScopeOpt = predicateOpt.map(predicate => scopePredicate(predicate, predicateIncoming))
-        val (boundVariables, newVariables) = variableOpt.partition(v => incoming.topologicalConstants contains v)
+        val matchesIter = variableOpt.exists(v => forceFreshExceptIter.exists(_.name == v.name))
+        val effectivelyForceFresh = forceFreshExceptIter.isDefined && !matchesIter
+        val (boundVariables, newVariables) =
+          if (effectivelyForceFresh) (None, variableOpt)
+          else variableOpt.partition(v => incoming.topologicalConstants contains v)
         val newVariablesWithAnon =
           if (variableOpt.isEmpty) Seq(Variable(c.anonVarGen.nextName)(patternAtom.position, isIsolated = false))
           else newVariables.toSeq
         val columns = variableOpt.toSeq
         val children = Seq(labelExpressionScopeOpt, propertiesScopeOpt, predicateScopeOpt).flatten
         val declared = Declarations(Seq.empty, newVariablesWithAnon)
-        incoming.resultScope(TableResult(columns), children, declared, boundVariables)
+        incoming.resultScope(
+          TableResult(columns),
+          children,
+          declared,
+          References.connect(boundVariables.toSeq, incoming.allSymbols)
+        )
 
       case parenthesizedPath: ParenthesizedPath => scopeParenthesizedPath(parenthesizedPath, incoming)
       case quantifiedPath: QuantifiedPath       => scopeQuantifiedPath(quantifiedPath, incoming)
@@ -249,7 +322,7 @@ object pegPattern {
     val ParenthesizedPath(patternPart, whereExpressionOpt) = parenthesizedPath
     val newPathConstants = collectPathVariablesOfPatternPart(patternPart)
     val newIncoming = incoming.removePathConstants().addPathConstants(newPathConstants)
-    val patternPartScope = scopePatternPart(patternPart, newIncoming)
+    val patternPartScope = scopePatternPart(patternPart, newIncoming, foreachIterVar = None)
     val whereExpressionScopes = whereExpressionOpt.map(whereExpression =>
       Seq(scopePredicate(whereExpression, newIncoming))
     ).getOrElse(Seq.empty[WorkingScope])
@@ -267,29 +340,36 @@ object pegPattern {
   )(implicit c: PegContext): PatternScope = {
     implicit val astNode: ASTNode = quantifiedPath
     val QuantifiedPath(patternPart, _, whereExpressionOpt, variableGroupings) = quantifiedPath
+
+    val singletons = variableGroupings.map(_.singleton)
+    val groupings = variableGroupings.map(_.group)
+
     val newPathConstants = collectPathVariablesOfPatternPart(patternPart)
-    val newIncoming = incoming.removePathConstants().addPathConstants(newPathConstants)
-    val patternPartScope = scopePatternPart(patternPart, newIncoming)
+    val newIncoming =
+      incoming.removePathConstants().addPathConstants(newPathConstants).replaceOccurrences(variableGroupings)
+    val patternPartScope = scopePatternPart(patternPart, newIncoming, foreachIterVar = None)
     val whereExpressionScopes = whereExpressionOpt.map(whereExpression =>
       Seq(scopePredicate(whereExpression, newIncoming))
     ).getOrElse(Seq.empty[WorkingScope])
     val children = patternPartScope +: whereExpressionScopes
 
-    val singletons = variableGroupings.map(_.singleton)
-    val groupings = variableGroupings.map(_.group)
-    val groups = collectPathVariablesOfPatternPart(patternPart) union singletons union groupings
+    // Inner sees singleton — each VariableGrouping.singleton references the same-named
+    // column declared inside the QPP's pattern-part scope. Outer sees group.
+    val singletonRefs = References.resolveByName(singletons, patternPartScope.result.getColumns)
 
-    // Singletons should only be visible to the inner pattern and not return to the rest of the query.
-    val (result, declared) = if (singletons equals groupings) {
-      (patternPartScope.result, patternPartScope.declared)
-    } else {
-      (
-        patternPartScope.result.replaceVariables(singletons.toSeq, groupings.toSeq),
-        patternPartScope.declared.amendVariables(groupings.toSeq)
+    val outwardFacingResult = TableResult(patternPartScope.result.getColumns.filterNot(singletons) ++ groupings.toSeq)
+    val outwardFacingDeclared =
+      Declarations(
+        constants = Seq.empty,
+        variables = patternPartScope.declared.variables.filterNot(singletons) ++ groupings.toSeq
       )
-    }
 
-    incoming.addGroupConstants(groups).resultScope(result, children, declared = declared)
+    val (result, declared) = (outwardFacingResult, outwardFacingDeclared)
+
+    incoming
+      .addGroupConstants(groupings)
+      .resultScope(result, children, declared = declared)
+      .addReferences(singletonRefs)
   }
 
   @inline private def scopePredicate(

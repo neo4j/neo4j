@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.scoping
 
-import org.neo4j.cypher.internal.ast.ASTAnnotationMap.PositionedNode
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
@@ -31,6 +30,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingContext
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Ref
 
 class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTestSupport {
 
@@ -42,11 +42,14 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
    */
   {
     withClue(
-      """WITH 1 AS a, WITH 1 AS b
+      """WITH 1 AS a
+        |WITH 1 AS b
         |RETURN a + b AS x""".stripMargin
     ) {
+      val sharedLeadingWith =
+        with_(aliasedReturnItem(literalInt(1), "a"), aliasedReturnItem(literalInt(1), "b"))
       def stmtWithClauses(cs: Clause*): Statement = singleQuery(
-        (with_(aliasedReturnItem(literalInt(1), "a"), aliasedReturnItem(literalInt(1), "b")) +: cs): _*
+        (sharedLeadingWith +: cs): _*
       )
 
       def stmtWithReturnItems(items: ReturnItem*): Statement = stmtWithClauses(
@@ -56,9 +59,10 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
       val beforeRewrite = stmtWithReturnItems(aliasedReturnItem(add(varFor("a"), varFor("b")), "x"))
 
       test("RETURN a + b AS y") {
+        val sharedExpr = add(varFor("a"), varFor("b"))
         doesNotInfluence(
-          beforeRewrite,
-          stmtWithReturnItems(aliasedReturnItem(add(varFor("a"), varFor("b")), "y"))
+          stmtWithReturnItems(aliasedReturnItem(sharedExpr, "x")),
+          stmtWithReturnItems(aliasedReturnItem(sharedExpr, "y"))
         )
       }
       test("RETURN b + b AS x") {
@@ -147,10 +151,10 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
     ASTNode,
     WorkingContext,
     String
-  )*): Map[(PositionedNode[ASTNode], WorkingContext), WorkingScopeModification] = {
+  )*): Map[(Ref[ASTNode], WorkingContext), WorkingScopeModification] = {
     modifications.map {
       case (astNode, incoming, marker) =>
-        (PositionedNode(astNode), incoming) -> replaceASTNodeInWorkingScope(
+        (Ref(astNode), incoming) -> markWorkingScopeModified(
           TaggedDummyASTNode(s"${this.getClass.getSimpleName} modified '''${prettify(astNode)}''' marked $marker")
         )
     }.toMap
@@ -303,20 +307,18 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
         |=====
         |""".stripMargin
     ) {
+      val firstReturn = return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(1, 1, 1)))
+      val secondReturn = return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(2, 2, 2)))
       val statement = union(
-        singleQuery(
-          return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(1, 1, 1)))
-        ),
-        singleQuery(
-          return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(2, 2, 2)))
-        )
+        singleQuery(firstReturn),
+        singleQuery(secondReturn)
       )
       test("modify subtrees only different by position — return in first arm but not in second") {
         shouldPickUpCacheModifications(
           statement,
           modify(
             mod(
-              return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(1, 1, 1))),
+              firstReturn,
               RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
               "first"
             )
@@ -328,7 +330,7 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
           statement,
           modify(
             mod(
-              return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(2, 2, 2))),
+              secondReturn,
               RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
               "second"
             )
@@ -340,12 +342,12 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
           statement,
           modify(
             mod(
-              return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(1, 1, 1))),
+              firstReturn,
               RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
               "first"
             ),
             mod(
-              return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(2, 2, 2))),
+              secondReturn,
               RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
               "second"
             )
@@ -357,12 +359,12 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
           statement,
           modify(
             mod(
-              return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(2, 2, 2))),
+              secondReturn,
               RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
               "second"
             ),
             mod(
-              return_(AliasedReturnItem(literalInt(1), varFor("x"))(InputPosition(1, 1, 1))),
+              firstReturn,
               RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
               "first"
             )
@@ -522,6 +524,93 @@ class ScopeCachingTest extends VariableCheckingTestSuite with AstConstructionTes
           shouldPickUpCacheModifications(statement, mods)
           shouldNotPickUpCacheModifications(statement, mods)
         }
+      }
+    }
+  }
+
+  withClue("cache correctness under identity-gated lookup") {
+    withClue(
+      """=====
+        |UNWIND [1, 2, 3] AS x
+        |RETURN x AS x
+        |=====
+        |""".stripMargin
+    ) {
+      val statement = singleQuery(
+        unwind(listOfInt(1, 2, 3), varFor("x")),
+        return_(aliasedReturnItem(varFor("x")))
+      )
+
+      test("mod keyed by a structurally-equal-but-identity-distinct node is treated as no-op") {
+        val freshUnwind = unwind(listOfInt(1, 2, 3), varFor("x"))
+
+        shouldPickUpCacheModifications(
+          statement,
+          modify(
+            mod(
+              freshUnwind,
+              RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
+              "fresh unwind"
+            )
+          )
+        )
+        shouldNotPickUpCacheModifications(
+          statement,
+          modify(
+            mod(
+              freshUnwind,
+              RegularContext(constants = Set.empty, variables = Set.empty, localCallables = Set.empty),
+              "fresh unwind"
+            )
+          )
+        )
+      }
+
+      test("mod keyed by a structurally-equal-but-identity-distinct leaf is treated as no-op") {
+        val freshItem = aliasedReturnItem(varFor("x"))
+
+        shouldPickUpCacheModifications(
+          statement,
+          modify(
+            mod(
+              freshItem,
+              RegularContext(constants = Set.empty, variables = Set(varFor("x")), localCallables = Set.empty),
+              "fresh return item"
+            )
+          )
+        )
+        shouldNotPickUpCacheModifications(
+          statement,
+          modify(
+            mod(
+              freshItem,
+              RegularContext(constants = Set.empty, variables = Set(varFor("x")), localCallables = Set.empty),
+              "fresh return item"
+            )
+          )
+        )
+      }
+
+      test("mod keyed by statement's own node with identity-distinct incoming variables is treated as no-op") {
+        val statementsReturnItem = statement.folder.treeCollect {
+          case item: org.neo4j.cypher.internal.ast.AliasedReturnItem => item
+        }.head
+
+        val incomingWithFreshX =
+          RegularContext(
+            constants = Set.empty,
+            variables = Set(varFor("x")), // fresh `x` — same name, new instance
+            localCallables = Set.empty
+          )
+
+        shouldPickUpCacheModifications(
+          statement,
+          modify(mod(statementsReturnItem, incomingWithFreshX, "identity-distinct incoming x"))
+        )
+        shouldNotPickUpCacheModifications(
+          statement,
+          modify(mod(statementsReturnItem, incomingWithFreshX, "identity-distinct incoming x"))
+        )
       }
     }
   }

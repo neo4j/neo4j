@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
-import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CallableName
 import org.neo4j.cypher.internal.util.InputPosition
@@ -322,7 +321,7 @@ trait VariableCheckerUtil {
 
         def unapply(scope: WorkingScope): Option[(RegularContext, Seq[WorkingScope])] =
           scope match {
-            case StatementScope(_: CommandClause, incoming, _, _, _, _, children, _) =>
+            case StatementScope(_: CommandClause, incoming, _, _, _, _, children, _) if children.nonEmpty =>
               Some((incoming, children))
             case _ => None
           }
@@ -349,10 +348,10 @@ trait VariableCheckerUtil {
 
       object Quantified {
 
-        def unapply(scope: WorkingScope): Option[(Set[VariableGrouping], Set[LogicalVariable])] =
+        def unapply(scope: WorkingScope): Option[(Set[LogicalVariable], Set[LogicalVariable])] =
           scope match {
-            case PatternScope(QuantifiedPath(_, _, _, groupings), _, referenced, _, _, _) =>
-              Some((groupings, referenced))
+            case PatternScope(QuantifiedPath(_, _, _, _), PatternScope.Topo(topo), _, declared, _, _) =>
+              Some((topo, declared.allSymbols.toSet))
             case _ => None
           }
 
@@ -362,8 +361,9 @@ trait VariableCheckerUtil {
 
         def unapply(scope: WorkingScope): Option[(LogicalVariable, Set[LogicalVariable], Set[LogicalVariable])] =
           scope match {
-            case PatternScope(PatternScope.PatternVariable(variable), PatternScope.Group(group), referenced, _, _, _) =>
-              Some((variable, group, referenced))
+            case PatternScope(PatternScope.PatternVariable(variable), PatternScope.Group(group), referenced, _, _, _)
+              if group.nonEmpty =>
+              Some((variable, group, referenced.getVariables.toSet))
             case _ => None
           }
 
@@ -380,7 +380,7 @@ trait VariableCheckerUtil {
 
       }
 
-      object VariableInPatternAlreadyDeclared {
+      object VariableInUpdatingPatternAlreadyDeclared {
 
         def unapply(scope: (Acc, WorkingScope)): Option[(Acc, String, InputPosition)] =
           scope match {
@@ -388,12 +388,12 @@ trait VariableCheckerUtil {
                 Acc.UpdatingContext(acc, allowedToShadow),
                 PatternScope(RelationshipPattern(Some(variable), _, _, _, _, _), _, referenced, _, _, _)
               )
-              if referenced.exists(_.name == variable.name) && !allowedToShadow(variable) =>
+              if referenced.getVariables.exists(_.name == variable.name) && !allowedToShadow(variable) =>
               Some((acc, variable.name, variable.position))
             case (
                 Acc.InRelationshipChain(acc, allowedToShadow),
                 PatternScope(NodePattern(Some(variable), _, _, _), _, referenced, _, _, _)
-              ) if referenced.exists(_.name == variable.name) && !allowedToShadow(variable) =>
+              ) if referenced.getVariables.exists(_.name == variable.name) && !allowedToShadow(variable) =>
               Some((acc, variable.name, variable.position))
             case _ => None
           }
@@ -412,7 +412,8 @@ trait VariableCheckerUtil {
       .filter(i => !i.isPassThrough && i.alias.isDefined && constants.contains(i.alias.get))
       .map(i => SemanticError.variableShadowingOuterScope(i.name, pos))
 
-  protected def findMultipleDeclarationsIn(names: Seq[LogicalVariable], pc: ProjectionClause): Seq[SemanticError] =
+  protected def findMultipleDeclarationsIn(pc: ProjectionClause): Seq[SemanticError] = {
+    val names = pc.returnItems.items.flatMap(_.alias)
     names.groupMapReduce(identity)(_ => 1)(_ + _).filter(_._2 > 1).map {
       case (v, _) =>
         val duplicates = pc.returnItems.items.collect {
@@ -422,6 +423,7 @@ trait VariableCheckerUtil {
         // Warn on the second item (i.e. the first duplicate)
         SemanticError.multipleReturnColumnsWithSameName(duplicates(1).position)
     }.toSeq
+  }
 
   protected def getIncompatibleReturnColumnsForUnion(
     position: InputPosition,

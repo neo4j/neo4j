@@ -16,55 +16,58 @@
  */
 package org.neo4j.cypher.internal.ast.semantics.scoping
 
-import org.neo4j.cypher.internal.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.PositionedNode
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState.RecordedScopes
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Ref
 
 case class ScopeState(
   workingScope: WorkingScope,
   recordedScopes: RecordedScopes,
   explainScope: Option[WorkingScope] = None
 ) {
-  def getIncoming(ast: ASTNode): Seq[LogicalVariable] = recordedScopes(ast).incoming.allSymbols.map(_.copyId).toSeq
 
-  def getOutgoing(ast: ASTNode): Seq[LogicalVariable] = recordedScopes(ast).outgoing.variables.map(_.copyId).toSeq
+  private lazy val recordedScopesByStructure: Map[PositionedNode[ASTNode], WorkingScope] =
+    recordedScopes.iterator.map { case (ref, scope) => PositionedNode(ref.value) -> scope }.toMap
+
+  private def scopeOf(ast: ASTNode): WorkingScope =
+    recordedScopes.getOrElse(Ref(ast), recordedScopesByStructure(PositionedNode(ast)))
+
+  def scopeOfOpt(ast: ASTNode): Option[WorkingScope] =
+    recordedScopes.get(Ref(ast)).orElse(recordedScopesByStructure.get(PositionedNode(ast)))
+
+  def getOutgoing(ast: ASTNode): Seq[LogicalVariable] = scopeOf(ast).outgoing.variables.map(_.copyId).toSeq
 
   def getOutgoingConstantsAndVariables(ast: ASTNode): Seq[LogicalVariable] =
-    recordedScopes(ast).outgoing.allSymbols.map(_.copyId).toSeq
+    scopeOf(ast).outgoing.allSymbols.map(_.copyId).toSeq
 
-  def getReferenced(ast: ASTNode): Set[LogicalVariable] = recordedScopes(PositionedNode(ast)).referenced.map(_.copyId)
+  def getReferenced(ast: ASTNode): Set[LogicalVariable] =
+    scopeOf(ast).referenced.getVariables.map(_.copyId).toSet
 
   def getReferenced(ast: ASTNode, default: Set[LogicalVariable]): Set[LogicalVariable] =
-    recordedScopes.get(PositionedNode(ast)).map(_.referenced.map(_.copyId)).getOrElse(default)
+    scopeOfOpt(ast).map(_.referenced.getVariables.map(_.copyId).toSet).getOrElse(default)
 
-  def getResultCols(ast: ASTNode): Seq[LogicalVariable] = recordedScopes(ast).result match {
+  def getResultCols(ast: ASTNode): Seq[LogicalVariable] = scopeOf(ast).result match {
     case TableResult(cols) => cols
     case _                 => Seq.empty
   }
 
   def getIncomingConstants(ast: ASTNode): Seq[LogicalVariable] =
-    recordedScopes(ast).incoming match {
+    scopeOf(ast).incoming match {
       case rc: RegularContext => rc.constants.toSeq
       case wc                 => wc.allSymbols.toSeq
     }
 
   def getIncomingVariables(ast: ASTNode): Seq[LogicalVariable] =
-    recordedScopes(ast).incoming match {
+    scopeOf(ast).incoming match {
       case rc: RegularContext => rc.variables.toSeq
       case wc                 => wc.allSymbols.toSeq
     }
 
-  def getResult(ast: ASTNode): Result = recordedScopes(ast).result
-
-  def getIncomingReturnItemSeq(ast: ASTNode): Seq[ReturnItem] =
-    getIncoming(ast).map(v =>
-      AliasedReturnItem(v.withPosition(ast.position), v.withPosition(ast.position))(ast.position)
-    )
+  def getResult(ast: ASTNode): Result = scopeOf(ast).result
 
   def getOutgoingVariableReturnItemSeq(ast: ASTNode): Seq[ReturnItem] =
     getOutgoing(ast).map(v =>
@@ -80,7 +83,7 @@ case class ScopeState(
 
 object ScopeState {
 
-  type RecordedScopes = ASTAnnotationMap[ASTNode, WorkingScope]
+  type RecordedScopes = Map[Ref[ASTNode], WorkingScope]
 
-  def emptyRecordedScopes: RecordedScopes = ASTAnnotationMap.empty
+  def emptyRecordedScopes: RecordedScopes = Map.empty
 }

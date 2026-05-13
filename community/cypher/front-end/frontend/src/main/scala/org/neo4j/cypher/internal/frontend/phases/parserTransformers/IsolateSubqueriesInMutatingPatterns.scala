@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -202,9 +203,9 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
       // For CREATE, filter out subqueries that have dependencies on entities created in the same clause.
       // Those are deprecated and rewriting them here would change the semantics of the query.
       case c: CreateOrInsert =>
-        val declaredByClause = scopeState.recordedScopes(c).declared
-        val referencesBySubqueryExpression = scopeState.recordedScopes(subqueryExpression).referenced
-        declaredByClause.variables.toSet.intersect(referencesBySubqueryExpression).nonEmpty
+        val declaredByClause = scopeState.recordedScopes(Ref(c)).declared
+        val referencesBySubqueryExpression = scopeState.recordedScopes(Ref(subqueryExpression)).referenced.getVariables
+        declaredByClause.variables.toSet.intersect(referencesBySubqueryExpression.toSet).nonEmpty
 
       case _ => false
     }

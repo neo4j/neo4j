@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.PatternIncomingContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.PatternScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionExpressionContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionSpecification
+import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.Result
 import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
@@ -135,11 +136,12 @@ object WorkingScopeStringRenderer {
     }
   }
 
-  private def renderReferenced(referenced: Set[LogicalVariable]): Text = {
-    if (referenced.isEmpty) {
+  private def renderReferenced(referenced: References): Text = {
+    val variables = referenced.getVariables.toSet
+    if (variables.isEmpty) {
       EpsilonSpan
     } else {
-      Span(s"Ref: ${renderVariableSet(referenced)}")
+      Span(s"Ref: ${renderVariableSet(variables)}")
     }
   }
 

@@ -58,7 +58,7 @@ class GQL_42N07_VariableIsShadowingOuterScopeTest extends VariableCheckingWithLo
         |  RETURN a
         |}
         |RETURN *""".stripMargin,
-      ignoreBeforeCypher25(E42N07("a")),
+      E42N07("a"),
       Seq("a")
     ),
     TestQuery(
@@ -71,7 +71,7 @@ class GQL_42N07_VariableIsShadowingOuterScopeTest extends VariableCheckingWithLo
         |  RETURN a
         |}
         |RETURN *""".stripMargin,
-      ignoreBeforeCypher25(E42N07("a")),
+      E42N07("a"),
       Seq("a")
     ),
     TestQuery(

@@ -34,12 +34,14 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAdministrationCommand
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
+import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.UnexpectedAstNodeScopingError
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 
@@ -61,7 +63,7 @@ object pegCommand {
         val declaringScope = StatementScope(
           declaringAST,
           incoming,
-          Set.empty,
+          References.empty,
           Declarations(Seq.empty, defaultCols),
           incoming.amendedWith(defaultCols.toSet),
           TableResult(defaultCols)
@@ -194,18 +196,38 @@ object pegCommand {
   )(implicit c: PegContext): WorkingScope = {
     val (yieldWithOpt, yieldItems, yieldAll, whereOpt, position) =
       (command.yieldWith, command.yieldItems, command.yieldAll, command.where, command.position)
+
     val commandCols = command.getFilteredColumns(c.semanticFeatures)
+
+    val accessedCols =
+      if (yieldAll || yieldItems.isEmpty) commandCols
+      else commandCols.filter(cc => yieldItems.exists(_.originalName == cc.name))
 
     val commandScope = StatementScope(
       command.getClauseWithoutSubclauses,
       RegularContext.unit,
-      Set.empty,
-      Declarations(constants = Seq.empty, variables = commandCols),
-      outgoing = incoming.amendedWith(commandCols.toSet),
-      result = TableResult(commandCols)
+      References.empty,
+      Declarations.noDeclarations,
+      outgoing = incoming.amendedWith(accessedCols.toSet),
+      result = TableResult(accessedCols)
     )
 
-    val incomingWithDefaults = commandScope.outgoing
+    val declared =
+      if (yieldAll || yieldItems.isEmpty) commandCols.map(v => AliasedReturnItem(v, v)(v.position))
+      else yieldItems.flatMap(yi => Seq(yi.toReturnItem)).distinct
+
+    val declaredWithIncoming =
+      declared
+        .filter(x => !incoming.variables.exists(_.name == x.name))
+        .map(r => r.alias.getOrElse(Variable(r.name)(r.position, isIsolated = false)))
+
+    val declaredByName: Map[String, LogicalVariable] =
+      declaredWithIncoming.iterator.map(v => v.name -> v).toMap
+    val commandOutgoingForYield = commandScope.outgoing.replaceWith(
+      commandScope.outgoing.variables.map(v => declaredByName.getOrElse(v.name, v))
+    )
+
+    val incomingWithDefaults = commandOutgoingForYield
       .amendedWithConstant(incoming.constants)
       .amendedWith(incoming.variables)
 
@@ -213,9 +235,6 @@ object pegCommand {
       case Right(expr) => Some(pegExpression(expr, incomingWithDefaults.constantChildContext()))
       case Left(_)     => None
     }
-    val declared =
-      if (yieldAll || yieldItems.isEmpty) commandCols.map(v => AliasedReturnItem(v.copyId))
-      else yieldItems.flatMap(yi => Seq(yi.toReturnItem)).distinct
 
     val modifiedYield = yieldWithOpt match {
       case Some(yW @ With(_, returnItems, _, _, _, _, _, _)) =>
@@ -233,11 +252,6 @@ object pegCommand {
       .amendedWith(incoming.variables)
 
     val whereScope = whereOpt.map(w => pegExpression(w.expression, outgoing.constantChildContext()))
-
-    val declaredWithIncoming =
-      declared
-        .filter(x => !incoming.variables.exists(_.name == x.name))
-        .map(r => r.alias.getOrElse(Variable(r.name)(r.position, isIsolated = false)))
 
     val children = Seq(commandScope) ++ namesScope ++ Seq(yieldScope) ++ whereScope
     val result = TableResult(outgoing.variables.toSeq)

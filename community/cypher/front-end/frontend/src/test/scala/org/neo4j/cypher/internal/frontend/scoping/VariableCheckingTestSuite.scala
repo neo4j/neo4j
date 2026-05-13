@@ -17,11 +17,11 @@
 package org.neo4j.cypher.internal.frontend.scoping
 
 import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.cypher.internal.ast.ASTAnnotationMap.PositionedNode
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ConditionalQueryBranch
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.Finish
+import org.neo4j.cypher.internal.ast.GroupBy
 import org.neo4j.cypher.internal.ast.LocalCallableDefinition
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Search
@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ScopeQueries
-import org.neo4j.cypher.internal.ast.semantics.scoping.AprioriScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.CommonContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionResult
@@ -44,13 +43,14 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.PatternIncomingContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.PatternScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionExpressionContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionSpecification
+import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.Result
 import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState.RecordedScopes
 import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.SymbolGroup
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResultWithNotYetKnownColumns
-import org.neo4j.cypher.internal.ast.semantics.scoping.UnexpectedAstNodeScopingError
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.Expression
@@ -60,11 +60,13 @@ import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.NoOp
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AmbiguousAggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
@@ -77,6 +79,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -94,11 +97,15 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
 
   val unit = Set.empty[String]
   val noCallables = Set.empty[Callable]
+  val noKeys = Set.empty[ExpectedGroupingKey]
   val feature: Set[SemanticFeature] = Set.empty
 
   val allCheckerTransformer: Transformer[BaseContext, BaseState, BaseState] =
     VariableChecker andThen AmbiguousAggregationAnalysis
   val checkersUnderTest: Seq[Transformer[BaseContext, BaseState, BaseState]] = Seq(VariableChecker)
+
+  def varOf(name: String, offset: Int): Variable =
+    Variable(name)(InputPosition(offset, 0, 0), isIsolated = false)
 
   sealed trait ExpectedCharacteristic
 
@@ -145,6 +152,23 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
 
   case class Referenced(variables: Set[String]) extends ExpectedCharacteristic
 
+  /**
+   * Opt-in richer form of `Referenced` that asserts the target (declaration) each caller
+   * resolves to. Use when caller names alone aren't enough to pin the intent — e.g. QPP
+   * singleton-to-column refs, union-mapping refs, chained references.
+   *
+   * Matched by mapping `ws.referenced.references` to `Map[String, String]` via
+   * `(caller, decl) => caller.value.name -> decl.value.name`.
+   */
+  case class ReferencesTo(pairs: Map[String, String]) extends ExpectedCharacteristic
+
+  /**
+   * Further opt-in variant that includes positions, for the narrow set of tests where two
+   * declarations share a name (e.g. QPP x-singleton vs x-group). Entries are
+   * `(callerName, callerOffset, declName, declOffset)`.
+   */
+  case class ReferencesToAt(pairs: Seq[(String, Int, String, Int)]) extends ExpectedCharacteristic
+
   case class Declared(
     constants: Seq[String] = Seq.empty,
     variables: Seq[String] = Seq.empty,
@@ -174,6 +198,7 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
 
   case class InImportingWith(value: Boolean = true) extends ExpectedCharacteristic
 
+  case class ExpectedSymbolGroup(declaration: LogicalVariable, uses: Seq[LogicalVariable], renaming: Option[String])
   case class ExpectedWorkingScope(expectedCharacteristics: ExpectedCharacteristic*) extends ExpectedCharacteristic
 
   object ExpectedWorkingScope {
@@ -206,7 +231,6 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
           localCallables = incomingCallables,
           groupingKeys = incomingKeys
         ),
-        // Hack until merged with new reference system
         if (referenced.isEmpty) Referenced(Set(name)) else Referenced(referenced)
       )
 
@@ -256,6 +280,7 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
     case s: Statement               => prettifier.asString(s)
     case d: LocalCallableDefinition => prettifier.asString(d)
     case c: Clause                  => prettifier.asString(SingleQuery(Seq(c))(InputPosition.NONE))
+    case g: GroupBy                 => prettifier.asString(g)
     case s: Search                  => prettifier.asString(s)
     case ex: Expression             => prettifier.expr(ex)
     case p: Pattern                 => prettifier.expr.patterns(p)
@@ -323,9 +348,9 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
 
     val transformers = {
       if (skipVariableChecker) scopeSurveyorPipe
-      else if (withPrepRewriting) PreparatoryRewriting andThen scopeSurveyorPipe andThen VariableChecker
+      else if (withPrepRewriting) PreparatoryRewriting andThen scopeSurveyorPipe andThen allCheckerTransformer
       else {
-        scopeSurveyorPipe andThen VariableChecker
+        scopeSurveyorPipe andThen allCheckerTransformer
       }
     }
     val state = transformers.transform(initialStateWithStatement(statement), context)
@@ -374,16 +399,31 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
 
   type WorkingScopeModification = WorkingScope => WorkingScope
 
-  def replaceASTNodeInWorkingScope(newASTNode: ASTNode): WorkingScopeModification = {
-    case s: StatementScope                => s.copy(astNode = newASTNode)
-    case s: PatternScope                  => s.copy(astNode = newASTNode)
-    case s: AprioriScope                  => s // ast node not modifiable
-    case s: ExpressionScope               => s.copy(astNode = newASTNode)
-    case s: UnexpectedAstNodeScopingError => s.copy(astNode = newASTNode)
+  /**
+   * Adds a marker child scope to a WorkingScope, leaving its own `astNode` intact.
+   */
+  def markWorkingScopeModified(marker: ASTNode): WorkingScopeModification = {
+    val markerChild = StatementScope(
+      astNode = marker,
+      incoming = RegularContext.unit,
+      referenced = References.empty,
+      declared = Declarations.noDeclarations,
+      outgoing = RegularContext.unit,
+      result = NoResult,
+      children = WorkingScope.noChildren
+    )
+
+    def withExtraChild(ws: WorkingScope): WorkingScope = ws.withChildren(ws.children :+ markerChild)
+
+    {
+      case s: StatementScope  => withExtraChild(s)
+      case s: PatternScope    => withExtraChild(s)
+      case s: ExpressionScope => withExtraChild(s)
+      case s                  => s
+    }
   }
 
-  type PositionedASTNode = PositionedNode[ASTNode]
-  type CacheModificationKey = (PositionedASTNode, WorkingContext)
+  type CacheModificationKey = (Ref[ASTNode], WorkingContext)
 
   def shouldPickUpCacheModifications(
     statement: Statement,
@@ -424,7 +464,8 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
             ): (WorkingScope, RecordedScopes, Boolean, Set[CacheModificationKey]) = {
               cacheModification.collectFirst {
                 case modKey -> modifyWorkingScope
-                  if modKey == (PositionedNode(workingScope.astNode), workingScope.incoming) =>
+                  if modKey._1 == Ref(workingScope.astNode) &&
+                    modKey._2 == workingScope.incoming =>
                   val newWorkingScope = modifyWorkingScope(workingScope)
                   val newRecordedScopes = recordedScopes + (modKey._1 -> newWorkingScope)
                   val modified = true
@@ -454,7 +495,7 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
                     }
                   // if any of the children is modified, we need to remove the parent from the cache
                   val cleanedNewRecordedScopes = if (modified) {
-                    newRecordedScopes.removed(workingScope.astNode)
+                    newRecordedScopes.removed(Ref(workingScope.astNode))
                   } else newRecordedScopes
                   val expectedWorkingScope =
                     if (shouldPickUp) workingScope.withChildren(newChildWorkingScopes) else workingScope
@@ -468,50 +509,60 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
             // add unused modification to recorded scopes
             val unusedModifications = cacheModification.filterNot(e => usedModifications contains e._1)
             val newRecordedScopes: RecordedScopes = unusedModifications.foldLeft(modifiedRecordedScopes) {
-              case (recordedScopes, (positionedAstNode, incoming) -> modifyWorkingScope) =>
-                val modifiedScope = modifyWorkingScope(positionedAstNode.node match {
+              case (recordedScopes, (astNodeRef, incoming) -> modifyWorkingScope) =>
+                val modifiedScope = modifyWorkingScope(astNodeRef.value match {
                   case e: Expression =>
-                    ExpressionScope(e, incoming.asInstanceOf[RegularContext], Set.empty, Declarations.noDeclarations)
+                    ExpressionScope(
+                      e,
+                      incoming.asInstanceOf[RegularContext],
+                      References.empty,
+                      Declarations.noDeclarations
+                    )
                   case e: LabelExpression =>
-                    ExpressionScope(e, incoming.asInstanceOf[RegularContext], Set.empty, Declarations.noDeclarations)
+                    ExpressionScope(
+                      e,
+                      incoming.asInstanceOf[RegularContext],
+                      References.empty,
+                      Declarations.noDeclarations
+                    )
                   case p: Pattern => PatternScope(
                       p,
                       incoming.asInstanceOf[PatternIncomingContext],
-                      Set.empty,
+                      References.empty,
                       Declarations.noDeclarations,
                       TableResult(Seq.empty)
                     )
                   case p: PatternPart => PatternScope(
                       p,
                       incoming.asInstanceOf[PatternIncomingContext],
-                      Set.empty,
+                      References.empty,
                       Declarations.noDeclarations,
                       TableResult(Seq.empty)
                     )
                   case p: PatternElement => PatternScope(
                       p,
                       incoming.asInstanceOf[PatternIncomingContext],
-                      Set.empty,
+                      References.empty,
                       Declarations.noDeclarations,
                       TableResult(Seq.empty)
                     )
                   case p: PatternAtom => PatternScope(
                       p,
                       incoming.asInstanceOf[PatternIncomingContext],
-                      Set.empty,
+                      References.empty,
                       Declarations.noDeclarations,
                       TableResult(Seq.empty)
                     )
                   case x => StatementScope(
                       x,
                       incoming.asInstanceOf[RegularContext],
-                      Set.empty,
+                      References.empty,
                       Declarations.noDeclarations,
                       RegularContext.unit,
                       TableResult(Seq.empty)
                     )
                 })
-                recordedScopes + (positionedAstNode -> modifiedScope)
+                recordedScopes + (astNodeRef -> modifiedScope)
             }
             newWorkingScopeOpt = Some(newWorkingScope)
             newRecordedScopesOpt = Some(newRecordedScopes)
@@ -546,18 +597,28 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
       case None => throw new RuntimeException(s"${prettify(statement)} did not have a newRecordedScopes")
       case Some(modifiedRecordedScopes) => modifiedRecordedScopes
     }
+    val actualDump = pprint.apply(actualWorkingScope).toString
+    val expectedDump = pprint.apply(expectedWorkingScope).toString
     withClue(
-      s"""given cache
+      s"""scope tree overview (! marks differing rows):
+         |
+         |${VariableCheckingTestUtil.sideBySideScopeTreeDiff(actualWorkingScope, expectedWorkingScope)}
+         |
+         |given cache
          |
          |${pprint.apply(modifiedRecordedScopes)}
          |
-         |actual
+         |working scope line diff (-actual / +expected):
          |
-         |${pprint.apply(actualWorkingScope)}
+         |${VariableCheckingTestUtil.unifiedLineDiff(actualDump, expectedDump)}
          |
-         |was not equal to expected
+         |full actual:
          |
-         |${pprint.apply(expectedWorkingScope)}
+         |$actualDump
+         |
+         |full expected:
+         |
+         |$expectedDump
          |""".stripMargin
     ) {
       actualWorkingScope shouldBe expectedWorkingScope
@@ -594,7 +655,7 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
     if (context.errors.isEmpty) {
       Left(state)
     } else {
-      Right(context.errors.collect { case e: SemanticError => e }.sortBy(e => VariableChecker.getErrorOrder(e)))
+      Right(context.errors.collect { case e: SemanticError => e })
     }
   }
 
@@ -899,6 +960,104 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
     })
   }
 
+  def hasSymbolGroups(
+    expected: Seq[ExpectedSymbolGroup],
+    versions: Array[CypherVersion] = Array(CypherVersion.Cypher25)
+  ): Unit = {
+    val query = testName
+    versions.foreach(version => {
+      runQuery(query, version, NoOp()) match {
+        case Left(state) =>
+          state.maybeScopeState should not be empty
+          val ss = state.maybeScopeState.get
+          val anonVarGen = new AnonymousVariableNameGenerator()
+          val symbolGroups = ss.workingScope.getSymbolGroups(anonVarGen)
+
+          assertExpectedSymbolGroups(symbolGroups, expected)
+
+          if (testLog) {
+            log.append(
+              s"""Query:
+                 |
+                 |$query
+                 |
+                 |Working scope:
+                 |
+                 |${logPPrint(ss.workingScope)}
+                 |----------
+                 |""".stripMargin
+            )
+          }
+        case Right(semanticErrors) =>
+          fail(
+            s"""Version: $version
+               |Query:
+               |
+               |$query
+               |
+               |is expected to be successful, but
+               |
+               |actually threw errors: ${pprint.apply(semanticErrors)}""".stripMargin
+          )
+      }
+
+    })
+  }
+
+  private def assertExpectedSymbolGroups(symbolGroups: Seq[SymbolGroup], expected: Seq[ExpectedSymbolGroup]): Unit = {
+    import VariableCheckingTestUtil._
+
+    def actualCells(sg: SymbolGroup): SymbolGroupRow =
+      (fmtVar(sg.declaration.value), fmtRen(sg.renaming), fmtUses(sg.uses.toSeq.map(_.value)))
+
+    def expectedCells(eg: ExpectedSymbolGroup): SymbolGroupRow =
+      (fmtVar(eg.declaration), fmtRen(eg.renaming), fmtUses(eg.uses))
+
+    val table = sideBySideSymbolGroupTable(symbolGroups.map(actualCells), expected.map(expectedCells))
+
+    val globalClue =
+      s"""|
+          |Symbol groups (actual vs expected):
+          |$table
+          |
+          |Actual pastable:
+          |${symbolGroups.map("  " + _.pastablePrint).mkString(",\n")}
+          |""".stripMargin
+
+    withClue(globalClue) {
+      withClue(s"Wrong number of symbol groups (actual=${symbolGroups.size}, expected=${expected.size}).") {
+        expected.size shouldEqual symbolGroups.size
+      }
+
+      symbolGroups.foreach {
+        case sg @ SymbolGroup(declaration, uses, renaming) =>
+          val comparableGroup = ExpectedSymbolGroup(declaration.value, uses.toSeq.map(_.value), renaming)
+          val expectedElement = expected.find(_ == comparableGroup)
+
+          val (aDecl, aRen, aUses) = actualCells(sg)
+          withClue(s"\nRow under test: decl=$aDecl  renaming=$aRen  uses=$aUses\n") {
+            withClue("Symbol Group missing from expected") {
+              expectedElement should contain(comparableGroup)
+            }
+
+            withClue("Wrong position of declaration") {
+              (
+                expectedElement.get.declaration,
+                expectedElement.get.declaration.position.offset
+              ) shouldEqual (declaration.value, declaration.value.position.offset)
+            }
+
+            withClue("Wrong position of use") {
+              expectedElement.get.uses.map(lv => (lv, lv.position.offset)) should contain allElementsOf uses.toSeq.map(
+                rv =>
+                  (rv.value, rv.value.position.offset)
+              )
+            }
+          }
+      }
+    }
+  }
+
   private def assertExpectation(ws: WorkingScope, expected: ExpectedWorkingScope): Unit = {
     val astNodeString = expected.expectedCharacteristics.collectFirst {
       case Ast(s) => s
@@ -915,6 +1074,12 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
     val referenced = expected.expectedCharacteristics.collectFirst {
       case Referenced(refs) => refs
     }.getOrElse(unit)
+    val referencesTo = expected.expectedCharacteristics.collectFirst {
+      case ReferencesTo(pairs) => pairs
+    }
+    val referencesToAt = expected.expectedCharacteristics.collectFirst {
+      case ReferencesToAt(pairs) => pairs
+    }
     val declared = expected.expectedCharacteristics.collectFirst {
       case d: Declared => d
     }.getOrElse(Declared(Seq.empty, Seq.empty, Seq.empty))
@@ -1006,8 +1171,6 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
                 expression = Some(exprText)
               )
             }
-            // Match each expected against actual: name equality is required; if the expected
-            // pins `expression`, that must also match. Otherwise the underlying expression is don't-care.
             val matched = pi.groupingKeys.flatMap { expected =>
               actualGroupingKeys.find { actual =>
                 actual.name == expected.name &&
@@ -1026,6 +1189,12 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
             (actualConstants.map(_.name) intersect actualVariables.map(_.name)) shouldBe empty
           }
         case None =>
+          withClue("[constants]") {
+            actualConstants.map(_.name) should contain theSameElementsAs incoming.constants
+          }
+          withClue("[variables]") {
+            actualVariables.map(_.name) should contain theSameElementsAs incoming.variables
+          }
           withClue("[callables]") {
             assertLocalCallableSet(actualLocalCallables, incoming.localCallables)
           }
@@ -1040,7 +1209,16 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
         whitespaceNormalization(prettify(ws.astNode)) shouldBe whitespaceNormalization(astNodeString)
       }
       ws match {
-        case StatementScope(_, CommonContext(constants, variables, localCallables), _, _, _, _, _, isInImportingWith) =>
+        case StatementScope(
+            _,
+            CommonContext(constants, variables, localCallables),
+            _,
+            _,
+            _,
+            _,
+            _,
+            isInImportingWith
+          ) =>
           withClue("[statement incoming]") {
             withClue("[constants]") {
               constants.map(_.name) should contain theSameElementsAs incoming.constants
@@ -1129,7 +1307,31 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
         }
       }
       withClue("[referenced]") {
-        ws.referenced.map(_.name) should contain theSameElementsAs referenced
+        withClue("[elements]") {
+          ws.referenced.getVariables.map(_.name).toSet shouldEqual referenced
+        }
+
+        referencesTo.foreach { expectedPairs =>
+          val actualPairs: Map[String, String] =
+            ws.referenced.references.iterator.map {
+              case (caller, decl) => caller.value.name -> decl.value.name
+            }.toMap
+          withClue("[caller -> target]") {
+            actualPairs should contain theSameElementsAs expectedPairs
+          }
+        }
+
+        referencesToAt.foreach { expectedPairs =>
+          val actualPairs: Seq[(String, Int, String, Int)] =
+            ws.referenced.references.iterator.map {
+              case (caller, decl) =>
+                (caller.value.name, caller.value.position.offset, decl.value.name, decl.value.position.offset)
+            }.toSeq
+          withClue("[caller -> target with positions]") {
+            actualPairs should contain theSameElementsAs expectedPairs
+          }
+        }
+
       }
       withClue("[declared]") {
         withClue("[constants]") {

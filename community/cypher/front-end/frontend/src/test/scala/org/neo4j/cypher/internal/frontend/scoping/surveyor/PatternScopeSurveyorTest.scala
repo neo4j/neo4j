@@ -715,18 +715,18 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
         Outgoing(variables = Set("p", "n", "r", "m")),
         ExpectedWorkingScope(
           Ast("MATCH p = (n:A {p: 1}) (()-[r:R]->()){1, 3} (m)"),
-          Declared(variables = Seq("p", "n", "  SURVEYOR0", "r", "  SURVEYOR1", "m")),
+          Declared(variables = Seq("p", "n", "  SURVEYOR0", "  SURVEYOR1", "r", "m")),
           Outgoing(variables = Set("p", "n", "r", "m")),
           ExpectedWorkingScope(
             Ast("p = (n:A {p: 1}) (()-[r:R]->()){1, 3} (m)"),
             PatternIncoming(predicate = Set("n", "r", "m"), path = Set("p")),
-            Declared(variables = Seq("p", "n", "  SURVEYOR0", "r", "  SURVEYOR1", "m")),
+            Declared(variables = Seq("p", "n", "  SURVEYOR0", "  SURVEYOR1", "r", "m")),
             Outgoing(variables = Set("p", "n", "r", "m")),
             ExpectedResult.TableResult("p", "n", "r", "m"),
             ExpectedWorkingScope(
               Ast("(n:A {p: 1}) (()-[r:R]->()){1, 3} (m)"),
               PatternIncoming(predicate = Set("n", "r", "m"), path = Set("p")),
-              Declared(variables = Seq("n", "  SURVEYOR0", "r", "  SURVEYOR1", "m")),
+              Declared(variables = Seq("n", "  SURVEYOR0", "  SURVEYOR1", "r", "m")),
               Outgoing(variables = Set("n", "r", "m")),
               ExpectedResult.TableResult("n", "r", "m"),
               ExpectedWorkingScope(
@@ -741,7 +741,8 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
               ExpectedWorkingScope(
                 Ast("(()-[r:R]->()){1, 3}"),
                 PatternIncoming(topology = Set("n"), predicate = Set("n", "r", "m"), path = Set("p")),
-                Declared(variables = Seq("  SURVEYOR0", "r", "  SURVEYOR1")),
+                Declared(variables = Seq("  SURVEYOR0", "  SURVEYOR1", "r")),
+                Referenced(variables = Set("r")),
                 Outgoing(variables = Set("r")),
                 ExpectedResult.TableResult("r"),
                 ExpectedWorkingScope(
@@ -793,18 +794,18 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
         Outgoing(variables = Set("p", "n", "r", "s", "m")),
         ExpectedWorkingScope(
           Ast("MATCH p = (n:A {p: 1}) (()-[r:R]->(:X)-[s:S]->() WHERE r.p = s.p){1, 3} (m)"),
-          Declared(variables = Seq("p", "n", "  SURVEYOR0", "r", "  SURVEYOR1", "s", "  SURVEYOR2", "m")),
+          Declared(variables = Seq("p", "n", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "s", "m")),
           Outgoing(variables = Set("p", "n", "r", "s", "m")),
           ExpectedWorkingScope(
             Ast("p = (n:A {p: 1}) (()-[r:R]->(:X)-[s:S]->() WHERE r.p = s.p){1, 3} (m)"),
             PatternIncoming(predicate = Set("n", "r", "s", "m"), path = Set("p")),
-            Declared(variables = Seq("p", "n", "  SURVEYOR0", "r", "  SURVEYOR1", "s", "  SURVEYOR2", "m")),
+            Declared(variables = Seq("p", "n", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "s", "m")),
             Outgoing(variables = Set("p", "n", "r", "s", "m")),
             ExpectedResult.TableResult("p", "n", "r", "s", "m"),
             ExpectedWorkingScope(
               Ast("(n:A {p: 1}) (()-[r:R]->(:X)-[s:S]->() WHERE r.p = s.p){1, 3} (m)"),
               PatternIncoming(predicate = Set("n", "r", "s", "m"), path = Set("p")),
-              Declared(variables = Seq("n", "  SURVEYOR0", "r", "  SURVEYOR1", "s", "  SURVEYOR2", "m")),
+              Declared(variables = Seq("n", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "s", "m")),
               Outgoing(variables = Set("n", "r", "s", "m")),
               ExpectedResult.TableResult("n", "r", "s", "m"),
               ExpectedWorkingScope(
@@ -819,7 +820,8 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
               ExpectedWorkingScope(
                 Ast("(()-[r:R]->(:X)-[s:S]->() WHERE r.p = s.p){1, 3}"),
                 PatternIncoming(topology = Set("n"), predicate = Set("n", "r", "s", "m"), path = Set("p")),
-                Declared(variables = Seq("  SURVEYOR0", "r", "  SURVEYOR1", "s", "  SURVEYOR2")),
+                Declared(variables = Seq("  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "s")),
+                Referenced(variables = Set("r", "s")),
                 Outgoing(variables = Set("r", "s")),
                 ExpectedResult.TableResult("r", "s"),
                 ExpectedWorkingScope(
@@ -1010,24 +1012,24 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
           ExpectedResult.TableResult("p", "r"),
           ExpectedWorkingScope(
             Ast(s"MATCH p = $normalizedSelector (:A) (()-[r:R]->())+ (b:B)"),
-            Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "r", "  SURVEYOR2", "b")),
+            Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "b")),
             Outgoing(variables = Set("p", "r", "b")),
             ExpectedWorkingScope(
               Ast(s"p = $normalizedSelector (:A) (()-[r:R]->())+ (b:B)"),
               PatternIncoming(predicate = Set("r", "b"), path = Set("p")),
-              Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "r", "  SURVEYOR2", "b")),
+              Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "b")),
               Outgoing(variables = Set("p", "r", "b")),
               ExpectedResult.TableResult("p", "r", "b"),
               ExpectedWorkingScope(
                 Ast("p = (:A) (()-[r:R]->())+ (b:B)"),
                 PatternIncoming(predicate = Set("r", "b"), path = Set("p")),
-                Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "r", "  SURVEYOR2", "b")),
+                Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "b")),
                 Outgoing(variables = Set("p", "r", "b")),
                 ExpectedResult.TableResult("p", "r", "b"),
                 ExpectedWorkingScope(
                   Ast("(:A) (()-[r:R]->())+ (b:B)"),
                   PatternIncoming(predicate = Set("r", "b"), path = Set("p")),
-                  Declared(variables = Seq("  SURVEYOR0", "  SURVEYOR1", "r", "  SURVEYOR2", "b")),
+                  Declared(variables = Seq("  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "b")),
                   Outgoing(variables = Set("r", "b")),
                   ExpectedResult.TableResult("r", "b"),
                   ExpectedWorkingScope(
@@ -1040,7 +1042,8 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
                   ExpectedWorkingScope(
                     Ast("(()-[r:R]->())+"),
                     PatternIncoming(predicate = Set("r", "b"), path = Set("p")),
-                    Declared(variables = Seq("  SURVEYOR1", "r", "  SURVEYOR2")),
+                    Declared(variables = Seq("  SURVEYOR1", "  SURVEYOR2", "r")),
+                    Referenced(variables = Set("r")),
                     Outgoing(variables = Set("r")),
                     ExpectedResult.TableResult("r"),
                     ExpectedWorkingScope(
@@ -1109,18 +1112,18 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
         ExpectedResult.TableResult("p", "r"),
         ExpectedWorkingScope(
           Ast("MATCH p = (:A) (()-[r:R]->())+ (b:B)"),
-          Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "r", "  SURVEYOR2", "b")),
+          Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "b")),
           Outgoing(variables = Set("p", "r", "b")),
           ExpectedWorkingScope(
             Ast("p = (:A) (()-[r:R]->())+ (b:B)"),
             PatternIncoming(predicate = Set("r", "b"), path = Set("p")),
-            Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "r", "  SURVEYOR2", "b")),
+            Declared(variables = Seq("p", "  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "b")),
             Outgoing(variables = Set("p", "r", "b")),
             ExpectedResult.TableResult("p", "r", "b"),
             ExpectedWorkingScope(
               Ast("(:A) (()-[r:R]->())+ (b:B)"),
               PatternIncoming(predicate = Set("r", "b"), path = Set("p")),
-              Declared(variables = Seq("  SURVEYOR0", "  SURVEYOR1", "r", "  SURVEYOR2", "b")),
+              Declared(variables = Seq("  SURVEYOR0", "  SURVEYOR1", "  SURVEYOR2", "r", "b")),
               Outgoing(variables = Set("r", "b")),
               ExpectedResult.TableResult("r", "b"),
               ExpectedWorkingScope(
@@ -1133,7 +1136,8 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
               ExpectedWorkingScope(
                 Ast("(()-[r:R]->())+"),
                 PatternIncoming(predicate = Set("r", "b"), path = Set("p")),
-                Declared(variables = Seq("  SURVEYOR1", "r", "  SURVEYOR2")),
+                Declared(variables = Seq("  SURVEYOR1", "  SURVEYOR2", "r")),
+                Referenced(variables = Set("r")),
                 Outgoing(variables = Set("r")),
                 ExpectedResult.TableResult("r"),
                 ExpectedWorkingScope(

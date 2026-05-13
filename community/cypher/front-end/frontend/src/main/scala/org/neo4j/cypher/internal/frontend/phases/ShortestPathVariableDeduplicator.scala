@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -186,7 +187,8 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
       // Rewrites predicates
       NormalizePredicates.completed
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    SemanticInfoAvailable + UpToDateScopes // Introduces new AST nodes
 
   override def phase: CompilationPhase = CompilationPhase.AST_REWRITE
 }

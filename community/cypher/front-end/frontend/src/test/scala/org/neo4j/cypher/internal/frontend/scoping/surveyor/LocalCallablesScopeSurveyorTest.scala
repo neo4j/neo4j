@@ -878,6 +878,7 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                     |UNION
                     |RETURN twice(3) AS x""".stripMargin),
               Incoming(localCallables = localCallables),
+              Declared(variables = List("x")),
               Outgoing(variables = Set("x")),
               ExpectedResult.TableResult("x"),
               ExpectedWorkingScope(

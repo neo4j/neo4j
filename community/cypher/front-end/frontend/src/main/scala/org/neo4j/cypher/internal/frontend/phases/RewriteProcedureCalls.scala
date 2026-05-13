@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.ProcedureName
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
@@ -80,7 +81,7 @@ trait RewriteProcedureCalls {
     val definitions = from.localDefinitions().localProcedureDefinitions
     val locallyResolved = {
       if (context.semanticFeatures contains LocalCallables)
-        from.scopeState().recordedScopes(unresolved).incoming.localCallables.collectFirst(Function.unlift {
+        from.scopeState().recordedScopes(Ref(unresolved)).incoming.localCallables.collectFirst(Function.unlift {
           case sig if sig.name.fullNameEqual(procedureName) =>
             definitions.get(procedureName).map { definition =>
               ResolvedLocalCall(unresolved, definition, definition.inferredOutputSignature(from.semantics()))

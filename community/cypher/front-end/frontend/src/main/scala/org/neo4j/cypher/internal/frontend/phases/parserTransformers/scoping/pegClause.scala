@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.ast.ParsedAsLet
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.ProjectionClause.Elements
 import org.neo4j.cypher.internal.ast.ProjectionClause.Subclauses
@@ -75,6 +76,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.AggregatingPart
 import org.neo4j.cypher.internal.ast.semantics.scoping.CommonContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionResult
+import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.GroupByPart
 import org.neo4j.cypher.internal.ast.semantics.scoping.LocalCallableScopeSignature
 import org.neo4j.cypher.internal.ast.semantics.scoping.LocalProcedureScopeSignature
@@ -84,6 +86,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.NonAggregatingSubclausePa
 import org.neo4j.cypher.internal.ast.semantics.scoping.OmittedResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionExpressionContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionSpecification
+import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.Result
 import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
@@ -97,14 +100,23 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.frontend.phases.ResolvedNonLocalCall
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Ref
 
 object pegClause {
 
-  def apply(clause: Clause, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    c.getRecordScopeOrElse[Clause](clause, incoming, inImportingWith = false, applyUncached(_, _))
+  def apply(clause: Clause, incoming: RegularContext, foreachIterVar: Option[LogicalVariable] = None)(implicit
+    c: PegContext): WorkingScope = {
+    c.getRecordScopeOrElse[Clause](
+      clause,
+      incoming,
+      inImportingWith = false,
+      foreachIterVar,
+      applyUncached(_, _, foreachIterVar)
+    )
   }
 
-  private def applyUncached(clause: Clause, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
+  private def applyUncached(clause: Clause, incoming: RegularContext, foreachIterVar: Option[LogicalVariable])(implicit
+    c: PegContext): WorkingScope = {
     implicit val astNode: ASTNode = clause
     clause match {
 
@@ -114,8 +126,10 @@ object pegClause {
       case call @ ImportingWithSubqueryCall(query, inTransactionsParameters, _) =>
         val importingAll = query.isCorrelated && query.importColumns.isEmpty
         val explicitImportedVariables = query.importColumns.toSet
+
         val importedVariableSet: Set[LogicalVariable] =
-          if (importingAll) incoming.allSymbols else explicitImportedVariables
+          if (importingAll) incoming.allSymbols
+          else incoming.allSymbols.filter(x => explicitImportedVariables.exists(x.name == _.name))
         val graphSelectionScopes = query.getGraphSelections.map(gs =>
           pegExpression(gs.graphReference, incoming.constantChildContext())
         )
@@ -129,13 +143,23 @@ object pegClause {
           inTransactionsParameters
         )
 
-        scope.withChildren(scope.children ++ graphSelectionScopes)
+        val additionalImportingWithRefs = query.getImportingWithItems.flatMap {
+          case AliasedReturnItem(v1 @ LogicalVariable(_), v2) =>
+            val x = explicitImportedVariables.find(_.name == v1.name)
+            x.flatMap(ex => {
+              val dec = scope.referenced.getDeclaration(Ref(ex))
+              Some(Set(Ref(v1) -> dec, Ref(v2) -> dec))
+            })
+          case _ => None
+        }.flatten
+
+        scope.withChildren(scope.children ++ graphSelectionScopes).addReferences(additionalImportingWithRefs)
 
       case call @ ScopeClauseSubqueryCall(_, isImportingAll, importedVariables, inTransactionsParameters, _) =>
         val innerQueryIncoming =
           if (isImportingAll) incoming.constantChildContext()
           else RegularContext(
-            constants = importedVariables.toSet,
+            constants = incoming.allSymbols.filter(x => importedVariables.exists(x.name == _.name)),
             variables = unitVariables,
             localCallables = incoming.localCallables
           )
@@ -286,7 +310,7 @@ object pegClause {
         incoming.noResultScope(outgoing = incoming.amendedWith(variable), children, declared = declared)
 
       case Match(_, _, pattern, hints, whereOpt, searchOpt) =>
-        val patternScope = pegPattern(pattern, incoming.constantChildContext())
+        val patternScope = pegPattern(pattern, incoming.constantChildContext(), foreachIterVar = None)
         val patternOutgoing = incoming.amendedWith(patternScope.outgoing.variables)
 
         val searchScopeOpt = searchOpt.map(search => scopeSearchSubclause(search, patternOutgoing))
@@ -313,31 +337,31 @@ object pegClause {
 
       // update clauses
       case Create(pattern) =>
-        val patternScope = pegPattern(pattern, incoming.constantChildContext())
+        val patternScope = pegPattern(pattern, incoming.constantChildContext(), foreachIterVar)
         val children = Seq(patternScope)
         val declared = patternScope.declared
-        val outgoing = incoming.amendedWith(patternScope.outgoing.variables)
+        val outgoing = amendedWithShadowingVariables(incoming, patternScope.outgoing.variables)
         incoming.omittedResultScope(outgoing, children, declared = declared)
       case Insert(pattern) =>
-        val patternScope = pegPattern(pattern, incoming.constantChildContext())
+        val patternScope = pegPattern(pattern, incoming.constantChildContext(), foreachIterVar)
         val children = Seq(patternScope)
         val declared = patternScope.declared
-        val outgoing = incoming.amendedWith(patternScope.outgoing.variables)
+        val outgoing = amendedWithShadowingVariables(incoming, patternScope.outgoing.variables)
         incoming.omittedResultScope(outgoing, children, declared = declared)
 
       case Merge(pattern, actions, whereOpt) =>
-        val patternScope = pegPattern(pattern, incoming.constantChildContext())
+        val patternScope = pegPattern(pattern, incoming.constantChildContext(), foreachIterVar)
         // note that the `where` attribute of merge is only populated by rewriters
         // but is populated with predicate that see the variable bound by the pattern
-        val inner = incoming.amendedWith(patternScope.outgoing.variables)
+        val inner = amendedWithShadowingVariables(incoming, patternScope.outgoing.variables)
         val whereScopeOpt = whereOpt.map(where =>
           pegExpression(where.expression, inner.constantChildContext())
         )
-        val actionsScoped = actions.map(ma => apply(ma.action, inner))
+        val actionsScoped = actions.map(ma => apply(ma.action, inner, foreachIterVar))
         val children = Seq(Some(patternScope), actionsScoped, whereScopeOpt).flatten
         val declared = patternScope.declared
         incoming.omittedResultScope(
-          incoming.amendedWith(patternScope.outgoing.variables),
+          amendedWithShadowingVariables(incoming, patternScope.outgoing.variables),
           children,
           declared = declared
         )
@@ -397,11 +421,12 @@ object pegClause {
         val subqueryScope =
           pegStatement(
             SingleQuery(updates)(updates.head.position),
-            expressionIncoming.amendedWith(variable)
+            expressionIncoming.shadowVariable(variable),
+            foreachIterVar = Some(variable)
           )
         val children = Seq(expressionScope, subqueryScope)
         val referenced = {
-          val subqueryReferenced = subqueryScope.referenced excl variable
+          val subqueryReferenced = subqueryScope.referenced diff variable
           val expressionReferenced = expressionScope.referenced
           Some(subqueryReferenced union expressionReferenced)
         }
@@ -443,10 +468,8 @@ object pegClause {
     }
 
     updatedIncoming.recognizeExpression(expression, isSubExpression = false) match {
-      case Some(item) =>
-        val references = Some(Set(item.referenceableVariable))
-        updatedIncoming.expressionResultScope(expression, WorkingScope.noChildren, references)
-      case None => pegExpression(expression, updatedIncoming)
+      case Some(item) => updatedIncoming.recognizedLeafScope(expression, item)
+      case None       => pegExpression(expression, updatedIncoming)
     }
   }
 
@@ -458,10 +481,8 @@ object pegClause {
   )(implicit c: PegContext): Seq[WorkingScope] = {
     groupingItems.map(item => {
       incoming.recognizeExpression(item.expression, isSubExpression = false) match {
-        case Some(item) =>
-          val references = Some(Set(item.referenceableVariable))
-          incoming.expressionResultScope(item.expression, WorkingScope.noChildren, references)
-        case None => pegExpression(item.expression, incoming)
+        case Some(recognised) => incoming.recognizedLeafScope(item.expression, recognised)
+        case None             => pegExpression(item.expression, incoming)
       }
     }) ++
       aggregationItems.map(item => pegExpression(item.expression, aggregatingExpressionContext))
@@ -480,7 +501,11 @@ object pegClause {
           (e, spec.getGroupingKeyExpression(e)) match {
             case (alias: LogicalVariable, Some(underlyingExpression)) =>
               val scope = pegExpression(underlyingExpression, groupByContext)
-              scope.withReferenced(scope.referenced + alias)
+              val aliasRefs = References.connect(Seq(alias), groupByContext.allSymbolsAndKeys)
+              scope match {
+                case es: ExpressionScope => es.copy(referenced = es.referenced union aliasRefs)
+                case other               => other
+              }
             case _ =>
               pegExpression(e, groupByContext)
           }
@@ -495,7 +520,7 @@ object pegClause {
     StatementScope(
       groupBy,
       groupByContext,
-      children.flatMap(_.referenced).toSet,
+      WorkingScope.referencedInChildren(children),
       Declarations.noDeclarations,
       groupByContext,
       NoResult,
@@ -587,31 +612,39 @@ object pegClause {
 
   private def getProjectionDeclared(
     introducedVariables: Seq[LogicalVariable],
-    clauseType: ClauseType
+    clauseType: ClauseType,
+    passThroughItems: Seq[ReturnItem]
   ): Declarations = clauseType match {
     case _: YieldType | _: ReturnType =>
       Declarations.noDeclarations
-    case _: WithType =>
+    case ParsedAsLet =>
       Declarations(Seq.empty, introducedVariables)
+    case _: WithType =>
+      Declarations(Seq.empty, introducedVariables.filterNot(passThroughItems.map(_.name) contains _.name))
   }
 
   private def getProjectionReferenced(
-    itemScopes: Seq[WorkingScope],
-    subclauseScopes: Seq[WorkingScope],
-    introducedVariables: Seq[LogicalVariable],
+    children: Seq[WorkingScope],
     includedIncomingVariables: Set[LogicalVariable],
     incomingConstants: Set[LogicalVariable],
     clauseType: ClauseType,
-    hasSideEffect: Boolean
-  ): Set[LogicalVariable] = {
-    val referencedInItems = WorkingScope.referencedInChildren(itemScopes)
-    val referencedInSubclauses = WorkingScope.referencedInChildren(subclauseScopes) -- introducedVariables.toSet
-    val referencedInChildren = referencedInItems union referencedInSubclauses
-    (clauseType, hasSideEffect) match {
+    hasSideEffect: Boolean,
+    incoming: RegularContext
+  ): References = {
+    val referencedInChildren = WorkingScope.referencedInChildren(children)
+    val allRefs = (clauseType, hasSideEffect) match {
       case (_: WithType, false) => referencedInChildren
-      case (_: WithType, true)  => referencedInChildren union includedIncomingVariables union incomingConstants
-      case _                    => referencedInChildren union includedIncomingVariables
+      case (_: WithType, true) =>
+        val shadowedConstantNames = incoming.variables.iterator.map(_.name).toSet
+        val effectiveConstants = incomingConstants.filterNot(c => shadowedConstantNames.contains(c.name))
+        referencedInChildren union References.connect(
+          (includedIncomingVariables union effectiveConstants).toSeq,
+          incoming.allSymbols
+        )
+      case _ => referencedInChildren union References.connect(includedIncomingVariables.toSeq, incoming.allSymbols)
     }
+
+    allRefs intersectByTarget incoming.allSymbols
   }
 
   private def scopeProjectionClause(
@@ -623,18 +656,34 @@ object pegClause {
     val Elements(distinct, items, subclauses, clauseType, projectionType) = Elements(projectionClause)
 
     // partitions item "c" and "c AS c" where c is a constant — a special case Cypher historically allows
+    // for WITH-style projections. LET is strict: every alias is a fresh declaration, no partition.
     val (constantItems, variableItems) =
-      items.partition(ri => ri.alias.exists(v => ri.isPassThrough && (incoming.constants contains v)))
+      if (clauseType == ParsedAsLet) (Seq.empty[ReturnItem], items)
+      else items.partition(ri => ri.alias.exists(v => ri.isPassThrough && (incoming.constants contains v)))
+
+    val passThroughItems = items.filter(_.isPassThrough)
 
     val introducedVariables = getIntroducedVariables(incoming, variableItems, items, clauseType, projectionType)
     val visibleIncomingVariables = incoming.variables.filterNot(v => introducedVariables contains v)
     val includedIncomingVariables = getIncludedIncomingVariables(visibleIncomingVariables, projectionType)
     val resultingVariables = includedIncomingVariables.toSeq ++ introducedVariables
 
-    val projectionItems =
-      items.map(ri => (ri.expression, ri.alias)) ++ includedIncomingVariables.map(iiv => iiv -> Some(iiv))
+    val incomingByName: Map[String, LogicalVariable] =
+      incoming.allSymbolsAndKeys.iterator.map(v => v.name -> v).toMap
+    def remapPassThroughAlias(item: ReturnItem): ReturnItem = item match {
+      case ari: AliasedReturnItem if ari.isPassThrough =>
+        incomingByName.get(ari.variable.name) match {
+          case Some(incomingVar) => AliasedReturnItem(ari.expression, incomingVar)(ari.position)
+          case None              => ari
+        }
+      case other => other
+    }
+    val remappedItems = items.map(remapPassThroughAlias)
 
-    val (aggregatingItems, groupingItems) = items.partition(_.directlyContainsAggregate)
+    val projectionItems =
+      remappedItems.map(ri => (ri.expression, ri.alias)) ++ includedIncomingVariables.map(iiv => iiv -> Some(iiv))
+
+    val (aggregatingItems, groupingItems) = remappedItems.partition(_.directlyContainsAggregate)
 
     val isAggregating = aggregatingItems.nonEmpty || distinct || subclauses.groupBy.isDefined
     val hasSideEffects = isAggregating || subclauses.hasSubclause
@@ -661,19 +710,25 @@ object pegClause {
     val subclauseScopes = scopeSubclauses(subclauseScope, subclauses)
 
     val children = itemScopes ++ groupByScopeOpt ++ subclauseScopes
-    val outgoing =
+    val outgoingInter =
       getProjectionOutgoing(incoming.constants, resultingVariables, constantItems, clauseType, incoming.localCallables)
+    val passThroughNames: Set[String] = passThroughItems.flatMap(_.alias).map(_.name).toSet
+    val outgoing = outgoingInter.replaceWith(outgoingInter.variables.map(v =>
+      if (passThroughNames.contains(v.name))
+        incoming.allSymbolsAndKeys.find(_.name == v.name).getOrElse(v)
+      else v
+    ))
     val result = getProjectionResult(resultingVariables, clauseType)
-    val declared = getProjectionDeclared(introducedVariables, clauseType)
-    val referenced = getProjectionReferenced(
-      itemScopes,
-      subclauseScopes,
-      introducedVariables,
-      includedIncomingVariables,
-      incoming.constants,
-      clauseType,
-      hasSideEffects
-    )
+    val declared = getProjectionDeclared(introducedVariables, clauseType, passThroughItems)
+    val referenced =
+      getProjectionReferenced(
+        children,
+        includedIncomingVariables,
+        incoming.constants,
+        clauseType,
+        hasSideEffects,
+        incoming
+      ) union References.connect(passThroughItems.flatMap(_.alias), incoming.allSymbolsAndKeys)
 
     StatementScope(astNode, incoming, referenced, declared, outgoing, result, children)
 
@@ -731,6 +786,21 @@ object pegClause {
   private def returnItemAliases(items: Seq[ReturnItem]): Seq[LogicalVariable] =
     items.map(item => item.alias.getOrElse(UnPositionedVariable.varFor(item.name)))
 
+  private def amendedWithShadowingVariables(
+    incoming: RegularContext,
+    newVariables: Set[LogicalVariable]
+  ): RegularContext = {
+    if (newVariables.isEmpty) incoming
+    else {
+      val shadowedNames = newVariables.iterator.map(_.name).toSet
+      RegularContext(
+        constants = incoming.constants.filterNot(c => shadowedNames.contains(c.name)),
+        variables = incoming.variables.filterNot(v => shadowedNames.contains(v.name)) union newVariables,
+        localCallables = incoming.localCallables
+      )
+    }
+  }
+
   private def scopeInlineSubquery(
     callClause: SubqueryCall,
     incoming: RegularContext,
@@ -756,7 +826,11 @@ object pegClause {
         throw new IllegalStateException("inner query cannot have an expression result")
     }
     val children = innerQueryScope +: inTransactionsChildren
-    val referenced = Some(innerQueryScope.referenced union explicitlyImportedVariables)
+
+    val referenced = Some(References.connectOrDrop(
+      (innerQueryScope.referenced.getVariables ++ explicitlyImportedVariables).toSeq,
+      incoming.allSymbols
+    ))
     val declared = Declarations(Seq.empty, declaredVariables ++ declaredInTransactionsVariables)
     incoming.noResultScope(outgoing, children, referenced, declared)
   }

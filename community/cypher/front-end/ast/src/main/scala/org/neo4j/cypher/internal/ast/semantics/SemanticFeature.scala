@@ -93,6 +93,10 @@ object SemanticFeature {
     override def name: String = "scope queries"
   }
 
+  case object EnableWorkingScopeNamespacer extends SemanticFeature with FeatureToString {
+    override def name: String = "enable working scope implementation for namespacer"
+  }
+
   case object EnableParsingOfObfuscatedLiterals extends SemanticFeature with FeatureToString {
     override def name: String = "enable parsing of obfuscated literals"
   }
@@ -142,6 +146,7 @@ object SemanticFeature {
     UUIDType,
     LocalCallables,
     ScopeQueries,
+    EnableWorkingScopeNamespacer,
     EnableParsingOfObfuscatedLiterals,
     DisableTypeCheckingInSemanticAnalysis,
     AllowClauseWithMixedLabelSyntax,

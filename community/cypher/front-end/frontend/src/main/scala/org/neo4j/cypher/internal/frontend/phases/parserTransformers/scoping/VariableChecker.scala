@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.util.Foldable.FoldingBehavior
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case class VariableChecker(
@@ -75,6 +76,11 @@ case class VariableChecker(
       // redeclaration of constants
       val redeclarationOfConstants = astNode match {
         case _: Foreach => Seq.empty // historically, the FOREACH iteration variable is allowed to shadow
+        case _: Union   => Seq.empty // ignore, union variable declarations
+        case _: CreateOrInsert | _: Merge if acc.foreachContext.allowedToShadow.nonEmpty =>
+          val outerNames = acc.foreachContext.allowedToShadow.map(_.name)
+          val bodyLocalDeclared = (constants ++ variables).filterNot(v => outerNames.contains(v.name))
+          incoming.checkIfVariablesAreAlreadyDeclaredAsConstant(bodyLocalDeclared.toSet)
         case _ =>
           incoming.checkIfVariablesAreAlreadyDeclaredAsConstant((constants ++ variables).toSet)
       }
@@ -113,12 +119,12 @@ case class VariableChecker(
   }
 
   private val multipleReturnColumns: VariableCheck = {
-    case (acc, StatementScope(w: With, _, _, Declarations(_, variables, _), _, _, _, _)) =>
-      acc(findMultipleDeclarationsIn(variables, w))
-    case (acc, StatementScope(y: Yield, _, _, _, _, TableResult(columns), _, _)) =>
-      acc(findMultipleDeclarationsIn(columns, y))
-    case (acc, StatementScope(r: Return, _, _, _, _, TableResult(columns), _, _)) =>
-      acc(findMultipleDeclarationsIn(columns, r))
+    case (acc, StatementScope(w: With, _, _, _, _, _, _, _)) =>
+      acc(findMultipleDeclarationsIn(w))
+    case (acc, StatementScope(y: Yield, _, _, _, _, _, _, _)) =>
+      acc(findMultipleDeclarationsIn(y))
+    case (acc, StatementScope(r: Return, _, _, _, _, _, _, _)) =>
+      acc(findMultipleDeclarationsIn(r))
   }
 
   private val incompatibleReturnColumns: VariableCheck = {
@@ -152,7 +158,7 @@ case class VariableChecker(
         Acc.CreatePattern(acc, topo, _, create, true),
         StatementScope(_: Match, _, _, declared, _, _, _, _)
       )
-      if version != CypherVersion.Cypher5 && (declared.withoutAnonymousDeclaration.allSymbols intersect topo).nonEmpty =>
+      if version != CypherVersion.Cypher5 && (declared.withoutAnonymousDeclaration.allSymbols.toSet intersect topo).nonEmpty =>
       acc(declared.withoutAnonymousDeclaration.allSymbols.filter(topo).map(v =>
         SemanticError.invalidEntityReference(v.name, create.name, v.position)
       ).toSeq)
@@ -160,7 +166,7 @@ case class VariableChecker(
         Acc.CreatePattern(acc, topo, patternVars, create, true),
         StatementScope(_: Match, _, _, declared, _, _, _, _)
       )
-      if version == CypherVersion.Cypher5 && (declared.withoutAnonymousDeclaration.allSymbols intersect topo).nonEmpty =>
+      if version == CypherVersion.Cypher5 && (declared.withoutAnonymousDeclaration.allSymbols.toSet intersect topo).nonEmpty =>
       acc(declared.withoutAnonymousDeclaration.allSymbols.flatMap(v =>
         if (patternVars contains v)
           Seq(SemanticError.invalidEntityReference(v.name, create.name, v.position))
@@ -267,12 +273,12 @@ case class VariableChecker(
         x.name == path.name && x.position != path.position
       ))
         .map(_ => SemanticError.variableAlreadyDeclared(path.name, path.position)).toSeq)
-    case (acc, Scope.Pattern.Quantified(groupings, referenced))
-      if referenced.intersect(groupings.map(_.group)).nonEmpty =>
-      acc(referenced.intersect(groupings.map(_.group)).map(v =>
+    case (acc, Scope.Pattern.Quantified(topo, declared))
+      if declared.intersect(topo).nonEmpty =>
+      acc(declared.intersect(topo).map(v =>
         SemanticError.variableAlreadyDeclared(v.name, v.position)
       ).toSeq)
-    case Scope.Pattern.VariableInPatternAlreadyDeclared(acc, name, position) =>
+    case Scope.Pattern.VariableInUpdatingPatternAlreadyDeclared(acc, name, position) =>
       acc(SemanticError.variableAlreadyDeclared(name, position))
     case (acc, Scope.Pattern.Element(variable, group, referenced))
       if referenced.intersect(group).exists(_.name == variable.name) =>
@@ -481,7 +487,7 @@ case object VariableChecker extends Phase[BaseContext, BaseState, BaseState] wit
     context: BaseContext,
     clause: ASTNode
   ): Seq[SemanticError] =
-    from.scopeState().recordedScopes.get(clause).fold(Seq.empty[SemanticError]) { c =>
+    from.scopeState().recordedScopes.get(Ref(clause)).fold(Seq.empty[SemanticError]) { c =>
       VariableChecker(context.cypherVersion, checkAggregations = true, logger = context.notificationLogger)
         .collectAll(c).toSeq
         .filter(_.gqlStatusObject.cause().get().gqlStatus() == "42I18")
@@ -539,13 +545,13 @@ case object VariableChecker extends Phase[BaseContext, BaseState, BaseState] wit
     "42N39",
     "42I32",
     "42I56",
+    "42N34",
     "42N07", // Variable declared in outer scope
     "42N59", // Variable already declared
     "42N62", // Variable not defined
     "42I37", // Invalid use of RETURN *
     "42I38",
     "42I69",
-    "42N34",
     "42N71",
     "22N27",
     "42I41",

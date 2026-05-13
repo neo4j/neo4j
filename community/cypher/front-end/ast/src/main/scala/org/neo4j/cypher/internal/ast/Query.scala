@@ -164,6 +164,8 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
    */
   def importColumns: Seq[LogicalVariable]
 
+  def getImportingWithItems: Seq[ReturnItem]
+
   /**
    * Returns the query stripped from importing WITH responsible for top-level importing and a USE graph clause.
    *
@@ -283,6 +285,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       )
     case _ => Seq.empty
   }
+
+  override def getImportingWithItems: Seq[ReturnItem] =
+    partitionedClauses.importingWith.toSeq.flatMap(_.returnItems.items)
 
   override def withoutImportingWithAndGraphSelection: Option[SingleQuery] = {
     Option.when(
@@ -1078,6 +1083,8 @@ case class TopLevelBraces(
   override def invalidImportingWith: Seq[SemanticError] = query.invalidImportingWith
   override def importColumns: Seq[LogicalVariable] = query.importColumns
 
+  override def getImportingWithItems: Seq[ReturnItem] = query.getImportingWithItems
+
   override def withoutImportingWithAndGraphSelection: Option[TopLevelBraces] =
     query.withoutImportingWithAndGraphSelection.map(q => TopLevelBraces(q, use)(position))
 
@@ -1132,6 +1139,8 @@ sealed trait Union extends Query {
   }
 
   override def importColumns: Seq[LogicalVariable] = lhs.importColumns ++ rhs.importColumns
+
+  override def getImportingWithItems: Seq[ReturnItem] = lhs.getImportingWithItems ++ rhs.getImportingWithItems
 
   def containsUpdates: Boolean = lhs.containsUpdates || rhs.containsUpdates
 
@@ -1665,6 +1674,9 @@ case class ConditionalQueryWhen(
   override def importColumns: Seq[LogicalVariable] =
     allBranches.flatMap(_.query.importColumns)
 
+  override def getImportingWithItems: Seq[ReturnItem] =
+    allBranches.flatMap(_.query.getImportingWithItems)
+
   override def withoutImportingWithAndGraphSelection: Option[ConditionalQueryWhen] = {
     if (allBranches.exists(_.withoutImportingWith.isDefined)) {
       Some(ConditionalQueryWhen(
@@ -1706,6 +1718,9 @@ case class NextStatement(queries: Seq[Query])(val position: InputPosition) exten
   override def isCorrelated: Boolean = queries.exists(_.isCorrelated)
 
   override def importColumns: Seq[LogicalVariable] = queries.flatMap(_.importColumns)
+
+  override def getImportingWithItems: Seq[ReturnItem] =
+    queries.flatMap(_.getImportingWithItems)
 
   override def withoutImportingWithAndGraphSelection: Option[NextStatement] = {
     if (queries.exists(_.withoutImportingWithAndGraphSelection.isDefined)) {
@@ -1852,6 +1867,8 @@ case class QueryWithLocalDefinitions(
    * Returns names of variables imported using importing WITH
    */
   override def importColumns: Seq[LogicalVariable] = query.importColumns
+
+  override def getImportingWithItems: Seq[ReturnItem] = query.getImportingWithItems
 
   /**
    * Returns the query stripped from importing WITH responsible for top-level importing.

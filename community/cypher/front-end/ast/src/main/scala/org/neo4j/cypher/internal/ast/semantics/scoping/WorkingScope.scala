@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.semantics.scoping
 
-import org.neo4j.cypher.internal.ast.ASTAnnotationMap.PositionedNode
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState.RecordedScopes
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.noLocalCallables
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.unitVariables
@@ -25,8 +26,27 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Ref
+
+case class SymbolGroup(
+  declaration: Ref[LogicalVariable],
+  uses: Set[Ref[LogicalVariable]],
+  renaming: Option[String]
+) {
+
+  def getRenamedUses: Option[Map[Ref[LogicalVariable], LogicalVariable]] =
+    renaming.map(renaming => uses.map(x => x -> x.value.renameId(renaming)).toMap)
+
+  def pastablePrint: String =
+    s"ExpectedSymbolGroup(varOf(\"${declaration.value.name}\",${declaration.value.position.offset}), List(${uses.toSeq.map(
+        u =>
+          s"varOf(\"${u.value.name}\",${u.value.position.offset})"
+      ).mkString(", ")}), ${renaming.map(s => s"Some(\"$s\")").getOrElse("None")})"
+
+}
 
 case object DummyASTNode extends ASTNode {
   self =>
@@ -39,21 +59,97 @@ case object DummyASTNode extends ASTNode {
 sealed trait WorkingScope extends Product with Foldable {
   def astNode: ASTNode
   def incoming: WorkingContext
-  def referenced: Set[LogicalVariable]
+  def referenced: References
+
+  /**
+   * Internal plumbing references — not visible to callers that ask about this scope's
+   * "external references". Used for `UnionMapping` that needs to be linked to the branch's
+   * output column even though neither side is "external" to the UNION.
+   */
+  def internalReferences: References = References.empty
+
   def declared: Declarations
   def outgoing: RegularContext
   def result: Result
   def children: Seq[WorkingScope]
   def inImportingWith: Boolean = false
+  def foreachIterVar: Option[LogicalVariable] = None
 
   def withChildren(children: Seq[WorkingScope]): WorkingScope
-  def withReferenced(referenced: Set[LogicalVariable]): WorkingScope
   def withDeclared(declared: Declarations): WorkingScope
+  def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): WorkingScope
+  def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): WorkingScope
 
-  private def getScopes: Seq[(PositionedNode[ASTNode], WorkingScope)] =
-    (PositionedNode(astNode), this) +: children.flatMap(_.getScopes)
+  def tagForCache(inImportingWith: Boolean, foreachIterVar: Option[LogicalVariable]): WorkingScope = this
+
+  private def getScopes: Seq[(Ref[ASTNode], WorkingScope)] =
+    (Ref(astNode), this) +: children.flatMap(_.getScopes)
 
   def getRecordedScopes: RecordedScopes = getScopes.toMap
+
+  def collectAllReferences: Map[Ref[LogicalVariable], Ref[LogicalVariable]] = {
+    val acc = scala.collection.mutable.HashMap.empty[Ref[LogicalVariable], Ref[LogicalVariable]]
+    WorkingScope.collectReferencesInto(this, acc)
+    acc.toMap
+  }
+
+  def collectAllDeclarations: Set[Ref[LogicalVariable]] =
+    children.foldLeft(declared.allSymbols.map(Ref.apply)) { case (declarations, child) =>
+      declarations ++ child.collectAllDeclarations
+    }.toSet
+
+  def collectAllReturnAliases: Set[Ref[LogicalVariable]] = {
+    astNode.folder.treeCollect[Set[Ref[LogicalVariable]]]({
+      case Return(_, ReturnItems(_, items, _), _, _, _, _, _, _, _) =>
+        items.flatMap(x => if (x.isPassThrough) None else Some(x.alias)).toSet.flatten.map(Ref.apply)
+      case _ => Set.empty
+    }).flatten.toSet
+  }
+
+  def getSymbolGroups(anonVarGen: AnonymousVariableNameGenerator): Seq[SymbolGroup] = {
+    val allDecls: Set[Ref[LogicalVariable]] = collectAllDeclarations
+    val returnAliases: Set[Ref[LogicalVariable]] = collectAllReturnAliases
+    val normalizedRefs: Map[Ref[LogicalVariable], Ref[LogicalVariable]] =
+      WorkingScope.normalizeReferences(collectAllReferences)
+
+    val anchors: Set[Ref[LogicalVariable]] = allDecls ++ returnAliases
+    val anchoredRefs: Map[Ref[LogicalVariable], Ref[LogicalVariable]] =
+      normalizedRefs.filter { case (_, target) => anchors.contains(target) }
+
+    // Every anchor that isn't already used as a caller contributes a self-reference.
+    val declarationsAsSelfRefs: Map[Ref[LogicalVariable], Ref[LogicalVariable]] =
+      (anchors -- anchoredRefs.keySet).iterator.map(v => v -> v).toMap
+    val allRefs: Map[Ref[LogicalVariable], Ref[LogicalVariable]] = anchoredRefs ++ declarationsAsSelfRefs
+
+    val groupsByDecl: Map[Ref[LogicalVariable], Map[Ref[LogicalVariable], Ref[LogicalVariable]]] =
+      allRefs.groupBy(_._2)
+
+    val walkOrder: Map[Ref[LogicalVariable], Int] =
+      astNode.folder.treeCollect[LogicalVariable] {
+        case lv: LogicalVariable => lv
+      }.iterator.map(Ref.apply).zipWithIndex.toMap
+
+    val sortedGroups = groupsByDecl.toSeq.sortBy { case (dec, _) =>
+      (walkOrder.getOrElse(dec, Int.MaxValue), dec.value.position)
+    }
+
+    // A declaration needs renaming iff another declaration shares its name.
+    val ambiguous: Set[Ref[LogicalVariable]] = {
+      val byName = sortedGroups.iterator.map(_._1).toSeq.groupBy(_.value.name)
+      byName.valuesIterator.filter(_.sizeIs > 1).flatten.toSet
+    }
+
+    val renamings: Map[Ref[LogicalVariable], String] =
+      sortedGroups.iterator
+        .map(_._1)
+        .filter(ambiguous.contains)
+        .map(dec => dec -> AnonymousVariableNameGenerator.genName(anonVarGen, dec.value.name))
+        .toMap
+
+    sortedGroups.map { case (dec, callers) =>
+      SymbolGroup(dec, callers.keySet + dec, renamings.get(dec))
+    }
+  }
 }
 
 object WorkingScope {
@@ -71,78 +167,193 @@ object WorkingScope {
     PatternScope(
       astNode = DummyASTNode,
       patternIncoming = incoming,
-      referenced = unitVariables,
+      referenced = References.empty,
       declared = Declarations.noDeclarations,
       // outgoing = outgoing,
       result = TableResult(Seq.empty),
       children = WorkingScope.noChildren
     )
 
-  def referencedInChildren(children: Seq[WorkingScope]): Set[LogicalVariable] =
-    children.foldLeft(Set.empty[LogicalVariable]) {
+  def referencedInChildren(children: Seq[WorkingScope]): References =
+    children.foldLeft(References.empty) {
       (referenced, c2) => referenced union c2.referenced
     }
+
+  private[scoping] def collectReferencesInto(
+    scope: WorkingScope,
+    acc: scala.collection.mutable.HashMap[Ref[LogicalVariable], Ref[LogicalVariable]]
+  ): Unit = {
+    mergeReferencesInto(acc, scope.referenced.references)
+    mergeReferencesInto(acc, scope.internalReferences.references)
+    scope.children.foreach(child => collectReferencesInto(child, acc))
+  }
+
+  private def mergeReferencesInto(
+    acc: scala.collection.mutable.HashMap[Ref[LogicalVariable], Ref[LogicalVariable]],
+    b: Map[Ref[LogicalVariable], Ref[LogicalVariable]]
+  ): Unit = {
+    if (b.nonEmpty) {
+      b.foreach { case (k, v) =>
+        acc.get(k) match {
+          case Some(existing) if existing == k && v != k =>
+            // incumbent is a self-ref, challenger is a real chain → chain wins
+            acc.update(k, v)
+          case Some(existing) if existing != k && v == k =>
+            // incumbent is a real chain, challenger is a self-ref → keep incumbent
+            ()
+          case _ =>
+            // both chains, both self-refs, or no incumbent — right-biased default
+            acc.update(k, v)
+        }
+      }
+    }
+  }
+
+  def normalizeReferences(
+    refs: Map[Ref[LogicalVariable], Ref[LogicalVariable]]
+  ): Map[Ref[LogicalVariable], Ref[LogicalVariable]] = {
+    val normalized = scala.collection.mutable.HashMap.from(refs)
+    val visiting = scala.collection.mutable.Set.empty[Ref[LogicalVariable]]
+    def root(v: Ref[LogicalVariable]): Ref[LogicalVariable] = normalized.get(v) match {
+      case None                                  => v
+      case Some(next) if next == v               => v
+      case Some(next) if visiting.contains(next) => v // cycle — break by treating v as its own root
+      case Some(next) =>
+        visiting += v
+        val r = root(next)
+        visiting -= v
+        normalized.update(v, r)
+        r
+    }
+    refs.keys.foreach(root)
+    normalized.toMap
+  }
 }
 
 case class AprioriScope(incoming: RegularContext, outgoing: RegularContext) extends WorkingScope {
   override def astNode: ASTNode = DummyASTNode
-  override def referenced: Set[LogicalVariable] = unitVariables
+  override def referenced: References = References.empty
   override def declared: Declarations = Declarations.noDeclarations
   override def result: Result = NoResult
   override def children: Seq[WorkingScope] = WorkingScope.noChildren
 
   override def withChildren(children: Seq[WorkingScope]): AprioriScope = this
-  override def withReferenced(referenced: Set[LogicalVariable]): AprioriScope = this
   override def withDeclared(declared: Declarations): AprioriScope = this
+
+  override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
+    : AprioriScope = this
+
+  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
+    : AprioriScope = this
 }
 
 case class StatementScope(
   astNode: ASTNode,
   incoming: RegularContext,
-  referenced: Set[LogicalVariable],
+  referenced: References,
   declared: Declarations,
   outgoing: RegularContext,
   result: Result = NoResult,
   children: Seq[WorkingScope] = WorkingScope.noChildren,
   override val inImportingWith: Boolean = false
 ) extends WorkingScope {
+  private var _internalReferences: References = References.empty
+  override def internalReferences: References = _internalReferences
+
+  private var _foreachIterVar: Option[LogicalVariable] = None
+  override def foreachIterVar: Option[LogicalVariable] = _foreachIterVar
+
   override def withChildren(children: Seq[WorkingScope]): StatementScope = copy(children = children)
-  override def withReferenced(referenced: Set[LogicalVariable]): StatementScope = copy(referenced = referenced)
   override def withDeclared(declared: Declarations): StatementScope = copy(declared = declared)
-  def isInImportingWith(inImportingWith: Boolean): StatementScope = copy(inImportingWith = inImportingWith)
+
+  override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): StatementScope =
+    copy(referenced = referenced.union(References(references.toMap)))
+
+  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): StatementScope = {
+    val c = this.copy()
+    c._internalReferences = _internalReferences.union(References(references.toMap))
+    c._foreachIterVar = _foreachIterVar
+    c
+  }
+
+  override def tagForCache(
+    inImportingWith: Boolean,
+    foreachIterVar: Option[LogicalVariable]
+  ): StatementScope = {
+    val c = this.copy(inImportingWith = inImportingWith)
+    c._internalReferences = _internalReferences
+    c._foreachIterVar = foreachIterVar
+    c
+  }
 }
 
 case class ExpressionScope(
   astNode: ASTNode,
   incoming: RegularContext,
-  referenced: Set[LogicalVariable],
+  referenced: References,
   declared: Declarations,
   children: Seq[WorkingScope] = WorkingScope.noChildren
 ) extends WorkingScope {
+  private var _internalReferences: References = References.empty
+  override def internalReferences: References = _internalReferences
+
   override def result: Result = ExpressionResult
   override def outgoing: RegularContext = RegularContext.unit
   def withAstNode(astNode: ASTNode): ExpressionScope = copy(astNode = astNode)
   override def withChildren(children: Seq[WorkingScope]): ExpressionScope = copy(children = children)
-  override def withReferenced(referenced: Set[LogicalVariable]): ExpressionScope = copy(referenced = referenced)
   override def withDeclared(declared: Declarations): ExpressionScope = copy(declared = declared)
+
+  override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): ExpressionScope =
+    copy(referenced = referenced.union(References(references.toMap)))
+
+  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): ExpressionScope = {
+    val c = this.copy()
+    c._internalReferences = _internalReferences.union(References(references.toMap))
+    c
+  }
 }
 
 case class PatternScope(
   astNode: ASTNode,
   patternIncoming: PatternIncomingContext,
-  referenced: Set[LogicalVariable],
+  referenced: References,
   declared: Declarations,
   result: TableResult,
   children: Seq[WorkingScope] = WorkingScope.noChildren
 ) extends WorkingScope {
+  private var _internalReferences: References = References.empty
+  override def internalReferences: References = _internalReferences
+
+  private var _foreachIterVar: Option[LogicalVariable] = None
+  override def foreachIterVar: Option[LogicalVariable] = _foreachIterVar
+
   override def incoming: RegularContext = patternIncoming.toRegularContext
 
   override def outgoing: RegularContext =
     RegularContext(unitVariables, result.columns.toSet, noLocalCallables)
   def withAstNode(astNode: ASTNode): PatternScope = copy(astNode = astNode)
   override def withChildren(children: Seq[WorkingScope]): PatternScope = copy(children = children)
-  override def withReferenced(referenced: Set[LogicalVariable]): PatternScope = copy(referenced = referenced)
   override def withDeclared(declared: Declarations): PatternScope = copy(declared = declared)
+
+  override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): PatternScope =
+    copy(referenced = referenced.union(References(references.toMap)))
+
+  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])]): PatternScope = {
+    val c = this.copy()
+    c._internalReferences = _internalReferences.union(References(references.toMap))
+    c._foreachIterVar = _foreachIterVar
+    c
+  }
+
+  override def tagForCache(
+    inImportingWith: Boolean,
+    foreachIterVar: Option[LogicalVariable]
+  ): PatternScope = {
+    val c = this.copy()
+    c._internalReferences = _internalReferences
+    c._foreachIterVar = foreachIterVar
+    c
+  }
 }
 
 object PatternScope {
@@ -168,15 +379,20 @@ object PatternScope {
 }
 
 case class UnexpectedAstNodeScopingError(astNode: ASTNode, incoming: RegularContext) extends WorkingScope {
-  override def referenced: Set[LogicalVariable] = Set.empty
+  override def referenced: References = References.empty
   override def declared: Declarations = Declarations.noDeclarations
   override def outgoing: RegularContext = incoming
   override def result: Result = NoResult
   override def children: Seq[WorkingScope] = WorkingScope.noChildren
 
   override def withChildren(children: Seq[WorkingScope]): UnexpectedAstNodeScopingError = this
-  override def withReferenced(referenced: Set[LogicalVariable]): UnexpectedAstNodeScopingError = this
   override def withDeclared(declared: Declarations): UnexpectedAstNodeScopingError = this
+
+  override def addReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
+    : UnexpectedAstNodeScopingError = this
+
+  override def addInternalReferences(references: Seq[(Ref[LogicalVariable], Ref[LogicalVariable])])
+    : UnexpectedAstNodeScopingError = this
 }
 
 sealed trait Result {
@@ -189,6 +405,11 @@ sealed trait Result {
   def isTableResult: Boolean = this match {
     case TableResult(_) => true
     case _              => false
+  }
+
+  def replaceVariables(replacements: Seq[LogicalVariable]): Result = this match {
+    case TableResult(_) => TableResult(replacements)
+    case _              => this
   }
 }
 
@@ -211,10 +432,7 @@ case class Declarations(
   @inline def isConstantsEmpty: Boolean = constants.isEmpty
   @inline def isVariablesEmpty: Boolean = variables.isEmpty
 
-  def allSymbols: Set[LogicalVariable] = (constants ++ variables).toSet
-
-  def amendVariables(amendment: Seq[LogicalVariable]): Declarations =
-    copy(variables = variables ++ amendment)
+  def allSymbols: Seq[LogicalVariable] = constants ++ variables
 
   def withoutAnonymousDeclaration: Declarations =
     copy(
@@ -230,4 +448,78 @@ object Declarations {
 
   def ofLocalCallable(localCallableScopeSignature: LocalCallableScopeSignature) =
     Declarations(Seq.empty[LogicalVariable], Seq.empty[LogicalVariable], Seq(localCallableScopeSignature))
+}
+
+case class References(references: Map[Ref[LogicalVariable], Ref[LogicalVariable]]) {
+
+  def getDeclaration(variable: Ref[LogicalVariable]): Ref[LogicalVariable] = references.getOrElse(variable, variable)
+
+  def getVariables: Seq[LogicalVariable] = references.keySet.toSeq.map(_.value)
+
+  def union(that: References): References = References(references ++ that.references)
+
+  def union(those: Seq[References]): References =
+    References(those.foldLeft(references) { case (ref, ref2) => ref ++ ref2.references })
+
+  def intersect(those: Set[LogicalVariable]): References =
+    References(references.filter(those contains _._1.value))
+
+  def intersectByTarget(those: Set[LogicalVariable]): References = {
+    val targets: Set[(String, Int)] = those.iterator.map(v => (v.name, v.position.offset)).toSet
+    References(references.filter { case (_, decl) =>
+      targets.contains((decl.value.name, decl.value.position.offset))
+    })
+  }
+
+  /**
+   * Filter the reference map by a predicate on each target (declaration). Returns a
+   * `References` containing only those entries whose declaration satisfies `p`.
+   */
+  def filterTargets(p: LogicalVariable => Boolean): References =
+    References(references.filter { case (_, decl) => p(decl.value) })
+
+  def diff(that: LogicalVariable): References =
+    References(references.filterNot(that == _._1.value))
+
+  def diff(those: Set[LogicalVariable]): References =
+    References(references.filterNot(those contains _._1.value))
+
+}
+
+object References {
+
+  def empty: References = References(Map.empty)
+
+  def connect(caller: LogicalVariable, incoming: Set[LogicalVariable]): References =
+    References(Map(Ref(caller) -> Ref(incoming.find(caller.equals).getOrElse(caller))))
+
+  def connect(callers: Seq[LogicalVariable], incoming: Set[LogicalVariable]): References =
+    References(Map.from(
+      callers.map { caller =>
+        val matched = incoming.find(caller.equals).getOrElse(caller)
+        Ref(caller) -> Ref(matched)
+      }
+    ))
+
+  def connectOrDrop(caller: LogicalVariable, incoming: Set[LogicalVariable]): References =
+    References(incoming.find(caller.equals).map(matched => Ref(caller) -> Ref(matched)).toMap)
+
+  def connectOrDrop(callers: Seq[LogicalVariable], incoming: Set[LogicalVariable]): References =
+    References(callers.iterator.flatMap(c => incoming.find(c.equals).map(m => Ref(c) -> Ref(m))).toMap)
+
+//  def intersectAndConnect(callers: Seq[LogicalVariable], incoming: Set[LogicalVariable]): References =
+//    References(Map.from(
+//      (callers filter incoming).map(caller =>
+//        Ref(caller) -> Ref(incoming.find(caller.equals).getOrElse(caller))
+//      )
+//    ))
+
+  def resolveByName(
+    callers: Iterable[LogicalVariable],
+    candidates: Iterable[LogicalVariable]
+  ): Seq[(Ref[LogicalVariable], Ref[LogicalVariable])] = {
+    val byName: Map[String, LogicalVariable] =
+      candidates.groupBy(_.name).transform((_, vars) => vars.head)
+    callers.flatMap(c => byName.get(c.name).map(dec => Ref(c) -> Ref(dec))).toSeq
+  }
 }

@@ -95,7 +95,7 @@ object WorkingScope2PlanDescription {
           variables = renderVariables(incoming),
           arguments = Seq(
             renderIncoming(incoming),
-            renderReferenced(referenced),
+            renderReferenced(referenced.getVariables.toSet),
             renderDeclaration(declared),
             renderResult(result),
             renderOutgoing(result, outgoing)
@@ -109,7 +109,7 @@ object WorkingScope2PlanDescription {
           variables = renderVariables(incoming),
           arguments = Seq(
             renderIncoming(incoming),
-            renderReferenced(referenced),
+            renderReferenced(referenced.getVariables.toSet),
             renderDeclaration(declared)
           ).flatten,
           children = children
@@ -121,7 +121,7 @@ object WorkingScope2PlanDescription {
           variables = renderVariables(patternIncoming),
           arguments = Seq(
             renderIncoming(patternIncoming),
-            renderReferenced(referenced),
+            renderReferenced(referenced.getVariables.toSet),
             renderDeclaration(declared),
             renderResult(result)
           ).flatten,

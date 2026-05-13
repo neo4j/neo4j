@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.AllReducePredicate
@@ -31,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.ListComprehension
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression
@@ -48,7 +48,13 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 object pegExpression {
 
   def apply(labelExpression: LabelExpression, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    c.getRecordScopeOrElse[LabelExpression](labelExpression, incoming, inImportingWith = false, applyUncached(_, _))
+    c.getRecordScopeOrElse[LabelExpression](
+      labelExpression,
+      incoming,
+      inImportingWith = false,
+      foreachIterVar = None,
+      applyUncached(_, _)
+    )
   }
 
   private def applyUncached(labelExpression: LabelExpression, incoming: RegularContext)(implicit
@@ -67,7 +73,13 @@ object pegExpression {
   }
 
   def apply(expression: Expression, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
-    c.getRecordScopeOrElse[Expression](expression, incoming, inImportingWith = false, applyUncached(_, _))
+    c.getRecordScopeOrElse[Expression](
+      expression,
+      incoming,
+      inImportingWith = false,
+      foreachIterVar = None,
+      applyUncached(_, _)
+    )
   }
 
   private def applyUncached(expression: Expression, incoming: RegularContext)(implicit c: PegContext): WorkingScope = {
@@ -86,20 +98,18 @@ object pegExpression {
     expression.folder.treeFold(Seq[ExpressionScope]()) {
 
       /**
-       *  Recognize expression (cf. AggregationChecker)
+       *  Recognize expression in projection context
        */
       case expr: Expression if incoming.recognizeExpression(expr, isSubExpression = true).isDefined =>
         val recognizedItem = incoming.recognizeExpression(expr, isSubExpression = true).get
-        val references = Some(Set(recognizedItem.referenceableVariable))
-        val scope = incoming.expressionResultScope(expr, WorkingScope.noChildren, references)
-        collect(scope)
+        collect(incoming.recognizedLeafScope(expr, recognizedItem))
 
       /**
        * Variable
        */
       case variable: Variable =>
         val children = WorkingScope.noChildren
-        val referenced: Option[Set[LogicalVariable]] = Some(Set(variable))
+        val referenced: Option[References] = Some(References.connect(variable, incoming.allSymbolsAndKeys))
         collect(incoming.expressionResultScope(variable, children, referenced))
 
       /**
@@ -128,7 +138,7 @@ object pegExpression {
        * Scope expressions
        */
       case lc @ ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expression) =>
-        val innerIncoming = incoming.amendedWithConstant(variable)
+        val innerIncoming = incoming.amendedWithShadowingConstant(Set(variable))
         val innerResult = Seq(innerPredicate, extractExpression).flatMap {
           case Some(ex) => Some(apply(ex, innerIncoming))
           case None     => None
@@ -136,7 +146,7 @@ object pegExpression {
         val expressionResult = apply(expression, incoming)
         val children = expressionResult +: innerResult
         val referenced = {
-          val innerReferenced = WorkingScope.referencedInChildren(innerResult) excl variable
+          val innerReferenced = WorkingScope.referencedInChildren(innerResult) diff variable
           val expressionReferenced = expressionResult.referenced
           Some(innerReferenced union expressionReferenced)
         }
@@ -144,7 +154,8 @@ object pegExpression {
         collect(incoming.expressionResultScope(lc, children, referenced, declared))
 
       case pe @ PatternExpression(pattern) =>
-        val patternResult = pegPattern(pattern.element, incoming.constantChildContext())
+        val patternResult =
+          pegPattern(pattern.element, incoming.constantChildContext(), foreachIterVar = None)
         collect(incoming.expressionResultScope(
           pe,
           Seq(patternResult),
@@ -153,12 +164,12 @@ object pegExpression {
         ))
 
       case pc @ PatternComprehension(optVar, pattern, innerPredicate, projection) =>
-        val patternResult = pegPattern(pattern.element, incoming)
+        val patternResult = pegPattern(pattern.element, incoming, foreachIterVar = None)
         val variables = optVar match {
           case Some(value) => Seq(value) ++ patternResult.declared.variables
           case None        => patternResult.declared.variables
         }
-        val innerIncoming = incoming.amendedWithConstant(variables.toSet)
+        val innerIncoming = incoming.amendedWithShadowingConstant(variables.toSet)
         val innerResult = Seq(innerPredicate, Some(projection)).flatMap {
           case Some(ex) => Some(apply(ex, innerIncoming))
           case None     => None
@@ -174,12 +185,12 @@ object pegExpression {
 
       case iter: IterablePredicateExpression =>
         val FilterScope(variable, innerPredicate) = iter.scope
-        val innerIncoming = incoming.amendedWithConstant(variable)
+        val innerIncoming = incoming.amendedWithShadowingConstant(Set(variable))
         val innerResult = innerPredicate.fold(Seq.empty[WorkingScope]) { ex => Seq(apply(ex, innerIncoming)) }
         val expressionResult = apply(iter.expression, incoming)
         val children = expressionResult +: innerResult
         val referenced = {
-          val innerReferenced = WorkingScope.referencedInChildren(innerResult) excl variable
+          val innerReferenced = WorkingScope.referencedInChildren(innerResult) diff variable
           val expressionReference = expressionResult.referenced
           Some(innerReferenced union expressionReference)
         }
@@ -187,14 +198,14 @@ object pegExpression {
         collect(incoming.expressionResultScope(iter, children, referenced, declared))
 
       case r @ ReduceExpression(ReduceScope(accumulator, variable, expression), init, list) =>
-        val innerIncoming = incoming.amendedWithConstant(Set(accumulator, variable))
+        val innerIncoming = incoming.amendedWithShadowingConstant(Set(accumulator, variable))
         val innerResult = apply(expression, innerIncoming)
         val initResult = apply(init, incoming)
         val listResult = apply(list, incoming)
 
         val children = Seq(initResult, listResult, innerResult)
         val referenced = {
-          val innerReferenced = innerResult.referenced excl accumulator excl variable
+          val innerReferenced = innerResult.referenced diff accumulator diff variable
           val expressionReferenced = WorkingScope.referencedInChildren(Seq(initResult, listResult))
           Some(innerReferenced union expressionReferenced)
         }
@@ -207,9 +218,9 @@ object pegExpression {
           list
         ) =>
         val reductionStepResult =
-          apply(reductionStep, incoming.amendedWithConstant(Set(accumulator, reductionStepVariable)))
+          apply(reductionStep, incoming.amendedWithShadowingConstant(Set(accumulator, reductionStepVariable)))
         val predicateResult =
-          apply(predicate, incoming.amendedWithConstant(Set(accumulator, reductionStepVariable)))
+          apply(predicate, incoming.amendedWithShadowingConstant(Set(accumulator, reductionStepVariable)))
         val initResult = apply(init, incoming)
         val listResult = apply(list, incoming)
 
@@ -218,7 +229,7 @@ object pegExpression {
           val innerReferenced = WorkingScope.referencedInChildren(Seq(
             reductionStepResult,
             predicateResult
-          )) excl accumulator excl reductionStepVariable
+          )) diff accumulator diff reductionStepVariable
           val expressionReferenced = WorkingScope.referencedInChildren(Seq(initResult, listResult))
           Some(innerReferenced union expressionReferenced)
         }

@@ -22,11 +22,14 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.noLocalCalla
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.unitVariables
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Ref
 
 sealed trait WorkingContext {
   def allSymbols: Set[LogicalVariable]
+  def allSymbolsAndKeys: Set[LogicalVariable]
   val localCallables: Set[LocalCallableScopeSignature]
 }
 
@@ -40,6 +43,7 @@ sealed trait RegularContext extends WorkingContext {
 
   lazy val constantsAndVariables: Set[LogicalVariable] = constants union variables
   override def allSymbols: Set[LogicalVariable] = constantsAndVariables
+  override def allSymbolsAndKeys: Set[LogicalVariable] = constantSymbols ++ variables
 
   @inline def isEmpty: Boolean = isVariablesEmpty && isConstantsEmpty
   @inline def isConstantsEmpty: Boolean = constants.isEmpty
@@ -67,6 +71,12 @@ sealed trait RegularContext extends WorkingContext {
 
   @inline def amendedWith(amendment: Set[LogicalVariable]): RegularContext =
     RegularContext(constants, variables union amendment, localCallables)
+
+  @inline def shadowVariable(amendment: LogicalVariable): RegularContext =
+    RegularContext(constants, (variables diff Set(amendment)) + amendment, localCallables)
+
+  /** Add `amendment` as constants, dropping any same-name entries from `constants`/`variables` first. */
+  def amendedWithShadowingConstant(amendment: Set[LogicalVariable]): RegularContext
 
   @inline def amendedWithProjectionSpecification(
     projectionSpecification: ProjectionSpecification,
@@ -144,7 +154,7 @@ sealed trait RegularContext extends WorkingContext {
     outgoing: RegularContext,
     result: Result,
     children: Seq[WorkingScope],
-    referencedOpt: Option[Set[LogicalVariable]] = None,
+    referencedOpt: Option[References] = None,
     declared: Declarations = Declarations.noDeclarations
   )(
     implicit astNode: ASTNode
@@ -172,7 +182,7 @@ sealed trait RegularContext extends WorkingContext {
   @inline def noResultScope(
     outgoing: RegularContext,
     children: Seq[WorkingScope],
-    referencedOpt: Option[Set[LogicalVariable]] = None,
+    referencedOpt: Option[References] = None,
     declared: Declarations = Declarations.noDeclarations
   )(
     implicit astNode: ASTNode
@@ -186,7 +196,7 @@ sealed trait RegularContext extends WorkingContext {
   @inline def omittedResultScope(
     outgoing: RegularContext,
     children: Seq[WorkingScope],
-    referencedOpt: Option[Set[LogicalVariable]] = None,
+    referencedOpt: Option[References] = None,
     declared: Declarations = Declarations.noDeclarations
   )(
     implicit astNode: ASTNode
@@ -200,13 +210,38 @@ sealed trait RegularContext extends WorkingContext {
   @inline def expressionResultScope(
     astNode: ASTNode,
     children: Seq[WorkingScope],
-    referencedOpt: Option[Set[LogicalVariable]] = None,
+    referencedOpt: Option[References] = None,
     declared: Declarations = Declarations.noDeclarations
   ): ExpressionScope = {
     val referenced = referencedOpt.getOrElse(
       WorkingScope.referencedInChildren(children)
     )
     ExpressionScope(astNode, this, referenced, declared, children)
+  }
+
+  def recognizedLeafScope(
+    expression: Expression,
+    recognizedItem: ProjectionItem
+  ): ExpressionScope = {
+    val aliasRefs = expression match {
+      case lv: LogicalVariable =>
+        References.connect(lv, allSymbolsAndKeys)
+      case _ =>
+        recognizedItem.alias match {
+          case Some(alias) => References.connect(Seq(alias), allSymbolsAndKeys)
+          case None        => References.empty
+        }
+    }
+    val scope = expressionResultScope(expression, WorkingScope.noChildren, Some(aliasRefs))
+    expression match {
+      case _: LogicalVariable => scope
+      case other =>
+        val incoming = allSymbolsAndKeys
+        val innerRefs = other.folder.findAllByClass[LogicalVariable].iterator
+          .flatMap(lv => incoming.find(lv.equals).map(matched => Ref(lv) -> Ref(matched)))
+          .toSeq
+        if (innerRefs.isEmpty) scope else scope.addInternalReferences(innerRefs)
+    }
   }
 }
 
@@ -242,6 +277,14 @@ case class CommonContext(
   def getProjectionSpecification: Option[ProjectionSpecification] = None
 
   override def aggregatingConstantChildContext: RegularContext = constantChildContext()
+
+  override def amendedWithShadowingConstant(amendment: Set[LogicalVariable]): RegularContext = {
+    val shadowedNames = amendment.iterator.map(_.name).toSet
+    copy(
+      constants = constants.filterNot(c => shadowedNames.contains(c.name)) union amendment,
+      variables = variables.filterNot(v => shadowedNames.contains(v.name))
+    )
+  }
 }
 
 sealed trait ProjectionPart {
@@ -299,6 +342,15 @@ case class ProjectionExpressionContext(
 
   }
 
+  override def amendedWithShadowingConstant(amendment: Set[LogicalVariable]): RegularContext = {
+    val shadowedNames = amendment.iterator.map(_.name).toSet
+    copy(
+      constants = constants.filterNot(c => shadowedNames.contains(c.name)) union amendment,
+      variables = variables.filterNot(v => shadowedNames.contains(v.name)),
+      projectionSpecification = projectionSpecification.shadowGroupingKeys(shadowedNames)
+    )
+  }
+
   def groupByContext(): ProjectionExpressionContext = {
     val visibleSymbols = constants ++ variables ++ projectionSpecification.nonAggregatingItems.flatMap(_.alias)
     ProjectionExpressionContext(visibleSymbols, Set.empty, localCallables, projectionSpecification, projectionPart)
@@ -321,11 +373,11 @@ case class ProjectionExpressionContext(
         case (false, false) =>
           (constants union variables, unitVariables)
         case (false, true) =>
-          (constants union variables union projectionSpecification.subclauseScopeSymbols, unitVariables)
+          (projectionSpecification.shadowSubclauseSymbols(constants union variables), unitVariables)
         case (true, false) =>
           (constants, variables)
         case (true, true) =>
-          (constants union projectionSpecification.subclauseScopeSymbols, unitVariables)
+          (projectionSpecification.shadowSubclauseSymbols(constants), unitVariables)
       }
 
     ProjectionExpressionContext(
@@ -373,6 +425,10 @@ case class ProjectionExpressionContext(
       projectionPart
     )
 
+  /**
+   * Inside an aggregating function's arguments we operate using the incoming constants and variables.
+   * No recognition of grouping keys available here thus we return to the CommonContext. 
+   */
   override def aggregatingConstantChildContext: RegularContext = {
     val newConstants = projectionPart match {
       case NonAggregatingSubclausePart =>
@@ -383,9 +439,7 @@ case class ProjectionExpressionContext(
         constants union variables
     }
 
-    val newPart = if (projectionPart == AggregatingPart) NonAggregatingPart else projectionPart
-
-    ProjectionExpressionContext(newConstants, unitVariables, localCallables, projectionSpecification, newPart)
+    CommonContext(newConstants, unitVariables, localCallables)
   }
 
 }
@@ -400,6 +454,16 @@ case class PatternIncomingContext(
 
   override def allSymbols: Set[LogicalVariable] =
     topologicalConstants union predicateConstants union pathConstants union groupConstants
+
+  override def allSymbolsAndKeys: Set[LogicalVariable] = allSymbols
+
+  private def replaceWith(origin: Set[LogicalVariable], substitutes: Set[VariableGrouping]): Set[LogicalVariable] = {
+    val map = substitutes.map(vg => vg.group -> vg.singleton).toMap
+    origin.map(lv => map.getOrElse(lv, lv))
+  }
+
+  def replaceOccurrences(variableGroupings: Set[VariableGrouping]): PatternIncomingContext =
+    copy(replaceWith(topologicalConstants, variableGroupings), replaceWith(predicateConstants, variableGroupings))
 
   @inline def amendedWithTopologicalConstant(amendment: LogicalVariable): PatternIncomingContext =
     PatternIncomingContext(
@@ -457,11 +521,12 @@ case class PatternIncomingContext(
     result: TableResult,
     children: Seq[WorkingScope],
     declared: Declarations,
-    referencedInTopology: Iterable[LogicalVariable] = None
+    referencedInTopology: References = References.empty
   )(
     implicit astNode: ASTNode
   ): PatternScope = {
-    val referenced = (WorkingScope.referencedInChildren(children) diff declared.variables.toSet) ++ referencedInTopology
+    val referenced =
+      (WorkingScope.referencedInChildren(children) diff declared.variables.toSet) union referencedInTopology
     PatternScope(astNode, this, referenced, declared, result, children)
   }
 

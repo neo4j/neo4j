@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.util.Ref
 
 /**
  * Runs all checks requiring the resolution of callables to be complete.
@@ -71,7 +72,7 @@ case object AggregationChecker extends VariableCheckerUtil {
   ): Set[LogicalVariable] = scope match {
     // A SubqueryExpression can only reference simple variable references - no recognition
     case ExpressionScope(_: FullSubqueryExpression, ctx: ProjectionExpressionContext, referenced, _, _) =>
-      referenced.filterNot(r => ctx.isConstantForPart(r, part))
+      referenced.filterTargets(t => !ctx.isConstantForPart(t, part)).getVariables.toSet
     // If an expression is recognized we skip the children
     case ExpressionScope(expr: Expression, ctx: ProjectionExpressionContext, _, _, _)
       if ctx.recognizeExpression(expr, inSubExpression).isDefined => Set.empty
@@ -129,7 +130,7 @@ case object AggregationChecker extends VariableCheckerUtil {
   }
 
   def checkAggregatingClause(from: BaseState, clause: ProjectionClause): Set[SemanticError] = {
-    val scopeOpt = from.scopeState().recordedScopes.get(clause)
+    val scopeOpt = from.scopeState().recordedScopes.get(Ref(clause))
     scopeOpt.fold(Set.empty[SemanticError]) { s => traverseScope(clause.name, s) } ++
       legacyIllegalAggregationCheck(clause)
   }

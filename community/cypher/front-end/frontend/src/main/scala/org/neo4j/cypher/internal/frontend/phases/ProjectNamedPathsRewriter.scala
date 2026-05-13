@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.ProjectNamedPaths
@@ -48,9 +49,9 @@ case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, Base
     ProjectNamedPaths.postConditions
 
   override def invalidatedConditions: Set[StepSequencer.Condition] =
-    SemanticInfoAvailable +
+    SemanticInfoAvailable ++
       // We may duplicate grouping variables of QPPs
-      Namespacer.completed
+      Set(UpToDateScopes, Namespacer.completed)
 
   override def getTransformer(planPipelineConfig: PlanPipelineTransformerConfig)
     : Transformer[_ <: BaseContext, _ <: BaseState, BaseState] = this

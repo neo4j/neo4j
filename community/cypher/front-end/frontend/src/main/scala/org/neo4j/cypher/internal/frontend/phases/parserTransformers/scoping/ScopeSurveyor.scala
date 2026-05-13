@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.ASTNode
@@ -49,10 +51,11 @@ case object UpToDateScopes extends StepSequencer.Condition
  */
 case object ScopeSurveyor extends Phase[BaseContext, BaseState, BaseState]
     with StepSequencer.Step
-    with ParsePipelineTransformerFactory {
+    with ParsePipelineTransformerFactory
+    with PlanPipelineTransformerFactory {
 
   override def process(from: BaseState, context: BaseContext): BaseState =
-    if (from.maybeScopeState.isEmpty || from.statement != from.scopeState().workingScope.astNode)
+    if (from.maybeScopeState.isEmpty || (from.statement() ne from.scopeState().workingScope.astNode))
       from.withScopeState(runFromState(from, context))
     else from
 
@@ -105,6 +108,9 @@ case object ScopeSurveyor extends Phase[BaseContext, BaseState, BaseState]
     obfuscateLiterals: Boolean
   ): Transformer[BaseContext, BaseState, BaseState] = ScopeSurveyor
 
+  override def getTransformer(planPipelineConfig: PlanPipelineTransformerConfig)
+    : Transformer[BaseContext, BaseState, BaseState] = ScopeSurveyor
+
   override val phase = CompilationPhase.VARIABLE_SCOPING
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
@@ -141,8 +147,8 @@ case object ScopeSurveyor extends Phase[BaseContext, BaseState, BaseState]
       /**
        * Pattern
        */
-      case pattern: Pattern         => pegPattern(pattern, incoming)
-      case patternPart: PatternPart => pegPattern(patternPart, incoming)
+      case pattern: Pattern         => pegPattern(pattern, incoming, foreachIterVar = None)
+      case patternPart: PatternPart => pegPattern(patternPart, incoming, foreachIterVar = None)
 
       /**
        * To make match exhaustive

@@ -213,6 +213,24 @@ class GQL_42I18_ReferenceToNonGroupingSubExpressionTest extends VariableChecking
       Seq("`n.age`", "res")
     ),
     TestQuery(
+      """MATCH (v:player)--(n:team)
+        |RETURN n.age, ANY(x IN collect(v.age) WHERE x > n.age) AS res""".stripMargin,
+      Passes,
+      Seq("`n.age`", "res")
+    ),
+    TestQuery(
+      """MATCH (v:player)--(n:team)
+        |RETURN n.age, reduce(acc = 0, x IN collect(v.age) | acc + x + n.age) AS res""".stripMargin,
+      Passes,
+      Seq("`n.age`", "res")
+    ),
+    TestQuery(
+      """MATCH (v:player)--(n:team)
+        |RETURN n.age, sum(size([(v)-[:KNOWS]->(p) WHERE p.age > n.age | p.age])) AS res""".stripMargin,
+      Passes,
+      Seq("`n.age`", "res")
+    ),
+    TestQuery(
       """MATCH (a:A)
         |CALL (a) {
         |  MATCH (a)-->(b:B)

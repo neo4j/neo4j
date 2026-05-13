@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator.anonymousVarName
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.NamedVariable
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
 
 /**
@@ -45,4 +46,19 @@ object AnonymousVariableNameGenerator {
 
   def isNamed(x: String): Boolean = !notNamed(x)
   def notNamed(x: String): Boolean = UNNAMED_PATTERN.matches(x)
+
+  /**
+   * Generate a unique anonymous name that includes the original variable name when available
+   */
+  def genName(generator: AnonymousVariableNameGenerator, variableName: String): String =
+    includeName(variableName, generator.nextName)
+
+  /**
+   * @param anonVarName a variable name obtained from `AnonymousVariableNameGenerator#nextName`
+   */
+  def includeName(variableName: String, anonVarName: String): String =
+    variableName match {
+      case NamedVariable(name) => anonVarName.replace(generatorName, name + "@")
+      case _                   => anonVarName
+    }
 }

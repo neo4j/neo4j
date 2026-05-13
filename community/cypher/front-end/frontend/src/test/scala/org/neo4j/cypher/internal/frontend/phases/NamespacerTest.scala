@@ -41,7 +41,8 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.Scop
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
+class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest
+    with NamespacerTestWithCanonicalization {
 
   private val tests: Seq[Test] = Seq(
     TestCase(
@@ -70,8 +71,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
               None,
               Set(
                 VariableGrouping(varFor("  x@0"), varFor("  x@3"))(pos),
-                VariableGrouping(varFor("  y@2"), varFor("  y@5"))(pos),
-                variableGrouping("  UNNAMED1", "  UNNAMED4")
+                variableGrouping("  UNNAMED1", "  UNNAMED4"),
+                VariableGrouping(varFor("  y@2"), varFor("  y@5"))(pos)
               )
             )(pos),
             nodePat(Some("  UNNAMED1"))
@@ -102,8 +103,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
               Some(allInList(varFor("  a@3"), prop("  a@0", "prop"), greaterThan(varFor("  a@3"), literalInt(0)))),
               Set(
                 VariableGrouping(varFor("  a@0"), varFor("  a@4"))(pos),
-                VariableGrouping(varFor("  b@2"), varFor("  b@6"))(pos),
-                VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED5"))(pos)
+                variableGrouping("  UNNAMED1", "  UNNAMED5"),
+                VariableGrouping(varFor("  b@2"), varFor("  b@6"))(pos)
               )
             )(pos),
             nodePat(Some("  UNNAMED2"))
@@ -115,7 +116,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         ),
         return_(aliasedReturnItem(varFor("  a@4")))
       ),
-      List(varFor("  a@0"), varFor("  a@4"), varFor("  a@3"), varFor("  b@2"), varFor("  b@6"))
+      List(varFor("  a@0"), varFor("  a@3"), varFor("  a@4"), varFor("  b@2"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",
@@ -173,15 +174,15 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         ),
         singleQuery(
           match_(
-            NodePattern(Some(varFor("  a@1")), None, None, None)(pos),
+            NodePattern(Some(varFor("  a@2")), None, None, None)(pos),
             MatchMode.default(pos),
-            Some(Where(HasLabels(varFor("  a@1"), Seq(LabelName("Animal")(pos)))(pos))(pos))
+            Some(Where(HasLabels(varFor("  a@2"), Seq(LabelName("Animal")(pos)))(pos))(pos))
           ),
-          return_(varFor("  a@1").as("  a@1"))
+          return_(varFor("  a@2").as("  a@2"))
         ),
-        List(UnionMapping(varFor("  a@2"), varFor("  a@0"), varFor("  a@1")))
+        List(UnionMapping(varFor("  a@1"), varFor("  a@0"), varFor("  a@2")))
       )(pos),
-      List(varFor("  a@0"), varFor("  a@1"))
+      List(varFor("  a@0"), varFor("  a@2"))
     ),
     TestCase(
       "MATCH p=(a:Start)-[r]->(b) RETURN *",

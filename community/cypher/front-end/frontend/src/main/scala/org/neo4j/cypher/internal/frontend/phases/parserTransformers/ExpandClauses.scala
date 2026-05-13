@@ -85,8 +85,10 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -197,6 +199,30 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
 
     val ensureUniqueIds: Rewriter = bottomUp(Rewriter.lift { case v: LogicalVariable => v.copyId })
 
+    /**
+     * Memoized union of `referenced` variables across an AST subtree.
+     */
+    private val refsCache: scala.collection.mutable.HashMap[Ref[ASTNode], Set[LogicalVariable]] =
+      scala.collection.mutable.HashMap.empty
+
+    private def refsFor(ast: ASTNode): Set[LogicalVariable] = collectRefsThrough(ast)
+
+    private def collectRefsThrough(node: AnyRef): Set[LogicalVariable] = node match {
+      case ast: ASTNode =>
+        refsCache.getOrElseUpdate(
+          Ref(ast), {
+            val own = scopeState.scopeOfOpt(ast)
+              .map(_.referenced.getVariables.toSet)
+              .getOrElse(Set.empty[LogicalVariable])
+            ast.treeChildren.foldLeft(own)((acc, child) => acc ++ collectRefsThrough(child))
+          }
+        )
+      case other =>
+        other.treeChildren.foldLeft(Set.empty[LogicalVariable])((acc, child) =>
+          acc ++ collectRefsThrough(child)
+        )
+    }
+
     sealed trait ContextKind
     case object SingleQueryCtx extends ContextKind
     case object UnionDistinctCtx extends ContextKind
@@ -261,10 +287,15 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
           withIncomingMappingAndContext(anonymizeResultMapping, SemanticContext(BodyInNextCtx, layout.resultMapping))
         else withIncomingMappingAndContext(anonymizeResultMapping, SemanticContext(LastInNextCtx, layout.resultMapping))
 
-      private def refsFor(ast: ASTNode): Set[LogicalVariable] =
-        scopeState.recordedScopes.get(ast).fold(Set.empty[LogicalVariable])(scope =>
-          scope.referenced ++ scope.children.flatMap(_.referenced)
+      private def importingWithFor(sq: SingleQuery): Option[PositionedNode[With]] =
+        if (
+          scopeState.recordedScopes.get(Ref(sq)).exists {
+            case StatementScope(_, _, _, _, _, _, _, true) => true
+            case _                                         => false
+          }
         )
+          sq.partitionedClauses.importingWith.map(PositionedNode(_))
+        else None
 
       def inUnionDistinctRefByQuery(ast: ASTNode): Layout =
         copy(
@@ -281,47 +312,18 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
       def inSingleQueryRefBySingleQuery(sq: SingleQuery): Layout =
         copy(
           semanticContext = semanticContext.copy(kind = SingleQueryCtx),
-          referencedByQuery =
-            scopeState.recordedScopes.get(sq) match {
-              case Some(scope) =>
-                scope.referenced ++ scope.children.flatMap(_.referenced)
-              case None =>
-                sq.clauses.flatMap(c => scopeState.recordedScopes.get(c)).flatMap(_.referenced).toSet
-            },
-          importingWith =
-            if (
-              scopeState.recordedScopes.get(sq).exists {
-                case StatementScope(_, _, _, _, _, _, _, true) => true
-                case _                                         => false
-              }
-            )
-              sq.partitionedClauses.importingWith.map(PositionedNode(_))
-            else None
+          referencedByQuery = refsFor(sq),
+          importingWith = importingWithFor(sq)
         )
 
       def refByQuery(ast: ASTNode): Layout =
         copy(referencedByQuery = refsFor(ast))
 
-      def refBySingleQuery(sq: SingleQuery): Layout = {
+      def refBySingleQuery(sq: SingleQuery): Layout =
         copy(
-          referencedByQuery =
-            scopeState.recordedScopes.get(sq) match {
-              case Some(scope) =>
-                scope.referenced ++ scope.children.flatMap(_.referenced)
-              case None =>
-                sq.clauses.flatMap(c => scopeState.recordedScopes.get(c)).flatMap(_.referenced).toSet
-            },
-          importingWith =
-            if (
-              scopeState.recordedScopes.get(sq).exists {
-                case StatementScope(_, _, _, _, _, _, _, true) => true
-                case _                                         => false
-              }
-            )
-              sq.partitionedClauses.importingWith.map(PositionedNode(_))
-            else None
+          referencedByQuery = refsFor(sq),
+          importingWith = importingWithFor(sq)
         )
-      }
 
       private def drivingTableReset(pos: InputPosition): Clause =
         With(
@@ -542,7 +544,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         val collectedColumns =
           if (incomingLayout.utilityVariable.isDefined) incomingLayout.incomingMapping
           else
-            variableRefs.map(vr =>
+            variableRefs.toSeq.sortBy(_.name).map(vr =>
               vr -> AnonymizedVariable(
                 vr,
                 incomingLayout.incomingMapping.get(vr).fold(vr)(_.incoming),
@@ -660,7 +662,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         val nestedQuery =
           ScopeClauseSubqueryCall(
             ensureNoTopLevelBracesSingleQuery(ast, incomingLayout.consumeLayout),
-            references.map(_.copyId).toSeq
+            references.toSeq.sortBy(_.name).map(_.copyId)
           )(ast.position)
 
         val deanonymizeReturns = returns.map(r => incomingLayout.resultMapping.getOrElse(r, r).copyId)
@@ -691,7 +693,8 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
 
         val listName = anonVarNameGen.nextName
 
-        val imports = referenced.toSeq ++ Seq(Variable(listName, ast.position))
+        val imports =
+          referenced.toSeq.sortBy(_.name) ++ Seq(Variable(listName, ast.position))
 
         // If returned columns exists in incoming symbols we need to anonymize the result columns
         val returnsMapped: Map[LogicalVariable, LogicalVariable] =
@@ -720,22 +723,21 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
         val unionOfBranches =
           branchQueries.tail.foldLeft[Query](branchQueries.head) { case (acc, query) => UnionAll(acc, query)(pos) }
 
-        // If the incoming variables need to be deanonymized we can't reference them in the CASE expression
-        // if it is in the same WITH clause. In this case we split the deanonymization to a preceding clause.
+        val referencedSorted: Seq[LogicalVariable] = referenced.toSeq.sortBy(_.name)
         val incomingItems =
           if (
             incomingLayout.ingress.nonEmpty ||
             incomingLayout.incomingMapping.isEmpty ||
             incomingLayout.incomingMapping.forall(!_._2.anonymizedIncoming)
           )
-            (None, referenced.toSeq.map(lv => AliasedReturnItem(lv)))
+            (None, referencedSorted.map(lv => AliasedReturnItem(lv)))
           else
             (
               Some(
                 With(
                   ReturnItems(
                     FreeProjection,
-                    referenced.toSeq.map(lv =>
+                    referencedSorted.map(lv =>
                       AliasedReturnItem(
                         incomingLayout.incomingMapping.get(lv).fold(lv)(_.incoming).copyId,
                         lv.copyId
@@ -745,7 +747,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
                   AddedInRewriteGeneral(Some("WHEN"))
                 )(ast.position)
               ),
-              referenced.toSeq.map(lv => AliasedReturnItem(lv))
+              referencedSorted.map(lv => AliasedReturnItem(lv))
             )
 
         /**
@@ -829,7 +831,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
               Return(returnItems)(ast.position)
             } else Finish()(ast.position)
 
-          val imports: Seq[LogicalVariable] = scopeState.getReferenced(ast).toSeq
+          val imports: Seq[LogicalVariable] = scopeState.getReferenced(ast).toSeq.sortBy(_.name)
 
           val expandedQuery =
             layoutWithUse.getIngress ++ Seq(ScopeClauseSubqueryCall(
@@ -947,7 +949,7 @@ case object ExpandClauses extends StatementRewriter with StepSequencer.Step with
     }
 
     def getScopeImports(call: ScopeClauseSubqueryCall): Seq[LogicalVariable] =
-      scopeState.getReferenced(call).map(_.copyId).toSeq
+      scopeState.getReferenced(call).toSeq.sortBy(_.name).map(_.copyId)
 
     def removeTopLevelBraces(tlb: TopLevelBraces, layout: Layout): Query =
       tlb.query.endoRewrite(rewriter(layout.pushUse(tlb.use)))

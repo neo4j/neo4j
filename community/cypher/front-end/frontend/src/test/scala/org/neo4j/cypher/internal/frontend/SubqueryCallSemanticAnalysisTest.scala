@@ -82,14 +82,9 @@ class SubqueryCallSemanticAnalysisTest
     run(query).hasAtLeastOneGqlErrorIn(_ =>
       Seq(
         (
-          getGql42001_42N07("i", 42, 4, 10),
+          getGql42001_42N07("i", 48, 5, 5),
           "Variable `i` already declared in outer scope",
-          p(42, 4, 10)
-        ),
-        (
-          getGql42001_42N07("i", 82, 7, 15),
-          "Variable `i` already declared in outer scope",
-          p(82, 7, 15)
+          p(48, 5, 5)
         )
       )
     )

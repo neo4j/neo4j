@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransfor
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -45,7 +46,7 @@ case object ResolveLocalFunctions extends StatementRewriter with StepSequencer.S
     bottomUp(
       Rewriter.lift {
         case fi: FunctionInvocation if fi.maybeLocalFunction.isEmpty =>
-          recordedScopes.get(fi).flatMap(ws =>
+          recordedScopes.get(Ref(fi)).flatMap(ws =>
             ws.incoming.localCallables.collectFirst {
               case sig @ LocalFunctionScopeSignature(name, _, _, _) if name.fullNameEqual(fi.functionName) => sig
             }

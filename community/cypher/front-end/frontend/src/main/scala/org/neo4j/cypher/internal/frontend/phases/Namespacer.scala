@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.Scope
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.EnableWorkingScopeNamespacer
 import org.neo4j.cypher.internal.ast.semantics.SymbolUse
 import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -31,6 +32,8 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -41,7 +44,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.NamedVariable
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 
@@ -58,7 +60,33 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
 
   override def phase: CompilationPhase = AST_REWRITE
 
-  override def process(from: BaseState, ignored: BaseContext): BaseState = {
+  override def process(from: BaseState, context: BaseContext): BaseState =
+    if (context.semanticFeatures.contains(EnableWorkingScopeNamespacer)) processNew(from, context)
+    else processOld(from, context)
+
+  def processNew(from: BaseState, context: BaseContext): BaseState = {
+    val withProjectedUnions = from.statement().endoRewrite(projectUnions)
+    // projectUnions rewrites the statement before scope consumption, so we must
+    // re-run ScopeSurveyor to get WorkingScope aligned with the rewritten tree.
+    val surveyed = ScopeSurveyor.process(from.withStatement(withProjectedUnions), context)
+    val table = surveyed.semanticTable()
+
+    val renamings: VariableRenamings =
+      surveyed.scopeState().workingScope
+        .getSymbolGroups(surveyed.anonymousVariableNameGenerator)
+        .flatMap(_.getRenamedUses).flatten.toMap
+
+    if (renamings.isEmpty) {
+      surveyed.withSemanticTable(table)
+    } else {
+      val rewriter = renamingRewriter(renamings)
+      val newStatement = surveyed.statement().endoRewrite(rewriter)
+      val newSemanticTable = table.replaceExpressions(rewriter)
+      surveyed.withStatement(newStatement).withSemanticTable(newSemanticTable)
+    }
+  }
+
+  def processOld(from: BaseState, context: BaseContext): BaseState = {
     val withProjectedUnions = from.statement().endoRewrite(projectUnions)
     val table = from.semanticTable()
 
@@ -125,29 +153,15 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
   }
 
   /**
-   * Generate a unique anonymous name.
-   *
-   * If the original variable is anonymous, simply create a new anonymous variable.
-   * If the original variable is not anonymous,
-   * include the original variable name for easier debugging and better plan descriptions.
+   * Generate a unique anonymous name, including the original variable name
+   * for easier debugging when possible.
    */
-  def genName(anonymousVariableNameGenerator: AnonymousVariableNameGenerator, variableName: String): String = {
-    val nextName = anonymousVariableNameGenerator.nextName
-    val res = includeName(variableName, nextName)
-    res
-  }
+  def genName(anonymousVariableNameGenerator: AnonymousVariableNameGenerator, variableName: String): String =
+    AnonymousVariableNameGenerator.genName(anonymousVariableNameGenerator, variableName)
 
-  /**
-   * @param anonVarName a variable name obtained from `AnonymousVariableNameGenerator#nextName`
-   */
-  def includeName(variableName: String, anonVarName: String): String = {
-    variableName match {
-      case NamedVariable(name) =>
-        anonVarName.replace(AnonymousVariableNameGenerator.generatorName, name + "@")
-      case _ =>
-        anonVarName
-    }
-  }
+  /** Thin forwarder to the util helper; kept for callers that reference `Namespacer.includeName`. */
+  def includeName(variableName: String, anonVarName: String): String =
+    AnonymousVariableNameGenerator.includeName(variableName, anonVarName)
 
   def projectUnions: Rewriter = {
     // This needs to be topDown so that Unions do net get copied before being replaced by a ProjectingUnion,
@@ -183,7 +197,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
     completed
   )
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    SemanticInfoAvailable + UpToDateScopes // Introduces new AST nodes
 
   override def getTransformer(planPipelineConfig: PlanPipelineTransformerConfig)
     : Transformer[BaseContext, BaseState, BaseState] = this

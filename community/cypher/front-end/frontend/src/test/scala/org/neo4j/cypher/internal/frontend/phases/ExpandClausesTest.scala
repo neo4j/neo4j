@@ -574,7 +574,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  WITH a AS a, a + 2 AS b
         |  RETURN a AS `  UNNAMED3`, b AS `  UNNAMED4`
         |}
-        |WITH `  UNNAMED4` AS b, `  UNNAMED3` AS a
+        |WITH `  UNNAMED3` AS a, `  UNNAMED4` AS b
         |WITH a AS a, b AS b, b + 1 AS c
         |RETURN a AS a, b AS b, c AS c""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
@@ -637,7 +637,7 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  MATCH (m:L1)
         |  RETURN m AS `  UNNAMED1`, n AS `  UNNAMED0`
         |}
-        |WITH `  UNNAMED0` AS n, `  UNNAMED1` AS m
+        |WITH `  UNNAMED1` AS m, `  UNNAMED0` AS n
         |MATCH (o:L2)
         |RETURN (n.x + m.x) + o.x AS `n.x + m.x + o.x`""".stripMargin,
       additionalExpectedAstUpdates = withUpdate(),
@@ -672,8 +672,8 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  MATCH (m:L1)
         |  RETURN m AS `  UNNAMED1`, n AS `  UNNAMED0`
         |}
-        |WITH `  UNNAMED0` AS n, `  UNNAMED1` AS m
-        |CALL (n,m) {
+        |WITH `  UNNAMED1` AS m, `  UNNAMED0` AS n
+        |CALL (m, n) {
         |  USE `neo1`
         |  MATCH (o:L2)
         |  RETURN (n.x + m.x) + o.x AS `n.x + m.x + o.x`
@@ -722,18 +722,18 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |WITH a AS a, 3 AS x
         |WITH a AS a, x AS x, 2 AS b
         |  ORDER BY a ASCENDING, 4 ASCENDING
-        |WITH count(*) AS `  UNNAMED3`, collect([a]) AS `  UNNAMED0`, collect([x]) AS `  UNNAMED1`, collect([b]) AS `  UNNAMED2`
+        |WITH count(*) AS `  UNNAMED3`, collect([a]) AS `  UNNAMED0`, collect([b]) AS `  UNNAMED1`, collect([x]) AS `  UNNAMED2`
         |CALL (`  UNNAMED0`,`  UNNAMED1`,`  UNNAMED2`,`  UNNAMED3`) {
         |  UNWIND range(0, `  UNNAMED3` - 1) AS `  UNNAMED4`
-        |  WITH (`  UNNAMED0`[`  UNNAMED4`])[0] AS a, (`  UNNAMED1`[`  UNNAMED4`])[0] AS x, (`  UNNAMED2`[`  UNNAMED4`])[0] AS b
+        |  WITH (`  UNNAMED0`[`  UNNAMED4`])[0] AS a, (`  UNNAMED1`[`  UNNAMED4`])[0] AS b, (`  UNNAMED2`[`  UNNAMED4`])[0] AS x
         |  RETURN DISTINCT a AS `  UNNAMED5`, b AS `  UNNAMED7`, x AS `  UNNAMED6`
         |  UNION
         |  UNWIND range(0, `  UNNAMED3` - 1) AS `  UNNAMED4`
-        |  WITH (`  UNNAMED0`[`  UNNAMED4`])[0] AS a, (`  UNNAMED1`[`  UNNAMED4`])[0] AS x, (`  UNNAMED2`[`  UNNAMED4`])[0] AS b
+        |  WITH (`  UNNAMED0`[`  UNNAMED4`])[0] AS a, (`  UNNAMED1`[`  UNNAMED4`])[0] AS b, (`  UNNAMED2`[`  UNNAMED4`])[0] AS x
         |  RETURN DISTINCT a AS `  UNNAMED5`, b AS `  UNNAMED7`, x AS `  UNNAMED6`
         |  UNION
         |  UNWIND range(0, `  UNNAMED3` - 1) AS `  UNNAMED4`
-        |  WITH (`  UNNAMED0`[`  UNNAMED4`])[0] AS a, (`  UNNAMED1`[`  UNNAMED4`])[0] AS x, (`  UNNAMED2`[`  UNNAMED4`])[0] AS b
+        |  WITH (`  UNNAMED0`[`  UNNAMED4`])[0] AS a, (`  UNNAMED1`[`  UNNAMED4`])[0] AS b, (`  UNNAMED2`[`  UNNAMED4`])[0] AS x
         |  RETURN DISTINCT a AS `  UNNAMED5`, b AS `  UNNAMED7`, x AS `  UNNAMED6`
         |}
         |RETURN `  UNNAMED5` AS a, `  UNNAMED6` AS x, `  UNNAMED7` AS b""".stripMargin,
@@ -2795,12 +2795,12 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |} AS res""".stripMargin,
       """WITH 1 AS x, 2 AS b
         |RETURN EXISTS {
-        |  WITH x, b, CASE
+        |  WITH b AS b, x AS x, CASE
         |    WHEN x < 0 THEN 0
         |    WHEN b < 1 THEN 1
         |    ELSE 2
         |  END AS `  UNNAMED0`
-        |  CALL (x,b,`  UNNAMED0`) {
+        |  CALL (b,x,`  UNNAMED0`) {
         |    WITH `  UNNAMED0` AS `  UNNAMED0`
         |      WHERE `  UNNAMED0` = 0
         |    CALL (x) {
@@ -3684,16 +3684,14 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |UNION
         |RETURN 0 AS x""".stripMargin,
       """WITH 5 AS y
-        |WITH count(*) AS `  UNNAMED1`, collect([y]) AS `  UNNAMED0`
-        |CALL (`  UNNAMED0`,`  UNNAMED1`) {
-        |  UNWIND range(0, `  UNNAMED1` - 1) AS `  UNNAMED2`
-        |  WITH (`  UNNAMED0`[`  UNNAMED2`])[0] AS y
+        |WITH count(*) AS `  UNNAMED0`
+        |CALL (`  UNNAMED0`) {
+        |  UNWIND range(0, `  UNNAMED0` - 1) AS `  UNNAMED1`
         |  WITH 2 AS z
         |  WITH 1 AS y
         |  RETURN y + 6 AS x
         |  UNION
-        |  UNWIND range(0, `  UNNAMED1` - 1) AS `  UNNAMED2`
-        |  WITH (`  UNNAMED0`[`  UNNAMED2`])[0] AS y
+        |  UNWIND range(0, `  UNNAMED0` - 1) AS `  UNNAMED1`
         |  RETURN 0 AS x
         |}
         |RETURN x AS x""".stripMargin,
@@ -4483,16 +4481,16 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |    WITH (`  UNNAMED1`[`  UNNAMED3`])[0] AS x
         |    RETURN x + a AS `  UNNAMED4`
         |  }
-        |  WITH `  UNNAMED4` AS x, a AS a
-        |  WITH x AS x, a AS a, CASE
+        |  WITH a AS a, `  UNNAMED4` AS x
+        |  WITH a AS a, x AS x, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED5`
-        |  CALL (x,a,`  UNNAMED5`) {
+        |  CALL (a,x,`  UNNAMED5`) {
         |    WITH `  UNNAMED5` AS `  UNNAMED5`
         |      WHERE `  UNNAMED5` = 0
-        |    CALL (x,a) {
-        |      CALL (x,a) {
+        |    CALL (a,x) {
+        |      CALL (a,x) {
         |        RETURN 5 AS `  UNNAMED6`
         |        UNION
         |        RETURN x + a AS `  UNNAMED6`
@@ -4512,16 +4510,16 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |    WITH (`  UNNAMED7`[`  UNNAMED9`])[0] AS x
         |    RETURN x + a AS `  UNNAMED10`
         |  }
-        |  WITH `  UNNAMED10` AS x, a AS a
-        |  WITH x AS x, a AS a, CASE
+        |  WITH a AS a, `  UNNAMED10` AS x
+        |  WITH a AS a, x AS x, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED11`
-        |  CALL (x,a,`  UNNAMED11`) {
+        |  CALL (a,x,`  UNNAMED11`) {
         |    WITH `  UNNAMED11` AS `  UNNAMED11`
         |      WHERE `  UNNAMED11` = 0
-        |    CALL (x,a) {
-        |      CALL (x,a) {
+        |    CALL (a,x) {
+        |      CALL (a,x) {
         |        RETURN 7 AS `  UNNAMED12`
         |        UNION
         |        RETURN x + a AS `  UNNAMED12`
@@ -4592,15 +4590,15 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |    WITH (`  UNNAMED1`[`  UNNAMED3`])[0] AS x
         |    RETURN x + a AS y
         |  }
-        |  WITH y AS y, a AS a, CASE
+        |  WITH a AS a, y AS y, CASE
         |  WHEN true THEN 0
         |  ELSE 1
         |END AS `  UNNAMED4`
-        |  CALL (y,a,`  UNNAMED4`) {
+        |  CALL (a,y,`  UNNAMED4`) {
         |    WITH `  UNNAMED4` AS `  UNNAMED4`
         |      WHERE `  UNNAMED4` = 0
-        |    CALL (y,a) {
-        |      CALL (y,a) {
+        |    CALL (a,y) {
+        |      CALL (a,y) {
         |        RETURN 2 AS `  UNNAMED5`, y AS `  UNNAMED6`
         |        UNION
         |        RETURN 1 + a AS `  UNNAMED5`, y AS `  UNNAMED6`
@@ -5165,12 +5163,12 @@ class ExpandClausesTest extends CypherFunSuite with RewritePhaseTest with AstCon
         |  }
         |  RETURN b AS `  UNNAMED4`, x AS `  UNNAMED3`, z AS `  UNNAMED5`
         |}
-        |WITH `  UNNAMED5` AS z, `  UNNAMED4` AS b
-        |WITH z AS z, b AS b, CASE
+        |WITH `  UNNAMED4` AS b, `  UNNAMED5` AS z
+        |WITH b AS b, z AS z, CASE
         |  WHEN z > 0 THEN 0
         |  ELSE 1
         |END AS `  UNNAMED6`
-        |CALL (z,b,`  UNNAMED6`) {
+        |CALL (b,z,`  UNNAMED6`) {
         |  WITH `  UNNAMED6` AS `  UNNAMED6`
         |    WHERE `  UNNAMED6` = 0
         |  CALL (b,z) {

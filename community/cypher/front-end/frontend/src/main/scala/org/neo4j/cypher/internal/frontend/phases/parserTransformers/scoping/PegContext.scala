@@ -20,9 +20,12 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState.RecordedScopes
+import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Ref
 
 case class PegContext(
   anonVarGen: AnonymousVariableNameGenerator,
@@ -32,31 +35,54 @@ case class PegContext(
 ) {
 
   /**
-   * Looks up the working scope for the given astNode in recordedScopes and
-   * returns is if the recorded working scope's incoming is equal to the given incoming.
-   * If no working scope is record for the given astNode or the incoming does match,
-   * the peg function is used to freshly compute the working scope for the given astNode.
+   * Looks up the working scope for the given astNode in recordedScopes and returns it only
+   * when the cached scope is observationally equivalent to a freshly computed one.
    *
-   * Note that the lookup includes the InputPosition, i.e. it assumes that changes to AST
-   * do not change positions for parts of the AST. This is usually the case for changes
-   * made by rewriters. It would not necessarily be true after serialization and reparsing.
+   * `References` hold `Ref[LogicalVariable]` whose equality
+   * is identity-based (`eq`). A cached scope's Refs therefore point at specific objects, and
+   * the cache is only safe to reuse when:
    *
-   * Conversely, this assumes that all AST nodes differ at least in their position. This is
-   * necessarily true after parsing. It is not necessarily true for changes made be rewriters.
-   * It is deemed unlikely to not be true though.
+   *   1. The looked-up `astNode` is the same JVM instance as the node the cached scope was
+   *      built for. The map is keyed by `Ref[ASTNode]`, so `recordedScopes.get(Ref(astNode))`
+   *      enforces this — a retrieved entry is, by construction, for the same instance.
+   *   2. Every LogicalVariable in `incoming` is the same instance as the one the cached
+   *      scope's enclosing context flowed in (`identityEquivalent(ws.incoming, incoming)`).
+   *      That guarantees Refs that resolved to variables from the outer scope (via
+   *      `References.connect(v, incoming.allSymbolsAndKeys)`) still point at live variables.
    *
-   * For same considerations, this approach is likely unsuitable for caching working scope's
-   * across queries.
+   * A miss here is never a correctness failure — it just means `peg(...)` recomputes fresh
+   * scope identities for the current AST. The structural `incoming ==` check is required for
+   * correctness, ensuring that the incmoing is of the same Context type, the localCallables
+   * are the same, .
    */
   def getRecordScopeOrElse[T <: ASTNode](
     astNode: T,
     incoming: RegularContext,
     inImportingWith: Boolean,
+    foreachIterVar: Option[LogicalVariable],
     peg: (T, RegularContext) => WorkingScope
   ): WorkingScope = {
-    recordedScopes.get(astNode).flatMap {
-      case ws: WorkingScope if ws.incoming == incoming && ws.inImportingWith == inImportingWith => Some(ws)
-      case _                                                                                    => None
+    recordedScopes.get(Ref(astNode)).flatMap {
+      case ws: WorkingScope
+        if ws.inImportingWith == inImportingWith &&
+          ws.foreachIterVar == foreachIterVar &&
+          ws.incoming == incoming &&
+          PegContext.identityEquivalent(ws.incoming, incoming) =>
+        Some(ws)
+      case _ => None
     }.getOrElse(peg(astNode, incoming))
   }
+}
+
+object PegContext {
+
+  /**
+   * True iff every LogicalVariable in `a.allSymbolsAndKeys` has a same-name counterpart in
+   * `b.allSymbolsAndKeys` that is the same instance (`eq`), and vice versa.
+   */
+  private def identityEquivalent(a: WorkingContext, b: WorkingContext): Boolean =
+    sameInstances(a.allSymbolsAndKeys, b.allSymbolsAndKeys)
+
+  private def sameInstances(as: Set[LogicalVariable], bs: Set[LogicalVariable]): Boolean =
+    as.size == bs.size && as.forall(v => bs.exists(w => w.name == v.name && (w eq v)))
 }

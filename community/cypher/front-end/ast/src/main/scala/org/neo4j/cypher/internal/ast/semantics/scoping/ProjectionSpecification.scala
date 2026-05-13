@@ -147,9 +147,42 @@ case class ProjectionSpecification(
   def isEmpty: Boolean = nonAggregatingItems.isEmpty && aggregatingItems.isEmpty
   def size: Int = nonAggregatingItems.size + aggregatingItems.size
 
+  /**
+   * Drop any grouping key whose underlying expression is a Variable / Property(Variable, _) whose name is in
+   * `shadowedNames`. Used when an inner scope-binding construct (list-comp, iter-pred, pattern-comp, reduce)
+   * shadows a name that would otherwise be recognised as a grouping key from an outer projection.
+   */
+  def shadowGroupingKeys(shadowedNames: Set[String]): ProjectionSpecification = {
+    val filteredKeys = groupingKeys.filterNot { gk =>
+      gk.expression match {
+        case v: LogicalVariable              => shadowedNames.contains(v.name)
+        case Property(v: LogicalVariable, _) => shadowedNames.contains(v.name)
+        case _                               => false
+      }
+    }
+    copy(groupingKeys = filteredKeys)
+  }
+
+  /**
+   * Symbols visible to subclause expressions (ORDER BY / WHERE / SKIP / LIMIT). Per CIP-236 Rule 7,
+   * grouping-key aliases are visible in subclauses even when they are not return items, so
+   * `groupingKeys.flatMap(_.alias)` is included alongside the projection-item scope symbols.
+   */
   val subclauseScopeSymbols: Set[LogicalVariable] =
     nonAggregatingItems.map(_.scopeSymbol) ++
-      aggregatingItems.map(_.scopeSymbol)
+      aggregatingItems.map(_.scopeSymbol) ++
+      groupingKeys.flatMap(_.alias)
+
+  /**
+   * Combine [[visible]] with this projection's [[subclauseScopeSymbols]] under shadowing semantics:
+   * symbols in `visible` whose name matches a `subclauseScopeSymbol` are dropped, then unioned with
+   * the projection symbols. Used by [[ProjectionExpressionContext.projectionChildContext]] to build
+   * the visible-symbol set for ORDER BY / WHERE / SKIP / LIMIT subclauses.
+   */
+  def shadowSubclauseSymbols(visible: Set[LogicalVariable]): Set[LogicalVariable] = {
+    val preferredNames = subclauseScopeSymbols.iterator.map(_.name).toSet
+    visible.filterNot(v => preferredNames.contains(v.name)) union subclauseScopeSymbols
+  }
 
   private lazy val groupingKeyByExpression: Map[Expression, GroupingKey] =
     firstWinsMap(groupingKeys.iterator.map(gk => gk.expression -> gk))
