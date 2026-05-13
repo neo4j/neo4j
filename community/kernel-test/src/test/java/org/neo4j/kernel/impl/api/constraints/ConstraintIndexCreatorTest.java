@@ -39,6 +39,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
@@ -49,6 +50,8 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -61,6 +64,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -332,6 +336,69 @@ class ConstraintIndexCreatorTest {
     }
 
     @Test
+    void shouldNotWrapTransientFailureFromInnerCommitIntoConstraintCreationFailure() throws Exception {
+        // given a transient failure (here LeaseExpired) surfacing from the inner transaction
+        // commit that creates the backing index — drivers can only retry it if it keeps its
+        // transient classification, not the database-error ConstraintCreationFailed it used to be.
+        IndexingService indexingService = mock(IndexingService.class);
+        when(schemaRead.indexGetForName(constraint.getName())).thenReturn(IndexDescriptor.NO_INDEX);
+
+        TransactionFailureException transientFailure = TransactionFailureException.leaseExpired(1, 0);
+        kernel.customizeNextTransaction(tx -> {
+            try {
+                doThrow(transientFailure).when(tx).commit();
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        });
+
+        ConstraintIndexCreator creator = new ConstraintIndexCreator(() -> kernel, indexingService, logProvider);
+
+        // when
+        KernelTransactionImplementation transaction = createTransaction();
+        TransactionFailureException thrown = assertThrows(
+                TransactionFailureException.class,
+                () -> creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {}));
+
+        // then — surface the original transient status, not ConstraintCreationFailed
+        assertEquals(
+                Status.Classification.TransientError, thrown.status().code().classification());
+        assertEquals(Status.Transaction.LeaseExpired, thrown.status());
+    }
+
+    @Test
+    void shouldWrapNonTransientTransactionFailureIntoConstraintCreationFailure() throws Exception {
+        // given a non-transient TransactionFailureException from the inner commit — only transient
+        // errors are filtered out for retryability; the rest stay wrapped as before.
+        IndexingService indexingService = mock(IndexingService.class);
+        when(schemaRead.indexGetForName(constraint.getName())).thenReturn(IndexDescriptor.NO_INDEX);
+
+        TransactionFailureException nonTransientFailure =
+                TransactionFailureException.unknownError(new RuntimeException("boom"));
+        kernel.customizeNextTransaction(tx -> {
+            try {
+                doThrow(nonTransientFailure).when(tx).commit();
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        });
+
+        ConstraintIndexCreator creator = new ConstraintIndexCreator(() -> kernel, indexingService, logProvider);
+
+        // when
+        KernelTransactionImplementation transaction = createTransaction();
+        CreateConstraintFailureException thrown = assertThrows(
+                CreateConstraintFailureException.class,
+                () -> creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {}));
+
+        // then
+        assertEquals(
+                Status.Classification.DatabaseError,
+                nonTransientFailure.status().code().classification());
+        assertEquals(nonTransientFailure, thrown.getCause());
+    }
+
+    @Test
     void logMessagesAboutConstraintCreation() throws KernelException {
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexingService indexingService = mock(IndexingService.class);
@@ -353,10 +420,20 @@ class ConstraintIndexCreatorTest {
 
     private class StubKernel implements Kernel {
         private final List<KernelTransactionImplementation> transactions = new ArrayList<>();
+        private Consumer<KernelTransactionImplementation> nextTransactionCustomizer;
 
         private KernelTransaction remember(KernelTransactionImplementation kernelTransaction) {
+            if (nextTransactionCustomizer != null) {
+                Consumer<KernelTransactionImplementation> customizer = nextTransactionCustomizer;
+                nextTransactionCustomizer = null;
+                customizer.accept(kernelTransaction);
+            }
             transactions.add(kernelTransaction);
             return kernelTransaction;
+        }
+
+        void customizeNextTransaction(Consumer<KernelTransactionImplementation> customizer) {
+            this.nextTransactionCustomizer = customizer;
         }
 
         @Override

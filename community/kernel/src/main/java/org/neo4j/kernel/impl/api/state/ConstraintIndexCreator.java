@@ -111,6 +111,14 @@ public class ConstraintIndexCreator {
             index = checkAndCreateConstraintIndex(schemaRead, transaction.tokenRead(), constraint, prototype);
         } catch (AlreadyConstrainedException e) {
             throw e;
+        } catch (TransactionFailureException e) {
+            // Transient errors (e.g. LeaseExpired) are retryable by drivers — don't bury them
+            // inside a CreateConstraintFailureException (a database error), or the retry is lost.
+            // Non-transient transaction failures stay wrapped as before.
+            if (e.status().code().classification() == Status.Classification.TransientError) {
+                throw e;
+            }
+            throw CreateConstraintFailureException.constraintCreationFailed(constraint, transaction.tokenRead(), e);
         } catch (KernelException e) {
             throw CreateConstraintFailureException.constraintCreationFailed(constraint, transaction.tokenRead(), e);
         }

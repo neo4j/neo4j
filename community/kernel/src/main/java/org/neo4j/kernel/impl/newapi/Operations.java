@@ -147,6 +147,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -3237,7 +3238,15 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 }
             }
             return constraint;
-        } catch (UniquePropertyValueValidationException | TransactionFailureException | AlreadyConstrainedException e) {
+        } catch (TransactionFailureException e) {
+            // Transient errors (e.g. LeaseExpired) are retryable by drivers — let them propagate
+            // so they aren't demoted to the database-level CreateConstraintFailureException.
+            // Non-transient transaction failures stay wrapped as before.
+            if (e.status().code().classification() == Status.Classification.TransientError) {
+                throw e;
+            }
+            throw CreateConstraintFailureException.constraintCreationFailed(constraint, token, e);
+        } catch (UniquePropertyValueValidationException | AlreadyConstrainedException e) {
             throw CreateConstraintFailureException.constraintCreationFailed(constraint, token, e);
         }
     }

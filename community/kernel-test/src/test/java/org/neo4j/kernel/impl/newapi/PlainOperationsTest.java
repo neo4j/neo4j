@@ -68,7 +68,9 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
@@ -90,6 +92,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -1211,6 +1214,58 @@ public class PlainOperationsTest extends OperationsTest {
         assertThat(e.getUserMessage(tokenHolders))
                 .containsIgnoringCase("index prototype")
                 .containsIgnoringCase("not unique");
+    }
+
+    @Test
+    void uniquePropertyConstraintCreateShouldNotWrapTransientFailureAsConstraintCreationFailed() throws Exception {
+        // given the inner index-creation transaction fails with a transient error (here
+        // LeaseExpired) — drivers retry transient errors, so it should reach them as such, not be
+        // re-classified as a non-retryable database error (KRNL-1585).
+        when(tokenHolders.labelTokens().getTokenById(anyInt())).thenReturn(new NamedToken("Label", 123));
+        when(tokenHolders.propertyKeyTokens().getTokenById(anyInt())).thenReturn(new NamedToken("prop", 456));
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
+                .withName("constraint name")
+                .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
+        when(storageReader.constraintsGetForSchema(schema)).thenReturn(Collections.emptyIterator());
+        when(storageReader.indexGetForSchema(schema)).thenReturn(Collections.emptyIterator());
+
+        TransactionFailureException transientFailure = TransactionFailureException.leaseExpired(1, 0);
+        when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), any(), any()))
+                .thenThrow(transientFailure);
+
+        // when
+        TransactionFailureException thrown = assertThrows(
+                TransactionFailureException.class, () -> operations.uniquePropertyConstraintCreate(prototype));
+
+        // then — surface the original transient status so drivers can retry
+        assertThat(thrown.status().code().classification()).isEqualTo(Status.Classification.TransientError);
+        assertThat(thrown).isSameAs(transientFailure);
+    }
+
+    @Test
+    void uniquePropertyConstraintCreateShouldWrapNonTransientTransactionFailure() throws Exception {
+        // given a non-transient TransactionFailureException — only transient errors should be
+        // allowed to propagate; the rest stay wrapped as CreateConstraintFailureException.
+        when(tokenHolders.labelTokens().getTokenById(anyInt())).thenReturn(new NamedToken("Label", 123));
+        when(tokenHolders.propertyKeyTokens().getTokenById(anyInt())).thenReturn(new NamedToken("prop", 456));
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
+                .withName("constraint name")
+                .withIndexProvider(AllIndexProviderDescriptors.RANGE_DESCRIPTOR);
+        when(storageReader.constraintsGetForSchema(schema)).thenReturn(Collections.emptyIterator());
+        when(storageReader.indexGetForSchema(schema)).thenReturn(Collections.emptyIterator());
+
+        TransactionFailureException nonTransientFailure =
+                TransactionFailureException.unknownError(new RuntimeException("boom"));
+        when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), any(), any()))
+                .thenThrow(nonTransientFailure);
+
+        // when
+        CreateConstraintFailureException thrown = assertThrows(
+                CreateConstraintFailureException.class, () -> operations.uniquePropertyConstraintCreate(prototype));
+
+        // then
+        assertThat(nonTransientFailure.status().code().classification()).isEqualTo(Status.Classification.DatabaseError);
+        assertThat(thrown.getCause()).isSameAs(nonTransientFailure);
     }
 
     @Test
