@@ -365,6 +365,8 @@ class Cypher25VocabularyTest extends CypherFunSuite {
     Cypher25Parser.STRING -> "'STRING'",
     Cypher25Parser.SUPPORTED -> "'SUPPORTED'",
     Cypher25Parser.SUSPENDED -> "'SUSPENDED'",
+    Cypher25Parser.TAG -> "'TAG'",
+    Cypher25Parser.TAGS -> "'TAGS'",
     Cypher25Parser.TARGET -> "'TARGET'",
     Cypher25Parser.TERMINATE -> "'TERMINATE'",
     Cypher25Parser.TEXT -> "'TEXT'",

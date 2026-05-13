@@ -983,6 +983,7 @@ alterCommand
       | alterCurrentGraphType
       | alterDatabase
       | alterUser
+      | alterUsers
       | alterServer
       | alterAuthRule
    )
@@ -1421,6 +1422,11 @@ roleToken
    | ROLE
    ;
 
+tagToken
+   : TAG
+   | TAGS
+   ;
+
 authRuleKeywords
     : AUTH (RULE | RULES)
     ;
@@ -1499,6 +1505,7 @@ createUser
       | userStatus
       | homeDatabase
       | setAuthClause
+      | userSetTagsClause
    ))+;
 
 dropUser
@@ -1518,17 +1525,41 @@ alterUser
       HOME DATABASE
       | ALL AUTH (PROVIDER | PROVIDERS)?
       | removeNamedProvider
+      | userRemoveTagsClause
+   ))* (ADD (
+      userAddTagsClause
    ))* (SET (
       password
       | PASSWORD passwordChangeRequired
       | userStatus
       | homeDatabase
       | setAuthClause
+      | userSetTagsClause
    ))*
+   ;
+
+alterUsers
+   : USERS commandNameExpression (COMMA commandNameExpression)* (IF EXISTS)?
+     (REMOVE userRemoveTagsClause)*
+     (ADD userAddTagsClause)*
+     (SET userSetTagsClause)*
    ;
 
 removeNamedProvider
    : AUTH (PROVIDER | PROVIDERS)? (stringLiteral | stringListLiteral | parameter["ANY"])
+   ;
+
+userSetTagsClause
+   : tagToken (stringLiteral | stringListLiteral | parameter["ANY"])
+   ;
+
+userAddTagsClause
+   : tagToken (stringLiteral | stringListLiteral | parameter["ANY"])
+   ;
+
+userRemoveTagsClause
+   : ALL tagToken
+   | tagToken (stringLiteral | stringListLiteral | parameter["ANY"])
    ;
 
 password
@@ -2428,6 +2459,8 @@ unescapedSymbolicNameString_
    | STRING
    | SUPPORTED
    | SUSPENDED
+   | TAG
+   | TAGS
    | TARGET
    | TERMINATE
    | TEXT

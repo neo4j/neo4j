@@ -2598,6 +2598,22 @@ class PrettifierIT extends AbstractPrettifierTest {
         |  SET AUTH PROVIDER "prov'id'er" {
         |    SET ID "i'd"
         |  }""".stripMargin,
+    FailsInCypher5(
+      "create user abc set password 'foo' set tags 'x'",
+      """CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET TAGS "x""""
+    ),
+    FailsInCypher5(
+      "create user abc set password 'foo' set tags ['a', 'b']",
+      """CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET TAGS ["a", "b"]"""
+    ),
+    FailsInCypher5(
+      "create user abc set password 'foo' set tags $tags",
+      "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET TAGS $tags"
+    ),
+    FailsInCypher5(
+      "create or replace user abc set password 'foo' set tags 'x'",
+      """CREATE OR REPLACE USER abc SET PASSWORD '******' CHANGE REQUIRED SET TAGS "x""""
+    ),
     "rename user alice to bob" ->
       "RENAME USER alice TO bob",
     "rename user `a%i$e` if exists to `b!b`" ->
@@ -2788,6 +2804,110 @@ class PrettifierIT extends AbstractPrettifierTest {
       """ALTER USER abc REMOVE AUTH PROVIDERS ['prov"id"er']""".stripMargin,
     """alter user abc remove auth ['prov\'id\'er'] """ ->
       """ALTER USER abc REMOVE AUTH PROVIDERS ["prov'id'er"]""".stripMargin,
+    FailsInCypher5(
+      "alter user abc add tags 'x'",
+      """ALTER USER abc ADD TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc add tag 'x'",
+      """ALTER USER abc ADD TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc add tags $tags",
+      "ALTER USER abc ADD TAGS $tags"
+    ),
+    FailsInCypher5(
+      "alter user $abc add tags 'x'",
+      """ALTER USER $abc ADD TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc remove tags 'x'",
+      """ALTER USER abc REMOVE TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc remove tags ['x', 'y']",
+      """ALTER USER abc REMOVE TAGS ["x", "y"]"""
+    ),
+    FailsInCypher5(
+      "alter user abc remove tags $tags",
+      "ALTER USER abc REMOVE TAGS $tags"
+    ),
+    FailsInCypher5(
+      "alter user abc remove all tags",
+      "ALTER USER abc REMOVE ALL TAGS"
+    ),
+    FailsInCypher5(
+      "alter user abc set tags 'x'",
+      """ALTER USER abc SET TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc set tags ['a', 'b']",
+      """ALTER USER abc SET TAGS ["a", "b"]"""
+    ),
+    FailsInCypher5(
+      "alter user abc set tags $tags",
+      "ALTER USER abc SET TAGS $tags"
+    ),
+    FailsInCypher5(
+      "alter user abc remove tags 'x' add tags 'y'",
+      """ALTER USER abc REMOVE TAGS "x" ADD TAGS "y""""
+    ),
+    FailsInCypher5(
+      "alter user abc add tags 'x' set password 'foo'",
+      """ALTER USER abc ADD TAGS "x" SET PASSWORD '******'"""
+    ),
+    FailsInCypher5(
+      "alter user abc set tags 'x' set status active",
+      """ALTER USER abc SET STATUS ACTIVE SET TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc set tags 'x' set home database db1",
+      """ALTER USER abc SET HOME DATABASE db1 SET TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc remove home database remove tags 'x'",
+      """ALTER USER abc REMOVE HOME DATABASE REMOVE TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter user abc if exists add tags 'x'",
+      """ALTER USER abc IF EXISTS ADD TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter users alice add tags 'x'",
+      """ALTER USERS alice ADD TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter users alice, bob add tags 'x'",
+      """ALTER USERS alice, bob ADD TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter users $user add tags 'x'",
+      """ALTER USERS $user ADD TAGS "x""""
+    ),
+    FailsInCypher5(
+      "alter users alice add tags $tags",
+      "ALTER USERS alice ADD TAGS $tags"
+    ),
+    FailsInCypher5(
+      "alter users alice if exists remove tags ['x']",
+      """ALTER USERS alice IF EXISTS REMOVE TAGS ["x"]"""
+    ),
+    FailsInCypher5(
+      "alter users alice remove all tags",
+      "ALTER USERS alice REMOVE ALL TAGS"
+    ),
+    FailsInCypher5(
+      "alter users alice set tags ['a', 'b']",
+      """ALTER USERS alice SET TAGS ["a", "b"]"""
+    ),
+    FailsInCypher5(
+      "alter users alice set tags $tags",
+      "ALTER USERS alice SET TAGS $tags"
+    ),
+    FailsInCypher5(
+      "alter users alice remove tags 'x' add tags 'y'",
+      """ALTER USERS alice REMOVE TAGS "x" ADD TAGS "y""""
+    ),
     "drop user abc" ->
       "DROP USER abc",
     "drop user $abc" ->

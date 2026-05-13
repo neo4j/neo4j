@@ -18,6 +18,7 @@
 package org.neo4j.cypher.internal.parser.v25.ast.factory
 
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.AddTags
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AlterAuthRule
 import org.neo4j.cypher.internal.ast.AlterDatabase
@@ -25,6 +26,7 @@ import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AlterUsers
 import org.neo4j.cypher.internal.ast.Auth
 import org.neo4j.cypher.internal.ast.AuthAttribute
 import org.neo4j.cypher.internal.ast.AuthId
@@ -60,8 +62,10 @@ import org.neo4j.cypher.internal.ast.PasswordChange
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateDatabases
+import org.neo4j.cypher.internal.ast.RemoveAllTags
 import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.RemoveTags
 import org.neo4j.cypher.internal.ast.RenameAuthRule
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameServer
@@ -69,6 +73,7 @@ import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.Restrict
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.SetTags
 import org.neo4j.cypher.internal.ast.ShardDefinition
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StatementWithGraph
@@ -77,6 +82,7 @@ import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UserOptions
+import org.neo4j.cypher.internal.ast.UserTagsAction
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
@@ -315,6 +321,36 @@ trait DdlBuilder extends Cypher25ParserListener {
     )(pos(ctx.getParent))
   }
 
+  final override def exitTagToken(ctx: Cypher25Parser.TagTokenContext): Unit = {}
+
+  final override def exitUserSetTagsClause(ctx: Cypher25Parser.UserSetTagsClauseContext): Unit = {
+    val tags =
+      if (ctx.stringLiteral() != null) ctx.stringLiteral().ast[StringLiteral]()
+      else if (ctx.stringListLiteral() != null) ctx.stringListLiteral().ast[ListLiteral]()
+      else ctx.parameter().ast[Parameter]()
+    ctx.ast = SetTags(tags)(pos(ctx))
+  }
+
+  final override def exitUserAddTagsClause(ctx: Cypher25Parser.UserAddTagsClauseContext): Unit = {
+    val tags =
+      if (ctx.stringLiteral() != null) ctx.stringLiteral().ast[StringLiteral]()
+      else if (ctx.stringListLiteral() != null) ctx.stringListLiteral().ast[ListLiteral]()
+      else ctx.parameter().ast[Parameter]()
+    ctx.ast = AddTags(tags)(pos(ctx))
+  }
+
+  final override def exitUserRemoveTagsClause(ctx: Cypher25Parser.UserRemoveTagsClauseContext): Unit = {
+    if (ctx.ALL() != null) {
+      ctx.ast = RemoveAllTags()(pos(ctx))
+    } else {
+      val tags =
+        if (ctx.stringLiteral() != null) ctx.stringLiteral().ast[StringLiteral]()
+        else if (ctx.stringListLiteral() != null) ctx.stringListLiteral().ast[ListLiteral]()
+        else ctx.parameter().ast[Parameter]()
+      ctx.ast = RemoveTags(tags)(pos(ctx))
+    }
+  }
+
   final override def exitAlterUser(
     ctx: Cypher25Parser.AlterUserContext
   ): Unit = {
@@ -334,14 +370,28 @@ trait DdlBuilder extends Cypher25ParserListener {
       if (nativeAuthAttr.nonEmpty) Some(Auth(NATIVE_AUTH, nativeAuthAttr)(nativeAuthAttr.head.position)) else None
     val removeAuth = RemoveAuth(!ctx.ALL().isEmpty, ctx.removeNamedProvider().asScala.toList.map(_.ast[Expression]()))
     val setAuth = ctx.setAuthClause().asScala.toList.map(_.ast[Auth]())
+    val tags: Seq[UserTagsAction] =
+      ctx.userRemoveTagsClause().asScala.toList.map(_.ast[UserTagsAction]()) ++
+        ctx.userAddTagsClause().asScala.toList.map(_.ast[UserTagsAction]()) ++
+        ctx.userSetTagsClause().asScala.toList.map(_.ast[UserTagsAction]())
     ctx.ast =
-      AlterUser(username, userOptions, ctx.EXISTS() != null, setAuth, nativeAuth, removeAuth)(pos(ctx.getParent))
+      AlterUser(username, userOptions, ctx.EXISTS() != null, setAuth, nativeAuth, removeAuth, tags)(pos(ctx.getParent))
   }
 
   override def exitRemoveNamedProvider(ctx: Cypher25Parser.RemoveNamedProviderContext): Unit = {
     ctx.ast = if (ctx.stringLiteral() != null) ctx.stringLiteral().ast[StringLiteral]()
     else if (ctx.stringListLiteral() != null) ctx.stringListLiteral().ast[ListLiteral]()
     else ctx.parameter().ast[Parameter]()
+  }
+
+  final override def exitAlterUsers(ctx: Cypher25Parser.AlterUsersContext): Unit = {
+    val userNames = ctx.commandNameExpression().asScala.toList.map(_.ast[Expression]())
+    val tags: Seq[UserTagsAction] = (
+      ctx.userRemoveTagsClause().asScala.toList ++
+        ctx.userAddTagsClause().asScala.toList ++
+        ctx.userSetTagsClause().asScala.toList
+    ).map(_.ast[UserTagsAction]())
+    ctx.ast = AlterUsers(userNames, ctx.EXISTS() != null, tags)(pos(ctx.getParent))
   }
 
   override def exitSetAuthClause(ctx: Cypher25Parser.SetAuthClauseContext): Unit = {

@@ -1065,7 +1065,7 @@ class AlterDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |       ^""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'OR': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
+          """Invalid input 'OR': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER', 'USER' or 'USERS' (line 1, column 7 (offset: 6))
             |"ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE"
             |       ^""".stripMargin
         )

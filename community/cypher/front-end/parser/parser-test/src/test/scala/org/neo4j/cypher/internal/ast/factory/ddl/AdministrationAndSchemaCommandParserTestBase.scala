@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
@@ -38,7 +39,8 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
   protected def assertAst(
     expected: ast.Statement,
     comparePosition: Boolean = true,
-    supportedInCypher5: Boolean = true
+    supportedInCypher5: Boolean = true,
+    obfuscator: Boolean = true
   ): Unit =
     parsesIn[ast.Statements] {
       case Cypher5 if !supportedInCypher5 =>
@@ -48,8 +50,8 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
           "error: syntax error or access rule violation - invalid input. Invalid input ",
           fuzzyStatusDescr = true
         )
-      case _ if comparePosition => _.toAstPositioned(ast.Statements(Seq(expected)))
-      case _                    => _.toAst(ast.Statements(Seq(expected)))
+      case _ if comparePosition => _.toAstWith(ast.Statements(Seq(expected)), obfuscator = obfuscator)
+      case _ => _.toAstWith(ast.Statements(Seq(expected)), comparePositions = false, obfuscator = obfuscator)
     }
 
   protected def assertAstVersionBased(
@@ -118,6 +120,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
   def literal[T](name: String)(implicit convertor: String => T): T = convertor(name)
 
   def stringParam(name: String): Parameter = parameter(name, CTString)
+  def anyParam(name: String): Parameter = parameter(name, CTAny)
   def stringParamName(name: String): ast.ParameterName = ast.ParameterName(parameter(name, CTString))(pos)
   def intParam(name: String): Parameter = parameter(name, CTInteger)
 

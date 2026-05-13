@@ -16,12 +16,16 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
+import org.neo4j.cypher.internal.ast.AddTags
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.Auth
+import org.neo4j.cypher.internal.ast.RemoveAllTags
 import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.RemoveTags
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.SetTags
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
@@ -1296,27 +1300,48 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   // fails parsing
 
   test("ALTER USER foo SET NAME bar") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'NAME': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
-        |"ALTER USER foo SET NAME bar"
-        |                    ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'NAME': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
+            |"ALTER USER foo SET NAME bar"
+            |                    ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'NAME': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT', 'STATUS', 'TAG' or 'TAGS' (line 1, column 20 (offset: 19))
+            |"ALTER USER foo SET NAME bar"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'secret' SET NAME bar") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'NAME': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 42 (offset: 41))
-        |"ALTER USER foo SET PASSWORD 'secret' SET NAME bar"
-        |                                          ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'NAME': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 42 (offset: 41))
+            |"ALTER USER foo SET PASSWORD 'secret' SET NAME bar"
+            |                                          ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'NAME': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT', 'STATUS', 'TAG' or 'TAGS' (line 1, column 42 (offset: 41))
+            |"ALTER USER foo SET PASSWORD 'secret' SET NAME bar"
+            |                                          ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo RENAME TO bar") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'RENAME': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))
-        |"ALTER USER foo RENAME TO bar"
-        |                ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'RENAME': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))
+            |"ALTER USER foo RENAME TO bar"
+            |                ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'RENAME': expected 'ADD', 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))
+            |"ALTER USER foo RENAME TO bar"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD null") {
@@ -1400,19 +1425,29 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   }
 
   test("ALTER USER foo PASSWORD CHANGE NOT REQUIRED") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'PASSWORD': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))
-        |"ALTER USER foo PASSWORD CHANGE NOT REQUIRED"
-        |                ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'PASSWORD': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))
+            |"ALTER USER foo PASSWORD CHANGE NOT REQUIRED"
+            |                ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'PASSWORD': expected 'ADD', 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))
+            |"ALTER USER foo PASSWORD CHANGE NOT REQUIRED"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo CHANGE NOT REQUIRED") {
-    failsParsing[Statements].withSyntaxErrorContaining(
-      """Invalid input 'CHANGE': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))
-        |"ALTER USER foo CHANGE NOT REQUIRED"
-        |                ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxErrorContaining(
+          "Invalid input 'CHANGE': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))"
+        )
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input 'CHANGE': expected 'ADD', 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line 1, column 16 (offset: 15))"
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE") {
@@ -1480,19 +1515,33 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   }
 
   test("ALTER USER foo SET DEFAULT DATABASE db1") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'DEFAULT': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
-        |"ALTER USER foo SET DEFAULT DATABASE db1"
-        |                    ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
+            |"ALTER USER foo SET DEFAULT DATABASE db1"
+            |                    ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT', 'STATUS', 'TAG' or 'TAGS' (line 1, column 20 (offset: 19))
+            |"ALTER USER foo SET DEFAULT DATABASE db1"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo REMOVE DEFAULT DATABASE") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'DEFAULT': expected 'AUTH', 'ALL AUTH' or 'HOME DATABASE' (line 1, column 23 (offset: 22))
-        |"ALTER USER foo REMOVE DEFAULT DATABASE"
-        |                       ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'AUTH', 'ALL AUTH' or 'HOME DATABASE' (line 1, column 23 (offset: 22))
+            |"ALTER USER foo REMOVE DEFAULT DATABASE"
+            |                       ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'AUTH', 'ALL AUTH', 'HOME DATABASE', 'TAG' or 'TAGS' (line 1, column 23 (offset: 22))
+            |"ALTER USER foo REMOVE DEFAULT DATABASE"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET STATUS ACTIVE SET STATUS SUSPENDED") {
@@ -1532,15 +1581,25 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   }
 
   test("ALTER USER foo AUTH PROVIDER 'foo' { SET ID 'bar' }") {
-    failsParsing[Statements].withSyntaxErrorContaining(
-      "Invalid input 'AUTH': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line"
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxErrorContaining(
+          "Invalid input 'AUTH': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line"
+        )
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input 'AUTH': expected 'ADD', 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line"
+        )
+    }
   }
 
   test("ALTER USER foo AUTH 'foo' { SET ID 'bar' }") {
-    failsParsing[Statements].withSyntaxErrorContaining(
-      "Invalid input 'AUTH': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line"
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxErrorContaining(
+          "Invalid input 'AUTH': expected 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line"
+        )
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input 'AUTH': expected 'ADD', 'IF EXISTS', 'REMOVE', 'SET' or <EOF> (line"
+        )
+    }
   }
 
   test("ALTER USER foo SET AUTH PROVIDERS 'foo' { SET ID 'bar' }") {
@@ -1679,7 +1738,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
             |       ^""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'PASSWORD': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
+          """Invalid input 'PASSWORD': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER', 'USER' or 'USERS' (line 1, column 7 (offset: 6))
             |"ALTER PASSWORD FROM 'current' TO 'new'"
             |       ^""".stripMargin
         )
@@ -1732,5 +1791,258 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
         |"ALTER CURRENT USER SET PASSWORD TO 'new'"
         |                                 ^""".stripMargin
     )
+  }
+
+  // Tag clauses
+
+  test("ALTER USER foo ADD TAG 'tag'") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(AddTags(literalString("tag"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo ADD TAGS 'tag'") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(AddTags(literalString("tag"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo ADD TAGS ['a', 'b']") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(AddTags(listOf(literalString("a"), literalString("b")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USER foo ADD TAGS $param") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(AddTags(anyParam("param"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo SET TAGS ['a', 'b']") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(SetTags(listOf(literalString("a"), literalString("b")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USER foo SET TAGS $param") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(SetTags(anyParam("param"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo REMOVE TAGS ['x']") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(RemoveTags(listOf(literalString("x")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USER foo REMOVE TAGS $param") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(RemoveTags(anyParam("param"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo REMOVE ALL TAGS") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(RemoveAllTags()(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo REMOVE ALL TAG") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(RemoveAllTags()(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo REMOVE TAGS 'x' ADD TAGS 'y'") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(RemoveTags(literalString("x"))(pos), AddTags(literalString("y"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  // SET TAGS combined with REMOVE/ADD — parses successfully, caught by semantic check
+  test("ALTER USER foo REMOVE TAGS 'x' SET TAGS ['a']") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(RemoveTags(literalString("x"))(pos), SetTags(listOf(literalString("a")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USER foo ADD TAGS 'x' SET TAGS ['a']") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(AddTags(literalString("x"))(pos), SetTags(listOf(literalString("a")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USER foo IF EXISTS ADD TAGS 'y'") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = true,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(AddTags(literalString("y"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("ALTER USER foo ADD TAGS 'a', 'b'") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Invalid input ','")
+    }
+  }
+
+  test("ALTER USER foo ADD TAGS 'a' ADD TAGS 'b'") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Duplicate ADD TAGS clause")
+    }
+  }
+
+  test("ALTER USER foo REMOVE TAGS 'a' REMOVE TAGS 'b'") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Duplicate REMOVE TAGS clause")
+    }
+  }
+
+  test("ALTER USER foo REMOVE ALL TAGS REMOVE TAGS 'x'") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Duplicate REMOVE TAGS clause")
+    }
+  }
+
+  test("ALTER USER foo ADD TAGS 'x' REMOVE HOME DATABASE") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Invalid input 'REMOVE'")
+    }
   }
 }

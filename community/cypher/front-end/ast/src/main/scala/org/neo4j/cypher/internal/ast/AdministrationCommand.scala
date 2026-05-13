@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringLiteralOrParameter
+import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringOrStringListOrParameter
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -108,7 +109,7 @@ sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnaly
     super.dup(children).withGraph(useGraph).asInstanceOf[this.type]
 }
 
-object AdministrationCommand {
+object AdministrationCommand extends SemanticAnalysisTooling {
   val NATIVE_AUTH = "native"
 
   private[ast] def checkIsStringLiteralOrParameter(value: String, expression: Expression): SemanticCheck =
@@ -122,6 +123,39 @@ object AdministrationCommand {
           s"$value must be a String, or a String parameter.",
           exp.position
         ))
+    }
+
+  /**
+   * Validate that {@code expr} is a non-empty StringLiteral, a non-empty ListLiteral of non-empty
+   * StringLiterals, or a Parameter. On failure produces a {@code 22N04} error tagged with the
+   * given {@code context} (e.g. "REMOVE AUTH", "SET TAGS").
+   */
+  private[ast] def checkIsStringOrStringListOrParameter(context: String, expr: Expression): SemanticCheck =
+    expr match {
+      case s: StringLiteral if s.value.nonEmpty => success
+      case _: Parameter                         => success
+      case list: ListLiteral
+        if list.expressions.nonEmpty &&
+          list.expressions.forall(e =>
+            e.isInstanceOf[StringLiteral] && e.asInstanceOf[StringLiteral].value.nonEmpty
+          ) =>
+        success
+      case _ =>
+        val stringifier = ExpressionStringifier()
+        val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N04)
+          .atPosition(expr.position.offset, expr.position.line, expr.position.column)
+          .withParam(GqlParams.StringParam.input, stringifier(expr))
+          .withParam(GqlParams.StringParam.context, context)
+          .withParam(
+            GqlParams.ListParam.inputList,
+            List(
+              "non-empty String",
+              "non-empty List of non-empty Strings",
+              "Parameter"
+            ).asJava
+          )
+          .build()
+        error(gql, "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.", expr.position)
     }
 }
 
@@ -404,12 +438,58 @@ sealed trait UserAuth extends SemanticAnalysisTooling {
   val usesOldStyleNativeAuth: Boolean = oldStyleAuth.nonEmpty
 }
 
+sealed trait UserTagsAction extends ASTNode
+
+final case class SetTags(tags: Expression)(val position: InputPosition) extends UserTagsAction
+final case class AddTags(tags: Expression)(val position: InputPosition) extends UserTagsAction
+final case class RemoveTags(tags: Expression)(val position: InputPosition) extends UserTagsAction
+final case class RemoveAllTags()(val position: InputPosition) extends UserTagsAction
+
+object UserTagsAction extends SemanticAnalysisTooling {
+
+  def checkFeature(tags: Seq[UserTagsAction]): SemanticCheck =
+    tags.headOption.map { t =>
+      val desc = t match {
+        case _: SetTags       => "The SET TAGS clause"
+        case _: AddTags       => "The ADD TAGS clause"
+        case _: RemoveTags    => "The REMOVE TAGS clause"
+        case _: RemoveAllTags => "The REMOVE ALL TAGS clause"
+      }
+      requireFeatureSupport(desc, SemanticFeature.UserTags, t.position)
+    }.getOrElse(success)
+
+  def checkConsistency(tags: Seq[UserTagsAction]): SemanticCheck =
+    if (
+      tags.exists(_.isInstanceOf[SetTags]) &&
+      tags.exists(t => t.isInstanceOf[AddTags] || t.isInstanceOf[RemoveTags] || t.isInstanceOf[RemoveAllTags])
+    ) {
+      val setPos = tags.collectFirst { case t: SetTags => t.position }.get
+      val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N92)
+        .atPosition(setPos.offset, setPos.line, setPos.column)
+        .build()
+      error(gql, "SET TAGS cannot be combined with ADD TAGS or REMOVE TAGS.", setPos)
+    } else success
+
+  /**
+   * Validate the expressions carried by SET/ADD/REMOVE TAGS clauses: each must be a non-empty
+   * StringLiteral, a non-empty ListLiteral of non-empty StringLiterals, or a Parameter.
+   */
+  def checkValues(tags: Seq[UserTagsAction]): SemanticCheck =
+    tags.foldSemanticCheck {
+      case _: RemoveAllTags => success
+      case SetTags(expr)    => checkIsStringOrStringListOrParameter("SET TAGS", expr)
+      case AddTags(expr)    => checkIsStringOrStringListOrParameter("ADD TAGS", expr)
+      case RemoveTags(expr) => checkIsStringOrStringListOrParameter("REMOVE TAGS", expr)
+    }
+}
+
 final case class CreateUser(
   userName: Expression,
   userOptions: UserOptions,
   ifExistsDo: IfExistsDo,
   protected val newStyleAuth: List[Auth],
-  protected val oldStyleAuth: Option[Auth]
+  protected val oldStyleAuth: Option[Auth],
+  tags: Option[SetTags] = None
 )(val position: InputPosition) extends WriteAdministrationCommand with UserAuth {
 
   override def name: String = ifExistsDo match {
@@ -429,7 +509,9 @@ final case class CreateUser(
     case IfExistsInvalidSyntax =>
       SemanticCheck.error(SemanticError.bothOrReplaceAndIfNotExists("user", userAsString, position))
     case _ =>
-      checkAtLeastOneAuth chain
+      UserTagsAction.checkFeature(tags.toSeq) chain
+        UserTagsAction.checkValues(tags.toSeq) chain
+        checkAtLeastOneAuth chain
         checkDuplicateAuth chain
         checkOldAndNewStyleCombination chain
         allAuths.foldSemanticCheck(auth =>
@@ -484,13 +566,14 @@ final case class AlterUser(
   ifExists: Boolean,
   protected val newStyleAuth: List[Auth],
   protected val oldStyleAuth: Option[Auth],
-  removeAuth: RemoveAuth
+  removeAuth: RemoveAuth,
+  tags: Seq[UserTagsAction] = Seq.empty
 )(val position: InputPosition) extends WriteAdministrationCommand with UserAuth {
 
   override def name = "ALTER USER"
 
   private def checkAtLeastOneClause: SemanticCheck =
-    if (userOptions.isEmpty && allAuths.isEmpty && removeAuth.isEmpty) {
+    if (userOptions.isEmpty && allAuths.isEmpty && removeAuth.isEmpty && tags.isEmpty) {
       val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N94)
         .atPosition(position.offset, position.line, position.column)
         .build()
@@ -500,34 +583,12 @@ final case class AlterUser(
     }
 
   private def checkRemoveAuth: SemanticCheck =
-    removeAuth.auths.foldSemanticCheck {
-      case s: StringLiteral if s.value.nonEmpty => success
-      case _: Parameter                         => success
-      case list: ListLiteral
-        if list.expressions.forall(e =>
-          e.isInstanceOf[StringLiteral] && e.asInstanceOf[StringLiteral].value.nonEmpty
-        ) && list.expressions.nonEmpty =>
-        success
-      case expr: Expression =>
-        val stringifier = ExpressionStringifier()
-        val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N04)
-          .atPosition(expr.position.offset, expr.position.line, expr.position.column)
-          .withParam(GqlParams.StringParam.input, stringifier(expr))
-          .withParam(GqlParams.StringParam.context, "REMOVE AUTH")
-          .withParam(
-            GqlParams.ListParam.inputList,
-            List(
-              "non-empty String",
-              "non-empty List of non-empty Strings",
-              "Parameter"
-            ).asJava
-          )
-          .build()
-        error(gql, "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.", expr.position)
-    }
+    removeAuth.auths.foldSemanticCheck(checkIsStringOrStringListOrParameter("REMOVE AUTH", _))
 
   override def semanticCheck: SemanticCheck =
-    checkAtLeastOneClause chain
+    UserTagsAction.checkFeature(tags) chain
+      checkAtLeastOneClause chain
+      UserTagsAction.checkConsistency(tags) chain
       checkDuplicateAuth chain
       checkOldAndNewStyleCombination chain
       allAuths.foldSemanticCheck(auth =>
@@ -537,6 +598,7 @@ final case class AlterUser(
       ) chain
       externalAuths.foldSemanticCheck(_.checkIdIsStringLiteralOrParameter) chain
       checkRemoveAuth chain
+      UserTagsAction.checkValues(tags) chain
       super.semanticCheck chain
       checkIsStringLiteralOrParameter("username", userName) chain
       SemanticState.recordCurrentScope(this)
@@ -547,6 +609,34 @@ object AlterUser {
   def unapply(a: AlterUser)
     : Some[(Expression, UserOptions, Boolean, List[ExternalAuth], Option[NativeAuth], RemoveAuth)] =
     Some((a.userName, a.userOptions, a.ifExists, a.externalAuths, a.nativeAuth, a.removeAuth))
+}
+
+final case class AlterUsers(
+  userNames: Seq[Expression],
+  ifExists: Boolean,
+  tags: Seq[UserTagsAction]
+)(val position: InputPosition) extends WriteAdministrationCommand {
+  override def name: String = "ALTER USERS"
+
+  private def checkTagsFeature: SemanticCheck =
+    requireFeatureSupport("The ALTER USERS command", SemanticFeature.UserTags, position)
+
+  private def checkAtLeastOneClause: SemanticCheck =
+    if (tags.isEmpty) {
+      val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N94)
+        .atPosition(position.offset, position.line, position.column)
+        .build()
+      error(gql, "`ALTER USERS` requires at least one tag clause.", position)
+    } else success
+
+  override def semanticCheck: SemanticCheck =
+    checkTagsFeature chain
+      checkAtLeastOneClause chain
+      UserTagsAction.checkConsistency(tags) chain
+      UserTagsAction.checkValues(tags) chain
+      userNames.foldSemanticCheck(checkIsStringLiteralOrParameter("username", _)) chain
+      super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
 }
 
 final case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)(val position: InputPosition)

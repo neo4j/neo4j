@@ -671,7 +671,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
             |       ^""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'ROLE': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
+          """Invalid input 'ROLE': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER', 'USER' or 'USERS' (line 1, column 7 (offset: 6))
             |"ALTER ROLE foo SET NAME bar"
             |       ^""".stripMargin
         )

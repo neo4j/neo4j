@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResourceBase
+import org.neo4j.cypher.internal.ast.AddTags
 import org.neo4j.cypher.internal.ast.AddedInRewriteShowCommands
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
@@ -35,6 +36,7 @@ import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AlterUsers
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AuthRuleCondition
 import org.neo4j.cypher.internal.ast.AuthRuleEnabled
@@ -169,11 +171,13 @@ import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.RemoteAliasStoredCredentials
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveAllTags
 import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.RemoveTags
 import org.neo4j.cypher.internal.ast.RenameAuthRule
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameServer
@@ -198,6 +202,7 @@ import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetPropertyItems
+import org.neo4j.cypher.internal.ast.SetTags
 import org.neo4j.cypher.internal.ast.SettingAllQualifier
 import org.neo4j.cypher.internal.ast.SettingQualifier
 import org.neo4j.cypher.internal.ast.ShardDefinition
@@ -251,6 +256,7 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.UserTagsAction
 import org.neo4j.cypher.internal.ast.UsingExpandHint
 import org.neo4j.cypher.internal.ast.UsingExpandStepHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -272,6 +278,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier.NL
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.authRuleSetClausesToString
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.escapeName
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.stringifyOptions
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier.userTagsActionAsString
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.DynamicLabelExpression
 import org.neo4j.cypher.internal.expressions.DynamicRelTypeExpression
@@ -589,7 +596,9 @@ case class Prettifier(
           ind.asString(auth)
         }.mkString
 
-        s"${x.name} $userNameString$ifNotExists$oldStyleNativeAuthString$statusString$homeDatabaseString$setAuthNativeString$externalAuthString"
+        val tagsString = x.tags.map(t => s" ${userTagsActionAsString(t)(expr)}").getOrElse("")
+
+        s"${x.name} $userNameString$ifNotExists$oldStyleNativeAuthString$statusString$homeDatabaseString$setAuthNativeString$externalAuthString$tagsString"
 
       case x @ RenameUser(fromUserName, toUserName, ifExists) =>
         Prettifier.prettifyRename(x.name, fromUserName, toUserName, ifExists)
@@ -658,7 +667,23 @@ case class Prettifier(
           ind.asString(auth)
         }.mkString
 
-        s"${x.name} $userNameString$ifExistsString$removeHomeDatabase$removeAuthString$oldStyleNativeAuthString$statusString$setHomeDatabaseString$setAuthNativeString$externalAuthString"
+        // CIP-254: canonical order is REMOVE* ADD* SET* (matching grammar); within SET, tags come last
+        val removeTagsString = x.tags.collect {
+          case t: RemoveTags    => t
+          case t: RemoveAllTags => t
+        }.map(t => s" ${userTagsActionAsString(t)(expr)}").mkString
+        val addTagsString = x.tags.collect { case t: AddTags => t }
+          .map(t => s" ${userTagsActionAsString(t)(expr)}").mkString
+        val setTagsString = x.tags.collect { case t: SetTags => t }
+          .map(t => s" ${userTagsActionAsString(t)(expr)}").mkString
+
+        s"${x.name} $userNameString$ifExistsString$removeHomeDatabase$removeAuthString$removeTagsString$addTagsString$oldStyleNativeAuthString$statusString$setHomeDatabaseString$setAuthNativeString$externalAuthString$setTagsString"
+
+      case x @ AlterUsers(userNames, ifExists, tags) =>
+        val names = userNames.map(Prettifier.escapeName).mkString(", ")
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        val tagsString = tags.map(t => s" ${userTagsActionAsString(t)(expr)}").mkString
+        s"${x.name} $names$ifExistsString$tagsString"
 
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
@@ -2001,5 +2026,13 @@ object Prettifier {
         )
       ).map { case (name, value) => s"$name $value" }
       .mkString(" ")
+
+  private def userTagsActionAsString(action: UserTagsAction)(implicit expr: ExpressionStringifier): String =
+    action match {
+      case SetTags(value)    => s"SET TAGS ${expr(value)}"
+      case AddTags(value)    => s"ADD TAGS ${expr(value)}"
+      case RemoveTags(value) => s"REMOVE TAGS ${expr(value)}"
+      case RemoveAllTags()   => "REMOVE ALL TAGS"
+    }
 
 }

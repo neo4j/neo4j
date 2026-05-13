@@ -549,6 +549,8 @@ public interface Cypher25ParserListener extends ParseTreeListener {
 
     void exitRoleToken(Cypher25Parser.RoleTokenContext ctx);
 
+    void exitTagToken(Cypher25Parser.TagTokenContext ctx);
+
     void exitAuthRuleKeywords(Cypher25Parser.AuthRuleKeywordsContext ctx);
 
     void exitEnableServerCommand(Cypher25Parser.EnableServerCommandContext ctx);
@@ -591,7 +593,15 @@ public interface Cypher25ParserListener extends ParseTreeListener {
 
     void exitAlterUser(Cypher25Parser.AlterUserContext ctx);
 
+    void exitAlterUsers(Cypher25Parser.AlterUsersContext ctx);
+
     void exitRemoveNamedProvider(Cypher25Parser.RemoveNamedProviderContext ctx);
+
+    void exitUserSetTagsClause(Cypher25Parser.UserSetTagsClauseContext ctx);
+
+    void exitUserAddTagsClause(Cypher25Parser.UserAddTagsClauseContext ctx);
+
+    void exitUserRemoveTagsClause(Cypher25Parser.UserRemoveTagsClauseContext ctx);
 
     void exitPassword(Cypher25Parser.PasswordContext ctx);
 

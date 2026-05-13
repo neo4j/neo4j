@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.ast.Password
 import org.neo4j.cypher.internal.ast.PasswordChange
 import org.neo4j.cypher.internal.ast.RemoteAliasCredentials
 import org.neo4j.cypher.internal.ast.RemoteAliasStoredCredentials
+import org.neo4j.cypher.internal.ast.SetTags
 import org.neo4j.cypher.internal.ast.ShardDefinition
 import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.UserOptions
@@ -468,12 +469,14 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
     val setAuth = ctx.setAuthClause().asScala.toList.map(_.ast[Auth]())
     val suspended = astOptFromList[Boolean](ctx.userStatus(), None)
     val homeDatabaseAction = astOptFromList[HomeDatabaseAction](ctx.homeDatabase(), None)
+    val tags = astOptFromList[SetTags](ctx.userSetTagsClause(), None)
     ctx.ast = CreateUser(
       ctx.commandNameExpression().ast[Expression](),
       UserOptions(suspended, homeDatabaseAction),
       ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
       setAuth,
-      nativeAuth
+      nativeAuth,
+      tags
     )(pos(parent))
   }
 

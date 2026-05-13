@@ -1711,7 +1711,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
             |       ^""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'RANDOM': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
+          """Invalid input 'RANDOM': expected 'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER', 'USER' or 'USERS' (line 1, column 7 (offset: 6))
             |"ALTER RANDOM name"
             |       ^""".stripMargin
         )

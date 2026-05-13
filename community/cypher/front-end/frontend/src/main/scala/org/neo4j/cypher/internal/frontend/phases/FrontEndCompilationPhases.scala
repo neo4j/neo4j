@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.RelationshipPrope
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ScopeQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ShowSetting
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UUIDType
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UserTags
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AmbiguousAggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
@@ -83,7 +84,8 @@ trait FrontEndCompilationPhases {
     GraphDatabaseInternalSettings.cypher_enable_scope_queries -> ScopeQueries.productPrefix,
     GraphDatabaseInternalSettings.cypher_enable_parsing_of_obfuscated_literals -> EnableParsingOfObfuscatedLiterals.productPrefix,
     GraphDatabaseInternalSettings.cypher_disable_type_checking -> DisableTypeCheckingInSemanticAnalysis.productPrefix,
-    GraphDatabaseInternalSettings.attribute_based_access_control -> AttributeBasedAccessControl.productPrefix
+    GraphDatabaseInternalSettings.attribute_based_access_control -> AttributeBasedAccessControl.productPrefix,
+    GraphDatabaseInternalSettings.user_tags -> UserTags.productPrefix
   )
 
   val defaultSemanticFeatures: Seq[String] = Seq(

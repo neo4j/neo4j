@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResourceBase
+import org.neo4j.cypher.internal.ast.AddTags
 import org.neo4j.cypher.internal.ast.AdditiveProjection
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
@@ -59,6 +60,7 @@ import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
+import org.neo4j.cypher.internal.ast.AlterUsers
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -287,6 +289,7 @@ import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.RemoteAliasCredentials
 import org.neo4j.cypher.internal.ast.RemoteAliasStoredCredentials
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveAllTags
 import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
@@ -296,6 +299,7 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.RemoveTags
 import org.neo4j.cypher.internal.ast.RenameAuthRule
 import org.neo4j.cypher.internal.ast.RenameAuthRuleAction
 import org.neo4j.cypher.internal.ast.RenameRole
@@ -333,6 +337,7 @@ import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.SetTags
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.SettingQualifier
@@ -413,6 +418,7 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.UserTagsAction
 import org.neo4j.cypher.internal.ast.UsingExpandHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOnly
@@ -3356,7 +3362,8 @@ class AstGenerator(
     suspended <- option(boolean)
     homeDatabase <- option(_setHomeDatabaseAction)
     ifExistsDo <- _ifExistsDo
-  } yield CreateUser(userName, UserOptions(suspended, homeDatabase), ifExistsDo, newAuths, oldNativeAuth)(pos)
+    tags <- if (usesCypher5) const(None) else option(_stringLiteralOrParameter.map(SetTags(_)(pos)))
+  } yield CreateUser(userName, UserOptions(suspended, homeDatabase), ifExistsDo, newAuths, oldNativeAuth, tags)(pos)
 
   def _renameUser: Gen[RenameUser] = for {
     fromUserName <- _stringLiteralOrParameter
@@ -3376,12 +3383,39 @@ class AstGenerator(
     newAuths <- _auths(mandatoryPassword = false, needsAuth = false)
     removeAuth <- _removeAuth()
     suspended <- option(boolean)
+    tags <- if (usesCypher5) const(Seq.empty[UserTagsAction]) else oneOf(const(Seq.empty), _alterUsersTags)
     // Need at least one SET or REMOVE clause
     homeDatabase <-
-      if (oldNativeAuth.isEmpty && newAuths.isEmpty && removeAuth.isEmpty && suspended.isEmpty)
+      if (oldNativeAuth.isEmpty && newAuths.isEmpty && removeAuth.isEmpty && suspended.isEmpty && tags.isEmpty)
         oneOf(some(_setHomeDatabaseAction), some(RemoveHomeDatabaseAction))
       else oneOf(option(_setHomeDatabaseAction), option(RemoveHomeDatabaseAction))
-  } yield AlterUser(userName, UserOptions(suspended, homeDatabase), ifExists, newAuths, oldNativeAuth, removeAuth)(pos)
+  } yield AlterUser(
+    userName,
+    UserOptions(suspended, homeDatabase),
+    ifExists,
+    newAuths,
+    oldNativeAuth,
+    removeAuth,
+    tags
+  )(pos)
+
+  def _alterUsersTags: Gen[Seq[UserTagsAction]] = oneOf(
+    _stringLiteralOrParameter.map(expr => Seq(SetTags(expr)(pos))),
+    _stringLiteralOrParameter.map(expr => Seq(AddTags(expr)(pos))),
+    for {
+      remove <- oneOf(
+        _stringLiteralOrParameter.map(expr => RemoveTags(expr)(pos): UserTagsAction),
+        const(RemoveAllTags()(pos): UserTagsAction)
+      )
+      maybeAdd <- option(_stringLiteralOrParameter.map(expr => AddTags(expr)(pos)))
+    } yield Seq(remove) ++ maybeAdd
+  )
+
+  def _alterUsers: Gen[AlterUsers] = for {
+    userNames <- oneOrMore(_stringLiteralOrParameter)
+    ifExists <- boolean
+    tags <- _alterUsersTags
+  } yield AlterUsers(userNames, ifExists, tags)(pos)
 
   def _passwordClause: Gen[Password] = for {
     password <- _password
@@ -3441,15 +3475,11 @@ class AstGenerator(
     oldPassword <- _password
   } yield SetOwnPassword(newPassword, oldPassword)(pos)
 
-  def _userCommand: Gen[AdministrationCommand] = oneOf(
-    _showUsers,
-    _showCurrentUser,
-    _createUser,
-    _renameUser,
-    _dropUser,
-    _alterUser,
-    _setOwnPassword
-  )
+  def _userCommand: Gen[AdministrationCommand] =
+    if (usesCypher5)
+      oneOf(_showUsers, _showCurrentUser, _createUser, _renameUser, _dropUser, _alterUser, _setOwnPassword)
+    else
+      oneOf(_showUsers, _showCurrentUser, _createUser, _renameUser, _dropUser, _alterUser, _alterUsers, _setOwnPassword)
 
   // Auth rule commands
 

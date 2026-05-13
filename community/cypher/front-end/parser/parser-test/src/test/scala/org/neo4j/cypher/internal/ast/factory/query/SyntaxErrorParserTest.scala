@@ -486,7 +486,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
   test("alter") {
     invalid({
       case Cypher5 => ("", "'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER'", 5)
-      case _       => ("", "'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER' or 'USER'", 5)
+      case _       => ("", "'ALIAS', 'CURRENT', 'DATABASE', 'AUTH RULE', 'SERVER', 'USER' or 'USERS'", 5)
     })
   }
 

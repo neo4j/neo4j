@@ -131,10 +131,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       .atPosition(pos.offset, pos.line, pos.column)
       .build()
 
-  private def gqlRemoveAuthWrongType(expr: String, pos: InputPosition) =
+  private def gqlStringOrStringListWrongType(expr: String, context: String, pos: InputPosition) =
     ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N04)
       .withParam(GqlParams.StringParam.input, expr)
-      .withParam(GqlParams.StringParam.context, "REMOVE AUTH")
+      .withParam(GqlParams.StringParam.context, context)
       .withParam(
         GqlParams.ListParam.inputList,
         List("non-empty String", "non-empty List of non-empty Strings", "Parameter").asJava
@@ -164,8 +164,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       .withFeature(SemanticFeature.MultipleDatabases)
       .withFeature(SemanticFeature.RelationshipPropertyValueAccessRules)
       .withFeature(SemanticFeature.AttributeBasedAccessControl)
+      .withFeature(SemanticFeature.UserTags)
 
-  private val sematicContextCypher25 = SemanticCheckContext(CypherVersion.Cypher25, NotImplementedErrorMessageProvider)
+  private val semanticContextCypher25 = SemanticCheckContext(CypherVersion.Cypher25, NotImplementedErrorMessageProvider)
 
   // Privilege command tests
 
@@ -3248,7 +3249,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     alterUser.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
       .error(
-        gqlRemoveAuthWrongType("42", pos1),
+        gqlStringOrStringListWrongType("42", "REMOVE AUTH", pos1),
         initialState,
         "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
         pos1
@@ -3267,7 +3268,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     alterUser.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
       .error(
-        gqlRemoveAuthWrongType("[42, 69]", pos1),
+        gqlStringOrStringListWrongType("[42, 69]", "REMOVE AUTH", pos1),
         initialState,
         "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
         pos1
@@ -3286,7 +3287,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     alterUser.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
       .error(
-        gqlRemoveAuthWrongType("""["bar", 69]""", pos1),
+        gqlStringOrStringListWrongType("""["bar", 69]""", "REMOVE AUTH", pos1),
         initialState,
         "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
         pos1
@@ -3305,7 +3306,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     alterUser.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
       .error(
-        gqlRemoveAuthWrongType("""[69, "bar"]""", pos1),
+        gqlStringOrStringListWrongType("""[69, "bar"]""", "REMOVE AUTH", pos1),
         initialState,
         "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
         pos1
@@ -3324,7 +3325,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     alterUser.semanticCheck.run(initialState, arbitrarySemanticContext()).errors shouldBe SemanticCheckResult
       .error(
-        gqlRemoveAuthWrongType("[]", pos1),
+        gqlStringOrStringListWrongType("[]", "REMOVE AUTH", pos1),
         initialState,
         "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
         pos1
@@ -3446,7 +3447,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialState, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(initialState, semanticContextCypher25).errors shouldBe SemanticCheckResult
       .error(initialState, authRuleFeatureToggleError("CREATE")).errors
   }
 
@@ -3457,7 +3458,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = false
     )(p)
 
-    authRule.semanticCheck.run(initialState, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(initialState, semanticContextCypher25).errors shouldBe SemanticCheckResult
       .error(initialState, authRuleFeatureToggleError("RENAME")).errors
   }
 
@@ -3470,7 +3471,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialState, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(initialState, semanticContextCypher25).errors shouldBe SemanticCheckResult
       .error(initialState, authRuleFeatureToggleError("ALTER")).errors
   }
 
@@ -3480,7 +3481,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = false
     )(p)
 
-    authRule.semanticCheck.run(initialState, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(initialState, semanticContextCypher25).errors shouldBe SemanticCheckResult
       .error(initialState, authRuleFeatureToggleError("DROP")).errors
   }
 
@@ -3493,7 +3494,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -3519,7 +3520,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -3547,7 +3548,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors shouldBe SemanticCheckResult
       .error(
         GqlHelper.getGql42001_42N14("OR REPLACE", "IF NOT EXISTS", p.offset, p.line, p.column),
         initialStateWithFeatureFlags,
@@ -3570,7 +3574,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("CREATE OR REPLACE AUTH RULE authRule SET CONDITION toLoWer('HELLO') = 'hello'") {
@@ -3586,7 +3590,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country') = 'SE'") {
@@ -3604,7 +3608,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("CREATE AUTH RULE authRule SET CONDITION $param") {
@@ -3618,7 +3622,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
     )(p)
 
     // This is not supported yet
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors shouldBe SemanticCheckResult
       .error(
         initialStateWithFeatureFlags,
         SemanticError.authRuleConditionCannotContainParameter(param)
@@ -3642,7 +3649,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
     )(p)
 
     // This is not supported yet
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors shouldBe SemanticCheckResult
       .error(
         initialStateWithFeatureFlags,
         SemanticError.authRuleConditionCannotContainParameter(param)
@@ -3664,7 +3674,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(1 + 1) = 'SE'") {
@@ -3683,7 +3693,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
     )(p)
 
     // Does not fail since we don't evaluate the inner expression
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("CREATE AUTH RULE authRule SET CONDITION unknown.function('HELLO') = 'SE'") {
@@ -3703,7 +3713,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -3739,7 +3749,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -3777,7 +3787,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country', 'city') = 'SE_MALMÖ'") {
@@ -3797,7 +3807,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         GqlHelper.getGql42001_42I13(
@@ -3831,7 +3841,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors shouldBe SemanticCheckResult
       .error(
         GqlHelper.getGql42001_22NB1(
           java.util.List.of(CTString.toCypherTypeString),
@@ -3866,7 +3879,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         )
       )(p)
 
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
     }
 
     test(s"CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName()") {
@@ -3890,7 +3903,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
       authRule.semanticCheck.run(
         initialStateWithFeatureFlags,
-        sematicContextCypher25
+        semanticContextCypher25
       ).errors should equal(SemanticCheckResult
         .error(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -3932,7 +3945,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
       authRule.semanticCheck.run(
         initialStateWithFeatureFlags,
-        sematicContextCypher25
+        semanticContextCypher25
       ).errors should equal(SemanticCheckResult
         .error(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -3974,7 +3987,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
       authRule.semanticCheck.run(
         initialStateWithFeatureFlags,
-        sematicContextCypher25
+        semanticContextCypher25
       ).errors should equal(SemanticCheckResult
         .error(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -4014,7 +4027,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         )
       )(p)
 
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
     }
   }
 
@@ -4025,7 +4038,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = false
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("RENAME AUTH RULE authRule IF EXISTS TO authRule2") {
@@ -4035,7 +4048,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = true
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("RENAME AUTH RULE $param1 TO $param2") {
@@ -4045,7 +4058,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = false
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("RENAME AUTH RULE $param1 IF EXISTS TO $param2") {
@@ -4055,7 +4068,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = true
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION 1=1") {
@@ -4067,7 +4080,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE $param SET CONDITION 1=1") {
@@ -4079,7 +4092,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET ENABLED true") {
@@ -4091,7 +4104,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule IF EXISTS SET CONDITION 1=1") {
@@ -4103,7 +4116,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule IF EXISTS SET ENABLED true") {
@@ -4115,7 +4128,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE $param IF EXISTS SET ENABLED true") {
@@ -4127,7 +4140,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION toLoWer('HELLO') = 'hello'") {
@@ -4143,7 +4156,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country') = 'SE'") {
@@ -4161,7 +4174,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION $param") {
@@ -4175,7 +4188,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
     )(p)
 
     // This is not supported yet
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors shouldBe SemanticCheckResult
       .error(
         initialStateWithFeatureFlags,
         SemanticError.authRuleConditionCannotContainParameter(param)
@@ -4199,7 +4215,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
     )(p)
 
     // This is not supported yet
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors shouldBe SemanticCheckResult
       .error(
         initialStateWithFeatureFlags,
         SemanticError.authRuleConditionCannotContainParameter(param)
@@ -4221,7 +4240,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(1 + 1) = 'SE'") {
@@ -4240,7 +4259,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
     )(p)
 
     // Does not fail since we don't evaluate the inner expression
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION unknown.function('HELLO') = 'SE'") {
@@ -4260,7 +4279,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -4296,7 +4315,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -4334,7 +4353,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country', 'city') = 'SE_MALMÖ'") {
@@ -4354,7 +4373,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     authRule.semanticCheck.run(
       initialStateWithFeatureFlags,
-      sematicContextCypher25
+      semanticContextCypher25
     ).errors should equal(SemanticCheckResult
       .error(
         GqlHelper.getGql42001_42I13(
@@ -4388,7 +4407,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       )
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe SemanticCheckResult
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors shouldBe SemanticCheckResult
       .error(
         GqlHelper.getGql42001_22NB1(
           java.util.List.of(CTString.toCypherTypeString),
@@ -4423,7 +4445,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         )
       )(p)
 
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
     }
 
     test(s"ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName()") {
@@ -4447,7 +4469,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
       authRule.semanticCheck.run(
         initialStateWithFeatureFlags,
-        sematicContextCypher25
+        semanticContextCypher25
       ).errors should equal(SemanticCheckResult
         .error(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -4489,7 +4511,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
       authRule.semanticCheck.run(
         initialStateWithFeatureFlags,
-        sematicContextCypher25
+        semanticContextCypher25
       ).errors should equal(SemanticCheckResult
         .error(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -4531,7 +4553,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
       authRule.semanticCheck.run(
         initialStateWithFeatureFlags,
-        sematicContextCypher25
+        semanticContextCypher25
       ).errors should equal(SemanticCheckResult
         .error(
           ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
@@ -4571,7 +4593,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         )
       )(p)
 
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
     }
   }
 
@@ -4581,7 +4603,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = false
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("DROP AUTH RULE authRule IF EXISTS") {
@@ -4590,6 +4612,579 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       ifExists = true
     )(p)
 
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, sematicContextCypher25).errors shouldBe empty
+    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  // User tags
+
+  test("CREATE USER foo SET PASSWORD 'password' SET TAGS 'label' — fails without UserTags feature") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)(pos1)))(pos1)),
+      Some(SetTags(literalString("label"))(pos2))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, semanticContextCypher25).errors should equal(Seq(
+      FeatureError.notAvailableInThisImplementation(SemanticFeature.UserTags, "The SET TAGS clause", pos2)
+    ))
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET TAGS 'label' — passes with UserTags feature") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)(pos1)))(pos1)),
+      Some(SetTags(literalString("label"))(pos2))
+    )(p)
+
+    createUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USER foo ADD TAGS 'x' — fails without UserTags feature") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(literalString("x"))(pos1))
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, semanticContextCypher25).errors should equal(Seq(
+      FeatureError.notAvailableInThisImplementation(SemanticFeature.UserTags, "The ADD TAGS clause", pos1)
+    ))
+  }
+
+  test("ALTER USER foo ADD TAGS 'x' — passes with UserTags feature") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(literalString("x"))(pos1))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USER foo REMOVE TAGS 'x' SET TAGS ['a'] — SET cannot combine with REMOVE") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(RemoveTags(literalString("x"))(pos1), SetTags(listOf(literalString("a")))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors should equal(
+      SemanticCheckResult.error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N92)
+          .atPosition(pos2.offset, pos2.line, pos2.column).build(),
+        initialStateWithFeatureFlags,
+        "SET TAGS cannot be combined with ADD TAGS or REMOVE TAGS.",
+        pos2
+      ).errors
+    )
+  }
+
+  test("ALTER USER foo ADD TAGS 'x' SET TAGS ['a'] — SET cannot combine with ADD") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(literalString("x"))(pos1), SetTags(listOf(literalString("a")))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors should equal(
+      SemanticCheckResult.error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N92)
+          .atPosition(pos2.offset, pos2.line, pos2.column).build(),
+        initialStateWithFeatureFlags,
+        "SET TAGS cannot be combined with ADD TAGS or REMOVE TAGS.",
+        pos2
+      ).errors
+    )
+  }
+
+  test("ALTER USERS alice ADD TAGS 'x' — fails without UserTags feature") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(AddTags(literalString("x"))(pos1))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialState, semanticContextCypher25).errors should equal(Seq(
+      FeatureError.notAvailableInThisImplementation(SemanticFeature.UserTags, "The ALTER USERS command", p)
+    ))
+  }
+
+  test("ALTER USERS alice ADD TAGS 'x' — passes with UserTags feature") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(AddTags(literalString("x"))(pos1))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USERS alice (no tag clause) — requires at least one tag clause") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq.empty
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors should equal(
+      SemanticCheckResult.error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N94)
+          .atPosition(p.offset, p.line, p.column).build(),
+        initialStateWithFeatureFlags,
+        "`ALTER USERS` requires at least one tag clause.",
+        p
+      ).errors
+    )
+  }
+
+  test("ALTER USERS alice REMOVE TAGS 'x' SET TAGS ['a'] — SET cannot combine with REMOVE") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(RemoveTags(literalString("x"))(pos1), SetTags(listOf(literalString("a")))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors should equal(
+      SemanticCheckResult.error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N92)
+          .atPosition(pos2.offset, pos2.line, pos2.column).build(),
+        initialStateWithFeatureFlags,
+        "SET TAGS cannot be combined with ADD TAGS or REMOVE TAGS.",
+        pos2
+      ).errors
+    )
+  }
+
+  test("ALTER USERS alice ADD TAGS 'x' SET TAGS ['a'] — SET cannot combine with ADD") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(AddTags(literalString("x"))(pos1), SetTags(listOf(literalString("a")))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors should equal(
+      SemanticCheckResult.error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N92)
+          .atPosition(pos2.offset, pos2.line, pos2.column).build(),
+        initialStateWithFeatureFlags,
+        "SET TAGS cannot be combined with ADD TAGS or REMOVE TAGS.",
+        pos2
+      ).errors
+    )
+  }
+
+  test("ALTER USER foo REMOVE ALL TAGS SET TAGS ['a'] — SET cannot combine with REMOVE ALL") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(RemoveAllTags()(pos1), SetTags(listOf(literalString("a")))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors should equal(
+      SemanticCheckResult.error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N92)
+          .atPosition(pos2.offset, pos2.line, pos2.column).build(),
+        initialStateWithFeatureFlags,
+        "SET TAGS cannot be combined with ADD TAGS or REMOVE TAGS.",
+        pos2
+      ).errors
+    )
+  }
+
+  test("ALTER USERS alice REMOVE ALL TAGS SET TAGS ['a'] — SET cannot combine with REMOVE ALL") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(RemoveAllTags()(pos1), SetTags(listOf(literalString("a")))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors should equal(
+      SemanticCheckResult.error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N92)
+          .atPosition(pos2.offset, pos2.line, pos2.column).build(),
+        initialStateWithFeatureFlags,
+        "SET TAGS cannot be combined with ADD TAGS or REMOVE TAGS.",
+        pos2
+      ).errors
+    )
+  }
+
+  test("ALTER USER foo REMOVE ALL TAGS ADD TAGS 'x' — passes (remove-all then add is allowed)") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(RemoveAllTags()(pos1), AddTags(literalString("x"))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USERS alice REMOVE ALL TAGS ADD TAGS 'x' — passes (remove-all then add is allowed)") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(RemoveAllTags()(pos1), AddTags(literalString("x"))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  // Empty / wrong-type tag values
+
+  test("ALTER USER foo ADD TAGS '' — empty string rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(StringLiteral("")(pos1))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("\"\"", "ADD TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo SET TAGS '' — empty string rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(SetTags(StringLiteral("")(pos1))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("\"\"", "SET TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo REMOVE TAGS '' — empty string rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(RemoveTags(StringLiteral("")(pos1))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("\"\"", "REMOVE TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo ADD TAGS ['x', ''] — list with empty element rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(listOfWithPosition(pos1, literalString("x"), literalString("")))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("""["x", ""]""", "ADD TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo ADD TAGS [] — empty list rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(listOfWithPosition(pos1))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("[]", "ADD TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo ADD TAGS 42 — wrong type rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(literalInt(42, pos1))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("42", "ADD TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo ADD TAGS [1, 2, 3] — non-string list rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(listOfWithPosition(pos1, literalInt(1, pos2), literalInt(2, pos3), literalInt(3, pos4)))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("[1, 2, 3]", "ADD TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo ADD TAGS [0, 'hello', 'world'] — heterogeneous list rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(listOfWithPosition(pos1, literalInt(0, pos2), literalString("hello"), literalString("world")))(pos3))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "ADD TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo SET TAGS [1, 2, 3] — non-string list rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(SetTags(listOfWithPosition(pos1, literalInt(1, pos2), literalInt(2, pos3), literalInt(3, pos4)))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("[1, 2, 3]", "SET TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo SET TAGS [0, 'hello', 'world'] — heterogeneous list rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(SetTags(listOfWithPosition(pos1, literalInt(0, pos2), literalString("hello"), literalString("world")))(pos3))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "SET TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo REMOVE TAGS [1, 2, 3] — non-string list rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(RemoveTags(listOfWithPosition(pos1, literalInt(1, pos2), literalInt(2, pos3), literalInt(3, pos4)))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("[1, 2, 3]", "REMOVE TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo REMOVE TAGS [0, 'hello', 'world'] — heterogeneous list rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(RemoveTags(listOfWithPosition(
+        pos1,
+        literalInt(0, pos2),
+        literalString("hello"),
+        literalString("world")
+      ))(pos3))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "REMOVE TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo ADD TAGS $param — parameter accepted") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(parameter("tags", CTString))(pos1))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USERS alice ADD TAGS '' — empty string rejected") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(AddTags(StringLiteral("")(pos1))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("\"\"", "ADD TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("CREATE USER foo SET TAGS '' — empty string rejected") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)(p)))(p)),
+      Some(SetTags(StringLiteral("")(pos1))(pos2))
+    )(p)
+
+    createUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("\"\"", "SET TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("CREATE USER foo SET TAGS [] — empty list rejected") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)(p)))(p)),
+      Some(SetTags(listOfWithPosition(pos1))(pos2))
+    )(p)
+
+    createUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
+      SemanticCheckResult.error(
+        gqlStringOrStringListWrongType("[]", "SET TAGS", pos1),
+        initialStateWithFeatureFlags,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo ADD TAGS ['a', 'b'] — non-empty list of non-empty strings passes") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(AddTags(listOf(literalString("a"), literalString("b")))(pos1))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 }

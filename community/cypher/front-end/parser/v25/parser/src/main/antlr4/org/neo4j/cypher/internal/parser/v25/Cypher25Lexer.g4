@@ -1268,6 +1268,14 @@ SUSPENDED
    : S U S P E N D E D
    ;
 
+TAG
+   : T A G
+   ;
+
+TAGS
+   : T A G S
+   ;
+
 TARGET
    : T A R G E T
    ;

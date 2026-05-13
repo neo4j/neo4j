@@ -123,6 +123,10 @@ object SemanticFeature {
     override def name: String = "Expand hints"
   }
 
+  case object UserTags extends SemanticFeature with FeatureToString {
+    override def name: String = "User tags"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -142,7 +146,8 @@ object SemanticFeature {
     DisableTypeCheckingInSemanticAnalysis,
     AllowClauseWithMixedLabelSyntax,
     AttributeBasedAccessControl,
-    ExpandHints
+    ExpandHints,
+    UserTags
   )
 
   def fromString(str: String): SemanticFeature =

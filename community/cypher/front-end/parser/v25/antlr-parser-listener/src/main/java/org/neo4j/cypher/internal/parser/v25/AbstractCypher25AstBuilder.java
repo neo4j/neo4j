@@ -434,6 +434,7 @@ public abstract class AbstractCypher25AstBuilder implements Cypher25ParserListen
             case Cypher25Parser.RULE_roleNames -> exitRoleNames((Cypher25Parser.RoleNamesContext) ctx);
             case Cypher25Parser.RULE_authRuleNames -> exitAuthRuleNames((Cypher25Parser.AuthRuleNamesContext) ctx);
             case Cypher25Parser.RULE_roleToken -> exitRoleToken((Cypher25Parser.RoleTokenContext) ctx);
+            case Cypher25Parser.RULE_tagToken -> exitTagToken((Cypher25Parser.TagTokenContext) ctx);
             case Cypher25Parser.RULE_authRuleKeywords ->
                 exitAuthRuleKeywords((Cypher25Parser.AuthRuleKeywordsContext) ctx);
             case Cypher25Parser.RULE_enableServerCommand ->
@@ -462,8 +463,15 @@ public abstract class AbstractCypher25AstBuilder implements Cypher25ParserListen
             case Cypher25Parser.RULE_alterCurrentUser ->
                 exitAlterCurrentUser((Cypher25Parser.AlterCurrentUserContext) ctx);
             case Cypher25Parser.RULE_alterUser -> exitAlterUser((Cypher25Parser.AlterUserContext) ctx);
+            case Cypher25Parser.RULE_alterUsers -> exitAlterUsers((Cypher25Parser.AlterUsersContext) ctx);
             case Cypher25Parser.RULE_removeNamedProvider ->
                 exitRemoveNamedProvider((Cypher25Parser.RemoveNamedProviderContext) ctx);
+            case Cypher25Parser.RULE_userSetTagsClause ->
+                exitUserSetTagsClause((Cypher25Parser.UserSetTagsClauseContext) ctx);
+            case Cypher25Parser.RULE_userAddTagsClause ->
+                exitUserAddTagsClause((Cypher25Parser.UserAddTagsClauseContext) ctx);
+            case Cypher25Parser.RULE_userRemoveTagsClause ->
+                exitUserRemoveTagsClause((Cypher25Parser.UserRemoveTagsClauseContext) ctx);
             case Cypher25Parser.RULE_password -> exitPassword((Cypher25Parser.PasswordContext) ctx);
             case Cypher25Parser.RULE_passwordOnly -> exitPasswordOnly((Cypher25Parser.PasswordOnlyContext) ctx);
             case Cypher25Parser.RULE_passwordExpression ->

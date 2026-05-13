@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetTags
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UserOptions
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 
 import scala.util.Random
 
@@ -1162,19 +1164,33 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'DEFAULT': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 45 (offset: 44))
-        |"CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1"
-        |                                             ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 45 (offset: 44))
+            |"CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1"
+            |                                             ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT', 'STATUS', 'TAG' or 'TAGS' (line 1, column 45 (offset: 44))
+            |"CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1"
+            |                                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'STAUS': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 45 (offset: 44))
-        |"CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE"
-        |                                             ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'STAUS': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 45 (offset: 44))
+            |"CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE"
+            |                                             ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'STAUS': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT', 'STATUS', 'TAG' or 'TAGS' (line 1, column 45 (offset: 44))
+            |"CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE"
+            |                                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
@@ -1313,5 +1329,93 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("CREATE USER foo SET AUTH PROVIDER 'bar' { SET ID 42 }") {
     failsParsing[Statements].withSyntaxErrorContaining("Invalid input '42': expected a parameter or a string (line")
+  }
+
+  // SET TAGS
+
+  test("CREATE USER foo SET PASSWORD 'password' SET TAG 'label'") {
+    assertAst(
+      CreateUser(
+        literalFoo,
+        UserOptions(None, None),
+        IfExistsThrowError,
+        List(),
+        Some(Auth("native", List(password(password)))(pos)),
+        Some(SetTags(literalString("label"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET TAGS 'label'") {
+    assertAst(
+      CreateUser(
+        literalFoo,
+        UserOptions(None, None),
+        IfExistsThrowError,
+        List(),
+        Some(Auth("native", List(password(password)))(pos)),
+        Some(SetTags(literalString("label"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET TAGS ['a', 'b']") {
+    assertAst(
+      CreateUser(
+        literalFoo,
+        UserOptions(None, None),
+        IfExistsThrowError,
+        List(),
+        Some(Auth("native", List(password(password)))(pos)),
+        Some(SetTags(listOf(literalString("a"), literalString("b")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET TAGS $param") {
+    assertAst(
+      CreateUser(
+        literalFoo,
+        UserOptions(None, None),
+        IfExistsThrowError,
+        List(),
+        Some(Auth("native", List(password(password)))(pos)),
+        Some(SetTags(anyParam("param"))(pos))
+      )(pos),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET TAGS ['a', 'a', 'b']") {
+    assertAst(
+      CreateUser(
+        literalFoo,
+        UserOptions(None, None),
+        IfExistsThrowError,
+        List(),
+        Some(Auth("native", List(password(password)))(pos)),
+        Some(SetTags(listOf(literalString("a"), literalString("a"), literalString("b")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' ADD TAGS 'x'") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Invalid input 'ADD': expected 'CHANGE', 'SET' or <EOF> (line")
+    }
+  }
+
+  test("CREATE USER foo SET PASSWORD $password SET TAGS 'a' SET TAGS 'b'") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Duplicate SET TAGS clause")
+    }
   }
 }

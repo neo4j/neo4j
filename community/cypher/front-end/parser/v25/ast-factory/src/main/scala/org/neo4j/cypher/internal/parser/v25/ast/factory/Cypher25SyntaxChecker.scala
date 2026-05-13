@@ -78,6 +78,7 @@ final class Cypher25SyntaxChecker(
       case Cypher25Parser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
       case Cypher25Parser.RULE_createUser                       => checkCreateUser(cast(ctx))
       case Cypher25Parser.RULE_alterUser                        => checkAlterUser(cast(ctx))
+      case Cypher25Parser.RULE_alterUsers                       => checkAlterUsers(cast(ctx))
       case Cypher25Parser.RULE_allPrivilege                     => checkAllPrivilege(cast(ctx))
       case Cypher25Parser.RULE_topology                         => checkTopology(cast(ctx))
       case Cypher25Parser.RULE_alterDatabase                    => checkAlterDatabase(cast(ctx))
@@ -170,11 +171,21 @@ final class Cypher25SyntaxChecker(
   private def checkCreateUser(ctx: Cypher25Parser.CreateUserContext): Unit = {
     errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
+    errorOnDuplicateRule(ctx.userSetTagsClause(), "SET TAGS")
   }
 
   private def checkAlterUser(ctx: Cypher25Parser.AlterUserContext): Unit = {
     errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
+    errorOnDuplicateRule(ctx.userSetTagsClause(), "SET TAGS")
+    errorOnDuplicateRule(ctx.userAddTagsClause(), "ADD TAGS")
+    errorOnDuplicateRule(ctx.userRemoveTagsClause(), "REMOVE TAGS")
+  }
+
+  private def checkAlterUsers(ctx: Cypher25Parser.AlterUsersContext): Unit = {
+    errorOnDuplicateRule(ctx.userSetTagsClause(), "SET TAGS")
+    errorOnDuplicateRule(ctx.userAddTagsClause(), "ADD TAGS")
+    errorOnDuplicateRule(ctx.userRemoveTagsClause(), "REMOVE TAGS")
   }
 
   private def checkCreateAuthRule(ctx: Cypher25Parser.CreateAuthRuleContext): Unit = {
