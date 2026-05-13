@@ -3026,6 +3026,8 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     userAggregationFunctions.foreach(registerUserAggregation)
+    // Refresh the transaction so its ProcedureView snapshot includes the aggregations we just registered.
+    restartTx()
   }
 
   test("should support user-defined aggregation") {

@@ -91,6 +91,8 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
         override def create(ctx: Context): UserAggregator = ???
       }
     )
+    // Refresh the transaction so its ProcedureView snapshot includes the function and aggregation we just registered.
+    restartTx()
   }
 
   test("hasLabel on top of allNodeScan") {
