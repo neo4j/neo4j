@@ -27,8 +27,8 @@ public interface EnvelopeLogRangeReader {
      * Prepares all the relevant files to be transferred in a {@link StoreChannelsForTransfer}.
      * The first file is positioned at the start of {@code fromIndex}. All other files are positioned at the starting
      * point of the file (meaning at the beginning of the second segment).
-     * @param fromIndex start of range. This is required to start the range.
-     * @param desiredToIndex desired end of range. This is not required to be the end of the range if the this log
+     * @param fromIndex start of range. This is required to start the range. Pass -1 for earliest available.
+     * @param desiredToIndex desired end of range. This is not required to be the end of the range. If the log
      *                       cannot serve this index it will still return a lower index.
      * @return  Returns a {@link StoreChannelsForTransfer} for the given {@code fromIndex} and {@code desiredToIndex}.
      * @throws IOException

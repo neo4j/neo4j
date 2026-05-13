@@ -30,12 +30,23 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
 
     @Override
     public StoreChannelsForTransfer storeChannels(long fromIndex, long desiredToIndex) throws IOException {
+        var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
+        logFilesMetadata.next();
+        long availableFromIndex = logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
+        return storeChannelsIfAvailable(fromIndex, availableFromIndex, desiredToIndex);
+    }
+
+    protected StoreChannelsForTransfer storeChannelsIfAvailable(long fromIndex, long availableFromIndex, long toIndex)
+            throws IOException {
         if (fromIndex == -1) {
-            var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
-            logFilesMetadata.next();
-            fromIndex = logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
+            fromIndex = availableFromIndex;
+        } else if (fromIndex < availableFromIndex) {
+            return StoreChannelsForTransfer.nothingToTransfer(availableFromIndex, fromIndex);
         }
-        return envelopedLogFiles.storeChannels(fromIndex, desiredToIndex);
+        if (toIndex < fromIndex) {
+            return StoreChannelsForTransfer.nothingToTransfer(fromIndex, toIndex);
+        }
+        return envelopedLogFiles.storeChannels(fromIndex, toIndex);
     }
 
     @Override
