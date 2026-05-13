@@ -111,7 +111,7 @@ object pegExpression {
         val argIncoming = incoming.aggregatingConstantChildContext
         val children = args.map(arg => apply(arg, argIncoming))
         collect(incoming.expressionResultScope(fi, children))
-      case fi @ ResolvedFunctionInvocation(_, _, args) if fi.isAggregate =>
+      case fi @ ResolvedFunctionInvocation(_, _, args, _) if fi.isAggregate =>
         val argIncoming = incoming.aggregatingConstantChildContext
         val children = args.map(arg => apply(arg, argIncoming))
         collect(incoming.expressionResultScope(fi, children))

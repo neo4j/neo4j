@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.semantics.*
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.error
@@ -23,27 +25,39 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.ast.semantics._
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
+import org.neo4j.cypher.internal.expressions.functions.{Function => BuiltInFunction}
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ZippableUtil.Zippable
 import org.neo4j.cypher.internal.util.symbols
 
+import java.util.Locale
+
 object ResolvedFunctionInvocation {
 
-  def apply(signatureLookup: FunctionName => Option[UserFunctionSignature])(unresolved: FunctionInvocation)
-    : ResolvedFunctionInvocation = {
+  def fromUnresolved(
+    signatureLookup: FunctionName => Option[UserFunctionSignature],
+    otherVersionLookup: FunctionName => Option[UserFunctionSignature] = _ => None,
+    otherVersion: CypherVersion = CypherVersion.Cypher25
+  )(unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
     val position = unresolved.position
     val name = unresolved.functionName
     val signature = signatureLookup(name)
     val args = signature.map(obfuscateArgs(_, unresolved.args)).getOrElse(unresolved.args)
+    val otherBuiltInFunction: Option[BuiltInFunction] =
+      BuiltInFunction.scopedLookup(otherVersion).get(name.fullName.toLowerCase(Locale.ROOT))
+    val otherVersionIfExists: Option[CypherVersion] = {
+      if (otherBuiltInFunction.isDefined) Some(otherVersion)
+      else if (signature.isEmpty) otherVersionLookup(name).map(_ => otherVersion)
+      else None
+    }
 
-    ResolvedFunctionInvocation(name, signature, args)(position)
+    ResolvedFunctionInvocation(name, signature, args, otherVersionIfExists)(position)
   }
 
   def obfuscateArgs(signature: UserFunctionSignature, args: IndexedSeq[Expression]): IndexedSeq[Expression] = {
@@ -68,7 +82,8 @@ object ResolvedFunctionInvocation {
 case class ResolvedFunctionInvocation(
   override val functionName: FunctionName,
   fcnSignature: Option[UserFunctionSignature],
-  override val callArguments: IndexedSeq[Expression]
+  override val callArguments: IndexedSeq[Expression],
+  otherCypherVersionIfExists: Option[CypherVersion] = None
 )(val position: InputPosition)
     extends Expression with UserDefinedFunctionInvocation with SemanticCheckableExpression {
 
@@ -90,9 +105,15 @@ case class ResolvedFunctionInvocation(
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = fcnSignature match {
     case None =>
       functionName match {
-        case FunctionName(_, qn) if qn.equalsIgnoreCase("not") =>
+        case fn: FunctionName if fn.name.equalsIgnoreCase("not") =>
           SemanticError.unknownFunctionNamedNot(position)
-        case _ => SemanticError.unknownFunction(functionName.fullName, position)
+        case _ =>
+          otherCypherVersionIfExists match {
+            case Some(otherVersion) =>
+              SemanticError.unknownFunctionWithVersionHint(functionName.fullName, otherVersion, position)
+            case None =>
+              SemanticError.unknownFunction(functionName.fullName, position)
+          }
       }
     case Some(signature) =>
       val expectedNumArgs = signature.inputSignature.length

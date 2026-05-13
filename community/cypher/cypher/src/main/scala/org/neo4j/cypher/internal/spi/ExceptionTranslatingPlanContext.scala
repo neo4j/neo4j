@@ -260,4 +260,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
     translateException(tokenNameLookup, inner.storageSupportsFastExpandInto)
 
   override def queryLanguage: QueryLanguage = inner.queryLanguage
+
+  override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = None
 }

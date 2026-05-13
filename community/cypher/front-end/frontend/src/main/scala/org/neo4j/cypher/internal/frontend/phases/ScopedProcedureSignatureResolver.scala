@@ -28,6 +28,7 @@ trait ProcedureSignatureResolver {
 trait ScopedProcedureSignatureResolver {
   def procedureSignature(name: ProcedureName): ProcedureSignature
   def functionSignature(name: FunctionName): Option[UserFunctionSignature]
+  def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature]
   def procedureSignatureVersion: Long
   def queryLanguage: QueryLanguage
 }
@@ -39,15 +40,19 @@ object ScopedProcedureSignatureResolver {
       throw new UnsupportedOperationException("No procedure resolver available")
     override def functionSignature(name: FunctionName): Option[UserFunctionSignature] =
       throw new UnsupportedOperationException("No function resolver available")
+    override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = None
     override def procedureSignatureVersion: Long =
       throw new UnsupportedOperationException("No signature version available")
     override def queryLanguage: QueryLanguage = QueryLanguage.Cypher25
   }
 
   def from(r: ProcedureSignatureResolver, scope: QueryLanguage): ScopedProcedureSignatureResolver = {
+    val other = QueryLanguage.otherVersion(scope)
     new ScopedProcedureSignatureResolver {
       override def procedureSignature(n: ProcedureName): ProcedureSignature = r.procedureSignature(n, scope)
       override def functionSignature(n: FunctionName): Option[UserFunctionSignature] = r.functionSignature(n, scope)
+      override def functionSignatureInOtherVersion(n: FunctionName): Option[UserFunctionSignature] =
+        r.functionSignature(n, other)
       override def procedureSignatureVersion: Long = r.procedureSignatureVersion
       override def queryLanguage: QueryLanguage = scope
     }

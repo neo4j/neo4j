@@ -83,6 +83,11 @@ object QueryLanguage {
     case QueryLanguage.Cypher25 => CypherVersion.Cypher25
   }
 
+  def otherVersion(scope: QueryLanguage): QueryLanguage = scope match {
+    case QueryLanguage.Cypher5  => QueryLanguage.Cypher25
+    case QueryLanguage.Cypher25 => QueryLanguage.Cypher5
+  }
+
   def toKernelScope(scope: QueryLanguage): org.neo4j.kernel.api.QueryLanguage = scope match {
     case QueryLanguage.Cypher5  => org.neo4j.kernel.api.QueryLanguage.CYPHER_5
     case QueryLanguage.Cypher25 => org.neo4j.kernel.api.QueryLanguage.CYPHER_25

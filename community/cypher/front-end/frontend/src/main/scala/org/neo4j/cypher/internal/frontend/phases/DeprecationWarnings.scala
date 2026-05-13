@@ -77,6 +77,7 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
       case f @ ResolvedFunctionInvocation(
           _,
           Some(UserFunctionSignature(name, inputFields, _, maybeDeprecatedInfo, _, _, _, _, _)),
+          _,
           _
         ) =>
         seq =>

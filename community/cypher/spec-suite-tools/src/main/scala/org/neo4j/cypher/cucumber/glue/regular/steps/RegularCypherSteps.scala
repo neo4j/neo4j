@@ -50,6 +50,8 @@ import org.neo4j.cypher.cucumber.user.function.AggCollectFunction
 import org.neo4j.cypher.cucumber.user.function.AggCountFunction
 import org.neo4j.cypher.cucumber.user.function.NodeHashFunction
 import org.neo4j.cypher.cucumber.user.function.PassThroughFunction
+import org.neo4j.cypher.cucumber.user.function.ScopedFunctionCypher25
+import org.neo4j.cypher.cucumber.user.function.ScopedFunctionCypher5
 import org.neo4j.cypher.cucumber.user.function.SeededRandFunction
 import org.neo4j.cypher.cucumber.user.function.TestFailNTimesFunction
 import org.neo4j.cypher.cucumber.value.CypherCucumberValueParser
@@ -64,6 +66,7 @@ import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.internal.kernel.api.procs.QualifiedName
+import org.neo4j.kernel.api.QueryLanguage
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
@@ -130,6 +133,20 @@ final class RegularCypherSteps @Inject() (
     registeredProcedures = registeredProcedures.appended(procedure.signature().name())
   }
 
+  override def registerProcedure(
+    signature: String,
+    results: DataTable,
+    supportedLanguages: Set[QueryLanguage]
+  ): Unit = {
+    val output = results.cells().stream()
+      .skip(1) // Header row
+      .map(row => row.stream().map(v => ValueUtils.asValue(parse(v))).toArray(i => new Array[AnyValue](i)))
+      .toArray(i => new Array[Array[AnyValue]](i))
+    val procedure = ProcedureBuilder.createProcedure(signature, output, supportedLanguages)
+    db.registerProcedure(procedure)
+    registeredProcedures = registeredProcedures.appended(procedure.signature().name())
+  }
+
   override def registerUserFunction(name: String): Unit = {
     name match {
       case "failNTimes" =>
@@ -148,6 +165,12 @@ final class RegularCypherSteps @Inject() (
       case "test.passThrough" =>
         registeredProcedures = registeredProcedures.appended(new QualifiedName("test", "passThrough"))
         db.registerFunction(classOf[PassThroughFunction])
+      case "test.cypher25Scope" =>
+        registeredProcedures = registeredProcedures.appended(new QualifiedName("test", "cypher25Scope"))
+        db.registerFunction(classOf[ScopedFunctionCypher25])
+      case "test.cypher5Scope" =>
+        registeredProcedures = registeredProcedures.appended(new QualifiedName("test", "cypher5Scope"))
+        db.registerFunction(classOf[ScopedFunctionCypher5])
       case hashFunc if hashFunc.startsWith("test.hash.") =>
         registeredProcedures = registeredProcedures.appendedAll(Seq(
           new QualifiedName("test", "hash", "node"),

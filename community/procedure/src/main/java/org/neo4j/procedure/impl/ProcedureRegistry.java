@@ -213,6 +213,12 @@ public class ProcedureRegistry {
     public ProcedureHandle procedure(QualifiedName name, QueryLanguage scope) throws ProcedureException {
         CallableProcedure proc = procedures.getByKey(name, scope);
         if (proc == null) {
+            QueryLanguage otherScope = QueryLanguage.getOther(scope);
+            CallableProcedure otherProc = procedures.getByKey(name, otherScope);
+            if (otherProc != null) {
+                int cypherVersion = otherScope == QueryLanguage.CYPHER_5 ? 5 : 25;
+                throw ProcedureException.noSuchProcedureWithVersionHint(name, cypherVersion);
+            }
             throw ProcedureException.noSuchProcedure(name);
         }
         return new ProcedureHandle(proc.signature(), procedures.idOfKey(name, scope));

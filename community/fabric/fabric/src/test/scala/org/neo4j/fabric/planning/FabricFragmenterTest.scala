@@ -946,7 +946,7 @@ class FabricFragmenterTest
     ResolvedNonLocalCall(scopedSignatures.procedureSignature)(unresolved)
 
   private def resolved(unresolved: FunctionInvocation): ResolvedFunctionInvocation =
-    ResolvedFunctionInvocation(scopedSignatures.functionSignature)(unresolved)
+    ResolvedFunctionInvocation.fromUnresolved(scopedSignatures.functionSignature)(unresolved)
 
   override def scopedSignatures: ScopedProcedureSignatureResolver = scopedSignatures(systemDefaultLanguage)
 }

@@ -361,7 +361,12 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
             Locale.ROOT
           ) == "distance" =>
           val pos = invocation.position
-          val gql = GqlHelper.getGql42001_42N48("distance", pos.offset, pos.line, pos.column)
+          val gql = GqlHelper.getGql42001_42N48(
+            "distance",
+            pos.offset,
+            pos.line,
+            pos.column
+          )
           SemanticError(
             gql,
             s"'distance' has been replaced by 'point.distance'",

@@ -107,6 +107,24 @@ public class ProcedureException extends KernelException {
                 name);
     }
 
+    public static ProcedureException noSuchProcedureWithVersionHint(QualifiedName name, int cypherVersion) {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N08)
+                        .withParam(GqlParams.StringParam.procFun, name.toString())
+                        .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42I78)
+                                .withParam(GqlParams.NumberParam.version1, cypherVersion)
+                                .build())
+                        .build())
+                .build();
+        return new ProcedureException(
+                gql,
+                Status.Procedure.ProcedureNotFound,
+                "There is no procedure with the name `%s` registered for this database instance. "
+                        + "Please ensure you've spelled the procedure name correctly and that the "
+                        + "procedure is properly deployed.",
+                name);
+    }
+
     public static ProcedureException noSuchProcedure(int id) {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N08)

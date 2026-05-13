@@ -1142,6 +1142,16 @@ public class GqlHelper {
                 .build();
     }
 
+    public static ErrorGqlStatusObject getGql42001_42N08(String procedureName, int offset, int line, int column) {
+        return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+                .atPosition(offset, line, column)
+                .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N08)
+                        .withParam(GqlParams.StringParam.procFun, procedureName)
+                        .atPosition(offset, line, column)
+                        .build())
+                .build();
+    }
+
     public static ErrorGqlStatusObject getGql42001_42N50(
             String returnColumn, List<String> availableColumns, int offset, int line, int column) {
         return ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)

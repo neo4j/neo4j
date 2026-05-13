@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.LocalFieldSignature
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -1554,6 +1555,30 @@ object SemanticError {
     unknownFunction(functionName, s"Unknown function '$functionName'", position)
   }
 
+  def unknownFunctionWithVersionHint(
+    functionName: String,
+    otherVersion: CypherVersion,
+    position: InputPosition
+  ): SemanticError = {
+    val versionNumber = otherVersion.versionName.toInt
+    val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+      .atPosition(position.offset, position.line, position.column)
+      .withCause(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N48)
+          .atPosition(position.offset, position.line, position.column)
+          .withParam(GqlParams.StringParam.fun, functionName)
+          .withCause(
+            ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42I78)
+              .atPosition(position.offset, position.line, position.column)
+              .withParam(GqlParams.NumberParam.version1, versionNumber)
+              .build()
+          )
+          .build()
+      )
+      .build()
+    SemanticError(gql, s"Unknown function '$functionName'", position)
+  }
+
   def unknownFunctionNamedNot(position: InputPosition): SemanticError = {
     unknownFunction(
       "not",
@@ -1563,7 +1588,8 @@ object SemanticError {
   }
 
   private def unknownFunction(functionName: String, legacyMessage: String, position: InputPosition): SemanticError = {
-    val gql = GqlHelper.getGql42001_42N48(functionName, position.offset, position.line, position.column)
+    val gql =
+      GqlHelper.getGql42001_42N48(functionName, position.offset, position.line, position.column)
     SemanticError(gql, legacyMessage, position)
   }
 

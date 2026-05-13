@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage
+import org.neo4j.cypher.internal.frontend.phases.QueryLanguage.toCypherVersion
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage.toKernelScope
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
@@ -96,6 +97,7 @@ object TransactionBoundPlanContext {
 
   def resolver(tc: TransactionalContextWrapper, cypherVersion: CypherVersion): ScopedProcedureSignatureResolver =
     new ScopedProcedureSignatureResolver {
+      val other: QueryLanguage = QueryLanguage.otherVersion(QueryLanguage.from(cypherVersion))
       override def procedureSignature(name: ProcedureName): ProcedureSignature =
         TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name, cypherVersion)
       override def functionSignature(name: FunctionName): Option[UserFunctionSignature] =
@@ -104,6 +106,9 @@ object TransactionBoundPlanContext {
         tc.procedures.signatureVersion
       override def queryLanguage: QueryLanguage =
         QueryLanguage.from(cypherVersion)
+
+      override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] =
+        TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name, toCypherVersion(other))
     }
 
   def procedureSignature(tx: KernelTransaction, name: ProcedureName, version: CypherVersion): ProcedureSignature = {
@@ -703,4 +708,7 @@ class TransactionBoundPlanContext(
     }
 
   override def queryLanguage: QueryLanguage = QueryLanguage.from(cypherVersion)
+
+  override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] =
+    TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name, cypherVersion.otherVersion())
 }

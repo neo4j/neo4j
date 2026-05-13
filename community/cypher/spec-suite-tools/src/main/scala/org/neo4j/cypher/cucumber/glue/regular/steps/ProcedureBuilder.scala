@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.QualifiedName
+import org.neo4j.kernel.api.QueryLanguage
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
@@ -45,17 +46,28 @@ import org.neo4j.values.AnyValue
 
 object ProcedureBuilder {
 
-  def createProcedure(signatureString: String, output: Array[Array[AnyValue]]): BasicProcedure = {
-    val signature = asKernelSignature(new ProcedureSignatureParser().parse(signatureString))
+  def createProcedure(signatureString: String, output: Array[Array[AnyValue]]): BasicProcedure =
+    createProcedure(signatureString, output, Set(QueryLanguage.CYPHER_5, QueryLanguage.CYPHER_25))
+
+  def createProcedure(
+    signatureString: String,
+    output: Array[Array[AnyValue]],
+    supportedLanguages: Set[QueryLanguage]
+  ): BasicProcedure = {
+    val signature = asKernelSignature(new ProcedureSignatureParser().parse(signatureString), supportedLanguages)
     new FeatureTestProcedure(signature, output)
   }
 
-  private def asKernelSignature(parsedSignature: ProcedureSignature): procs.ProcedureSignature = {
+  private def asKernelSignature(
+    parsedSignature: ProcedureSignature,
+    supportedLanguages: Set[QueryLanguage]
+  ): procs.ProcedureSignature = {
     val builder = procs.ProcedureSignature.procedureSignature(new QualifiedName(
       parsedSignature.namespace.toArray,
       parsedSignature.name
     ))
     builder.mode(Mode.READ)
+    builder.supportedQueryLanguages(supportedLanguages.toSeq: _*)
     parsedSignature.inputs.foreach { case (name, tpe) => builder.in(name, asKernelType(tpe)) }
     parsedSignature.outputs match {
       case Some(fields) => fields.foreach { case (name, tpe) => builder.out(name, asKernelType(tpe)) }

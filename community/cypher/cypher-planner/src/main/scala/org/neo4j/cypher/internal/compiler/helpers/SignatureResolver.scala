@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.util.symbols.CTVector
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.internal.kernel.api.Procedures
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
@@ -99,7 +100,22 @@ final class SignatureResolver(lookup: ProcedureLookup) extends ProcedureSignatur
 
   override def procedureSignature(name: ProcedureName, scope: QueryLanguage): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.parts.toArray, name.name)
-    SignatureResolver.toCypherProcedure(lookup.procedure(kn, toKernelScope(scope)))
+    val ks = toKernelScope(scope)
+    try {
+      SignatureResolver.toCypherProcedure(lookup.procedure(kn, ks))
+    } catch {
+      case _: Exception =>
+        val otherScope = toKernelScope(QueryLanguage.otherVersion(scope))
+        val existsInOther =
+          try { lookup.procedure(kn, otherScope) != null }
+          catch { case _: Exception => false }
+        if (existsInOther) {
+          val otherVersionNum = QueryLanguage.toCypherVersion(QueryLanguage.otherVersion(scope)).versionName.toInt
+          throw ProcedureException.noSuchProcedureWithVersionHint(kn, otherVersionNum)
+        } else {
+          throw ProcedureException.noSuchProcedure(kn)
+        }
+    }
   }
 
   override def procedureSignatureVersion: Long = lookup.signatureVersion

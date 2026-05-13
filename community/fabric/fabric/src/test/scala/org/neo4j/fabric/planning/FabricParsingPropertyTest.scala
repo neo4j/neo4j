@@ -94,6 +94,8 @@ class FabricParsingPropertyTest extends CypherFunSuite
       override def procedureSignatureVersion: Long = -1
 
       override def queryLanguage: QueryLanguage = QueryLanguage.from(astGenerator.whenAstDifferUseCypherVersion)
+
+      override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = None
     }
   }
 

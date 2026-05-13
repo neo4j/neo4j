@@ -3667,7 +3667,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   private val resolvedFunction = topDown(
     Rewriter.lift {
       case f: FunctionInvocation if f.needsToBeResolved =>
-        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
+        ResolvedFunctionInvocation.fromUnresolved(resolver.functionSignature)(f).coerceArguments
     }
   )
 
@@ -3693,7 +3693,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   private def parseProjections(projections: String*): Map[LogicalVariable, Expression] = {
     toVarMap(parser.parseProjections(projections: _*)).view.mapValues {
       case f: FunctionInvocation if f.needsToBeResolved =>
-        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
+        ResolvedFunctionInvocation.fromUnresolved(resolver.functionSignature)(f).coerceArguments
       case e => e
     }.toMap
   }
@@ -3701,7 +3701,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   private def parseAggregationProjections(projections: String*): Map[LogicalVariable, Expression] = {
     toVarMap(parser.parseAggregationProjections(projections: _*)).view.mapValues {
       case f: FunctionInvocation if f.needsToBeResolved =>
-        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
+        ResolvedFunctionInvocation.fromUnresolved(resolver.functionSignature)(f).coerceArguments
       case e => e
     }.toMap
   }

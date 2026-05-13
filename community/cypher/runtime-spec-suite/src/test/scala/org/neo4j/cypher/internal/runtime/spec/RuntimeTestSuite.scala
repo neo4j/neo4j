@@ -423,7 +423,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
 
   def toExpression(value: Any): Expression = {
     def resolve(function: FunctionInvocation): Expression = {
-      if (function.needsToBeResolved) ResolvedFunctionInvocation(functionSignature)(function).coerceArguments
+      if (function.needsToBeResolved)
+        ResolvedFunctionInvocation.fromUnresolved(functionSignature)(function).coerceArguments
       else function
     }
     val valueToConvert = value match {

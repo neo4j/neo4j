@@ -82,6 +82,8 @@ trait LocalCallablesSemanticAnalysisTest
       override def procedureSignatureVersion: Long = 42
 
       override def queryLanguage: QueryLanguage = Cypher25
+
+      override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = None
     }
   }
 

@@ -30,6 +30,7 @@ import org.neo4j.cypher.cucumber.steps.Result.DoublePrecision.Within
 import org.neo4j.cypher.cucumber.steps.Result.Order.Ordered
 import org.neo4j.cypher.cucumber.steps.Result.Order.Unordered
 import org.neo4j.cypher.cucumber.steps.Result.Single
+import org.neo4j.kernel.api.QueryLanguage
 
 import java.nio.charset.StandardCharsets
 
@@ -58,8 +59,13 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
     parametersAre(params.asMap().asScala.toMap)
   }
 
-  Given("^there exists a procedure (.+):$") { (signature: String, results: DataTable) =>
+  Given("^there exists a procedure (?!.*? only in Cypher \\d)(.+):$") { (signature: String, results: DataTable) =>
     registerProcedure(signature, results)
+  }
+
+  Given("^there exists a procedure (.+?) only in Cypher (\\d+):$") {
+    (signature: String, version: Int, results: DataTable) =>
+      registerProcedure(signature, results, versionToQueryLanguage(version))
   }
 
   Given("there exists a CSV file with URL as ${word}, with rows:") { (param: String, content: DataTable) =>
@@ -185,7 +191,17 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
   def loadNamedGraph(name: String): Unit = havingExecuted(readNamedGraphCypher(name))
   def parametersAre(params: Map[String, String]): Unit
   def registerProcedure(signature: String, results: DataTable): Unit
+
+  def registerProcedure(signature: String, results: DataTable, supportedLanguages: Set[QueryLanguage]): Unit =
+    registerProcedure(signature, results)
+
   def registerUserFunction(name: String): Unit
+
+  private def versionToQueryLanguage(version: Int): Set[QueryLanguage] = version match {
+    case 5  => Set(QueryLanguage.CYPHER_5)
+    case 25 => Set(QueryLanguage.CYPHER_25)
+    case _  => throw new IllegalArgumentException(s"Unsupported Cypher version: $version")
+  }
   def givenCsvFile(urlParam: String, content: DataTable): Unit
   def havingExecuted(cypher: String): Unit
   def executingQuery(cypher: String): Unit

@@ -189,4 +189,6 @@ class NotImplementedPlanContext extends PlanContext {
   override def storageSupportsFastExpandInto: Boolean = ???
 
   override def queryLanguage: QueryLanguage = Cypher25
+
+  override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = None
 }

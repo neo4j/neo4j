@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage
+import org.neo4j.cypher.internal.frontend.phases.QueryLanguage.toCypherVersion
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractSensitiveLiterals
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
@@ -264,5 +265,28 @@ class CypherQueryObfuscatorFactory {
     override def storageSupportsFastExpandInto: Boolean = fail()
 
     override def queryLanguage: QueryLanguage = QueryLanguage.from(version)
+
+    override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = {
+      val otherVersion: QueryLanguage = QueryLanguage.otherVersion(QueryLanguage.from(version))
+      val maybeSig = org.neo4j.cypher.internal.expressions.functions.Function
+        .scopedFunctionInfo(toCypherVersion(otherVersion))
+        .find(_.function.name == name.name)
+
+      maybeSig.map { sig =>
+        val inputSig: IndexedSeq[FieldSignature] =
+          sig.names.zip(sig.argumentTypes).map { case (n, t) => FieldSignature(n, t) }
+
+        UserFunctionSignature(
+          name = name,
+          inputSignature = inputSig,
+          outputType = sig.outputType,
+          deprecationInfo = None,
+          description = Option(sig.description),
+          isAggregate = sig.isAggregationFunction,
+          id = -1,
+          builtIn = true
+        )
+      }
+    }
   }
 }

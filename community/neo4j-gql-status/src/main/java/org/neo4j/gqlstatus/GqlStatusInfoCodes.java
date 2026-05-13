@@ -1995,6 +1995,14 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             },
             "local callable already defined",
             ErrorClassification.CLIENT_ERROR),
+    STATUS_42I78(
+            "The procedure or function is available in `CYPHER { %s }`. Consider changing the database default Cypher version using `ALTER DATABASE SET DEFAULT LANGUAGE` or prefix the query with `CYPHER { %s }`.",
+            new GqlParams.GqlParam[] {
+                new NonSensitiveGqlParam(GqlParams.NumberParam.version1, List.of(NON_SENSITIVE_NUMBER)),
+                new NonSensitiveGqlParam(GqlParams.NumberParam.version1, List.of(NON_SENSITIVE_NUMBER))
+            },
+            "unsupported procedure or function in language version",
+            ErrorClassification.CLIENT_ERROR),
     STATUS_42N00(
             "A graph reference with the name { %s } was not found. Verify that the spelling is correct.",
             new GqlParams.GqlParam[] {new NonSensitiveGqlParam(GqlParams.StringParam.db, List.of(TOPOLOGY))},

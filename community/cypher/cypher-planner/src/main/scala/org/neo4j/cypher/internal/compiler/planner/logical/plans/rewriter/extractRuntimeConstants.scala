@@ -183,7 +183,7 @@ trait FunctionMatcher extends Product {
 
   def unapply(arg: Expression): Option[IndexedSeq[Expression]] = {
     arg match {
-      case ResolvedFunctionInvocation(FunctionName(ns, n), _, args)
+      case ResolvedFunctionInvocation(FunctionName(ns, n), _, args, _)
         if n.equalsIgnoreCase(name) && ns.parts.toSeq == namespace =>
         Some(args)
       case _ => None

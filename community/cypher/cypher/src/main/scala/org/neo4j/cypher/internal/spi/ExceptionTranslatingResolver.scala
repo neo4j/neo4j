@@ -48,4 +48,7 @@ class ExceptionTranslatingResolver(
   override def procedureSignatureVersion: Long = inner.procedureSignatureVersion
 
   override def queryLanguage: QueryLanguage = inner.queryLanguage
+
+  override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] =
+    translateException(inner.functionSignatureInOtherVersion(name))
 }

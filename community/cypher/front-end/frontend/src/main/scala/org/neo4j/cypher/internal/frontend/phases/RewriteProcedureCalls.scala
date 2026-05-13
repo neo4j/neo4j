@@ -100,7 +100,12 @@ trait RewriteProcedureCalls {
   }
 
   def resolveFunction(resolver: ScopedProcedureSignatureResolver, unresolved: FunctionInvocation): Expression = {
-    val resolved = ResolvedFunctionInvocation(resolver.functionSignature)(unresolved)
+    val otherVersion = QueryLanguage.toCypherVersion(QueryLanguage.otherVersion(resolver.queryLanguage))
+    val resolved = ResolvedFunctionInvocation.fromUnresolved(
+      signatureLookup = resolver.functionSignature,
+      otherVersionLookup = resolver.functionSignatureInOtherVersion,
+      otherVersion = otherVersion
+    )(unresolved)
     // We coerce here to ensure that the semantic check run after this rewriter assigns a type
     // to the coercion expression
     val coerced = resolved.coerceArguments
@@ -194,8 +199,8 @@ case class TryRewriteProcedureCalls(resolver: ScopedProcedureSignatureResolver)
     unresolved: FunctionInvocation
   ): Expression = {
     super.resolveFunction(resolver, unresolved) match {
-      case resolved @ ResolvedFunctionInvocation(_, Some(_), _) => resolved
-      case _                                                    => unresolved
+      case resolved @ ResolvedFunctionInvocation(_, Some(_), _, _) => resolved
+      case _                                                       => unresolved
     }
   }
 
@@ -216,6 +221,9 @@ class InstrumentedProcedureSignatureResolver(resolver: ScopedProcedureSignatureR
     resolved = true
     resolver.functionSignature(name)
   }
+
+  def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] =
+    resolver.functionSignatureInOtherVersion(name)
 
   def signatureVersionIfResolved: Option[Long] =
     if (resolved) Some(resolver.procedureSignatureVersion) else None

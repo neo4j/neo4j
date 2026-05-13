@@ -90,7 +90,7 @@ object UseEvaluation {
 
     private def resolveFunctions(expr: Expression): Expression = expr.rewritten.bottomUp {
       case f: FunctionInvocation if f.needsToBeResolved => {
-        val resolved = ResolvedFunctionInvocation(signatureResolver.functionSignature)(f).coerceArguments
+        val resolved = ResolvedFunctionInvocation.fromUnresolved(signatureResolver.functionSignature)(f).coerceArguments
 
         if (resolved.fcnSignature.isEmpty) {
           Errors.unknownFunction(resolved.functionName.fullName, resolved.position)

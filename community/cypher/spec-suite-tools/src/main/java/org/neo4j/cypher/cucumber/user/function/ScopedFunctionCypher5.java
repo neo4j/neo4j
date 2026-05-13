@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.cypher.cucumber.user.function;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
+import org.neo4j.kernel.api.QueryLanguage;
+import org.neo4j.kernel.api.procedure.QueryLanguageScope;
+import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.UserFunction;
 
-public enum QueryLanguage {
-    CYPHER_25,
-    CYPHER_5;
+public class ScopedFunctionCypher5 {
 
-    public static final Set<QueryLanguage> ALL = Collections.unmodifiableSet(EnumSet.allOf(QueryLanguage.class));
-
-    public static QueryLanguage getOther(QueryLanguage queryLanguage) {
-        if (queryLanguage == CYPHER_5) {
-            return CYPHER_25;
-        } else if (queryLanguage == CYPHER_25) {
-            return CYPHER_5;
-        }
-        return queryLanguage;
+    @UserFunction("test.cypher5Scope")
+    @Description("Pass-through")
+    @QueryLanguageScope(scope = {QueryLanguage.CYPHER_5})
+    public Object cypher5scope(@Name("value") Object value) {
+        return value;
     }
 }

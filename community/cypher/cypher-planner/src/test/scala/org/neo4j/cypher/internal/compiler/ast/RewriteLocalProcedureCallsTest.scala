@@ -1483,4 +1483,6 @@ object PlanContextMock extends PlanContext {
   override def getOptRelTypeId(relType: String): Option[Int] = ???
   override def getRelTypeId(relType: String): Int = ???
   override def queryLanguage: QueryLanguage = ???
+
+  override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = ???
 }

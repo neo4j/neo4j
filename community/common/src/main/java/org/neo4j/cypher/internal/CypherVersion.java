@@ -48,6 +48,14 @@ public enum CypherVersion {
         return order > other.order;
     }
 
+    public CypherVersion otherVersion() {
+        if (this == CypherVersion.Cypher25) {
+            return CypherVersion.Cypher5;
+        } else {
+            return CypherVersion.Cypher25;
+        }
+    }
+
     public boolean isEqualOrAfter(CypherVersion other) {
         return order >= other.order;
     }
