@@ -399,6 +399,55 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
     }
 
     @Test
+    void shouldChunkASingleLine() throws IOException {
+        Path chunkFile = testDirectory.createFile("inside/chunk-batch-test.txt");
+        String unbreakable = "a".repeat(1000);
+        Files.writeString(chunkFile, unbreakable);
+        String eighty_a = "a".repeat(80);
+        String forty_a = "a".repeat(40);
+
+        String embeddingResponse = """
+                {"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]}""";
+
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing(eighty_a))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing(forty_a))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+
+        String query = """
+                WITH { token: 'dummy-openai-token', model: 'gpt-4' } AS conf
+                CALL ai.file.embedBatch($file, 'openai', conf, 10)
+                YIELD index, vector, resource
+                RETURN index, resource, vector IS :: VECTOR<FLOAT32> AS vector
+                """;
+
+        assertThat(db.executeTransactionally(query, Map.of("file", "file:///" + chunkFile.getFileName()), consume()))
+                .as("Two short lines should accumulate into one chunk; the third starts a new chunk")
+                .containsExactly(
+                        Map.of("vector", true, "index", 0L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 1L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 2L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 3L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 4L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 5L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 6L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 7L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 8L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 9L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 10L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 11L, "resource", eighty_a),
+                        Map.of("vector", true, "index", 12L, "resource", forty_a));
+    }
+
+    @Test
     void shouldNotPrependNewlineAtChunkBoundaryAfterOversizedLine() throws IOException {
         String fileName = "mixed-chunk-test.txt";
         Path mixedFile = testDirectory.createFile("inside/" + fileName);
@@ -406,8 +455,15 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
 
         String embeddingResponse = """
                 {"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]}""";
+        // "One Two Three" (3 tokens) exceeds the limit of 2 and is split into sub-chunks.
         this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
-                .withRequestBody(containing("One Two Three"))
+                .withRequestBody(containing("\"One Two \""))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing("\"Three\""))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -427,9 +483,99 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
                 """;
 
         assertThat(db.executeTransactionally(query, Map.of("file", "file:///" + fileName), consume()))
-                .as("The line following an oversized chunk must not start with a leading newline")
+                .as("The line following oversized sub-chunks must not start with a leading newline")
                 .containsExactly(
-                        Map.of("index", 0L, "resource", "One Two Three"), Map.of("index", 1L, "resource", "A"));
+                        Map.of("index", 0L, "resource", "One Two "),
+                        Map.of("index", 1L, "resource", "Three"),
+                        Map.of("index", 2L, "resource", "A"));
+    }
+
+    @Test
+    void shouldChunkOversizedSingleLineIntoSmallerChunks() throws IOException {
+        // A single line with more tokens than the limit is split via RecursiveTokenSplitter
+        // into multiple sub-chunks, each within the limit.
+        String fileName = "oversized-line-test.txt";
+        Path file = testDirectory.createFile("inside/" + fileName);
+        Files.writeString(file, "One Two Three Four");
+
+        String embeddingResponse = """
+                {"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]}""";
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing("\"One Two \""))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing("\"Three Four\""))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+
+        String query = """
+                WITH { token: 'dummy-openai-token', model: 'text-embedding-3-small' } AS conf
+                CALL ai.file.embedBatch($file, 'openai', conf, 2)
+                YIELD index, resource
+                RETURN index, resource
+                """;
+
+        assertThat(db.executeTransactionally(query, Map.of("file", "file:///" + fileName), consume()))
+                .as("Oversized single line should be split into sub-chunks each within the limit")
+                .containsExactly(
+                        Map.of("index", 0L, "resource", "One Two "), Map.of("index", 1L, "resource", "Three Four"));
+    }
+
+    @Test
+    void shouldFlushAccumulatedBucketBeforeChunkingOversizedLine() throws IOException {
+        // Short lines accumulate into a bucket up to the limit. When an oversized line is
+        // encountered, the accumulator must be flushed first, then the oversized line gets
+        // split into its own sub-chunks.
+        String fileName = "flush-then-chunk-test.txt";
+        Path file = testDirectory.createFile("inside/" + fileName);
+        Files.writeString(file, "A\nB\nOne Two Three Four\nC");
+
+        String embeddingResponse = """
+                {"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]}""";
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing("\"A\\nB\""))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing("\"One Two \""))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing("\"Three Four\""))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+        this.wireMock.stubFor(post(urlEqualTo("/v1/embeddings"))
+                .withRequestBody(containing("\"C\""))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(embeddingResponse)));
+
+        String query = """
+                WITH { token: 'dummy-openai-token', model: 'text-embedding-3-small' } AS conf
+                CALL ai.file.embedBatch($file, 'openai', conf, 2)
+                YIELD index, resource
+                RETURN index, resource
+                """;
+
+        assertThat(db.executeTransactionally(query, Map.of("file", "file:///" + fileName), consume()))
+                .as("Accumulated lines should be flushed as a chunk before chunking the oversized line")
+                .containsExactly(
+                        Map.of("index", 0L, "resource", "A\nB"),
+                        Map.of("index", 1L, "resource", "One Two "),
+                        Map.of("index", 2L, "resource", "Three Four"),
+                        Map.of("index", 3L, "resource", "C"));
     }
 
     @Test

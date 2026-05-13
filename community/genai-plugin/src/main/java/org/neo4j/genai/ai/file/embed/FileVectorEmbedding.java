@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.ai.text.embed.VectorEmbedding;
+import org.neo4j.genai.ai.text.tokenChunking.RecursiveTokenSplitter;
 import org.neo4j.genai.ai.text.tokenChunking.TextChunkConfig;
 import org.neo4j.genai.util.ResourceLoader;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -144,6 +145,7 @@ public class FileVectorEmbedding {
             final var provider = providers.configure(providerName, configuration, genAIConfig);
 
             var encoding = textChunkConfig.getEncoding();
+            var splitter = new RecursiveTokenSplitter(encoding, textChunkConfig.getLimit(), 0);
             var currentOffset = 0;
             var currentBatchSize = 0;
             var newResources = new StringBuilder();
@@ -152,23 +154,29 @@ public class FileVectorEmbedding {
 
             while ((line = reader.readLine()) != null) {
                 var resourceSize = encoding.countTokens(line);
-                if (currentBatchSize + resourceSize > textChunkConfig.getLimit() && currentBatchSize != 0) {
+                if (resourceSize > textChunkConfig.getLimit()) {
+                    // The line alone exceeds the limit. Flush the current bucket (if any),
+                    // then split the line into smaller chunks via RecursiveTokenSplitter.
+                    if (currentBatchSize != 0) {
+                        streams.add(VectorEmbedding.encodePartialBatch(
+                                List.of(newResources.toString()), provider, currentOffset));
+                        currentOffset += 1;
+                        currentBatchSize = 0;
+                        newResources = new StringBuilder();
+                    }
+                    for (String subChunk : splitter.splitText(line)) {
+                        streams.add(VectorEmbedding.encodePartialBatch(List.of(subChunk), provider, currentOffset));
+                        currentOffset += 1;
+                    }
+                } else if (currentBatchSize + resourceSize > textChunkConfig.getLimit() && currentBatchSize != 0) {
                     // Close current bucket, send away
                     streams.add(VectorEmbedding.encodePartialBatch(
                             List.of(newResources.toString()), provider, currentOffset));
-                    currentBatchSize = 0;
                     currentOffset += 1;
                     newResources = new StringBuilder();
                     // Add current resource to the bucket
                     newResources.append(line);
-                    currentBatchSize += resourceSize;
-                } else if (currentBatchSize + resourceSize > textChunkConfig.getLimit() && currentBatchSize == 0) {
-                    // The resource is really large, we won't do any splitting, just send away, user error
-                    newResources.append(line);
-                    streams.add(VectorEmbedding.encodePartialBatch(
-                            List.of(newResources.toString()), provider, currentOffset));
-                    currentOffset += 1;
-                    newResources = new StringBuilder();
+                    currentBatchSize = resourceSize;
                 } else {
                     // We have more room in the bucket
                     if (!newResources.isEmpty()) {
