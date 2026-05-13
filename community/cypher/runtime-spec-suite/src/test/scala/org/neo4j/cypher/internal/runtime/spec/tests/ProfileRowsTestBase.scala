@@ -2229,6 +2229,8 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
         ResourceRawIterator.of[Array[AnyValue], ProcedureException](input, input)
       }
     })
+    // Refresh the transaction so its ProcedureView snapshot includes the procedure we just registered.
+    restartTx()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

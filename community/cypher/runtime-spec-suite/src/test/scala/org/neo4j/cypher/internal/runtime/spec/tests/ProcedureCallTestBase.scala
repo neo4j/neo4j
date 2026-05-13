@@ -180,6 +180,8 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     super.beforeEach()
     testVar.set(0)
     procedures.foreach(registerProcedure)
+    // Refresh the transaction so its ProcedureView snapshot includes the procedures we just registered.
+    restartTx()
   }
 
   test("should call read void procedure") {
