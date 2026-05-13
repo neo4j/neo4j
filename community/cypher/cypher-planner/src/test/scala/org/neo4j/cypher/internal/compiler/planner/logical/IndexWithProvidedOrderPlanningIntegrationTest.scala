@@ -3432,8 +3432,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$functionName: should use provided node index order followed by sort for ORDER BY with reverse order"
     ) {
       val (inverseOrder, inverseSortOrder) = cypherToken match {
-        case "ASC"  => ("DESC", Descending)
-        case "DESC" => ("ASC", Ascending)
+        case "ASC"  => ("DESC", Descending.apply _)
+        case "DESC" => ("ASC", Ascending.apply _)
       }
 
       val planner = minMaxPlannerBuilder()
@@ -3610,8 +3610,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$functionName: should use provided relationship index order followed by sort for ORDER BY with reverse order"
     ) {
       val (inverseOrder, inverseSortOrder) = cypherToken match {
-        case "ASC"  => ("DESC", Descending)
-        case "DESC" => ("ASC", Ascending)
+        case "ASC"  => ("DESC", Descending.apply _)
+        case "DESC" => ("ASC", Ascending.apply _)
       }
 
       val planner = minMaxPlannerBuilder()

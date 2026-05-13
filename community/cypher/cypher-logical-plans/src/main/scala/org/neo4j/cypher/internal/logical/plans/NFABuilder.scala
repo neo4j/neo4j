@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
@@ -104,7 +104,7 @@ class NFABuilder protected (val startState: State) {
     predicate: Option[VariablePredicate] = None
   ): State = {
     val state = states.getOrElseUpdate(id, State(id, variable, predicate))
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       state.variable == variable,
       s"Found state with id $id to be `${state.variable.name}` instead of `${variable.name}`"
     )

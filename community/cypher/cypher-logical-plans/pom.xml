@@ -24,6 +24,7 @@
   <properties>
     <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.cypher.internal.logical.plans</moduleName>
+    <scala.binary.version>3</scala.binary.version>
   </properties>
 
   <dependencies>
@@ -58,6 +59,11 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-ir</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-macros-scala3</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -118,15 +124,40 @@
       <artifactId>neo4j-ast-test-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-test-util</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalatest</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalatestplus</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalactic</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- neo4j testing -->
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-test-util</artifactId>
+      <artifactId>neo4j-test-util-scala3</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-test-util</artifactId>
+        </exclusion>
+      </exclusions>
+
     </dependency>
     <dependency>
       <groupId>org.reflections</groupId>
@@ -172,6 +203,40 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>${scala-maven-plugin.version}</version>
+
+        <configuration>
+          <scalaVersion>${scala3.version}</scalaVersion>
+          <scalaCompatVersion>3</scalaCompatVersion>
+          <recompileMode>${scala.plugin.recompileMode}</recompileMode>
+          <args>
+            <!-- Silence Scala 3 syntax deprecation warnings -->
+            <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
+          </args>
+          <jvmArgs>
+            <jvmArg>-Xms256m</jvmArg>
+            <jvmArg>-Xmx1024m</jvmArg>
+            <jvmArg>-Xss4M</jvmArg>
+          </jvmArgs>
+          <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <scala>
+            <scalafmt>
+              <scalaMajorVersion>2.13</scalaMajorVersion>
+              <file>${maven.multiModuleProjectDirectory}/public/build-resources/scalafmt3.conf</file>
+            </scalafmt>
+          </scala>
+        </configuration>
+      </plugin>
+
+      <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -205,9 +270,11 @@
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
             <configuration>
-              <args combine.children="append">
+              <args combine.self="override">
                 <arg>-Xfatal-warnings</arg>
                 <arg>-feature</arg>
+                <!-- Silence Scala 3 syntax deprecation warnings -->
+                <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
               </args>
             </configuration>
           </plugin>

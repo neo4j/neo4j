@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SameId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class LogicalPlanTreeRendererTest extends CypherFunSuite {
+class LogicalPlanTreeRendererTest extends CypherFunSuite3 {
 
   implicit val idGen: SameId = SameId(Id(0))
 

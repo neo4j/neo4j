@@ -104,6 +104,11 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-ir</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-logical-plans</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -214,11 +219,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.github.jbellis</groupId>
       <artifactId>jamm</artifactId>
       <scope>provided</scope>
@@ -255,12 +255,6 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ast-test-util</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-ir</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -347,10 +341,13 @@
                 <ignoredUnusedDeclaredDependency>co.helmethair:scalatest-junit-runner</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.scala-lang:scala-reflect</ignoredUnusedDeclaredDependency>
                 <!-- I suspect byte code compilation inlines what's used from this dependency. -->
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-codegen</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
+              <ignoredNonTestScopedDependencies>
+                <ignoredNonTestScopedDependency>org.scala-lang:scala3-library_3</ignoredNonTestScopedDependency>
+                <ignoredNonTestScopedDependency>org.neo4j:neo4j-cypher-ir</ignoredNonTestScopedDependency>
+              </ignoredNonTestScopedDependencies>
             </configuration>
           </execution>
         </executions>

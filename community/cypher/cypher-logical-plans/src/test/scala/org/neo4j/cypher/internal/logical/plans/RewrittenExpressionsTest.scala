@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class RewrittenExpressionsTest extends CypherFunSuite with LogicalPlanAstConstructionTestSupport {
+class RewrittenExpressionsTest extends CypherFunSuite3 with LogicalPlanAstConstructionTestSupport {
 
   test("RewrittenExpressions.empty should use an empty map") {
     RewrittenExpressions.empty shouldBe empty

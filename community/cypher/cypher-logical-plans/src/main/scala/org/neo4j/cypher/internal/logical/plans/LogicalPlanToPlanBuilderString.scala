@@ -774,9 +774,9 @@ object LogicalPlanToPlanBuilderString {
         s"$invocation$yielding".quoted
 
       case ProduceResult(_, columns) if columns.exists(_.cachedProperties.nonEmpty) =>
-        spread(columns) { col =>
-          call("column", col.variable, spread(col.cachedProperties)(expressionStringifierExtension(_).quoted))
-        }
+        spread(columns)(using { col =>
+            call("column", col.variable, spread(col.cachedProperties)(expressionStringifierExtension(_).quoted))
+          })
 
       case ProduceResult(_, columns) =>
         spread(columns)(_.variable.escaped)
@@ -2560,7 +2560,7 @@ object LogicalPlanToPlanBuilderString {
     implicit def fromSeq[A: ToParam]: ToParam[Seq[A]] = seqParam(_)
 
     implicit def fromMap[K: ToParam, V: ToParam]: ToParam[Map[K, V]] = map =>
-      call("Map", spread(map) { case (k, v) => Param.tuple(k, v) })
+      call("Map", spread(map)(using { case (k, v) => Param.tuple(k, v) }))
 
     implicit def fromExpression[E <: Expression]: ToParam[E] = str(expressionStringifier(_))
 

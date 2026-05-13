@@ -47,7 +47,6 @@ object GraphType {
       case (x: RelationshipElementType, y: RelationshipElementType) =>
         x.identifyingLabel.name.compareTo(y.identifyingLabel.name)
       case (_: RelationshipElementType, _: NodeElementType) => 1
-      case (_: RelationshipElementType, _)                  => -1
     }
   }
 

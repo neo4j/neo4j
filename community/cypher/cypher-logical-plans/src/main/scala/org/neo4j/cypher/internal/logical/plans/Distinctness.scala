@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.InputPosition
 
 object Distinctness {
@@ -123,7 +123,7 @@ sealed trait Distinctness {
  * @param columns the tuple of `columns` is distinct.
  */
 case class DistinctColumns private (columns: Set[LogicalVariable]) extends Distinctness {
-  AssertMacros.checkOnlyWhenAssertionsAreEnabled(columns.nonEmpty, "DistinctColumns must be non-empty")
+  AssertMacros3.checkOnlyWhenAssertionsAreEnabled(columns.nonEmpty, "DistinctColumns must be non-empty")
 
   /**
    * If these distinct columns are a subset of the given distinct `expressions`

@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.NFA.MultiRelationshipExpansionTra
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Repetition
 
@@ -350,7 +350,7 @@ case class NFA(
     s"digraph G {\n$nodes\n$edges\n}"
   }
 
-  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+  AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
     states.zipWithIndex.forall { case (s, i) => s.id == i },
     "NFA States should be sorted by internal State Id"
   )

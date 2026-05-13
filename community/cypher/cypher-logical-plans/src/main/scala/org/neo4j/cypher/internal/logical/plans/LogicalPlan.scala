@@ -69,7 +69,7 @@ import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode.Trail
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -289,7 +289,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
           constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else
           constructor.invoke(this, args: _*).asInstanceOf[this.type]
-      resultingPlan
+      resultingPlan.asInstanceOf[this.type]
     }
 
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
@@ -860,7 +860,7 @@ case class Aggregation(
     newAggregationExpressions: Map[LogicalVariable, Expression],
     newOrderToLeverage: Seq[Expression]
   )(idGen: IdGen): AggregatingPlan = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       newOrderToLeverage.isEmpty,
       s"Order to leverage expressions are not allowed in ${getClass.getSimpleName}."
     )
@@ -2572,11 +2572,11 @@ case class Distinct(
     newAggregationExpressions: Map[LogicalVariable, Expression],
     newOrderToLeverage: Seq[Expression]
   )(idGen: IdGen): AggregatingPlan = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       newAggregationExpressions.isEmpty,
       s"Aggregation expressions are not allowed in ${getClass.getSimpleName}."
     )
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       newOrderToLeverage.isEmpty,
       s"Order to leverage expressions are not allowed in ${getClass.getSimpleName}."
     )
@@ -3049,7 +3049,7 @@ case class StatefulShortestPath(
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with PlanWithVariableGroupings {
 
-  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+  AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
     // With ExpandInto, we must not have predicates on the target node
     mode != ExpandInto || nfa.finalState.variablePredicate.isEmpty,
     "Expand into and predicates on the target node are forbidden: \n" + nfa.toDotString
@@ -4129,7 +4129,7 @@ case class OrderedAggregation(
 
   override val localAvailableSymbols: Set[LogicalVariable] = groupingKeys ++ aggregationExpressions.keySet
 
-  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+  AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
     orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
     s"""orderToLeverage expressions can only be grouping expression values, i.e. the expressions _before_ the aggregation.
        |Grouping expressions: $groupingExpressions
@@ -4168,14 +4168,14 @@ case class OrderedDistinct(
     newAggregationExpressions: Map[LogicalVariable, Expression],
     newOrderToLeverage: Seq[Expression]
   )(idGen: IdGen): AggregatingPlan = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       newAggregationExpressions.isEmpty,
       s"Aggregation expressions are not allowed in ${getClass.getSimpleName}."
     )
     copy(groupingExpressions = newGroupingExpressions, orderToLeverage = newOrderToLeverage)(idGen)
   }
 
-  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+  AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
     orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
     s"""orderToLeverage expressions can only be grouping expression values, i.e. the expressions _before_ the distinct.
        |Grouping expressions: $groupingExpressions

@@ -38,7 +38,6 @@ case class CachedProperties(entries: Map[LogicalVariable, CachedProperties.Entry
               Set(cachedProperty.propertyKey)
             ))
         }
-      case (acc, _) => acc
     }
     CachedProperties(updatedEntries)
   }

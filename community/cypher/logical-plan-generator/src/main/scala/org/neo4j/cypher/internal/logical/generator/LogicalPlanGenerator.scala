@@ -490,7 +490,7 @@ class LogicalPlanGenerator(
   def sort(state: State): Gen[WithState[Sort]] = for {
     WithState(source, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
     columns <- Gen.atLeastOne(source.availableSymbols)
-    orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending, Descending))
+    orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending.apply _, Descending.apply _))
   } yield {
     val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
     val plan = Sort(source, orderedColumns.toSeq)(state.idGen)
@@ -500,7 +500,7 @@ class LogicalPlanGenerator(
   def top(state: State): Gen[WithState[Top]] = for {
     WithState(source, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
     columns <- Gen.atLeastOne(source.availableSymbols)
-    orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending, Descending))
+    orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending.apply _, Descending.apply _))
     count <- Gen.chooseNum(0, Long.MaxValue, 1)
   } yield {
     val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }

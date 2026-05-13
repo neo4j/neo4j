@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.messages.MessageUtil
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-class RemoteUrlValidatorTest extends CypherFunSuite {
+class RemoteUrlValidatorTest extends CypherFunSuite3 {
 
   val url = "://localhost"
   val unsecureSchemes = Seq("neo4j")

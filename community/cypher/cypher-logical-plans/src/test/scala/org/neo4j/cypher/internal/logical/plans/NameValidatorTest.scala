@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlStatus
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
-class NameValidatorTest extends CypherFunSuite {
+class NameValidatorTest extends CypherFunSuite3 {
 
   // username tests
 

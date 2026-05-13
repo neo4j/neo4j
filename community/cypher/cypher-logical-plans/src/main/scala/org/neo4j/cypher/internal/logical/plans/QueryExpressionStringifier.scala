@@ -50,9 +50,9 @@ class QueryExpressionStringifier(
     }
 
     valueExpr match {
-      case qe: SingleQueryExpression[Expression] =>
+      case qe: SingleQueryExpression[?] =>
         s"${propRef(propNames.head)} = ${stringify(qe.expression)}"
-      case qe: ManyQueryExpression[Expression] =>
+      case qe: ManyQueryExpression[?] =>
         qe.expression match {
           case ListLiteral(expressions) =>
             s"${propRef(propNames.head)} = ${expressions.map(stringify).mkString(" OR ")}"
@@ -60,7 +60,7 @@ class QueryExpressionStringifier(
             s"${propRef(propNames.head)} IN ${stringify(expr)}"
         }
       case ExistenceQueryExpression => propRef(propNames.head)
-      case qe: RangeQueryExpression[Expression] =>
+      case qe: RangeQueryExpression[?] =>
         qe.expression match {
           case PrefixSeekRangeWrapper(PrefixRange(expression)) =>
             s"${propRef(propNames.head)} STARTS WITH ${stringify(expression)}"
@@ -78,7 +78,7 @@ class QueryExpressionStringifier(
           case other =>
             throw new IllegalStateException(s"Unknown range expression: $other")
         }
-      case qe: CompositeQueryExpression[Expression] =>
+      case qe: CompositeQueryExpression[?] =>
         qe.inner.zip(propNames).map { case (innerQe, propName) =>
           apply(innerQe, entity, Seq(propName))
         }.mkString(compositeSeparator)
@@ -129,8 +129,6 @@ class QueryExpressionStringifier(
         val lt = rangeStr(lessThan, propName, stringifier)
         val pre: (String, String) = (gt.post._2, switchInequalitySignString(gt.post._1))
         RangeStr(Some(pre), propName, lt.post)
-      case _ =>
-        throw new IllegalStateException(s"Unknown range expression: $range")
     }
   }
 

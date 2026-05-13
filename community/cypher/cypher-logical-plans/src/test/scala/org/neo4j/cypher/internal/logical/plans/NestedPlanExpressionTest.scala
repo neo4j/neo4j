@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class NestedPlanExpressionTest extends CypherFunSuite {
+class NestedPlanExpressionTest extends CypherFunSuite3 {
 
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
   implicit private val idGen: IdGen = SameId(Id.INVALID_ID)
