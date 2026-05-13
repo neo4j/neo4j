@@ -30,8 +30,8 @@ class RangeLayoutTest {
     void shouldHaveUniqueIdentifierForDifferentNumberOfSlots() {
         Map<Long, Integer> layouts = new HashMap<>();
         for (int i = 0; i < 100; i++) {
-            final RangeLayout rangeLayout = new RangeLayout(i);
-            final Integer previous = layouts.put(rangeLayout.identifier(), i);
+            RangeLayout rangeLayout = new RangeLayout(i);
+            Integer previous = layouts.put(rangeLayout.identifier(), i);
             assertNull(
                     previous,
                     String.format(

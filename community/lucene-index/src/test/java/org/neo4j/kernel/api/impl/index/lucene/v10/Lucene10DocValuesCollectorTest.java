@@ -66,7 +66,7 @@ final class Lucene10DocValuesCollectorTest {
         assertEquals(4, collector.getTotalHits());
         List<Lucene10DocValuesCollector.MatchingDocs> allMatchingDocs = collector.getMatchingDocs();
         assertEquals(1, allMatchingDocs.size());
-        Lucene10DocValuesCollector.MatchingDocs matchingDocs = allMatchingDocs.get(0);
+        Lucene10DocValuesCollector.MatchingDocs matchingDocs = allMatchingDocs.getFirst();
         assertSame(readerStub.getContext(), matchingDocs.context);
         assertEquals(4, matchingDocs.totalHits);
         DocIdSetIterator idIterator = matchingDocs.docIdSet;
@@ -96,7 +96,7 @@ final class Lucene10DocValuesCollectorTest {
         List<Lucene10DocValuesCollector.MatchingDocs> allMatchingDocs = collector.getMatchingDocs();
         assertEquals(2, allMatchingDocs.size());
 
-        Lucene10DocValuesCollector.MatchingDocs matchingDocs = allMatchingDocs.get(0);
+        Lucene10DocValuesCollector.MatchingDocs matchingDocs = allMatchingDocs.getFirst();
         assertSame(readerStub.getContext(), matchingDocs.context);
         assertEquals(2, matchingDocs.totalHits);
         DocIdSetIterator idIterator = matchingDocs.docIdSet;

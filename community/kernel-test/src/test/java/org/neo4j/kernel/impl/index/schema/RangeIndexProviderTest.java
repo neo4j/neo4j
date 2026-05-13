@@ -85,7 +85,7 @@ class RangeIndexProviderTest extends IndexProviderTests {
         try (IndexAccessor accessor = provider.getOnlineAccessor(
                         descriptor,
                         samplingConfig(),
-                        tokenNameLookup,
+                        TOKEN_NAME_LOOKUP,
                         ElementIdMapper.PLACEHOLDER,
                         Sets.immutable.empty(),
                         StorageEngineIndexingBehaviour.EMPTY);

@@ -48,12 +48,6 @@ record ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>(
             (u1, u2) -> Values.COMPARATOR.compare(u1.values()[0], u2.values()[0]);
     public static final int N_VALUES = 10;
 
-    ValueCreatorUtil(IndexDescriptor indexDescriptor, ValueType[] supportedTypes, double fractionDuplicates) {
-        this.indexDescriptor = indexDescriptor;
-        this.supportedTypes = supportedTypes;
-        this.fractionDuplicates = fractionDuplicates;
-    }
-
     int compareIndexedPropertyValue(KEY key1, KEY key2) {
         return Values.COMPARATOR.compare(key1.asValues()[0], key2.asValues()[0]);
     }

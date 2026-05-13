@@ -68,7 +68,7 @@ public class LuceneFulltextTestSupport {
     static final String PROP2 = "prop2";
     static final String PROP3 = "prop3";
 
-    protected AssertableLogProvider logProvider = new AssertableLogProvider();
+    protected final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Inject
     DbmsController controller;

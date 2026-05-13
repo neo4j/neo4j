@@ -25,13 +25,13 @@ import org.neo4j.gis.spatial.index.Envelope;
  * N-dimensional searchEnvelope
  */
 class SearchEnvelope {
-    private long[] min; // inclusive lower bounds
-    private long[] max; // exclusive upper bounds
-    private int nbrDim;
+    private final long[] min; // inclusive lower bounds
+    private final long[] max; // exclusive upper bounds
+    private final int nbrDim;
 
     SearchEnvelope(SpaceFillingCurve curve, Envelope referenceEnvelope) {
-        this.min = curve.getNormalizedCoord(referenceEnvelope.getMin());
-        this.max = curve.getNormalizedCoord(referenceEnvelope.getMax());
+        this.min = curve.getNormalizedCoord(referenceEnvelope.min());
+        this.max = curve.getNormalizedCoord(referenceEnvelope.max());
         this.nbrDim = referenceEnvelope.getDimension();
         for (int i = 0; i < nbrDim; i++) {
             // getNormalizedCoord gives inclusive bounds. Need to increment to make the upper exclusive.
@@ -98,7 +98,7 @@ class SearchEnvelope {
         for (int i = 0; i < nbrDim; i++) {
             long min = Math.max(this.min[i], other.min[i]);
             long max = Math.min(this.max[i], other.max[i]);
-            final double innerFraction = (double) (max - min) / (double) (other.max[i] - other.min[i]);
+            double innerFraction = (double) (max - min) / (double) (other.max[i] - other.min[i]);
             fraction *= innerFraction;
         }
         return fraction;

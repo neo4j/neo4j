@@ -49,7 +49,8 @@ class ThrowingConflictDetectorTest {
 
         // then
         assertSame(MergeResult.UNCHANGED, mergeResult);
-        var e = assertThrows(IndexEntryConflictException.class, () -> detector.checkConflict(array(value)));
+        IndexEntryConflictException e =
+                assertThrows(IndexEntryConflictException.class, () -> detector.checkConflict(array(value)));
         assertEquals(entityId1, e.getExistingEntityId());
         assertEquals(entityId2, e.getAddedEntityId());
         assertEquals(value, e.getPropertyValues().getOnlyValue());

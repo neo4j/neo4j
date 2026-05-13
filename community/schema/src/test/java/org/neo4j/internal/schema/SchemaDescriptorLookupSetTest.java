@@ -27,6 +27,7 @@ import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_T
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,62 +52,62 @@ class SchemaDescriptorLookupSetTest {
     void shouldLookupSingleKeyDescriptors() {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
-        var expected = of(SchemaDescriptors.forLabel(1, 2));
+        SchemaDescriptorSupplier expected = of(SchemaDescriptors.forLabel(1, 2));
         set.add(expected);
 
         // when
-        var descriptors = new HashSet<SchemaDescriptorSupplier>();
+        Collection<SchemaDescriptorSupplier> descriptors = new HashSet<>();
         set.matchingDescriptorsForPartialListOfProperties(descriptors, entityTokens(1), properties(2));
 
         // then
-        assertThat(descriptors).isEqualTo(asSet(expected));
+        assertThat(descriptors).contains(expected);
     }
 
     @Test
     void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors() {
         // given
-        var set = new SchemaDescriptorLookupSet<>();
-        var expected1 = of(SchemaDescriptors.forLabel(1, 2));
-        var expected2 = of(SchemaDescriptors.forLabel(1, 2, 3));
+        SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
+        SchemaDescriptorSupplier expected1 = of(SchemaDescriptors.forLabel(1, 2));
+        SchemaDescriptorSupplier expected2 = of(SchemaDescriptors.forLabel(1, 2, 3));
         set.add(expected1);
         set.add(expected2);
 
         // when
-        var descriptors = new HashSet<SchemaDescriptorSupplier>();
+        Collection<SchemaDescriptorSupplier> descriptors = new HashSet<>();
         set.matchingDescriptorsForPartialListOfProperties(descriptors, entityTokens(1), properties(2));
 
         // then
-        assertThat(descriptors).isEqualTo(asSet(expected1, expected2));
+        assertThat(descriptors).contains(expected1, expected2);
     }
 
     @Test
     void shouldLookupCompositeKeyDescriptor() {
         // given
-        var set = new SchemaDescriptorLookupSet<>();
-        var descriptor1 = of(SchemaDescriptors.forLabel(1, 2, 3));
-        var descriptor2 = of(SchemaDescriptors.forLabel(1, 2, 4));
-        var descriptor3 = of(SchemaDescriptors.forLabel(1, 2, 5, 6));
+        SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
+        SchemaDescriptorSupplier descriptor1 = of(SchemaDescriptors.forLabel(1, 2, 3));
+        SchemaDescriptorSupplier descriptor2 = of(SchemaDescriptors.forLabel(1, 2, 4));
+        SchemaDescriptorSupplier descriptor3 = of(SchemaDescriptors.forLabel(1, 2, 5, 6));
         set.add(descriptor1);
         set.add(descriptor2);
         set.add(descriptor3);
 
         // when
-        var descriptors = new HashSet<SchemaDescriptorSupplier>();
+        Collection<SchemaDescriptorSupplier> descriptors = new HashSet<>();
         set.matchingDescriptorsForCompleteListOfProperties(descriptors, entityTokens(1), properties(2, 5, 6));
 
         // then
-        assertThat(descriptors).isEqualTo(asSet(descriptor3));
+        assertThat(descriptors).contains(descriptor3);
     }
 
     @Test
     void shouldLookupAllByEntityToken() {
         // given
-        var set = new SchemaDescriptorLookupSet<>();
-        var descriptor1 = of(SchemaDescriptors.forLabel(1, 2, 3));
-        var descriptor2 = of(SchemaDescriptors.forLabel(1, 2, 4));
-        var descriptor3 = of(SchemaDescriptors.forLabel(1, 2, 5, 6));
-        var descriptor4 = of(SchemaDescriptors.forLabel(2, 2, 3));
-        var descriptor5 = of(SchemaDescriptors.forLabel(3, 2, 5, 6));
+        SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
+        SchemaDescriptorSupplier descriptor1 = of(SchemaDescriptors.forLabel(1, 2, 3));
+        SchemaDescriptorSupplier descriptor2 = of(SchemaDescriptors.forLabel(1, 2, 4));
+        SchemaDescriptorSupplier descriptor3 = of(SchemaDescriptors.forLabel(1, 2, 5, 6));
+        SchemaDescriptorSupplier descriptor4 = of(SchemaDescriptors.forLabel(2, 2, 3));
+        SchemaDescriptorSupplier descriptor5 = of(SchemaDescriptors.forLabel(3, 2, 5, 6));
         set.add(descriptor1);
         set.add(descriptor2);
         set.add(descriptor3);
@@ -114,11 +115,11 @@ class SchemaDescriptorLookupSetTest {
         set.add(descriptor5);
 
         // when
-        var descriptors = new HashSet<SchemaDescriptorSupplier>();
+        Collection<SchemaDescriptorSupplier> descriptors = new HashSet<>();
         set.matchingDescriptors(descriptors, entityTokens(1));
 
         // then
-        assertThat(descriptors).isEqualTo(asSet(descriptor1, descriptor2, descriptor3));
+        assertThat(descriptors).contains(descriptor1, descriptor2, descriptor3);
     }
 
     @Test
@@ -135,30 +136,30 @@ class SchemaDescriptorLookupSetTest {
     void shouldUpdateToIndexWithOwningConstraintId() {
         SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
 
-        var indexNoOwningConstraint = new IndexDescriptor(
+        IndexDescriptor indexNoOwningConstraint = new IndexDescriptor(
                 1,
                 IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(1, 2)).withName("index"));
         set.add(indexNoOwningConstraint);
         Set<SchemaDescriptorSupplier> result1 = new HashSet<>();
         set.matchingDescriptorsForCompleteListOfProperties(result1, entityTokens(1), properties(2));
         assertThat(result1).hasSize(1);
-        var index1 = (IndexDescriptor) result1.iterator().next();
+        IndexDescriptor index1 = (IndexDescriptor) result1.iterator().next();
         assertThat(index1.getOwningConstraintId()).isEmpty();
 
         // The index should replace the previous one since it is equal except for added owning constraint id
-        var indexWithConstraint = indexNoOwningConstraint.withOwningConstraintId(42);
+        IndexDescriptor indexWithConstraint = indexNoOwningConstraint.withOwningConstraintId(42);
         set.add(indexWithConstraint);
         Set<SchemaDescriptorSupplier> result2 = new HashSet<>();
         set.matchingDescriptorsForCompleteListOfProperties(result2, entityTokens(1), properties(2));
         assertThat(result2).hasSize(1);
-        var index2 = (IndexDescriptor) result2.iterator().next();
+        IndexDescriptor index2 = (IndexDescriptor) result2.iterator().next();
         assertThat(index2.getOwningConstraintId()).isPresent().hasValue(42);
     }
 
     private void shouldAddRemoveAndLookupRandomDescriptors(boolean includeIdempotentAddsAndRemoves) {
         // given
-        var all = new ArrayList<SchemaDescriptorSupplier>();
-        var set = new SchemaDescriptorLookupSet<>();
+        List<SchemaDescriptorSupplier> all = new ArrayList<>();
+        SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
         int highEntityKeyId = 8;
         int highPropertyKeyId = 8;
         int maxNumberOfEntityKeys = 3;
@@ -169,9 +170,9 @@ class SchemaDescriptorLookupSetTest {
             // add some
             int countToAdd = random.nextInt(1, 5);
             for (int a = 0; a < countToAdd; a++) {
-                var descriptor = of(randomSchemaDescriptor(
+                SchemaDescriptorSupplier descriptor = of(randomSchemaDescriptor(
                         highEntityKeyId, highPropertyKeyId, maxNumberOfEntityKeys, maxNumberOfPropertyKeys));
-                if (!includeIdempotentAddsAndRemoves && all.indexOf(descriptor) != -1) {
+                if (!includeIdempotentAddsAndRemoves && all.contains(descriptor)) {
                     // Oops, we randomly generated a descriptor that already exists
                     continue;
                 }
@@ -183,7 +184,7 @@ class SchemaDescriptorLookupSetTest {
             // remove some
             int countToRemove = random.nextInt(0, 2);
             for (int r = 0; r < countToRemove && !all.isEmpty(); r++) {
-                var descriptor = all.remove(random.nextInt(all.size()));
+                SchemaDescriptorSupplier descriptor = all.remove(random.nextInt(all.size()));
                 set.remove(descriptor);
                 if (includeIdempotentAddsAndRemoves) {
                     set.remove(descriptor);
@@ -199,7 +200,7 @@ class SchemaDescriptorLookupSetTest {
                 int[] entityTokenIdsInts = randomUniqueSortedIntArray(highEntityKeyId, random.nextInt(1, 3));
                 int[] propertyKeyIds =
                         randomUniqueSortedIntArray(highPropertyKeyId, random.nextInt(1, maxNumberOfPropertyKeys));
-                var actual = new HashSet<SchemaDescriptorSupplier>();
+                Set<SchemaDescriptorSupplier> actual = new HashSet<>();
 
                 // lookup by only entity tokens
                 actual.clear();
@@ -298,18 +299,7 @@ class SchemaDescriptorLookupSetTest {
         return new TestSchemaDescriptorSupplier(schema);
     }
 
-    private static class TestSchemaDescriptorSupplier implements SchemaDescriptorSupplier {
-        private final SchemaDescriptor schema;
-
-        TestSchemaDescriptorSupplier(SchemaDescriptor schema) {
-            this.schema = schema;
-        }
-
-        @Override
-        public SchemaDescriptor schema() {
-            return schema;
-        }
-
+    private record TestSchemaDescriptorSupplier(SchemaDescriptor schema) implements SchemaDescriptorSupplier {
         @Override
         public String userDescription(TokenNameLookup tokenNameLookup) {
             return null;
@@ -325,11 +315,6 @@ class SchemaDescriptorLookupSetTest {
             }
 
             return schema.equals(((TestSchemaDescriptorSupplier) o).schema);
-        }
-
-        @Override
-        public int hashCode() {
-            return schema.hashCode();
         }
     }
 }

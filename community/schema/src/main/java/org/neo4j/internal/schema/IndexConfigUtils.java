@@ -52,12 +52,12 @@ public class IndexConfigUtils {
             IndexProviderDescriptor descriptor,
             Set<IndexSetting> acceptedSettings) {
         // fail on first
-        final Invalid invalidRecord = validationRecords.getFirstInvalidRecordOrNull();
+        Invalid invalidRecord = validationRecords.getFirstInvalidRecordOrNull();
         if (invalidRecord == null) {
             return;
         }
 
-        final String settingName = invalidRecord.settingName();
+        String settingName = invalidRecord.settingName();
         throw switch (invalidRecord) {
             // these are an implementation mistake
             case Unprocessed unprocessed -> incompleteValidation(descriptor, unprocessed);
@@ -69,16 +69,16 @@ public class IndexConfigUtils {
             case MissingSetting ignored -> InvalidArgumentException.missingInput("setting", settingName);
 
             case IncorrectType incorrectType -> {
-                final Object value = incorrectType.value();
+                Object value = incorrectType.value();
                 yield InvalidArgumentException.invalidType(
                         settingName, stringify(value), nameOfType(incorrectType.targetType()), nameOfType(value));
             }
 
             case InvalidValue invalidValue -> {
-                final Object value = Objects.requireNonNullElse(invalidValue.value(), NO_VALUE);
-                final String valueString = stringify(value);
+                Object value = Objects.requireNonNullElse(invalidValue.value(), NO_VALUE);
+                String valueString = stringify(value);
 
-                final IndexSettingsRequirement<?> requirement = invalidValue.requirement();
+                IndexSettingsRequirement<?> requirement = invalidValue.requirement();
                 yield switch (requirement.get()) {
                     case InclusiveRange<?> range ->
                         InvalidArgumentException.outOfRange(
@@ -126,8 +126,8 @@ public class IndexConfigUtils {
     }
 
     public static InvalidArgumentException unrecognizedSetting(String settingName, Set<IndexSetting> settings) {
-        final List<String> settingNames = new ArrayList<>(settings.size());
-        for (final IndexSetting setting : settings) {
+        List<String> settingNames = new ArrayList<>(settings.size());
+        for (IndexSetting setting : settings) {
             settingNames.addLast(setting.getSettingName());
         }
         return InvalidArgumentException.invalidIndexConfig(settingName, settingNames);

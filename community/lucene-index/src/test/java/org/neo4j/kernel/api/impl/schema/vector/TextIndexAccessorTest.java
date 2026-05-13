@@ -38,6 +38,7 @@ import static org.neo4j.values.ElementIdMapper.PLACEHOLDER;
 
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.factory.primitive.LongSets;
+import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +56,8 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.text.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -81,7 +84,7 @@ class TextIndexAccessorTest {
 
     void start(LuceneContext luceneContext) {
         scheduler = new ThreadPoolJobScheduler();
-        var config = Config.defaults();
+        Config config = Config.defaults();
         samplingConfig = new IndexSamplingConfig(config);
         provider = new TextIndexProvider(
                 fs,
@@ -103,12 +106,12 @@ class TextIndexAccessorTest {
     void shouldInsertFrom(LuceneContext luceneContext) throws Exception {
         start(luceneContext);
         // given
-        var mainDescriptor = provider.completeConfiguration(
+        IndexDescriptor mainDescriptor = provider.completeConfiguration(
                 forSchema(forLabel(1, 1)).withIndexType(TEXT).withName("index1").materialise(1L), EMPTY);
-        var otherDescriptor = provider.completeConfiguration(
+        IndexDescriptor otherDescriptor = provider.completeConfiguration(
                 forSchema(forLabel(1, 1)).withIndexType(TEXT).withName("index2").materialise(2L), EMPTY);
-        try (var mainIndex = createEmptyIndex(provider, samplingConfig, mainDescriptor);
-                var otherIndex = createEmptyIndex(provider, samplingConfig, otherDescriptor)) {
+        try (IndexAccessor mainIndex = createEmptyIndex(provider, samplingConfig, mainDescriptor);
+                IndexAccessor otherIndex = createEmptyIndex(provider, samplingConfig, otherDescriptor)) {
             insertData(mainIndex, mainDescriptor, 0, 1_000);
             insertData(otherIndex, otherDescriptor, 1_000, 2_000);
 
@@ -125,17 +128,17 @@ class TextIndexAccessorTest {
     void shouldInsertFromWithFiltering(LuceneContext luceneContext) throws Exception {
         start(luceneContext);
         // given
-        var mainDescriptor = provider.completeConfiguration(
+        IndexDescriptor mainDescriptor = provider.completeConfiguration(
                 forSchema(forLabel(1, 1)).withIndexType(TEXT).withName("index1").materialise(1L), EMPTY);
-        var otherDescriptor = provider.completeConfiguration(
+        IndexDescriptor otherDescriptor = provider.completeConfiguration(
                 forSchema(forLabel(1, 1)).withIndexType(TEXT).withName("index2").materialise(2L), EMPTY);
-        try (var mainIndex = createEmptyIndex(provider, samplingConfig, mainDescriptor);
-                var otherIndex = createEmptyIndex(provider, samplingConfig, otherDescriptor)) {
+        try (IndexAccessor mainIndex = createEmptyIndex(provider, samplingConfig, mainDescriptor);
+                IndexAccessor otherIndex = createEmptyIndex(provider, samplingConfig, otherDescriptor)) {
             insertData(mainIndex, mainDescriptor, 0, 1_000);
             insertData(otherIndex, otherDescriptor, 1_000, 2_000);
 
             // when
-            var excluded = LongSets.immutable.with(1010, 1234, 1357);
+            ImmutableLongSet excluded = LongSets.immutable.with(1010, 1234, 1357);
             mainIndex.insertFrom(otherIndex, null, false, null, id -> !excluded.contains(id), 4, scheduler, NONE);
 
             // then
@@ -143,7 +146,7 @@ class TextIndexAccessorTest {
         }
     }
 
-    private IndexAccessor createEmptyIndex(
+    private static IndexAccessor createEmptyIndex(
             TextIndexProvider provider, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor)
             throws Exception {
         IndexPopulator populator = provider.getPopulator(
@@ -162,19 +165,19 @@ class TextIndexAccessorTest {
                 descriptor, samplingConfig, TOKEN_ID_NAME_LOOKUP, PLACEHOLDER, Sets.immutable.empty(), false, EMPTY);
     }
 
-    private void insertData(IndexAccessor index, IndexDescriptor descriptor, int from, int to)
+    private static void insertData(IndexAccessor index, IndexDescriptor descriptor, int from, int to)
             throws IndexEntryConflictException {
-        try (var updater = index.newUpdater(ONLINE, NULL_CONTEXT, false)) {
+        try (IndexUpdater updater = index.newUpdater(ONLINE, NULL_CONTEXT, false)) {
             for (int i = from; i < to; i++) {
                 updater.process(EagerValueIndexEntryUpdate.add(i, descriptor, Values.stringValue("string" + i)));
             }
         }
     }
 
-    private void verifyData(IndexAccessor index, int from, int to, LongSet excluded)
+    private static void verifyData(IndexAccessor index, int from, int to, LongSet excluded)
             throws IndexNotApplicableKernelException {
-        try (var reader = index.newValueReader(NO_USAGE_TRACKING);
-                var client = new SimpleEntityValueClient()) {
+        try (ValueIndexReader reader = index.newValueReader(NO_USAGE_TRACKING);
+                SimpleEntityValueClient client = new SimpleEntityValueClient()) {
             for (int i = from; i < to; i++) {
                 reader.query(
                         client,

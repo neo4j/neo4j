@@ -30,6 +30,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -93,7 +94,8 @@ class RecoverIndexDropIT {
         DatabaseLayout databaseLayout;
         long initialIndexCount;
         StorageEngineFactory storageEngineFactory;
-        try (var managementService = new TestDatabaseManagementServiceBuilder(directory.homePath()).build()) {
+        try (DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder(directory.homePath()).build()) {
             GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
             databaseLayout = db.databaseLayout();
             initialIndexCount = currentIndexCount(db);
@@ -106,7 +108,8 @@ class RecoverIndexDropIT {
         assertThat(Recovery.isRecoveryRequired(fs, databaseLayout, defaults(), INSTANCE))
                 .isTrue();
         // when recovering this (the drop transaction with the index file intact)
-        try (var managementService = new TestDatabaseManagementServiceBuilder(directory.homePath()).build()) {
+        try (DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder(directory.homePath()).build()) {
             // then
             assertEquals(initialIndexCount, currentIndexCount(managementService.database(DEFAULT_DATABASE_NAME)));
         } // and the ability to shut down w/o failing on still open files
@@ -165,7 +168,8 @@ class RecoverIndexDropIT {
     }
 
     private CommittedCommandBatchRepresentation prepareDropTransaction() throws IOException {
-        try (var dbms = new TestDatabaseManagementServiceBuilder(directory.directory("preparation")).build(); ) {
+        try (DatabaseManagementService dbms =
+                new TestDatabaseManagementServiceBuilder(directory.directory("preparation")).build()) {
             GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
             // Create index
             IndexDefinition index;

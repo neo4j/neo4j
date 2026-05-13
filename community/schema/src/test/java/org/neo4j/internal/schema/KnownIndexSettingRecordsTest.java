@@ -54,7 +54,7 @@ class KnownIndexSettingRecordsTest {
 
     @Test
     void upsertRecord() {
-        final RecordWithSetting record = new MissingSetting(TestIndexSetting.STRING);
+        RecordWithSetting record = new MissingSetting(TestIndexSetting.STRING);
         assertThat(record).isSameAs(records.upsert(record)).isSameAs(records.get(TestIndexSetting.STRING));
         assertThat(records).containsExactly(record);
     }
@@ -68,10 +68,9 @@ class KnownIndexSettingRecordsTest {
 
     @Test
     void upsertWithNullProcessor() {
-        final RecordProcessor processor = record -> null;
+        RecordProcessor processor = record -> null;
 
-        final RecordWithSetting intRecord =
-                records.upsert(new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42)));
+        RecordWithSetting intRecord = records.upsert(new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42)));
         records.upsert(new Pending(TestIndexSetting.STRING, "foo", Values.utf8Value("foo")));
         records.upsertWith(TestIndexSetting.STRING, processor);
 
@@ -82,10 +81,9 @@ class KnownIndexSettingRecordsTest {
 
     @Test
     void upsertWithProcessor() {
-        final RecordProcessor processor = record -> new InvalidValue(record, FAKE_VALUE, null);
+        RecordProcessor processor = record -> new InvalidValue(record, FAKE_VALUE, null);
 
-        final RecordWithSetting intRecord =
-                records.upsert(new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42)));
+        RecordWithSetting intRecord = records.upsert(new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42)));
         records.upsert(new Pending(TestIndexSetting.STRING, "foo", Values.utf8Value("foo")));
         records.upsertWith(TestIndexSetting.STRING, processor);
 
@@ -99,14 +97,13 @@ class KnownIndexSettingRecordsTest {
 
     @Test
     void upsertWithProcessorNoSettingRecord() {
-        final RecordProcessor processor = record -> switch (record) {
+        RecordProcessor processor = record -> switch (record) {
             case MissingSetting missingSetting -> new Pending(missingSetting, FAKE_VALUE, null);
             default -> new InvalidValue(record, FAKE_VALUE, null);
         };
 
-        final RecordWithSetting intRecord =
-                records.upsert(new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42)));
-        final RecordWithSetting stringRecord =
+        RecordWithSetting intRecord = records.upsert(new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42)));
+        RecordWithSetting stringRecord =
                 records.upsert(new Pending(TestIndexSetting.STRING, "foo", Values.utf8Value("foo")));
         records.upsertWith(TestIndexSetting.OBJECT, processor);
 
@@ -121,7 +118,7 @@ class KnownIndexSettingRecordsTest {
 
     @Test
     void toIndexSettings() {
-        final Iterable<RecordWithSetting> provided = Iterables.asIterable(
+        Iterable<RecordWithSetting> provided = Iterables.asIterable(
                 records.upsert(new MissingSetting(TestIndexSetting.OBJECT)),
                 records.upsert(new InvalidValue(
                         TestIndexSetting.STRING, "foo", new IterableRequirement(Set.of("bar", "baz")))),
@@ -129,7 +126,7 @@ class KnownIndexSettingRecordsTest {
                 records.upsert(new Pending(TestIndexSetting.BOOLEAN, false, Values.NO_VALUE)),
                 records.upsert(new Valid(TestIndexSetting.DOUBLE, Math.PI, Values.doubleValue(Math.PI))));
 
-        final IndexSettingRecords indexSettingRecords = records.toIndexSettingRecords();
+        IndexSettingRecords indexSettingRecords = records.toIndexSettingRecords();
         assertThat(indexSettingRecords).containsExactlyInAnyOrderElementsOf(provided);
     }
 }

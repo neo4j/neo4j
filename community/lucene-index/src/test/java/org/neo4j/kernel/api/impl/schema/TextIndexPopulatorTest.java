@@ -59,6 +59,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.text.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -153,14 +154,15 @@ class TextIndexPopulatorTest {
     void shouldIgnoreAddingUnsupportedValueTypes(LuceneContext luceneContext) throws Exception {
         before(luceneContext);
         // given  populating an empty index
-        final var ids = LongStream.range(0L, 10L).toArray();
+        long[] ids = LongStream.range(0L, 10L).toArray();
 
         // when   updates of unsupported value types (longs in this case) are processed
-        final var updates = Arrays.stream(ids).mapToObj(id -> add(id, id)).toList();
+        List<IndexEntryUpdate> updates =
+                Arrays.stream(ids).mapToObj(id -> add(id, id)).toList();
         indexPopulator.add(updates, NULL_CONTEXT);
 
         // then   should not be indexed
-        final var hits = Arrays.stream(ids).mapToObj(Hit::new).toArray(Hit[]::new);
+        Hit[] hits = Arrays.stream(ids).mapToObj(Hit::new).toArray(Hit[]::new);
         assertIndexedValues(hits);
     }
 
@@ -261,13 +263,9 @@ class TextIndexPopulatorTest {
         return new Hit(value);
     }
 
-    private static class Hit {
-        private final Value value;
-        private final Long[] nodeIds;
-
+    private record Hit(Value value, Long... nodeIds) {
         Hit(Object value, Long... nodeIds) {
-            this.value = Values.of(value);
-            this.nodeIds = nodeIds;
+            this(Values.of(value), nodeIds);
         }
     }
 
@@ -314,8 +312,8 @@ class TextIndexPopulatorTest {
 
     private static void updatePopulator(IndexPopulator populator, Iterable<IndexEntryUpdate> updates)
             throws IndexEntryConflictException {
-        try (var updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
-            for (var update : updates) {
+        try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+            for (IndexEntryUpdate update : updates) {
                 updater.process(update);
             }
         }

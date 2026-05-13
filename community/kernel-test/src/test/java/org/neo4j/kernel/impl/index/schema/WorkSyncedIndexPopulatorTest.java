@@ -38,9 +38,9 @@ class WorkSyncedIndexPopulatorTest {
 
     @Test
     void callsToDelegatingPopulatorAddShouldNotBeConcurrent() throws Throwable {
-        var populator = new WorkSyncedIndexPopulator(new NotThreadSafePopulator());
+        WorkSyncedIndexPopulator populator = new WorkSyncedIndexPopulator(new NotThreadSafePopulator());
 
-        var race = new Race();
+        Race race = new Race();
         race.addContestants(
                 10,
                 throwing(() -> populator.add(

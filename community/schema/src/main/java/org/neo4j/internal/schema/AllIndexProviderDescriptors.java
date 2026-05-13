@@ -22,6 +22,7 @@ package org.neo4j.internal.schema;
 import static java.util.Map.entry;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 public interface AllIndexProviderDescriptors {
@@ -83,7 +84,7 @@ public interface AllIndexProviderDescriptors {
      * @return the pairing of {@link IndexProviderDescriptor} to {@link IndexType} for the provided name
      */
     static Optional<ProviderDescriptorDetails> providerDescriptorDetails(String providerName) {
-        for (var entry : INDEX_TYPES.entrySet()) {
+        for (Entry<IndexProviderDescriptor, IndexType> entry : INDEX_TYPES.entrySet()) {
             if (entry.getKey().name().equals(providerName)) {
                 return Optional.of(new ProviderDescriptorDetails(entry.getKey(), entry.getValue()));
             }

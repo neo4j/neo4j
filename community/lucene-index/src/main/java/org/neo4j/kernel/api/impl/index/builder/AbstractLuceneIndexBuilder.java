@@ -33,8 +33,9 @@ import org.neo4j.logging.LogProvider;
  *
  * @param <T> actual index type
  */
+@SuppressWarnings("unchecked")
 public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>> {
-    protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
+    protected final LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
     protected final DatabaseReadOnlyChecker readOnlyChecker;
     protected boolean permanentlyReadOnly;
     protected final LogProvider logProvider;

@@ -36,6 +36,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -71,7 +72,7 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
                 bufferFactory,
                 config,
                 memoryTracker,
-                tokenNameLookup,
+                TOKEN_NAME_LOOKUP,
                 ElementIdMapper.PLACEHOLDER,
                 monitor,
                 Sets.immutable.empty(),
@@ -89,14 +90,14 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 4})
     void shouldLetMultipleThreadsAddData(int threadSharingFactor) throws IOException, IndexEntryConflictException {
-        var entriesMerged = new AtomicLong();
+        AtomicLong entriesMerged = new AtomicLong();
         var monitor = new BlockBasedIndexPopulator.Monitor.Adapter() {
             @Override
             public void entriesMerged(int entries) {
                 entriesMerged.addAndGet(entries);
             }
         };
-        var populator = instantiatePopulator(
+        BlockBasedIndexPopulator<RangeKey> populator = instantiatePopulator(
                 monitor,
                 SchemaTestUtil.defaultHeapBufferFactory(),
                 INSTANCE,
@@ -105,7 +106,7 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
             // given
             int numThreads = 8;
             int numEntriesPerThread = 1_000;
-            var race = new Race();
+            Race race = new Race();
             race.addContestants(
                     numThreads,
                     contestantId -> throwing(() -> {
@@ -132,7 +133,7 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
             RangeKey to = layout().newKey();
             layout().initializeAsLowest(from);
             layout().initializeAsHighest(to);
-            try (var seek = populator.tree.seek(from, to, NULL_CONTEXT)) {
+            try (Seeker<RangeKey, NullValue> seek = populator.tree.seek(from, to, NULL_CONTEXT)) {
                 long max = numThreads * numEntriesPerThread;
                 //                assertThat(entriesMerged.longValue()).isEqualTo(max);
                 for (long nextExpected = 0; nextExpected < max; nextExpected++) {

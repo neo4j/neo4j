@@ -37,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -101,7 +102,7 @@ abstract class IndexAccessorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>>
         try (PageCache pageCache = PageCacheSupportExtension.getPageCache(fs, PageCacheConfig.config())) {
             accessor = createAccessor(pageCache);
             long baseline = pageCacheTracer.flushes();
-            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+            try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush()) {
                 accessor.force(flushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
             }
             long preDrop = pageCacheTracer.flushes();

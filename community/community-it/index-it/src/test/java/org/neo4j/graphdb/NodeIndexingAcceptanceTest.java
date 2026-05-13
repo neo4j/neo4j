@@ -95,11 +95,11 @@ public class NodeIndexingAcceptanceTest {
             // When
             String id = createNode(db, map("key0", true, "key1", true));
 
-            createIndex(db, indexType(), TOKEN1, "key2");
+            createIndex(db, indexType(), token1, "key2");
             Node myNode;
             try (Transaction tx = db.beginTx()) {
                 myNode = tx.getNodeByElementId(id);
-                myNode.addLabel(TOKEN1);
+                myNode.addLabel(token1);
                 myNode.setProperty("key2", LONG_STRING);
                 myNode.setProperty("key3", LONG_STRING);
 
@@ -111,7 +111,7 @@ public class NodeIndexingAcceptanceTest {
                 // Then
                 assertEquals(LONG_STRING, myNode.getProperty("key2"));
                 assertEquals(LONG_STRING, myNode.getProperty("key3"));
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN1, "key2", LONG_STRING))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token1, "key2", LONG_STRING))
                         .containsOnly(myNode);
             }
         }
@@ -119,39 +119,39 @@ public class NodeIndexingAcceptanceTest {
         @Test
         void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime() {
             // Given
-            var nodeId = createNode(db, map("name", "Hawking"), TOKEN1, TOKEN2);
-            createIndex(db, indexType(), TOKEN1, "name");
-            createIndex(db, indexType(), TOKEN2, "name");
-            createIndex(db, indexType(), TOKEN3, "name");
+            String nodeId = createNode(db, map("name", "Hawking"), token1, token2);
+            createIndex(db, indexType(), token1, "name");
+            createIndex(db, indexType(), token2, "name");
+            createIndex(db, indexType(), token3, "name");
 
             // When
             try (Transaction tx = db.beginTx()) {
-                var myNode = tx.getNodeByElementId(nodeId);
-                myNode.removeLabel(TOKEN1);
-                myNode.addLabel(TOKEN3);
+                Node myNode = tx.getNodeByElementId(nodeId);
+                myNode.removeLabel(token1);
+                myNode.addLabel(token3);
                 myNode.setProperty("name", "Einstein");
                 tx.commit();
             }
 
             try (Transaction transaction = db.beginTx()) {
-                var myNode = transaction.getNodeByElementId(nodeId);
+                Node myNode = transaction.getNodeByElementId(nodeId);
                 // Then
                 assertEquals("Einstein", myNode.getProperty("name"));
-                assertThat(myNode.getLabels()).containsOnly(TOKEN2, TOKEN3);
+                assertThat(myNode.getLabels()).containsOnly(token2, token3);
 
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN1, "name", "Hawking"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token1, "name", "Hawking"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN1, "name", "Einstein"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token1, "name", "Einstein"))
                         .isEmpty();
 
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN2, "name", "Hawking"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token2, "name", "Hawking"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN2, "name", "Einstein"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token2, "name", "Einstein"))
                         .containsOnly(myNode);
 
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN3, "name", "Hawking"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token3, "name", "Hawking"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN3, "name", "Einstein"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token3, "name", "Einstein"))
                         .containsOnly(myNode);
                 transaction.commit();
             }
@@ -160,46 +160,46 @@ public class NodeIndexingAcceptanceTest {
         @Test
         void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce() {
             // Given
-            String nodeId = createNode(db, map("name", "Hawking"), TOKEN1, TOKEN2);
-            createIndex(db, indexType(), TOKEN1, "name");
-            createIndex(db, indexType(), TOKEN2, "name");
-            createIndex(db, indexType(), TOKEN3, "name");
+            String nodeId = createNode(db, map("name", "Hawking"), token1, token2);
+            createIndex(db, indexType(), token1, "name");
+            createIndex(db, indexType(), token2, "name");
+            createIndex(db, indexType(), token3, "name");
 
             // When
             try (Transaction tx = db.beginTx()) {
-                var myNode = tx.getNodeByElementId(nodeId);
-                myNode.addLabel(TOKEN3);
+                Node myNode = tx.getNodeByElementId(nodeId);
+                myNode.addLabel(token3);
                 myNode.setProperty("name", "Einstein");
-                myNode.removeLabel(TOKEN1);
+                myNode.removeLabel(token1);
                 myNode.setProperty("name", "Feynman");
                 tx.commit();
             }
 
             try (Transaction transaction = db.beginTx()) {
-                var myNode = transaction.getNodeByElementId(nodeId);
+                Node myNode = transaction.getNodeByElementId(nodeId);
                 // Then
                 assertEquals("Feynman", myNode.getProperty("name"));
-                assertThat(myNode.getLabels()).containsOnly(TOKEN2, TOKEN3);
+                assertThat(myNode.getLabels()).containsOnly(token2, token3);
 
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN1, "name", "Hawking"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token1, "name", "Hawking"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN1, "name", "Einstein"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token1, "name", "Einstein"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN1, "name", "Feynman"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token1, "name", "Feynman"))
                         .isEmpty();
 
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN2, "name", "Hawking"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token2, "name", "Hawking"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN2, "name", "Einstein"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token2, "name", "Einstein"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN2, "name", "Feynman"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token2, "name", "Feynman"))
                         .containsOnly(myNode);
 
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN3, "name", "Hawking"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token3, "name", "Hawking"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN3, "name", "Einstein"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token3, "name", "Einstein"))
                         .isEmpty();
-                assertThat(findEntitiesByTokenAndProperty(transaction, TOKEN3, "name", "Feynman"))
+                assertThat(findEntitiesByTokenAndProperty(transaction, token3, "name", "Feynman"))
                         .containsOnly(myNode);
                 transaction.commit();
             }

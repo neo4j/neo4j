@@ -28,7 +28,7 @@ class Lucene10DocumentsFactoryTest {
 
     @Test
     void exceptionShouldBeThrownWhenValueIsNull() {
-        var methodName = "addIndexableFields";
+        String methodName = "addIndexableFields";
         assertThatThrownBy(() -> Lucene10DocumentsFactory.addIndexableFields(null, -1, null, null))
                 .isInstanceOf(InvalidArgumentException.class)
                 .hasMessageContaining("Invalid input for '" + methodName + "': the value parameter is null");

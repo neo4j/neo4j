@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SequencedCollection;
 import java.util.function.LongPredicate;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
@@ -77,8 +78,8 @@ class Lucene10PartitionedSearch implements LucenePartitionedSearch {
 
     private static class FulltextResultCollectorManager
             implements CollectorManager<FulltextResultCollector, ValuesIterator> {
-        IndexQueryConstraints constraints;
-        LongPredicate exclusionFilter;
+        final IndexQueryConstraints constraints;
+        final LongPredicate exclusionFilter;
 
         public FulltextResultCollectorManager(IndexQueryConstraints constraints, LongPredicate exclusionFilter) {
             this.constraints = constraints;
@@ -121,13 +122,14 @@ class Lucene10PartitionedSearch implements LucenePartitionedSearch {
 
         private Optional<TermStatistics> computeTermStatistics(Term term) {
             TermStatistics result;
-            List<TermStatistics> statistics = new ArrayList<>(searches.size());
+            SequencedCollection<TermStatistics> statistics = new ArrayList<>(searches.size());
             for (PreparedSearch preparedSearch : searches) {
                 IndexSearcher searcher = preparedSearch.indexSearcher;
                 try {
                     TermStates context = TermStates.build(searcher, term, true);
                     if (context.docFreq() > 0) {
-                        var statistic = searcher.termStatistics(term, context.docFreq(), context.totalTermFreq());
+                        TermStatistics statistic =
+                                searcher.termStatistics(term, context.docFreq(), context.totalTermFreq());
                         statistics.add(statistic);
                     }
                 } catch (IOException e) {

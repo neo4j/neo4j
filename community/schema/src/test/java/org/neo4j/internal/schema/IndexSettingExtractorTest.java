@@ -73,7 +73,7 @@ class IndexSettingExtractorTest {
 
         @Test
         void missingSetting() {
-            final SettingsAccessor accessor = settings();
+            SettingsAccessor accessor = settings();
             assertThat(accessor.settings()).isEmpty();
             extractForValidationAndAssertRecord(accessor, MissingSetting.class);
             extractForAuthoritativeReadAndAssertRecord(accessor, MissingSetting.class);
@@ -81,7 +81,7 @@ class IndexSettingExtractorTest {
 
         @Test
         void missingValue() {
-            final SettingsAccessor accessor = settingValue(null);
+            SettingsAccessor accessor = settingValue(null);
             assertThat(accessor.containsSetting(setting)).isTrue();
             assertThat(accessor.get(setting)).isEqualTo(Values.NO_VALUE);
             extractForValidationAndAssertRecord(accessor, MissingSetting.class);
@@ -119,7 +119,7 @@ class IndexSettingExtractorTest {
 
         @Test
         void incorrectType() {
-            final SettingsAccessor accessor = settingValue(42);
+            SettingsAccessor accessor = settingValue(42);
 
             extractForValidationAndAssertRecord(accessor, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -129,16 +129,16 @@ class IndexSettingExtractorTest {
         @ParameterizedTest
         @ValueSource(booleans = {false, true})
         void extracted(boolean value) {
-            final BooleanValue booleanValue = Values.booleanValue(value);
-            final SettingsAccessor accessor = settingValue(value);
+            BooleanValue booleanValue = Values.booleanValue(value);
+            SettingsAccessor accessor = settingValue(value);
 
-            final ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
+            ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
             validationAssert.extracting(RecordWithValue::value, BOOLEAN).isEqualTo(value);
             validationAssert
                     .extracting(RecordWithStorable::storable, type(BooleanValue.class))
                     .isEqualTo(booleanValue);
 
-            final ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
+            ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
             authoritativeReadAssert.extracting(RecordWithValue::value, BOOLEAN).isEqualTo(value);
             authoritativeReadAssert
                     .extracting(RecordWithStorable::storable, type(BooleanValue.class))
@@ -154,7 +154,7 @@ class IndexSettingExtractorTest {
 
         @Test
         void incorrectType() {
-            final SettingsAccessor accessor = settingValue("foo");
+            SettingsAccessor accessor = settingValue("foo");
 
             extractForValidationAndAssertRecord(accessor, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -164,9 +164,9 @@ class IndexSettingExtractorTest {
         @ParameterizedTest
         @ValueSource(longs = {Long.MIN_VALUE, Integer.MIN_VALUE - 1L, Integer.MAX_VALUE + 1L, Long.MAX_VALUE})
         void invalidValue(long value) {
-            final SettingsAccessor accessor = settingValue(value);
+            SettingsAccessor accessor = settingValue(value);
 
-            final ObjectAssert<InvalidValue> invalidValueAssert =
+            ObjectAssert<InvalidValue> invalidValueAssert =
                     extractForValidationAndAssertRecord(accessor, InvalidValue.class);
             invalidValueAssert.extracting(RecordWithValue::value).isEqualTo(value);
             invalidValueAssert
@@ -200,18 +200,18 @@ class IndexSettingExtractorTest {
                     Integer.MAX_VALUE
                 })
         void extracted(Number value) {
-            final int integer = value.intValue();
-            final IntValue storable = Values.intValue(integer);
-            final SettingsAccessor accessor = settingValue(value);
+            int integer = value.intValue();
+            IntValue storable = Values.intValue(integer);
+            SettingsAccessor accessor = settingValue(value);
 
-            final ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
+            ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
             validationAssert.extracting(RecordWithValue::value, INTEGER).isEqualTo(integer);
             validationAssert
                     .as("should specifically be an % on validation", IntValue.class.getSimpleName())
                     .extracting(RecordWithStorable::storable, type(IntValue.class))
                     .isEqualTo(storable);
 
-            final ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
+            ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
             authoritativeReadAssert.extracting(RecordWithValue::value, INTEGER).isEqualTo(integer);
             authoritativeReadAssert
                     .extracting(RecordWithStorable::storable, type(IntegralValue.class))
@@ -227,7 +227,7 @@ class IndexSettingExtractorTest {
 
         @Test
         void incorrectType() {
-            final SettingsAccessor accessor = settingValue("42");
+            SettingsAccessor accessor = settingValue("42");
 
             extractForValidationAndAssertRecord(accessor, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -266,8 +266,8 @@ class IndexSettingExtractorTest {
                     Short.MIN_VALUE,
                     Byte.MIN_VALUE,
                     -Float.MIN_VALUE,
-                    -0.f,
-                    +0.f,
+                    -0.0f,
+                    +0.0f,
                     Float.MIN_VALUE,
                     Byte.MAX_VALUE,
                     Short.MAX_VALUE,
@@ -302,17 +302,17 @@ class IndexSettingExtractorTest {
                     Double.POSITIVE_INFINITY
                 })
         void extracted(Number value) {
-            final double doubleValue = value.doubleValue();
-            final DoubleValue storable = Values.doubleValue(doubleValue);
-            final SettingsAccessor accessor = settingValue(value);
+            double doubleValue = value.doubleValue();
+            DoubleValue storable = Values.doubleValue(doubleValue);
+            SettingsAccessor accessor = settingValue(value);
 
-            final ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
+            ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
             validationAssert.extracting(RecordWithValue::value, DOUBLE).isEqualTo(doubleValue);
             validationAssert
                     .extracting(RecordWithStorable::storable, type(DoubleValue.class))
                     .isEqualTo(storable);
 
-            final ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
+            ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
             authoritativeReadAssert.extracting(RecordWithValue::value, DOUBLE).isEqualTo(doubleValue);
             authoritativeReadAssert
                     .extracting(RecordWithStorable::storable, type(NumberValue.class))
@@ -323,16 +323,16 @@ class IndexSettingExtractorTest {
         @ValueSource(floats = {Float.NaN})
         @ValueSource(doubles = {Float.NaN, Double.NaN})
         void extractedNaN(Number value) {
-            final SettingsAccessor accessor = settingValue(value);
+            SettingsAccessor accessor = settingValue(value);
 
-            final ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
+            ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
             validationAssert.extracting(RecordWithValue::value, DOUBLE).isNaN();
             validationAssert
                     .extracting(RecordWithStorable::storable, type(DoubleValue.class))
                     .extracting(fp -> fp.isNaN(), BOOLEAN)
                     .isTrue();
 
-            final ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
+            ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
             authoritativeReadAssert.extracting(RecordWithValue::value, DOUBLE).isNaN();
             authoritativeReadAssert
                     .extracting(RecordWithStorable::storable, type(FloatingPointValue.class))
@@ -349,7 +349,7 @@ class IndexSettingExtractorTest {
 
         @Test
         void incorrectType() {
-            final SettingsAccessor accessor = settingValue(42);
+            SettingsAccessor accessor = settingValue(42);
 
             extractForValidationAndAssertRecord(accessor, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -359,16 +359,16 @@ class IndexSettingExtractorTest {
         @ParameterizedTest
         @ValueSource(strings = {"foo", "bar", "baz"})
         void extracted(String value) {
-            final TextValue storable = Values.stringValue(value);
-            final SettingsAccessor accessor = settingValue(value);
+            TextValue storable = Values.stringValue(value);
+            SettingsAccessor accessor = settingValue(value);
 
-            final ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
+            ObjectAssert<Pending> validationAssert = extractForValidationAndAssertRecord(accessor, Pending.class);
             validationAssert.extracting(RecordWithValue::value, STRING).isEqualTo(value);
             validationAssert
                     .extracting(RecordWithStorable::storable, type(TextValue.class))
                     .isEqualTo(storable);
 
-            final ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
+            ObjectAssert<Valid> authoritativeReadAssert = extractForAuthoritativeReadAndAssertRecord(accessor);
             authoritativeReadAssert.extracting(RecordWithValue::value, STRING).isEqualTo(value);
             authoritativeReadAssert
                     .extracting(RecordWithStorable::storable, type(TextValue.class))

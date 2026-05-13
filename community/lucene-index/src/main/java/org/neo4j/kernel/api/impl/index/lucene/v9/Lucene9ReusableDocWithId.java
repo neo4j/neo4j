@@ -135,7 +135,7 @@ abstract class Lucene9ReusableDocWithId {
                         nbrAddedValues++;
                     }
                     if (value.valueGroup() == ValueGroup.TEXT_ARRAY) {
-                        var array = (TextArray) value;
+                        TextArray array = (TextArray) value;
                         for (AnyValue val : array) {
                             document.add(encodeValueField(name, (Value) val));
                         }

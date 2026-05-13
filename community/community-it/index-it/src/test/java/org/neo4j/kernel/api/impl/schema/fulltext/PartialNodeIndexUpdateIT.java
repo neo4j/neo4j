@@ -35,14 +35,14 @@ class PartialNodeIndexUpdateIT {
 
     @Test
     void partialIndexedNodePropertiesUpdate() {
-        final Label userLabel = Label.label("User");
+        Label userLabel = Label.label("User");
         try (Transaction transaction = database.beginTx()) {
             transaction.execute("CREATE FULLTEXT INDEX test FOR (n: Card | " + userLabel.name() + ") "
                     + "ON EACH [n.title, n.plainText, n.username, n.screenName]");
             transaction.commit();
         }
 
-        final String value = "asdf";
+        String value = "asdf";
         try (Transaction transaction = database.beginTx()) {
             transaction.execute("UNWIND [{_id:48, properties:{screenName:\"" + value + "\"}}] as row "
                     + "CREATE (n:L1{_id: row._id}) SET n += row.properties SET n:" + userLabel.name());

@@ -36,14 +36,14 @@ public final class NodeLabelExistenceMissingLabelExceptionTest {
 
     @Test
     public void shouldGetCorrectUserMessage() {
-        var kernelToken = mock(TokenNameLookup.class);
+        TokenNameLookup kernelToken = mock(TokenNameLookup.class);
 
         when(kernelToken.labelGetName(SCHEMA_LABEL_ID)).thenReturn("SchemaLabel");
         when(kernelToken.labelGetName(REQUIRED_LABEL_ID)).thenReturn("RequiredLabel");
 
         NodeLabelExistenceConstraintDescriptor constraintDescriptor =
                 ConstraintDescriptorFactory.nodeLabelExistenceForLabel(SCHEMA_LABEL_ID, REQUIRED_LABEL_ID);
-        var userMessage = NodeLabelExistenceMissingLabelException.tokenPresenceVerificationFailed(
+        String userMessage = NodeLabelExistenceMissingLabelException.tokenPresenceVerificationFailed(
                         constraintDescriptor,
                         ConstraintValidationException.Phase.VERIFICATION,
                         SCHEMA_LABEL_ID,

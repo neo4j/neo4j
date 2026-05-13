@@ -99,6 +99,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -108,6 +109,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
 import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -257,7 +259,7 @@ class FulltextIndexProviderTest {
 
     @Test
     void createAndQueryFulltextIndex() throws Exception {
-        var indexReference = createIndex(
+        IndexDescriptor indexReference = createIndex(
                 new int[] {labelIdHej, labelIdHa, labelIdHe}, new int[] {propIdHej, propIdHa, propIdHe, propIdHo});
         await(indexReference);
         String thirdNodeId = createTheThirdNode();
@@ -437,7 +439,7 @@ class FulltextIndexProviderTest {
         await(index);
         List<String> acceptedEntities = new ArrayList<>();
         try (Transaction tx = db.beginTx()) {
-            var idMapper = ((TransactionImpl) tx).elementIdMapper();
+            ElementIdMapper idMapper = ((TransactionImpl) tx).elementIdMapper();
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction(tx);
             NodeValueIndexCursor cursor = new ExtendedNodeValueIndexCursorAdapter() {
                 private long nodeReference;
@@ -533,7 +535,7 @@ class FulltextIndexProviderTest {
 
         // Modify the full-text index such that it has an analyzer configured that does not exist.
         controller.restartDbms(builder -> {
-            var cacheTracer = NULL;
+            PageCacheTracer cacheTracer = NULL;
             CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(
                     Config.defaults(GraphDatabaseSettings.neo4j_home, builder.getHomeDirectory()));
@@ -554,12 +556,13 @@ class FulltextIndexProviderTest {
                         contextFactory,
                         false,
                         DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
-                var cursorContext = CursorContext.NULL_CONTEXT;
+                CursorContext cursorContext = CursorContext.NULL_CONTEXT;
                 try (NeoStores neoStores = factory.openAllNeoStores();
-                        var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
+                        CachedStoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
                     TokenHolders tokens =
                             StoreTokens.readOnlyTokenHolders(neoStores, storeCursors, EmptyMemoryTracker.INSTANCE);
-                    var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+                    DynamicAllocatorProvider allocatorProvider =
+                            DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
                     SchemaStore schemaStore = neoStores.getSchemaStore();
                     SchemaStorage storage = new SchemaStorage(schemaStore, tokens);
                     IndexDescriptor index = (IndexDescriptor)
@@ -887,7 +890,7 @@ class FulltextIndexProviderTest {
 
     private void verifyNodeData(String thirdNodeId) throws Exception {
         try (Transaction tx = db.beginTx()) {
-            var idMapper = ((TransactionImpl) tx).elementIdMapper();
+            ElementIdMapper idMapper = ((TransactionImpl) tx).elementIdMapper();
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction(tx);
             IndexReadSession index =
                     ktx.dataRead().indexReadSession(ktx.schemaRead().indexGetForName("fulltext"));
@@ -901,7 +904,7 @@ class FulltextIndexProviderTest {
         }
     }
 
-    private void assertIndexedNodes(
+    private static void assertIndexedNodes(
             ElementIdMapper idMapper,
             KernelTransaction ktx,
             IndexReadSession index,
@@ -919,7 +922,7 @@ class FulltextIndexProviderTest {
 
     private void verifyRelationshipData(String secondRelId) throws Exception {
         try (Transaction tx = db.beginTx()) {
-            var idMapper = ((TransactionImpl) tx).elementIdMapper();
+            ElementIdMapper idMapper = ((TransactionImpl) tx).elementIdMapper();
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction(tx);
             IndexDescriptor index = ktx.schemaRead().indexGetForName("fulltext");
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession(index);
@@ -934,7 +937,7 @@ class FulltextIndexProviderTest {
         }
     }
 
-    private void assertIndexedRelationships(
+    private static void assertIndexedRelationships(
             ElementIdMapper idMapper,
             KernelTransaction ktx,
             IndexReadSession indexReadSession,

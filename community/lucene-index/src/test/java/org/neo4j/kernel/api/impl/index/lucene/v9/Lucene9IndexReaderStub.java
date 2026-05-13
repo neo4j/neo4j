@@ -78,7 +78,7 @@ public class Lucene9IndexReaderStub extends LeafReader {
             true,
             false);
 
-    public Lucene9IndexReaderStub(final NumericDocValues ndv) {
+    public Lucene9IndexReaderStub(NumericDocValues ndv) {
         this.ndvs = s -> ndv;
     }
 

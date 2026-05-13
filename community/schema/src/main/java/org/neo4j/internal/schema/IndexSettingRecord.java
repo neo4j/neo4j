@@ -56,8 +56,8 @@ public sealed interface IndexSettingRecord extends NamedSetting, Comparable<Inde
         public static final SortedSet<State> INVALID_STATES;
 
         static {
-            final SortedSet<State> invalidStates = new TreeSet<>();
-            for (final State state : values()) {
+            SortedSet<State> invalidStates = new TreeSet<>();
+            for (State state : values()) {
                 if (state != VALID) {
                     invalidStates.add(state);
                 }
@@ -99,7 +99,7 @@ public sealed interface IndexSettingRecord extends NamedSetting, Comparable<Inde
             this(hasValue.setting(), hasValue.value(), storable);
         }
 
-        public Valid(RecordWithSetting hasSetting, Object value, Value storable) {
+        public Valid(HasSetting hasSetting, Object value, Value storable) {
             this(hasSetting.setting(), value, storable);
         }
 
@@ -132,7 +132,7 @@ public sealed interface IndexSettingRecord extends NamedSetting, Comparable<Inde
             this(hasValue.setting(), hasValue.value(), storable);
         }
 
-        public Pending(RecordWithSetting hasSetting, Object value, Value storable) {
+        public Pending(HasSetting hasSetting, Object value, Value storable) {
             this(hasSetting.setting(), value, storable);
         }
 
@@ -158,7 +158,7 @@ public sealed interface IndexSettingRecord extends NamedSetting, Comparable<Inde
     }
 
     record MissingSetting(IndexSetting setting) implements RecordWithSetting, Invalid {
-        public MissingSetting(RecordWithSetting hasSetting) {
+        public MissingSetting(HasSetting hasSetting) {
             this(hasSetting.setting());
         }
 
@@ -193,7 +193,7 @@ public sealed interface IndexSettingRecord extends NamedSetting, Comparable<Inde
             this(hasValue.setting(), hasValue.value(), requirement);
         }
 
-        public InvalidValue(RecordWithSetting hasSetting, Object value, IndexSettingsRequirement<?> requirement) {
+        public InvalidValue(HasSetting hasSetting, Object value, IndexSettingsRequirement<?> requirement) {
             this(hasSetting.setting(), value, requirement);
         }
 

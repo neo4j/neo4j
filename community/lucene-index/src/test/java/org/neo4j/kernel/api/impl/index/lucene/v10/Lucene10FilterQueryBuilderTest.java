@@ -52,6 +52,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,7 @@ import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TimeValue;
@@ -74,19 +76,18 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 public class Lucene10FilterQueryBuilderTest {
-
     private static final int KEY_INDEX = 4;
+    private static final Analyzer ANALYZER = new KeywordAnalyzer();
+    private static final VectorDocumentStructure DOCUMENT_STRUCTURE = new TestVectorDocumentStructure();
 
-    Analyzer analyzer = new KeywordAnalyzer();
-    VectorDocumentStructure documentStructure = new TestVectorDocumentStructure();
-    MemoryIndex index;
+    private MemoryIndex index;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    public void setUp() {
         index = new MemoryIndex();
     }
 
-    PropertyIndexQuery[] queries = new PropertyIndexQuery[10 /*enough*/];
+    final PropertyIndexQuery[] queries = new PropertyIndexQuery[10 /*enough*/];
 
     private void addField(int position, Value value) {
         // position 0 is reserved by the vector embedding
@@ -95,14 +96,14 @@ public class Lucene10FilterQueryBuilderTest {
             return;
         }
 
-        var exists = new StringField(
+        StringField exists = new StringField(
                 Lucene10DocumentsFactory.EXISTS_KEY,
                 new BytesRef(Lucene10ValueFields.intToBytes(fieldPosition)),
                 Store.NO);
-        index.addField(exists, analyzer);
+        index.addField(exists, ANALYZER);
 
         Lucene10DocumentsFactory.addIndexableFields(
-                documentStructure, fieldPosition, value, field -> index.addField(field, analyzer));
+                DOCUMENT_STRUCTURE, fieldPosition, value, field -> index.addField(field, ANALYZER));
     }
 
     private float scoreForQuery(int position, PropertyIndexQuery... queries) {
@@ -113,8 +114,8 @@ public class Lucene10FilterQueryBuilderTest {
                 this.queries[queryPosition++] = query;
             }
         }
-        var luceneQuery = Lucene10FilterQueryBuilder.build(
-                documentStructure, PropertyIndexQuery.matchAllEntityFilter(), this.queries);
+        Query luceneQuery = Lucene10FilterQueryBuilder.build(
+                DOCUMENT_STRUCTURE, PropertyIndexQuery.matchAllEntityFilter(), this.queries);
         return index.search(new ConstantScoreQuery(luceneQuery));
     }
 
@@ -124,7 +125,7 @@ public class Lucene10FilterQueryBuilderTest {
         addField(indexablePropertyIndex, Values.utf8Value("indexed"));
 
         int nonIndexablePropertyIndex = 4;
-        addField(nonIndexablePropertyIndex, Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 0.f, 1.f));
+        addField(nonIndexablePropertyIndex, Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 0.0f, 1.0f));
 
         int noValuePropertyIndex = 5;
         addField(noValuePropertyIndex, null);
@@ -143,7 +144,7 @@ public class Lucene10FilterQueryBuilderTest {
         addField(indexablePropertyIndex, Values.utf8Value("indexed"));
 
         int nonIndexablePropertyIndex = 4;
-        addField(nonIndexablePropertyIndex, Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 0.f, 1.f));
+        addField(nonIndexablePropertyIndex, Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 0.0f, 1.0f));
 
         int noValuePropertyIndex = 5;
         addField(noValuePropertyIndex, null);
@@ -307,17 +308,17 @@ public class Lucene10FilterQueryBuilderTest {
 
     @Test
     public void testTemporalQueryTypes() {
-        var APOLLO_UTC = ZonedDateTime.of(1969, 7, 20, 20, 17, 0, 0, ZoneOffset.UTC);
+        ZonedDateTime APOLLO_UTC = ZonedDateTime.of(1969, 7, 20, 20, 17, 0, 0, ZoneOffset.UTC);
         addAndCheckFieldsAreIndependent(allTemporalValues(APOLLO_UTC));
     }
 
     @Test
     public void testTemporalQueryTypeRanges() {
-        var APOLLO_UTC = ZonedDateTime.of(1969, 7, 20, 20, 17, 0, 0, ZoneOffset.UTC);
+        ZonedDateTime APOLLO_UTC = ZonedDateTime.of(1969, 7, 20, 20, 17, 0, 0, ZoneOffset.UTC);
         addAndCheckFieldsAreIndependent(allTemporalValues(APOLLO_UTC));
 
-        var temporals = allTemporalValues(APOLLO_UTC);
-        for (var temporal : temporals) {
+        List<Temporal> temporals = allTemporalValues(APOLLO_UTC);
+        for (Temporal temporal : temporals) {
             if (temporal.isSupported(ChronoField.YEAR)) {
                 checkTemporalRange(temporal, ChronoField.YEAR, ChronoUnit.YEARS);
                 checkTemporalRange(temporal, ChronoField.INSTANT_SECONDS, SECONDS);
@@ -396,11 +397,11 @@ public class Lucene10FilterQueryBuilderTest {
     @Test
     public void testBigFloatRange() {
 
-        var bigFloat = 9.23e18; // large than Long.MAX_VALUE
+        double bigFloat = 9.23e18; // large than Long.MAX_VALUE
         addField(KEY_INDEX, asValue(bigFloat));
 
         assertOutRangeTT(Long.MIN_VALUE, Long.MAX_VALUE);
-        assertInRangeTT(Long.MIN_VALUE, 10e18);
+        assertInRangeTT(Long.MIN_VALUE, 10.00e18);
     }
 
     @Test
@@ -443,10 +444,10 @@ public class Lucene10FilterQueryBuilderTest {
 
     @Test
     public void testTemporalRangePoint() {
-        var APOLLO_11_LOCALTIME = LocalDateTime.of(1969, 7, 20, 20, 17, 0);
-        var APOLLO_11_UTC = ZonedDateTime.of(APOLLO_11_LOCALTIME, ZoneOffset.UTC);
-        var APOLLO_12_LOCALTIME = LocalDateTime.of(1969, 11, 24, 20, 58, 24);
-        var APOLLO_12_UTC = ZonedDateTime.of(APOLLO_12_LOCALTIME, ZoneOffset.UTC);
+        LocalDateTime APOLLO_11_LOCALTIME = LocalDateTime.of(1969, 7, 20, 20, 17, 0);
+        ZonedDateTime APOLLO_11_UTC = ZonedDateTime.of(APOLLO_11_LOCALTIME, ZoneOffset.UTC);
+        LocalDateTime APOLLO_12_LOCALTIME = LocalDateTime.of(1969, 11, 24, 20, 58, 24);
+        ZonedDateTime APOLLO_12_UTC = ZonedDateTime.of(APOLLO_12_LOCALTIME, ZoneOffset.UTC);
 
         addField(KEY_INDEX, asValue(APOLLO_11_UTC));
         assertInRangeTT(APOLLO_11_UTC, APOLLO_11_UTC);
@@ -482,12 +483,12 @@ public class Lucene10FilterQueryBuilderTest {
 
     @Test
     public void testTemporalRangeWider() {
-        var APOLLO_12_LOCALTIME = LocalDateTime.of(1969, 11, 24, 20, 58, 24);
-        var APOLLO_12_UTC = ZonedDateTime.of(APOLLO_12_LOCALTIME, ZoneOffset.UTC);
-        var APOLLO_14_LOCALTIME = LocalDateTime.of(1971, 2, 9, 21, 5, 0);
-        var APOLLO_14_UTC = ZonedDateTime.of(APOLLO_14_LOCALTIME, ZoneOffset.UTC);
-        var APOLLO_16_LOCALTIME = LocalDateTime.of(1972, 4, 25, 5, 47, 0);
-        var APOLLO_16_UTC = ZonedDateTime.of(APOLLO_16_LOCALTIME, ZoneOffset.UTC);
+        LocalDateTime APOLLO_12_LOCALTIME = LocalDateTime.of(1969, 11, 24, 20, 58, 24);
+        ZonedDateTime APOLLO_12_UTC = ZonedDateTime.of(APOLLO_12_LOCALTIME, ZoneOffset.UTC);
+        LocalDateTime APOLLO_14_LOCALTIME = LocalDateTime.of(1971, 2, 9, 21, 5, 0);
+        ZonedDateTime APOLLO_14_UTC = ZonedDateTime.of(APOLLO_14_LOCALTIME, ZoneOffset.UTC);
+        LocalDateTime APOLLO_16_LOCALTIME = LocalDateTime.of(1972, 4, 25, 5, 47, 0);
+        ZonedDateTime APOLLO_16_UTC = ZonedDateTime.of(APOLLO_16_LOCALTIME, ZoneOffset.UTC);
 
         assertOutRangeTT(APOLLO_12_UTC, APOLLO_16_UTC);
 
@@ -505,8 +506,8 @@ public class Lucene10FilterQueryBuilderTest {
     @Test
     public void testTemporalRangeImplementationArtifacts() {
 
-        var APOLLO_16_LOCALTIME = LocalDateTime.of(1972, 4, 25, 5, 47, 0);
-        var APOLLO_16_UTC = ZonedDateTime.of(APOLLO_16_LOCALTIME, ZoneOffset.UTC);
+        LocalDateTime APOLLO_16_LOCALTIME = LocalDateTime.of(1972, 4, 25, 5, 47, 0);
+        ZonedDateTime APOLLO_16_UTC = ZonedDateTime.of(APOLLO_16_LOCALTIME, ZoneOffset.UTC);
 
         addField(KEY_INDEX, asValue(APOLLO_16_UTC.plusNanos(10_000_000)));
 
@@ -581,9 +582,9 @@ public class Lucene10FilterQueryBuilderTest {
 
     @Test
     public void temporalDateTypesDontClash() {
-        var APOLLO_11_LOCALTIME = LocalDateTime.of(1969, 7, 20, 20, 17, 0);
-        var APOLLO_11_UTC = ZonedDateTime.of(APOLLO_11_LOCALTIME, ZoneOffset.UTC);
-        var APOLLO_11_DATE = DateValue.date(LocalDate.from(APOLLO_11_LOCALTIME));
+        LocalDateTime APOLLO_11_LOCALTIME = LocalDateTime.of(1969, 7, 20, 20, 17, 0);
+        ZonedDateTime APOLLO_11_UTC = ZonedDateTime.of(APOLLO_11_LOCALTIME, ZoneOffset.UTC);
+        DateValue APOLLO_11_DATE = DateValue.date(LocalDate.from(APOLLO_11_LOCALTIME));
 
         addField(KEY_INDEX, APOLLO_11_DATE);
         assertInRangeTT(APOLLO_11_DATE, APOLLO_11_DATE);
@@ -593,8 +594,9 @@ public class Lucene10FilterQueryBuilderTest {
 
     @Test
     public void temporalDateConfirmIdAsOffsetBeforeIdAsRegion() {
-        var VOYAGER_2_OFFSET = DateTimeValue.parse("1977-02-20T19:29:44Z", ZoneOffset::systemDefault);
-        var VOYAGER_2_REGION = DateTimeValue.parse("1977-02-20T19:29:44[Europe/Dublin]", ZoneOffset::systemDefault);
+        DateTimeValue VOYAGER_2_OFFSET = DateTimeValue.parse("1977-02-20T19:29:44Z", ZoneOffset::systemDefault);
+        DateTimeValue VOYAGER_2_REGION =
+                DateTimeValue.parse("1977-02-20T19:29:44[Europe/Dublin]", ZoneOffset::systemDefault);
         assertThat(Values.COMPARATOR.compare(VOYAGER_2_OFFSET, VOYAGER_2_REGION))
                 .isNegative();
         addField(KEY_INDEX, VOYAGER_2_REGION);
@@ -608,9 +610,10 @@ public class Lucene10FilterQueryBuilderTest {
     /// GMT < GMT0 but "\[GMT0\]" < "\[GMT\]".
     @Test
     public void versionsOfGMT() {
-        var before = DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
-        var mid = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
-        var after = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT0]", ZoneOffset::systemDefault);
+        DateTimeValue before =
+                DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
+        DateTimeValue mid = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
+        DateTimeValue after = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT0]", ZoneOffset::systemDefault);
         addField(KEY_INDEX, mid);
         assertInRangeTT(before, mid);
         assertInRangeTT(before, after);
@@ -622,7 +625,7 @@ public class Lucene10FilterQueryBuilderTest {
         addField(indexablePropertyIndex, Values.utf8Value("indexed"));
 
         int nonIndexablePropertyIndex = 4;
-        addField(nonIndexablePropertyIndex, Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 0.f, 1.f));
+        addField(nonIndexablePropertyIndex, Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 0.0f, 1.0f));
 
         int noValuePropertyIndex = 5;
         addField(noValuePropertyIndex, null);
@@ -664,55 +667,65 @@ public class Lucene10FilterQueryBuilderTest {
 
     @Test
     public void rangeWithOpenEndSameZoneOffsetLowerExists() {
-        var lower = DateTimeValue.parse("2019-06-03T05:00:00.000-0200", ZoneOffset::systemDefault);
-        var upper = DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
+        DateTimeValue lower = DateTimeValue.parse("2019-06-03T05:00:00.000-0200", ZoneOffset::systemDefault);
+        DateTimeValue upper =
+                DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
         checkRangeLowerExists(lower, upper);
     }
 
     @Test
     public void rangeWithOpenEndSameZoneOffsetUpperExists() {
-        var lower = DateTimeValue.parse("2019-06-03T05:00:00.000-0200", ZoneOffset::systemDefault);
-        var upper = DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
+        DateTimeValue lower = DateTimeValue.parse("2019-06-03T05:00:00.000-0200", ZoneOffset::systemDefault);
+        DateTimeValue upper =
+                DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
         checkRangeUpperExists(lower, upper);
     }
 
     @Test
     public void rangeWithOpenEndSameInstantLowerExists() {
-        var lower = DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
-        var upper = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
+        DateTimeValue lower =
+                DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
+        DateTimeValue upper = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
         checkRangeLowerExists(lower, upper);
     }
 
     @Test
     public void rangeWithOpenEndSameInstantUpperExists() {
-        var lower = DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
-        var upper = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
+        DateTimeValue lower =
+                DateTimeValue.parse("2019-06-03T05:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
+        DateTimeValue upper = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
         checkRangeUpperExists(lower, upper);
     }
 
     @Test
     public void rangeWithOpenEndLowerExists() {
-        var lower = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
-        var upper = DateTimeValue.parse("2019-06-03T06:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
+        DateTimeValue lower = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
+        DateTimeValue upper =
+                DateTimeValue.parse("2019-06-03T06:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
         checkRangeLowerExists(lower, upper);
     }
 
     @Test
     public void rangeWithOpenEndUpperExists() {
-        var lower = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
-        var upper = DateTimeValue.parse("2019-06-03T06:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
+        DateTimeValue lower = DateTimeValue.parse("2019-06-03T07:00:00.000[GMT]", ZoneOffset::systemDefault);
+        DateTimeValue upper =
+                DateTimeValue.parse("2019-06-03T06:00:00.000[Brazil/DeNoronha]", ZoneOffset::systemDefault);
         checkRangeUpperExists(lower, upper);
     }
 
     @Test
     public void temporalTime() {
-        var APOLLO_11_LOCALTIME = LocalDateTime.of(1969, 7, 20, 20, 17, 0);
-        var tZ4 = OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(4));
-        var tZ5 = OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(5));
-        var offsetTime =
+        LocalDateTime APOLLO_11_LOCALTIME = LocalDateTime.of(1969, 7, 20, 20, 17, 0);
+        OffsetTime tZ4 =
+                OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(4));
+        OffsetTime tZ5 =
+                OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(5));
+        OffsetTime offsetTime =
                 OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(6));
-        var tZ7 = OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(7));
-        var tZ8 = OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(8));
+        OffsetTime tZ7 =
+                OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(7));
+        OffsetTime tZ8 =
+                OffsetTime.ofInstant(APOLLO_11_LOCALTIME.toInstant(ZoneOffset.ofHours(0)), ZoneOffset.ofHours(8));
         addField(KEY_INDEX, TimeValue.time(offsetTime));
         assertInRangeTT(offsetTime, offsetTime);
         assertOutRangeFT(offsetTime, offsetTime);
@@ -723,7 +736,7 @@ public class Lucene10FilterQueryBuilderTest {
 
     @Test
     public void temporalLocalTime() {
-        var storedTime = LocalTime.of(14, 35, 15, 63000);
+        LocalTime storedTime = LocalTime.of(14, 35, 15, 63000);
         addField(KEY_INDEX, LocalTimeValue.localTime(storedTime));
         assertInRangeTT(LocalTime.of(13, 55), LocalTime.of(15, 3));
         assertOutRangeTT(LocalTime.of(14, 36), LocalTime.of(15, 3));
@@ -739,7 +752,7 @@ public class Lucene10FilterQueryBuilderTest {
             value = ChronoUnit.class,
             names = {"NANOS", "MILLIS", "MICROS", "SECONDS", "HOURS", "DAYS", "WEEKS", "YEARS"}) //
     public void temporalWithOffsetExact(ChronoUnit chronoUnit) {
-        var VOYAGER_2 = ZonedDateTime.ofInstant(
+        ZonedDateTime VOYAGER_2 = ZonedDateTime.ofInstant(
                 LocalDateTime.of(1977, 8, 20, 14, 29, 44),
                 ZoneOffset.ofHoursMinutes(-6, 0),
                 ZoneId.of("America/Chicago"));
@@ -747,19 +760,19 @@ public class Lucene10FilterQueryBuilderTest {
         assertExactHit(VOYAGER_2);
         assertExactMiss(VOYAGER_2.minus(1, chronoUnit));
         assertExactMiss(VOYAGER_2.plus(1, chronoUnit));
-        var paris = VOYAGER_2.withZoneSameInstant(ZoneId.of("Europe/Paris"));
+        ZonedDateTime paris = VOYAGER_2.withZoneSameInstant(ZoneId.of("Europe/Paris"));
         assertExactMiss(paris);
     }
 
     @Test
     public void temporalWithOffsetRange() {
-        var VOYAGER_2 = ZonedDateTime.ofInstant(
+        ZonedDateTime VOYAGER_2 = ZonedDateTime.ofInstant(
                 LocalDateTime.of(1977, 8, 20, 14, 29, 44),
                 ZoneOffset.ofHoursMinutes(-6, 0),
                 ZoneId.of("America/Chicago"));
         addField(KEY_INDEX, asValue(VOYAGER_2));
-        var anchorage = VOYAGER_2.withZoneSameInstant(ZoneId.of("America/Anchorage"));
-        var paris = VOYAGER_2.withZoneSameInstant(ZoneId.of("Europe/Paris"));
+        ZonedDateTime anchorage = VOYAGER_2.withZoneSameInstant(ZoneId.of("America/Anchorage"));
+        ZonedDateTime paris = VOYAGER_2.withZoneSameInstant(ZoneId.of("Europe/Paris"));
         assertInRangeFF(anchorage, paris);
         assertOutRangeFF(paris, anchorage);
 
@@ -779,11 +792,8 @@ public class Lucene10FilterQueryBuilderTest {
         assertInRangeFF(VOYAGER_2.minusHours(8), VOYAGER_2.plusDays(1).minusHours(6));
     }
 
-    private Value asValue(Object v) {
-        if (v instanceof Value value) {
-            return value;
-        }
-        return Values.of(v);
+    private static Value asValue(Object v) {
+        return v instanceof Value value ? value : Values.of(v);
     }
 
     private void assertInRangeFF(Object from, Object to) {
@@ -838,8 +848,8 @@ public class Lucene10FilterQueryBuilderTest {
 
     private static List<String> sortedZoneIdsWithOffset(ZonedDateTime reference, ZoneOffset offset) {
         List<String> zoneIds = new ArrayList<>();
-        for (var zone : ZoneRulesProvider.getAvailableZoneIds()) {
-            var referenceInZone = reference.withZoneSameInstant(ZoneId.of(zone));
+        for (String zone : ZoneRulesProvider.getAvailableZoneIds()) {
+            ZonedDateTime referenceInZone = reference.withZoneSameInstant(ZoneId.of(zone));
             if (offset.equals(referenceInZone.getOffset())) {
                 zoneIds.add(zone);
             }
@@ -859,9 +869,9 @@ public class Lucene10FilterQueryBuilderTest {
     @ParameterizedTest
     @MethodSource("provideSortedZoneIdsWithOffset")
     public void temporalWithOffsetZoneIdRange(String zoneId) {
-        var entry = VOYAGER_2.withZoneSameInstant(ZoneId.of(zoneId));
+        ZonedDateTime entry = VOYAGER_2.withZoneSameInstant(ZoneId.of(zoneId));
         addField(KEY_INDEX, asValue(entry));
-        var zoneIdsWithSameOffset = sortedZoneIdsWithOffset(VOYAGER_2, ZoneOffset.ofHours(-6));
+        List<String> zoneIdsWithSameOffset = sortedZoneIdsWithOffset(VOYAGER_2, ZoneOffset.ofHours(-6));
         for (String before : zoneIdsWithSameOffset) {
             for (String after : zoneIdsWithSameOffset) {
                 if (before.compareTo(zoneId) < 0 && zoneId.compareTo(after) < 0) {
@@ -880,7 +890,7 @@ public class Lucene10FilterQueryBuilderTest {
     @Test
     public void testDuration() {
         int keyIndex = KEY_INDEX;
-        var value = duration(1, 1, 1, 1);
+        DurationValue value = duration(1, 1, 1, 1);
         addField(keyIndex, value);
 
         // exact
@@ -924,9 +934,8 @@ public class Lucene10FilterQueryBuilderTest {
         }
     }
 
-    private List<Temporal> allTemporalValues(ZonedDateTime zonedDateTime) {
-
-        var list = new ArrayList<Temporal>();
+    private static List<Temporal> allTemporalValues(ZonedDateTime zonedDateTime) {
+        List<Temporal> list = new ArrayList<>();
         list.add(zonedDateTime);
         list.add(zonedDateTime.toLocalDateTime());
         list.add(zonedDateTime.toLocalTime());
@@ -939,11 +948,11 @@ public class Lucene10FilterQueryBuilderTest {
 
         int keyIndex = KEY_INDEX;
 
-        var unwritten = new ArrayList<>(temporals);
-        var written = new ArrayList<>();
+        List<Temporal> unwritten = new ArrayList<>(temporals);
+        List<Object> written = new ArrayList<>();
         while (!unwritten.isEmpty()) {
-            var time = unwritten.getFirst();
-            for (var tQuery : unwritten) {
+            Temporal time = unwritten.getFirst();
+            for (Temporal tQuery : unwritten) {
                 assertThat(scoreForQuery(keyIndex, PropertyIndexQuery.exact(1, asValue(tQuery))))
                         .isEqualTo(0.0f);
             }
@@ -952,7 +961,7 @@ public class Lucene10FilterQueryBuilderTest {
             unwritten.removeFirst();
             written.add(time);
 
-            for (var tQuery : written) {
+            for (Object tQuery : written) {
                 assertThat(scoreForQuery(keyIndex, PropertyIndexQuery.exact(1, asValue(tQuery))))
                         .as("Expected to find " + tQuery + " in the index. Written list "
                                 + Arrays.toString(written.toArray()))

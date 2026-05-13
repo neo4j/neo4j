@@ -34,7 +34,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 class RawBitsTest {
-    public RangeLayout layout = new RangeLayout(1);
+    public final RangeLayout layout = new RangeLayout(1);
 
     private final List<Object> objects = Arrays.asList(
             Double.NEGATIVE_INFINITY,
@@ -60,19 +60,19 @@ class RawBitsTest {
             Short.MAX_VALUE,
             Integer.MAX_VALUE,
             33554432,
-            33554432F,
+            33554432.0F,
             33554433,
-            33554433F,
+            33554433.0F,
             33554434,
-            33554434F,
+            33554434.0F,
             9007199254740991L,
-            9007199254740991D,
+            9007199254740991.0D,
             9007199254740992L,
-            9007199254740992D,
+            9007199254740992.0D,
             9007199254740993L,
-            9007199254740993D,
+            9007199254740993.0D,
             9007199254740994L,
-            9007199254740994D,
+            9007199254740994.0D,
             Long.MAX_VALUE,
             Float.MAX_VALUE,
             Double.MAX_VALUE,

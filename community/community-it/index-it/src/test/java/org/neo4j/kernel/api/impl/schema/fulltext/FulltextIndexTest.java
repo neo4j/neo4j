@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions;
+import org.neo4j.gqlstatus.GqlExceptionLikeAssert;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -95,9 +96,9 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
 
         long nodeId;
         long higherNodeId = -1;
-        var label2 = label("label2");
+        Label label2 = label("label2");
         try (Transaction tx = db.beginTx()) {
-            var node = tx.createNode(LABEL, label2);
+            Node node = tx.createNode(LABEL, label2);
             nodeId = node.getId();
             node.setProperty(PROP, "b");
             // This has to be done for Block because otherwise it wouldn't need to move from the page (see below)
@@ -113,7 +114,7 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
             tx.getNodeById(higherNodeId);
             KernelTransaction ktx = kernelTransaction(tx);
 
-            var cursorContext = ktx.cursorContext();
+            CursorContext cursorContext = ktx.cursorContext();
             ((DefaultPageCursorTracer) cursorContext.getCursorTracer()).setIgnoreCounterCheck(true);
 
             cursorContext.getCursorTracer().reportEvents();
@@ -121,7 +122,7 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
 
             assertQueryFindsIds(ktx, true, NODE_INDEX_NAME, "b", nodeId);
 
-            var pins = cursorContext.getCursorTracer().pins();
+            long pins = cursorContext.getCursorTracer().pins();
             assertThat(pins).isGreaterThan(0);
             assertThat(cursorContext.getCursorTracer().hits()).isEqualTo(pins);
         }
@@ -817,7 +818,7 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
 
             try (NodeValueIndexCursor cursor =
                     ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                var eAssert = ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> ktx.dataRead()
+                GqlExceptionLikeAssert eAssert = ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> ktx.dataRead()
                                 .nodeIndexSeek(
                                         ktx.queryContext(),
                                         indexSession,
@@ -895,7 +896,7 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
         try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = kernelTransaction(tx);
             IndexDescriptor index = ktx.schemaRead().indexGetForName(NODE_INDEX_NAME);
-            final var propertyKey = ktx.tokenRead().propertyKey(PROP);
+            int propertyKey = ktx.tokenRead().propertyKey(PROP);
 
             try (NodeValueIndexCursor cursor =
                     ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
@@ -939,7 +940,7 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
         try (Transaction tx = db.beginTx()) {
             KernelTransaction ktx = kernelTransaction(tx);
             IndexDescriptor index = ktx.schemaRead().indexGetForName(REL_INDEX_NAME);
-            final var propertyKey = ktx.tokenRead().propertyKey(PROP);
+            int propertyKey = ktx.tokenRead().propertyKey(PROP);
 
             try (RelationshipValueIndexCursor cursor =
                     ktx.cursors().allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {

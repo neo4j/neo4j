@@ -142,10 +142,10 @@ public class IndexEntryConflictException extends KernelException {
             long addedEntityId,
             TokenNameLookup tokenNameLookup,
             ValueTuple propertyValues) {
-        var message =
+        String message =
                 buildErrorMessage(tokenNameLookup, schemaDescriptor, propertyValues, addedEntityId, existingEntityId);
 
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N80)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N80)
                 .withParam(GqlParams.StringParam.value, message)
                 .build();
         return new IndexEntryConflictException(

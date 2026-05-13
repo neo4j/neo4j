@@ -191,7 +191,7 @@ class LuceneIndexCompatibilityTest {
     private static final String TEXT_PREFIX = "Written in ";
     private static final Pattern EXISTING_TEXT = Pattern.compile(TEXT_PREFIX + "\\d+(\\.\\d+)*");
     private static final String NEW_TEXT = TEXT_PREFIX + Neo4jVersion.LATEST;
-    private static final float[] VECTOR = new float[] {1.f, 0.f, 0.f};
+    private static final float[] VECTOR = new float[] {1.0f, 0.0f, 0.0f};
     private static final Label LAST_TOUCHED = Label.label("LastTouched");
     private static final int MAX_EF_SEARCH = 1 << 20;
 
@@ -220,9 +220,9 @@ class LuceneIndexCompatibilityTest {
         fs.mkdirs(layout.databaseDirectory());
         fs.mkdirs(layout.getNeo4jLayout().transactionLogsRootDirectory());
 
-        final Path dump =
+        Path dump =
                 Path.of(getClass().getResource(DUMP).toURI()).toAbsolutePath().normalize();
-        final Loader loader = new Loader(fs);
+        Loader loader = new Loader(fs);
         loader.load(layout, dump);
         startDBMS();
 
@@ -259,9 +259,9 @@ class LuceneIndexCompatibilityTest {
     @Test
     @Disabled("Helper method for debugging, not intended to be run as regular test")
     void printAllIndexesInDump() {
-        try (final Transaction tx = db.beginTx()) {
-            final SortedSet<IndexDefinition> indexes = existingLuceneNodeIndexes(tx);
-            for (final IndexDefinition index : indexes) {
+        try (Transaction tx = db.beginTx()) {
+            SortedSet<IndexDefinition> indexes = existingLuceneNodeIndexes(tx);
+            for (IndexDefinition index : indexes) {
                 System.out.printf("%s%n%n", index);
             }
         }
@@ -270,10 +270,10 @@ class LuceneIndexCompatibilityTest {
     @Test
     @Disabled("Helper method for debugging, not intended to be run as regular test")
     void printAllNodesInDump() {
-        final PrettyPrinter pp = new PrettyPrinter();
-        try (final Transaction tx = db.beginTx();
-                final ResourceIterable<Node> nodes = tx.getAllNodes()) {
-            for (final Node node : nodes) {
+        PrettyPrinter pp = new PrettyPrinter();
+        try (Transaction tx = db.beginTx();
+                ResourceIterable<Node> nodes = tx.getAllNodes()) {
+            for (Node node : nodes) {
                 pp.reset();
                 wrapNodeEntity(node).writeTo(pp);
                 System.out.println(pp.value());
@@ -283,34 +283,34 @@ class LuceneIndexCompatibilityTest {
 
     @Test
     void ensureConfiguredIndexesExistInDump() {
-        final Map<String, Index> configuredIndexes = new HashMap<>();
-        for (final Index index : INDEXES) {
+        Map<String, Index> configuredIndexes = new HashMap<>();
+        for (Index index : INDEXES) {
             assertThat(configuredIndexes.put(index.name(), index))
                     .as("index with name `%s` should only be seen once", index.name())
                     .isNull();
         }
 
-        try (final Transaction tx = db.beginTx()) {
-            final Map<String, IndexDefinition> indexesInDump = new HashMap<>();
-            for (final IndexDefinition index : existingLuceneNodeIndexes(tx)) {
+        try (Transaction tx = db.beginTx()) {
+            Map<String, IndexDefinition> indexesInDump = new HashMap<>();
+            for (IndexDefinition index : existingLuceneNodeIndexes(tx)) {
                 assertThat(indexesInDump.put(index.getName(), index))
                         .as("index with name `%s` should only be seen once", index.getName())
                         .isNull();
             }
 
-            final Set<String> names = configuredIndexes.keySet();
+            Set<String> names = configuredIndexes.keySet();
             assertThat(indexesInDump).containsOnlyKeys(names);
 
-            for (final String name : names) {
-                final Index configuredIndex = assertThat(configuredIndexes)
+            for (String name : names) {
+                Index configuredIndex = assertThat(configuredIndexes)
                         .extractingByKey(name)
                         .isNotNull()
                         .actual();
-                final IndexDefinition indexInDump = assertThat(indexesInDump)
+                IndexDefinition indexInDump = assertThat(indexesInDump)
                         .extractingByKey(name)
                         .isNotNull()
                         .actual();
-                final ObjectAssert<IndexDefinition> indexAssert = assertThat(indexInDump);
+                ObjectAssert<IndexDefinition> indexAssert = assertThat(indexInDump);
 
                 indexAssert.extracting(IndexDefinition::getName).isEqualTo(configuredIndex.name());
                 indexAssert.extracting(IndexDefinition::isNodeIndex, BOOLEAN).isTrue();
@@ -333,13 +333,13 @@ class LuceneIndexCompatibilityTest {
                         .extracting(IndexRef::getIndexProvider)
                         .isEqualTo(configuredIndex.provider());
 
-                final SortedSet<Addition> additions = configuredIndex.additions();
-                final MapAssert<IndexSetting, Object> indexConfigAssert = indexAssert.extracting(
+                SortedSet<Addition> additions = configuredIndex.additions();
+                MapAssert<IndexSetting, Object> indexConfigAssert = indexAssert.extracting(
                         IndexDefinition::getIndexConfiguration, map(IndexSetting.class, Object.class));
 
                 if (configuredIndex.type() == IndexType.VECTOR) {
-                    for (final Addition addition : additions) {
-                        final Assert<?, ?> ignored =
+                    for (Addition addition : additions) {
+                        Assert<?, ?> ignored =
                                 switch (addition) {
                                     case SQ ->
                                         indexConfigAssert
@@ -358,17 +358,17 @@ class LuceneIndexCompatibilityTest {
     @ParameterizedTest
     @MethodSource("indexes")
     void shouldReadAndWriteToIndex(Index index) {
-        final Map<Long, Object> existing;
-        try (final Transaction tx = db.beginTx()) {
+        Map<Long, Object> existing;
+        try (Transaction tx = db.beginTx()) {
             existing = assertExistingText(tx, index);
         }
 
-        final int numberOfNewNodes = random.nextInt(4, 8);
-        try (final Transaction tx = db.beginTx()) {
+        int numberOfNewNodes = random.nextInt(4, 8);
+        try (Transaction tx = db.beginTx()) {
             index.createNewNodes(tx, numberOfNewNodes, random.random());
             tx.commit();
         }
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             assertNewText(tx, index, existing.keySet(), numberOfNewNodes);
         }
     }
@@ -380,39 +380,39 @@ class LuceneIndexCompatibilityTest {
     @Test
     @Disabled("Helper method for creating an updated dump, not intended to be run as regular test")
     void createUpdatedDump() throws IOException, KernelException {
-        final Path dump = Path.of(System.getProperty("user.dir"), DUMP);
+        Path dump = Path.of(System.getProperty("user.dir"), DUMP);
 
-        final Map<String, Index> configuredIndexes = new HashMap<>();
-        for (final Index index : INDEXES) {
+        Map<String, Index> configuredIndexes = new HashMap<>();
+        for (Index index : INDEXES) {
             assertThat(configuredIndexes.put(index.name(), index))
                     .as("index with name `%s` should only be seen once", index.name())
                     .isNull();
         }
 
-        try (final Transaction tx = db.beginTx()) {
-            for (final IndexDefinition index : existingLuceneNodeIndexes(tx)) {
+        try (Transaction tx = db.beginTx()) {
+            for (IndexDefinition index : existingLuceneNodeIndexes(tx)) {
                 assertThat(configuredIndexes.remove(index.getName()))
                         .as("index with name `%s` should have been configured")
                         .isNotNull();
             }
         }
 
-        final Collection<Index> indexesToCreate = configuredIndexes.values();
+        Collection<Index> indexesToCreate = configuredIndexes.values();
         if (indexesToCreate.isEmpty()) {
             return;
         }
 
         System.out.println("Creating nodes for indexes");
-        try (final Transaction tx = db.beginTx()) {
-            for (final Index index : indexesToCreate) {
+        try (Transaction tx = db.beginTx()) {
+            for (Index index : indexesToCreate) {
                 index.createNodes(tx, random.random());
             }
             tx.commit();
         }
 
         System.out.printf("Creating %d indexes:%n", indexesToCreate.size());
-        try (final Transaction tx = db.beginTx()) {
-            for (final Index index : indexesToCreate) {
+        try (Transaction tx = db.beginTx()) {
+            for (Index index : indexesToCreate) {
                 System.out.println(index);
                 index.createIndex(tx);
             }
@@ -422,8 +422,8 @@ class LuceneIndexCompatibilityTest {
         stopDBMS();
 
         System.out.printf("%s updated dump: %s", fs.fileExists(dump) ? "Overwritting with" : "Creating", dump);
-        final Dumper dumper = new Dumper(fs);
-        final Path[] exclude = new Path[] {
+        Dumper dumper = new Dumper(fs);
+        Path[] exclude = new Path[] {
             layout.databaseLockFile().getFileName(), layout.quarantineFile().getFileName()
         };
         dumper.dump(
@@ -435,11 +435,11 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static SortedSet<IndexDefinition> existingLuceneNodeIndexes(Transaction tx) {
-        final Set<IndexType> luceneIndexTypes = Set.of(IndexType.TEXT, IndexType.FULLTEXT, IndexType.VECTOR);
-        final SortedSet<IndexDefinition> indexes = new TreeSet<>(
+        Set<IndexType> luceneIndexTypes = Set.of(IndexType.TEXT, IndexType.FULLTEXT, IndexType.VECTOR);
+        SortedSet<IndexDefinition> indexes = new TreeSet<>(
                 Comparator.comparing(IndexDefinition::getIndexType).thenComparing(IndexDefinition::getName));
-        for (final IndexDefinition index : tx.schema().getIndexes()) {
-            final IndexType type = IndexType.fromPublicApi(index.getIndexType());
+        for (IndexDefinition index : tx.schema().getIndexes()) {
+            IndexType type = IndexType.fromPublicApi(index.getIndexType());
             if (index.isNodeIndex() && luceneIndexTypes.contains(type)) {
                 indexes.add(index);
             }
@@ -448,8 +448,8 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static Map<Long, Object> assertExistingText(Transaction tx, Index index) {
-        final Map<Long, Object> allEntries = allEntries(tx, index, IndexPropKey.text);
-        final Map<Long, Object> cypherIndexQuery = query(tx, index, IndexPropKey.text);
+        Map<Long, Object> allEntries = allEntries(tx, index, IndexPropKey.text);
+        Map<Long, Object> cypherIndexQuery = query(tx, index, IndexPropKey.text);
         assertExistingText(allEntries).hasSize(EXISTING_NODES_PER_INDEX);
         assertExistingText(cypherIndexQuery).hasSameSizeAs(allEntries);
         return allEntries;
@@ -462,8 +462,8 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static void assertNewText(Transaction tx, Index index, Set<Long> existing, int expectedNew) {
-        final Map<Long, Object> newEntries = allEntries(tx, index, IndexPropKey.text);
-        final Map<Long, Object> cypherIndexQuery = query(tx, index, IndexPropKey.text);
+        Map<Long, Object> newEntries = allEntries(tx, index, IndexPropKey.text);
+        Map<Long, Object> cypherIndexQuery = query(tx, index, IndexPropKey.text);
         existing.forEach(nodeId -> {
             assertThat(newEntries.remove(nodeId))
                     .as("Existing entry for %d should have been seen", nodeId)
@@ -483,17 +483,17 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static Map<Long, Object> allEntries(Transaction tx, Index index, IndexPropKey projectionKey) {
-        final KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-        final IndexDescriptor indexDescriptor = ktx.schemaRead().indexGetForName(index.name());
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+        IndexDescriptor indexDescriptor = ktx.schemaRead().indexGetForName(index.name());
         assertThat(indexDescriptor).as("Index `%s` should exist", index.name()).isNotEqualTo(IndexDescriptor.NO_INDEX);
-        final int labelId = ktx.tokenRead().nodeLabel(index.label().name());
+        int labelId = ktx.tokenRead().nodeLabel(index.label().name());
         assertThat(labelId).as("Label `%s` should exist", index.label().name()).isNotEqualTo(TokenConstants.NO_TOKEN);
-        final int propKeyId = ktx.tokenRead().propertyKey(index.key().name());
+        int propKeyId = ktx.tokenRead().propertyKey(index.key().name());
         assertThat(propKeyId)
                 .as("Property Key `%s` should exist", index.key().name())
                 .isNotEqualTo(TokenConstants.NO_TOKEN);
 
-        final int projectionKeyId;
+        int projectionKeyId;
         if (projectionKey == index.key()) {
             projectionKeyId = propKeyId;
         } else {
@@ -502,15 +502,15 @@ class LuceneIndexCompatibilityTest {
                     .as("Property Key `%s` should exist", projectionKey.name())
                     .isNotEqualTo(TokenConstants.NO_TOKEN);
         }
-        final PropertySelection selection = PropertySelection.selection(projectionKeyId);
+        PropertySelection selection = PropertySelection.selection(projectionKeyId);
 
-        final Map<Long, Object> projections = new HashMap<>();
+        Map<Long, Object> projections = new HashMap<>();
         assertThatCode(() -> {
-                    try (final NodeValueIndexCursor indexCursor = ktx.cursors()
+                    try (NodeValueIndexCursor indexCursor = ktx.cursors()
                                     .allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker());
-                            final NodeCursor nodeCursor =
+                            NodeCursor nodeCursor =
                                     ktx.cursors().allocateNodeCursor(ktx.cursorContext(), ktx.memoryTracker());
-                            final PropertyCursor propertyCursor =
+                            PropertyCursor propertyCursor =
                                     ktx.cursors().allocatePropertyCursor(ktx.cursorContext(), ktx.memoryTracker())) {
                         ktx.dataRead()
                                 .nodeIndexSeek(
@@ -520,7 +520,7 @@ class LuceneIndexCompatibilityTest {
                                         IndexQueryConstraints.unconstrained(),
                                         PropertyIndexQuery.allEntries());
                         while (indexCursor.next()) {
-                            final long nodeId = indexCursor.nodeReference();
+                            long nodeId = indexCursor.nodeReference();
                             indexCursor.node(nodeCursor);
                             assertThat(nodeCursor.next())
                                     .as("node %s should exist", nodeId)
@@ -553,14 +553,14 @@ class LuceneIndexCompatibilityTest {
     private static Map<Long, Object> textQuery(Transaction tx, Index index, IndexPropKey projectionKey) {
         // Cannot use cypher query parameters with USING INDEX hint
         // Cannot mix $($label) pattern with literals in query
-        final String query = """
+        String query = """
             PROFILE
             MATCH (node:${label})
             USING TEXT INDEX node:${label}(${key})
             WHERE node.${key} STARTS WITH ${prefix}
             RETURN id(node) AS nodeId, node.${projectionKey} AS projection
             """;
-        final Map<String, Object> params = Map.of(
+        Map<String, Object> params = Map.of(
                 "label", forceEscapeName(index.label().name()),
                 "key", forceEscapeName(index.key().name()),
                 "prefix", "'" + escapeSingleQuotes(TEXT_PREFIX) + "'",
@@ -569,18 +569,18 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static Map<Long, Object> fulltextQuery(Transaction tx, Index index, IndexPropKey projectionKey) {
-        final String query = """
+        String query = """
             CALL db.index.fulltext.queryNodes($name, $prefix) YIELD node, score
             RETURN id(node) AS nodeId, node[$projectionKey] AS projection
             """;
-        final Map<String, Object> params =
+        Map<String, Object> params =
                 Map.of("name", index.name(), "prefix", TEXT_PREFIX + "*", "projectionKey", projectionKey.name());
         return query(tx, query, params);
     }
 
     private static Map<Long, Object> vectorQuery(Transaction tx, Index index, IndexPropKey projectionKey) {
         // index name cannot be a parameter here yet
-        final String query = """
+        String query = """
             MATCH (node:$($label))
             SEARCH node IN (
                 VECTOR INDEX ${name}
@@ -589,8 +589,8 @@ class LuceneIndexCompatibilityTest {
             ) SCORE as score
             RETURN id(node) AS nodeId, node[$projectionKey] AS projection
             """;
-        final Map<String, Object> name = Map.of("name", forceEscapeName(index.name()));
-        final Map<String, Object> params = Map.of(
+        Map<String, Object> name = Map.of("name", forceEscapeName(index.name()));
+        Map<String, Object> params = Map.of(
                 "label",
                 index.label().name(),
                 "vector",
@@ -603,17 +603,17 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static Map<Long, Object> query(Transaction tx, String query, Map<String, Object> params) {
-        final Map<Long, Object> projections = new HashMap<>();
-        try (final Result result = tx.execute(query, params)) {
+        Map<Long, Object> projections = new HashMap<>();
+        try (Result result = tx.execute(query, params)) {
             assertThat(result.getQueryExecutionType().canContainResults()).isTrue();
             result.forEachRemaining(row -> {
-                final MapAssert<String, Object> rowAssert = assertThat(row);
-                final long nodeId = rowAssert
+                MapAssert<String, Object> rowAssert = assertThat(row);
+                long nodeId = rowAssert
                         .as("has nodeId")
                         .extractingByKey("nodeId", LONG)
                         .isNotNull()
                         .actual();
-                final Object projection = rowAssert
+                Object projection = rowAssert
                         .as("has projection")
                         .extractingByKey("projection")
                         .isNotNull()
@@ -623,7 +623,7 @@ class LuceneIndexCompatibilityTest {
                         .isNull();
             });
             if (result.getQueryExecutionType().requestedExecutionPlanDescription()) {
-                final ExecutionPlanDescription plan = result.getExecutionPlanDescription();
+                ExecutionPlanDescription plan = result.getExecutionPlanDescription();
                 assertThat(planContains(plan, "NodeIndexSeekByRange"))
                         .as("Plan uses index")
                         .isTrue();
@@ -633,7 +633,7 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static boolean planContains(ExecutionPlanDescription plan, String name) {
-        for (final ExecutionPlanDescription child : plan.getChildren()) {
+        for (ExecutionPlanDescription child : plan.getChildren()) {
             if (name.equals(child.getName()) || planContains(child, name)) {
                 return true;
             }
@@ -642,10 +642,10 @@ class LuceneIndexCompatibilityTest {
     }
 
     private static void touch(Transaction tx, Neo4jVersion version) {
-        try (final ResourceIterator<Node> nodes = tx.findNodes(LAST_TOUCHED)) {
-            final IteratorAssert<Node> nodesAssert = assertThat(nodes);
+        try (ResourceIterator<Node> nodes = tx.findNodes(LAST_TOUCHED)) {
+            IteratorAssert<Node> nodesAssert = assertThat(nodes);
             nodesAssert.as("Node with label :%s should exist", LAST_TOUCHED).hasNext();
-            final Node lastTouched = nodes.next();
+            Node lastTouched = nodes.next();
             nodesAssert
                     .as("Only one node with label :%s should exist", LAST_TOUCHED)
                     .isExhausted();
@@ -736,18 +736,18 @@ class LuceneIndexCompatibilityTest {
             SortedSet<Addition> additions) {
 
         static Index describe(IndexProviderDescriptor provider, Neo4jVersion version, Addition... additions) {
-            final IndexType type = INDEX_TYPES.get(provider);
-            final LuceneVersion luceneVersion = version.defaultLuceneVersion();
-            final IndexPropKey key = IndexPropKey.from(type);
-            final SortedSet<Addition> sortedAdditions =
+            IndexType type = INDEX_TYPES.get(provider);
+            LuceneVersion luceneVersion = version.defaultLuceneVersion();
+            IndexPropKey key = IndexPropKey.from(type);
+            SortedSet<Addition> sortedAdditions =
                     additions != null ? new TreeSet<>(Arrays.asList(additions)) : new TreeSet<>();
-            final StringJoiner joiner = new StringJoiner(", ")
+            StringJoiner joiner = new StringJoiner(", ")
                     .add(version.toString())
                     .add(provider.name())
                     .add(luceneVersion.toString());
             sortedAdditions.forEach(addition -> joiner.add(addition.name()));
-            final String name = joiner.toString();
-            final Label label = Label.label(name);
+            String name = joiner.toString();
+            Label label = Label.label(name);
             return new Index(version, type, provider, luceneVersion, name, label, key, sortedAdditions);
         }
 
@@ -762,22 +762,22 @@ class LuceneIndexCompatibilityTest {
         private void createNodes(
                 Transaction tx, Neo4jVersion version, int numberOfNodesToCreate, RandomGenerator random) {
             for (int i = 1; i <= numberOfNodesToCreate; i++) {
-                final Node node = tx.createNode(label);
+                Node node = tx.createNode(label);
                 node.setProperty(IndexPropKey.text.name(), TEXT_PREFIX + version);
                 if (key == IndexPropKey.vector) {
-                    node.setProperty(key.name(), new float[] {1.f, i, random.nextFloat()});
+                    node.setProperty(key.name(), new float[] {1.0f, i, random.nextFloat()});
                 }
             }
             touch(tx, version);
         }
 
         void createIndex(Transaction tx) throws KernelException {
-            final KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
 
-            final TokenWrite tokenWrite = ktx.tokenWrite();
-            final int labelId = tokenWrite.labelGetOrCreateForName(label.name());
-            final int propKeyId = tokenWrite.propertyKeyGetOrCreateForName(key.name());
-            final SchemaDescriptor schema =
+            TokenWrite tokenWrite = ktx.tokenWrite();
+            int labelId = tokenWrite.labelGetOrCreateForName(label.name());
+            int propKeyId = tokenWrite.propertyKeyGetOrCreateForName(key.name());
+            SchemaDescriptor schema =
                     switch (type) {
                         case TEXT -> SchemaDescriptors.forLabel(labelId, propKeyId);
                         case FULLTEXT, VECTOR ->
@@ -786,13 +786,13 @@ class LuceneIndexCompatibilityTest {
                         default -> throw new IllegalArgumentException(type + " is not a known Lucene index type");
                     };
 
-            final Map<IndexSetting, Object> settings = new HashMap<>();
-            for (final Addition addition : additions) {
+            Map<IndexSetting, Object> settings = new HashMap<>();
+            for (Addition addition : additions) {
                 settings.putAll(addition.settings());
             }
-            final IndexConfig indexConfig = IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(settings);
+            IndexConfig indexConfig = IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(settings);
 
-            final IndexPrototype prototype = IndexPrototype.forSchema(schema)
+            IndexPrototype prototype = IndexPrototype.forSchema(schema)
                     .withName(name)
                     .withIndexType(type)
                     .withIndexProvider(provider)

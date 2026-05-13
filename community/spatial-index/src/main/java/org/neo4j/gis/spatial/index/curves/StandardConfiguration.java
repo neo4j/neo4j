@@ -30,7 +30,7 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration {
      * our search area. This number dictates the amount of levels we go deeper than that, to trim down the amount
      * of false positives.
      */
-    protected int extraLevels;
+    protected final int extraLevels;
 
     public StandardConfiguration() {
         this(DEFAULT_EXTRA_LEVELS);

@@ -36,6 +36,7 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -91,7 +92,7 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
     void createShouldClearExistingFile() throws Exception {
         // given
         byte[] someBytes = fileWithContent();
-        var storeFile = indexFiles.getStoreFile();
+        Path storeFile = indexFiles.getStoreFile();
         assertThat(fs.fileExists(storeFile)).isTrue();
         assertThat(fs.getFileSize(storeFile)).isEqualTo(someBytes.length);
 
@@ -251,7 +252,7 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
         populator.markAsFailed("");
 
         // then
-        var e = assertThrows(RuntimeException.class, () -> populator.close(true, NULL_CONTEXT));
+        RuntimeException e = assertThrows(RuntimeException.class, () -> populator.close(true, NULL_CONTEXT));
         assertTrue(
                 hasCause(e, IllegalStateException.class), "Expected cause to contain " + IllegalStateException.class);
         populator.close(false, NULL_CONTEXT);
@@ -308,7 +309,7 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
         assertFileNotPresent();
 
         // when
-        var e = assertThrows(RuntimeException.class, () -> populator.close(true, NULL_CONTEXT));
+        RuntimeException e = assertThrows(RuntimeException.class, () -> populator.close(true, NULL_CONTEXT));
         assertTrue(
                 hasCause(e, IllegalStateException.class), "Expected cause to contain " + IllegalStateException.class);
     }
@@ -336,7 +337,7 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
         populator.drop();
 
         // then
-        var e = assertThrows(RuntimeException.class, () -> populator.close(true, NULL_CONTEXT));
+        RuntimeException e = assertThrows(RuntimeException.class, () -> populator.close(true, NULL_CONTEXT));
         assertTrue(
                 hasCause(e, IllegalStateException.class), "Expected cause to contain " + IllegalStateException.class);
     }
@@ -350,14 +351,14 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
         populator.drop();
 
         // then
-        var e = assertThrows(RuntimeException.class, () -> populator.close(false, NULL_CONTEXT));
+        RuntimeException e = assertThrows(RuntimeException.class, () -> populator.close(false, NULL_CONTEXT));
         assertTrue(
                 hasCause(e, IllegalStateException.class), "Expected cause to contain " + IllegalStateException.class);
     }
 
     private void assertNoHeader() {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader(failureByte());
-        var e = catchThrowable(() -> GBPTree.readHeader(
+        Throwable e = catchThrowable(() -> GBPTree.readHeader(
                 pageCache, indexFiles.getStoreFile(), headerReader, "db", NULL_CONTEXT, immutable.empty()));
         assertThat(e).isInstanceOf(MetadataMismatchException.class);
     }

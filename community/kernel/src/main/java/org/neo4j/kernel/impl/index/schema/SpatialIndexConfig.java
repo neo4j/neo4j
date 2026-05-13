@@ -55,8 +55,8 @@ public final class SpatialIndexConfig {
      */
     static void addSpatialConfig(
             Map<String, Value> map, CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings) {
-        double[] min = settings.indexExtents().getMin();
-        double[] max = settings.indexExtents().getMax();
+        double[] min = settings.indexExtents().min();
+        double[] max = settings.indexExtents().max();
         addSpatialConfig(map, crs, min, max);
     }
 

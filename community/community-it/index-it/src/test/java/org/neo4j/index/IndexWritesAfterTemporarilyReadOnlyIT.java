@@ -39,11 +39,20 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -52,6 +61,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -59,12 +69,12 @@ import org.neo4j.values.storable.Values;
 @TestDirectoryExtension
 @SkipOnSpd(reason = "Config-based readonly is disabled on SPD")
 class IndexWritesAfterTemporarilyReadOnlyIT {
+    private static final Label LABEL = Label.label("Tag");
+    private static final String KEY = "key";
+    private static final String INDEX_NAME = "Bob";
+
     @Inject
     private TestDirectory directory;
-
-    private final Label label = Label.label("Tag");
-    private final String key = "key";
-    private final String indexName = "Bob";
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("indexTypes")
@@ -76,13 +86,13 @@ class IndexWritesAfterTemporarilyReadOnlyIT {
         createIndexInIsolatedDbms(indexType);
 
         // when starting up this dbms again, although with the db set to (temporarily) read-only
-        var dbms = dbmsBuilder()
+        DatabaseManagementService dbms = dbmsBuilder()
                 .setConfig(read_only_databases, Set.of(DEFAULT_DATABASE_NAME))
                 .build();
         try {
-            var db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
+            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
             // just make sure it's available and doesn't accept writes
-            try (var tx = db.beginTx()) {
+            try (Transaction tx = db.beginTx()) {
                 assertThatThrownBy(tx::createNode).isInstanceOf(WriteOperationsNotAllowedException.class);
             }
 
@@ -91,19 +101,19 @@ class IndexWritesAfterTemporarilyReadOnlyIT {
 
             // then it should be possible to make writes updating that index
             long nodeId;
-            try (var tx = db.beginTx()) {
-                var node = tx.createNode(label);
-                node.setProperty(key, value.asObjectCopy());
+            try (Transaction tx = db.beginTx()) {
+                Node node = tx.createNode(LABEL);
+                node.setProperty(KEY, value.asObjectCopy());
                 nodeId = node.getId();
                 tx.commit();
             }
-            try (var itx = db.beginTransaction(EXPLICIT, AUTH_DISABLED);
-                    var cursor =
+            try (InternalTransaction itx = db.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                    NodeValueIndexCursor cursor =
                             itx.kernelTransaction().cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
-                var ktx = itx.kernelTransaction();
-                var index = ktx.schemaRead().indexGetForName(indexName);
-                var session = ktx.dataRead().indexReadSession(index);
-                var keyId = ktx.tokenRead().propertyKey(key);
+                KernelTransaction ktx = itx.kernelTransaction();
+                IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+                IndexReadSession session = ktx.dataRead().indexReadSession(index);
+                int keyId = ktx.tokenRead().propertyKey(KEY);
                 ktx.dataRead()
                         .nodeIndexSeek(
                                 ktx.queryContext(), session, cursor, unconstrained(), query(indexType, keyId, value));
@@ -116,12 +126,12 @@ class IndexWritesAfterTemporarilyReadOnlyIT {
         }
     }
 
-    private PropertyIndexQuery query(IndexType indexType, int keyId, Value value) {
+    private static PropertyIndexQuery query(IndexType indexType, int keyId, Value value) {
         return switch (indexType) {
             case TEXT, RANGE -> exact(keyId, value);
             case FULLTEXT -> fulltextSearch(((TextValue) value).stringValue());
             case POINT -> {
-                var pointValue = (PointValue) value;
+                PointValue pointValue = (PointValue) value;
                 yield PropertyIndexQuery.boundingBox(keyId, pointValue, pointValue);
             }
             default -> throw new IllegalStateException("Unexpected value: " + indexType);
@@ -129,24 +139,24 @@ class IndexWritesAfterTemporarilyReadOnlyIT {
     }
 
     private static Stream<Arguments> indexTypes() {
-        var plainStringValue = Values.stringValue("abc");
+        StringValue plainStringValue = Values.stringValue("abc");
         return Stream.of(
                 arguments(IndexType.RANGE, plainStringValue),
                 arguments(IndexType.TEXT, plainStringValue),
                 arguments(IndexType.FULLTEXT, plainStringValue),
-                arguments(IndexType.POINT, Values.pointValue(CoordinateReferenceSystem.WGS_84, 2D, 2D)));
+                arguments(IndexType.POINT, Values.pointValue(CoordinateReferenceSystem.WGS_84, 2.0D, 2.0D)));
     }
 
     private void createIndexInIsolatedDbms(IndexType indexType) {
-        var dbms = dbmsBuilder().build();
+        DatabaseManagementService dbms = dbmsBuilder().build();
         try {
-            var db = dbms.database(DEFAULT_DATABASE_NAME);
-            try (var tx = db.beginTx()) {
+            GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
+            try (Transaction tx = db.beginTx()) {
                 tx.schema()
-                        .indexFor(label)
-                        .on(key)
+                        .indexFor(LABEL)
+                        .on(KEY)
                         .withIndexType(indexType)
-                        .withName(indexName)
+                        .withName(INDEX_NAME)
                         .create();
                 tx.commit();
             }

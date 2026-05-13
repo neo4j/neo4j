@@ -20,11 +20,14 @@
 package org.neo4j.kernel.api.impl.index.lucene.v9;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
@@ -34,6 +37,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.shaded.lucene9.store.ByteBuffersDirectory;
 import org.neo4j.shaded.lucene9.store.FSDirectory;
 import org.neo4j.shaded.lucene9.store.IOContext;
+import org.neo4j.shaded.lucene9.store.IndexOutput;
 import org.neo4j.shaded.lucene9.store.NIOFSDirectory;
 import org.neo4j.shaded.lucene9.store.NRTCachingDirectory;
 
@@ -92,7 +96,7 @@ public class Lucene9DirectoryFactory implements LuceneDirectoryFactory {
         }
 
         private Lucene9Directory openFromFs(Path dir) {
-            var directory = new ByteBuffersDirectory();
+            ByteBuffersDirectory directory = new ByteBuffersDirectory();
             if (fs != null) {
                 try {
                     if (fs.fileExists(dir)) {
@@ -100,13 +104,13 @@ public class Lucene9DirectoryFactory implements LuceneDirectoryFactory {
                             throw new RuntimeException("File " + dir + " existed, but was not a directory");
                         }
                         // Load the state of the directory from the time it was closed
-                        for (var file : fs.listFiles(dir)) {
-                            try (var in = fs.openAsInputStream(file);
-                                    var out = directory.createOutput(
+                        for (Path file : fs.listFiles(dir)) {
+                            try (InputStream in = fs.openAsInputStream(file);
+                                    IndexOutput out = directory.createOutput(
                                             file.getFileName().toString(), IOContext.DEFAULT)) {
-                                var length = in.available();
-                                var bytes = new byte[length];
-                                var bytesRead = in.read(bytes, 0, length);
+                                int length = in.available();
+                                byte[] bytes = new byte[length];
+                                int bytesRead = in.read(bytes, 0, length);
                                 if (bytesRead < length) {
                                     throw new RuntimeException("Couldn't read it all " + bytesRead + " < " + length);
                                 }
@@ -126,14 +130,14 @@ public class Lucene9DirectoryFactory implements LuceneDirectoryFactory {
             try {
                 // Store the directories in the provided file system (supposedly ephemeral)
                 if (fs != null) {
-                    for (var entry : directories.entrySet()) {
-                        var directoryPath = entry.getKey();
+                    for (Entry<Path, Lucene9Directory> entry : directories.entrySet()) {
+                        Path directoryPath = entry.getKey();
                         fs.deleteRecursively(directoryPath);
                         fs.mkdirs(directoryPath);
-                        var directory = entry.getValue();
-                        for (var name : directory.listAll()) {
-                            var filePath = directoryPath.resolve(name);
-                            try (var out = fs.openAsOutputStream(filePath, false)) {
+                        Lucene9Directory directory = entry.getValue();
+                        for (String name : directory.listAll()) {
+                            Path filePath = directoryPath.resolve(name);
+                            try (OutputStream out = fs.openAsOutputStream(filePath, false)) {
                                 byte[] bytes = directory.readFile(name);
                                 out.write(bytes, 0, bytes.length);
                             }

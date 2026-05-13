@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.BoundingBoxPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -47,6 +48,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.EagerValueIndexEntryUpdate;
@@ -211,10 +213,10 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
 
         processAll(updates);
 
-        try (var indexReader = accessor.newValueReader(NO_USAGE_TRACKING);
-                var client = new SimpleEntityValueClient()) {
+        try (ValueIndexReader indexReader = accessor.newValueReader(NO_USAGE_TRACKING);
+                SimpleEntityValueClient client = new SimpleEntityValueClient()) {
 
-            var boundingBox = PropertyIndexQuery.boundingBox(
+            BoundingBoxPredicate boundingBox = PropertyIndexQuery.boundingBox(
                     descriptor.schema().getPropertyId(), Values.pointValue(WGS_84, searchStart), limitPoint);
             indexReader.query(
                     client, QueryContext.NULL_CONTEXT, CursorContext.NULL_CONTEXT, unorderedValues(), boundingBox);
@@ -256,8 +258,8 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
     }
 
     void exactMatchOnAllValues(List<Value> values) throws IndexNotApplicableKernelException {
-        try (var indexReader = accessor.newValueReader(NO_USAGE_TRACKING);
-                var client = new SimpleEntityValueClient(); ) {
+        try (ValueIndexReader indexReader = accessor.newValueReader(NO_USAGE_TRACKING);
+                SimpleEntityValueClient client = new SimpleEntityValueClient()) {
             for (Value value : values) {
                 PropertyIndexQuery.ExactPredicate exact =
                         PropertyIndexQuery.exact(descriptor.schema().getPropertyId(), value);

@@ -40,7 +40,8 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public final class IndexConfig implements Serializable {
     private static final IndexConfig EMPTY = new IndexConfig();
-    private static final Supplier<TreeMap<String, Value>> NEW_MAP = () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Supplier<SortedMap<String, Value>> NEW_MAP =
+            () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final SortedMap<String, Value> map;
 
@@ -57,23 +58,23 @@ public final class IndexConfig implements Serializable {
     }
 
     public static IndexConfig with(String key, Value value) {
-        final TreeMap<String, Value> map = NEW_MAP.get();
+        SortedMap<String, Value> map = NEW_MAP.get();
         map.put(key, value);
         return new IndexConfig(map);
     }
 
     public static IndexConfig with(Map<String, Value> map) {
-        final TreeMap<String, Value> settings = NEW_MAP.get();
-        for (final Entry<String, Value> entry : map.entrySet()) {
-            final String settingName = entry.getKey();
-            final Value value = validate(entry.getValue());
+        SortedMap<String, Value> settings = NEW_MAP.get();
+        for (Entry<String, Value> entry : map.entrySet()) {
+            String settingName = entry.getKey();
+            Value value = validate(entry.getValue());
             settings.put(settingName, value);
         }
         return new IndexConfig(settings);
     }
 
     private static Value validate(Value value) {
-        final ValueCategory category = value.valueGroup().category();
+        ValueCategory category = value.valueGroup().category();
         return switch (category) {
             case GEOMETRY, GEOMETRY_ARRAY, TEMPORAL, TEMPORAL_ARRAY, UNKNOWN, NO_CATEGORY ->
                 throw new IllegalArgumentException("Value type not support in index configuration: " + value + ".");
@@ -87,7 +88,7 @@ public final class IndexConfig implements Serializable {
             return this;
         }
 
-        final TreeMap<String, Value> copy = NEW_MAP.get();
+        SortedMap<String, Value> copy = NEW_MAP.get();
         copy.putAll(map);
         copy.put(key, validate(value));
         return new IndexConfig(copy);
@@ -99,7 +100,7 @@ public final class IndexConfig implements Serializable {
     }
 
     public <T extends Value> T getOrDefault(String key, T defaultValue) {
-        final T value = get(key);
+        T value = get(key);
         return value != null ? value : defaultValue;
     }
 
@@ -109,7 +110,7 @@ public final class IndexConfig implements Serializable {
 
     public <T extends Value, E extends Throwable> T getOrThrow(String key, Supplier<? extends E> exceptionSupplier)
             throws E {
-        final T value = get(key);
+        T value = get(key);
         if (value == null) {
             throw exceptionSupplier.get();
         }
@@ -146,8 +147,8 @@ public final class IndexConfig implements Serializable {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("IndexConfig[");
-        for (final Entry<String, Value> entry : entries()) {
+        StringBuilder sb = new StringBuilder("IndexConfig[");
+        for (Entry<String, Value> entry : entries()) {
             sb.append(entry.getKey()).append(" -> ").append(entry.getValue()).append(", ");
         }
         if (!map.isEmpty()) {

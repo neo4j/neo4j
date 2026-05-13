@@ -67,7 +67,7 @@ public interface LuceneDocumentsFactory {
      * @return a valid {@code float[]} representation of the vector, otherwise {@code null}.
      */
     static float[] maybeVectorFromValues(Value[] values, Neo4jVectorSimilarityFunction similarityFunction) {
-        final var candidate = VectorCandidate.maybeFrom(values[0]);
+        VectorCandidate candidate = VectorCandidate.maybeFrom(values[0]);
         if (candidate == null) {
             return null;
         }

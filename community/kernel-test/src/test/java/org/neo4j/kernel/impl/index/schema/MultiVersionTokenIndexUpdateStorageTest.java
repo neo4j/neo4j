@@ -25,11 +25,13 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import io.netty.util.internal.EmptyArrays;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.index.schema.MultiVersionTokenIndexUpdateStorage.Reader;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -51,10 +53,11 @@ class MultiVersionTokenIndexUpdateStorageTest {
     @Test
     void shouldHandleZeroEntries() throws IOException {
         FileSystemAbstraction fs = directory.getFileSystem();
-        var file = directory.file("token-updates");
-        try (var storage = new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
+        Path file = directory.file("token-updates");
+        try (MultiVersionTokenIndexUpdateStorage storage =
+                new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
             // no updates written
-            try (var reader = storage.reader()) {
+            try (Reader reader = storage.reader()) {
                 assertFalse(reader.next());
             }
         }
@@ -63,11 +66,12 @@ class MultiVersionTokenIndexUpdateStorageTest {
     @Test
     void shouldWriteAndReadFewEntries() throws IOException {
         FileSystemAbstraction fs = directory.getFileSystem();
-        var file = directory.file("token-updates-few");
-        var expected = generateUpdates(5, 3);
-        try (var storage = new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
+        Path file = directory.file("token-updates-few");
+        List<TokenUpdate> expected = generateUpdates(5, 3);
+        try (MultiVersionTokenIndexUpdateStorage storage =
+                new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
             storeAll(storage, expected);
-            try (var reader = storage.reader()) {
+            try (Reader reader = storage.reader()) {
                 verify(expected, reader);
             }
         }
@@ -76,11 +80,12 @@ class MultiVersionTokenIndexUpdateStorageTest {
     @Test
     void shouldWriteAndReadManyEntries() throws IOException {
         FileSystemAbstraction fs = directory.getFileSystem();
-        var file = directory.file("token-updates-many");
-        var expected = generateUpdates(1000, 50);
-        try (var storage = new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
+        Path file = directory.file("token-updates-many");
+        List<TokenUpdate> expected = generateUpdates(1000, 50);
+        try (MultiVersionTokenIndexUpdateStorage storage =
+                new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
             storeAll(storage, expected);
-            try (var reader = storage.reader()) {
+            try (Reader reader = storage.reader()) {
                 verify(expected, reader);
             }
         }
@@ -89,8 +94,8 @@ class MultiVersionTokenIndexUpdateStorageTest {
     @Test
     void shouldWriteMegaEntries() throws IOException {
         FileSystemAbstraction fs = directory.getFileSystem();
-        var file = directory.file("token-updates-mega");
-        var updates = new ArrayList<TokenUpdate>(50);
+        Path file = directory.file("token-updates-mega");
+        List<TokenUpdate> updates = new ArrayList<>(50);
         for (int i = 0; i < 50; i++) {
             long version = random.nextLong(Long.MAX_VALUE);
             long entityId = random.nextLong(Long.MAX_VALUE);
@@ -101,10 +106,11 @@ class MultiVersionTokenIndexUpdateStorageTest {
             }
             updates.add(new TokenUpdate(entityId, addedArray, removed, version));
         }
-        var expected = (List<TokenUpdate>) updates;
-        try (var storage = new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
+        List<TokenUpdate> expected = updates;
+        try (MultiVersionTokenIndexUpdateStorage storage =
+                new MultiVersionTokenIndexUpdateStorage(fs, file, memoryTracker)) {
             storeAll(storage, expected);
-            try (var reader = storage.reader()) {
+            try (Reader reader = storage.reader()) {
                 verify(expected, reader);
             }
         }
@@ -112,14 +118,14 @@ class MultiVersionTokenIndexUpdateStorageTest {
 
     private static void storeAll(MultiVersionTokenIndexUpdateStorage storage, List<TokenUpdate> updates)
             throws IOException {
-        for (var u : updates) {
+        for (TokenUpdate u : updates) {
             storage.add(u.entityId, u.added, u.removed, u.version);
         }
     }
 
     private static void verify(List<TokenUpdate> expected, MultiVersionTokenIndexUpdateStorage.Reader reader)
             throws IOException {
-        for (var u : expected) {
+        for (TokenUpdate u : expected) {
             assertTrue(reader.next());
             Assertions.assertThat(reader.version).isEqualTo(u.version);
             Assertions.assertThat(reader.entityId).isEqualTo(u.entityId);
@@ -130,7 +136,7 @@ class MultiVersionTokenIndexUpdateStorageTest {
     }
 
     private List<TokenUpdate> generateUpdates(int count, int maxArraySize) {
-        var updates = new ArrayList<TokenUpdate>(count);
+        List<TokenUpdate> updates = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             long version = random.nextLong(Long.MAX_VALUE);
             long entityId = random.nextLong(Long.MAX_VALUE);

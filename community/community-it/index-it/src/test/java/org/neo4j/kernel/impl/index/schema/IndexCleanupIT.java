@@ -26,9 +26,11 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILE
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -179,7 +181,7 @@ public class IndexCleanupIT {
     }
 
     private void restartDatabase(SetInitialStateInNativeIndex action) throws IOException {
-        var openOptions = db.getDependencyResolver()
+        ImmutableSet<OpenOption> openOptions = db.getDependencyResolver()
                 .resolveDependency(StorageEngine.class)
                 .getOpenOptions();
         managementService.shutdown();

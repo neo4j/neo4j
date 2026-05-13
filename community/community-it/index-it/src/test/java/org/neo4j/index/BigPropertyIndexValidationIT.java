@@ -40,13 +40,13 @@ class BigPropertyIndexValidationIT {
     @Inject
     private GraphDatabaseService db;
 
-    private Label LABEL;
+    private Label label;
     private String longString;
     private String propertyKey;
 
     @BeforeEach
     void setup() {
-        LABEL = Label.label("LABEL");
+        label = Label.label("LABEL");
         char[] chars = new char[1 << 15];
         Arrays.fill(chars, 'c');
         longString = new String(chars);
@@ -56,14 +56,14 @@ class BigPropertyIndexValidationIT {
     @Test
     void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation() {
         // GIVEN
-        createIndex(db, LABEL, propertyKey);
+        createIndex(db, label, propertyKey);
 
         // We expect this transaction to fail due to the huge property
         assertThrows(TransientTransactionFailureException.class, () -> {
             try (Transaction tx = db.beginTx()) {
                 assertThrows(
                         IllegalArgumentException.class,
-                        () -> tx.execute("CREATE (n:" + LABEL + " {name: \"" + longString + "\"})"));
+                        () -> tx.execute("CREATE (n:" + label + " {name: \"" + longString + "\"})"));
                 tx.commit();
             }
             // Check that the database is empty.
@@ -77,15 +77,15 @@ class BigPropertyIndexValidationIT {
     @Test
     void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation() {
         // GIVEN
-        createIndex(db, LABEL, propertyKey);
+        createIndex(db, label, propertyKey);
 
         // We expect this transaction to fail due to the huge property
         assertThrows(TransientTransactionFailureException.class, () -> {
             try (Transaction tx = db.beginTx()) {
-                tx.execute("CREATE (n:" + LABEL + ")");
+                tx.execute("CREATE (n:" + label + ")");
                 assertThrows(
                         IllegalArgumentException.class,
-                        () -> tx.execute("match (n:" + LABEL + ")set n.name= \"" + longString + "\""));
+                        () -> tx.execute("match (n:" + label + ")set n.name= \"" + longString + "\""));
                 tx.commit();
             }
             // Check that the database is empty.
@@ -99,7 +99,7 @@ class BigPropertyIndexValidationIT {
     @Test
     void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd() {
         // GIVEN
-        createIndex(db, LABEL, propertyKey);
+        createIndex(db, label, propertyKey);
 
         // We expect this transaction to fail due to the huge property
         assertThrows(TransientTransactionFailureException.class, () -> {
@@ -107,7 +107,7 @@ class BigPropertyIndexValidationIT {
                 String otherLabel = "SomethingElse";
                 tx.execute("CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})");
                 assertThrows(
-                        IllegalArgumentException.class, () -> tx.execute("match (n:" + otherLabel + ")set n:" + LABEL));
+                        IllegalArgumentException.class, () -> tx.execute("match (n:" + otherLabel + ")set n:" + label));
                 tx.commit();
             }
             // Check that the database is empty.

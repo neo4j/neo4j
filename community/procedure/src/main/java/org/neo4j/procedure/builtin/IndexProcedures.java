@@ -45,12 +45,12 @@ public class IndexProcedures {
     }
 
     void awaitIndexByName(String indexName, long timeout, TimeUnit timeoutUnits) throws ProcedureException {
-        final IndexDescriptor index = getIndex(indexName, "awaitIndexByName");
+        IndexDescriptor index = getIndex(indexName, "awaitIndexByName");
         waitUntilOnline(index, timeout, timeoutUnits, "awaitIndexByName");
     }
 
     void resampleIndex(String indexName) throws ProcedureException {
-        final IndexDescriptor index = getIndex(indexName, "resampleIndex");
+        IndexDescriptor index = getIndex(indexName, "resampleIndex");
         triggerSampling(index);
     }
 

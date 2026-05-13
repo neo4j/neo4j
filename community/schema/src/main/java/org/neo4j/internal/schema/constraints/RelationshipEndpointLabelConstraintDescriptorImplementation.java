@@ -124,7 +124,7 @@ final class RelationshipEndpointLabelConstraintDescriptorImplementation extends 
         if (!other.isRelationshipEndpointLabelConstraint()) {
             return false;
         }
-        var that = other.asRelationshipEndpointLabelConstraint();
+        RelationshipEndpointLabelConstraintDescriptor that = other.asRelationshipEndpointLabelConstraint();
         if (this.endpointType != that.endpointType()) {
             return false;
         }
@@ -133,11 +133,7 @@ final class RelationshipEndpointLabelConstraintDescriptorImplementation extends 
             return false;
         }
 
-        if (!this.schema().equals(that.schema())) {
-            return false;
-        }
-
-        return true;
+        return this.schema().equals(that.schema());
     }
 
     // For RelationshipEndpointConstraints we are allowed to have at most one constraint per EndpointType and RelType
@@ -146,10 +142,8 @@ final class RelationshipEndpointLabelConstraintDescriptorImplementation extends 
     @Override
     public boolean conflictsWith(ConstraintDescriptor other) {
         if (other.isRelationshipEndpointLabelConstraint()) {
-            var that = other.asRelationshipEndpointLabelConstraint();
-            if (this.endpointType == that.endpointType() && this.schema().equals(that.schema())) {
-                return true;
-            }
+            RelationshipEndpointLabelConstraintDescriptor that = other.asRelationshipEndpointLabelConstraint();
+            return this.endpointType == that.endpointType() && this.schema().equals(that.schema());
         }
         return false;
     }

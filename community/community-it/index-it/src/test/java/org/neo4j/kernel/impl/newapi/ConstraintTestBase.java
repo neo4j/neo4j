@@ -75,7 +75,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
             // THEN
             assertThat(constraints).hasSize(1);
-            assertThat(constraints.get(0).schema().getPropertyId()).isEqualTo(prop);
+            assertThat(constraints.getFirst().schema().getPropertyId()).isEqualTo(prop);
         }
     }
 

@@ -35,8 +35,8 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
 
     @Override
     public VectorValue scale(VectorCandidate vector, float scale) {
-        final int dimensions = vector.dimensions();
-        final float[] scaled = new float[dimensions];
+        int dimensions = vector.dimensions();
+        float[] scaled = new float[dimensions];
         for (int i = 0; i < dimensions; i++) {
             scaled[i] = scale * vector.floatValue(i);
         }
@@ -45,8 +45,8 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
 
     @Override
     public float dotProduct(VectorCandidate vector1, VectorCandidate vector2) {
-        final int dimensions = vector1.dimensions();
-        float sum = 0.f;
+        int dimensions = vector1.dimensions();
+        float sum = 0.0f;
         for (int i = 0; i < dimensions; i++) {
             sum += vector1.floatValue(i) * vector2.floatValue(i);
         }
@@ -55,13 +55,13 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
 
     @Override
     public float cosine(VectorCandidate vector1, VectorCandidate vector2) {
-        final int dimensions = vector1.dimensions();
-        float norm1 = 0.f;
-        float norm2 = 0.f;
-        float sum = 0.f;
+        int dimensions = vector1.dimensions();
+        float norm1 = 0.0f;
+        float norm2 = 0.0f;
+        float sum = 0.0f;
         for (int i = 0; i < dimensions; i++) {
-            final float element1 = vector1.floatValue(i);
-            final float element2 = vector2.floatValue(i);
+            float element1 = vector1.floatValue(i);
+            float element2 = vector2.floatValue(i);
             norm1 += element1 * element1;
             norm2 += element2 * element2;
             sum += element1 * element2;
@@ -71,10 +71,10 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
 
     @Override
     public float l1Distance(VectorCandidate vector1, VectorCandidate vector2) {
-        final int dimensions = vector1.dimensions();
-        float sum = 0.f;
+        int dimensions = vector1.dimensions();
+        float sum = 0.0f;
         for (int i = 0; i < dimensions; i++) {
-            final float diff = vector1.floatValue(i) - vector2.floatValue(i);
+            float diff = vector1.floatValue(i) - vector2.floatValue(i);
             sum += Math.abs(diff);
         }
         return sum;
@@ -82,10 +82,10 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
 
     @Override
     public float l1Norm(VectorCandidate vector) {
-        final int dimensions = vector.dimensions();
-        float sum = 0.f;
+        int dimensions = vector.dimensions();
+        float sum = 0.0f;
         for (int i = 0; i < dimensions; i++) {
-            final float element = vector.floatValue(i);
+            float element = vector.floatValue(i);
             sum += Math.abs(element);
         }
         return sum;
@@ -93,10 +93,10 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
 
     @Override
     public float squareL2Distance(VectorCandidate vector1, VectorCandidate vector2) {
-        final int dimensions = vector1.dimensions();
-        float square = 0.f;
+        int dimensions = vector1.dimensions();
+        float square = 0.0f;
         for (int i = 0; i < dimensions; i++) {
-            final float diff = vector1.floatValue(i) - vector2.floatValue(i);
+            float diff = vector1.floatValue(i) - vector2.floatValue(i);
             square += diff * diff;
         }
         return square;
@@ -104,10 +104,10 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
 
     @Override
     public float squareL2Norm(VectorCandidate vector) {
-        final int dimensions = vector.dimensions();
-        float sum = 0.f;
+        int dimensions = vector.dimensions();
+        float sum = 0.0f;
         for (int i = 0; i < dimensions; i++) {
-            final float element = vector.floatValue(i);
+            float element = vector.floatValue(i);
             sum += element * element;
         }
         return sum;
@@ -117,7 +117,7 @@ class DefaultVectorUtilSupport implements VectorUtilSupport {
     //       should consider if we should allow an IntegralVectorCandidate to specialise integral operations
     @Override
     public int hammingDistance(VectorCandidate vector1, VectorCandidate vector2) {
-        final int dimensions = vector1.dimensions();
+        int dimensions = vector1.dimensions();
         int diff = 0;
         for (int i = 0; i < dimensions; i++) {
             if (vector1.floatValue(i) != vector2.floatValue(i)) {

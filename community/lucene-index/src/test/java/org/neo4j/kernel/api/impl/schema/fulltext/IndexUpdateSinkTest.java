@@ -26,7 +26,7 @@ import static org.neo4j.test.OtherThreadExecutor.command;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,15 +68,15 @@ class IndexUpdateSinkTest {
     @Test
     void enqueueShouldAwaitQueueSpace() throws Exception {
         // given
-        var sink = new IndexUpdateSink(scheduler, 100);
-        var updater1 = updater();
-        var updater2 = updater();
-        var updater3 = updater();
+        IndexUpdateSink sink = new IndexUpdateSink(scheduler, 100);
+        IndexUpdater updater1 = updater();
+        IndexUpdater updater2 = updater();
+        IndexUpdater updater3 = updater();
         sink.enqueueTransactionBatchOfUpdates(index, updater1, updates(40));
         sink.enqueueTransactionBatchOfUpdates(index, updater2, updates(40));
 
         // when
-        var thirdEnqueueFuture =
+        Future<Object> thirdEnqueueFuture =
                 t2.executeDontWait(command(() -> sink.enqueueTransactionBatchOfUpdates(index, updater3, updates(40))));
         t2.waitUntilWaiting(location -> location.isAt(IndexUpdateSink.class, "enqueueTransactionBatchOfUpdates"));
 
@@ -92,12 +92,12 @@ class IndexUpdateSinkTest {
     @Test
     void shouldAwaitUpdatesToBeApplied() throws Exception {
         // given
-        var sink = new IndexUpdateSink(scheduler, 100);
-        var updater = updater();
+        IndexUpdateSink sink = new IndexUpdateSink(scheduler, 100);
+        IndexUpdater updater = updater();
         sink.enqueueTransactionBatchOfUpdates(index, updater, updates(10));
 
         // when
-        var awaitUpdateFuture = t2.executeDontWait(command(sink::awaitUpdateApplication));
+        Future<Object> awaitUpdateFuture = t2.executeDontWait(command(sink::awaitUpdateApplication));
         t2.waitUntilWaiting(location -> location.isAt(IndexUpdateSink.class, "awaitUpdateApplication"));
         verifyNoInteractions(updater);
         scheduler.runJob();
@@ -108,14 +108,14 @@ class IndexUpdateSinkTest {
     }
 
     private Collection<IndexEntryUpdate> updates(int count) {
-        List<IndexEntryUpdate> updates = new ArrayList<>();
+        Collection<IndexEntryUpdate> updates = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             updates.add(EagerValueIndexEntryUpdate.add(i, descriptor, Values.intValue(i)));
         }
         return updates;
     }
 
-    private IndexUpdater updater() {
+    private static IndexUpdater updater() {
         return Mockito.mock(IndexUpdater.class);
     }
 }

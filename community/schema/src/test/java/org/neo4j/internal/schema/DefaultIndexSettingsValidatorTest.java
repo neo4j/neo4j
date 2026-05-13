@@ -60,9 +60,9 @@ import org.neo4j.values.storable.Values;
 class DefaultIndexSettingsValidatorTest {
     @Test
     void processorShouldCoverAllExtractedSettings() {
-        final IndexSettingExtractors extractors = new IndexSettingExtractors(
+        IndexSettingExtractors extractors = new IndexSettingExtractors(
                 IntegerExtractor.of(TestIndexSetting.INTEGER), BooleanExtractor.of(TestIndexSetting.BOOLEAN));
-        final ValidatingIndexSettingsProcessor processor = FinalizePending.of(TestIndexSetting.INTEGER);
+        ValidatingIndexSettingsProcessor processor = FinalizePending.of(TestIndexSetting.INTEGER);
 
         assertThatThrownBy(() -> new DefaultIndexSettingsValidator(extractors, processor))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -79,10 +79,9 @@ class DefaultIndexSettingsValidatorTest {
 
     @Test
     void implicitSettingsShouldNotHaveDuplicateSettings() {
-        final IndexSettingExtractors extractors =
-                new IndexSettingExtractors(IntegerExtractor.of(TestIndexSetting.INTEGER));
-        final ValidatingIndexSettingsProcessor processor = FinalizePending.of(TestIndexSetting.INTEGER);
-        final IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
+        IndexSettingExtractors extractors = new IndexSettingExtractors(IntegerExtractor.of(TestIndexSetting.INTEGER));
+        ValidatingIndexSettingsProcessor processor = FinalizePending.of(TestIndexSetting.INTEGER);
+        IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
             new IndexSettingEntry(TestIndexSetting.BOOLEAN, true),
             new IndexSettingEntry(TestIndexSetting.STRING, "foo"),
             new IndexSettingEntry(TestIndexSetting.DOUBLE, Math.PI),
@@ -103,11 +102,11 @@ class DefaultIndexSettingsValidatorTest {
 
     @Test
     void implicitSettingsShouldNotIncludeWhatIsProcessed() {
-        final IndexSettingExtractors extractors = new IndexSettingExtractors(
+        IndexSettingExtractors extractors = new IndexSettingExtractors(
                 IntegerExtractor.of(TestIndexSetting.INTEGER), BooleanExtractor.of(TestIndexSetting.BOOLEAN));
-        final ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
+        ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
                 FinalizePending.of(TestIndexSetting.INTEGER), FinalizePending.of(TestIndexSetting.BOOLEAN));
-        final IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
+        IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
             new IndexSettingEntry(TestIndexSetting.BOOLEAN, true),
             new IndexSettingEntry(TestIndexSetting.STRING, "foo"),
             new IndexSettingEntry(TestIndexSetting.INTEGER, 42),
@@ -128,26 +127,25 @@ class DefaultIndexSettingsValidatorTest {
 
     @Test
     void correctAcceptedSettings() {
-        final IndexSettingExtractors extractors = new IndexSettingExtractors(
+        IndexSettingExtractors extractors = new IndexSettingExtractors(
                 IntegerExtractor.of(TestIndexSetting.INTEGER), BooleanExtractor.of(TestIndexSetting.BOOLEAN));
-        final ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
+        ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
                 FinalizePending.of(TestIndexSetting.INTEGER), FinalizePending.of(TestIndexSetting.BOOLEAN));
-        final IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
+        IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
             new IndexSettingEntry(TestIndexSetting.STRING, "foo"),
             new IndexSettingEntry(TestIndexSetting.DOUBLE, Math.PI)
         };
 
-        final IndexSettingsValidator validator =
-                new DefaultIndexSettingsValidator(extractors, processor, implicitSettings);
+        IndexSettingsValidator validator = new DefaultIndexSettingsValidator(extractors, processor, implicitSettings);
         assertThat(validator.acceptedSettings())
                 .containsExactlyInAnyOrder(TestIndexSetting.BOOLEAN, TestIndexSetting.INTEGER);
     }
 
     @Test
     void incompeleteProcessorShouldFailValidation() {
-        final IndexSettingExtractors extractors = new IndexSettingExtractors(
+        IndexSettingExtractors extractors = new IndexSettingExtractors(
                 IntegerExtractor.of(TestIndexSetting.INTEGER), BooleanExtractor.of(TestIndexSetting.BOOLEAN));
-        final ValidatingIndexSettingsProcessor processor = new ValidatingIndexSettingsProcessor() {
+        ValidatingIndexSettingsProcessor processor = new ValidatingIndexSettingsProcessor() {
             @Override
             public void updateForVerification(KnownIndexSettingRecords records) {
                 /* NOOP */
@@ -164,50 +162,49 @@ class DefaultIndexSettingsValidatorTest {
             }
         };
 
-        final IndexSettingsValidator validator = new DefaultIndexSettingsValidator(extractors, processor);
-        final SettingsAccessor accessor = new IndexSettingObjectMapAccessor(
+        IndexSettingsValidator validator = new DefaultIndexSettingsValidator(extractors, processor);
+        SettingsAccessor accessor = new IndexSettingObjectMapAccessor(
                 Map.ofEntries(entry(TestIndexSetting.BOOLEAN, true), entry(TestIndexSetting.INTEGER, 42)));
 
-        final IndexSettingRecordsByState records = validator.validate(accessor);
+        IndexSettingRecordsByState records = validator.validate(accessor);
         assertThat(records.invalid()).isTrue();
 
-        for (final Invalid record : records.invalidRecords()) {
+        for (Invalid record : records.invalidRecords()) {
             assertThat(record.state()).isEqualTo(State.PENDING);
         }
     }
 
     @Test
     void providingUnregonizedSettingsShouldSupercedeImplict() {
-        final IndexSettingExtractors extractors = new IndexSettingExtractors(
+        IndexSettingExtractors extractors = new IndexSettingExtractors(
                 IntegerExtractor.of(TestIndexSetting.INTEGER), BooleanExtractor.of(TestIndexSetting.BOOLEAN));
-        final ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
+        ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
                 FinalizePending.of(TestIndexSetting.INTEGER), FinalizePending.of(TestIndexSetting.BOOLEAN));
-        final IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
+        IndexSettingEntry[] implicitSettings = new IndexSettingEntry[] {
             new IndexSettingEntry(TestIndexSetting.STRING, "foo"),
             new IndexSettingEntry(TestIndexSetting.DOUBLE, Math.PI)
         };
 
-        final IndexSettingsValidator validator =
-                new DefaultIndexSettingsValidator(extractors, processor, implicitSettings);
+        IndexSettingsValidator validator = new DefaultIndexSettingsValidator(extractors, processor, implicitSettings);
 
-        final SettingsAccessor accessor = new IndexSettingObjectMapAccessor(Map.ofEntries(
+        SettingsAccessor accessor = new IndexSettingObjectMapAccessor(Map.ofEntries(
                 entry(TestIndexSetting.BOOLEAN, true),
                 entry(TestIndexSetting.STRING, "error"),
                 entry(TestIndexSetting.INTEGER, 42)));
 
-        final IndexSettingRecordsByState records = validator.validate(accessor);
+        IndexSettingRecordsByState records = validator.validate(accessor);
         assertThat(records.invalid()).isTrue();
 
-        for (final Invalid record : records.invalidRecords()) {
+        for (Invalid record : records.invalidRecords()) {
             assertThat(record.state()).isEqualTo(State.UNRECOGNIZED_SETTING);
         }
     }
 
     @Test
     void providingUnregonizedSettingsShouldSupercedeMigrator() {
-        final IndexSettingExtractors extractors = new IndexSettingExtractors(
+        IndexSettingExtractors extractors = new IndexSettingExtractors(
                 IntegerExtractor.of(TestIndexSetting.INTEGER), BooleanExtractor.of(TestIndexSetting.BOOLEAN));
-        final ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
+        ValidatingIndexSettingsProcessor processor = mergeToValidatingProcessor(
                 FinalizePending.of(TestIndexSetting.INTEGER),
                 FinalizePending.of(TestIndexSetting.BOOLEAN),
                 new SingleIndexSettingMigrator<>(
@@ -219,17 +216,17 @@ class DefaultIndexSettingsValidatorTest {
                 },
                 FinalizePending.of(TestIndexSetting.OBJECT));
 
-        final IndexSettingsValidator validator = new DefaultIndexSettingsValidator(extractors, processor);
+        IndexSettingsValidator validator = new DefaultIndexSettingsValidator(extractors, processor);
 
-        final SettingsAccessor accessor = new IndexSettingObjectMapAccessor(Map.ofEntries(
+        SettingsAccessor accessor = new IndexSettingObjectMapAccessor(Map.ofEntries(
                 entry(TestIndexSetting.BOOLEAN, true),
                 entry(TestIndexSetting.OBJECT, Lookup.FOO.name()),
                 entry(TestIndexSetting.INTEGER, 42)));
 
-        final IndexSettingRecordsByState records = validator.validate(accessor);
+        IndexSettingRecordsByState records = validator.validate(accessor);
         assertThat(records.invalid()).isTrue();
 
-        for (final Invalid record : records.invalidRecords()) {
+        for (Invalid record : records.invalidRecords()) {
             assertThat(record.state()).isEqualTo(State.UNRECOGNIZED_SETTING);
         }
     }
@@ -268,11 +265,11 @@ class DefaultIndexSettingsValidatorTest {
         @ParameterizedTest
         @MethodSource
         void validateInvalidSettings(SettingsAccessor accessor, Map<IndexSetting, State> expected) {
-            final IndexSettingRecordsByState records = VALIDATOR.validate(accessor);
+            IndexSettingRecordsByState records = VALIDATOR.validate(accessor);
             assertThat(records.invalid()).isTrue();
 
-            for (final Invalid record : records.invalidRecords()) {
-                final RecordWithSetting hasSetting = assertThat(record)
+            for (Invalid record : records.invalidRecords()) {
+                RecordWithSetting hasSetting = assertThat(record)
                         .asInstanceOf(type(RecordWithSetting.class))
                         .actual();
                 assertThat(hasSetting.state()).isEqualTo(expected.get(hasSetting.setting()));
@@ -316,10 +313,10 @@ class DefaultIndexSettingsValidatorTest {
         @ParameterizedTest
         @MethodSource
         void validateValidSettings(SettingsAccessor accessor, Map<IndexSetting, Object> expected) {
-            final IndexSettingRecordsByState records = VALIDATOR.validate(accessor);
+            IndexSettingRecordsByState records = VALIDATOR.validate(accessor);
             assertThat(records.valid()).isTrue();
 
-            for (final Valid record : records.validRecords()) {
+            for (Valid record : records.validRecords()) {
                 assertThat(record.value()).isEqualTo(expected.get(record.setting()));
             }
         }
@@ -351,7 +348,7 @@ class DefaultIndexSettingsValidatorTest {
         @ParameterizedTest
         @MethodSource
         void trustIsValidSettings(SettingsAccessor accessor, Map<IndexSetting, Object> expected) {
-            for (final Valid record : VALIDATOR.interpretAuthoritative(accessor)) {
+            for (Valid record : VALIDATOR.interpretAuthoritative(accessor)) {
                 assertThat(record.value()).isEqualTo(expected.get(record.setting()));
             }
         }

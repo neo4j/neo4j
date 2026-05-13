@@ -98,7 +98,7 @@ class Lucene10IndexSearcher implements LuceneIndexSearcher {
         TopDocs search = indexSearcher.search(toInternal(queryContext), n);
         ScoreDoc[] scoreDocs = search.scoreDocs;
 
-        ArrayList<LuceneDocument> results = new ArrayList<>(scoreDocs.length);
+        List<LuceneDocument> results = new ArrayList<>(scoreDocs.length);
         for (ScoreDoc scoreDoc : scoreDocs) {
             results.add(doc(scoreDoc.doc));
         }

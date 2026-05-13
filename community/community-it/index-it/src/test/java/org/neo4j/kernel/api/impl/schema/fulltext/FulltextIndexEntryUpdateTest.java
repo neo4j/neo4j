@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -47,6 +48,8 @@ import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory.DatabaseIdResolver;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -54,6 +57,7 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SemanticSearchSchemaDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -70,6 +74,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
@@ -137,14 +142,14 @@ class FulltextIndexEntryUpdateTest {
     final void setup() {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
-        var defaultDatabaseId = DatabaseIdFactory.from(
+        NamedDatabaseId defaultDatabaseId = DatabaseIdFactory.from(
                 DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
-        var databaseIdResolver = mock(ConfigBasedLookupFactory.DatabaseIdResolver.class);
+        DatabaseIdResolver databaseIdResolver = mock(ConfigBasedLookupFactory.DatabaseIdResolver.class);
         Mockito.when(databaseIdResolver.resolve(DEFAULT_DATABASE_NAME))
                 .thenReturn(Optional.of(defaultDatabaseId.databaseId()));
-        var configBasedLookup = new ConfigBasedLookupFactory(CONFIG, databaseIdResolver);
-        var readOnlyDatabases = new DefaultReadOnlyDatabases(configBasedLookup);
-        final var readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
+        ConfigBasedLookupFactory configBasedLookup = new ConfigBasedLookupFactory(CONFIG, databaseIdResolver);
+        DefaultReadOnlyDatabases readOnlyDatabases = new DefaultReadOnlyDatabases(configBasedLookup);
+        DatabaseReadOnlyChecker readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         provider = new FulltextIndexProviderFactoryV2()
                 .create(
@@ -166,7 +171,8 @@ class FulltextIndexEntryUpdateTest {
         life.add(provider);
         life.start();
 
-        final var schema = SchemaDescriptors.forSemanticSearch(EntityType.NODE, new int[] {123}, new int[] {321});
+        SemanticSearchSchemaDescriptor schema =
+                SchemaDescriptors.forSemanticSearch(EntityType.NODE, new int[] {123}, new int[] {321});
         index = provider.completeConfiguration(
                 IndexPrototype.forSchema(schema)
                         .withIndexType(provider.getIndexType())
@@ -186,21 +192,23 @@ class FulltextIndexEntryUpdateTest {
 
     @Test
     final void populatorShouldNotIgnoreSupportedValueTypes() throws Exception {
-        final var ids = generateIds(0, 10);
-        final var updates = generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id)));
+        Collection<Long> ids = generateIds(0, 10);
+        Collection<EagerValueIndexEntryUpdate> updates =
+                generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id)));
         populatorTest(updates, ids);
     }
 
     @Test
     final void populatorShouldIgnoreUnsupportedValueTypes() throws Exception {
-        final var ids = generateIds(0, 10);
-        final var updates = generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id)));
+        Collection<Long> ids = generateIds(0, 10);
+        Collection<EagerValueIndexEntryUpdate> updates =
+                generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id)));
         populatorTest(updates, List.of());
     }
 
     private void populatorTest(Collection<EagerValueIndexEntryUpdate> updates, Iterable<Long> expectedIds)
             throws Exception {
-        final var populator = getPopulator();
+        IndexPopulator populator = getPopulator();
         try {
             populator.add(updates, CursorContext.NULL_CONTEXT);
             completePopulation(populator);
@@ -214,39 +222,41 @@ class FulltextIndexEntryUpdateTest {
 
     @Test
     final void populatingUpdaterShouldNotIgnoreAddedSupportedValueType() throws Exception {
-        final var ids = generateIds(0, 10);
-        final var updates = generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id)));
+        Collection<Long> ids = generateIds(0, 10);
+        Collection<EagerValueIndexEntryUpdate> updates =
+                generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id)));
         populatingUpdaterTest(updates, ids);
     }
 
     @Test
     final void populatingUpdaterShouldIgnoreAddedUnsupportedValueType() throws Exception {
-        final var ids = generateIds(0, 10);
-        final var updates = generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id)));
+        Collection<Long> ids = generateIds(0, 10);
+        Collection<EagerValueIndexEntryUpdate> updates =
+                generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id)));
         populatingUpdaterTest(updates, List.of());
     }
 
     @Test
     final void populatingUpdaterShouldNotIgnoreRemovedSupportedValueType() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var removedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> removedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id))),
                         generateUpdates(
                                 removedIds, id -> EagerValueIndexEntryUpdate.remove(id, index, supportedValue(id))))
                 .flatMap(Collection::stream)
                 .toList();
 
-        final var expectedIds = new HashSet<>(addedIds);
+        Set<Long> expectedIds = new HashSet<>(addedIds);
         expectedIds.removeAll(removedIds);
         populatingUpdaterTest(updates, expectedIds);
     }
 
     @Test
     final void populatingUpdaterShouldIgnoreRemovedUnsupportedValueType() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var removedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> removedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(
                                 addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id))),
                         generateUpdates(
@@ -258,17 +268,17 @@ class FulltextIndexEntryUpdateTest {
 
     @Test
     final void populatingUpdaterShouldNotIgnoreChangedBetweenSupportedValueTypes() throws Exception {
-        final var ids = generateIds(0, 20);
-        final var updates = generateUpdates(
+        Collection<Long> ids = generateIds(0, 20);
+        Collection<EagerValueIndexEntryUpdate> updates = generateUpdates(
                 ids, id -> EagerValueIndexEntryUpdate.change(id, index, supportedValue(id), supportedValue(id + 1)));
         populatingUpdaterTest(updates, ids);
     }
 
     @Test
     final void populatingUpdaterShouldTreatChangedFromUnsupportedToSupportedValueTypesAsAdded() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var changedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> changedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(
                                 addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id))),
                         generateUpdates(
@@ -282,9 +292,9 @@ class FulltextIndexEntryUpdateTest {
 
     @Test
     final void populatingUpdaterShouldTreatChangedFromSupportedToUnsupportedValueTypesAsRemoved() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var changedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> changedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id))),
                         generateUpdates(
                                 changedIds,
@@ -293,15 +303,15 @@ class FulltextIndexEntryUpdateTest {
                 .flatMap(Collection::stream)
                 .toList();
 
-        final var expectedIds = new HashSet<>(addedIds);
+        Set<Long> expectedIds = new HashSet<>(addedIds);
         expectedIds.removeAll(changedIds);
         populatingUpdaterTest(updates, expectedIds);
     }
 
     @Test
     final void populatingUpdaterShouldIgnoreChangedBetweenUnsupportedValueTypes() throws Exception {
-        final var ids = generateIds(0, 20);
-        final var updates = generateUpdates(
+        Collection<Long> ids = generateIds(0, 20);
+        Collection<EagerValueIndexEntryUpdate> updates = generateUpdates(
                 ids,
                 id -> EagerValueIndexEntryUpdate.change(id, index, unsupportedValue(id), unsupportedValue(id + 1)));
         populatingUpdaterTest(updates, List.of());
@@ -309,9 +319,9 @@ class FulltextIndexEntryUpdateTest {
 
     private void populatingUpdaterTest(Iterable<EagerValueIndexEntryUpdate> updates, Iterable<Long> expectedIds)
             throws Exception {
-        final var populator = getPopulator();
-        try (var updater = getPopulatingUpdater(populator)) {
-            for (final var update : updates) {
+        IndexPopulator populator = getPopulator();
+        try (IndexUpdater updater = getPopulatingUpdater(populator)) {
+            for (EagerValueIndexEntryUpdate update : updates) {
                 updater.process(update);
             }
             completePopulation(populator);
@@ -325,39 +335,41 @@ class FulltextIndexEntryUpdateTest {
 
     @Test
     final void updaterShouldNotIgnoreAddedSupportedValueType() throws Exception {
-        final var ids = generateIds(0, 10);
-        final var updates = generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id)));
+        Collection<Long> ids = generateIds(0, 10);
+        Collection<EagerValueIndexEntryUpdate> updates =
+                generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id)));
         updaterTest(updates, ids);
     }
 
     @Test
     final void updaterShouldIgnoreAddedUnsupportedValueType() throws Exception {
-        final var ids = generateIds(0, 10);
-        final var updates = generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id)));
+        Collection<Long> ids = generateIds(0, 10);
+        Collection<EagerValueIndexEntryUpdate> updates =
+                generateUpdates(ids, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id)));
         updaterTest(updates, List.of());
     }
 
     @Test
     final void updaterShouldNotIgnoreRemovedSupportedValueType() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var removedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> removedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id))),
                         generateUpdates(
                                 removedIds, id -> EagerValueIndexEntryUpdate.remove(id, index, supportedValue(id))))
                 .flatMap(Collection::stream)
                 .toList();
 
-        final var expectedIds = new HashSet<>(addedIds);
+        Set<Long> expectedIds = new HashSet<>(addedIds);
         expectedIds.removeAll(removedIds);
         updaterTest(updates, expectedIds);
     }
 
     @Test
     final void updaterShouldIgnoreRemovedUnsupportedValueType() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var removedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> removedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(
                                 addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id))),
                         generateUpdates(
@@ -369,17 +381,17 @@ class FulltextIndexEntryUpdateTest {
 
     @Test
     final void updaterShouldNotIgnoreChangedBetweenSupportedValueTypes() throws Exception {
-        final var ids = generateIds(0, 20);
-        final var updates = generateUpdates(
+        Collection<Long> ids = generateIds(0, 20);
+        Collection<EagerValueIndexEntryUpdate> updates = generateUpdates(
                 ids, id -> EagerValueIndexEntryUpdate.change(id, index, supportedValue(id), supportedValue(id + 1)));
         updaterTest(updates, ids);
     }
 
     @Test
     final void updaterShouldTreatChangedFromUnsupportedToSupportedValueTypesAsAdded() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var changedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> changedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(
                                 addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, unsupportedValue(id))),
                         generateUpdates(
@@ -393,9 +405,9 @@ class FulltextIndexEntryUpdateTest {
 
     @Test
     final void updaterShouldTreatChangedFromSupportedToUnsupportedValueTypesAsRemoved() throws Exception {
-        final var addedIds = generateIds(0, 20);
-        final var changedIds = generateIds(11, 17);
-        final var updates = Stream.of(
+        Collection<Long> addedIds = generateIds(0, 20);
+        Collection<Long> changedIds = generateIds(11, 17);
+        List<EagerValueIndexEntryUpdate> updates = Stream.of(
                         generateUpdates(addedIds, id -> EagerValueIndexEntryUpdate.add(id, index, supportedValue(id))),
                         generateUpdates(
                                 changedIds,
@@ -404,15 +416,15 @@ class FulltextIndexEntryUpdateTest {
                 .flatMap(Collection::stream)
                 .toList();
 
-        final var expectedIds = new HashSet<>(addedIds);
+        Set<Long> expectedIds = new HashSet<>(addedIds);
         expectedIds.removeAll(changedIds);
         updaterTest(updates, expectedIds);
     }
 
     @Test
     final void updaterShouldIgnoreChangedBetweenUnsupportedValueTypes() throws Exception {
-        final var ids = generateIds(0, 20);
-        final var updates = generateUpdates(
+        Collection<Long> ids = generateIds(0, 20);
+        Collection<EagerValueIndexEntryUpdate> updates = generateUpdates(
                 ids,
                 id -> EagerValueIndexEntryUpdate.change(id, index, unsupportedValue(id), unsupportedValue(id + 1)));
         updaterTest(updates, List.of());
@@ -420,9 +432,9 @@ class FulltextIndexEntryUpdateTest {
 
     private void updaterTest(Iterable<EagerValueIndexEntryUpdate> updates, Iterable<Long> expectedIds)
             throws Exception {
-        try (var accessor = getAccessor();
-                var updater = getUpdater(accessor)) {
-            for (final var update : updates) {
+        try (IndexAccessor accessor = getAccessor();
+                IndexUpdater updater = getUpdater(accessor)) {
+            for (EagerValueIndexEntryUpdate update : updates) {
                 updater.process(update);
             }
         }
@@ -447,7 +459,7 @@ class FulltextIndexEntryUpdateTest {
     }
 
     private IndexPopulator getPopulator() throws IOException {
-        final var populator = provider.getPopulator(
+        IndexPopulator populator = provider.getPopulator(
                 index,
                 SAMPLING_CONFIG,
                 ByteBufferFactory.heapBufferFactory((int) ByteUnit.kibiBytes(100)),
@@ -464,7 +476,7 @@ class FulltextIndexEntryUpdateTest {
         populator.scanCompleted(PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
     }
 
-    private IndexUpdater getPopulatingUpdater(IndexPopulator populator) {
+    private static IndexUpdater getPopulatingUpdater(IndexPopulator populator) {
         return populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT);
     }
 
@@ -478,17 +490,17 @@ class FulltextIndexEntryUpdateTest {
                 StorageEngineIndexingBehaviour.EMPTY);
     }
 
-    private IndexUpdater getUpdater(IndexAccessor accessor) {
+    private static IndexUpdater getUpdater(IndexAccessor accessor) {
         return accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false);
     }
 
-    private BoundedIterable<Long> getReader(IndexAccessor accessor) {
+    private static BoundedIterable<Long> getReader(IndexAccessor accessor) {
         return accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT);
     }
 
     private void assertIndexed(Iterable<Long> expectedIds) throws Exception {
-        try (var accessor = getAccessor();
-                var reader = getReader(accessor)) {
+        try (IndexAccessor accessor = getAccessor();
+                BoundedIterable<Long> reader = getReader(accessor)) {
             softly.assertThat(reader).containsExactlyInAnyOrderElementsOf(expectedIds);
         }
     }

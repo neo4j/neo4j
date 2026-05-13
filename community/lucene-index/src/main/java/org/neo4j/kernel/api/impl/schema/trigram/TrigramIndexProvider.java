@@ -125,13 +125,13 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        var builder = builder(descriptor);
+        TrigramIndexBuilder builder = builder(descriptor);
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
         }
-        final var luceneIndex = builder.build();
+        DatabaseIndex<ValueIndexReader> luceneIndex = builder.build();
         luceneIndex.open();
-        final var validator = valueValidator(descriptor, tokenNameLookup, elementIdMapper);
+        LuceneIndexValueValidator validator = valueValidator(descriptor, tokenNameLookup, elementIdMapper);
         return new TrigramIndexAccessor(luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY, validator);
     }
 
@@ -140,7 +140,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
     }
 
-    private LuceneIndexValueValidator valueValidator(
+    private static LuceneIndexValueValidator valueValidator(
             IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, ElementIdMapper elementIdMapper) {
         return new LuceneIndexValueValidator(descriptor, tokenNameLookup, elementIdMapper);
     }

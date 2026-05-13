@@ -53,7 +53,7 @@ class SequencedIndexSettingProcessorsTest {
 
     @Test
     void collatesSettings() {
-        final IndexSettingsProcessor processor = mergeProcessors(
+        IndexSettingsProcessor processor = mergeProcessors(
                 MissingSettingMaterializer.forVerification(TestIndexSetting.BOOLEAN, false),
                 MissingSettingMaterializer.forVerification(TestIndexSetting.INTEGER, 42),
                 MissingSettingMaterializer.forVerification(TestIndexSetting.STRING, "foo"),
@@ -101,7 +101,7 @@ class SequencedIndexSettingProcessorsTest {
 
         @Test
         void missingSetting() {
-            final ValidatingIndexSettingsProcessor processor = validatingProcessor();
+            ValidatingIndexSettingsProcessor processor = validatingProcessor();
             process(
                     processor,
                     new Pending(TestIndexSetting.BOOLEAN, false, Values.booleanValue(false)),
@@ -115,7 +115,7 @@ class SequencedIndexSettingProcessorsTest {
 
         @Test
         void valid() {
-            final ValidatingIndexSettingsProcessor processor = validatingProcessor();
+            ValidatingIndexSettingsProcessor processor = validatingProcessor();
             process(
                     processor,
                     new Pending(TestIndexSetting.BOOLEAN, false, Values.booleanValue(false)),
@@ -135,7 +135,7 @@ class SequencedIndexSettingProcessorsTest {
         }
 
         void process(IndexSettingsProcessor processor, RecordWithSetting... records) {
-            for (final RecordWithSetting record : records) {
+            for (RecordWithSetting record : records) {
                 this.records.upsert(record);
             }
             processor.updateForVerification(this.records);
@@ -170,11 +170,11 @@ class SequencedIndexSettingProcessorsTest {
 
         @Test
         void missingSetting() {
-            final MissingSetting record = new MissingSetting(TestIndexSetting.INTEGER);
+            MissingSetting record = new MissingSetting(TestIndexSetting.INTEGER);
             processForValidation(record);
 
-            final RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
-            final RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
             assertThat(intRecord).isNotEqualTo(optionalIntRecord);
 
             assertThat(intRecord)
@@ -190,12 +190,12 @@ class SequencedIndexSettingProcessorsTest {
 
         @Test
         void outsideRange() {
-            final int value = 10;
-            final Value storable = Values.intValue(value);
+            int value = 10;
+            Value storable = Values.intValue(value);
             processForValidation(new Pending(TestIndexSetting.INTEGER, value, storable));
 
-            final RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
-            final RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
             assertThat(intRecord).isNotEqualTo(optionalIntRecord);
 
             assertThat(intRecord)
@@ -211,12 +211,12 @@ class SequencedIndexSettingProcessorsTest {
 
         @Test
         void withinRangeForValidation() {
-            final int value = 42;
-            final Value storable = Values.intValue(value);
+            int value = 42;
+            Value storable = Values.intValue(value);
             processForValidation(new Pending(TestIndexSetting.INTEGER, value, storable));
 
-            final RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
-            final RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
             assertThat(intRecord)
                     .isEqualTo(optionalIntRecord)
                     .asInstanceOf(type(Valid.class))
@@ -226,12 +226,12 @@ class SequencedIndexSettingProcessorsTest {
 
         @Test
         void withinRangeForAuthoritativeRead() {
-            final int value = 42;
-            final Value storable = Values.intValue(value);
+            int value = 42;
+            Value storable = Values.intValue(value);
             processForAuthoritativeRead(new Valid(TestIndexSetting.INTEGER, value, storable));
 
-            final RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
-            final RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting intRecord = intRecords.get(TestIndexSetting.INTEGER);
+            RecordWithSetting optionalIntRecord = optionaIntRecords.get(TestIndexSetting.INTEGER);
             assertThat(intRecord)
                     .isEqualTo(optionalIntRecord)
                     .asInstanceOf(type(Valid.class))
@@ -249,7 +249,7 @@ class SequencedIndexSettingProcessorsTest {
 
         void process(
                 BiConsumer<IndexSettingsProcessor, KnownIndexSettingRecords> update, RecordWithSetting... records) {
-            for (final RecordWithSetting record : records) {
+            for (RecordWithSetting record : records) {
                 intRecords.upsert(record);
                 optionaIntRecords.upsert(record);
             }

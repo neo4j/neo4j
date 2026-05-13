@@ -243,8 +243,8 @@ public class NestedIndexReadersIT {
 
                     @Override
                     public void createEntity(Transaction tx, String token, String key, Object value) {
-                        var from = tx.createNode();
-                        var to = tx.createNode();
+                        Node from = tx.createNode();
+                        Node to = tx.createNode();
                         from.createRelationshipTo(to, RelationshipType.withName(token))
                                 .setProperty(key, value);
                     }

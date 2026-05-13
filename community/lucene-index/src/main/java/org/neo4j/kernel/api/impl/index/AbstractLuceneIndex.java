@@ -72,7 +72,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> implements
 
     // Note that we rely on the thread-safe internal snapshot feature of the CopyOnWriteArrayList
     // for the thread-safety of this and derived classes.
-    private final CopyOnWriteArrayList<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
+    private final List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
 
     private volatile boolean open;
 
@@ -113,7 +113,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> implements
     public void open() throws IOException {
         Set<Map.Entry<Path, LuceneDirectory>> indexDirectories =
                 indexStorage.openIndexDirectories().entrySet();
-        List<AbstractIndexPartition> list = new ArrayList<>(indexDirectories.size());
+        Collection<AbstractIndexPartition> list = new ArrayList<>(indexDirectories.size());
         for (Map.Entry<Path, LuceneDirectory> entry : indexDirectories) {
             list.add(partitionFactory.createPartition(entry.getKey(), entry.getValue()));
         }
@@ -305,7 +305,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> implements
         return partitions;
     }
 
-    public static boolean hasSinglePartition(List<AbstractIndexPartition> partitions) {
+    public static boolean hasSinglePartition(Collection<AbstractIndexPartition> partitions) {
         return partitions.size() == 1;
     }
 
@@ -340,7 +340,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> implements
         }
     }
 
-    protected static List<SearcherReference> acquireSearchers(List<AbstractIndexPartition> partitions)
+    protected static List<SearcherReference> acquireSearchers(Collection<AbstractIndexPartition> partitions)
             throws IOException {
         List<SearcherReference> searchers = new ArrayList<>(partitions.size());
         try {

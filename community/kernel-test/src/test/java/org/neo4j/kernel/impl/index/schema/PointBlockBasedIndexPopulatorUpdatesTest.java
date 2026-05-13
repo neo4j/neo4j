@@ -43,12 +43,15 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaUserDescription;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.logging.NullLogProvider;
@@ -59,6 +62,7 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueType;
@@ -86,7 +90,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
 
     @Override
     BlockBasedIndexPopulator<PointKey> instantiatePopulator(IndexDescriptor indexDescriptor) throws IOException {
-        final var populator = new PointBlockBasedIndexPopulator(
+        PointBlockBasedIndexPopulator populator = new PointBlockBasedIndexPopulator(
                 databaseIndexContext,
                 indexFiles,
                 LAYOUT,
@@ -128,8 +132,8 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
         }
 
         // then
-        try (var accessor = pointAccessor();
-                var reader = accessor.newAllEntriesValueReader(NULL_CONTEXT)) {
+        try (PointIndexAccessor accessor = pointAccessor();
+                BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(NULL_CONTEXT)) {
             assertThat(reader.iterator()).isExhausted();
         }
     }
@@ -138,7 +142,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     @EnumSource(ScanUpdateOrder.class)
     final void shouldIgnoreAddedUnsupportedValueTypes(ScanUpdateOrder scanUpdateOrder) throws Exception {
         // given  the population of an empty index
-        final var updates =
+        Collection<IndexEntryUpdate> updates =
                 generateUpdatesToIgnore((id, value) -> EagerValueIndexEntryUpdate.add(id, INDEX_DESCRIPTOR, value));
         // when   processing the addition of unsupported value types
         // then   updates should not have been indexed
@@ -149,7 +153,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     @EnumSource(ScanUpdateOrder.class)
     final void shouldIgnoreRemovedUnsupportedValueTypes(ScanUpdateOrder scanUpdateOrder) throws Exception {
         // given  the population of an empty index
-        final var updates =
+        Collection<IndexEntryUpdate> updates =
                 generateUpdatesToIgnore((id, value) -> EagerValueIndexEntryUpdate.remove(id, INDEX_DESCRIPTOR, value));
         // when   processing the removal of unsupported value types
         // then   updates should not have been indexed
@@ -160,8 +164,8 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     @EnumSource(ScanUpdateOrder.class)
     final void shouldIgnoreChangesBetweenUnsupportedValueTypes(ScanUpdateOrder scanUpdateOrder) throws Exception {
         // given  the population of an empty index
-        final var otherValue = random.randomValues().nextValueOfTypes(UNSUPPORTED_TYPES.toArray(ValueType[]::new));
-        final var updates = generateUpdatesToIgnore(
+        Value otherValue = random.randomValues().nextValueOfTypes(UNSUPPORTED_TYPES.toArray(ValueType[]::new));
+        Collection<IndexEntryUpdate> updates = generateUpdatesToIgnore(
                 (id, value) -> EagerValueIndexEntryUpdate.change(id, INDEX_DESCRIPTOR, value, otherValue));
         // when   processing the change between unsupported value types
         // then   updates should not have been indexed
@@ -173,8 +177,8 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     final void shouldNotIgnoreChangesUnsupportedValueTypesToSupportedValueTypes(ScanUpdateOrder scanUpdateOrder)
             throws Exception {
         // given  the population of an empty index
-        final var supportedValue = supportedValue(random.nextInt());
-        final var updates = generateUpdatesToIgnore(
+        Value supportedValue = supportedValue(random.nextInt());
+        Collection<IndexEntryUpdate> updates = generateUpdatesToIgnore(
                 (id, value) -> EagerValueIndexEntryUpdate.change(id, INDEX_DESCRIPTOR, value, supportedValue));
         // when   processing the change from an unsupported to a supported value type
         // then   updates should have been indexed as additions
@@ -186,8 +190,8 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     final void shouldNotIgnoreChangesSupportedValueTypesToUnsupportedValueTypes(ScanUpdateOrder scanUpdateOrder)
             throws Exception {
         // given  the population of an empty index
-        final var supportedValue = supportedValue(random.nextInt());
-        final var updates = generateUpdatesToIgnore(
+        Value supportedValue = supportedValue(random.nextInt());
+        Collection<IndexEntryUpdate> updates = generateUpdatesToIgnore(
                 (id, value) -> EagerValueIndexEntryUpdate.change(id, INDEX_DESCRIPTOR, supportedValue, value));
         // when   processing the change from a supported to an unsupported value type
         // then   updates should have been indexed as removals
@@ -196,15 +200,15 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
 
     private void test(ScanUpdateOrder scanUpdateOrder, Collection<IndexEntryUpdate> updates, long expectedUpdateCount)
             throws Exception {
-        try (var accessor = pointAccessor();
-                var reader = accessor.newAllEntriesValueReader(NULL_CONTEXT)) {
+        try (PointIndexAccessor accessor = pointAccessor();
+                BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(NULL_CONTEXT)) {
             assertThat(reader.iterator()).isExhausted();
         }
 
-        final var populator = instantiatePopulator(INDEX_DESCRIPTOR);
+        BlockBasedIndexPopulator<PointKey> populator = instantiatePopulator(INDEX_DESCRIPTOR);
         scanUpdateOrder.beforeUpdates(populator, populationWorkScheduler);
-        try (var updater = populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
-            for (final var update : updates) {
+        try (IndexUpdater updater = populator.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
+            for (IndexEntryUpdate update : updates) {
                 updater.process(update);
             }
             scanUpdateOrder.afterUpdates(populator, populationWorkScheduler);
@@ -212,19 +216,19 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
             populator.close(true, CursorContext.NULL_CONTEXT);
         }
 
-        final var sample = populator.sample(CursorContext.NULL_CONTEXT);
+        IndexSample sample = populator.sample(CursorContext.NULL_CONTEXT);
         assertThat(sample.indexSize()).isEqualTo(0L);
         assertThat(sample.updates()).isEqualTo(expectedUpdateCount);
     }
 
     private Collection<IndexEntryUpdate> generateUpdatesToIgnore(
             BiFunction<Long, Value, IndexEntryUpdate> updateFunction) {
-        final var idGen = idGenerator();
-        final var randomValues = random.randomValues();
+        LongSupplier idGen = idGenerator();
+        RandomValues randomValues = random.randomValues();
         return UNSUPPORTED_TYPES.stream()
                 .map(randomValues::nextValueOfType)
                 .map(value -> updateFunction.apply(idGen.getAsLong(), value))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     private static LongSupplier idGenerator() {
@@ -232,7 +236,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     }
 
     private PointIndexAccessor pointAccessor() {
-        final var cleanup = RecoveryCleanupWorkCollector.immediate();
+        RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         return new PointIndexAccessor(
                 databaseIndexContext,
                 indexFiles,

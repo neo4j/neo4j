@@ -45,6 +45,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigMode;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
@@ -243,7 +244,8 @@ class PartitionedIndexStorageTest {
         } while (fs.fileExists(file));
 
         try (StoreChannel channel = fs.write(file);
-                var scopedBuffer = new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
+                ScopedBuffer scopedBuffer =
+                        new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
             channel.writeAll(scopedBuffer.getBuffer());
         }
     }

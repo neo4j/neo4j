@@ -31,9 +31,13 @@ import java.util.function.Consumer;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -56,38 +60,38 @@ class IndexSamplingIntegrationTest {
     private Neo4jLayout layout;
 
     private static final String TOKEN = "Person";
-    private final String property = "name";
-    private final String schemaName = "schema_name";
-    private final long entities = 1000;
-    private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
+    private static final String PROPERTY = "name";
+    private static final String SCHEMA_NAME = "schema_name";
+    private static final long ENTITIES = 1000;
+    private static final String[] NAMES = {"Neo4j", "Neo", "Graph", "Apa"};
 
     @ParameterizedTest
     @EnumSource(Entity.class)
     @SkipOnSpd(reason = "We fetch index data only from the graph shard")
     void shouldSampleNotUniqueIndex(Entity entity) throws Throwable {
         // Given / When
-        final var deletions = new MutableInt();
+        MutableInt deletions = new MutableInt();
         populateDatabaseThenTriggerIndexResamplingOnNextStartup(db -> {
-            try (var tx = db.beginTx()) {
-                entity.createIndex(tx, schemaName, TOKEN, property);
+            try (Transaction tx = db.beginTx()) {
+                entity.createIndex(tx, SCHEMA_NAME, TOKEN, PROPERTY);
                 tx.commit();
             }
 
-            try (var tx = db.beginTx()) {
-                tx.schema().awaitIndexOnline(schemaName, 1, TimeUnit.MINUTES);
+            try (Transaction tx = db.beginTx()) {
+                tx.schema().awaitIndexOnline(SCHEMA_NAME, 1, TimeUnit.MINUTES);
                 tx.commit();
             }
 
-            try (var tx = db.beginTx()) {
-                for (int i = 0; i < entities; i++) {
-                    entity.createEntity(tx, TOKEN, property, names[i % names.length]);
+            try (Transaction tx = db.beginTx()) {
+                for (int i = 0; i < ENTITIES; i++) {
+                    entity.createEntity(tx, TOKEN, PROPERTY, NAMES[i % NAMES.length]);
                 }
                 tx.commit();
             }
 
-            try (var tx = db.beginTx()) {
-                for (int i = 0; i < (entities / 10); i++) {
-                    entity.deleteFirstFound(tx, TOKEN, property, names[i % names.length]);
+            try (Transaction tx = db.beginTx()) {
+                for (int i = 0; i < (ENTITIES / 10); i++) {
+                    entity.deleteFirstFound(tx, TOKEN, PROPERTY, NAMES[i % NAMES.length]);
                     deletions.increment();
                 }
                 tx.commit();
@@ -97,16 +101,16 @@ class IndexSamplingIntegrationTest {
         // Then
 
         // lucene will consider also the delete nodes, native won't
-        final var indexSample = fetchIndexSamplingValues();
-        final var deletedNodes = deletions.intValue();
-        assertThat(indexSample.uniqueValues()).as("Unique values").isEqualTo(names.length);
+        IndexSample indexSample = fetchIndexSamplingValues();
+        int deletedNodes = deletions.intValue();
+        assertThat(indexSample.uniqueValues()).as("Unique values").isEqualTo(NAMES.length);
         assertThat(indexSample.sampleSize())
                 .as("Sample size")
-                .isGreaterThanOrEqualTo(entities - deletedNodes)
-                .isLessThanOrEqualTo(entities);
+                .isGreaterThanOrEqualTo(ENTITIES - deletedNodes)
+                .isLessThanOrEqualTo(ENTITIES);
         // but regardless, the deleted nodes should not be considered in the index size value
         assertThat(indexSample.updates()).as("Updates").isEqualTo(0);
-        assertThat(indexSample.indexSize()).as("Index size").isEqualTo(entities - deletedNodes);
+        assertThat(indexSample.indexSize()).as("Index size").isEqualTo(ENTITIES - deletedNodes);
     }
 
     @ParameterizedTest
@@ -114,24 +118,24 @@ class IndexSamplingIntegrationTest {
     @SkipOnSpd(reason = "We fetch index data only from the graph shard")
     void shouldSampleUniqueIndex(Entity entity) throws Throwable {
         // Given / When
-        final var deletions = new MutableInt();
+        MutableInt deletions = new MutableInt();
         populateDatabaseThenTriggerIndexResamplingOnNextStartup(db -> {
-            try (var tx = db.beginTx()) {
-                entity.createConstraint(tx, schemaName, TOKEN, property);
+            try (Transaction tx = db.beginTx()) {
+                entity.createConstraint(tx, SCHEMA_NAME, TOKEN, PROPERTY);
                 tx.commit();
             }
 
-            try (var tx = db.beginTx()) {
-                for (int i = 0; i < entities; i++) {
-                    entity.createEntity(tx, TOKEN, property, "" + i);
+            try (Transaction tx = db.beginTx()) {
+                for (int i = 0; i < ENTITIES; i++) {
+                    entity.createEntity(tx, TOKEN, PROPERTY, "" + i);
                 }
                 tx.commit();
             }
 
-            try (var tx = db.beginTx()) {
-                for (int i = 0; i < entities; i++) {
+            try (Transaction tx = db.beginTx()) {
+                for (int i = 0; i < ENTITIES; i++) {
                     if (i % 10 == 0) {
-                        entity.deleteFirstFound(tx, TOKEN, property, "" + i);
+                        entity.deleteFirstFound(tx, TOKEN, PROPERTY, "" + i);
                         deletions.increment();
                     }
                 }
@@ -140,19 +144,19 @@ class IndexSamplingIntegrationTest {
         });
 
         // Then
-        final var indexSample = fetchIndexSamplingValues();
-        final var deletedNodes = deletions.intValue();
-        assertThat(indexSample.uniqueValues()).as("Unique values").isEqualTo(entities - deletedNodes);
-        assertThat(indexSample.sampleSize()).as("Sample size").isEqualTo(entities - deletedNodes);
+        IndexSample indexSample = fetchIndexSamplingValues();
+        int deletedNodes = deletions.intValue();
+        assertThat(indexSample.uniqueValues()).as("Unique values").isEqualTo(ENTITIES - deletedNodes);
+        assertThat(indexSample.sampleSize()).as("Sample size").isEqualTo(ENTITIES - deletedNodes);
         assertThat(indexSample.updates()).as("Updates").isEqualTo(0);
-        assertThat(indexSample.indexSize()).as("Index size").isEqualTo(entities - deletedNodes);
+        assertThat(indexSample.indexSize()).as("Index size").isEqualTo(ENTITIES - deletedNodes);
     }
 
     private void populateDatabaseThenTriggerIndexResamplingOnNextStartup(Consumer<GraphDatabaseService> consumer)
             throws IOException {
-        final DatabaseLayout databaseLayout;
-        try (final var managementService = new TestDatabaseManagementServiceBuilder(layout).build()) {
-            final var db = managementService.database(DEFAULT_DATABASE_NAME);
+        DatabaseLayout databaseLayout;
+        try (DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(layout).build()) {
+            GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
             consumer.accept(db);
             databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
         }
@@ -160,12 +164,12 @@ class IndexSamplingIntegrationTest {
         triggerIndexResamplingOnNextStartup(databaseLayout);
     }
 
-    private IndexDescriptor indexId(KernelTransaction tx) {
-        return tx.schemaRead().indexGetForName(schemaName);
+    private static IndexDescriptor indexId(KernelTransaction tx) {
+        return tx.schemaRead().indexGetForName(SCHEMA_NAME);
     }
 
     private IndexSample fetchIndexSamplingValues() throws IndexNotFoundKernelException, TransactionFailureException {
-        try (var managementService = new TestDatabaseManagementServiceBuilder(layout).build()) {
+        try (DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(layout).build()) {
             // Then
             GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
@@ -176,7 +180,7 @@ class IndexSamplingIntegrationTest {
         }
     }
 
-    private void triggerIndexResamplingOnNextStartup(DatabaseLayout layout) throws IOException {
+    private static void triggerIndexResamplingOnNextStartup(DatabaseLayout layout) throws IOException {
         // Trigger index resampling on next at startup
         delete(layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
     }
@@ -208,7 +212,7 @@ class IndexSamplingIntegrationTest {
 
             @Override
             void deleteFirstFound(Transaction tx, String token, String property, String value) {
-                try (var nodes = tx.findNodes(Label.label(token), property, value)) {
+                try (ResourceIterator<Node> nodes = tx.findNodes(Label.label(token), property, value)) {
                     nodes.next().delete();
                 }
             }
@@ -234,14 +238,15 @@ class IndexSamplingIntegrationTest {
 
             @Override
             void createEntity(Transaction tx, String token, String property, String value) {
-                var from = tx.createNode();
-                var to = tx.createNode();
+                Node from = tx.createNode();
+                Node to = tx.createNode();
                 from.createRelationshipTo(to, RelationshipType.withName(token)).setProperty(property, value);
             }
 
             @Override
             void deleteFirstFound(Transaction tx, String token, String property, String value) {
-                try (var rels = tx.findRelationships(RelationshipType.withName(token), property, value)) {
+                try (ResourceIterator<Relationship> rels =
+                        tx.findRelationships(RelationshipType.withName(token), property, value)) {
                     rels.next().delete();
                 }
             }

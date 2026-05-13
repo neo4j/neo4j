@@ -76,7 +76,7 @@ class Lucene10AllDocumentsReader implements LuceneAllDocumentsReader {
     }
 
     @Override
-    public void close() throws IOException {}
+    public void close() {}
 
     private LuceneDocument getDocument(int docId) {
         try {

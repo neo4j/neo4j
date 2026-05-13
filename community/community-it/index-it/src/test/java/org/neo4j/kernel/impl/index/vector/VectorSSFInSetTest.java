@@ -70,7 +70,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         singleIntegerPropertyInSet(new RelationshipVectorIndexMethods());
     }
 
-    void singleIntegerPropertyInSet(VectorIndexMethods indexMethods) throws Exception {
+    static void singleIntegerPropertyInSet(VectorIndexMethods indexMethods) throws Exception {
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "id");
         indexMethods.createTestEntity(Map.of("id", 10, "name", "Alice", EMBEDDING_NAME, EMBEDDINGS.get(1)));
         indexMethods.createTestEntity(Map.of("id", 20, "name", "Bob", EMBEDDING_NAME, EMBEDDINGS.get(2)));
@@ -111,7 +111,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
                 .has(field("name", "Alice"));
     }
 
-    private Value[] of(Object... objects) {
+    private static Value[] of(Object... objects) {
         Value[] values = new Value[objects.length];
         for (int i = 0; i < objects.length; i++) {
             values[i] = Values.of(objects[i]);
@@ -129,7 +129,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         stringAndIntegerAndFloat(new RelationshipVectorIndexMethods());
     }
 
-    void stringAndIntegerAndFloat(VectorIndexMethods indexMethods) throws Exception {
+    static void stringAndIntegerAndFloat(VectorIndexMethods indexMethods) throws Exception {
 
         // in order to break the index id ordering being 1,2,3
         indexMethods.createTestEntity(Map.of("id", 103, "priority", 15, "story", "Once upon a time", "age", 128));
@@ -190,7 +190,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         mixedValueInSet(new RelationshipVectorIndexMethods());
     }
 
-    void mixedValueInSet(VectorIndexMethods indexMethods) throws Exception {
+    static void mixedValueInSet(VectorIndexMethods indexMethods) throws Exception {
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "id", "name");
         indexMethods.createTestEntity(Map.of("id", 10, "name", "Alice", EMBEDDING_NAME, EMBEDDINGS.get(1)));
         indexMethods.createTestEntity(Map.of("id", 20, "name", "Bob", EMBEDDING_NAME, EMBEDDINGS.get(2)));
@@ -219,7 +219,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         emptyValueList(new RelationshipVectorIndexMethods());
     }
 
-    void emptyValueList(VectorIndexMethods indexMethods) throws Exception {
+    static void emptyValueList(VectorIndexMethods indexMethods) throws Exception {
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "id", "name");
         indexMethods.createTestEntity(Map.of("id", 10, "name", "Alice", EMBEDDING_NAME, EMBEDDINGS.get(1)));
         indexMethods.createTestEntity(Map.of("id", 20, "name", "Bob", EMBEDDING_NAME, EMBEDDINGS.get(2)));
@@ -245,7 +245,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         singleFloatValues(new RelationshipVectorIndexMethods());
     }
 
-    void singleFloatValues(VectorIndexMethods indexMethods) throws Exception {
+    static void singleFloatValues(VectorIndexMethods indexMethods) throws Exception {
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "age");
         indexMethods.createTestEntity(Map.of("id", 5, "age", 74.0f, EMBEDDING_NAME, EMBEDDINGS.get(1)));
         indexMethods.createTestEntity(Map.of("id", 10, "age", 75.0f, EMBEDDING_NAME, EMBEDDINGS.get(1)));
@@ -302,7 +302,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         extremeFloatValues(new RelationshipVectorIndexMethods());
     }
 
-    void extremeFloatValues(VectorIndexMethods indexMethods) throws Exception {
+    static void extremeFloatValues(VectorIndexMethods indexMethods) throws Exception {
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "age");
         indexMethods.createTestEntity(Map.of("id", 1, "age", 75, EMBEDDING_NAME, EMBEDDINGS.get(1)));
 
@@ -339,7 +339,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         durations(new RelationshipVectorIndexMethods());
     }
 
-    void durations(VectorIndexMethods indexMethods) throws Exception {
+    static void durations(VectorIndexMethods indexMethods) throws Exception {
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "duration");
         indexMethods.createTestEntity(
                 Map.of("id", 10, "duration", duration(0, 0, 0, 1000_000), EMBEDDING_NAME, EMBEDDINGS.get(1)));
@@ -403,7 +403,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         booleanInSet(new RelationshipVectorIndexMethods());
     }
 
-    void booleanInSet(VectorIndexMethods indexMethods) throws Exception {
+    static void booleanInSet(VectorIndexMethods indexMethods) throws Exception {
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "authorized");
         indexMethods.createTestEntity(Map.of("id", 10, "authorized", true, EMBEDDING_NAME, EMBEDDINGS.get(1)));
         indexMethods.createTestEntity(Map.of("id", 20, "authorized", false, EMBEDDING_NAME, EMBEDDINGS.get(2)));
@@ -432,11 +432,11 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
             "2019-06-02T22:00:00.000[Africa/Accra]",
             "2019-06-02T22:00:00.000[Africa/Bamako]");
 
-    private DateTimeValue dateTimeValue(int i) {
+    private static DateTimeValue dateTimeValue(int i) {
         return DateTimeValue.parse(dateTimeValues.get(i), ZoneId::systemDefault);
     }
 
-    private DateTimeValue lastDateTimeValue() {
+    private static DateTimeValue lastDateTimeValue() {
         return DateTimeValue.parse(dateTimeValues.getLast(), ZoneId::systemDefault);
     }
 
@@ -450,7 +450,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         temporalInSetForIndexMethods(new RelationshipVectorIndexMethods());
     }
 
-    void temporalInSetForIndexMethods(VectorIndexMethods indexMethods) throws Exception {
+    static void temporalInSetForIndexMethods(VectorIndexMethods indexMethods) throws Exception {
 
         indexMethods.createTestIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "time");
         for (int i = 0; i < dateTimeValues.size() - 1; i++) {
@@ -529,7 +529,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
         Map<Integer, TValue> present = new HashMap<>();
         int id = 1;
         // single transaction to create all the nodes
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             for (String timeString : generator.get()) {
                 TValue dateTimeValue = parser.apply(timeString, ZoneId::systemDefault);
                 if (random.intBetween(0, 100) < 80) {
@@ -548,7 +548,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
 
         for (int j = 0; j < ITERATIONS; j++) {
             int listSize = random.among(new int[] {2, 2, 2, 2, 3, 3, 3, 5, 5, 7, 10});
-            ArrayList<Integer> list = new ArrayList<>(listSize);
+            List<Integer> list = new ArrayList<>(listSize);
             for (int k = 0; k < listSize; k++) {
                 list.add(random.nextInt(1, limit));
             }
@@ -562,7 +562,7 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
             for (int i = 0; i < list.size(); i++) {
                 valuesToQuery[i] = map.get(list.get(i));
             }
-            var result = indexMethods.queryTestIndex(inSetQuery("time", valuesToQuery));
+            ResultList result = indexMethods.queryTestIndex(inSetQuery("time", valuesToQuery));
             assertThat(result)
                     .hasSize(expected.size())
                     .extracting(extractor("id"))
@@ -597,8 +597,8 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
             return createTestNode(tx, properties);
         }
 
-        @SafeVarargs
         @Override
+        @SafeVarargs
         public final ResultList queryTestIndex(Function<TokenRead, PropertyIndexQuery>... queryFilters)
                 throws Exception {
             return queryNodeIndex(queryFilters);
@@ -622,8 +622,8 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
             return createTestRelationship(tx, properties);
         }
 
-        @SafeVarargs
         @Override
+        @SafeVarargs
         public final ResultList queryTestIndex(Function<TokenRead, PropertyIndexQuery>... queryFilters)
                 throws Exception {
             return queryRelationshipIndex(queryFilters);

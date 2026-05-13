@@ -77,7 +77,7 @@ class DefaultTokenIndexReaderTest {
     }
 
     private Seeker<TokenScanKey, TokenScanValue> cursor(boolean ascending) {
-        var layout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout layout = new DefaultTokenIndexIdLayout();
         List<Pair<TokenScanKey, TokenScanValue>> entries = new ArrayList<>();
         TokenScanKey currentKey = null;
         TokenScanValue currentValue = new TokenScanValue();
@@ -99,7 +99,8 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleEntitiesInEachRange() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
+        DefaultTokenIndexReader reader =
+                new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(tokenClient, unconstrained(), new TokenPredicate(LABEL_ID), NULL_CONTEXT);
 
@@ -111,7 +112,8 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleWithProgressorAscending() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
+        DefaultTokenIndexReader reader =
+                new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(
                     tokenClient,
@@ -127,7 +129,8 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleWithProgressorDescending() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
+        DefaultTokenIndexReader reader =
+                new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
         try (SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient()) {
             reader.query(
                     tokenClient,

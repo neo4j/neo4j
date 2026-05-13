@@ -69,7 +69,7 @@ public class CompatibilityKnnVectorFormatV3 extends KnnVectorsFormat {
         return NONE.fieldsReader(state);
     }
 
-    private boolean fileExists(SegmentReadState state, String extension) throws IOException {
+    private static boolean fileExists(SegmentReadState state, String extension) throws IOException {
         String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, extension);
         try {
             long ignoreFileSize = state.directory.fileLength(fileName);

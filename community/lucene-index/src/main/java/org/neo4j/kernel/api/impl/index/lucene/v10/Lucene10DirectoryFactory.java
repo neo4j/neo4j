@@ -20,14 +20,18 @@
 package org.neo4j.kernel.api.impl.index.lucene.v10;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.neo4j.io.IOUtils;
@@ -92,7 +96,7 @@ public class Lucene10DirectoryFactory implements LuceneDirectoryFactory {
         }
 
         private Lucene10Directory openFromFs(Path dir) {
-            var directory = new ByteBuffersDirectory();
+            ByteBuffersDirectory directory = new ByteBuffersDirectory();
             if (fs != null) {
                 try {
                     if (fs.fileExists(dir)) {
@@ -100,13 +104,13 @@ public class Lucene10DirectoryFactory implements LuceneDirectoryFactory {
                             throw new RuntimeException("File " + dir + " existed, but was not a directory");
                         }
                         // Load the state of the directory from the time it was closed
-                        for (var file : fs.listFiles(dir)) {
-                            try (var in = fs.openAsInputStream(file);
-                                    var out = directory.createOutput(
+                        for (Path file : fs.listFiles(dir)) {
+                            try (InputStream in = fs.openAsInputStream(file);
+                                    IndexOutput out = directory.createOutput(
                                             file.getFileName().toString(), IOContext.DEFAULT)) {
-                                var length = in.available();
-                                var bytes = new byte[length];
-                                var bytesRead = in.read(bytes, 0, length);
+                                int length = in.available();
+                                byte[] bytes = new byte[length];
+                                int bytesRead = in.read(bytes, 0, length);
                                 if (bytesRead < length) {
                                     throw new RuntimeException("Couldn't read it all " + bytesRead + " < " + length);
                                 }
@@ -126,14 +130,14 @@ public class Lucene10DirectoryFactory implements LuceneDirectoryFactory {
             try {
                 // Store the directories in the provided file system (supposedly ephemeral)
                 if (fs != null) {
-                    for (var entry : directories.entrySet()) {
-                        var directoryPath = entry.getKey();
+                    for (Entry<Path, Lucene10Directory> entry : directories.entrySet()) {
+                        Path directoryPath = entry.getKey();
                         fs.deleteRecursively(directoryPath);
                         fs.mkdirs(directoryPath);
-                        var directory = entry.getValue();
-                        for (var name : directory.listAll()) {
-                            var filePath = directoryPath.resolve(name);
-                            try (var out = fs.openAsOutputStream(filePath, false)) {
+                        Lucene10Directory directory = entry.getValue();
+                        for (String name : directory.listAll()) {
+                            Path filePath = directoryPath.resolve(name);
+                            try (OutputStream out = fs.openAsOutputStream(filePath, false)) {
                                 byte[] bytes = directory.readFile(name);
                                 out.write(bytes, 0, bytes.length);
                             }

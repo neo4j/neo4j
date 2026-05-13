@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.schema.constraints;
 
+import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.map.ImmutableMap;
@@ -118,7 +120,7 @@ public final class VectorType implements ConstrainableType {
 
     private static VectorType getInterned(CoordinateType inner, int dimension) {
         /* To avoid that each Value has a distinct VectorType we intern the created values. */
-        var map = INTERNED.get(inner);
+        Map<Integer, VectorType> map = INTERNED.get(inner);
         assert map != null; // Created statically from all InnerTypes
         return map.computeIfAbsent(dimension, (ignored) -> new VectorType(inner, dimension));
     }
@@ -133,7 +135,7 @@ public final class VectorType implements ConstrainableType {
     }
 
     public static VectorType deserialize(String str) throws IllegalArgumentException {
-        var matcher = DESERIALIZE_PATTERN.matcher(str);
+        Matcher matcher = DESERIALIZE_PATTERN.matcher(str);
         if (matcher.matches()) {
             return getInterned(CoordinateType.valueOf(matcher.group(1)), Integer.parseInt(matcher.group(2)));
         }

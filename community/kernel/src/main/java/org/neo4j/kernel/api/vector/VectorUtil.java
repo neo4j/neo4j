@@ -40,63 +40,63 @@ public class VectorUtil {
 
     public static float dotProduct(VectorCandidate vector1, VectorCandidate vector2) {
         preconditions("dotProduct", vector1, vector2);
-        final float r = IMPL.dotProduct(vector1, vector2);
+        float r = IMPL.dotProduct(vector1, vector2);
         assert Float.isFinite(r);
         return r;
     }
 
     public static float cosine(VectorCandidate vector1, VectorCandidate vector2) {
         preconditions("cosine", vector1, vector2);
-        final float r = IMPL.cosine(vector1, vector2);
+        float r = IMPL.cosine(vector1, vector2);
         assert Float.isFinite(r);
         return r;
     }
 
     public static float l1Distance(VectorCandidate vector1, VectorCandidate vector2) {
         preconditions("l1Distance", vector1, vector2);
-        final float r = IMPL.l1Distance(vector1, vector2);
+        float r = IMPL.l1Distance(vector1, vector2);
         assert Float.isFinite(r);
         return r;
     }
 
     public static float l1Norm(VectorCandidate vector) {
         preconditions(vector);
-        final float r = IMPL.l1Norm(vector);
+        float r = IMPL.l1Norm(vector);
         assert Float.isFinite(r);
         return r;
     }
 
     public static VectorValue l1NormalizedVector(VectorCandidate vector) {
         preconditions(vector);
-        final float scale = 1.f / IMPL.l1Norm(vector);
+        float scale = 1.0f / IMPL.l1Norm(vector);
         assert Float.isFinite(scale);
         return IMPL.scale(vector, scale);
     }
 
     public static float squareL2Distance(VectorCandidate vector1, VectorCandidate vector2) {
         preconditions("squareL2Distance", vector1, vector2);
-        final float r = IMPL.squareL2Distance(vector1, vector2);
+        float r = IMPL.squareL2Distance(vector1, vector2);
         assert Float.isFinite(r);
         return r;
     }
 
     public static float l2Distance(VectorCandidate vector1, VectorCandidate vector2) {
         preconditions("l2Distance", vector1, vector2);
-        final float r = (float) Math.sqrt(IMPL.squareL2Distance(vector1, vector2));
+        float r = (float) Math.sqrt(IMPL.squareL2Distance(vector1, vector2));
         assert Float.isFinite(r);
         return r;
     }
 
     public static float l2Norm(VectorCandidate vector) {
         preconditions(vector);
-        final float r = (float) Math.sqrt(IMPL.squareL2Norm(vector));
+        float r = (float) Math.sqrt(IMPL.squareL2Norm(vector));
         assert Float.isFinite(r);
         return r;
     }
 
     public static VectorValue l2NormalizedVector(VectorCandidate vector) {
         preconditions(vector);
-        final float scale = (float) (1.0 / Math.sqrt(IMPL.squareL2Norm(vector)));
+        float scale = (float) (1.0 / Math.sqrt(IMPL.squareL2Norm(vector)));
         assert Float.isFinite(scale);
         return IMPL.scale(vector, scale);
     }
@@ -107,7 +107,7 @@ public class VectorUtil {
     }
 
     static boolean valid(VectorCandidate vector) {
-        final int dimensions;
+        int dimensions;
         if (vector == null || (dimensions = vector.dimensions()) <= 0) {
             return false;
         }
@@ -121,9 +121,9 @@ public class VectorUtil {
 
     static boolean origin(VectorCandidate vector) {
         preconditions(vector);
-        final int dimensions = vector.dimensions();
+        int dimensions = vector.dimensions();
         for (int i = 0; i < dimensions; i++) {
-            if (vector.floatValue(i) != 0.f) {
+            if (vector.floatValue(i) != 0.0f) {
                 return false;
             }
         }
@@ -132,7 +132,7 @@ public class VectorUtil {
 
     private static void preconditions(VectorCandidate vector) {
         if (vector == null) {
-            final ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N05)
+            ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N05)
                     .withParam(GqlParams.StringParam.input, "null")
                     .withParam(GqlParams.StringParam.context, "vector")
                     .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22004)
@@ -141,9 +141,9 @@ public class VectorUtil {
             throw new InvalidArgumentException(gql, "Vector cannot be null.");
         }
 
-        final int dimensions = vector.dimensions();
+        int dimensions = vector.dimensions();
         if (dimensions < 1) {
-            final ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22003)
+            ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22003)
                     .withParam(GqlParams.StringParam.value, String.valueOf(dimensions))
                     .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N86)
                             .build())
@@ -156,10 +156,10 @@ public class VectorUtil {
     private static void preconditions(String function, VectorCandidate vector1, VectorCandidate vector2) {
         preconditions(vector1);
         preconditions(vector2);
-        final int dimension1 = vector1.dimensions();
-        final int dimension2 = vector2.dimensions();
+        int dimension1 = vector1.dimensions();
+        int dimension2 = vector2.dimensions();
         if (dimension1 != dimension2) {
-            final ErrorGqlStatusObject gql = GqlHelper.getGql22N38_22N04(
+            ErrorGqlStatusObject gql = GqlHelper.getGql22N38_22N04(
                     function,
                     "(%dd-vector, %dd-vector)".formatted(dimension1, dimension2),
                     function,

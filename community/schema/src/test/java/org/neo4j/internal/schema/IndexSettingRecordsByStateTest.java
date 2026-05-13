@@ -42,19 +42,19 @@ import org.neo4j.values.storable.Values;
 class IndexSettingRecordsByStateTest {
     @Test
     void get() {
-        final Iterable<IndexSettingRecord> validRecords = Iterables.asIterable(
+        Iterable<IndexSettingRecord> validRecords = Iterables.asIterable(
                 recordFor(State.VALID, TestIndexSetting.INTEGER), recordFor(State.VALID, TestIndexSetting.BOOLEAN));
-        final Iterable<IndexSettingRecord> missingSettingRecords = Iterables.asIterable(
+        Iterable<IndexSettingRecord> missingSettingRecords = Iterables.asIterable(
                 recordFor(State.MISSING_SETTING, TestIndexSetting.STRING),
                 recordFor(State.MISSING_SETTING, TestIndexSetting.OBJECT));
-        final Iterable<IndexSettingRecord> incorrectTypeRecords =
+        Iterable<IndexSettingRecord> incorrectTypeRecords =
                 Iterables.asIterable(recordFor(State.INCORRECT_TYPE, TestIndexSetting.DOUBLE));
 
-        final IndexSettingRecords records = new IndexSettingRecords();
+        IndexSettingRecords records = new IndexSettingRecords();
         records.upsertAll(validRecords);
         records.upsertAll(missingSettingRecords);
         records.upsertAll(incorrectTypeRecords);
-        final IndexSettingRecordsByState recordsByState = records.groupByState();
+        IndexSettingRecordsByState recordsByState = records.groupByState();
 
         assertThat(recordsByState.get(State.VALID)).containsExactlyInAnyOrderElementsOf(validRecords);
         assertThat(recordsByState.get(State.MISSING_SETTING))
@@ -65,19 +65,19 @@ class IndexSettingRecordsByStateTest {
     @Test
     void invalid() {
 
-        final Iterable<IndexSettingRecord> validRecords = Iterables.asIterable(
+        Iterable<IndexSettingRecord> validRecords = Iterables.asIterable(
                 recordFor(State.VALID, TestIndexSetting.INTEGER), recordFor(State.VALID, TestIndexSetting.BOOLEAN));
-        final Iterable<IndexSettingRecord> missingSettingRecords = Iterables.asIterable(
+        Iterable<IndexSettingRecord> missingSettingRecords = Iterables.asIterable(
                 recordFor(State.MISSING_SETTING, TestIndexSetting.STRING),
                 recordFor(State.MISSING_SETTING, TestIndexSetting.OBJECT));
-        final Iterable<IndexSettingRecord> incorrectTypeRecords =
+        Iterable<IndexSettingRecord> incorrectTypeRecords =
                 Iterables.asIterable(recordFor(State.INCORRECT_TYPE, TestIndexSetting.DOUBLE));
 
-        final IndexSettingRecords records = new IndexSettingRecords();
+        IndexSettingRecords records = new IndexSettingRecords();
         records.upsertAll(validRecords);
         records.upsertAll(missingSettingRecords);
         records.upsertAll(incorrectTypeRecords);
-        final IndexSettingRecordsByState recordsByState = records.groupByState();
+        IndexSettingRecordsByState recordsByState = records.groupByState();
 
         assertThat(recordsByState.invalid()).isTrue();
         assertThat(recordsByState.valid()).isFalse();
@@ -86,7 +86,7 @@ class IndexSettingRecordsByStateTest {
                 .map(IndexSettingRecord.class::cast)
                 .containsExactlyInAnyOrderElementsOf(validRecords);
 
-        final Iterable<Invalid> invalidRecords = recordsByState.invalidRecords();
+        Iterable<Invalid> invalidRecords = recordsByState.invalidRecords();
         assertThat(invalidRecords)
                 .map(IndexSettingRecord.class::cast)
                 .containsAll(missingSettingRecords)
@@ -99,14 +99,14 @@ class IndexSettingRecordsByStateTest {
 
     @Test
     void valid() {
-        final Iterable<IndexSettingRecord> validRecords = Iterables.asIterable(
+        Iterable<IndexSettingRecord> validRecords = Iterables.asIterable(
                 recordFor(State.VALID, TestIndexSetting.INTEGER),
                 recordFor(State.VALID, TestIndexSetting.BOOLEAN),
                 recordFor(State.VALID, TestIndexSetting.STRING));
 
-        final IndexSettingRecords records = new IndexSettingRecords();
+        IndexSettingRecords records = new IndexSettingRecords();
         records.upsertAll(validRecords);
-        final IndexSettingRecordsByState recordsByState = records.groupByState();
+        IndexSettingRecordsByState recordsByState = records.groupByState();
 
         assertThat(recordsByState.invalid()).isFalse();
         assertThat(recordsByState.valid()).isTrue();
@@ -120,8 +120,8 @@ class IndexSettingRecordsByStateTest {
     }
 
     private static IndexSettingRecord recordFor(State state, IndexSetting setting) {
-        final int value = 42;
-        final Value storable = Values.intValue(42);
+        int value = 42;
+        Value storable = Values.intValue(42);
         return switch (state) {
             case VALID -> new Valid(setting, value, storable);
             case UNPROCESSED -> new Unprocessed(setting, storable);

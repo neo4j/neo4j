@@ -119,7 +119,7 @@ abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends 
     }
 
     private void withCursor(Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer) throws IOException {
-        var openOptions = getOpenOptions().newWith(WRITE);
+        ImmutableSet<OpenOption> openOptions = getOpenOptions().newWith(WRITE);
         if (create) {
             openOptions = openOptions.newWith(CREATE);
         }

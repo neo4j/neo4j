@@ -49,14 +49,14 @@ public class VectorIndexUnknownConfigValidationTest {
 
     @Test
     void unknownLatestVectorIndexVersionValidation() {
-        final VectorIndexVersion unknown = VectorIndexVersion.UNKNOWN;
+        VectorIndexVersion unknown = VectorIndexVersion.UNKNOWN;
         assertValidatorForVersion(unknown.descriptor(), Optional.empty(), unknown.indexSettingValidator());
     }
 
     @ParameterizedTest
     @KernelVersionSource
     void unknownVectorIndexVersionValidation(KernelVersion kernelVersion) {
-        final VectorIndexVersion unknown = VectorIndexVersion.UNKNOWN;
+        VectorIndexVersion unknown = VectorIndexVersion.UNKNOWN;
         assertValidatorForVersion(unknown.descriptor(), Optional.empty(), unknown.indexSettingValidator(kernelVersion));
     }
 

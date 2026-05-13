@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.impl.index.lucene.v10;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
@@ -412,25 +414,25 @@ final class Lucene10ValueFields {
                 case DateTimeValue dateTimeValue -> dateTimeValue.asObjectCopy().toInstant();
 
                 case LocalDateTimeValue localDateTimeValue -> {
-                    var dateTime = localDateTimeValue.asObjectCopy();
+                    LocalDateTime dateTime = localDateTimeValue.asObjectCopy();
                     yield Instant.ofEpochSecond(dateTime.toEpochSecond(ZoneOffset.UTC), dateTime.getNano());
                 }
 
                 case LocalTimeValue localTimeValue -> {
-                    var offset = Duration.between(LocalTime.MIN, localTimeValue.asObjectCopy());
+                    Duration offset = Duration.between(LocalTime.MIN, localTimeValue.asObjectCopy());
                     yield Instant.ofEpochSecond(offset.getSeconds(), offset.getNano());
                 }
 
                 case DateValue dateValue ->
                 // 00:00:00 UTC on the date in question
                 {
-                    var localDate = dateValue.asObjectCopy();
+                    LocalDate localDate = dateValue.asObjectCopy();
                     yield Instant.ofEpochSecond(localDate.toEpochSecond(LocalTime.ofSecondOfDay(0), ZoneOffset.UTC), 0);
                 }
 
                 case TimeValue timeValue -> {
                     // a fake instant calculated as duration from the earliest possible offset time
-                    var offset = Duration.between(OffsetTime.MIN, timeValue.asObjectCopy());
+                    Duration offset = Duration.between(OffsetTime.MIN, timeValue.asObjectCopy());
                     yield Instant.ofEpochSecond(offset.getSeconds(), offset.getNano());
                 }
                 // would be nice to make Temporal sealed, and remove this default branch

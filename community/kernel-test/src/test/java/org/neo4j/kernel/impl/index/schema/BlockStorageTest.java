@@ -317,9 +317,10 @@ class BlockStorageTest {
 
     @Test
     void shouldShareOneBlockStorageWithMultipleThreads() throws IOException {
-        try (var storage = new BlockStorage<>(layout, heapBufferFactory(100), fileSystem, file, NO_MONITOR, INSTANCE)) {
+        try (BlockStorage<MutableLong, MutableLong> storage =
+                new BlockStorage<>(layout, heapBufferFactory(100), fileSystem, file, NO_MONITOR, INSTANCE)) {
             // given concurrent additions
-            var addRace = new Race();
+            Race addRace = new Race();
             int numContestants = 4;
             List<List<BlockEntry<MutableLong, MutableLong>>> expected =
                     Collections.synchronizedList(new ArrayList<>(numContestants));
@@ -329,8 +330,8 @@ class BlockStorageTest {
                         int count = 1_000;
                         List<BlockEntry<MutableLong, MutableLong>> threadExpected = new ArrayList<>(count);
                         for (int i = 0, dataId = contestantId; i < count; i++, dataId += numContestants) {
-                            var key = new MutableLong(dataId);
-                            var value = new MutableLong(dataId);
+                            MutableLong key = new MutableLong(dataId);
+                            MutableLong value = new MutableLong(dataId);
                             storage.add(key, value);
                             threadExpected.add(new BlockEntry<>(key, value));
                         }
@@ -344,7 +345,7 @@ class BlockStorageTest {
 
             // then
             List<BlockEntry<MutableLong, MutableLong>> mergedExpected = new ArrayList<>();
-            for (var threadExpected : expected) {
+            for (List<BlockEntry<MutableLong, MutableLong>> threadExpected : expected) {
                 mergedExpected.addAll(threadExpected);
             }
             mergedExpected.sort((o1, o2) -> layout.compare(o1.key(), o2.key()));

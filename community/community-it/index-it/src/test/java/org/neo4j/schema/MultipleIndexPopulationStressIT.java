@@ -55,6 +55,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -197,17 +198,18 @@ class MultipleIndexPopulationStressIT {
     }
 
     private void populateDbAndIndexes(long nodeCount, long relCount) throws InterruptedException {
-        try (var managementService = new TestDatabaseManagementServiceBuilder(directory.homePath()).build()) {
-            final GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+        try (DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder(directory.homePath()).build()) {
+            GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
             // The database was created by the importer in record format.
             assert ((GraphDatabaseAPI) db)
                     .getDependencyResolver()
                     .resolveOptionalDependency(StorageEngineFactory.class)
-                    .map(e -> e.name())
+                    .map(StorageEngineFactory::name)
                     .orElseThrow()
                     .equals(RecordStorageEngineFactory.NAME);
-            try (var tx = db.beginTx();
-                    var softly = new AutoCloseableSoftAssertions()) {
+            try (Transaction tx = db.beginTx();
+                    AutoCloseableSoftAssertions softly = new AutoCloseableSoftAssertions()) {
                 softly.assertThat(Iterables.count(tx.getAllNodes()))
                         .as("Number of nodes")
                         .isEqualTo(nodeCount);
@@ -216,7 +218,7 @@ class MultipleIndexPopulationStressIT {
                         .isEqualTo(relCount);
             }
             createIndexes(db);
-            final AtomicBoolean end = new AtomicBoolean();
+            AtomicBoolean end = new AtomicBoolean();
             executor = Executors.newCachedThreadPool();
             for (int i = 0; i < 10; i++) {
                 executor.submit(() -> {
@@ -243,7 +245,8 @@ class MultipleIndexPopulationStressIT {
     }
 
     private void dropIndexes() {
-        try (var managementService = new TestDatabaseManagementServiceBuilder(directory.homePath())
+        try (DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(
+                        directory.homePath())
                 .setConfig(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8))
                 .build()) {
             GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
@@ -444,7 +447,7 @@ class MultipleIndexPopulationStressIT {
             return ReadableGroups.EMPTY;
         }
 
-        private void properties(RandomValues state, InputEntityVisitor visitor) {
+        private static void properties(RandomValues state, InputEntityVisitor visitor) {
             String[] keys = state.selection(TOKENS, 1, TOKENS.length, false);
             for (String key : keys) {
                 visitor.property(key, state.nextValue(), false);

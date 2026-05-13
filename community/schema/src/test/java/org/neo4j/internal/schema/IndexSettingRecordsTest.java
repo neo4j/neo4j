@@ -53,14 +53,14 @@ class IndexSettingRecordsTest {
 
     @Test
     void upsertRecordWithSetting() {
-        final RecordWithSetting record = new MissingSetting(TestIndexSetting.STRING);
+        RecordWithSetting record = new MissingSetting(TestIndexSetting.STRING);
         assertThat(record).isSameAs(records.upsert(record));
         assertThat(records).containsExactly(record);
     }
 
     @Test
     void upsertUnrecognizedSetting() {
-        final UnrecognizedSetting record = new UnrecognizedSetting("unknown");
+        UnrecognizedSetting record = new UnrecognizedSetting("unknown");
         assertThat(record).isSameAs(records.upsert(record));
         assertThat(records).containsExactly(record);
     }
@@ -74,7 +74,7 @@ class IndexSettingRecordsTest {
 
     @Test
     void upsertRecords() {
-        final Iterable<IndexSettingRecord> provided = Iterables.asIterable(
+        Iterable<IndexSettingRecord> provided = Iterables.asIterable(
                 new UnrecognizedSetting("unknown"),
                 new InvalidValue(TestIndexSetting.STRING, "foo", new IterableRequirement(Set.of("bar", "baz"))),
                 new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42)),
@@ -86,24 +86,24 @@ class IndexSettingRecordsTest {
 
     @Test
     void groupByState() {
-        final Iterable<UnrecognizedSetting> unrecognizedSettings = Iterables.asIterable(
+        Iterable<UnrecognizedSetting> unrecognizedSettings = Iterables.asIterable(
                 records.upsert(new UnrecognizedSetting("unknown")),
                 records.upsert(new UnrecognizedSetting(IndexSetting.fulltext_Analyzer())));
 
-        final Iterable<MissingSetting> missingSetting =
+        Iterable<MissingSetting> missingSetting =
                 Iterables.asIterable(records.upsert(new MissingSetting(TestIndexSetting.OBJECT)));
 
-        final Iterable<InvalidValue> invalidValue = Iterables.asIterable(records.upsert(
+        Iterable<InvalidValue> invalidValue = Iterables.asIterable(records.upsert(
                 new InvalidValue(TestIndexSetting.STRING, "foo", new IterableRequirement(Set.of("bar", "baz")))));
 
-        final Iterable<Pending> pending = Iterables.asIterable(
+        Iterable<Pending> pending = Iterables.asIterable(
                 records.upsert(new Pending(TestIndexSetting.INTEGER, 42, Values.intValue(42))),
                 records.upsert(new Pending(TestIndexSetting.BOOLEAN, false, Values.NO_VALUE)));
 
-        final Iterable<Valid> valid = Iterables.asIterable(
+        Iterable<Valid> valid = Iterables.asIterable(
                 records.upsert(new Valid(TestIndexSetting.DOUBLE, Math.PI, Values.doubleValue(Math.PI))));
 
-        final IndexSettingRecordsByState recordsByState = records.groupByState();
+        IndexSettingRecordsByState recordsByState = records.groupByState();
         assertThat(recordsByState).containsExactlyInAnyOrderElementsOf(records);
         assertThat(recordsByState.get(State.UNRECOGNIZED_SETTING))
                 .containsExactlyInAnyOrderElementsOf(unrecognizedSettings);

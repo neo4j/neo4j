@@ -107,7 +107,7 @@ class VectorSSEntityFilterTest extends VectorSSFTestBase {
         assertThat(vectors.randomNodeQuery(dim)).isEmpty();
 
         for (int i = 0; i < ITERATIONS; i++) {
-            var subset = randomSubset(allNodes);
+            Set<Long> subset = randomSubset(allNodes);
             assertThat(vectors.randomNodeQuery(dim, from(subset)))
                     .extracting(EXTRACT_ENTITY_ID)
                     .containsExactlyInAnyOrderElementsOf(subset);
@@ -157,7 +157,7 @@ class VectorSSEntityFilterTest extends VectorSSFTestBase {
         assertThat(vectors.randomRelationshipQuery(dim)).isEmpty();
 
         for (int i = 0; i < ITERATIONS; i++) {
-            var subset = randomSubset(allRels);
+            Set<Long> subset = randomSubset(allRels);
             assertThat(vectors.randomRelationshipQuery(dim, from(subset)))
                     .extracting(EXTRACT_ENTITY_ID)
                     .containsExactlyInAnyOrderElementsOf(subset);
@@ -173,7 +173,7 @@ class VectorSSEntityFilterTest extends VectorSSFTestBase {
         return set;
     }
 
-    private long[] from(Set<Long> ids) {
+    private static long[] from(Set<Long> ids) {
         return ids.stream().mapToLong(Long::longValue).toArray();
     }
 
@@ -206,8 +206,8 @@ class VectorSSEntityFilterTest extends VectorSSFTestBase {
             float[] vector = random.randomValues().nextFloatArrayRaw(dim, dim);
 
             // ensure at least one (random) element is not at exact origin, so vector is not all zeros
-            final int index = random.nextInt(dim);
-            if (vector[index] == 0.f) {
+            int index = random.nextInt(dim);
+            if (vector[index] == 0.0f) {
                 vector[index] = random.nextBoolean() ? Math.nextUp(vector[index]) : Math.nextDown(vector[index]);
             }
 

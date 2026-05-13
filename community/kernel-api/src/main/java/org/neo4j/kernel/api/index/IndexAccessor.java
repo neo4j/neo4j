@@ -260,7 +260,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @param jobScheduler to run the jobs for this validation.
      */
     default void validateShards(
-            IndexAccessor[] otherShards,
+            Iterable<IndexAccessor> otherShards,
             boolean valueUniqueness,
             ShardedIndexEntryConflictHandler conflictHandler,
             int threads,
@@ -346,8 +346,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
                 LongPredicate entityFilter,
                 int threads,
                 JobScheduler jobScheduler,
-                ProgressListener progress)
-                throws IndexEntryConflictException {}
+                ProgressListener progress) {}
 
         @Override
         public void validate(
@@ -485,7 +484,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
 
         @Override
         public void validateShards(
-                IndexAccessor[] otherShards,
+                Iterable<IndexAccessor> otherShards,
                 boolean valueUniqueness,
                 ShardedIndexEntryConflictHandler conflictHandler,
                 int threads,

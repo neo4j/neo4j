@@ -70,7 +70,7 @@ class Lucene9DocValuesCollector extends SimpleCollector {
     }
 
     @Override
-    public final void collect(int doc) throws IOException {
+    public final void collect(int doc) {
         docs.addDoc(doc);
         segmentHits++;
         totalHits++;
@@ -127,7 +127,7 @@ class Lucene9DocValuesCollector extends SimpleCollector {
         DocIdSetIterator currentIdIterator;
         NumericDocValues currentDocValues;
         Lucene9DocValuesCollector.MatchingDocs currentDocs;
-        float score;
+        final float score;
         int index;
         long next;
 

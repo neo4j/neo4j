@@ -41,8 +41,14 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectory;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectoryReader;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocument;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriterConfig;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneQueryFactory.VectorQueryFactory;
 import org.neo4j.kernel.api.impl.schema.vector.Neo4jVectorSimilarityFunction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
@@ -100,20 +106,22 @@ public class Lucene10RescoringQueryTest {
         VectorDocumentStructure documentStructure = mock(VectorDocumentStructure.class);
         when(documentStructure.vectorValueKeyFor(DIMENSIONS)).thenReturn(EMBEDDING_FIELD);
 
-        try (var directoryFactory = LuceneContext.LUCENE_10.directoryFactory().newInMemoryDirectoryFactory();
-                var directory = directoryFactory.open(null)) {
+        try (DirectoryFactory directoryFactory =
+                        LuceneContext.LUCENE_10.directoryFactory().newInMemoryDirectoryFactory();
+                LuceneDirectory directory = directoryFactory.open(null)) {
 
             // creates an empty index so that opening the indexReader doesn't crash
-            try (var indexWriter = directory.newWriter(LuceneIndexWriterConfig.analyzerOnly(new KeywordAnalyzer()))) {
+            try (LuceneIndexWriter indexWriter =
+                    directory.newWriter(LuceneIndexWriterConfig.analyzerOnly(new KeywordAnalyzer()))) {
                 indexWriter.commit();
             }
 
-            try (var indexReader = directory.open();
-                    var indexSearcher = indexReader.newDirectSearcher()) {
+            try (LuceneDirectoryReader indexReader = directory.open();
+                    LuceneIndexSearcher indexSearcher = indexReader.newDirectSearcher()) {
 
-                var vectorQueryFactory =
+                VectorQueryFactory vectorQueryFactory =
                         new VectorQueryFactory(documentStructure, quantizationType, DEFAULT_SEARCH_EXPANSION);
-                var queryContext = vectorQueryFactory.createQuery(
+                LuceneQueryContext queryContext = vectorQueryFactory.createQuery(
                         indexSearcher,
                         IndexQueryConstraints.unconstrained(),
                         IndexDescriptor.NO_INDEX,
@@ -122,7 +130,7 @@ public class Lucene10RescoringQueryTest {
                 Query query = ((Lucene10QueryContext) queryContext).build();
 
                 if (expectedRescoring) {
-                    var rescoreQueryAssert =
+                    ObjectAssert<RescoreTopNQuery> rescoreQueryAssert =
                             assertThat(query).asInstanceOf(InstanceOfAssertFactories.type(RescoreTopNQuery.class));
                     rescoreQueryAssert
                             .extracting("n", InstanceOfAssertFactories.INTEGER)
@@ -157,11 +165,13 @@ public class Lucene10RescoringQueryTest {
         VectorDocumentStructure documentStructure = mock(VectorDocumentStructure.class);
         when(documentStructure.vectorValueKeyFor(DIMENSIONS)).thenReturn(EMBEDDING_FIELD);
 
-        try (var directoryFactory = LuceneContext.LUCENE_10.directoryFactory().newInMemoryDirectoryFactory();
-                var directory = directoryFactory.open(null)) {
+        try (DirectoryFactory directoryFactory =
+                        LuceneContext.LUCENE_10.directoryFactory().newInMemoryDirectoryFactory();
+                LuceneDirectory directory = directoryFactory.open(null)) {
 
             // creates an empty index so that opening the indexReader doesn't crash
-            try (var indexWriter = directory.newWriter(LuceneIndexWriterConfig.analyzerOnly(new KeywordAnalyzer()))) {
+            try (LuceneIndexWriter indexWriter =
+                    directory.newWriter(LuceneIndexWriterConfig.analyzerOnly(new KeywordAnalyzer()))) {
                 // segment 1
                 {
                     LuceneDocument doc = indexWriter.newDocument();
@@ -180,12 +190,12 @@ public class Lucene10RescoringQueryTest {
                 }
             }
 
-            try (var indexReader = directory.open();
-                    var indexSearcher = indexReader.newDirectSearcher()) {
+            try (LuceneDirectoryReader indexReader = directory.open();
+                    LuceneIndexSearcher indexSearcher = indexReader.newDirectSearcher()) {
 
-                var vectorQueryFactory =
+                VectorQueryFactory vectorQueryFactory =
                         new VectorQueryFactory(documentStructure, quantizationType, DEFAULT_SEARCH_EXPANSION);
-                var queryContext = vectorQueryFactory.createQuery(
+                LuceneQueryContext queryContext = vectorQueryFactory.createQuery(
                         indexSearcher,
                         IndexQueryConstraints.unconstrained(),
                         IndexDescriptor.NO_INDEX,
@@ -199,7 +209,7 @@ public class Lucene10RescoringQueryTest {
                         .build();
 
                 if (expectedRescoring) {
-                    var rescoreQueryAssert =
+                    ObjectAssert<RescoreTopNQuery> rescoreQueryAssert =
                             assertThat(query).asInstanceOf(InstanceOfAssertFactories.type(RescoreTopNQuery.class));
                     rescoreQueryAssert
                             .extracting("n", InstanceOfAssertFactories.INTEGER)
@@ -224,11 +234,11 @@ public class Lucene10RescoringQueryTest {
         }
     }
 
-    void assertKnnQuery(ObjectAssert<?> queryAssert, int k, float[] embedding) {
+    static void assertKnnQuery(ObjectAssert<?> queryAssert, int k, float[] embedding) {
         assertKnnQuery(queryAssert, k, embedding, null);
     }
 
-    void assertKnnQuery(ObjectAssert<?> queryAssert, int k, float[] embedding, Query expectedFilter) {
+    static void assertKnnQuery(ObjectAssert<?> queryAssert, int k, float[] embedding, Query expectedFilter) {
         queryAssert
                 .asInstanceOf(InstanceOfAssertFactories.type(KnnFloatVectorQuery.class))
                 .returns(k, KnnFloatVectorQuery::getK)

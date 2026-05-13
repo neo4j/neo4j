@@ -40,9 +40,9 @@ public interface SettingsAccessor {
     Set<String> settingNames();
 
     default Set<IndexSetting> settings() {
-        final Set<String> settingNames = settingNames();
-        final Set<IndexSetting> settings = new HashSet<>(settingNames.size());
-        for (final String settingName : settingNames) {
+        Set<String> settingNames = settingNames();
+        Set<IndexSetting> settings = new HashSet<>(settingNames.size());
+        for (String settingName : settingNames) {
             settings.add(lookup(settingName));
         }
         return Collections.unmodifiableSet(settings);
@@ -67,8 +67,8 @@ public interface SettingsAccessor {
 
         @Override
         public Set<String> settingNames() {
-            final Set<String> settingNames = new HashSet<>(settings.size());
-            for (final IndexSetting setting : settings.keySet()) {
+            Set<String> settingNames = new HashSet<>(settings.size());
+            for (IndexSetting setting : settings.keySet()) {
                 settingNames.add(setting.getSettingName());
             }
             return Collections.unmodifiableSet(settingNames);
@@ -117,8 +117,8 @@ public interface SettingsAccessor {
 
         @Override
         public Set<String> settingNames() {
-            final Set<String> settingNames = new HashSet<>();
-            for (final String settingName : map.keySet()) {
+            Set<String> settingNames = new HashSet<>();
+            for (String settingName : map.keySet()) {
                 settingNames.add(settingName);
             }
             return Collections.unmodifiableSet(settingNames);

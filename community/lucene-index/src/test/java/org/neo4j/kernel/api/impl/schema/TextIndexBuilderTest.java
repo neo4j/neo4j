@@ -33,8 +33,10 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
 import org.neo4j.kernel.api.impl.schema.text.TextIndexBuilder;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -48,7 +50,7 @@ class TextIndexBuilderTest {
     @Inject
     private DefaultFileSystemAbstraction fileSystemRule;
 
-    private final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 0))
+    private static final IndexDescriptor DESCRIPTOR = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 0))
             .withName("a")
             .withIndexType(IndexType.TEXT)
             .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
@@ -57,8 +59,8 @@ class TextIndexBuilderTest {
     @ParameterizedTest
     @EnumSource
     void readOnlyIndexCreation(LuceneContext luceneContext) throws Exception {
-        try (var index = TextIndexBuilder.create(
-                        descriptor, readOnly(), getDefaultConfig(), NullLogProvider.getInstance())
+        try (DatabaseIndex<ValueIndexReader> index = TextIndexBuilder.create(
+                        DESCRIPTOR, readOnly(), getDefaultConfig(), NullLogProvider.getInstance())
                 .withFileSystem(fileSystemRule)
                 .withIndexRootFolder(testDir.directory("a"))
                 .withLuceneContext(luceneContext)
@@ -70,8 +72,8 @@ class TextIndexBuilderTest {
     @ParameterizedTest
     @EnumSource
     void writableIndexCreation(LuceneContext luceneContext) throws Exception {
-        try (var index = TextIndexBuilder.create(
-                        descriptor, writable(), getDefaultConfig(), NullLogProvider.getInstance())
+        try (DatabaseIndex<ValueIndexReader> index = TextIndexBuilder.create(
+                        DESCRIPTOR, writable(), getDefaultConfig(), NullLogProvider.getInstance())
                 .withFileSystem(fileSystemRule)
                 .withIndexRootFolder(testDir.directory("b"))
                 .withLuceneContext(luceneContext)

@@ -57,7 +57,7 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
         this.documentStructure = documentStructure;
         this.config = config;
 
-        final IndexWriterConfigBuilder writerConfigBuilder = new IndexWriterConfigBuilder(
+        IndexWriterConfigBuilder writerConfigBuilder = new IndexWriterConfigBuilder(
                         IndexWriterConfigMode.VECTOR, config)
                 .withLogProvider(logProvider)
                 .withCodec(codec);
@@ -100,8 +100,8 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
      * @return lucene schema index
      */
     DatabaseIndex<VectorIndexReader> build() {
-        final PartitionedIndexStorage storage = storageBuilder.build();
-        final VectorIndex index = new VectorIndex(
+        PartitionedIndexStorage storage = storageBuilder.build();
+        VectorIndex index = new VectorIndex(
                 storage,
                 new WritableIndexPartitionFactory(writerConfigFactory),
                 documentStructure,

@@ -51,7 +51,7 @@ public class PartitionedIndexWriter implements LucenePartitionIndexWriter {
 
     public PartitionedIndexWriter(WritableDatabaseIndex<?, ?> index, Config config) {
         this.index = index;
-        var configuredMaxPartitionSize = config.get(LuceneSettings.lucene_max_partition_size);
+        Integer configuredMaxPartitionSize = config.get(LuceneSettings.lucene_max_partition_size);
         maximumPartitionSize = Objects.requireNonNullElse(configuredMaxPartitionSize, DEFAULT_MAXIMUM_PARTITION_SIZE);
     }
 

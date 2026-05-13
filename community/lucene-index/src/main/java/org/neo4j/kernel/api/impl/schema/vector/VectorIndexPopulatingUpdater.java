@@ -21,13 +21,14 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
 import org.neo4j.kernel.api.impl.schema.writer.LucenePartitionIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 
 class VectorIndexPopulatingUpdater implements IndexUpdater {
     private final LucenePartitionIndexWriter writer;
@@ -50,15 +51,15 @@ class VectorIndexPopulatingUpdater implements IndexUpdater {
 
     @Override
     public void process(IndexEntryUpdate update) {
-        final var valueUpdate = asValueUpdate(update);
+        ValueIndexEntryUpdate valueUpdate = asValueUpdate(update);
         if (valueUpdate == null) {
             return;
         }
 
         try {
-            final var entityId = valueUpdate.getEntityId();
-            final var values = valueUpdate.values();
-            final var updateMode = valueUpdate.updateMode();
+            long entityId = valueUpdate.getEntityId();
+            Value[] values = valueUpdate.values();
+            UpdateMode updateMode = valueUpdate.updateMode();
             switch (updateMode) {
                 case ADDED ->
                     writer.updateDocument(
@@ -81,10 +82,10 @@ class VectorIndexPopulatingUpdater implements IndexUpdater {
 
     @Override
     public ValueIndexEntryUpdate asValueUpdate(IndexEntryUpdate update) {
-        final var valueUpdate = IndexUpdater.super.asValueUpdate(update);
+        ValueIndexEntryUpdate valueUpdate = IndexUpdater.super.asValueUpdate(update);
         return !ignoreStrategy.ignore(valueUpdate) ? ignoreStrategy.toEquivalentUpdate(valueUpdate) : null;
     }
 
     @Override
-    public void close() throws IndexEntryConflictException {}
+    public void close() {}
 }

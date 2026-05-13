@@ -91,16 +91,16 @@ abstract class SupportPartitionedScanTestSuite {
     }
 
     protected static Map<Query, Boolean> supports(Query... queries) {
-        final var supported = new EnumMap<>(NO_SUPPORT);
-        for (final var query : queries) {
+        Map<Query, Boolean> supported = new EnumMap<>(NO_SUPPORT);
+        for (Query query : queries) {
             supported.put(query, true);
         }
         return supported;
     }
 
     private static Map<Query, Boolean> createNoSupport() {
-        final var noSupport = new EnumMap<Query, Boolean>(Query.class);
-        for (final var query : Query.values()) {
+        Map<Query, Boolean> noSupport = new EnumMap<>(Query.class);
+        for (Query query : Query.values()) {
             noSupport.put(query, false);
         }
         return Collections.unmodifiableMap(noSupport);

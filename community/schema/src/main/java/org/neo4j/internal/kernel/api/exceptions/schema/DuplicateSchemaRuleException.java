@@ -42,8 +42,8 @@ public class DuplicateSchemaRuleException extends SchemaRuleException {
 
     public static DuplicateSchemaRuleException internalError(
             String msgTitle, SchemaDescriptorSupplier schemaThing, TokenNameLookup tokenNameLookup) {
-        var message = String.format(MULTIPLE_FOUND_MESSAGE_TEMPLATE, schemaThing, tokenNameLookup);
-        var gql = GqlHelper.get50N00(msgTitle, message);
+        String message = String.format(MULTIPLE_FOUND_MESSAGE_TEMPLATE, schemaThing, tokenNameLookup);
+        ErrorGqlStatusObject gql = GqlHelper.get50N00(msgTitle, message);
         return new DuplicateSchemaRuleException(gql, schemaThing, tokenNameLookup);
     }
 }

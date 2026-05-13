@@ -59,7 +59,7 @@ public class TokenScanValueIndexProgressorTest {
 
     @Test
     void shouldProgressAscendingThroughBitSet() {
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
         List<Labels> labels = randomData(random, idLayout);
 
         for (Labels label : labels) {
@@ -76,7 +76,7 @@ public class TokenScanValueIndexProgressorTest {
 
     @Test
     void shouldProgressDescendingThroughBitSet() {
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
         List<Labels> labels = randomData(random, idLayout);
 
         for (Labels label : labels) {
@@ -96,7 +96,7 @@ public class TokenScanValueIndexProgressorTest {
 
     @Test
     void shouldRespectRequestedRange() {
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
         Labels label = labels(1, idLayout, 20, 39, 40, 41, 60, 80, 99, 100, 101, 120);
         MyClient client = new MyClient();
         TokenScanValueIndexProgressor progressor = TokenScanValueIndexProgressor.create(
@@ -329,7 +329,7 @@ public class TokenScanValueIndexProgressorTest {
     }
 
     private void runSeekTest(IndexOrder order, Function<Labels, EntityRange> labelToRange, SeekTest test) {
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
         List<Labels> labels = randomData(random, idLayout);
 
         for (Labels label : labels) {

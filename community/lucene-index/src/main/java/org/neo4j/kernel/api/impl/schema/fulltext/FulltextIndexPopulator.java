@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocument;
+import org.neo4j.kernel.api.impl.schema.fulltext.FulltextIndexPopulator.IdLockManager.Lock;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -66,15 +67,15 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     @Override
     public void add(Collection<? extends IndexEntryUpdate> updates, CursorContext cursorContext) {
         try {
-            for (var update : updates) {
-                final var valueUpdate = (ValueIndexEntryUpdate) update;
+            for (IndexEntryUpdate update : updates) {
+                ValueIndexEntryUpdate valueUpdate = (ValueIndexEntryUpdate) update;
                 if (ignoreStrategy.ignore(valueUpdate.values())) {
                     continue;
                 }
 
-                var entityId = valueUpdate.getEntityId();
-                var document = updateAsDocument(valueUpdate);
-                try (var lock = concurrentUpdateLockManager.lock(entityId)) {
+                long entityId = valueUpdate.getEntityId();
+                LuceneDocument document = updateAsDocument(valueUpdate);
+                try (Lock lock = concurrentUpdateLockManager.lock(entityId)) {
                     if (concurrentUpdateFilter.mayContain(entityId)) {
                         writer.updateOrDeleteDocument(FIELD_ENTITY_ID, entityId, document);
                     } else {
@@ -111,13 +112,13 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     private class PopulatingFulltextIndexUpdater implements IndexUpdater {
         @Override
         public void process(IndexEntryUpdate update) {
-            var valueUpdate = asValueUpdate(update);
+            ValueIndexEntryUpdate valueUpdate = asValueUpdate(update);
             if (ignoreStrategy.ignore(valueUpdate)) {
                 return;
             }
             try {
                 long entityId = valueUpdate.getEntityId();
-                try (var lock = concurrentUpdateLockManager.lock(entityId)) {
+                try (Lock lock = concurrentUpdateLockManager.lock(entityId)) {
                     switch (valueUpdate.updateMode()) {
                         case ADDED, CHANGED -> {
                             concurrentUpdateFilter.add(entityId);
@@ -157,7 +158,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
      * The updater locks the entity id before it updates the document, then records the id in the bloom filter
      * so that if the entity id is processed later by the populator, that uses {@code updateDocument}
      */
-    private static class IdLockManager {
+    static class IdLockManager {
 
         private final MutableLongSet locked = new LongHashSet();
 
@@ -175,7 +176,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
             }
         }
 
-        private class Lock implements AutoCloseable {
+        class Lock implements AutoCloseable {
 
             private final long id;
 

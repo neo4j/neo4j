@@ -213,10 +213,7 @@ public class ConstraintDescriptorImplementation extends ConstraintDescriptorAdap
             return false;
         }
 
-        if (that.enforcesPropertyType()) {
-            return false;
-        }
-        return true;
+        return !that.enforcesPropertyType();
     }
 
     // The constraints implementing this class must be unique on the combined fields constraintType, entityToken and

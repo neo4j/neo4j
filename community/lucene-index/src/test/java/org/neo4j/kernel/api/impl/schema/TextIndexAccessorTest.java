@@ -80,7 +80,7 @@ class TextIndexAccessorTest {
         setUp(luceneContext);
         when(schemaIndex.isValid()).thenReturn(false);
         MutableBoolean called = new MutableBoolean();
-        final InvocationHandler handler = (proxy, method, args) -> {
+        InvocationHandler handler = (proxy, method, args) -> {
             called.setTrue();
             return null;
         };

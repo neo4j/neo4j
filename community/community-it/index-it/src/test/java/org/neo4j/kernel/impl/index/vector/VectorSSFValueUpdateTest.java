@@ -78,8 +78,8 @@ class VectorSSFValueUpdateTest extends VectorSSFTestBase {
 
     @Test
     void fromIndexableFieldToNonIndexableField() throws Exception {
-        final String officeName = "Malmö Office";
-        final Point officeLocation = Values.pointValue(CoordinateReferenceSystem.WGS_84, 12.994840, 55.612103);
+        String officeName = "Malmö Office";
+        Point officeLocation = Values.pointValue(CoordinateReferenceSystem.WGS_84, 12.994840, 55.612103);
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "location");
 
         createTestNode(Map.of("id", 1, "name", "Bob", "location", officeName, EMBEDDING_NAME, EMBEDDINGS.get(5)));
@@ -91,8 +91,8 @@ class VectorSSFValueUpdateTest extends VectorSSFTestBase {
 
     @Test
     void fromNonIndexableFieldToIndexableField() throws Exception {
-        final String officeName = "Malmö Office";
-        final Point officeLocation = Values.pointValue(CoordinateReferenceSystem.WGS_84, 12.994840, 55.612103);
+        String officeName = "Malmö Office";
+        Point officeLocation = Values.pointValue(CoordinateReferenceSystem.WGS_84, 12.994840, 55.612103);
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "location");
 
         createTestNode(Map.of("id", 1, "name", "Bob", "location", officeLocation, EMBEDDING_NAME, EMBEDDINGS.get(5)));
@@ -104,8 +104,8 @@ class VectorSSFValueUpdateTest extends VectorSSFTestBase {
 
     @Test
     void addAndRemoveValue() throws Exception {
-        final String officeName = "Malmö Office";
-        final Point officeLocation = Values.pointValue(CoordinateReferenceSystem.WGS_84, 12.994840, 55.612103);
+        String officeName = "Malmö Office";
+        Point officeLocation = Values.pointValue(CoordinateReferenceSystem.WGS_84, 12.994840, 55.612103);
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "age", "location");
 
         createTestNode(Map.of("id", 1, "name", "Alice", "age", 23, EMBEDDING_NAME, EMBEDDINGS.get(1)));

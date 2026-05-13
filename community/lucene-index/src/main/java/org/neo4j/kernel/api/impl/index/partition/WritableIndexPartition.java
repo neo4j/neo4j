@@ -26,6 +26,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectory;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectoryReader;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriterConfig;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneSearcherManager;
@@ -91,7 +92,7 @@ public class WritableIndexPartition extends AbstractIndexPartition {
     public void accessClosedDirectory(ThrowingBiConsumer<Integer, LuceneDirectory, IOException> visitor)
             throws IOException {
         indexWriter.close();
-        var searcher = searcherManager.acquire();
+        LuceneIndexSearcher searcher = searcherManager.acquire();
         int numDocs;
         try {
             numDocs = searcher.numDocs();

@@ -29,7 +29,8 @@ class MalformedSchemaRuleExceptionTest {
 
     @Test
     void propertyMismatchShouldUseCorrectMessageAndGqlStatus() {
-        var e = MalformedSchemaRuleException.propertyTypeMismatch("prop", Values.intValue(1), StringValue.class);
+        MalformedSchemaRuleException e =
+                MalformedSchemaRuleException.propertyTypeMismatch("prop", Values.intValue(1), StringValue.class);
         ErrorGqlStatusObjectAssertions.assertThat(e)
                 .hasMessageContaining("Expected property prop to be a StringValue but was Int(1)")
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N01)

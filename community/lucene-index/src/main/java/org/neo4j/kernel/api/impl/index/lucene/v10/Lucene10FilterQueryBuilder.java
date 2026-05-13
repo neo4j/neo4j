@@ -27,7 +27,9 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.apache.lucene.document.KeywordField;
@@ -111,19 +113,19 @@ final class Lucene10FilterQueryBuilder {
         };
     }
 
-    private Query queryForExists(int propertyIndex) {
+    private static Query queryForExists(int propertyIndex) {
         return new TermQuery(new Term(EXISTS_KEY, new BytesRef(Lucene10ValueFields.intToBytes(propertyIndex))));
     }
 
-    private Query queryForNotExists(int propertyIndex) {
+    private static Query queryForNotExists(int propertyIndex) {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         queryBuilder.add(MatchAllDocsQuery.INSTANCE, Occur.FILTER);
         queryBuilder.add(queryForExists(propertyIndex), Occur.MUST_NOT);
         return queryBuilder.build();
     }
 
-    private Query entityFilterPredicate(long[] validEntities) {
-        TreeSet<BytesRef> idStrings = new TreeSet<>();
+    private static Query entityFilterPredicate(long[] validEntities) {
+        SortedSet<BytesRef> idStrings = new TreeSet<>();
         for (long validEntity : validEntities) {
             idStrings.add(new BytesRef(Long.toString(validEntity)));
         }
@@ -353,9 +355,9 @@ final class Lucene10FilterQueryBuilder {
             ValueGroup valueGroup,
             int propertyIndex) {
 
-        final int fromOffsetSeconds =
+        int fromOffsetSeconds =
                 TemporalOffsetWithId.zoneOffsetOf(from, ZoneOffset.MIN).getTotalSeconds();
-        final int toOffsetSeconds =
+        int toOffsetSeconds =
                 TemporalOffsetWithId.zoneOffsetOf(to, ZoneOffset.MAX).getTotalSeconds();
         if (toOffsetSeconds < fromOffsetSeconds) {
             return MatchNoDocsQuery.INSTANCE;
@@ -385,7 +387,7 @@ final class Lucene10FilterQueryBuilder {
         // Build a list of the necessary queries
         List<Query> zoneOffsetQueries = new ArrayList<>();
 
-        final int fromOffsetRange;
+        int fromOffsetRange;
         if (TemporalOffsetWithId.hasZoneId(from)) {
             zoneOffsetQueries.add(everyQuery(temporalRangeQueryWithinSingleOffset(
                     fromOffsetSeconds, fromZoneId, fromInclusive, null, false, valueGroup, propertyIndex)));
@@ -397,7 +399,7 @@ final class Lucene10FilterQueryBuilder {
             fromOffsetRange = fromOffsetSeconds;
         }
 
-        final int toOffsetRange;
+        int toOffsetRange;
         if (TemporalOffsetWithId.hasZoneId(to)) {
             zoneOffsetQueries.add(everyQuery(temporalRangeQueryWithinSingleOffset(
                     toOffsetSeconds, null, false, toZoneId, toInclusive, valueGroup, propertyIndex)));
@@ -554,7 +556,7 @@ final class Lucene10FilterQueryBuilder {
         long days = d.get(ChronoUnit.DAYS);
         long months = d.get(ChronoUnit.MONTHS);
 
-        var builder = new BooleanQuery.Builder();
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(
                 Lucene10ValueFields.SingleLongField.newExactQuery(
                         vectorDocumentStructure.durationMonthsValueKeyFor(propertyIndex), months),
@@ -662,16 +664,16 @@ final class Lucene10FilterQueryBuilder {
         return queryBuilder.build();
     }
 
-    private static BooleanQuery anyQuery(List<Query> queries) {
-        var builder = new BooleanQuery.Builder().setMinimumNumberShouldMatch(1);
+    private static BooleanQuery anyQuery(Iterable<Query> queries) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder().setMinimumNumberShouldMatch(1);
         for (Query query : queries) {
             builder.add(new ConstantScoreQuery(query), Occur.SHOULD);
         }
         return builder.build();
     }
 
-    private static BooleanQuery everyQuery(List<Query> queries) {
-        var builder = new BooleanQuery.Builder();
+    private static BooleanQuery everyQuery(Iterable<Query> queries) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (Query query : queries) {
             builder.add(new ConstantScoreQuery(query), Occur.FILTER);
         }
@@ -682,7 +684,7 @@ final class Lucene10FilterQueryBuilder {
         return everyQuery(List.of(queries));
     }
 
-    private static BooleanQuery everyQuery(Query firstQuery, List<Query> queries) {
+    private static BooleanQuery everyQuery(Query firstQuery, Collection<Query> queries) {
         List<Query> newQueries = new ArrayList<>(queries.size() + 1);
         newQueries.add(firstQuery);
         newQueries.addAll(queries);
@@ -706,7 +708,7 @@ final class Lucene10FilterQueryBuilder {
                 /*Do nothing*/
             }
             case EntityFilterPredicate.MatchEntitySet set ->
-                queryBuilder.add(filterQueryFactory.entityFilterPredicate(set.entities()), Occur.FILTER);
+                queryBuilder.add(Lucene10FilterQueryBuilder.entityFilterPredicate(set.entities()), Occur.FILTER);
         }
 
         for (int i = 0; i < filterQueries.length; i++) {

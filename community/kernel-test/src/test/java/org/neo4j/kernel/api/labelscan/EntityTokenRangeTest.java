@@ -51,7 +51,7 @@ class EntityTokenRangeTest {
         int[][] labelsPerNode = new int[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
 
         // when
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
         EntityTokenRange range = new EntityTokenRangeImpl(10, labelsPerNode, NODE, idLayout);
 
         // then

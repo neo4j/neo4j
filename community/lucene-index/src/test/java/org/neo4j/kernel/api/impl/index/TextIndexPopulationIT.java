@@ -56,6 +56,7 @@ import org.neo4j.kernel.api.impl.schema.text.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.logging.NullLogProvider;
@@ -68,13 +69,13 @@ import org.neo4j.values.storable.Values;
 
 @TestDirectoryExtension
 class TextIndexPopulationIT {
-    private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(0, 0))
+    private static final IndexDescriptor DESCRIPTOR = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(0, 0))
             .withName("a")
             .withIndexType(IndexType.TEXT)
             .withIndexProvider(AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR)
             .materialise(1)
             .withIndexCapability(TextIndexProvider.CAPABILITY);
-    private final Config config = Config.newBuilder()
+    private static final Config CONFIG = Config.newBuilder()
             .set(LuceneSettings.lucene_max_partition_size, 10)
             .build();
 
@@ -104,7 +105,8 @@ class TextIndexPopulationIT {
     @MethodSource("provideParameters")
     void partitionedIndexPopulation(LuceneContext luceneContext, int affectedNodes) throws Exception {
         Path rootFolder = testDir.directory("partitionIndex" + affectedNodes).resolve("uniqueIndex" + affectedNodes);
-        try (var index = TextIndexBuilder.create(descriptor, writable(), config, NullLogProvider.getInstance())
+        try (DatabaseIndex<ValueIndexReader> index = TextIndexBuilder.create(
+                        DESCRIPTOR, writable(), CONFIG, NullLogProvider.getInstance())
                 .withFileSystem(fileSystem)
                 .withLuceneContext(luceneContext)
                 .withIndexRootFolder(rootFolder)
@@ -116,14 +118,14 @@ class TextIndexPopulationIT {
             assertFalse(index.exists());
 
             try (TextIndexAccessor indexAccessor =
-                    new TextIndexAccessor(index, descriptor, SIMPLE_TOKEN_LOOKUP, null, UPDATE_IGNORE_STRATEGY)) {
+                    new TextIndexAccessor(index, DESCRIPTOR, SIMPLE_TOKEN_LOOKUP, null, UPDATE_IGNORE_STRATEGY)) {
                 generateUpdates(indexAccessor, affectedNodes);
                 indexAccessor.force(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, CursorContext.NULL_CONTEXT);
 
                 // now index is online and should contain updates data
                 assertTrue(index.isOnline());
 
-                try (var indexReader = indexAccessor.newValueReader(NO_USAGE_TRACKING);
+                try (ValueIndexReader indexReader = indexAccessor.newValueReader(NO_USAGE_TRACKING);
                         NodeValueIterator results = new NodeValueIterator();
                         IndexSampler indexSampler = indexReader.createSampler()) {
                     indexReader.query(
@@ -155,6 +157,6 @@ class TextIndexPopulationIT {
     }
 
     private IndexEntryUpdate add(long nodeId, Object value) {
-        return EagerValueIndexEntryUpdate.add(nodeId, descriptor, Values.of(value));
+        return EagerValueIndexEntryUpdate.add(nodeId, DESCRIPTOR, Values.of(value));
     }
 }

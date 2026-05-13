@@ -143,19 +143,19 @@ class IndexDescriptorTest {
     }
 
     private static Stream<IndexPrototype> validPrototypesFor(SchemaDescriptor schema) {
-        final int[] entityTokenIds = schema.getEntityTokenIds();
+        int[] entityTokenIds = schema.getEntityTokenIds();
         if (IntSets.mutable.of(entityTokenIds).size() != entityTokenIds.length) {
             return Stream.empty();
         }
 
-        final int[] propertyKeyIds = schema.getPropertyIds();
+        int[] propertyKeyIds = schema.getPropertyIds();
         if (IntSets.mutable.of(propertyKeyIds).size() != propertyKeyIds.length) {
             return Stream.empty();
         }
 
-        final Stream.Builder<IndexPrototype> prototypes = Stream.builder();
-        final IndexPrototype unique = IndexPrototype.uniqueForSchema(schema);
-        final IndexPrototype nonUnique = IndexPrototype.forSchema(schema);
+        Stream.Builder<IndexPrototype> prototypes = Stream.builder();
+        IndexPrototype unique = IndexPrototype.uniqueForSchema(schema);
+        IndexPrototype nonUnique = IndexPrototype.forSchema(schema);
         if (schema.isAnyTokenSchemaDescriptor()) {
             prototypes.add(nonUnique.withIndexType(IndexType.LOOKUP));
         } else if (schema.isSemanticSearchSchemaDescriptor()) {

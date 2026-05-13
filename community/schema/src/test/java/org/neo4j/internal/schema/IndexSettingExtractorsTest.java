@@ -53,8 +53,8 @@ class IndexSettingExtractorsTest {
 
     @Test
     void correctSettings() {
-        final Set<IndexSetting> settings = new HashSet<>(INDIVIDUAL_EXTRACTORS.length);
-        for (final IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
+        Set<IndexSetting> settings = new HashSet<>(INDIVIDUAL_EXTRACTORS.length);
+        for (IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
             settings.add(extractor.setting());
         }
 
@@ -74,10 +74,10 @@ class IndexSettingExtractorsTest {
     }
 
     static Stream<Named<IndexSettingExtractor[]>> requireOnlyOneExtractorPerSetting() {
-        final IndexSetting setting = TestIndexSetting.INTEGER;
+        IndexSetting setting = TestIndexSetting.INTEGER;
 
         IndexSettingExtractor duplicateReference = null;
-        for (final IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
+        for (IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
             if (extractor.setting().equals(setting)) {
                 duplicateReference = extractor;
                 break;
@@ -85,10 +85,10 @@ class IndexSettingExtractorsTest {
         }
         assertThat(duplicateReference).isNotNull();
 
-        final IndexSettingExtractor duplicateType = IntegerExtractor.of(setting);
+        IndexSettingExtractor duplicateType = IntegerExtractor.of(setting);
         assertThat(duplicateType).isNotSameAs(duplicateReference).isEqualTo(duplicateReference);
 
-        final IndexSettingExtractor otherType = StringExtractor.of(setting);
+        IndexSettingExtractor otherType = StringExtractor.of(setting);
         assertThat(otherType).isNotInstanceOf(duplicateReference.getClass());
 
         return Stream.of(
@@ -114,21 +114,21 @@ class IndexSettingExtractorsTest {
 
         @Test
         void extractForValidation() {
-            for (final IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
+            for (IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
                 records.upsert(extractor.extractForValidation(ACCESSOR));
             }
 
-            final KnownIndexSettingRecords extractedRecords = EXTRACTORS.extractForValidation(ACCESSOR);
+            KnownIndexSettingRecords extractedRecords = EXTRACTORS.extractForValidation(ACCESSOR);
             assertThat(extractedRecords).containsExactlyInAnyOrderElementsOf(records);
         }
 
         @Test
         void extractForAuthoritativeRead() {
-            for (final IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
+            for (IndexSettingExtractor extractor : INDIVIDUAL_EXTRACTORS) {
                 records.upsert(extractor.extractForAuthoritativeRead(ACCESSOR));
             }
 
-            final KnownIndexSettingRecords extractedRecords = EXTRACTORS.extractForAuthoritativeRead(ACCESSOR);
+            KnownIndexSettingRecords extractedRecords = EXTRACTORS.extractForAuthoritativeRead(ACCESSOR);
             assertThat(extractedRecords).containsExactlyInAnyOrderElementsOf(records);
         }
     }

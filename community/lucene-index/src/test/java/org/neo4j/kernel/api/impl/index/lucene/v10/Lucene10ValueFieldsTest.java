@@ -63,13 +63,13 @@ public class Lucene10ValueFieldsTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    public void checkTemporalWithZoneOrder(List<String> allDateTimes) {
+    public static void checkTemporalWithZoneOrder(List<String> allDateTimes) {
         List<DateTimeValue> dateTimeValues = new ArrayList<>();
-        for (var datetimeInput : allDateTimes) {
+        for (String datetimeInput : allDateTimes) {
             dateTimeValues.add(DateTimeValue.parse(datetimeInput, ZoneId::systemDefault));
         }
         DateTimeValue previousDateTime = null;
-        for (var datetime : dateTimeValues) {
+        for (DateTimeValue datetime : dateTimeValues) {
             if (previousDateTime != null) {
                 assertThat(Values.COMPARATOR.compare(previousDateTime, datetime))
                         .isNegative();

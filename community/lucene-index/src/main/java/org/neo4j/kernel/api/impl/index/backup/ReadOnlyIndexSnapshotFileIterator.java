@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index.backup;
 
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Iterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -33,7 +32,7 @@ public class ReadOnlyIndexSnapshotFileIterator extends PrefetchingIterator<Path>
     private final Path indexDirectory;
     private final Iterator<String> fileNames;
 
-    protected ReadOnlyIndexSnapshotFileIterator(Path indexDirectory, Collection<String> fileNames) {
+    protected ReadOnlyIndexSnapshotFileIterator(Path indexDirectory, Iterable<String> fileNames) {
         this.indexDirectory = indexDirectory;
         this.fileNames = fileNames.iterator();
     }

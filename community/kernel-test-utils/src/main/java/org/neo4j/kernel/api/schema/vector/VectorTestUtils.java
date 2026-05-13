@@ -538,9 +538,9 @@ public class VectorTestUtils {
     }
 
     private static double extremeSameFloatValue(double value) {
-        final int floatSignificandWidth = 24; // jdk.internal.math.FloatConsts.SIGNIFICAND_WIDTH
-        final int doubleSignificandWidth = 53; // jdk.internal.math.DoubleConsts.SIGNIFICAND_WIDTH
-        final int mask = (1 << (doubleSignificandWidth - floatSignificandWidth - 1)) - 1;
+        int floatSignificandWidth = 24; // jdk.internal.math.FloatConsts.SIGNIFICAND_WIDTH
+        int doubleSignificandWidth = 53; // jdk.internal.math.DoubleConsts.SIGNIFICAND_WIDTH
+        int mask = (1 << (doubleSignificandWidth - floatSignificandWidth - 1)) - 1;
         return Double.longBitsToDouble(Double.doubleToRawLongBits(value) | mask);
     }
 

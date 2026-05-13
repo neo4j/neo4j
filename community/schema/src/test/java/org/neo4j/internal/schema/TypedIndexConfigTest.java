@@ -129,13 +129,13 @@ class TypedIndexConfigTest {
     @ParameterizedTest
     @MethodSource
     void expectedValues(Valid record) {
-        final IndexSetting setting = record.setting();
+        IndexSetting setting = record.setting();
 
-        final Object value = CONFIG.get(setting);
+        Object value = CONFIG.get(setting);
         assertThat(value).isEqualTo(record.value());
 
         if (ACCEPTED_SETTINGS.contains(setting)) {
-            final Value storable = CONFIG.getValue(setting);
+            Value storable = CONFIG.getValue(setting);
             assertThat(storable).isEqualTo(Objects.requireNonNullElse(record.storable(), Values.NO_VALUE));
         }
     }

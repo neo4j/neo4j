@@ -110,7 +110,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
         // nop
     }
 
-    private boolean differentMultiVersionCapabilities(StoreVersion toVersion, StoreVersion fromVersion) {
+    private static boolean differentMultiVersionCapabilities(StoreVersion toVersion, StoreVersion fromVersion) {
         return toVersion.hasCapability(MULTI_VERSION_INDEXES) ^ fromVersion.hasCapability(MULTI_VERSION_INDEXES);
     }
 

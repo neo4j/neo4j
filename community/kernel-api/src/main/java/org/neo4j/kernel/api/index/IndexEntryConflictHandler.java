@@ -26,7 +26,7 @@ public interface IndexEntryConflictHandler {
 
     enum IndexEntryConflictAction {
         THROW,
-        DELETE;
+        DELETE
     }
 
     IndexEntryConflictAction indexEntryConflict(long firstEntityId, long otherEntityId, Value[] values);

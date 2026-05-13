@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 
 class TrigramIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueIndexReader>> {
     private final IndexValueValidator validator;
@@ -42,8 +43,8 @@ class TrigramIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueInde
 
     @Override
     protected LuceneDocument updateAsDocument(ValueIndexEntryUpdate update) {
-        var entityId = update.getEntityId();
-        var value = update.values()[0];
+        long entityId = update.getEntityId();
+        Value value = update.values()[0];
         validator.validate(entityId, value);
         return documentsFactory.createTrigramDocument(entityId, value);
     }

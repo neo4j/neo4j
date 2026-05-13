@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.EagerValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.RandomValues.Configuration;
 import org.neo4j.values.storable.Values;
 
 abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
@@ -153,10 +154,10 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
     void shouldApplyLargeAmountOfInterleavedRandomUpdates() throws Exception {
         // given
         populator.create();
-        var cfg = RandomValues.newConfigurationBuilder()
+        Configuration cfg = RandomValues.newConfigurationBuilder()
                 .maxVectorNumBytes(RandomValues.MAX_NUM_BYTES_IN_INDEX_KEY - Integer.BYTES)
                 .build();
-        var randomValues = RandomValues.create(random.random(), cfg);
+        RandomValues randomValues = RandomValues.create(random.random(), cfg);
         Random updaterRandom = new Random(random.seed());
         Iterator<EagerValueIndexEntryUpdate> updates = valueCreatorUtil.randomUpdateGenerator(randomValues);
 

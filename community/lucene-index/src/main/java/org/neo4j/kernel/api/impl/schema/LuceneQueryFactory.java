@@ -25,6 +25,10 @@ import org.neo4j.function.ThrowingPredicate;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringContainsPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringSuffixPredicate;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
@@ -54,23 +58,23 @@ public abstract class LuceneQueryFactory {
                 IndexQueryConstraints constraints,
                 IndexDescriptor descriptor,
                 PropertyIndexQuery... predicates) {
-            var predicate = predicates[0];
+            PropertyIndexQuery predicate = predicates[0];
             return switch (predicate.type()) {
                 case ALL_ENTRIES -> searcher.newQueryContext().matchAll();
                 case EXACT ->
                     TextDocumentStructure.newSeekQuery(
                             searcher, ((PropertyIndexQuery.ExactPredicate) predicate).value());
                 case STRING_PREFIX -> {
-                    final var spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
+                    StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
                     yield searcher.newQueryContext().stringPrefix(spp.prefix().stringValue());
                 }
                 case STRING_CONTAINS -> {
-                    final var scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
+                    StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
                     yield searcher.newQueryContext()
                             .stringContains(scp.contains().stringValue());
                 }
                 case STRING_SUFFIX -> {
-                    final var ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
+                    StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
                     yield searcher.newQueryContext().stringSuffix(ssp.suffix().stringValue());
                 }
                 default -> throw invalidQuery(descriptor, predicate);
@@ -89,27 +93,27 @@ public abstract class LuceneQueryFactory {
                 IndexQueryConstraints constraints,
                 IndexDescriptor descriptor,
                 PropertyIndexQuery... predicates) {
-            var predicate = predicates[0];
+            PropertyIndexQuery predicate = predicates[0];
             return switch (predicate.type()) {
                 case ALL_ENTRIES -> searcher.newQueryContext().matchAll();
                 case EXACT -> {
-                    final var value = ((PropertyIndexQuery.ExactPredicate) predicate)
+                    String value = ((PropertyIndexQuery.ExactPredicate) predicate)
                             .value()
                             .asObject()
                             .toString();
                     yield searcher.newQueryContext().trigramSearch(value);
                 }
                 case STRING_PREFIX -> {
-                    final var spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
+                    StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
                     yield searcher.newQueryContext().trigramSearch(spp.prefix().stringValue());
                 }
                 case STRING_CONTAINS -> {
-                    final var scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
+                    StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
                     yield searcher.newQueryContext()
                             .trigramSearch(scp.contains().stringValue());
                 }
                 case STRING_SUFFIX -> {
-                    final var ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
+                    StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
                     yield searcher.newQueryContext().trigramSearch(ssp.suffix().stringValue());
                 }
                 default -> throw invalidQuery(descriptor, predicate);
@@ -137,12 +141,13 @@ public abstract class LuceneQueryFactory {
                 IndexQueryConstraints constraints,
                 IndexDescriptor descriptor,
                 PropertyIndexQuery... predicates) {
-            var predicate = predicates[0];
+            PropertyIndexQuery predicate = predicates[0];
             return switch (predicate.type()) {
                 case ALL_ENTRIES -> searcher.newQueryContext().matchAll();
                 case NEAREST_NEIGHBORS -> {
-                    final var nearestNeighborsPredicate = (PropertyIndexQuery.NearestNeighborsPredicate) predicate;
-                    final int k = Math.toIntExact(Math.min(
+                    NearestNeighborsPredicate nearestNeighborsPredicate =
+                            (PropertyIndexQuery.NearestNeighborsPredicate) predicate;
+                    int k = Math.toIntExact(Math.min(
                             nearestNeighborsPredicate.numberOfNeighbors(),
                             constraints.limit().orElse(Integer.MAX_VALUE)));
 
@@ -220,7 +225,7 @@ public abstract class LuceneQueryFactory {
         }
     }
 
-    protected IllegalArgumentException invalidQuery(IndexDescriptor descriptor, PropertyIndexQuery predicate) {
+    protected static IllegalArgumentException invalidQuery(IndexDescriptor descriptor, PropertyIndexQuery predicate) {
         return new IllegalArgumentException(
                 "Index query not supported for %s index. Query: %s".formatted(descriptor.getIndexType(), predicate));
     }

@@ -78,6 +78,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.scheduler.Group;
@@ -223,8 +224,8 @@ abstract class IndexPopulationStressTest {
                         ElementIdMapper.PLACEHOLDER,
                         Sets.immutable.empty(),
                         StorageEngineIndexingBehaviour.EMPTY);
-                var reader = accessor.newValueReader(NO_USAGE_TRACKING);
-                var referenceReader = referenceAccessor.newValueReader(NO_USAGE_TRACKING)) {
+                ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
+                ValueIndexReader referenceReader = referenceAccessor.newValueReader(NO_USAGE_TRACKING)) {
             RecordingClient entries = new RecordingClient();
             RecordingClient referenceEntries = new RecordingClient();
             reader.query(
@@ -320,7 +321,7 @@ abstract class IndexPopulationStressTest {
         return throwing(() -> {
             try {
                 Generator generator = generators[slot] =
-                        new Generator(MAX_BATCH_SIZE, random.seed() + slot, slot * worstCaseEntriesPerThread);
+                        new Generator(MAX_BATCH_SIZE, random.seed() + slot, (long) slot * worstCaseEntriesPerThread);
                 for (int j = 0; j < BATCHES_PER_THREAD; j++) {
                     List<EagerValueIndexEntryUpdate> batch = generator.batch(descriptor);
                     updateLock.readLock().lock();

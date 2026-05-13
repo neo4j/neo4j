@@ -22,6 +22,7 @@ package org.neo4j.internal.schema;
 import java.util.Optional;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.hashing.HashFunction;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointLabelConstraintDescriptor;
 import org.neo4j.util.Preconditions;
 
 public class SchemaNameUtil {
@@ -87,15 +88,15 @@ public class SchemaNameUtil {
     public static String generateName(SchemaDescriptorSupplier rule, TokenNameLookup tokenNameLookup) {
         // NOTE to future maintainers: You probably want to avoid touching this function.
         // Last time this was changed, we had some 400+ tests to update.
-        final HashFunction hf = HashFunction.incrementalXXH64();
+        HashFunction hf = HashFunction.incrementalXXH64();
 
         // common strong seed for distributing values across 64-bit space
         // hex(floor(pow(2, 64) / goldenRatio))
         long key = hf.initialise(0x9E3779B97F4A7C15L);
 
-        final SchemaDescriptor schema = rule.schema();
-        final int[] entityTokenIds = schema.getEntityTokenIds();
-        final int[] propertyKeyIds = schema.getPropertyIds();
+        SchemaDescriptor schema = rule.schema();
+        int[] entityTokenIds = schema.getEntityTokenIds();
+        int[] propertyKeyIds = schema.getPropertyIds();
         key = hf.update(key, schema.entityType().ordinal());
         key = hf.update(
                 key,
@@ -134,7 +135,8 @@ public class SchemaNameUtil {
                             key,
                             constraint.asPropertyTypeConstraint().propertyType().hashCode());
                 } else if (constraint.isRelationshipEndpointLabelConstraint()) {
-                    var relEndpointLabelConstraint = constraint.asRelationshipEndpointLabelConstraint();
+                    RelationshipEndpointLabelConstraintDescriptor relEndpointLabelConstraint =
+                            constraint.asRelationshipEndpointLabelConstraint();
                     key = hf.update(
                             key,
                             tokenNameLookup

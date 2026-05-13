@@ -70,7 +70,7 @@ abstract class Lucene9ScoredEntityResultCollector extends SimpleCollector {
     }
 
     private static long getLimit(IndexQueryConstraints constraints) {
-        final var limit = constraints.limit().orElse(Integer.MAX_VALUE)
+        long limit = constraints.limit().orElse(Integer.MAX_VALUE)
                 + constraints.skip().orElse(0);
         // If the limit is enormous, and we will never reach it from just querying a single index partition.
         // An index partition can "only" hold 2 billion documents.
@@ -88,7 +88,7 @@ abstract class Lucene9ScoredEntityResultCollector extends SimpleCollector {
     @Override
     public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
-        minCompetitiveScore = 0f;
+        minCompetitiveScore = 0.0f;
         updateMinCompetitiveScore(scorer);
     }
 
@@ -131,7 +131,7 @@ abstract class Lucene9ScoredEntityResultCollector extends SimpleCollector {
         if (limit != NO_LIMIT && pq.size() >= limit) {
             // since we tie-break on doc id and collect in doc id order, we can require
             // the next float
-            var localMinScore = Math.nextUp(pq.peekTopScore());
+            float localMinScore = Math.nextUp(pq.peekTopScore());
             if (localMinScore > minCompetitiveScore) {
                 scorer.setMinCompetitiveScore(localMinScore);
                 minCompetitiveScore = localMinScore;

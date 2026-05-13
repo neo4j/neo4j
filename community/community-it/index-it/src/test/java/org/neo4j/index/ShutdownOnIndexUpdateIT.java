@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.availability.AvailabilityListener;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -56,8 +57,8 @@ class ShutdownOnIndexUpdateIT {
             Node node = transaction.createNode(CONSTRAINT_INDEX_LABEL);
             node.setProperty(UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement());
 
-            var availabilityGuard = database.getDatabaseAvailabilityGuard();
-            var closeListener = new TransactionCloseListener(transaction);
+            DatabaseAvailabilityGuard availabilityGuard = database.getDatabaseAvailabilityGuard();
+            TransactionCloseListener closeListener = new TransactionCloseListener(transaction);
             availabilityGuard.addListener(closeListener);
             database.stop();
 

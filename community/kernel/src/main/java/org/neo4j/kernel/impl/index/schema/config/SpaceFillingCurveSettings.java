@@ -129,6 +129,6 @@ public class SpaceFillingCurveSettings {
     public String toString() {
         return String.format(
                 "Space filling curves settings: dimensions=%d, maxLevels=%d, min=%s, max=%s",
-                dimensions, maxLevels, Arrays.toString(extents.getMin()), Arrays.toString(extents.getMax()));
+                dimensions, maxLevels, Arrays.toString(extents.min()), Arrays.toString(extents.max()));
     }
 }

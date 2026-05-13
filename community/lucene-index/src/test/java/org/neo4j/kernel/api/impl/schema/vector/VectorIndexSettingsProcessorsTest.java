@@ -90,9 +90,9 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void existingForVerification(VectorQuantizationType type) {
-            final double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
-            final DoubleValue storable = Values.doubleValue(expansionFactor);
-            final RecordWithSetting record =
+            double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
+            DoubleValue storable = Values.doubleValue(expansionFactor);
+            RecordWithSetting record =
                     records.upsert(new Pending(DEFAULT_SEARCH_EXPANSION_FACTOR, expansionFactor, storable));
 
             DEFAULT.updateForVerification(records);
@@ -102,9 +102,9 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void existingForAuthoritativeRead(VectorQuantizationType type) {
-            final double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
-            final DoubleValue storable = Values.doubleValue(expansionFactor);
-            final RecordWithSetting record =
+            double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
+            DoubleValue storable = Values.doubleValue(expansionFactor);
+            RecordWithSetting record =
                     records.upsert(new Valid(DEFAULT_SEARCH_EXPANSION_FACTOR, expansionFactor, storable));
 
             DEFAULT.updateForAuthoritativeRead(records);
@@ -114,8 +114,8 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void useDefaultForVerification(VectorQuantizationType type) {
-            final double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
-            final DoubleValue storable = Values.doubleValue(expansionFactor);
+            double expansionFactor = EXPANSION_FACTORS_FOR_VERIFICATION.get(type);
+            DoubleValue storable = Values.doubleValue(expansionFactor);
             records.upsert(new Valid(QUANTIZATION_TYPE, type, Values.utf8Value(type.name())));
 
             DEFAULT.updateForVerification(records);
@@ -128,7 +128,7 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void useDefaultAuthoritativeRead(VectorQuantizationType type) {
-            final double expansionFactor = EXPANSION_FACTORS_FOR_AUTHORITATIVE_READ.get(type);
+            double expansionFactor = EXPANSION_FACTORS_FOR_AUTHORITATIVE_READ.get(type);
             records.upsert(new Valid(QUANTIZATION_TYPE, type, Values.utf8Value(type.name())));
 
             DEFAULT.updateForAuthoritativeRead(records);
@@ -148,10 +148,10 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @ValueSource(booleans = {false, true})
         void invalidValue(boolean enabled) {
-            final RecordWithSetting record =
+            RecordWithSetting record =
                     records.upsert(new Pending(QUANTIZATION_ENABLED, enabled, Values.booleanValue(enabled)));
 
-            final RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
+            RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
             assertThat(processedRecord)
                     .asInstanceOf(type(InvalidValue.class))
                     .extracting(HasSetting::setting, RecordWithValue::value, TestBase::underlyingRequirement)
@@ -165,10 +165,9 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @ValueSource(strings = {"false", "true"})
         void incorrectType(String value) {
-            final RecordWithSetting record =
-                    records.upsert(new Valid(QUANTIZATION_ENABLED, value, Values.utf8Value(value)));
+            RecordWithSetting record = records.upsert(new Valid(QUANTIZATION_ENABLED, value, Values.utf8Value(value)));
 
-            final RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
+            RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
             assertThat(processedRecord)
                     .asInstanceOf(type(IncorrectType.class))
                     .extracting(HasSetting::setting, IncorrectType::targetType)
@@ -182,12 +181,11 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @ValueSource(booleans = {false, true})
         void validForVerification(boolean enabled) {
-            final RecordWithSetting record =
+            RecordWithSetting record =
                     records.upsert(new Valid(QUANTIZATION_ENABLED, enabled, Values.booleanValue(enabled)));
-            final VectorQuantizationType processedValue =
-                    enabled ? CORRESPONDING_ENABLED_TYPE : VectorQuantizationType.NONE;
+            VectorQuantizationType processedValue = enabled ? CORRESPONDING_ENABLED_TYPE : VectorQuantizationType.NONE;
 
-            final RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
+            RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
             assertThat(processedRecord)
                     .asInstanceOf(type(Valid.class))
                     .extracting(HasSetting::setting, RecordWithValue::value, RecordWithStorable::storable)
@@ -201,12 +199,11 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @ValueSource(booleans = {false, true})
         void validForAuthoritativeRead(boolean enabled) {
-            final RecordWithSetting record =
+            RecordWithSetting record =
                     records.upsert(new Valid(QUANTIZATION_ENABLED, enabled, Values.booleanValue(enabled)));
-            final VectorQuantizationType processedValue =
-                    enabled ? CORRESPONDING_ENABLED_TYPE : VectorQuantizationType.NONE;
+            VectorQuantizationType processedValue = enabled ? CORRESPONDING_ENABLED_TYPE : VectorQuantizationType.NONE;
 
-            final RecordWithSetting processedRecord = MIGRATOR.processForAuthoritativeRead(record);
+            RecordWithSetting processedRecord = MIGRATOR.processForAuthoritativeRead(record);
             assertThat(processedRecord)
                     .asInstanceOf(type(Valid.class))
                     .extracting(HasSetting::setting, RecordWithValue::value, RecordWithStorable::storable)
@@ -230,8 +227,8 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void invalidValueViaEnabled(VectorQuantizationType type) {
-            final Value storable = Values.utf8Value(type.name());
-            final RecordWithSetting enabledRecord = records.upsert(new MissingSetting(QUANTIZATION_ENABLED));
+            Value storable = Values.utf8Value(type.name());
+            RecordWithSetting enabledRecord = records.upsert(new MissingSetting(QUANTIZATION_ENABLED));
             records.upsert(new Pending(QUANTIZATION_TYPE, type.name(), storable));
             LOOKUP.updateForVerification(records);
 
@@ -247,10 +244,10 @@ class VectorIndexSettingsProcessorsTest {
         @NullSource
         @ValueSource(booleans = {false, true})
         void invalidValueViaType(Boolean enabled) {
-            final Optional<Boolean> optionalEnabled = Optional.ofNullable(enabled);
-            final Value storable = optionalEnabled.map(Values::of).orElse(Values.NO_VALUE);
+            Optional<Boolean> optionalEnabled = Optional.ofNullable(enabled);
+            Value storable = optionalEnabled.map(Values::of).orElse(Values.NO_VALUE);
             records.upsert(new Pending(QUANTIZATION_ENABLED, optionalEnabled, storable));
-            final RecordWithSetting typeRecord = records.upsert(new MissingSetting(QUANTIZATION_TYPE));
+            RecordWithSetting typeRecord = records.upsert(new MissingSetting(QUANTIZATION_TYPE));
             LOOKUP.updateForVerification(records);
 
             assertThat(records.get(QUANTIZATION_ENABLED))
@@ -263,8 +260,8 @@ class VectorIndexSettingsProcessorsTest {
 
         @Test
         void invalidValueViaBoth() {
-            final RecordWithSetting enabledRecord = records.upsert(new MissingSetting(QUANTIZATION_ENABLED));
-            final RecordWithSetting typeRecord = records.upsert(new MissingSetting(QUANTIZATION_TYPE));
+            RecordWithSetting enabledRecord = records.upsert(new MissingSetting(QUANTIZATION_ENABLED));
+            RecordWithSetting typeRecord = records.upsert(new MissingSetting(QUANTIZATION_TYPE));
             LOOKUP.updateForVerification(records);
 
             assertThat(records.get(QUANTIZATION_ENABLED)).isSameAs(enabledRecord);
@@ -273,15 +270,15 @@ class VectorIndexSettingsProcessorsTest {
 
         @Test
         void conflict() {
-            final boolean enabled = true;
-            final Optional<Boolean> optionalEnabled = Optional.of(enabled);
-            final VectorQuantizationType type = VectorQuantizationType.NONE;
-            final Value storable = Values.utf8Value(type.name());
+            boolean enabled = true;
+            Optional<Boolean> optionalEnabled = Optional.of(enabled);
+            VectorQuantizationType type = VectorQuantizationType.NONE;
+            Value storable = Values.utf8Value(type.name());
             records.upsert(new Pending(QUANTIZATION_ENABLED, optionalEnabled, Values.booleanValue(enabled)));
             records.upsert(new Pending(QUANTIZATION_TYPE, type.name(), storable));
             LOOKUP.updateForVerification(records);
 
-            final ObjectAssert<InvalidValue> invalidEnabledValueAssert =
+            ObjectAssert<InvalidValue> invalidEnabledValueAssert =
                     assertThat(records.get(QUANTIZATION_ENABLED)).asInstanceOf(type(InvalidValue.class));
             invalidEnabledValueAssert.extracting(RecordWithValue::value).isEqualTo(optionalEnabled);
             invalidEnabledValueAssert
@@ -303,7 +300,7 @@ class VectorIndexSettingsProcessorsTest {
                             String.valueOf(Optional.empty()),
                             VectorQuantizationType.SCALAR.name());
 
-            final ObjectAssert<InvalidValue> invalidTypeValueAssert =
+            ObjectAssert<InvalidValue> invalidTypeValueAssert =
                     assertThat(records.get(QUANTIZATION_TYPE)).asInstanceOf(type(InvalidValue.class));
             invalidTypeValueAssert.extracting(RecordWithValue::value).isEqualTo(type);
             invalidTypeValueAssert
@@ -329,14 +326,14 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource(mode = Mode.EXCLUDE, names = "NONE")
         void conflict(VectorQuantizationType type) {
-            final boolean enabled = false;
-            final Optional<Boolean> optionalEnabled = Optional.of(enabled);
-            final Value storable = Values.utf8Value(type.name());
+            boolean enabled = false;
+            Optional<Boolean> optionalEnabled = Optional.of(enabled);
+            Value storable = Values.utf8Value(type.name());
             records.upsert(new Pending(QUANTIZATION_ENABLED, optionalEnabled, Values.booleanValue(enabled)));
             records.upsert(new Pending(QUANTIZATION_TYPE, type.name(), storable));
             LOOKUP.updateForVerification(records);
 
-            final ObjectAssert<InvalidValue> invalidEnabledValueAssert =
+            ObjectAssert<InvalidValue> invalidEnabledValueAssert =
                     assertThat(records.get(QUANTIZATION_ENABLED)).asInstanceOf(type(InvalidValue.class));
             invalidEnabledValueAssert.extracting(RecordWithValue::value).isEqualTo(optionalEnabled);
             invalidEnabledValueAssert
@@ -358,7 +355,7 @@ class VectorIndexSettingsProcessorsTest {
                             String.valueOf(Optional.empty()),
                             VectorQuantizationType.SCALAR.name());
 
-            final ObjectAssert<InvalidValue> invalidTypeValueAssert =
+            ObjectAssert<InvalidValue> invalidTypeValueAssert =
                     assertThat(records.get(QUANTIZATION_TYPE)).asInstanceOf(type(InvalidValue.class));
             invalidTypeValueAssert.extracting(RecordWithValue::value).isEqualTo(type);
             invalidTypeValueAssert
@@ -388,7 +385,7 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void missingEnabledForVerification(VectorQuantizationType type) {
-            final Value storable = Values.utf8Value(type.name());
+            Value storable = Values.utf8Value(type.name());
             records.upsert(new Pending(QUANTIZATION_ENABLED, Optional.empty(), Values.NO_VALUE));
             records.upsert(new Pending(QUANTIZATION_TYPE, type.name(), storable));
             LOOKUP.updateForVerification(records);
@@ -407,9 +404,8 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource
         void missingEnabledForAuthoritativeRead(VectorQuantizationType type) {
-            final Value storable = Values.utf8Value(type.name());
-            final Valid enabledRecord =
-                    records.upsert(new Valid(QUANTIZATION_ENABLED, Optional.empty(), Values.NO_VALUE));
+            Value storable = Values.utf8Value(type.name());
+            Valid enabledRecord = records.upsert(new Valid(QUANTIZATION_ENABLED, Optional.empty(), Values.NO_VALUE));
             records.upsert(new Valid(QUANTIZATION_TYPE, type.name(), storable));
             LOOKUP.updateForAuthoritativeRead(records);
 
@@ -423,11 +419,11 @@ class VectorIndexSettingsProcessorsTest {
 
         @Test
         void disabledForVerification() {
-            final boolean enabled = false;
-            final Optional<Boolean> optionalEnabled = Optional.of(enabled);
-            final VectorQuantizationType type = VectorQuantizationType.NONE;
-            final Value storableEnabled = Values.booleanValue(enabled);
-            final Value storableType = Values.utf8Value(type.name());
+            boolean enabled = false;
+            Optional<Boolean> optionalEnabled = Optional.of(enabled);
+            VectorQuantizationType type = VectorQuantizationType.NONE;
+            Value storableEnabled = Values.booleanValue(enabled);
+            Value storableType = Values.utf8Value(type.name());
             records.upsert(new Pending(QUANTIZATION_ENABLED, optionalEnabled, storableEnabled));
             records.upsert(new Pending(QUANTIZATION_TYPE, type.name(), storableType));
             LOOKUP.updateForVerification(records);
@@ -445,11 +441,11 @@ class VectorIndexSettingsProcessorsTest {
 
         @Test
         void disabledForAuthoritativeRead() {
-            final boolean enabled = false;
-            final Optional<Boolean> optionalEnabled = Optional.of(enabled);
-            final VectorQuantizationType type = VectorQuantizationType.NONE;
-            final Value storableEnabled = Values.booleanValue(enabled);
-            final Value storableType = Values.utf8Value(type.name());
+            boolean enabled = false;
+            Optional<Boolean> optionalEnabled = Optional.of(enabled);
+            VectorQuantizationType type = VectorQuantizationType.NONE;
+            Value storableEnabled = Values.booleanValue(enabled);
+            Value storableType = Values.utf8Value(type.name());
             records.upsert(new Valid(QUANTIZATION_ENABLED, optionalEnabled, storableEnabled));
             records.upsert(new Valid(QUANTIZATION_TYPE, type.name(), storableType));
             LOOKUP.updateForAuthoritativeRead(records);
@@ -468,10 +464,10 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource(mode = Mode.EXCLUDE, names = "NONE")
         void enabledForVerification(VectorQuantizationType type) {
-            final boolean enabled = true;
-            final Optional<Boolean> optionalEnabled = Optional.of(enabled);
-            final Value storableEnabled = Values.booleanValue(enabled);
-            final Value storableType = Values.utf8Value(type.name());
+            boolean enabled = true;
+            Optional<Boolean> optionalEnabled = Optional.of(enabled);
+            Value storableEnabled = Values.booleanValue(enabled);
+            Value storableType = Values.utf8Value(type.name());
             records.upsert(new Pending(QUANTIZATION_ENABLED, optionalEnabled, Values.booleanValue(enabled)));
             records.upsert(new Pending(QUANTIZATION_TYPE, type.name(), storableType));
             LOOKUP.updateForVerification(records);
@@ -490,10 +486,10 @@ class VectorIndexSettingsProcessorsTest {
         @ParameterizedTest
         @EnumSource(mode = Mode.EXCLUDE, names = "NONE")
         void enabledForAuthoritativeRead(VectorQuantizationType type) {
-            final boolean enabled = true;
-            final Optional<Boolean> optionalEnabled = Optional.of(enabled);
-            final Value storableEnabled = Values.booleanValue(enabled);
-            final Value storableType = Values.utf8Value(type.name());
+            boolean enabled = true;
+            Optional<Boolean> optionalEnabled = Optional.of(enabled);
+            Value storableEnabled = Values.booleanValue(enabled);
+            Value storableType = Values.utf8Value(type.name());
             records.upsert(new Valid(QUANTIZATION_ENABLED, optionalEnabled, storableEnabled));
             records.upsert(new Valid(QUANTIZATION_TYPE, type.name(), storableType));
             LOOKUP.updateForAuthoritativeRead(records);

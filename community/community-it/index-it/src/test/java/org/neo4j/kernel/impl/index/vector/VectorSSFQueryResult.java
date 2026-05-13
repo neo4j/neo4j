@@ -54,6 +54,7 @@ class VectorSSFQueryResult {
         return entityId;
     }
 
+    @SuppressWarnings("unchecked")
     public <V extends Value> V getValue(String key) {
         return (V) values.get(key);
     }
@@ -80,9 +81,9 @@ class VectorSSFQueryResult {
     private void addProperties(PropertyCursor propertyCursor, TokenRead tokenRead, Set<String> exclude)
             throws PropertyKeyIdNotFoundKernelException {
         while (propertyCursor.next()) {
-            var key = tokenRead.propertyKeyName(propertyCursor.propertyKey());
+            String key = tokenRead.propertyKeyName(propertyCursor.propertyKey());
             if (!exclude.contains(key)) {
-                var value = propertyCursor.propertyValue();
+                Value value = propertyCursor.propertyValue();
                 values.put(key, value);
             }
         }
@@ -91,8 +92,8 @@ class VectorSSFQueryResult {
     static VectorSSFQueryResult fromCursors(
             float score, NodeCursor nodeCursor, PropertyCursor propertyCursor, TokenRead tokenRead, Set<String> exclude)
             throws LabelNotFoundKernelException, PropertyKeyIdNotFoundKernelException {
-        var queryResult = new VectorSSFQueryResult(nodeCursor.nodeReference(), score);
-        var labelTokens = nodeCursor.labelsAndProperties(propertyCursor, PropertySelection.ALL_PROPERTIES);
+        VectorSSFQueryResult queryResult = new VectorSSFQueryResult(nodeCursor.nodeReference(), score);
+        TokenSet labelTokens = nodeCursor.labelsAndProperties(propertyCursor, PropertySelection.ALL_PROPERTIES);
         queryResult.addLabels(labelTokens, tokenRead);
         queryResult.addProperties(propertyCursor, tokenRead, exclude);
 
@@ -106,7 +107,7 @@ class VectorSSFQueryResult {
             TokenRead tokenRead,
             Set<String> exclude)
             throws KernelException {
-        var queryResult = new VectorSSFQueryResult(relCursor.relationshipReference(), score);
+        VectorSSFQueryResult queryResult = new VectorSSFQueryResult(relCursor.relationshipReference(), score);
         queryResult.addType(relCursor.type(), tokenRead);
         relCursor.properties(propertyCursor);
         queryResult.addProperties(propertyCursor, tokenRead, exclude);
@@ -119,7 +120,7 @@ class VectorSSFQueryResult {
     }
 
     public Map<String, Value> mapForKeys(String... keys) {
-        final Map<String, Value> result = new HashMap<>(keys.length);
+        Map<String, Value> result = new HashMap<>(keys.length);
         for (String key : keys) {
             result.put(key, values.get(key));
         }
@@ -141,7 +142,7 @@ class VectorSSFQueryResult {
 
     static Condition<VectorSSFQueryResult> field(String key, Object o) {
         Value value = Values.of(o);
-        return new Condition<VectorSSFQueryResult>(s -> s.getValue(key).equals(value), "value %s=%s", key, value);
+        return new Condition<>(s -> s.getValue(key).equals(value), "value %s=%s", key, value);
     }
 
     static class ResultList extends ArrayList<VectorSSFQueryResult> {}

@@ -233,7 +233,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
 
     @Override
     public void validateShards(
-            IndexAccessor[] otherShards,
+            Iterable<IndexAccessor> otherShards,
             boolean valueUniqueness,
             ShardedIndexEntryConflictHandler conflictHandler,
             int threads,

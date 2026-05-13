@@ -86,7 +86,7 @@ public class VectorQuantizationTest extends VectorSSFTestBase {
         float[] vector3 = {0.1f, 2.0f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f};
         float[] vector4 = {0.8f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f};
 
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             createTestNode(tx, Map.of("id", 1, EMBEDDING_NAME, vector1));
             createTestNode(tx, Map.of("id", 2, EMBEDDING_NAME, vector2));
             createTestNode(tx, Map.of("id", 3, EMBEDDING_NAME, vector3));

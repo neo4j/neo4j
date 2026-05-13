@@ -52,7 +52,7 @@ public final class NodeLabelExistenceMissingLabelException extends ConstraintVal
             Phase phase,
             long nodeReference,
             TokenNameLookup tokenNameLookup) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NB3)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NB3)
                 .withParam(GqlParams.StringParam.entityType, EntityType.NODE.name())
                 .withParam(GqlParams.NumberParam.entityId, nodeReference)
                 .withParam(GqlParams.StringParam.tokenType1, TokenType.LABEL.getName())

@@ -87,8 +87,7 @@ public class VectorIndexConfigUtils {
     public static final SortedMap<IndexSetting, KernelVersion> INDEX_SETTING_INTRODUCED_VERSIONS;
 
     static {
-        final SortedMap<IndexSetting, KernelVersion> indexSettingIntroducedVersions =
-                new TreeMap<>(INDEX_SETTING_COMPARATOR);
+        SortedMap<IndexSetting, KernelVersion> indexSettingIntroducedVersions = new TreeMap<>(INDEX_SETTING_COMPARATOR);
         indexSettingIntroducedVersions.put(DIMENSIONS, KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
         indexSettingIntroducedVersions.put(SIMILARITY_FUNCTION, KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
         indexSettingIntroducedVersions.put(
@@ -136,10 +135,10 @@ public class VectorIndexConfigUtils {
     }
 
     static ValidatingIndexSettingsProcessor similarityFunctionLookup(VectorSimilarityFunction... similarityFunctions) {
-        final Map<String, VectorSimilarityFunction> lookup = new TreeMap<>(CASE_INSENSITIVE_ORDER);
-        for (final VectorSimilarityFunction similarityFunction : similarityFunctions) {
-            final String name = similarityFunction.functionName().toUpperCase(Locale.ROOT);
-            final VectorSimilarityFunction existingSimilarityFunction = lookup.put(name, similarityFunction);
+        Map<String, VectorSimilarityFunction> lookup = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+        for (VectorSimilarityFunction similarityFunction : similarityFunctions) {
+            String name = similarityFunction.functionName().toUpperCase(Locale.ROOT);
+            VectorSimilarityFunction existingSimilarityFunction = lookup.put(name, similarityFunction);
             throw new IllegalArgumentException(
                     "Expected a single %s to be provided for '%s', multiple given. Provided both `%s` and `%s`."
                             .formatted(
@@ -156,8 +155,8 @@ public class VectorIndexConfigUtils {
     }
 
     static IndexSettingsProcessor similarityFunctionNormalizer(Map<String, VectorSimilarityFunction> lookup) {
-        final Map<VectorSimilarityFunction, TextValue> inverted = new HashMap<>(lookup.size());
-        for (final Entry<String, VectorSimilarityFunction> entry : lookup.entrySet()) {
+        Map<VectorSimilarityFunction, TextValue> inverted = new HashMap<>(lookup.size());
+        for (Entry<String, VectorSimilarityFunction> entry : lookup.entrySet()) {
             inverted.put(entry.getValue(), Values.utf8Value(entry.getKey()));
         }
         return SingleIndexSettingMapStorableNormalizer.of(
@@ -208,27 +207,27 @@ public class VectorIndexConfigUtils {
 
         @Override
         public void updateForVerification(KnownIndexSettingRecords records) {
-            if (!(records.get(DEFAULT_SEARCH_EXPANSION_FACTOR) instanceof final MissingSetting missing)) {
+            if (!(records.get(DEFAULT_SEARCH_EXPANSION_FACTOR) instanceof MissingSetting missing)) {
                 return;
             }
-            if (!(records.get(QUANTIZATION_TYPE) instanceof final Valid validType
-                    && validType.value() instanceof final VectorQuantizationType type)) {
+            if (!(records.get(QUANTIZATION_TYPE) instanceof Valid validType
+                    && validType.value() instanceof VectorQuantizationType type)) {
                 return;
             }
 
-            final double expansionFactor = defaultsForVerification.applyAsDouble(type);
+            double expansionFactor = defaultsForVerification.applyAsDouble(type);
             records.upsert(new Pending(missing, expansionFactor, Values.doubleValue(expansionFactor)));
         }
 
         @Override
         public void updateForAuthoritativeRead(KnownIndexSettingRecords records) {
             if (defaultsForAuthoritativeRead == null
-                    || !(records.get(DEFAULT_SEARCH_EXPANSION_FACTOR) instanceof final MissingSetting missing)) {
+                    || !(records.get(DEFAULT_SEARCH_EXPANSION_FACTOR) instanceof MissingSetting missing)) {
                 return;
             }
 
-            final Valid validType = (Valid) records.get(QUANTIZATION_TYPE);
-            final double expansionFactor =
+            Valid validType = (Valid) records.get(QUANTIZATION_TYPE);
+            double expansionFactor =
                     defaultsForAuthoritativeRead.applyAsDouble(validType.valueAs(VectorQuantizationType.class));
             records.upsert(new Valid(missing, expansionFactor, Values.NO_VALUE));
         }
@@ -305,7 +304,7 @@ public class VectorIndexConfigUtils {
 
         @Override
         public RecordWithSetting processForVerification(RecordWithSetting record) {
-            final RecordWithSetting migratedRecord = super.processForVerification(record);
+            RecordWithSetting migratedRecord = super.processForVerification(record);
             return switch (migratedRecord) {
                 case Pending pending when pending.setting().equals(toSetting) -> new Valid(pending);
                 default -> migratedRecord;
@@ -317,7 +316,7 @@ public class VectorIndexConfigUtils {
             new SingleIndexSettingProcessor(QUANTIZATION_ENABLED) {
                 @Override
                 public RecordWithSetting processForVerification(RecordWithSetting record) {
-                    if (!(record instanceof final Valid valid)) {
+                    if (!(record instanceof Valid valid)) {
                         return record;
                     }
                     return new Valid(valid, Optional.empty(), Values.NO_VALUE);
@@ -344,7 +343,7 @@ public class VectorIndexConfigUtils {
             StringToUpperCaseConverter.of(QUANTIZATION_TYPE);
 
     static IndexSettingsProcessor quantizationTypeDefault(VectorQuantizationType quantizationType) {
-        final String name = quantizationType.name();
+        String name = quantizationType.name();
         return MissingSettingMaterializer.of(QUANTIZATION_TYPE, name, name, Values.utf8Value(name));
     }
 
@@ -363,7 +362,7 @@ public class VectorIndexConfigUtils {
                     if (optionalEnabled.isEmpty()) {
                         return true;
                     }
-                    final boolean enabled = optionalEnabled.get();
+                    boolean enabled = optionalEnabled.get();
                     return !enabled && type == VectorQuantizationType.NONE
                             || enabled && type != VectorQuantizationType.NONE;
                 };
@@ -385,10 +384,10 @@ public class VectorIndexConfigUtils {
                     NameToEnumLookup.of(QUANTIZATION_TYPE, quantizationTypes));
 
             // build up supported message
-            final Optional<Boolean> optEmpty = Optional.empty();
-            final Optional<Boolean> optFalse = Optional.of(false);
-            final Optional<Boolean> optTrue = Optional.of(true);
-            final StringBuilder sb = new StringBuilder()
+            Optional<Boolean> optEmpty = Optional.empty();
+            Optional<Boolean> optFalse = Optional.of(false);
+            Optional<Boolean> optTrue = Optional.of(true);
+            StringBuilder sb = new StringBuilder()
                     .append("('")
                     .append(QUANTIZATION_ENABLED.getSettingName())
                     .append("', '")
@@ -403,18 +402,18 @@ public class VectorIndexConfigUtils {
                     .append(")");
 
             // true, not NONE
-            for (final VectorQuantizationType type : quantizationTypes) {
+            for (VectorQuantizationType type : quantizationTypes) {
                 if (type != VectorQuantizationType.NONE) {
                     sb.append(" | (").append(optTrue).append(", ").append(type).append(")");
                 }
             }
 
             // NULL, _
-            for (final VectorQuantizationType type : quantizationTypes) {
+            for (VectorQuantizationType type : quantizationTypes) {
                 sb.append(" | (").append(optEmpty).append(", ").append(type).append(")");
             }
 
-            final String supported = sb.toString();
+            String supported = sb.toString();
             this.requirement = new DefaultRequirement<>(JOINT_VALUE_VALIDATOR) {
                 @Override
                 public String supported() {
@@ -426,10 +425,10 @@ public class VectorIndexConfigUtils {
         @Override
         public void updateForVerification(KnownIndexSettingRecords records) {
             independentSettingsValidator.updateForVerification(records);
-            final RecordWithSetting enabledRecord = records.get(QUANTIZATION_ENABLED);
-            final RecordWithSetting typeRecord = records.get(QUANTIZATION_TYPE);
-            if (enabledRecord instanceof final Valid validEnabled
-                    && typeRecord instanceof final Valid validType
+            RecordWithSetting enabledRecord = records.get(QUANTIZATION_ENABLED);
+            RecordWithSetting typeRecord = records.get(QUANTIZATION_TYPE);
+            if (enabledRecord instanceof Valid validEnabled
+                    && typeRecord instanceof Valid validType
                     && !JOINT_VALUE_VALIDATOR.test(validEnabled.get(), validType.get())) {
                 // incompatable settings
                 records.upsert(new InvalidValue(validEnabled, requirement));

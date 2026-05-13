@@ -61,7 +61,7 @@ public class SingleIndexSettingConverterTest {
 
         @Test
         void incorrectType() {
-            final RecordWithSetting record = new Pending(setting, "42", Values.utf8Value("42"));
+            RecordWithSetting record = new Pending(setting, "42", Values.utf8Value("42"));
 
             processForVerificationAndAssertRecord(record, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -81,9 +81,9 @@ public class SingleIndexSettingConverterTest {
                     Integer.MAX_VALUE
                 })
         void pending(Integer value) {
-            final Value storable = Values.unsafeOf(value, true);
-            final RecordWithSetting record = new Pending(setting, value, storable);
-            final OptionalInt processedValue = value != null ? OptionalInt.of(value) : OptionalInt.empty();
+            Value storable = Values.unsafeOf(value, true);
+            RecordWithSetting record = new Pending(setting, value, storable);
+            OptionalInt processedValue = value != null ? OptionalInt.of(value) : OptionalInt.empty();
 
             processForVerificationAndAssertRecord(record, Pending.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -103,9 +103,9 @@ public class SingleIndexSettingConverterTest {
                     Integer.MAX_VALUE
                 })
         void valid(Integer value) {
-            final Value storable = Values.unsafeOf(value, true);
-            final RecordWithSetting record = new Valid(setting, value, storable);
-            final OptionalInt processedValue = value != null ? OptionalInt.of(value) : OptionalInt.empty();
+            Value storable = Values.unsafeOf(value, true);
+            RecordWithSetting record = new Valid(setting, value, storable);
+            OptionalInt processedValue = value != null ? OptionalInt.of(value) : OptionalInt.empty();
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -126,7 +126,7 @@ public class SingleIndexSettingConverterTest {
         @ParameterizedTest
         @MethodSource
         void incorrectType(Object value) {
-            final RecordWithSetting record = new Pending(setting, value, Values.of(value));
+            RecordWithSetting record = new Pending(setting, value, Values.of(value));
 
             processForVerificationAndAssertRecord(record, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -134,16 +134,16 @@ public class SingleIndexSettingConverterTest {
         }
 
         static Stream<Object> incorrectType() {
-            return Stream.of(false, 42, new float[] {3.f, 4.f, 5.f});
+            return Stream.of(false, 42, new float[] {3.0f, 4.0f, 5.0f});
         }
 
         @ParameterizedTest
         @NullSource
         @ValueSource(strings = {"foo", "bar", "baz"})
         void pending(String value) {
-            final Value storable = Values.unsafeOf(value, true);
-            final RecordWithSetting record = new Pending(setting, value, storable);
-            final Optional<?> processedValue = Optional.ofNullable(value);
+            Value storable = Values.unsafeOf(value, true);
+            RecordWithSetting record = new Pending(setting, value, storable);
+            Optional<?> processedValue = Optional.ofNullable(value);
 
             processForVerificationAndAssertRecord(record, Pending.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -154,9 +154,9 @@ public class SingleIndexSettingConverterTest {
         @NullSource
         @ValueSource(strings = {"foo", "bar", "baz"})
         void valid(String value) {
-            final Value storable = Values.unsafeOf(value, true);
-            final RecordWithSetting record = new Valid(setting, value, storable);
-            final Optional<?> processedValue = Optional.ofNullable(value);
+            Value storable = Values.unsafeOf(value, true);
+            RecordWithSetting record = new Valid(setting, value, storable);
+            Optional<?> processedValue = Optional.ofNullable(value);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -177,7 +177,7 @@ public class SingleIndexSettingConverterTest {
         @ParameterizedTest
         @MethodSource
         void incorrectType(Object value) {
-            final RecordWithSetting record = new Pending(setting, value, Values.of(value));
+            RecordWithSetting record = new Pending(setting, value, Values.of(value));
 
             processForVerificationAndAssertRecord(record, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -185,15 +185,15 @@ public class SingleIndexSettingConverterTest {
         }
 
         static Stream<Object> incorrectType() {
-            return Stream.of(false, 42, new float[] {3.f, 4.f, 5.f});
+            return Stream.of(false, 42, new float[] {3.0f, 4.0f, 5.0f});
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"foo", "bar", "baz"})
         void pending(String value) {
-            final Value storable = Values.utf8Value(value);
-            final RecordWithSetting record = new Pending(setting, value, storable);
-            final String processedValue = value.toUpperCase(Locale.ROOT);
+            Value storable = Values.utf8Value(value);
+            RecordWithSetting record = new Pending(setting, value, storable);
+            String processedValue = value.toUpperCase(Locale.ROOT);
 
             processForVerificationAndAssertRecord(record, Pending.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -203,9 +203,9 @@ public class SingleIndexSettingConverterTest {
         @ParameterizedTest
         @ValueSource(strings = {"foo", "bar", "baz"})
         void valid(String value) {
-            final Value storable = Values.utf8Value(value);
-            final RecordWithSetting record = new Valid(setting, value, storable);
-            final String processedValue = value.toUpperCase(Locale.ROOT);
+            Value storable = Values.utf8Value(value);
+            RecordWithSetting record = new Valid(setting, value, storable);
+            String processedValue = value.toUpperCase(Locale.ROOT);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)

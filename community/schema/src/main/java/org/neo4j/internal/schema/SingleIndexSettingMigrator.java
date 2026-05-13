@@ -51,7 +51,7 @@ public abstract class SingleIndexSettingMigrator<FROM, TO> extends SingleIndexSe
     /// If a non-valid [RecordWithSetting] is provided an [InvalidValue] will be returned.
     @Override
     public RecordWithSetting processForVerification(RecordWithSetting record) {
-        if (!(record instanceof final Valid valid)) {
+        if (!(record instanceof Valid valid)) {
             return new InvalidValue(toSetting, null, new ClassRequirement(toType));
         }
         if (!fromType.isInstance(valid.value())) {
@@ -63,7 +63,7 @@ public abstract class SingleIndexSettingMigrator<FROM, TO> extends SingleIndexSe
 
     @Override
     public RecordWithSetting processForAuthoritativeRead(RecordWithSetting record) {
-        if (!(record instanceof final Valid valid)) {
+        if (!(record instanceof Valid valid)) {
             return new MissingSetting(toSetting);
         }
 

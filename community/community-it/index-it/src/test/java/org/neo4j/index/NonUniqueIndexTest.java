@@ -134,7 +134,7 @@ class NonUniqueIndexTest {
         };
     }
 
-    private static Runnable slowRunnable(final Runnable target) {
+    private static Runnable slowRunnable(Runnable target) {
         return () -> {
             LockSupport.parkNanos(100_000_000L);
             target.run();

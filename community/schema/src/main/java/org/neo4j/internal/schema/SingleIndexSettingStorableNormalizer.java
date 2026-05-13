@@ -55,18 +55,18 @@ public abstract class SingleIndexSettingStorableNormalizer<FROM> extends SingleI
 
     @Override
     public RecordWithSetting processForVerification(RecordWithSetting record) {
-        if (!(record instanceof final Valid valid)) {
+        if (!(record instanceof Valid valid)) {
             return record;
         }
 
-        final Object value = valid.value();
+        Object value = valid.value();
         if (value == null) {
             return new InvalidValue(valid, requirement);
         }
         if (!fromType.isInstance(value)) {
             return new IncorrectType(valid, fromType);
         }
-        final FROM typedValue = valid.valueAs(fromType);
+        FROM typedValue = valid.valueAs(fromType);
         if (!normalizable(typedValue)) {
             return new InvalidValue(valid, requirement);
         }
@@ -89,15 +89,15 @@ public abstract class SingleIndexSettingStorableNormalizer<FROM> extends SingleI
 
         @Override
         public RecordWithSetting processForVerification(RecordWithSetting record) {
-            if (!(record instanceof final Valid valid)) {
+            if (!(record instanceof Valid valid)) {
                 return record;
             }
 
-            final Object value = valid.value();
+            Object value = valid.value();
             if (value != null && !fromType.isInstance(value)) {
                 return new IncorrectType(valid, fromType);
             }
-            final FROM typedValue = valid.valueAs(fromType);
+            FROM typedValue = valid.valueAs(fromType);
             if (!normalizable(typedValue)) {
                 return new InvalidValue(valid, requirement);
             }
@@ -143,6 +143,7 @@ public abstract class SingleIndexSettingStorableNormalizer<FROM> extends SingleI
             return of(setting, fromType, EnumSet.allOf(fromType));
         }
 
+        @SafeVarargs
         public static <FROM extends Enum<FROM>> EnumToNameStorableNormalizer<FROM> of(
                 IndexSetting setting, Class<FROM> fromType, FROM first, FROM... rest) {
             return of(setting, fromType, EnumSet.of(first, rest));
@@ -150,8 +151,8 @@ public abstract class SingleIndexSettingStorableNormalizer<FROM> extends SingleI
 
         public static <FROM extends Enum<FROM>> EnumToNameStorableNormalizer<FROM> of(
                 IndexSetting setting, Class<FROM> fromType, Set<FROM> values) {
-            final Map<FROM, TextValue> lookup = new EnumMap<>(fromType);
-            for (final FROM value : values) {
+            Map<FROM, TextValue> lookup = new EnumMap<>(fromType);
+            for (FROM value : values) {
                 lookup.put(value, Values.utf8Value(value.name()));
             }
             return new EnumToNameStorableNormalizer<>(setting, fromType, lookup);

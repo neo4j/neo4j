@@ -66,7 +66,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
 
     @Override
     NativeIndexPopulator<KEY> createPopulator(PageCache pageCache) throws IOException {
-        var cacheTracer = PageCacheTracer.NULL;
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DatabaseIndexContext context = DatabaseIndexContext.builder(
                         pageCache,
                         fs,
@@ -117,7 +117,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
         for (IndexEntryUpdate update : updates) {
             updater.process(update);
         }
-        var e = assertThrows(Exception.class, () -> {
+        Exception e = assertThrows(Exception.class, () -> {
             updater.close();
             populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
         });

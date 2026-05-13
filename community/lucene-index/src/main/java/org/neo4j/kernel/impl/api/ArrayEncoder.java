@@ -230,32 +230,15 @@ public final class ArrayEncoder {
         }
 
         private static char typeChar(ArrayType arrayType) {
-            switch (arrayType) {
-                case BOOLEAN:
-                    return 'Z';
-                case BYTE:
-                case SHORT:
-                case INT:
-                case LONG:
-                case FLOAT:
-                case DOUBLE:
-                    return 'D';
-                case CHAR:
-                case STRING:
-                    return 'L';
-                case POINT:
-                    return 'P';
-                case ZONED_DATE_TIME:
-                case LOCAL_DATE_TIME:
-                case DATE:
-                case ZONED_TIME:
-                case LOCAL_TIME:
-                    return 'T';
-                case DURATION:
-                    return 'A';
-                default:
-                    throw new UnsupportedOperationException("Not supported array type: " + arrayType);
-            }
+            return switch (arrayType) {
+                case BOOLEAN -> 'Z';
+                case BYTE, SHORT, INT, LONG, FLOAT, DOUBLE -> 'D';
+                case CHAR, STRING -> 'L';
+                case POINT -> 'P';
+                case ZONED_DATE_TIME, LOCAL_DATE_TIME, DATE, ZONED_TIME, LOCAL_TIME -> 'T';
+                case DURATION -> 'A';
+                case UUID -> throw new UnsupportedOperationException("Not supported array type: " + arrayType);
+            };
         }
     }
 }

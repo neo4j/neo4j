@@ -91,8 +91,8 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<RangeKey, N
 
         // WHEN
         IndexSample sample;
-        try (var gbpTree = getTree()) {
-            var sampler = new FullScanNonUniqueIndexSampler<>(gbpTree, layout);
+        try (GBPTree<RangeKey, NullValue> gbpTree = getTree()) {
+            FullScanNonUniqueIndexSampler<RangeKey> sampler = new FullScanNonUniqueIndexSampler<>(gbpTree, layout);
             sample = sampler.sample(NULL_CONTEXT, new AtomicBoolean(true));
         }
 
@@ -107,9 +107,9 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<RangeKey, N
         Value[] values = generateNumberValues();
         buildTree(values);
 
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
-        var cursorContext = contextFactory.create("testTracer");
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
+        CursorContext cursorContext = contextFactory.create("testTracer");
 
         assertZeroCursor(cursorContext);
 

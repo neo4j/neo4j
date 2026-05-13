@@ -70,11 +70,11 @@ public class FailingIndexProviderIT {
             throws IOException, URISyntaxException, IncorrectFormat {
         // Given an index with custom analyzer that is not presented in the classpath
         String databaseName = Config.defaults().get(GraphDatabaseSettings.initial_default_database);
-        final Path dump =
+        Path dump =
                 Path.of(getClass().getResource(DUMP).toURI()).toAbsolutePath().normalize();
         fs.mkdirs(databaseLayout.databaseDirectory());
         fs.mkdirs(databaseLayout.getNeo4jLayout().transactionLogsRootDirectory());
-        final Loader loader = new Loader(fs);
+        Loader loader = new Loader(fs);
         loader.load(databaseLayout, dump);
         // the name of the index was set when dump was created
         String indexName = "index1";

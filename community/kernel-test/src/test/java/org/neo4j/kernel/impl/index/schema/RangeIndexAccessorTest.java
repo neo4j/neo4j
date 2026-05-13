@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.eclipse.collections.api.factory.primitive.LongSets;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
@@ -63,6 +64,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -74,6 +76,7 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.ValueType;
@@ -133,9 +136,9 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
     @ParameterizedTest
     @MethodSource("unsupportedPredicates")
     void readerShouldThrowOnUnsupportedQuery(PropertyIndexQuery predicate) {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
-            var e = assertThrows(IndexNotApplicableKernelException.class, () -> {
-                try (var client = new SimpleEntityValueClient()) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+            IndexNotApplicableKernelException e = assertThrows(IndexNotApplicableKernelException.class, () -> {
+                try (SimpleEntityValueClient client = new SimpleEntityValueClient()) {
                     reader.query(client, NULL_CONTEXT, CursorContext.NULL_CONTEXT, unorderedValues(), predicate);
                 }
             });
@@ -156,9 +159,9 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
 
     @Test
     void readerShouldThrowOnUnsupportedCompositePredicates() {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
-            var e = assertThrows(IndexNotApplicableKernelException.class, () -> {
-                try (var client = new SimpleEntityValueClient()) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+            IndexNotApplicableKernelException e = assertThrows(IndexNotApplicableKernelException.class, () -> {
+                try (SimpleEntityValueClient client = new SimpleEntityValueClient()) {
                     reader.query(
                             client,
                             NULL_CONTEXT,
@@ -188,9 +191,9 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
 
     @Test
     void readerShouldThrowOnUnsupportedQueryPrecisionInCompositePredicates() {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
-            var e = assertThrows(IndexNotApplicableKernelException.class, () -> {
-                try (var client = new SimpleEntityValueClient()) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+            IndexNotApplicableKernelException e = assertThrows(IndexNotApplicableKernelException.class, () -> {
+                try (SimpleEntityValueClient client = new SimpleEntityValueClient()) {
                     reader.query(
                             client,
                             NULL_CONTEXT,
@@ -231,8 +234,8 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
         Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates(someUpdates);
 
         // when
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
-            final PropertyIndexQuery.ExistsPredicate exists = PropertyIndexQuery.exists(0);
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+            PropertyIndexQuery.ExistsPredicate exists = PropertyIndexQuery.exists(0);
 
             expectIndexOrder(allValues, reader, IndexOrder.ASCENDING, exists);
             expectIndexOrder(allValues, reader, IndexOrder.DESCENDING, exists);
@@ -245,7 +248,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
     @ParameterizedTest
     @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void regressionTestWithSeed(boolean fromBeginning, boolean toEnd) throws Exception {
-        var valueTypeCandidates = new ValueType[] {ValueType.STRING_ARRAY};
+        ValueType[] valueTypeCandidates = new ValueType[] {ValueType.STRING_ARRAY};
         shouldSeeAllEntriesBetweenSpecificValues(fromBeginning, toEnd, valueTypeCandidates);
     }
 
@@ -253,22 +256,23 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
     void shouldValidateUniquenessAmongShards() throws IOException, IndexEntryConflictException {
         // given
         int totalNumShards = 4;
-        var otherShards = new NativeIndexAccessor[totalNumShards - 1];
+        int numOtherShards = totalNumShards - 1;
+        List<IndexAccessor> otherShards = new ArrayList<>(numOtherShards);
         List<IndexDescriptor> indexDescriptors = new ArrayList<>();
         indexDescriptors.add(indexDescriptor());
-        for (int i = 0; i < otherShards.length; i++) {
-            var shardIndexDescriptor = IndexPrototype.forSchema(INDEX_DESCRIPTOR.schema())
+        for (int i = 0; i < numOtherShards; i++) {
+            IndexDescriptor shardIndexDescriptor = IndexPrototype.forSchema(INDEX_DESCRIPTOR.schema())
                     .withIndexProvider(INDEX_DESCRIPTOR.getIndexProvider())
                     .withName("shard-" + i)
                     .materialise(INDEX_DESCRIPTOR.getId() + 1 + i);
-            otherShards[i] = createAccessor(pageCache, shardIndexDescriptor);
+            otherShards.addLast(createAccessor(pageCache, shardIndexDescriptor));
             indexDescriptors.add(shardIndexDescriptor);
         }
 
         // Inserting a bunch of (across all shards) unique values into the shards
         List<IndexUpdater> updaters = new ArrayList<>();
         updaters.add(accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false));
-        for (var shard : otherShards) {
+        for (IndexAccessor shard : otherShards) {
             updaters.add(shard.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false));
         }
         int initialDataSize = 100_000;
@@ -277,14 +281,14 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
         try {
             for (int i = 0; i < initialDataSize; i++) {
                 int shard = i % totalNumShards;
-                var updater = updaters.get(shard);
-                var descriptor = indexDescriptors.get(shard);
-                var value = Values.stringValue("Value" + i);
+                IndexUpdater updater = updaters.get(shard);
+                IndexDescriptor descriptor = indexDescriptors.get(shard);
+                StringValue value = Values.stringValue("Value" + i);
                 updater.process(EagerValueIndexEntryUpdate.add(i, descriptor, value));
                 data.put(ValueTuple.of(value), LongSets.mutable.of(i));
             }
 
-            var conflictsAdded = IntSets.mutable.empty();
+            MutableIntSet conflictsAdded = IntSets.mutable.empty();
             for (int i = 0; i < numConflicts; i++) {
                 // The assumption here is that all these shards are internally unique
                 int conflictingValueId;
@@ -298,9 +302,9 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
                     shard = random.nextInt(totalNumShards);
                 } while (shard == conflictingValueId % totalNumShards);
 
-                var updater = updaters.get(shard);
-                var descriptor = indexDescriptors.get(shard);
-                var value = Values.stringValue("Value" + conflictingValueId);
+                IndexUpdater updater = updaters.get(shard);
+                IndexDescriptor descriptor = indexDescriptors.get(shard);
+                StringValue value = Values.stringValue("Value" + conflictingValueId);
                 long entityId = initialDataSize + i;
                 updater.process(EagerValueIndexEntryUpdate.add(entityId, descriptor, value));
                 data.get(ValueTuple.of(value)).add(entityId);
@@ -311,13 +315,13 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
 
         try {
             // when
-            var foundConflicts = new AtomicInteger();
+            AtomicInteger foundConflicts = new AtomicInteger();
             accessor.validateShards(
                     otherShards,
                     true,
                     (firstEntityId, firstShardId, otherEntityId, otherShardId, values) -> {
                         foundConflicts.incrementAndGet();
-                        var expectedConflict = data.remove(ValueTuple.of(values));
+                        MutableLongSet expectedConflict = data.remove(ValueTuple.of(values));
                         assertThat(expectedConflict).isEqualTo(LongSets.mutable.of(firstEntityId, otherEntityId));
                     },
                     4,

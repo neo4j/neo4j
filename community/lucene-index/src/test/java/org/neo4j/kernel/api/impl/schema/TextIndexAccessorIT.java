@@ -61,7 +61,9 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory.DatabaseIdResolver;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -80,6 +82,7 @@ import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -123,16 +126,16 @@ public class TextIndexAccessorIT {
 
     void setUp(LuceneContext luceneContext) {
         Path path = directory.directory("db");
-        var defaultDatabaseId = DatabaseIdFactory.from(
+        NamedDatabaseId defaultDatabaseId = DatabaseIdFactory.from(
                 DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
         config = Config.defaults();
-        var databaseIdResolver = mock(ConfigBasedLookupFactory.DatabaseIdResolver.class);
+        DatabaseIdResolver databaseIdResolver = mock(ConfigBasedLookupFactory.DatabaseIdResolver.class);
         Mockito.when(databaseIdResolver.resolve(DEFAULT_DATABASE_NAME))
                 .thenReturn(Optional.of(defaultDatabaseId.databaseId()));
-        var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdResolver);
-        var globalChecker = new DefaultReadOnlyDatabases(readOnlyLookup);
-        var listener = new ConfigReadOnlyDatabaseListener(globalChecker, config);
-        var readOnlyChecker = globalChecker.forDatabase(defaultDatabaseId);
+        ConfigBasedLookupFactory readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdResolver);
+        DefaultReadOnlyDatabases globalChecker = new DefaultReadOnlyDatabases(readOnlyLookup);
+        ConfigReadOnlyDatabaseListener listener = new ConfigReadOnlyDatabaseListener(globalChecker, config);
+        DatabaseReadOnlyChecker readOnlyChecker = globalChecker.forDatabase(defaultDatabaseId);
         indexProvider = new TextIndexProvider(
                 directory.getFileSystem(),
                 DirectoryFactory.persistent(luceneContext),
@@ -163,7 +166,7 @@ public class TextIndexAccessorIT {
                 .withName("TestIndex")
                 .materialise(99);
         populateWithInitialNodes(indexDescriptor, nodes, expectedNodes);
-        try (var accessor = indexProvider.getOnlineAccessor(
+        try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
                 indexDescriptor,
                 samplingConfig,
                 mock(TokenNameLookup.class),
@@ -193,7 +196,7 @@ public class TextIndexAccessorIT {
                 .materialise(99);
         populateWithInitialNodes(indexDescriptor, nodes, expectedNodes);
         config.set(GraphDatabaseSettings.read_only_databases, Set.of(DEFAULT_DATABASE_NAME));
-        try (var onlineAccessor = indexProvider.getOnlineAccessor(
+        try (IndexAccessor onlineAccessor = indexProvider.getOnlineAccessor(
                 indexDescriptor,
                 samplingConfig,
                 mock(TokenNameLookup.class),
@@ -308,10 +311,10 @@ public class TextIndexAccessorIT {
     @MethodSource("unsupportedTypes")
     void updaterShouldIgnoreUnsupportedTypes(LuceneContext luceneContext, ValueType unsupportedType) throws Exception {
         setUp(luceneContext);
-        final var descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 1))
+        IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 1))
                 .withName("test")
                 .materialise(1);
-        try (var accessor = indexProvider.getOnlineAccessor(
+        try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
                 descriptor,
                 samplingConfig,
                 mock(TokenNameLookup.class),
@@ -320,14 +323,15 @@ public class TextIndexAccessorIT {
                 StorageEngineIndexingBehaviour.EMPTY)) {
             // given  an empty index
             // when   an unsupported value type is added
-            try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-                final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+            try (IndexUpdater updater =
+                    accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+                Value unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
                 updater.process(
                         EagerValueIndexEntryUpdate.add(idGenerator().getAsLong(), descriptor, unsupportedValue));
             }
 
             // then   it should not be indexed, and thus not visible
-            try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
                 assertThat(reader).isEmpty();
             }
         }
@@ -338,10 +342,10 @@ public class TextIndexAccessorIT {
     void updaterShouldChangeUnsupportedToSupportedByAdd(LuceneContext luceneContext, ValueType unsupportedType)
             throws Exception {
         setUp(luceneContext);
-        final var descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 1))
+        IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 1))
                 .withName("test")
                 .materialise(1);
-        try (var accessor = indexProvider.getOnlineAccessor(
+        try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
                 descriptor,
                 samplingConfig,
                 mock(TokenNameLookup.class),
@@ -349,26 +353,28 @@ public class TextIndexAccessorIT {
                 immutable.empty(),
                 StorageEngineIndexingBehaviour.EMPTY)) {
             // when   an unsupported value type is added
-            final var entityId = idGenerator().getAsLong();
-            final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
-            try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            long entityId = idGenerator().getAsLong();
+            Value unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+            try (IndexUpdater updater =
+                    accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
                 updater.process(EagerValueIndexEntryUpdate.add(entityId, descriptor, unsupportedValue));
             }
 
             // then   it should not be indexed, and thus not visible
-            try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
                 assertThat(reader).isEmpty();
             }
 
             // when   the unsupported value type is changed to a supported value type
-            try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-                final var supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
+            try (IndexUpdater updater =
+                    accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+                Value supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
                 updater.process(
                         EagerValueIndexEntryUpdate.change(entityId, descriptor, unsupportedValue, supportedValue));
             }
 
             // then   it should be added to the index, and thus now visible
-            try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
                 assertThat(reader).containsExactlyInAnyOrder(entityId);
             }
         }
@@ -379,10 +385,10 @@ public class TextIndexAccessorIT {
     void updaterShouldChangeSupportedToUnsupportedByRemove(LuceneContext luceneContext, ValueType unsupportedType)
             throws Exception {
         setUp(luceneContext);
-        final var descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 1))
+        IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, 1))
                 .withName("test")
                 .materialise(1);
-        try (var accessor = indexProvider.getOnlineAccessor(
+        try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
                 descriptor,
                 samplingConfig,
                 mock(TokenNameLookup.class),
@@ -391,26 +397,28 @@ public class TextIndexAccessorIT {
                 StorageEngineIndexingBehaviour.EMPTY)) {
             // given  an empty index
             // when   a supported value type is added
-            final var entityId = idGenerator().getAsLong();
-            final var supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
-            try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            long entityId = idGenerator().getAsLong();
+            Value supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
+            try (IndexUpdater updater =
+                    accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
                 updater.process(EagerValueIndexEntryUpdate.add(entityId, descriptor, supportedValue));
             }
 
             // then   it should be added to the index, and thus visible
-            try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
                 assertThat(reader).containsExactlyInAnyOrder(entityId);
             }
 
             // when   the supported value type is changed to an unsupported value type
-            try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-                final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+            try (IndexUpdater updater =
+                    accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+                Value unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
                 updater.process(
                         EagerValueIndexEntryUpdate.change(entityId, descriptor, supportedValue, unsupportedValue));
             }
 
             // then   it should be removed from the index, and thus no longer visible
-            try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+            try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
                 assertThat(reader).isEmpty();
             }
         }
@@ -478,7 +486,7 @@ public class TextIndexAccessorIT {
         for (int i = 0; i < rounds; i++) {
             try (IndexUpdater updater = index.newUpdater(IndexUpdateMode.RECOVERY, NULL_CONTEXT, false)) {
                 for (int j = 0; j < updatesPerRound; j++) {
-                    var update = randomUpdate(highEntityId, liveEntityIds, descriptor, random.random());
+                    IndexEntryUpdate update = randomUpdate(highEntityId, liveEntityIds, descriptor, random.random());
                     updater.process(update);
                 }
             }

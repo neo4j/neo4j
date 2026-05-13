@@ -294,7 +294,7 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
             KEY key2 = states.get(i + 1);
 
             for (int slot = 0; slot < nbrOfSlots; slot++) {
-                var result = COMPARATOR.compare(key1.asValues()[slot], key2.asValues()[slot]);
+                int result = COMPARATOR.compare(key1.asValues()[slot], key2.asValues()[slot]);
                 if (result < 0) {
                     break;
                 }
@@ -308,29 +308,29 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
 
     @Test
     void vectorKeysMustBeOrderedAfterCoordinateAndDimensionAndLexicographicOrder() {
-        var expectedOrder = List.of(
+        List<VectorValue> expectedOrder = List.of(
                 Values.int8Vector(new byte[] {1, 2, 3}),
                 Values.int8Vector(new byte[] {3, 2, 1}),
                 Values.int16Vector(new short[] {1, 2, 3}),
                 Values.int16Vector(new short[] {3, 2, 1}),
-                Values.int32Vector(new int[] {1, 2, 3}),
-                Values.int32Vector(new int[] {3, 2, 1}),
-                Values.int64Vector(new long[] {1, 2, 3}),
-                Values.int64Vector(new long[] {3, 2, 1}),
-                Values.float32Vector(new float[] {1, 2, 3}),
-                Values.float32Vector(new float[] {3, 2, 1}),
-                Values.float64Vector(new double[] {1, 2, 3}),
-                Values.float64Vector(new double[] {3, 2, 1}));
+                Values.int32Vector(1, 2, 3),
+                Values.int32Vector(3, 2, 1),
+                Values.int64Vector(1L, 2L, 3L),
+                Values.int64Vector(3L, 2L, 1L),
+                Values.float32Vector(1.0f, 2.0f, 3.0f),
+                Values.float32Vector(3.0f, 2.0f, 1.0f),
+                Values.float64Vector(1.0, 2.0, 3.0),
+                Values.float64Vector(3.0, 2.0, 1.0));
 
         Function<VectorValue, RangeKey> makeKey = (v) -> {
-            var k = new RangeKey();
+            RangeKey k = new RangeKey();
             v.writeTo(k);
             return k;
         };
 
-        var shuffled = new ArrayList<>(expectedOrder);
+        List<VectorValue> shuffled = new ArrayList<>(expectedOrder);
         Collections.shuffle(shuffled, random.random());
-        var actualOrder = shuffled.stream()
+        List<Value> actualOrder = shuffled.stream()
                 .map(makeKey)
                 .sorted(RangeKey::compareValueTo)
                 .map(RangeKey::asValue)
@@ -341,10 +341,10 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
     @ParameterizedTest
     @MethodSource
     void vectorKeysAreNotConfusedAboutEndianness(ByteOrder order) {
-        final byte[] storage = new byte[PageCache.PAGE_SIZE];
-        final var value = Values.int32Vector(0xde7ec7ed);
-        final var serializeKey = new RangeKey();
-        final var deserializeKey = new RangeKey();
+        byte[] storage = new byte[PageCache.PAGE_SIZE];
+        Int32Vector value = Values.int32Vector(0xde7ec7ed);
+        RangeKey serializeKey = new RangeKey();
+        RangeKey deserializeKey = new RangeKey();
 
         // Make sure that the keys are properly initialized
         serializeKey.clear();
@@ -352,12 +352,12 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
 
         // when
         value.writeTo(serializeKey);
-        try (var cursor = new ByteArrayPageCursor(
+        try (ByteArrayPageCursor cursor = new ByteArrayPageCursor(
                 0, ByteBuffer.wrap(storage, 0, storage.length).order(order))) {
             serializeKey.put(cursor);
         }
 
-        try (var cursor = new ByteArrayPageCursor(
+        try (ByteArrayPageCursor cursor = new ByteArrayPageCursor(
                 0, ByteBuffer.wrap(storage, 0, storage.length).order(order))) {
             deserializeKey.get(cursor, serializeKey.size());
         }
@@ -1205,45 +1205,31 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
     }
 
     private static int getNumberSize(Value value) {
-        int expectedSizeOfData;
-        if (value instanceof ByteValue) {
-            expectedSizeOfData = 3;
-        } else if (value instanceof ShortValue) {
-            expectedSizeOfData = 4;
-        } else if (value instanceof IntValue) {
-            expectedSizeOfData = 6;
-        } else if (value instanceof LongValue) {
-            expectedSizeOfData = 10;
-        } else if (value instanceof FloatValue) {
-            expectedSizeOfData = 6;
-        } else if (value instanceof DoubleValue) {
-            expectedSizeOfData = 10;
-        } else {
-            throw new RuntimeException(
-                    "Unexpected class for value in value group " + NUMBER + ", was " + value.getClass());
-        }
-        return expectedSizeOfData;
+        return switch (value) {
+            case ByteValue ignored -> 3;
+            case ShortValue ignored -> 4;
+            case IntValue ignored -> 6;
+            case LongValue ignored -> 10;
+            case FloatValue ignored -> 6;
+            case DoubleValue ignored -> 10;
+            default ->
+                throw new RuntimeException(
+                        "Unexpected class for value in value group " + NUMBER + ", was " + value.getClass());
+        };
     }
 
     private static int getNumberArrayElementSize(Value value) {
-        int arrayElementSize;
-        if (value instanceof ByteArray) {
-            arrayElementSize = 1;
-        } else if (value instanceof ShortArray) {
-            arrayElementSize = 2;
-        } else if (value instanceof IntArray) {
-            arrayElementSize = 4;
-        } else if (value instanceof LongArray) {
-            arrayElementSize = 8;
-        } else if (value instanceof FloatArray) {
-            arrayElementSize = 4;
-        } else if (value instanceof DoubleArray) {
-            arrayElementSize = 8;
-        } else {
-            throw new RuntimeException(
-                    "Unexpected class for value in value group " + NUMBER_ARRAY + ", was " + value.getClass());
-        }
-        return arrayElementSize;
+        return switch (value) {
+            case ByteArray ignored -> 1;
+            case ShortArray ignored -> 2;
+            case IntArray ignored -> 4;
+            case LongArray ignored -> 8;
+            case FloatArray ignored -> 4;
+            case DoubleArray ignored -> 8;
+            default ->
+                throw new RuntimeException(
+                        "Unexpected class for value in value group " + NUMBER_ARRAY + ", was " + value.getClass());
+        };
     }
 
     private static void assertTextArraySize(

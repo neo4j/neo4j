@@ -32,6 +32,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -101,8 +103,8 @@ class TypeRepresentationTest {
                 Arguments.of(Values.of(new short[] {1, 2, 3}), SchemaValueType.LIST_INTEGER),
                 Arguments.of(Values.of(new int[] {1, 2, 3}), SchemaValueType.LIST_INTEGER),
                 Arguments.of(Values.of(new long[] {1, 2, 3}), SchemaValueType.LIST_INTEGER),
-                Arguments.of(Values.of(new float[] {1f, 2f}), SchemaValueType.LIST_FLOAT),
-                Arguments.of(Values.of(new double[] {1f, 2f}), SchemaValueType.LIST_FLOAT),
+                Arguments.of(Values.of(new float[] {1.0f, 2.0f}), SchemaValueType.LIST_FLOAT),
+                Arguments.of(Values.of(new double[] {1.0f, 2.0f}), SchemaValueType.LIST_FLOAT),
 
                 // List of dates and times
                 Arguments.of(Values.of(new ZonedDateTime[] {ZonedDateTime.now()}), SchemaValueType.LIST_ZONED_DATETIME),
@@ -121,14 +123,14 @@ class TypeRepresentationTest {
                 Arguments.of(Values.int8Vector(new byte[] {1, 2, 3}), VectorType.int8Vector(3)),
                 Arguments.of(Values.int16Vector(new short[] {1}), VectorType.int16Vector(1)),
                 Arguments.of(Values.int16Vector(new short[] {1, 2, 3}), VectorType.int16Vector(3)),
-                Arguments.of(Values.int32Vector(new int[] {1}), VectorType.int32Vector(1)),
-                Arguments.of(Values.int32Vector(new int[] {1, 2, 3}), VectorType.int32Vector(3)),
-                Arguments.of(Values.int64Vector(new long[] {1}), VectorType.int64Vector(1)),
-                Arguments.of(Values.int64Vector(new long[] {1, 2, 3}), VectorType.int64Vector(3)),
-                Arguments.of(Values.float32Vector(new float[] {1}), VectorType.float32Vector(1)),
-                Arguments.of(Values.float32Vector(new float[] {1, 2, 3}), VectorType.float32Vector(3)),
-                Arguments.of(Values.float64Vector(new double[] {1}), VectorType.float64Vector(1)),
-                Arguments.of(Values.float64Vector(new double[] {1, 2, 3}), VectorType.float64Vector(3)));
+                Arguments.of(Values.int32Vector(1), VectorType.int32Vector(1)),
+                Arguments.of(Values.int32Vector(1, 2, 3), VectorType.int32Vector(3)),
+                Arguments.of(Values.int64Vector(1), VectorType.int64Vector(1)),
+                Arguments.of(Values.int64Vector(1, 2, 3), VectorType.int64Vector(3)),
+                Arguments.of(Values.float32Vector(1), VectorType.float32Vector(1)),
+                Arguments.of(Values.float32Vector(1, 2, 3), VectorType.float32Vector(3)),
+                Arguments.of(Values.float64Vector(1), VectorType.float64Vector(1)),
+                Arguments.of(Values.float64Vector(1, 2, 3), VectorType.float64Vector(3)));
     }
 
     @ParameterizedTest
@@ -159,9 +161,9 @@ class TypeRepresentationTest {
 
     private static Stream<Arguments> illegalCombinations() {
         return Stream.of(
-                Arguments.of(PropertyTypeSet.of(), Values.of(1l)),
+                Arguments.of(PropertyTypeSet.of(), Values.of(1L)),
                 Arguments.of(PropertyTypeSet.of(), Values.of("HELLO")),
-                Arguments.of(PropertyTypeSet.of(SchemaValueType.STRING), Values.of(1l)),
+                Arguments.of(PropertyTypeSet.of(SchemaValueType.STRING), Values.of(1L)),
                 Arguments.of(
                         PropertyTypeSet.of(SchemaValueType.LIST_BOOLEAN, SchemaValueType.LIST_INTEGER),
                         Values.of("hello")),
@@ -197,16 +199,16 @@ class TypeRepresentationTest {
     @Test
     void shouldOrderAllTypesAccordingToCip100Spec() {
         // GIVEN
-        var entries = types().collect(Collectors.toCollection(ArrayList<TypeRepresentation>::new));
+        List<TypeRepresentation> entries = types().collect(Collectors.toCollection(ArrayList<TypeRepresentation>::new));
         Collections.shuffle(entries, random.random());
 
         // WHEN
-        var set = new TreeSet<>(TypeRepresentation::compare);
+        Set<TypeRepresentation> set = new TreeSet<>(TypeRepresentation::compare);
         set.addAll(entries);
-        var actual = set.stream().map(TypeRepresentation::userDescription).toArray(String[]::new);
+        String[] actual = set.stream().map(TypeRepresentation::userDescription).toArray(String[]::new);
 
         // THEN
-        var expected = new String[] {
+        String[] expected = new String[] {
             "NULL",
             "BOOLEAN",
             "STRING",

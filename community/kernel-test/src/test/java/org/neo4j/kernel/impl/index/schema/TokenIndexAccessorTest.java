@@ -59,6 +59,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.collection.PrimitiveArrays;
+import org.neo4j.collection.PrimitiveArrays.RemovalsAndAdditions;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -249,7 +250,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         addToIndex(outerTokenId, outerIds);
         addToIndex(innerTokenId, innerIds);
 
-        try (var reader = accessor.newTokenReader(NO_USAGE_TRACKING)) {
+        try (TokenIndexReader reader = accessor.newTokenReader(NO_USAGE_TRACKING)) {
             assertReaderFindsExpected(
                     reader,
                     outerOrder,
@@ -402,7 +403,8 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
                     }
                     int[] afterTokens = generateRandomTokens(random);
                     trackingStructure.put(entityId, Arrays.copyOf(afterTokens, afterTokens.length));
-                    var removalsAndAdditions = PrimitiveArrays.toRemovalsAndAdditions(beforeTokens, afterTokens);
+                    RemovalsAndAdditions removalsAndAdditions =
+                            PrimitiveArrays.toRemovalsAndAdditions(beforeTokens, afterTokens);
                     updater.process(TokenIndexEntryUpdate.tokenChange(
                             entityId, null, removalsAndAdditions.removals(), removalsAndAdditions.additions()));
                 }
@@ -444,7 +446,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     }
 
     private void assertReaderFindsExpected(IndexOrder indexOrder, long tokenId, LongList expectedIds) throws Exception {
-        try (var indexReader = accessor.newTokenReader(NO_USAGE_TRACKING)) {
+        try (TokenIndexReader indexReader = accessor.newTokenReader(NO_USAGE_TRACKING)) {
             assertReaderFindsExpected(indexReader, indexOrder, tokenId, expectedIds, ThrowingConsumer.noop());
         }
     }

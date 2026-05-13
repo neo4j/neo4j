@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import org.eclipse.collections.api.block.procedure.primitive.LongFloatProcedure;
@@ -45,7 +46,7 @@ class Lucene10ScoredEntityResultCollectorTest {
     class PriorityQueueTest {
         @Test
         void queueMustCollectAndOrderResultsByScore() {
-            final var pq = new ScoredEntityPriorityQueue(true);
+            ScoredEntityPriorityQueue pq = new ScoredEntityPriorityQueue(true);
             assertThat(pq.isEmpty()).isTrue();
             pq.insert(1, 3.0f);
             assertThat(pq.isEmpty()).isFalse();
@@ -56,8 +57,8 @@ class Lucene10ScoredEntityResultCollectorTest {
             pq.insert(6, 5.0f);
             pq.insert(7, 6.0f);
 
-            final var ids = new ArrayList<Integer>(7);
-            final var receiver = (LongFloatProcedure) (id, score) -> ids.add((int) id);
+            List<Integer> ids = new ArrayList<>(7);
+            LongFloatProcedure receiver = (id, score) -> ids.add((int) id);
             assertThat(pq.size()).isEqualTo(7);
             pq.removeTop(receiver);
             assertThat(pq.size()).isEqualTo(6);
@@ -80,7 +81,7 @@ class Lucene10ScoredEntityResultCollectorTest {
 
         @Test
         void queueMustCollectAndMinOrderResultsByScore() {
-            final var pq = new ScoredEntityPriorityQueue(false);
+            ScoredEntityPriorityQueue pq = new ScoredEntityPriorityQueue(false);
             assertThat(pq.isEmpty()).isTrue();
             pq.insert(1, 3.0f);
             assertThat(pq.isEmpty()).isFalse();
@@ -91,8 +92,8 @@ class Lucene10ScoredEntityResultCollectorTest {
             pq.insert(6, 5.0f);
             pq.insert(7, 6.0f);
 
-            final var ids = new ArrayList<Integer>(7);
-            final var receiver = (LongFloatProcedure) (id, score) -> ids.add((int) id);
+            List<Integer> ids = new ArrayList<>(7);
+            LongFloatProcedure receiver = (id, score) -> ids.add((int) id);
             while (!pq.isEmpty()) {
                 pq.removeTop(receiver);
             }
@@ -102,19 +103,19 @@ class Lucene10ScoredEntityResultCollectorTest {
 
         @RepeatedTest(200)
         void randomizedMaxPriorityQueueTest() {
-            final var count = random.nextInt(5, 100);
+            int count = random.nextInt(5, 100);
 
-            final var actualQueue = new ScoredEntityPriorityQueue(true);
-            final var expectedQueue = new PriorityQueue<ScoredEntity>();
+            ScoredEntityPriorityQueue actualQueue = new ScoredEntityPriorityQueue(true);
+            PriorityQueue<ScoredEntity> expectedQueue = new PriorityQueue<>();
             for (int i = 0; i < count; i++) {
-                final var score = random.nextFloat();
+                float score = random.nextFloat();
                 expectedQueue.add(new ScoredEntity(i, score));
                 actualQueue.insert(i, score);
             }
 
             assertThat(actualQueue.size()).isEqualTo(expectedQueue.size());
 
-            final var scoredEntity = new ScoredEntity(0, 0.0f);
+            ScoredEntity scoredEntity = new ScoredEntity(0, 0.0f);
             while (!actualQueue.isEmpty()) {
                 actualQueue.removeTop(scoredEntity);
                 assertThat(scoredEntity).isEqualTo(expectedQueue.remove());
@@ -124,19 +125,19 @@ class Lucene10ScoredEntityResultCollectorTest {
 
         @RepeatedTest(200)
         void randomizedMinPriorityQueueTest() {
-            final var count = random.nextInt(5, 100);
+            int count = random.nextInt(5, 100);
 
-            final var actualQueue = new ScoredEntityPriorityQueue(false);
-            final var expectedQueue = new PriorityQueue<ScoredEntity>(Comparator.reverseOrder());
+            ScoredEntityPriorityQueue actualQueue = new ScoredEntityPriorityQueue(false);
+            PriorityQueue<ScoredEntity> expectedQueue = new PriorityQueue<>(Comparator.reverseOrder());
             for (int i = 0; i < count; i++) {
-                final var score = random.nextFloat();
+                float score = random.nextFloat();
                 expectedQueue.add(new ScoredEntity(i, score));
                 actualQueue.insert(i, score);
             }
 
             assertThat(actualQueue.size()).isEqualTo(expectedQueue.size());
 
-            final var scoredEntity = new ScoredEntity(0, 0.0f);
+            ScoredEntity scoredEntity = new ScoredEntity(0, 0.0f);
             while (!actualQueue.isEmpty()) {
                 actualQueue.removeTop(scoredEntity);
                 assertThat(scoredEntity).isEqualTo(expectedQueue.remove());
@@ -149,17 +150,17 @@ class Lucene10ScoredEntityResultCollectorTest {
     class ScoredEntityResultsMaxQueueIteratorTest {
         @RepeatedTest(200)
         void randomizedPriorityQueueTest() {
-            final var count = random.nextInt(50, 100);
-            final var actualQueue = new ScoredEntityPriorityQueue(true);
-            final var expectedQueue = new PriorityQueue<ScoredEntity>(count);
+            int count = random.nextInt(50, 100);
+            ScoredEntityPriorityQueue actualQueue = new ScoredEntityPriorityQueue(true);
+            PriorityQueue<ScoredEntity> expectedQueue = new PriorityQueue<>(count);
             for (int i = 0, j = 1; i < count; i++, j++) {
-                final var score = random.nextFloat();
+                float score = random.nextFloat();
                 expectedQueue.add(new ScoredEntity(i, score));
                 actualQueue.insert(i, score);
             }
-            final var iterator = new ScoredEntityResultsMaxQueueIterator(actualQueue);
+            ScoredEntityResultsMaxQueueIterator iterator = new ScoredEntityResultsMaxQueueIterator(actualQueue);
 
-            final var scoredEntity = new ScoredEntity(0, 0.0f);
+            ScoredEntity scoredEntity = new ScoredEntity(0, 0.0f);
             int i = 0;
             while (iterator.hasNext()) {
                 iterator.next();
@@ -174,12 +175,12 @@ class Lucene10ScoredEntityResultCollectorTest {
     class ScoredEntityResultsMinQueueIteratorTest {
         @Test
         void mustReturnEntriesFromMinQueueInDescendingOrder() {
-            final var pq = new ScoredEntityPriorityQueue(false);
+            ScoredEntityPriorityQueue pq = new ScoredEntityPriorityQueue(false);
             pq.insert(1, 2.0f);
             pq.insert(2, 3.0f);
             pq.insert(3, 1.0f);
 
-            final var iterator = new ScoredEntityResultsMinQueueIterator(pq);
+            ScoredEntityResultsMinQueueIterator iterator = new ScoredEntityResultsMinQueueIterator(pq);
             assertThat(iterator.hasNext()).isTrue();
             assertThat(iterator.next()).isEqualTo(2);
             assertThat(iterator.current()).isEqualTo(2);
@@ -224,7 +225,7 @@ class Lucene10ScoredEntityResultCollectorTest {
             if (obj == null || obj.getClass() != this.getClass()) {
                 return false;
             }
-            final var that = (ScoredEntity) obj;
+            ScoredEntity that = (ScoredEntity) obj;
             return this.entity == that.entity && Float.floatToIntBits(this.score) == Float.floatToIntBits(that.score);
         }
 

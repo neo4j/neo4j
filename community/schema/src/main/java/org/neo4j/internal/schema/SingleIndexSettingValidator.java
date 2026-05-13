@@ -49,11 +49,11 @@ public abstract class SingleIndexSettingValidator<TYPE> extends SingleIndexSetti
     /// Validates values from [Pending] records using [#isValid(TYPE)]
     @Override
     public RecordWithSetting processForVerification(RecordWithSetting record) {
-        if (!(record instanceof final Pending pending)) {
+        if (!(record instanceof Pending pending)) {
             return record;
         }
 
-        final Object value = pending.value();
+        Object value = pending.value();
         if (value == null) {
             return new InvalidValue(pending, requirement);
         }
@@ -81,11 +81,11 @@ public abstract class SingleIndexSettingValidator<TYPE> extends SingleIndexSetti
 
         @Override
         public RecordWithSetting processForVerification(RecordWithSetting record) {
-            if (!(record instanceof final Pending pending)) {
+            if (!(record instanceof Pending pending)) {
                 return record;
             }
 
-            final Object value = pending.value();
+            Object value = pending.value();
             if (value != null && !type.isInstance(value)) {
                 return new IncorrectType(pending, type);
             }

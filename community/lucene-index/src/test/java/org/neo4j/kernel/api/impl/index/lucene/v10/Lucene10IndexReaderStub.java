@@ -60,7 +60,7 @@ public class Lucene10IndexReaderStub extends LeafReader {
     private String[] elements = EMPTY_STRING_ARRAY;
     private Function<String, NumericDocValues> ndvs;
 
-    public Lucene10IndexReaderStub(final NumericDocValues ndv) {
+    public Lucene10IndexReaderStub(NumericDocValues ndv) {
         this.ndvs = s -> ndv;
     }
 
@@ -135,12 +135,10 @@ public class Lucene10IndexReaderStub extends LeafReader {
     }
 
     @Override
-    public void searchNearestVectors(String s, float[] floats, KnnCollector knnCollector, AcceptDocs acceptDocs)
-            throws IOException {}
+    public void searchNearestVectors(String s, float[] floats, KnnCollector knnCollector, AcceptDocs acceptDocs) {}
 
     @Override
-    public void searchNearestVectors(String s, byte[] bytes, KnnCollector knnCollector, AcceptDocs acceptDocs)
-            throws IOException {}
+    public void searchNearestVectors(String s, byte[] bytes, KnnCollector knnCollector, AcceptDocs acceptDocs) {}
 
     @Override
     public FieldInfos getFieldInfos() {

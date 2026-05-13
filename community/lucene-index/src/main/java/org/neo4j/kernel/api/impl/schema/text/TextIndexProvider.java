@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigMode;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.api.impl.schema.populator.TextIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -94,9 +96,11 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour,
             IndexPopulator.Configuration configuration) {
-        final var writerConfigBuilder = new IndexWriterConfigBuilder(IndexWriterConfigMode.TEXT_POPULATION, config)
+        IndexWriterConfigBuilder writerConfigBuilder = new IndexWriterConfigBuilder(
+                        IndexWriterConfigMode.TEXT_POPULATION, config)
                 .withLogProvider(logProvider);
-        final var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config, logProvider)
+        DatabaseIndex<ValueIndexReader> index = TextIndexBuilder.create(
+                        descriptor, readOnlyChecker, config, logProvider)
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
@@ -119,11 +123,11 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        var builder = builder(descriptor, samplingConfig);
+        TextIndexBuilder builder = builder(descriptor, samplingConfig);
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
         }
-        final var index = builder.build();
+        DatabaseIndex<ValueIndexReader> index = builder.build();
         index.open();
         return new TextIndexAccessor(index, descriptor, tokenNameLookup, elementIdMapper, UPDATE_IGNORE_STRATEGY);
     }

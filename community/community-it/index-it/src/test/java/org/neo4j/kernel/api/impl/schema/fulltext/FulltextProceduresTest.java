@@ -625,6 +625,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                             .isNotNull()
                             .isInstanceOf(List.class);
 
+                    //noinspection unchecked
                     List<String> words = (List<String>) stopwords;
                     String analyzerName = (String) row.get("analyzer");
                     if (analyzerName.equals("english") || analyzerName.equals("standard")) {
@@ -696,7 +697,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
     @Test
     void fulltextIndexMustIgnoreNonStringPropertiesForUpdate() {
-        var random = RandomValues.create(RandomValuesUtils.selectStorageEngineDependentConfiguration(db));
+        RandomValues random = RandomValues.create(RandomValuesUtils.selectStorageEngineDependentConfiguration(db));
         try (Transaction tx = db.beginTx()) {
             createSimpleNodesIndex(tx);
             createSimpleRelationshipIndex(tx);
@@ -722,7 +723,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
     @Test
     void fulltextIndexMustIgnoreNonStringPropertiesForPopulation() {
-        var random = RandomValues.create(RandomValuesUtils.selectStorageEngineDependentConfiguration(db));
+        RandomValues random = RandomValues.create(RandomValuesUtils.selectStorageEngineDependentConfiguration(db));
         List<Value> values = generateRandomNonStringValues(random);
 
         try (Transaction tx = db.beginTx()) {
@@ -1347,7 +1348,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @CsvSource({"false, without DB restart", "true, with DB restart"})
     @ParameterizedTest(name = "{1}")
     void fulltextIndexMustNotBeAvailableForRegularIndexSeeks(boolean dbRestart, String name) {
-        var random = RandomValues.create(RandomValuesUtils.selectStorageEngineDependentConfiguration(db));
+        RandomValues random = RandomValues.create(RandomValuesUtils.selectStorageEngineDependentConfiguration(db));
         try (Transaction tx = db.beginTx()) {
             createSimpleNodesIndex(tx);
             tx.commit();
@@ -1792,7 +1793,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         }
 
         try (Transaction tx = db.beginTx()) {
-            try (var iterator =
+            try (ResourceIterator<Object> iterator =
                     tx.execute(format(QUERY_NODES, indexName, "*SOMECODE*")).columnAs("node")) {
                 assertTrue(iterator.hasNext());
                 assertThat(((Node) iterator.next()).getElementId()).isEqualTo(nodeId);
@@ -1885,7 +1886,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     private static void assertAtLeastSingleHitOnSearch(
             String indexName, String expectedNodeId, Transaction tx, String searchString) {
         Set<String> nodeIds = new TreeSet<>();
-        try (var iterator =
+        try (ResourceIterator<Object> iterator =
                 tx.execute(format(QUERY_NODES, indexName, searchString)).columnAs("node")) {
             while (iterator.hasNext()) {
                 nodeIds.add(((Node) iterator.next()).getElementId());

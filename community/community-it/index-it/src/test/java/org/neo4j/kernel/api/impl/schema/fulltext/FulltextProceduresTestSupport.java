@@ -33,6 +33,8 @@ import static org.neo4j.kernel.api.impl.schema.fulltext.FulltextIndexSettingsKey
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +44,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.Sets;
-import org.eclipse.collections.api.set.MutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.common.EntityType;
@@ -185,7 +186,7 @@ class FulltextProceduresTestSupport {
         // instance.
         String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
         String[] expectedIds = ids.toArray(String[]::new);
-        MutableSet<String> actualIds = Sets.mutable.empty();
+        Set<String> actualIds = new HashSet<>();
         try (Transaction tx = db.beginTx()) {
             Function<String, Entity> getEntity = queryNodes ? tx::getNodeByElementId : tx::getRelationshipByElementId;
             Result result = tx.execute(format(queryCall, index, query));
@@ -216,12 +217,12 @@ class FulltextProceduresTestSupport {
             String query,
             Set<String> ids,
             String[] expectedIds,
-            MutableSet<String> actualIds,
+            Set<String> actualIds,
             String msg) {
         StringBuilder message = new StringBuilder(msg).append('\n');
-        var itr = ids.iterator();
+        Iterator<String> itr = ids.iterator();
         while (itr.hasNext()) {
-            var id = itr.next();
+            String id = itr.next();
             Entity entity = getEntity.apply(id);
             message.append('\t')
                     .append(entity)
@@ -239,7 +240,7 @@ class FulltextProceduresTestSupport {
         message.append("actual ids: ").append(actualIds);
         itr = actualIds.iterator();
         while (itr.hasNext()) {
-            var id = itr.next();
+            String id = itr.next();
             Entity entity = getEntity.apply(id);
             message.append("\n\t").append(entity).append(entity.getAllProperties());
         }
@@ -364,7 +365,7 @@ class FulltextProceduresTestSupport {
         void assertQueryFindsIds(GraphDatabaseAPI db, String query, Set<String> ids);
 
         default void assertQueryFindsIdsInOrder(GraphDatabaseAPI db, String query, String... ids) {
-            try (var tx = db.beginTx()) {
+            try (Transaction tx = db.beginTx()) {
                 assertQueryFindsIdsInOrder(tx, query, ids);
                 tx.commit();
             }

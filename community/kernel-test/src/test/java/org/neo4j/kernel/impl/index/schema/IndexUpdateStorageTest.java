@@ -73,7 +73,7 @@ class IndexUpdateStorageTest {
                 layout,
                 INSTANCE)) {
             // when
-            var expected = generateSomeUpdates(0);
+            List<UpdateInstruction> expected = generateSomeUpdates(0);
             storeAll(storage, expected);
 
             // then
@@ -98,7 +98,7 @@ class IndexUpdateStorageTest {
                 layout,
                 INSTANCE)) {
             // when
-            var expected = generateSomeUpdates(numEntries);
+            List<UpdateInstruction> expected = generateSomeUpdates(numEntries);
             storeAll(storage, expected);
 
             // then
@@ -123,7 +123,7 @@ class IndexUpdateStorageTest {
                 layout,
                 INSTANCE)) {
             // when
-            var expected = generateSomeUpdates(numEntries);
+            List<UpdateInstruction> expected = generateSomeUpdates(numEntries);
             storeAll(storage, expected);
 
             // then
@@ -133,15 +133,15 @@ class IndexUpdateStorageTest {
 
     private static void storeAll(IndexUpdateStorage<RangeKey> storage, List<UpdateInstruction> expected)
             throws IOException {
-        for (var update : expected) {
+        for (UpdateInstruction update : expected) {
             storage.add(update.addition, update.key, update.version);
         }
         storage.doneAdding();
     }
 
     private void verify(List<UpdateInstruction> expected, IndexUpdateStorage<RangeKey> storage) throws IOException {
-        try (var reader = storage.reader()) {
-            for (var expectedUpdate : expected) {
+        try (IndexUpdateCursor<RangeKey> reader = storage.reader()) {
+            for (UpdateInstruction expectedUpdate : expected) {
                 assertTrue(reader.next());
                 Assertions.assertThat(reader.addition()).isEqualTo(expectedUpdate.addition);
                 Assertions.assertThat(reader.version()).isEqualTo(expectedUpdate.version);
@@ -152,10 +152,10 @@ class IndexUpdateStorageTest {
     }
 
     private List<UpdateInstruction> generateSomeUpdates(int count) {
-        var updates = new ArrayList<UpdateInstruction>();
+        List<UpdateInstruction> updates = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             long entityId = random.nextLong(10_000_000);
-            var key = layout.newKey();
+            RangeKey key = layout.newKey();
             initializeKeyFromUpdate(key, entityId, new Value[] {random.nextValue()});
             long version = random.nextLong(Long.MAX_VALUE);
             switch (random.among(UpdateMode.MODES)) {
@@ -163,7 +163,7 @@ class IndexUpdateStorageTest {
                 case REMOVED -> updates.add(new UpdateInstruction(false, key, version));
                 case CHANGED -> {
                     updates.add(new UpdateInstruction(true, key, version));
-                    var oldKey = layout.newKey();
+                    RangeKey oldKey = layout.newKey();
                     initializeKeyFromUpdate(oldKey, entityId, new Value[] {random.nextValue()});
                     updates.add(new UpdateInstruction(false, oldKey, version));
                 }

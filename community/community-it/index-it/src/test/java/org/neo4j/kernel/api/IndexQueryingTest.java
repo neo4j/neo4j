@@ -52,7 +52,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
     private static final String NODE_INDEX_NAME = "ftsNodes";
     private static final String REL_INDEX_NAME = "ftsRels";
 
-    protected AssertableLogProvider logProvider = new AssertableLogProvider();
+    protected final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Override
     public ReadTestSupport newTestSupport() {
@@ -86,7 +86,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(REL_INDEX_NAME));
         try (NodeValueIndexCursor cursor =
                 cursors.allocateNodeValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
-            var e = assertThrows(
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> read.nodeIndexSeek(
                             tx.queryContext(),
@@ -109,7 +109,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
     @Test
     void partitionedNodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception {
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(REL_INDEX_NAME));
-        var e = assertThrows(
+        IndexNotApplicableKernelException e = assertThrows(
                 IndexNotApplicableKernelException.class,
                 () -> read.nodeIndexSeek(index, 10, tx.queryContext(), PropertyIndexQuery.fulltextSearch("search")));
         assertThat(e).hasMessageContaining("Node index seek can not be performed on index");
@@ -129,7 +129,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
         IndexReadSession indexReadSession = read.indexReadSession(index);
         try (RelationshipValueIndexCursor cursor =
                 cursors.allocateRelationshipValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
-            var e = assertThrows(
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> read.relationshipIndexSeek(
                             tx.queryContext(),
@@ -153,7 +153,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
     void partitionedRelationshipIndexSeekMustThrowOnWrongIndexEntityType() throws IndexNotFoundKernelException {
         IndexDescriptor index = schemaRead.indexGetForName(NODE_INDEX_NAME);
         IndexReadSession indexReadSession = read.indexReadSession(index);
-        var e = assertThrows(
+        IndexNotApplicableKernelException e = assertThrows(
                 IndexNotApplicableKernelException.class,
                 () -> read.relationshipIndexSeek(
                         indexReadSession, 10, tx.queryContext(), PropertyIndexQuery.fulltextSearch("search")));
@@ -173,7 +173,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(REL_INDEX_NAME));
         try (NodeValueIndexCursor cursor =
                 cursors.allocateNodeValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
-            var e = assertThrows(
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class, () -> read.nodeIndexScan(index, cursor, unconstrained()));
             assertThat(e).hasMessageContaining("Node index scan can not be performed on index");
             assertThat(e.gqlStatus()).isEqualTo("50N15");
@@ -192,7 +192,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(NODE_INDEX_NAME));
         try (RelationshipValueIndexCursor cursor =
                 cursors.allocateRelationshipValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
-            var e = assertThrows(
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> read.relationshipIndexScan(index, cursor, unconstrained()));
             assertThat(e).hasMessageContaining("Relationship index scan can not be performed on index");
@@ -214,7 +214,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
                 .next());
         try (NodeLabelIndexCursor cursor =
                 cursors.allocateNodeLabelIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
-            var e = assertThrows(
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> read.nodeLabelScan(
                             tokenReadSession, cursor, unconstrained(), new TokenPredicate(1), tx.cursorContext()));
@@ -237,7 +237,7 @@ public class IndexQueryingTest extends KernelAPIReadTestBase<ReadTestSupport> {
                 .next());
         try (RelationshipTypeIndexCursor cursor =
                 cursors.allocateRelationshipTypeIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
-            var e = assertThrows(
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> read.relationshipTypeScan(
                             tokenReadSession, cursor, unconstrained(), new TokenPredicate(1), tx.cursorContext()));

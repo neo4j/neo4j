@@ -117,7 +117,7 @@ public class PointKeyStateTest {
         PointValue equalPoint = Values.point(firstPoint);
         CoordinateReferenceSystem crs = firstPoint.getCoordinateReferenceSystem();
         SpaceFillingCurve curve = noSpecificIndexSettings.forCrs(crs);
-        Long spaceFillingCurveValue = curve.derivedValueFor(firstPoint.coordinate());
+        long spaceFillingCurveValue = curve.derivedValueFor(firstPoint.coordinate());
         PointValue centerPoint = Values.pointValue(crs, curve.centerPointFor(spaceFillingCurveValue));
 
         PointKey firstKey = newKeyState();

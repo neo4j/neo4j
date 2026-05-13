@@ -29,6 +29,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneDocument;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
@@ -75,7 +76,7 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader,
         @Override
         protected void addIdempotent(long entityId, Value[] values) {
             try {
-                final var document =
+                LuceneDocument document =
                         documentsFactory.createVectorDocument(documentStructure, entityId, similarityFunction, values);
                 writer.updateOrDeleteDocument(ENTITY_ID_KEY, entityId, document);
             } catch (IOException e) {
@@ -86,7 +87,7 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader,
         @Override
         protected void add(long entityId, Value[] values) {
             try {
-                final var document =
+                LuceneDocument document =
                         documentsFactory.createVectorDocument(documentStructure, entityId, similarityFunction, values);
                 writer.nullableAddDocument(document);
             } catch (IOException e) {
@@ -97,7 +98,7 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader,
         @Override
         protected void change(long entityId, Value[] values) {
             try {
-                final var document =
+                LuceneDocument document =
                         documentsFactory.createVectorDocument(documentStructure, entityId, similarityFunction, values);
                 writer.updateOrDeleteDocument(ENTITY_ID_KEY, entityId, document);
             } catch (IOException e) {

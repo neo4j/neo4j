@@ -61,7 +61,7 @@ public class TextIndexBuilder extends AbstractLuceneIndexBuilder<TextIndexBuilde
         this.config = config;
         this.samplingConfig = new IndexSamplingConfig(config);
 
-        final var writerConfigBuilder =
+        IndexWriterConfigBuilder writerConfigBuilder =
                 new IndexWriterConfigBuilder(IndexWriterConfigMode.TEXT, config).withLogProvider(logProvider);
         this.writerConfigFactory = writerConfigBuilder::build;
     }
@@ -109,7 +109,7 @@ public class TextIndexBuilder extends AbstractLuceneIndexBuilder<TextIndexBuilde
      */
     public DatabaseIndex<ValueIndexReader> build() {
         PartitionedIndexStorage storage = storageBuilder.build();
-        var index = new TextIndex(
+        TextIndex index = new TextIndex(
                 storage,
                 descriptor,
                 samplingConfig,

@@ -60,7 +60,7 @@ public enum Neo4jVectorSimilarityFunction implements VectorSimilarityFunction {
             }
             int dimensions = candidate.dimensions();
 
-            float square = 0.f;
+            float square = 0.0f;
             float[] vector = new float[dimensions];
             for (int i = 0; i < dimensions; i++) {
                 float element = candidate.floatValue(i);
@@ -71,7 +71,7 @@ public enum Neo4jVectorSimilarityFunction implements VectorSimilarityFunction {
                 vector[i] = element;
             }
 
-            if (square <= 0.f || !Float.isFinite(square)) {
+            if (square <= 0.0f || !Float.isFinite(square)) {
                 return null;
             }
 

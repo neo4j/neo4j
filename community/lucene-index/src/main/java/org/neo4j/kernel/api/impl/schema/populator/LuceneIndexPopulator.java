@@ -38,6 +38,8 @@ import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
 import org.neo4j.kernel.api.impl.schema.writer.LucenePartitionIndexWriter;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexSampler;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -47,7 +49,7 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
  */
 public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> implements IndexPopulator {
     protected final IndexUpdateIgnoreStrategy ignoreStrategy;
-    protected INDEX luceneIndex;
+    protected final INDEX luceneIndex;
     protected LucenePartitionIndexWriter writer;
     protected LuceneDocumentsFactory documentsFactory;
 
@@ -130,8 +132,8 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     public IndexSample sample(CursorContext cursorContext) {
         try {
             luceneIndex.maybeRefreshBlocking();
-            try (var reader = luceneIndex.getIndexReader(NO_USAGE_TRACKING);
-                    var sampler = reader.createSampler()) {
+            try (ValueIndexReader reader = luceneIndex.getIndexReader(NO_USAGE_TRACKING);
+                    IndexSampler sampler = reader.createSampler()) {
                 return sampler.sampleIndex(cursorContext, new AtomicBoolean());
             }
         } catch (IOException | IndexNotFoundKernelException e) {
@@ -139,8 +141,8 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
         }
     }
 
-    private boolean updatesForCorrectIndex(Collection<? extends IndexEntryUpdate> updates) {
-        for (var update : updates) {
+    private boolean updatesForCorrectIndex(Iterable<? extends IndexEntryUpdate> updates) {
+        for (IndexEntryUpdate update : updates) {
             if (!update.indexKey().schema().equals(luceneIndex.getDescriptor().schema())) {
                 return false;
             }

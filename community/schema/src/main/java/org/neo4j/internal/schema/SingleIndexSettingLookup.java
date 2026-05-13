@@ -117,13 +117,14 @@ public abstract class SingleIndexSettingLookup<FROM> extends SingleIndexSettingP
             return of(setting, EnumSet.allOf(type));
         }
 
+        @SafeVarargs
         public static <TYPE extends Enum<TYPE>> NameToEnumLookup of(IndexSetting setting, TYPE first, TYPE... rest) {
             return of(setting, EnumSet.of(first, rest));
         }
 
         public static <TYPE extends Enum<TYPE>> NameToEnumLookup of(IndexSetting setting, Set<TYPE> values) {
-            final Map<String, TYPE> lookup = new TreeMap<>();
-            for (final TYPE value : values) {
+            Map<String, TYPE> lookup = new TreeMap<>();
+            for (TYPE value : values) {
                 lookup.put(value.name(), value);
             }
             return new NameToEnumLookup(setting, lookup);

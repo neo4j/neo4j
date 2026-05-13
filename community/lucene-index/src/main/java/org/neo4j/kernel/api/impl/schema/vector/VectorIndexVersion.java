@@ -317,8 +317,8 @@ public enum VectorIndexVersion {
     public static final SortedSet<VectorIndexVersion> KNOWN_VERSIONS;
 
     static {
-        final TreeSet<VectorIndexVersion> versions = new TreeSet<>();
-        for (final VectorIndexVersion version : values()) {
+        SortedSet<VectorIndexVersion> versions = new TreeSet<>();
+        for (VectorIndexVersion version : values()) {
             if (version != UNKNOWN) {
                 versions.add(version);
             }
@@ -327,7 +327,7 @@ public enum VectorIndexVersion {
     }
 
     public static VectorIndexVersion latestSupportedVersion(KernelVersion kernelVersion) {
-        for (final var version : KNOWN_VERSIONS.reversed()) {
+        for (VectorIndexVersion version : KNOWN_VERSIONS.reversed()) {
             if (kernelVersion.isAtLeast(version.minimumRequiredKernelVersion)) {
                 return version;
             }
@@ -336,7 +336,7 @@ public enum VectorIndexVersion {
     }
 
     public static VectorIndexVersion fromDescriptor(IndexProviderDescriptor descriptor) {
-        for (final var version : KNOWN_VERSIONS.reversed()) {
+        for (VectorIndexVersion version : KNOWN_VERSIONS.reversed()) {
             if (version.descriptor.equals(descriptor)) {
                 return version;
             }
@@ -371,15 +371,15 @@ public enum VectorIndexVersion {
         this.descriptor = providerDescriptor;
         this.maxDimensions = maxDimensions;
         {
-            final Map<String, VectorSimilarityFunction> similarityFunctions = new TreeMap<>(CASE_INSENSITIVE_ORDER);
-            for (final VectorSimilarityFunction similarityFunction : supportedSimilarityFunctions) {
+            Map<String, VectorSimilarityFunction> similarityFunctions = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+            for (VectorSimilarityFunction similarityFunction : supportedSimilarityFunctions) {
                 similarityFunctions.put(similarityFunction.functionName().toUpperCase(Locale.ROOT), similarityFunction);
             }
             this.similarityFunctions = Collections.unmodifiableMap(similarityFunctions);
         }
         this.quantizationBooleans = Collections.unmodifiableSortedSet(new TreeSet<>(supportedQuantizationEnableds));
         {
-            final SortedSet<VectorQuantizationType> quantizationTypes =
+            SortedSet<VectorQuantizationType> quantizationTypes =
                     new TreeSet<>(Comparator.comparing(Enum::name, CASE_INSENSITIVE_ORDER));
             quantizationTypes.addAll(supportedQuantizationTypes);
             this.quantizationTypes = Collections.unmodifiableSortedSet(quantizationTypes);
@@ -388,7 +388,7 @@ public enum VectorIndexVersion {
         this.maxHnswM = maxHnswM;
         this.maxHnswEfConstruction = maxHnswEfConstruction;
         {
-            final SortedMap<KernelVersion, TypedIndexSettingsValidator<VectorIndexConfig>> validators =
+            SortedMap<KernelVersion, TypedIndexSettingsValidator<VectorIndexConfig>> validators =
                     new TreeMap<>(Comparator.reverseOrder());
             validators.putAll(configureValidators());
             this.validators = Collections.unmodifiableSortedMap(validators);
@@ -429,7 +429,7 @@ public enum VectorIndexVersion {
     }
 
     public VectorSimilarityFunction similarityFunction(String name) {
-        final var similarityFunction = maybeSimilarityFunction(name);
+        VectorSimilarityFunction similarityFunction = maybeSimilarityFunction(name);
         if (similarityFunction == null) {
             throw new IllegalArgumentException(
                     "'%s' is an unsupported vector similarity function for index with provider %s. "

@@ -27,19 +27,30 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
+import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -140,7 +151,7 @@ abstract class VectorSSFTestBase {
         }
 
         static EmbeddingHolder from(String resource) throws IOException {
-            try (final BufferedReader in = new BufferedReader(new InputStreamReader(
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(
                     Preconditions.requireNonNull(
                             VectorSSFTestBase.class.getResourceAsStream(resource), "Resource not found"),
                     StandardCharsets.UTF_8))) {
@@ -183,13 +194,13 @@ abstract class VectorSSFTestBase {
     protected void createNodeVectorIndex(
             String name, int vectorDimension, Consumer<VectorIndexSettings> modifySettings, String... onProperties) {
 
-        try (final Transaction tx = db.beginTx()) {
-            var creator = tx.schema().indexFor(LABEL_NODE_1);
+        try (Transaction tx = db.beginTx()) {
+            IndexCreator creator = tx.schema().indexFor(LABEL_NODE_1);
             for (String onProperty : onProperties) {
                 creator = creator.on(onProperty);
             }
 
-            var indexSettings = VectorIndexSettings.create()
+            VectorIndexSettings indexSettings = VectorIndexSettings.create()
                     .withDimensions(vectorDimension)
                     .withSimilarityFunction(SIMILARITY_FUNCTION)
                     .withHnswEfConstruction(EF_CONSTRUCTION);
@@ -201,18 +212,18 @@ abstract class VectorSSFTestBase {
             creator.create();
             tx.commit();
         }
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexOnline(name, 2, TimeUnit.MINUTES);
         }
     }
 
     protected void createRelationshipVectorIndex(String name, int vectorDimension, String... onProperties) {
-        try (final Transaction tx = db.beginTx()) {
-            var creator = tx.schema().indexFor(TYPE_REL_1);
+        try (Transaction tx = db.beginTx()) {
+            IndexCreator creator = tx.schema().indexFor(TYPE_REL_1);
             for (String onProperty : onProperties) {
                 creator = creator.on(onProperty);
             }
-            var indexSettings = VectorIndexSettings.create()
+            VectorIndexSettings indexSettings = VectorIndexSettings.create()
                     .withDimensions(vectorDimension)
                     .withSimilarityFunction(SIMILARITY_FUNCTION)
                     .withHnswEfConstruction(EF_CONSTRUCTION);
@@ -222,7 +233,7 @@ abstract class VectorSSFTestBase {
             creator.create();
             tx.commit();
         }
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexOnline(name, 2, TimeUnit.MINUTES);
         }
     }
@@ -233,7 +244,7 @@ abstract class VectorSSFTestBase {
      */
     protected long createTestNode(Map<String, Object> properties) {
         long node;
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             node = createTestNode(tx, properties);
             tx.commit();
         }
@@ -244,9 +255,9 @@ abstract class VectorSSFTestBase {
      * Create a single node with the specified properties
      * @param properties for the created record
      */
-    protected long createTestNode(Transaction tx, Map<String, Object> properties) {
-        var node = tx.createNode(LABEL_NODE_1);
-        for (var prop : properties.entrySet()) {
+    protected static long createTestNode(Transaction tx, Map<String, Object> properties) {
+        Node node = tx.createNode(LABEL_NODE_1);
+        for (Entry<String, Object> prop : properties.entrySet()) {
             node.setProperty(prop.getKey(), prop.getValue());
         }
         return node.getId();
@@ -258,7 +269,7 @@ abstract class VectorSSFTestBase {
      */
     protected long createTestRelationship(Map<String, Object> properties) {
         long rel;
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             rel = createTestRelationship(tx, properties);
             tx.commit();
         }
@@ -269,9 +280,10 @@ abstract class VectorSSFTestBase {
      * Create a single relationship with the specified properties
      * @param properties for the created record
      */
-    protected long createTestRelationship(Transaction tx, Map<String, Object> properties) {
-        var relationship = tx.createNode(LABEL_NODE_1).createRelationshipTo(tx.createNode(LABEL_NODE_1), TYPE_REL_1);
-        for (var prop : properties.entrySet()) {
+    protected static long createTestRelationship(Transaction tx, Map<String, Object> properties) {
+        Relationship relationship =
+                tx.createNode(LABEL_NODE_1).createRelationshipTo(tx.createNode(LABEL_NODE_1), TYPE_REL_1);
+        for (Entry<String, Object> prop : properties.entrySet()) {
             relationship.setProperty(prop.getKey(), prop.getValue());
         }
         return relationship.getId();
@@ -281,8 +293,8 @@ abstract class VectorSSFTestBase {
      * Delete a single node with the specified properties
      */
     protected void deleteTestNode(String key, Object value) {
-        try (final Transaction tx = db.beginTx()) {
-            var node = tx.findNode(LABEL_NODE_1, key, value);
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.findNode(LABEL_NODE_1, key, value);
             node.delete();
             tx.commit();
         }
@@ -293,12 +305,12 @@ abstract class VectorSSFTestBase {
      * @param properties for the created record
      */
     protected void updateTestNode(String key, Object value, Map<String, Object> properties) {
-        try (final Transaction tx = db.beginTx()) {
-            var node = tx.findNode(LABEL_NODE_1, key, value);
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.findNode(LABEL_NODE_1, key, value);
             if (node != null) {
-                for (var prop : properties.entrySet()) {
-                    var propKey = prop.getKey();
-                    var propValue = prop.getValue();
+                for (Entry<String, Object> prop : properties.entrySet()) {
+                    String propKey = prop.getKey();
+                    Object propValue = prop.getValue();
                     if (propValue != null) {
                         node.setProperty(propKey, propValue);
                     } else {
@@ -317,10 +329,10 @@ abstract class VectorSSFTestBase {
      * @param name of an index to search for
      * @return the first matching descriptor
      */
-    private IndexDescriptor findIndexDescriptor(KernelTransaction ktx, IndexType indexType, String name)
+    private static IndexDescriptor findIndexDescriptor(KernelTransaction ktx, IndexType indexType, String name)
             throws TestException {
 
-        final IndexDescriptor index = ktx.schemaRead().indexGetForName(name);
+        IndexDescriptor index = ktx.schemaRead().indexGetForName(name);
         if (index.getId() == -1 || !index.getIndexType().equals(indexType)) {
             throw new TestException("This is not the expected index");
         }
@@ -344,22 +356,23 @@ abstract class VectorSSFTestBase {
             EntityFilterPredicate entityFilterPredicate,
             Function<TokenRead, PropertyIndexQuery>... queryFilters)
             throws Exception {
-        try (final Transaction tx = db.beginTx()) {
-            final var ktx = ((InternalTransaction) tx).kernelTransaction();
-            try (final var indexCursor =
+        try (Transaction tx = db.beginTx()) {
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+            try (NodeValueIndexCursor indexCursor =
                             ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker());
-                    final var propertyCursor =
+                    PropertyCursor propertyCursor =
                             ktx.cursors().allocatePropertyCursor(ktx.cursorContext(), ktx.memoryTracker());
-                    final var nodeCursor = ktx.cursors().allocateNodeCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                var read = ktx.dataRead();
-                var tokenRead = ktx.tokenRead();
-                var queryContext = ktx.queryContext();
+                    NodeCursor nodeCursor =
+                            ktx.cursors().allocateNodeCursor(ktx.cursorContext(), ktx.memoryTracker())) {
+                Read read = ktx.dataRead();
+                TokenRead tokenRead = ktx.tokenRead();
+                QueryContext queryContext = ktx.queryContext();
                 IndexReadSession session = read.indexReadSession(findIndexDescriptor(ktx, IndexType.VECTOR, indexName));
                 PropertyIndexQuery[] queries = new PropertyIndexQuery[queryFilters.length + 2];
                 queries[0] = kNearestNeighboursPredicate;
                 queries[1] = entityFilterPredicate;
                 for (int i = 0; i < queryFilters.length; i++) {
-                    var queryFilter = queryFilters[i];
+                    Function<TokenRead, PropertyIndexQuery> queryFilter = queryFilters[i];
                     queries[i + 2] = queryFilter == null ? null : queryFilter.apply(tokenRead);
                 }
                 read.nodeIndexSeek(queryContext, session, indexCursor, IndexQueryConstraints.unconstrained(), queries);
@@ -385,23 +398,23 @@ abstract class VectorSSFTestBase {
             EntityFilterPredicate entityFilterPredicate,
             Function<TokenRead, PropertyIndexQuery>... queryFilters)
             throws Exception {
-        try (final Transaction tx = db.beginTx()) {
-            final var ktx = ((InternalTransaction) tx).kernelTransaction();
-            try (final var indexCursor = ktx.cursors()
+        try (Transaction tx = db.beginTx()) {
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+            try (RelationshipValueIndexCursor indexCursor = ktx.cursors()
                             .allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker());
-                    final var propertyCursor =
+                    PropertyCursor propertyCursor =
                             ktx.cursors().allocatePropertyCursor(ktx.cursorContext(), ktx.memoryTracker());
-                    final var relCursor =
+                    RelationshipScanCursor relCursor =
                             ktx.cursors().allocateRelationshipScanCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                var read = ktx.dataRead();
-                var tokenRead = ktx.tokenRead();
-                var queryContext = ktx.queryContext();
+                Read read = ktx.dataRead();
+                TokenRead tokenRead = ktx.tokenRead();
+                QueryContext queryContext = ktx.queryContext();
                 IndexReadSession session = read.indexReadSession(findIndexDescriptor(ktx, IndexType.VECTOR, indexName));
                 PropertyIndexQuery[] queries = new PropertyIndexQuery[queryFilters.length + 2];
                 queries[0] = kNearestNeighboursPredicate;
                 queries[1] = entityFilterPredicate;
                 for (int i = 0; i < queryFilters.length; i++) {
-                    var queryFilter = queryFilters[i];
+                    Function<TokenRead, PropertyIndexQuery> queryFilter = queryFilters[i];
                     queries[i + 2] = queryFilter == null ? null : queryFilter.apply(tokenRead);
                 }
                 read.relationshipIndexSeek(

@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -141,9 +142,10 @@ class IndexPopulationFlipRaceIT {
             IndexDescriptor indexA = single(tx.schemaRead().index(SchemaDescriptors.forLabel(labelAId, keyAId)));
             IndexDescriptor indexB = single(tx.schemaRead().index(SchemaDescriptors.forLabel(labelBId, keyBId)));
 
-            var indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
-            try (var valueIndexReaderA = indexingService.getIndexProxy(indexA).newValueReader();
-                    var valueIndexReaderB =
+            IndexingService indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
+            try (ValueIndexReader valueIndexReaderA =
+                            indexingService.getIndexProxy(indexA).newValueReader();
+                    ValueIndexReader valueIndexReaderB =
                             indexingService.getIndexProxy(indexB).newValueReader()) {
                 for (int j = 0; j < NODES_PER_INDEX; j++) {
                     long nodeAId = data.first()[j];

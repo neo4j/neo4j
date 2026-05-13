@@ -34,10 +34,10 @@ class DefaultTokenIndexIdLayoutTest {
 
     @Test
     void testBasicConversionFromEntityId() {
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
 
         for (int i = 0; i < 1000; i++) {
-            var entityId = random.nextLong(0, Long.MAX_VALUE);
+            long entityId = random.nextLong(0, Long.MAX_VALUE);
             assertThat(idLayout.rangeOf(entityId)).isEqualTo(entityId / TokenScanValue.RANGE_SIZE);
             assertThat(idLayout.idWithinRange(entityId)).isEqualTo(entityId % TokenScanValue.RANGE_SIZE);
         }
@@ -45,16 +45,16 @@ class DefaultTokenIndexIdLayoutTest {
 
     @Test
     void testBasicConversionToEntityId() {
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
         for (int i = 0; i < 1000; i++) {
-            var range = random.nextLong();
+            long range = random.nextLong();
             assertThat(idLayout.firstIdOfRange(range)).isEqualTo(range * TokenScanValue.RANGE_SIZE);
         }
     }
 
     @Test
     void testEdgeCases() {
-        var idLayout = new DefaultTokenIndexIdLayout();
+        DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
         // full range seeks should start from the lowest actual range that is 0
         assertThat(idLayout.rangeOf(Long.MIN_VALUE)).isLessThan(0);
         // range seeks add 1 to cover to-exclusive entity id, full range shouldn't fail with overflow

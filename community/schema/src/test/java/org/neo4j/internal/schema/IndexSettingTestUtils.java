@@ -36,8 +36,8 @@ public class IndexSettingTestUtils {
     @SafeVarargs
     public static SettingsAccessor settings(Entry<IndexSetting, Object>... entries) {
         // HashMap can support null values
-        final Map<IndexSetting, Object> map = new HashMap<>(entries.length);
-        for (final Entry<IndexSetting, Object> entry : entries) {
+        Map<IndexSetting, Object> map = new HashMap<>(entries.length);
+        for (Entry<IndexSetting, Object> entry : entries) {
             map.put(entry.getKey(), entry.getValue());
         }
         return new IndexSettingObjectMapAccessor(map);

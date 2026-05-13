@@ -24,6 +24,7 @@ import static org.neo4j.kernel.api.impl.schema.fulltext.FulltextIndexSettings.is
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.LongPredicate;
@@ -36,6 +37,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.FulltextSearchPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -105,7 +107,7 @@ public class FulltextIndexReader implements ValueIndexReader {
             PropertyIndexQuery... queries)
             throws IndexNotApplicableKernelException {
         validateQuery(constraints, queries);
-        final var predicate = queries[0];
+        PropertyIndexQuery predicate = queries[0];
         ValuesIterator iterator;
         if (searchers.isEmpty()) {
             // We are replicating the behaviour of IndexSearcher.search(Query, Collector), which starts out by
@@ -125,7 +127,7 @@ public class FulltextIndexReader implements ValueIndexReader {
 
         reportIndexQueried(queryContext, queries);
 
-        final var progressor = new LuceneScoredEntityIndexProgressor(iterator, client, constraints);
+        IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(iterator, client, constraints);
         client.initializeQuery(index, progressor, true, false, constraints, queries);
     }
 
@@ -143,7 +145,7 @@ public class FulltextIndexReader implements ValueIndexReader {
                     msg -> IndexNotApplicableKernelException.indexNotApplicable(log, index.getName(), msg), predicates);
         }
 
-        final var predicate = predicates[0];
+        PropertyIndexQuery predicate = predicates[0];
         if (!index.getCapability().isQuerySupported(predicate.type(), predicate.valueCategory())) {
             throw invalidQuery(
                     msg -> IndexNotApplicableKernelException.indexNotApplicable(log, index.getName(), msg), predicate);
@@ -152,7 +154,7 @@ public class FulltextIndexReader implements ValueIndexReader {
 
     private <E extends Exception> E invalidCompositeQuery(
             Function<String, E> constructor, PropertyIndexQuery... predicates) {
-        final var indexType = index.getIndexType();
+        IndexType indexType = index.getIndexType();
         return constructor.apply(("Tried to query a %s index with a composite query. "
                         + "Composite queries are not supported by a %s index. "
                         + "Query was: %s ")
@@ -164,7 +166,7 @@ public class FulltextIndexReader implements ValueIndexReader {
         return switch (predicate.type()) {
             case ALL_ENTRIES -> indexSearcher.newQueryContext().matchAll();
             case FULLTEXT_SEARCH -> {
-                final var fulltextSearchPredicate = (FulltextSearchPredicate) predicate;
+                FulltextSearchPredicate fulltextSearchPredicate = (FulltextSearchPredicate) predicate;
                 try {
                     // todo: is the boolean query needed?
                     LuceneQueryContext queryContext = indexSearcher.newQueryContext();
@@ -189,7 +191,7 @@ public class FulltextIndexReader implements ValueIndexReader {
         };
     }
 
-    private <E extends Exception> E invalidQuery(Function<String, E> constructor, PropertyIndexQuery query) {
+    private static <E extends Exception> E invalidQuery(Function<String, E> constructor, PropertyIndexQuery query) {
         return constructor.apply("A fulltext schema index cannot answer %s queries on %s values."
                 .formatted(query.type(), query.valueCategory()));
     }
@@ -229,7 +231,7 @@ public class FulltextIndexReader implements ValueIndexReader {
 
     @Override
     public void close() {
-        List<AutoCloseable> resources = new ArrayList<>(searchers.size() + 1);
+        Collection<AutoCloseable> resources = new ArrayList<>(searchers.size() + 1);
         resources.addAll(searchers);
         resources.add(transactionState);
         IOUtils.close(IndexReaderCloseException::new, resources);

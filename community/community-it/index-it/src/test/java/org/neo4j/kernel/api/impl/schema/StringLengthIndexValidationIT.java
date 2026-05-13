@@ -41,6 +41,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -312,15 +314,15 @@ public abstract class StringLengthIndexValidationIT {
         long indexId;
 
         try (Transaction tx = db.beginTx()) {
-            var token = ((TransactionImpl) tx).kernelTransaction().token();
-            var labelId = token.labelGetOrCreateForName(LABEL_ONE.name());
-            var propertyId = token.propertyKeyGetOrCreateForName(propKey);
-            var schemaWrite = ((TransactionImpl) tx).kernelTransaction().schemaWrite();
-            var indexPrototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId))
+            Token token = ((TransactionImpl) tx).kernelTransaction().token();
+            int labelId = token.labelGetOrCreateForName(LABEL_ONE.name());
+            int propertyId = token.propertyKeyGetOrCreateForName(propKey);
+            SchemaWrite schemaWrite = ((TransactionImpl) tx).kernelTransaction().schemaWrite();
+            IndexPrototype indexPrototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId))
                     .withIndexType(getIndexType())
                     .withName("coolName")
                     .withIndexProvider(getIndexProvider());
-            var indexDescriptor = schemaWrite.indexCreate(indexPrototype);
+            IndexDescriptor indexDescriptor = schemaWrite.indexCreate(indexPrototype);
             indexId = indexDescriptor.getId();
             tx.commit();
         }

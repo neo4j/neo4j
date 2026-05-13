@@ -94,7 +94,7 @@ public final class SchemaDescriptorImplementation
         }
     }
 
-    private SchemaArchetype detectArchetype(
+    private static SchemaArchetype detectArchetype(
             EntityType entityType, SchemaPatternMatchingType schemaPatternMatchingType, int[] entityTokens) {
 
         if (entityTokens.length == 1 && schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {

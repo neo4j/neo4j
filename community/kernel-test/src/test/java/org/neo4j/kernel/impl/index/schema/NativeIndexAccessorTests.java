@@ -56,12 +56,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -201,7 +203,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     @Test
     void shouldReturnZeroCountForEmptyIndex() {
         // given
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             // when
             EagerValueIndexEntryUpdate update =
                     valueCreatorUtil.randomUpdateGenerator(random).next();
@@ -223,7 +225,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             for (EagerValueIndexEntryUpdate update : updates) {
                 long count = reader.countIndexedEntities(
                         update.getEntityId(),
@@ -256,7 +258,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         for (EagerValueIndexEntryUpdate update : updates) {
             int[] propKeys = valueCreatorUtil.indexDescriptor().schema().getPropertyIds();
@@ -277,15 +279,15 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     @Test
     void shouldReturnAllEntriesForAllEntriesPredicate() throws Exception {
         // given
-        final var updates = someUpdatesSingleType();
+        EagerValueIndexEntryUpdate[] updates = someUpdatesSingleType();
         processAll(updates);
 
-        final var expectedIds = Stream.of(updates)
+        long[] expectedIds = Stream.of(updates)
                 .mapToLong(EagerValueIndexEntryUpdate::getEntityId)
                 .toArray();
         // when
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING);
-                var result = query(reader, PropertyIndexQuery.allEntries())) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
+                NodeValueIterator result = query(reader, PropertyIndexQuery.allEntries())) {
             // then
             assertEntityIdHits(expectedIds, result);
         }
@@ -298,7 +300,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         for (EagerValueIndexEntryUpdate update : updates) {
             Value value = update.values()[0];
             try (NodeValueIterator result = query(reader, PropertyIndexQuery.exact(0, value))) {
@@ -314,7 +316,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         Object value = generateUniqueValue(updates);
         try (NodeValueIterator result = query(reader, PropertyIndexQuery.exact(0, value))) {
             assertEntityIdHits(EMPTY_LONG_ARRAY, result);
@@ -370,7 +372,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         // given
         EagerValueIndexEntryUpdate[] updates = someUpdatesSingleType();
         processAll(updates);
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
                 IndexSampler sampler = reader.createSampler()) {
             // when
             IndexSample sample = sampler.sampleIndex(NULL_CONTEXT, new AtomicBoolean());
@@ -389,9 +391,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        try (var cursorContext = contextFactory.create("test")) {
+        try (CursorContext cursorContext = contextFactory.create("test")) {
             Set<Long> ids;
-            try (var reader = accessor.newAllEntriesValueReader(cursorContext)) {
+            try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(cursorContext)) {
                 ids = asUniqueSet(reader);
             }
 
@@ -409,7 +411,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void shouldSeeAllEntriesBetweenSpecificValues(boolean fromBeginning, boolean toEnd) throws Exception {
         // given
-        var valueTypeCandidates = Arrays.stream(valueCreatorUtil.supportedTypes())
+        ValueType[] valueTypeCandidates = Arrays.stream(valueCreatorUtil.supportedTypes())
                 .filter(type -> type != ValueType.STRING_ARRAY)
                 .toArray(ValueType[]::new);
         shouldSeeAllEntriesBetweenSpecificValues(fromBeginning, toEnd, valueTypeCandidates);
@@ -417,11 +419,11 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
 
     protected void shouldSeeAllEntriesBetweenSpecificValues(
             boolean fromBeginning, boolean toEnd, ValueType[] valueTypeCandidates) throws IndexEntryConflictException {
-        var updates = someUpdatesSingleType(valueTypeCandidates);
+        EagerValueIndexEntryUpdate[] updates = someUpdatesSingleType(valueTypeCandidates);
         processAll(updates);
 
         // when
-        try (var cursorContext = contextFactory.create("test")) {
+        try (CursorContext cursorContext = contextFactory.create("test")) {
             Arrays.sort(
                     updates,
                     (o1, o2) -> ValueTuple.COMPARATOR.compare(ValueTuple.of(o1.values()), ValueTuple.of(o2.values())));
@@ -457,7 +459,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
             List<EagerValueIndexEntryUpdate> found = new ArrayList<>();
             Value[] from = fromBeginning ? null : updates[fromIndex].values();
             Value[] to = toEnd ? null : updates[toIndex].values();
-            try (var reader = accessor.newAllEntriesValueReader(from, to, cursorContext)) {
+            try (IndexEntriesReader reader = accessor.newAllEntriesValueReader(from, to, cursorContext)) {
                 while (reader.hasNext()) {
                     found.add(EagerValueIndexEntryUpdate.add(reader.next(), indexDescriptor, reader.values()));
                 }

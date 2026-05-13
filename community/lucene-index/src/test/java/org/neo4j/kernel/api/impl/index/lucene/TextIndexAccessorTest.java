@@ -52,7 +52,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,6 +60,8 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.IOFunction;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExistsPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -79,6 +80,7 @@ import org.neo4j.kernel.api.impl.schema.text.TextIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.text.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexSampler;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
@@ -93,18 +95,10 @@ import org.neo4j.values.ElementIdMapper;
 @ExtendWith(ThreadingExtension.class)
 public class TextIndexAccessorTest {
     private static final int PROP_ID = 1;
-
-    @Inject
-    private Threading threading;
-
-    private static EphemeralFileSystemAbstraction fileSystem;
-
-    private TextIndexAccessor accessor;
-    private final long nodeId = 1;
-    private final long nodeId2 = 2;
-    private final Object value = "value";
-    private final Object value2 = "40";
-    private DirectoryFactory dirFactory;
+    private static final long NODE_ID = 1;
+    private static final long NODE_ID_2 = 2;
+    private static final Object VALUE = "value";
+    private static final Object VALUE_2 = "40";
     private static final IndexDescriptor GENERAL_INDEX = IndexPrototype.forSchema(forLabel(0, PROP_ID))
             .withName("a")
             .withIndexType(IndexType.TEXT)
@@ -113,11 +107,20 @@ public class TextIndexAccessorTest {
             .withIndexCapability(TextIndexProvider.CAPABILITY);
     private static final Config CONFIG = Config.defaults();
 
+    private static final EphemeralFileSystemAbstraction FILE_SYSTEM = new EphemeralFileSystemAbstraction();
+
+    @Inject
+    private Threading threading;
+
+    private DirectoryFactory dirFactory;
+    private TextIndexAccessor accessor;
+
     public static Stream<Arguments> implementations() {
-        final Path dir = Path.of("dir");
+        Path dir = Path.of("dir");
         return Stream.of(Arguments.of(GENERAL_INDEX, (IOFunction<DirectoryFactory, TextIndexAccessor>) dirFactory1 -> {
-            var index = TextIndexBuilder.create(GENERAL_INDEX, writable(), CONFIG, NullLogProvider.getInstance())
-                    .withFileSystem(fileSystem)
+            DatabaseIndex<ValueIndexReader> index = TextIndexBuilder.create(
+                            GENERAL_INDEX, writable(), CONFIG, NullLogProvider.getInstance())
+                    .withFileSystem(FILE_SYSTEM)
                     .withDirectoryFactory(dirFactory1)
                     .withIndexRootFolder(dir.resolve("1"))
                     .build();
@@ -129,14 +132,9 @@ public class TextIndexAccessorTest {
         }));
     }
 
-    @BeforeAll
-    static void beforeAll() {
-        fileSystem = new EphemeralFileSystemAbstraction();
-    }
-
     @AfterAll
     static void afterAll() throws IOException {
-        fileSystem.close();
+        FILE_SYSTEM.close();
     }
 
     void init(LuceneContext luceneContext) throws IOException {
@@ -144,7 +142,7 @@ public class TextIndexAccessorTest {
         Path dir = Path.of("dir");
         DatabaseIndex<ValueIndexReader> databaseIndex = TextIndexBuilder.create(
                         GENERAL_INDEX, writable(), CONFIG, NullLogProvider.getInstance())
-                .withFileSystem(fileSystem)
+                .withFileSystem(FILE_SYSTEM)
                 .withDirectoryFactory(dirFactory)
                 .withLuceneContext(luceneContext)
                 .withIndexRootFolder(dir.resolve("1"))
@@ -166,14 +164,14 @@ public class TextIndexAccessorTest {
     void indexReaderShouldSupportScan(LuceneContext luceneContext) throws Exception {
         init(luceneContext);
         // GIVEN
-        updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(asList(add(NODE_ID, VALUE), add(NODE_ID_2, VALUE_2)));
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // WHEN
         Set<Long> results = resultSet(reader, allEntries());
 
         // THEN
-        assertEquals(asSet(nodeId, nodeId2), results);
+        assertEquals(asSet(NODE_ID, NODE_ID_2), results);
         reader.close();
     }
 
@@ -182,9 +180,9 @@ public class TextIndexAccessorTest {
     void indexReaderExistsQuery(LuceneContext luceneContext) throws Exception {
         init(luceneContext);
         // GIVEN
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             // WHEN
-            var query = exists(PROP_ID);
+            ExistsPredicate query = exists(PROP_ID);
             assertThatThrownBy(() -> resultsArray(reader, query))
                     .isInstanceOf(IndexNotApplicableKernelException.class)
                     .hasMessageContainingAll(
@@ -197,14 +195,14 @@ public class TextIndexAccessorTest {
     void indexReaderExactQuery(LuceneContext luceneContext) throws Exception {
         init(luceneContext);
         // GIVEN
-        updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(asList(add(NODE_ID, VALUE), add(NODE_ID_2, VALUE_2)));
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // WHEN
-        Set<Long> results = resultSet(reader, exact(PROP_ID, value));
+        Set<Long> results = resultSet(reader, exact(PROP_ID, VALUE));
 
         // THEN
-        assertEquals(asSet(nodeId), results);
+        assertEquals(asSet(NODE_ID), results);
         reader.close();
     }
 
@@ -214,9 +212,9 @@ public class TextIndexAccessorTest {
         init(luceneContext);
 
         // GIVEN
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             // WHEN
-            var query = exists(PROP_ID);
+            ExistsPredicate query = exists(PROP_ID);
             assertThatThrownBy(() -> resultsArray(reader, query))
                     .isInstanceOf(IndexNotApplicableKernelException.class)
                     .hasMessageContainingAll(
@@ -231,8 +229,8 @@ public class TextIndexAccessorTest {
 
         updateAndCommit(asList(add(1, "1"), add(2, "2"), add(3, "3"), add(4, "4"), add(5, "Double.NaN")));
 
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
-        var query = range(PROP_ID, 2, true, 3, true);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        RangePredicate<?> query = range(PROP_ID, 2, true, 3, true);
         assertThatThrownBy(() -> resultsArray(reader, query))
                 .isInstanceOf(IndexNotApplicableKernelException.class)
                 .hasMessageContainingAll(
@@ -245,14 +243,14 @@ public class TextIndexAccessorTest {
         init(luceneContext);
 
         // GIVEN
-        updateAndCommit(singletonList(add(nodeId, value)));
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(singletonList(add(NODE_ID, VALUE)));
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // WHEN
-        updateAndCommit(singletonList(remove(nodeId, value)));
+        updateAndCommit(singletonList(remove(NODE_ID, VALUE)));
 
         // THEN
-        assertEquals(asSet(nodeId), resultSet(reader, exact(PROP_ID, value)));
+        assertEquals(asSet(NODE_ID), resultSet(reader, exact(PROP_ID, VALUE)));
         reader.close();
     }
 
@@ -263,16 +261,16 @@ public class TextIndexAccessorTest {
         init(luceneContext);
 
         // WHEN
-        updateAndCommit(singletonList(add(nodeId, value)));
-        var firstReader = accessor.newValueReader(NO_USAGE_TRACKING);
-        updateAndCommit(singletonList(add(nodeId2, value2)));
-        var secondReader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(singletonList(add(NODE_ID, VALUE)));
+        ValueIndexReader firstReader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(singletonList(add(NODE_ID_2, VALUE_2)));
+        ValueIndexReader secondReader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // THEN
-        assertEquals(asSet(nodeId), resultSet(firstReader, exact(PROP_ID, value)));
-        assertEquals(asSet(), resultSet(firstReader, exact(PROP_ID, value2)));
-        assertEquals(asSet(nodeId), resultSet(secondReader, exact(PROP_ID, value)));
-        assertEquals(asSet(nodeId2), resultSet(secondReader, exact(PROP_ID, value2)));
+        assertEquals(asSet(NODE_ID), resultSet(firstReader, exact(PROP_ID, VALUE)));
+        assertEquals(asSet(), resultSet(firstReader, exact(PROP_ID, VALUE_2)));
+        assertEquals(asSet(NODE_ID), resultSet(secondReader, exact(PROP_ID, VALUE)));
+        assertEquals(asSet(NODE_ID_2), resultSet(secondReader, exact(PROP_ID, VALUE_2)));
         firstReader.close();
         secondReader.close();
     }
@@ -283,11 +281,11 @@ public class TextIndexAccessorTest {
         init(luceneContext);
 
         // WHEN
-        updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(asList(add(NODE_ID, VALUE), add(NODE_ID_2, VALUE_2)));
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // THEN
-        assertEquals(asSet(nodeId), resultSet(reader, exact(PROP_ID, value)));
+        assertEquals(asSet(NODE_ID), resultSet(reader, exact(PROP_ID, VALUE)));
         reader.close();
     }
 
@@ -297,15 +295,15 @@ public class TextIndexAccessorTest {
         init(luceneContext);
 
         // GIVEN
-        updateAndCommit(singletonList(add(nodeId, value)));
+        updateAndCommit(singletonList(add(NODE_ID, VALUE)));
 
         // WHEN
-        updateAndCommit(singletonList(change(nodeId, value, value2)));
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(singletonList(change(NODE_ID, VALUE, VALUE_2)));
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // THEN
-        assertEquals(asSet(nodeId), resultSet(reader, exact(PROP_ID, value2)));
-        assertEquals(emptySet(), resultSet(reader, exact(PROP_ID, value)));
+        assertEquals(asSet(NODE_ID), resultSet(reader, exact(PROP_ID, VALUE_2)));
+        assertEquals(emptySet(), resultSet(reader, exact(PROP_ID, VALUE)));
         reader.close();
     }
 
@@ -315,15 +313,15 @@ public class TextIndexAccessorTest {
         init(luceneContext);
 
         // GIVEN
-        updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
+        updateAndCommit(asList(add(NODE_ID, VALUE), add(NODE_ID_2, VALUE_2)));
 
         // WHEN
-        updateAndCommit(singletonList(remove(nodeId, value)));
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        updateAndCommit(singletonList(remove(NODE_ID, VALUE)));
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // THEN
-        assertEquals(asSet(nodeId2), resultSet(reader, exact(PROP_ID, value2)));
-        assertEquals(asSet(), resultSet(reader, exact(PROP_ID, value)));
+        assertEquals(asSet(NODE_ID_2), resultSet(reader, exact(PROP_ID, VALUE_2)));
+        assertEquals(asSet(), resultSet(reader, exact(PROP_ID, VALUE)));
         reader.close();
     }
 
@@ -333,16 +331,16 @@ public class TextIndexAccessorTest {
         init(luceneContext);
 
         // given
-        updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
+        updateAndCommit(asList(add(NODE_ID, VALUE), add(NODE_ID_2, VALUE_2)));
 
         // when
-        var indexReader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader indexReader = accessor.newValueReader(NO_USAGE_TRACKING);
         BinaryLatch dropLatch = new BinaryLatch();
         BinaryLatch sampleLatch = new BinaryLatch();
 
         LuceneIndexSampler indexSampler = spy((LuceneIndexSampler) indexReader.createSampler());
         doAnswer(inv -> {
-                    var obj = inv.callRealMethod();
+                    Object obj = inv.callRealMethod();
                     dropLatch.release(); // We have now started the sampling, let the index try to drop
                     sampleLatch.await(); // Wait for the drop to be blocked
                     return obj;
@@ -351,7 +349,7 @@ public class TextIndexAccessorTest {
                 .newTask();
 
         List<Future<?>> futures = new ArrayList<>();
-        try (var reader = indexReader /* do not inline! */;
+        try (ValueIndexReader reader = indexReader /* do not inline! */;
                 IndexSampler sampler = indexSampler /* do not inline! */) {
             futures.add(threading.execute(
                     nothing -> {
@@ -405,21 +403,21 @@ public class TextIndexAccessorTest {
         }
     }
 
-    private IndexEntryUpdate add(long nodeId, Object value) {
+    private static IndexEntryUpdate add(long nodeId, Object value) {
         return IndexQueryHelper.add(nodeId, GENERAL_INDEX, value);
     }
 
-    private IndexEntryUpdate remove(long nodeId, Object value) {
+    private static IndexEntryUpdate remove(long nodeId, Object value) {
         return IndexQueryHelper.remove(nodeId, GENERAL_INDEX, value);
     }
 
-    private IndexEntryUpdate change(long nodeId, Object valueBefore, Object valueAfter) {
+    private static IndexEntryUpdate change(long nodeId, Object valueBefore, Object valueAfter) {
         return IndexQueryHelper.change(nodeId, GENERAL_INDEX, valueBefore, valueAfter);
     }
 
     private void updateAndCommit(List<IndexEntryUpdate> nodePropertyUpdates) throws IndexEntryConflictException {
-        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-            for (var update : nodePropertyUpdates) {
+        try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            for (IndexEntryUpdate update : nodePropertyUpdates) {
                 updater.process(update);
             }
         }

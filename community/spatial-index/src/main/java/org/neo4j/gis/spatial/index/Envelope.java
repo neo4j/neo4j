@@ -22,18 +22,8 @@ package org.neo4j.gis.spatial.index;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class Envelope {
-    static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100_000;
-
-    protected final double[] min;
-    protected final double[] max;
-
-    /**
-     * Copy constructor
-     */
-    public Envelope(Envelope e) {
-        this(e.min, e.max);
-    }
+public record Envelope(double[] min, double[] max) {
+    static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100_000.0;
 
     /**
      * General constructor for the n-dimensional case
@@ -54,6 +44,13 @@ public class Envelope {
     }
 
     /**
+     * Copy constructor
+     */
+    public Envelope(Envelope e) {
+        this(e.min, e.max);
+    }
+
+    /**
      * @return a copy of the envelope where the ratio of smallest to largest side is not more than 1:100
      */
     public Envelope withSideRatioNotTooSmall() {
@@ -65,21 +62,13 @@ public class Envelope {
             diffs[i] = to[i] - from[i];
             highestDiff = Math.max(highestDiff, diffs[i]);
         }
-        final double mindiff = highestDiff / MAXIMAL_ENVELOPE_SIDE_RATIO;
+        double mindiff = highestDiff / MAXIMAL_ENVELOPE_SIDE_RATIO;
         for (int i = 0; i < from.length; i++) {
             if (diffs[i] < mindiff) {
                 to[i] = from[i] + mindiff;
             }
         }
         return new Envelope(from, to);
-    }
-
-    public double[] getMin() {
-        return min;
-    }
-
-    public double[] getMax() {
-        return max;
     }
 
     public double getMin(int dimension) {

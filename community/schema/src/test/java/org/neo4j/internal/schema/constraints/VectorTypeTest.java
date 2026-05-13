@@ -36,16 +36,16 @@ class VectorTypeTest {
         return Stream.of(
                 Arguments.of(Values.int8Vector(new byte[] {2, 3, 5, 7, 11}), VectorType.int8Vector(5)),
                 Arguments.of(Values.int16Vector(new short[] {2, 3, 5, 7, 11}), VectorType.int16Vector(5)),
-                Arguments.of(Values.int32Vector(new int[] {2, 3, 5, 7, 11}), VectorType.int32Vector(5)),
-                Arguments.of(Values.int64Vector(new long[] {2, 3, 5, 7, 11}), VectorType.int64Vector(5)),
-                Arguments.of(Values.float32Vector(new float[] {2, 3, 5, 7, 11}), VectorType.float32Vector(5)),
-                Arguments.of(Values.float64Vector(new double[] {2, 3, 5, 7, 11}), VectorType.float64Vector(5)));
+                Arguments.of(Values.int32Vector(2, 3, 5, 7, 11), VectorType.int32Vector(5)),
+                Arguments.of(Values.int64Vector(2, 3, 5, 7, 11), VectorType.int64Vector(5)),
+                Arguments.of(Values.float32Vector(2, 3, 5, 7, 11), VectorType.float32Vector(5)),
+                Arguments.of(Values.float64Vector(2, 3, 5, 7, 11), VectorType.float64Vector(5)));
     }
 
     @ParameterizedTest
     @MethodSource("values")
     void shouldReturnInternedInstanceWhenInferringVectorType(Value val, ConstrainableType expected) {
-        var actual = TypeRepresentation.infer(val);
+        TypeRepresentation actual = TypeRepresentation.infer(val);
         // Check object identity
         assertThat(actual).isSameAs(expected);
     }
@@ -53,7 +53,7 @@ class VectorTypeTest {
     @ParameterizedTest
     @MethodSource("values")
     void shouldReturnInternedInstanceWhenDeserializingVectorType(Value ignored, ConstrainableType expected) {
-        var actual = TypeRepresentation.deserialize(expected.serialize());
+        ConstrainableType actual = TypeRepresentation.deserialize(expected.serialize());
         // Check object identity
         assertThat(actual).isSameAs(expected);
     }

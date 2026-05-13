@@ -126,7 +126,7 @@ public class UniqueIndexRecoveryTest {
         return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static Path snapshot(final Path path) throws IOException {
+    private static Path snapshot(Path path) throws IOException {
         Path snapshotDir = path.resolve("snapshot-" + new Random().nextInt());
         FileUtils.copyDirectory(path, snapshotDir, pathName -> {
             String subPath = pathName.toAbsolutePath()

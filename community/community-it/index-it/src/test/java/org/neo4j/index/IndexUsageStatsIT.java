@@ -38,12 +38,19 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.assertion.Assert;
@@ -84,11 +91,11 @@ class IndexUsageStatsIT {
     @Test
     void shouldGatherUsageStatsWhenUsingKernelAPI() throws KernelException {
         // when
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var ktx = tx.kernelTransaction();
-            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
-            try (var cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
-                var indexSession = ktx.dataRead().indexReadSession(index);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+            try (NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
+                IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
                 ktx.dataRead().nodeIndexSeek(ktx.queryContext(), indexSession, cursor, unorderedValues(), allEntries());
                 while (cursor.next()) {
                     // just go through it
@@ -109,8 +116,8 @@ class IndexUsageStatsIT {
     @Test
     void shouldGatherUsageStatsWhenUsingCypher() throws IndexNotFoundKernelException {
         // when
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            try (var result = tx.execute(format("MATCH (n:%s) WHERE n.%s='hello' RETURN n", LABEL, KEY))) {
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            try (Result result = tx.execute(format("MATCH (n:%s) WHERE n.%s='hello' RETURN n", LABEL, KEY))) {
                 while (result.hasNext()) {
                     result.next();
                 }
@@ -142,14 +149,14 @@ class IndexUsageStatsIT {
     void shouldHaveDefaultValueForNonExistingIndex() throws IndexNotFoundKernelException {
         // then
         triggerReportUsageStatistics();
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var ktx = tx.kernelTransaction();
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            KernelTransaction ktx = tx.kernelTransaction();
 
-            final var descriptor = SchemaDescriptors.forLabel(1, 42);
+            LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel(1, 42);
             // pick an index ID above the 3 that currently do exist
-            final var nonExistingIndex = TestIndexDescriptorFactory.forSchema(13, descriptor);
+            IndexDescriptor nonExistingIndex = TestIndexDescriptorFactory.forSchema(13, descriptor);
 
-            var stats = ktx.schemaRead().indexUsageStats(nonExistingIndex);
+            IndexUsageStats stats = ktx.schemaRead().indexUsageStats(nonExistingIndex);
             assertThat(stats.trackedSince()).isEqualTo(0);
             assertThat(stats.lastRead()).isEqualTo(0);
             assertThat(stats.readCount()).isEqualTo(0);
@@ -159,8 +166,8 @@ class IndexUsageStatsIT {
     @Test
     void shouldHaveDefaultValueIfNoPeriodicUpdateYet() throws IndexNotFoundKernelException {
         // when
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            try (var result = tx.execute(format("MATCH (n:%s) WHERE n.%s='hello' RETURN n", LABEL, KEY))) {
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            try (Result result = tx.execute(format("MATCH (n:%s) WHERE n.%s='hello' RETURN n", LABEL, KEY))) {
                 while (result.hasNext()) {
                     result.next();
                 }
@@ -190,11 +197,11 @@ class IndexUsageStatsIT {
     @Test
     void shouldThrowWhenTryingToGetStatsFromDroppedIndex() throws KernelException {
         // given
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var ktx = tx.kernelTransaction();
-            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
-            try (var cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
-                var indexSession = ktx.dataRead().indexReadSession(index);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+            try (NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
+                IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
                 ktx.dataRead().nodeIndexSeek(ktx.queryContext(), indexSession, cursor, unorderedValues(), allEntries());
                 while (cursor.next()) {
                     // just go through it
@@ -213,7 +220,7 @@ class IndexUsageStatsIT {
         dropIndex();
 
         // then
-        var e = assertThrows(IndexNotFoundKernelException.class, this::getIndexUsageStats);
+        IndexNotFoundKernelException e = assertThrows(IndexNotFoundKernelException.class, this::getIndexUsageStats);
         assertThat(e.gqlStatus()).isEqualTo("22N69");
         assertThat(e.statusDescription())
                 .isEqualTo("error: data exception - index does not exist. The index '$idxDescrOrName' does not exist.");
@@ -221,15 +228,15 @@ class IndexUsageStatsIT {
 
     @Test
     void shouldThrowWhenTryingToGetPopulationProgressFromIndexDroppedInSameTransaction() {
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var ktx = tx.kernelTransaction();
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            KernelTransaction ktx = tx.kernelTransaction();
             // Important: get index before dropping it.
             // Otherwise, `KernelSchemaRead.assertValidIndex` will throw before
             // `SchemaReadCoreSnapshot.checkIndexState`.
-            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
             tx.schema().getIndexByName(INDEX_NAME).drop();
 
-            var e = assertThrows(
+            IndexNotFoundKernelException e = assertThrows(
                     IndexNotFoundKernelException.class, () -> ktx.schemaRead().indexGetPopulationProgress(index));
             assertThat(e.gqlStatus()).isEqualTo("25N12");
             assertThat(e.statusDescription())
@@ -242,11 +249,11 @@ class IndexUsageStatsIT {
     @Test
     void shouldResetIndexStatsBetweenDropAndRecreate() throws KernelException {
         // given
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var ktx = tx.kernelTransaction();
-            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
-            try (var cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
-                var indexSession = ktx.dataRead().indexReadSession(index);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+            try (NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
+                IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
                 ktx.dataRead().nodeIndexSeek(ktx.queryContext(), indexSession, cursor, unorderedValues(), allEntries());
                 while (cursor.next()) {
                     // just go through it
@@ -275,7 +282,7 @@ class IndexUsageStatsIT {
     }
 
     private void createIndex() {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema()
                     .indexFor(Label.label(LABEL))
                     .on(KEY)
@@ -283,7 +290,7 @@ class IndexUsageStatsIT {
                     .create();
             tx.commit();
         }
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(1, TimeUnit.MINUTES);
         }
     }
@@ -300,22 +307,22 @@ class IndexUsageStatsIT {
     }
 
     private void assertIndexUsageStats(Consumer<IndexUsageStats> asserter) throws IndexNotFoundKernelException {
-        var usageStats = getIndexUsageStats();
+        IndexUsageStats usageStats = getIndexUsageStats();
         asserter.accept(usageStats);
     }
 
     private IndexUsageStats getIndexUsageStats() throws IndexNotFoundKernelException {
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var ktx = tx.kernelTransaction();
-            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
             return ktx.schemaRead().indexUsageStats(index);
         }
     }
 
     private void assertEventuallyIndexUsageStats(Predicate<IndexUsageStats> asserter) {
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var ktx = tx.kernelTransaction();
-            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(INDEX_NAME);
             Assert.assertEventually(() -> ktx.schemaRead().indexUsageStats(index), asserter, 1, TimeUnit.MINUTES);
         }
     }

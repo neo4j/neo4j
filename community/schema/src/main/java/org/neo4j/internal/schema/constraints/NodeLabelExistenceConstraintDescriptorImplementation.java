@@ -121,11 +121,7 @@ final class NodeLabelExistenceConstraintDescriptorImplementation extends Constra
             return false;
         }
 
-        if (!this.schema().equals(that.schema())) {
-            return false;
-        }
-
-        return true;
+        return this.schema().equals(that.schema());
     }
 
     @Override
@@ -139,7 +135,7 @@ final class NodeLabelExistenceConstraintDescriptorImplementation extends Constra
     public boolean conflictsWith(ConstraintDescriptor other) {
         if (other.graphTypeDependence() == GraphTypeDependence.DEPENDENT) {
             if (other.isNodeLabelExistenceConstraint()) {
-                var that = other.asNodeLabelExistenceConstraint();
+                NodeLabelExistenceConstraintDescriptor that = other.asNodeLabelExistenceConstraint();
                 return this.schema().getLabelId() == that.requiredLabelId()
                         || this.requiredLabelId() == that.schema().getLabelId();
             } else if (other.isNodePropertyTypeConstraint() || other.isNodePropertyExistenceConstraint()) {

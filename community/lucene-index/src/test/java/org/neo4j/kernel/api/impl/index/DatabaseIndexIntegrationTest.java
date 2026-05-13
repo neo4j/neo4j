@@ -239,7 +239,7 @@ class DatabaseIndexIntegrationTest {
     }
 
     private static class Lucene10SyncNotifierDirectoryFactory implements DirectoryFactory {
-        final CountDownLatch signal;
+        private final CountDownLatch signal;
 
         Lucene10SyncNotifierDirectoryFactory(CountDownLatch signal) {
             this.signal = signal;
@@ -286,7 +286,7 @@ class DatabaseIndexIntegrationTest {
     }
 
     private static class Lucene9SyncNotifierDirectoryFactory implements DirectoryFactory {
-        final CountDownLatch signal;
+        private final CountDownLatch signal;
 
         Lucene9SyncNotifierDirectoryFactory(CountDownLatch signal) {
             this.signal = signal;

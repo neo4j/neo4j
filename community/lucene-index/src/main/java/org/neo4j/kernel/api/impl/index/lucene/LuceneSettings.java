@@ -127,7 +127,7 @@ public class LuceneSettings implements SettingsDeclaration {
                     + " best for batched indexing and speedier searches. Only used if"
                     + " `internal.dbms.index.lucene.merge_policy` is set to LOG_BYTE_SIZE.")
     public static final Setting<Double> lucene_max_merge =
-            newBuilder("internal.dbms.index.lucene.max_merge", DOUBLE, 2048D).build();
+            newBuilder("internal.dbms.index.lucene.max_merge", DOUBLE, 2048.0D).build();
 
     @Internal
     @Description(
@@ -173,7 +173,7 @@ public class LuceneSettings implements SettingsDeclaration {
             + "to flush by RAM usage instead of document count and use as large a RAM buffer as you can. "
             + "This is only used during the creation of the index.")
     public static final Setting<Double> lucene_population_ram_buffer_size = newBuilder(
-                    "internal.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50D)
+                    "internal.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50.0D)
             .build();
 
     @Internal
@@ -182,7 +182,7 @@ public class LuceneSettings implements SettingsDeclaration {
             + "to flush by RAM usage instead of document count and use as large a RAM buffer as you can. "
             + "This is only used for vector indexes during the creation of the index.")
     public static final Setting<Double> vector_population_ram_buffer_size = newBuilder(
-                    "internal.dbms.index.vector.population_ram_buffer_size", DOUBLE, 1D)
+                    "internal.dbms.index.vector.population_ram_buffer_size", DOUBLE, 1.0D)
             .build();
 
     @Internal

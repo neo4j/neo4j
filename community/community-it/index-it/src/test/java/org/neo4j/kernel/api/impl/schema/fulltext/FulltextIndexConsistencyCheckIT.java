@@ -49,6 +49,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -854,7 +855,7 @@ class FulltextIndexConsistencyCheckIT {
             nodeId = node.getElementId();
             tx.commit();
         }
-        var storeFiles = getStoreFiles(db);
+        Collection<Path> storeFiles = getStoreFiles(db);
 
         managementService.shutdown();
         Path copyRoot = testDirectory.directory("cpy");
@@ -879,28 +880,28 @@ class FulltextIndexConsistencyCheckIT {
     @Test
     @SkipOnSpd(reason = "Spd consistency check for graph shard does not check indexes since it has no properties")
     void mustDiscoverRelationshipInIndexWithMissingPropertyInStore() throws Exception {
-        var db = createDatabase();
-        try (var tx = db.beginTx()) {
+        GraphDatabaseAPI db = createDatabase();
+        try (Transaction tx = db.beginTx()) {
             tx.execute(format(FULLTEXT_CREATE, "rels", asRelationshipTypeStr("REL"), asPropertiesStrList("prop")))
                     .close();
             tx.commit();
         }
 
         String relId;
-        try (var tx = db.beginTx()) {
-            final var node = tx.createNode();
-            final var rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.createNode();
+            Relationship rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
             relId = rel.getElementId();
             tx.commit();
         }
-        var storeFiles = getStoreFiles(db);
+        Collection<Path> storeFiles = getStoreFiles(db);
 
         managementService.shutdown();
-        final var copyRoot = testDirectory.directory("cpy");
+        Path copyRoot = testDirectory.directory("cpy");
         copyStoreFiles(storeFiles, copyRoot);
 
         db = createDatabase();
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
 
             tx.getRelationshipByElementId(relId).setProperty("prop", "value");
@@ -910,7 +911,7 @@ class FulltextIndexConsistencyCheckIT {
 
         restoreStoreFiles(copyRoot);
 
-        final var result = checkConsistency();
+        Result result = checkConsistency();
         assertThat(result.isSuccessful()).isFalse();
         assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
     }
@@ -918,31 +919,31 @@ class FulltextIndexConsistencyCheckIT {
     @Test
     @SkipOnSpd(reason = "Spd consistency check for graph shard does not check indexes since it has no properties")
     void mustDiscoverRelationshipInIndexWithMissingRelationshipInStore() throws Exception {
-        var db = createDatabase();
-        try (var tx = db.beginTx()) {
+        GraphDatabaseAPI db = createDatabase();
+        try (Transaction tx = db.beginTx()) {
             tx.execute(format(FULLTEXT_CREATE, "rels", asRelationshipTypeStr("REL"), asPropertiesStrList("prop")))
                     .close();
             tx.commit();
         }
 
         String nodeId;
-        try (var tx = db.beginTx()) {
-            final var node = tx.createNode();
+        try (Transaction tx = db.beginTx()) {
+            Node node = tx.createNode();
             nodeId = node.getElementId();
             tx.commit();
         }
-        var storeFiles = getStoreFiles(db);
+        Collection<Path> storeFiles = getStoreFiles(db);
 
         managementService.shutdown();
-        final var copyRoot = testDirectory.directory("cpy");
+        Path copyRoot = testDirectory.directory("cpy");
         copyStoreFiles(storeFiles, copyRoot);
 
         db = createDatabase();
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
 
-            final var node = tx.getNodeByElementId(nodeId);
-            final var rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
+            Node node = tx.getNodeByElementId(nodeId);
+            Relationship rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
             rel.setProperty("prop", "value");
             tx.commit();
         }
@@ -950,7 +951,7 @@ class FulltextIndexConsistencyCheckIT {
 
         restoreStoreFiles(copyRoot);
 
-        final var result = checkConsistency();
+        Result result = checkConsistency();
         assertThat(result.isSuccessful()).isFalse();
         assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
     }

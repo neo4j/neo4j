@@ -58,7 +58,7 @@ public class SingleIndexSettingProcessorTest {
 
         @Test
         void passthroughProcessed() {
-            final RecordWithSetting record = new InvalidValue(setting, FAKE_VALUE, null);
+            RecordWithSetting record = new InvalidValue(setting, FAKE_VALUE, null);
             assertThat(processor.processForVerification(record)).isSameAs(record);
             assertThat(processor.processForAuthoritativeRead(record)).isSameAs(record);
         }
@@ -69,7 +69,7 @@ public class SingleIndexSettingProcessorTest {
             @ParameterizedTest
             @MethodSource("records")
             void verification(KnownIndexSettingRecords records) {
-                final KnownIndexSettingRecords copy = new KnownIndexSettingRecords();
+                KnownIndexSettingRecords copy = new KnownIndexSettingRecords();
                 records.forEach(copy::upsert);
                 assertThat(records).containsExactlyInAnyOrderElementsOf(copy);
 
@@ -81,7 +81,7 @@ public class SingleIndexSettingProcessorTest {
             @ParameterizedTest
             @MethodSource("records")
             void authoritativeRead(KnownIndexSettingRecords records) {
-                final KnownIndexSettingRecords copy = new KnownIndexSettingRecords();
+                KnownIndexSettingRecords copy = new KnownIndexSettingRecords();
                 records.forEach(copy::upsert);
                 assertThat(records).containsExactlyInAnyOrderElementsOf(copy);
 
@@ -91,15 +91,15 @@ public class SingleIndexSettingProcessorTest {
             }
 
             private static Stream<KnownIndexSettingRecords> records() {
-                final KnownIndexSettingRecords empty = new KnownIndexSettingRecords();
-                final KnownIndexSettingRecords missingSetting = new KnownIndexSettingRecords();
-                final KnownIndexSettingRecords incorrectType = new KnownIndexSettingRecords();
-                final KnownIndexSettingRecords invalidValue = new KnownIndexSettingRecords();
-                final KnownIndexSettingRecords pending = new KnownIndexSettingRecords();
-                final KnownIndexSettingRecords valid = new KnownIndexSettingRecords();
-                for (final TestIndexSetting setting : TestIndexSetting.values()) {
-                    final Object value = value(setting);
-                    final Value storable = Objects.requireNonNullElse(Values.unsafeOf(value, true), Values.NO_VALUE);
+                KnownIndexSettingRecords empty = new KnownIndexSettingRecords();
+                KnownIndexSettingRecords missingSetting = new KnownIndexSettingRecords();
+                KnownIndexSettingRecords incorrectType = new KnownIndexSettingRecords();
+                KnownIndexSettingRecords invalidValue = new KnownIndexSettingRecords();
+                KnownIndexSettingRecords pending = new KnownIndexSettingRecords();
+                KnownIndexSettingRecords valid = new KnownIndexSettingRecords();
+                for (TestIndexSetting setting : TestIndexSetting.values()) {
+                    Object value = value(setting);
+                    Value storable = Objects.requireNonNullElse(Values.unsafeOf(value, true), Values.NO_VALUE);
                     missingSetting.upsert(new MissingSetting(setting));
                     incorrectType.upsert(new IncorrectType(setting, FAKE_VALUE, setting.getType()));
                     invalidValue.upsert(new InvalidValue(setting, value, new ClassRequirement(setting.getType())));
@@ -153,9 +153,9 @@ public class SingleIndexSettingProcessorTest {
 
         @Test
         void existingForVerification() {
-            final String existingValue = "existing Value";
-            final Value existingStorable = Values.utf8Value(existingValue);
-            final RecordWithSetting record = new Pending(setting, existingValue, existingStorable);
+            String existingValue = "existing Value";
+            Value existingStorable = Values.utf8Value(existingValue);
+            RecordWithSetting record = new Pending(setting, existingValue, existingStorable);
 
             processForVerificationAndAssertRecord(record, Pending.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -164,9 +164,9 @@ public class SingleIndexSettingProcessorTest {
 
         @Test
         void existingForAuthoritativeRead() {
-            final String existingValue = "existing Value";
-            final Value existingStorable = Values.utf8Value(existingValue);
-            final RecordWithSetting record = new Valid(setting, existingValue, existingStorable);
+            String existingValue = "existing Value";
+            Value existingStorable = Values.utf8Value(existingValue);
+            RecordWithSetting record = new Valid(setting, existingValue, existingStorable);
 
             processForAuthoritativeReadAndAssertRecord(record)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -175,7 +175,7 @@ public class SingleIndexSettingProcessorTest {
 
         @Test
         void useDefault() {
-            final RecordWithSetting record = new MissingSetting(setting);
+            RecordWithSetting record = new MissingSetting(setting);
 
             processForVerificationAndAssertRecord(record, Pending.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)

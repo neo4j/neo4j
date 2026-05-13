@@ -45,13 +45,13 @@ public abstract class TypedIndexConfig {
     // settings
     protected TypedIndexConfig(
             IndexProviderDescriptor descriptor, Set<IndexSetting> acceptedSettings, Iterable<Valid> records) {
-        final SortedMap<IndexSetting, Object> settings = new TreeMap<>(INDEX_SETTING_COMPARATOR);
-        final Map<String, Value> storables = new HashMap<>();
-        for (final Valid record : records) {
-            final IndexSetting setting = record.setting();
+        SortedMap<IndexSetting, Object> settings = new TreeMap<>(INDEX_SETTING_COMPARATOR);
+        Map<String, Value> storables = new HashMap<>();
+        for (Valid record : records) {
+            IndexSetting setting = record.setting();
             settings.put(setting, record.value());
             if (acceptedSettings.contains(setting)) {
-                final Value storable = record.storable();
+                Value storable = record.storable();
                 if (storable != null && storable != NO_VALUE) {
                     storables.put(setting.getSettingName(), storable);
                 }
@@ -74,7 +74,7 @@ public abstract class TypedIndexConfig {
 
     @SuppressWarnings("unchecked")
     public <T> T get(IndexSetting setting) {
-        final Object value = settings.get(setting);
+        Object value = settings.get(setting);
         if (value == null && !settings.containsKey(setting)) {
             throw unrecognizedSetting(setting.getSettingName(), settings.keySet());
         }

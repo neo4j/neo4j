@@ -52,6 +52,10 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.factory.primitive.ObjectFloatMaps;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.map.primitive.MutableObjectFloatMap;
+import org.eclipse.collections.api.multimap.list.MutableListMultimap;
+import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -154,7 +158,7 @@ class KernelIndexesLifecycleManagerTest {
         when(storageReader.allocateNodeCursor(any(), any(), any())).thenReturn(nodeCursor);
         when(storageReader.allocateRelationshipScanCursor(any(), any(), any())).thenReturn(relCursor);
 
-        final var config = Config.defaults();
+        Config config = Config.defaults();
         KernelVersion kernelVersion = KernelVersion.getLatestVersion(config);
         indexesLifecycleManager = new KernelIndexesLifecycleManager(new KernelSchemaLifecycleContext(
                 config,
@@ -187,7 +191,7 @@ class KernelIndexesLifecycleManagerTest {
 
     @Test
     void factoryRequiresCorrectContext() {
-        final var factory = new IndexImporterFactoryImpl();
+        IndexImporterFactoryImpl factory = new IndexImporterFactoryImpl();
         assertThatThrownBy(() -> factory.getLifecycleManager(new DuffContext(fs)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Index creation requires an instance of BulkIndexCreationContext");
@@ -195,9 +199,9 @@ class KernelIndexesLifecycleManagerTest {
 
     private static Stream<Arguments> completeConfiguration() {
         return INDEX_TYPES.entrySet().stream().map(entry -> {
-            final var indexProviderDescriptor = entry.getKey();
-            final var indexType = entry.getValue();
-            final var addsDefaultConfig = indexType == IndexType.POINT || indexType == IndexType.FULLTEXT;
+            IndexProviderDescriptor indexProviderDescriptor = entry.getKey();
+            IndexType indexType = entry.getValue();
+            boolean addsDefaultConfig = indexType == IndexType.POINT || indexType == IndexType.FULLTEXT;
             return Arguments.of(indexProviderDescriptor, indexType, addsDefaultConfig);
         });
     }
@@ -205,13 +209,13 @@ class KernelIndexesLifecycleManagerTest {
     @ParameterizedTest
     @MethodSource
     void completeConfiguration(IndexProviderDescriptor providerDescriptor, IndexType type, boolean addsDefaultConfig) {
-        final var prototype =
+        IndexPrototype prototype =
                 forSchema(forLabel(1, 2)).withName("basic").withIndexType(type).withIndexProvider(providerDescriptor);
 
-        final var descriptor = withDefaultConfig(prototype).materialise(3);
+        IndexDescriptor descriptor = withDefaultConfig(prototype).materialise(3);
         assertThat(descriptor.getCapability()).isEqualTo(IndexCapability.NO_CAPABILITY);
 
-        final var completedDescriptor = indexesLifecycleManager.completeConfiguration(descriptor);
+        IndexDescriptor completedDescriptor = indexesLifecycleManager.completeConfiguration(descriptor);
         assertThat(completedDescriptor.getCapability())
                 .as("completion should set the correct capability")
                 .isNotEqualTo(IndexCapability.NO_CAPABILITY);
@@ -239,12 +243,12 @@ class KernelIndexesLifecycleManagerTest {
 
     @Test
     void createWithError() throws IOException {
-        final var deltas = ObjectFloatMaps.mutable.<IndexDescriptor>empty();
-        final var completed = new MutableBoolean();
-        final var checkPointed = new MutableBoolean();
+        MutableObjectFloatMap<IndexDescriptor> deltas = ObjectFloatMaps.mutable.empty();
+        MutableBoolean completed = new MutableBoolean();
+        MutableBoolean checkPointed = new MutableBoolean();
 
         // this isn't valid config (RANGE + LOOKUP) => boom
-        final var descriptor = forSchema(forLabel(1, 2))
+        IndexDescriptor descriptor = forSchema(forLabel(1, 2))
                 .withName("duff")
                 .withIndexType(IndexType.RANGE)
                 .withIndexProvider(TOKEN_DESCRIPTOR)
@@ -297,43 +301,48 @@ class KernelIndexesLifecycleManagerTest {
     @Test
     void longerRunningIndexingReportsCorrectly()
             throws IOException, IndexPopulationFailedKernelException, IndexNotFoundKernelException {
-        final var indexingService = mock(IndexingService.class);
-        try (var lifecycleManager = indexesLifecycleManager(indexingService)) {
-            final var descriptor1 = forSchema(forLabel(1, 2))
+        IndexingService indexingService = mock(IndexingService.class);
+        try (KernelIndexesLifecycleManager lifecycleManager = indexesLifecycleManager(indexingService)) {
+            IndexDescriptor descriptor1 = forSchema(forLabel(1, 2))
                     .withName("descriptor1")
                     .withIndexType(IndexType.RANGE)
                     .withIndexProvider(RANGE_DESCRIPTOR)
                     .materialise(1);
-            final var descriptor2 = forSchema(forLabel(3, 4))
+            IndexDescriptor descriptor2 = forSchema(forLabel(3, 4))
                     .withName("descriptor2")
                     .withIndexType(IndexType.RANGE)
                     .withIndexProvider(RANGE_DESCRIPTOR)
                     .materialise(2);
 
-            final var d1p1 = 0.0f;
-            final var d2p1 = 0.0f;
-            final var d1p2 = 0.1f;
-            final var d2p2 = 0.1f;
-            final var d2p3 = 0.2f;
-            final var d2p4 = 0.5f;
-            final var d2p5 = 0.9f;
-            final var d2p6 = 1.0f;
+            float d1p1 = 0.0f;
+            float d2p1 = 0.0f;
+            float d1p2 = 0.1f;
+            float d2p2 = 0.1f;
+            float d2p3 = 0.2f;
+            float d2p4 = 0.5f;
+            float d2p5 = 0.9f;
+            float d2p6 = 1.0f;
 
-            final var tentativeProxy = populatingProxy(descriptor2, d2p6);
+            IndexProxy tentativeProxy = populatingProxy(descriptor2, d2p6);
 
-            final var state1 = Sets.mutable.of(populatingProxy(descriptor1, d1p1), populatingProxy(descriptor2, d2p1));
-            final var state2 = Sets.mutable.of(populatingProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p2));
-            final var state3 = Sets.mutable.of(failedProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p3));
-            final var state4 = Sets.mutable.of(failedProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p4));
-            final var state5 = Sets.mutable.of(failedProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p5));
-            final var state6 = Sets.mutable.of(failedProxy(descriptor1, d1p2), tentativeProxy);
-            final var state7 = Sets.mutable.of(failedProxy(descriptor1, d1p2), onlineProxy(descriptor2));
+            MutableSet<IndexProxy> state1 =
+                    Sets.mutable.of(populatingProxy(descriptor1, d1p1), populatingProxy(descriptor2, d2p1));
+            MutableSet<IndexProxy> state2 =
+                    Sets.mutable.of(populatingProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p2));
+            MutableSet<IndexProxy> state3 =
+                    Sets.mutable.of(failedProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p3));
+            MutableSet<IndexProxy> state4 =
+                    Sets.mutable.of(failedProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p4));
+            MutableSet<IndexProxy> state5 =
+                    Sets.mutable.of(failedProxy(descriptor1, d1p2), populatingProxy(descriptor2, d2p5));
+            MutableSet<IndexProxy> state6 = Sets.mutable.of(failedProxy(descriptor1, d1p2), tentativeProxy);
+            MutableSet<IndexProxy> state7 = Sets.mutable.of(failedProxy(descriptor1, d1p2), onlineProxy(descriptor2));
             //noinspection unchecked
             when(indexingService.getIndexProxies()).thenReturn(state1, state2, state3, state4, state5, state6, state7);
 
-            final var completed = new MutableBoolean();
-            final var errors = Lists.mutable.<IndexDescriptor>empty();
-            final var progress = Multimaps.mutable.list.<IndexDescriptor, Float>empty();
+            MutableBoolean completed = new MutableBoolean();
+            MutableList<IndexDescriptor> errors = Lists.mutable.empty();
+            MutableListMultimap<IndexDescriptor, Float> progress = Multimaps.mutable.list.empty();
             lifecycleManager.create(
                     new CreationListener() {
                         @Override
@@ -364,7 +373,7 @@ class KernelIndexesLifecycleManagerTest {
             assertThat(errors).as("should complete with the one error").containsExactly(descriptor1);
             assertThat(progress.get(descriptor1)).containsExactly(d1p2);
             assertThat(progress.get(descriptor2)).hasSize(5).satisfies(deltas -> {
-                for (var delta : deltas) {
+                for (Float delta : deltas) {
                     assertThat(delta).isGreaterThan(0.0f);
                 }
             });
@@ -375,28 +384,28 @@ class KernelIndexesLifecycleManagerTest {
 
     @Test
     void drop() throws IOException {
-        final var descriptor1 = forSchema(forLabel(1, 2))
+        IndexDescriptor descriptor1 = forSchema(forLabel(1, 2))
                 .withName("descriptor1")
                 .withIndexType(IndexType.RANGE)
                 .withIndexProvider(RANGE_DESCRIPTOR)
                 .materialise(1);
-        final var descriptor2 = forSchema(forLabel(3, 4))
+        IndexDescriptor descriptor2 = forSchema(forLabel(3, 4))
                 .withName("descriptor2")
                 .withIndexType(IndexType.RANGE)
                 .withIndexProvider(RANGE_DESCRIPTOR)
                 .materialise(2);
-        final var descriptor3 = forSchema(forLabel(5, 6))
+        IndexDescriptor descriptor3 = forSchema(forLabel(5, 6))
                 .withName("descriptor3")
                 .withIndexType(IndexType.RANGE)
                 .withIndexProvider(RANGE_DESCRIPTOR)
                 .materialise(3);
 
-        final var indexingService = mock(IndexingService.class);
+        IndexingService indexingService = mock(IndexingService.class);
 
-        final var boom = new IllegalArgumentException("boom");
+        IllegalArgumentException boom = new IllegalArgumentException("boom");
         doThrow(boom).when(indexingService).dropIndex(eq(descriptor3));
 
-        try (var lifecycleManager = indexesLifecycleManager(indexingService)) {
+        try (KernelIndexesLifecycleManager lifecycleManager = indexesLifecycleManager(indexingService)) {
             lifecycleManager.drop(
                     new DropListener() {
                         @Override
@@ -426,9 +435,9 @@ class KernelIndexesLifecycleManagerTest {
     }
 
     private KernelIndexesLifecycleManager indexesLifecycleManager(IndexingService indexingService) throws IOException {
-        final var config = Config.defaults();
+        Config config = Config.defaults();
         KernelVersion kernelVersion = KernelVersion.getLatestVersion(config);
-        final var context = new KernelSchemaLifecycleContext(
+        KernelSchemaLifecycleContext context = new KernelSchemaLifecycleContext(
                 config,
                 storageEngine,
                 databaseLayout,
@@ -459,9 +468,9 @@ class KernelIndexesLifecycleManagerTest {
 
     private void assertCreation(IndexDescriptor... descriptors) throws Exception {
         // WHEN
-        final var deltas = ObjectFloatMaps.mutable.<IndexDescriptor>empty();
-        final var completed = new MutableBoolean();
-        final var checkPointed = new MutableBoolean();
+        MutableObjectFloatMap<IndexDescriptor> deltas = ObjectFloatMaps.mutable.empty();
+        MutableBoolean completed = new MutableBoolean();
+        MutableBoolean checkPointed = new MutableBoolean();
         indexesLifecycleManager.create(
                 new CreationListener() {
                     @Override
@@ -487,7 +496,7 @@ class KernelIndexesLifecycleManagerTest {
                 List.of(descriptors));
 
         // THEN
-        for (var descriptor : descriptors) {
+        for (IndexDescriptor descriptor : descriptors) {
             assertThat(deltas.get(descriptor))
                     .as("should have completed the progress")
                     .isEqualTo(1.0f);
@@ -508,10 +517,10 @@ class KernelIndexesLifecycleManagerTest {
     }
 
     private static IndexProxy populatingProxy(IndexDescriptor descriptor, float percent) {
-        final var populationProgress = mock(PopulationProgress.class);
+        PopulationProgress populationProgress = mock(PopulationProgress.class);
         when(populationProgress.getProgress()).thenReturn(percent);
 
-        final var proxy = mock(IndexProxy.class);
+        IndexProxy proxy = mock(IndexProxy.class);
         when(proxy.getState()).thenReturn(InternalIndexState.POPULATING);
         when(proxy.getDescriptor()).thenReturn(descriptor);
         when(proxy.getIndexPopulationProgress()).thenReturn(populationProgress);
@@ -529,14 +538,14 @@ class KernelIndexesLifecycleManagerTest {
 
     @SuppressWarnings("SameParameterValue")
     private static IndexProxy failedProxy(IndexDescriptor descriptor, float percent) {
-        final var populationProgress = mock(PopulationProgress.class);
+        PopulationProgress populationProgress = mock(PopulationProgress.class);
         when(populationProgress.getProgress()).thenReturn(percent);
 
-        final var failure = mock(IndexPopulationFailure.class);
+        IndexPopulationFailure failure = mock(IndexPopulationFailure.class);
         when(failure.asIndexPopulationFailure(any(), any()))
                 .thenReturn(IndexPopulationFailedKernelException.indexPopulationFailed("boom", new IOException()));
 
-        final var proxy = mock(IndexProxy.class);
+        IndexProxy proxy = mock(IndexProxy.class);
         when(proxy.getState()).thenReturn(InternalIndexState.FAILED);
         when(proxy.getDescriptor()).thenReturn(descriptor);
         when(proxy.getIndexPopulationProgress()).thenReturn(populationProgress);
@@ -546,10 +555,10 @@ class KernelIndexesLifecycleManagerTest {
 
     @SuppressWarnings("SameParameterValue")
     private static IndexProxy onlineProxy(IndexDescriptor descriptor) {
-        final var populationProgress = mock(PopulationProgress.class);
+        PopulationProgress populationProgress = mock(PopulationProgress.class);
         when(populationProgress.getProgress()).thenReturn(1.0f);
 
-        final var proxy = mock(IndexProxy.class);
+        IndexProxy proxy = mock(IndexProxy.class);
         when(proxy.getState()).thenReturn(InternalIndexState.ONLINE);
         when(proxy.getDescriptor()).thenReturn(descriptor);
         when(proxy.getIndexPopulationProgress()).thenReturn(populationProgress);
@@ -557,7 +566,7 @@ class KernelIndexesLifecycleManagerTest {
     }
 
     private static TokenHolder tokenHolder(String typePropertyKey) {
-        var tokenHolder = new CreatingTokenHolder(READ_ONLY, typePropertyKey);
+        CreatingTokenHolder tokenHolder = new CreatingTokenHolder(READ_ONLY, typePropertyKey);
         tokenHolder.setInitialTokens(IntStream.range(0, TOKEN_COUNT)
                 .mapToObj(i -> new NamedToken(typePropertyKey + i, i))
                 .toList());
@@ -565,12 +574,12 @@ class KernelIndexesLifecycleManagerTest {
     }
 
     private static Stream<Arguments> indexes() {
-        final var counter = new MutableInt();
+        MutableInt counter = new MutableInt();
         return Stream.of(EntityType.NODE, EntityType.RELATIONSHIP)
                 .flatMap(entityType -> INDEX_TYPES.entrySet().stream().map(entry -> {
-                    final var providerDescriptor = entry.getKey();
-                    final var indexType = entry.getValue();
-                    final var ruleId = counter.getAndIncrement();
+                    IndexProviderDescriptor providerDescriptor = entry.getKey();
+                    IndexType indexType = entry.getValue();
+                    int ruleId = counter.getAndIncrement();
                     IndexPrototype indexPrototype;
                     if (indexType.isLookup()) {
                         indexPrototype = forSchema(forAnyEntityTokens(entityType));
@@ -593,8 +602,8 @@ class KernelIndexesLifecycleManagerTest {
 
     private static IndexPrototype withDefaultConfig(IndexPrototype indexPrototype) {
         if (indexPrototype.getIndexType() == IndexType.VECTOR) {
-            final var version = VectorIndexVersion.fromDescriptor(indexPrototype.getIndexProvider());
-            final var settings = VectorIndexSettings.create();
+            VectorIndexVersion version = VectorIndexVersion.fromDescriptor(indexPrototype.getIndexProvider());
+            VectorIndexSettings settings = VectorIndexSettings.create();
             if (version == VectorIndexVersion.V1_0) {
                 settings.withDimensions(666).withSimilarityFunction("COSINE");
             }

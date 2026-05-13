@@ -86,7 +86,7 @@ public class FulltextIndexPopulatorTest {
     private static final String[] PROPERTY_NAMES = new String[] {"p101", "p102"};
 
     @BeforeEach
-    void before() throws Exception {
+    void before() {
         counter = new AtomicLong(10000);
         cursorContext = mock(CursorContext.class);
 
@@ -100,6 +100,7 @@ public class FulltextIndexPopulatorTest {
 
         indexWriter = new CapturingIndexWriter();
 
+        //noinspection unchecked
         luceneFulltext = mock(DatabaseIndex.class);
         when(luceneFulltext.getIndexWriter()).thenReturn(indexWriter);
 
@@ -125,16 +126,16 @@ public class FulltextIndexPopulatorTest {
     @Test
     public void scanPopulationShouldBeUpdateAfterConcurrent() throws IndexEntryConflictException {
 
-        var fromScan = add("one flew over the cuckoo's nest", "one un uno");
-        var fromTx = change(fromScan, "one flew over the cuckoo's nest", "two deux due");
+        EagerValueIndexEntryUpdate fromScan = add("one flew over the cuckoo's nest", "one un uno");
+        EagerValueIndexEntryUpdate fromTx = change(fromScan, "one flew over the cuckoo's nest", "two deux due");
         fulltextIndexPopulator.newPopulatingUpdater(cursorContext).process(fromTx);
         fulltextIndexPopulator.add(List.of(fromScan), cursorContext);
 
-        var first = indexWriter.next();
+        Written first = indexWriter.next();
         assertThat(first.writeType).isEqualTo(WriteType.Update);
         assertThat(first.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromTx));
 
-        var second = indexWriter.next();
+        Written second = indexWriter.next();
         assertThat(second.writeType).isEqualTo(WriteType.Update);
         assertThat(second.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromScan));
 
@@ -144,16 +145,16 @@ public class FulltextIndexPopulatorTest {
     @Test
     public void scanPopulationShouldBeAddBeforeConcurrent() throws IndexEntryConflictException {
 
-        var fromScan = add("one flew over the cuckoo's nest", "one un uno");
-        var fromTx = change(fromScan, "one flew over the cuckoo's nest", "two deux due");
+        EagerValueIndexEntryUpdate fromScan = add("one flew over the cuckoo's nest", "one un uno");
+        EagerValueIndexEntryUpdate fromTx = change(fromScan, "one flew over the cuckoo's nest", "two deux due");
         fulltextIndexPopulator.add(List.of(fromScan), cursorContext);
         fulltextIndexPopulator.newPopulatingUpdater(cursorContext).process(fromTx);
 
-        var first = indexWriter.next();
+        Written first = indexWriter.next();
         assertThat(first.writeType).isEqualTo(WriteType.Add);
         assertThat(first.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromScan));
 
-        var second = indexWriter.next();
+        Written second = indexWriter.next();
         assertThat(second.writeType).isEqualTo(WriteType.Update);
         assertThat(second.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromTx));
 
@@ -163,16 +164,16 @@ public class FulltextIndexPopulatorTest {
     @Test
     public void scanPopulationShouldBeAddIfIndependent() throws IndexEntryConflictException {
 
-        var fromScan = add("one flew over the cuckoo's nest", "one un uno");
-        var fromTx = add("Slaughterhouse Five", "two deux due");
+        EagerValueIndexEntryUpdate fromScan = add("one flew over the cuckoo's nest", "one un uno");
+        EagerValueIndexEntryUpdate fromTx = add("Slaughterhouse Five", "two deux due");
         fulltextIndexPopulator.newPopulatingUpdater(cursorContext).process(fromTx);
         fulltextIndexPopulator.add(List.of(fromScan), cursorContext);
 
-        var first = indexWriter.next();
+        Written first = indexWriter.next();
         assertThat(first.writeType).isEqualTo(WriteType.Update);
         assertThat(first.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromTx));
 
-        var second = indexWriter.next();
+        Written second = indexWriter.next();
         assertThat(second.writeType).isEqualTo(WriteType.Add);
         assertThat(second.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromScan));
 
@@ -182,18 +183,18 @@ public class FulltextIndexPopulatorTest {
     @Test
     public void scanPopulationShouldLockBlockOnConcurrentThenUpdate() throws InterruptedException, ExecutionException {
 
-        var fromScan = add("one flew over the cuckoo's nest", "one un uno");
-        var fromTx = change(fromScan, "one flew over the cuckoo's nest", "two deux due");
+        EagerValueIndexEntryUpdate fromScan = add("one flew over the cuckoo's nest", "one un uno");
+        EagerValueIndexEntryUpdate fromTx = change(fromScan, "one flew over the cuckoo's nest", "two deux due");
 
         beforeUpdateLatch = new CountDownLatch(1);
         proceedUpdateLatch = new CountDownLatch(1);
-        var future1 = onThread(
+        Future<?> future1 = onThread(
                 () -> fulltextIndexPopulator.newPopulatingUpdater(cursorContext).process(fromTx));
         beforeUpdateLatch.await();
         // fromTx holds its lock, is waiting for proceedUpdateLatch
 
         beforeUpdateLatch = new CountDownLatch(1);
-        var future2 = onThread(() -> fulltextIndexPopulator.add(List.of(fromScan), cursorContext));
+        Future<?> future2 = onThread(() -> fulltextIndexPopulator.add(List.of(fromScan), cursorContext));
         Thread.sleep(100);
         proceedUpdateLatch.countDown();
 
@@ -205,11 +206,11 @@ public class FulltextIndexPopulatorTest {
         future1.get();
         future2.get();
 
-        var first = indexWriter.next();
+        Written first = indexWriter.next();
         assertThat(first.writeType).isEqualTo(WriteType.Update);
         assertThat(first.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromTx));
 
-        var second = indexWriter.next();
+        Written second = indexWriter.next();
         assertThat(second.writeType).isEqualTo(WriteType.Update);
         assertThat(second.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromScan));
 
@@ -219,19 +220,19 @@ public class FulltextIndexPopulatorTest {
     @Test
     public void scanPopulationIndependentLocksShouldNoBlockAdd() throws InterruptedException, ExecutionException {
 
-        var fromScan = add("one flew over the cuckoo's nest", "one un uno");
-        var fromTx = add("Slaughterhouse Five", "two deux due");
+        EagerValueIndexEntryUpdate fromScan = add("one flew over the cuckoo's nest", "one un uno");
+        EagerValueIndexEntryUpdate fromTx = add("Slaughterhouse Five", "two deux due");
 
         beforeUpdateLatch = new CountDownLatch(1);
         proceedUpdateLatch = new CountDownLatch(1);
-        var future1 = onThread(
+        Future<?> future1 = onThread(
                 () -> fulltextIndexPopulator.newPopulatingUpdater(cursorContext).process(fromTx));
         beforeUpdateLatch.await();
         // fromTx holds its lock, is waiting for proceedUpdateLatch
 
         beforeAddLatch = new CountDownLatch(1);
         proceedAddLatch = new CountDownLatch(1);
-        var future2 = onThread(() -> fulltextIndexPopulator.add(List.of(fromScan), cursorContext));
+        Future<?> future2 = onThread(() -> fulltextIndexPopulator.add(List.of(fromScan), cursorContext));
 
         beforeAddLatch.await();
         proceedAddLatch.countDown();
@@ -241,11 +242,11 @@ public class FulltextIndexPopulatorTest {
 
         future1.get();
 
-        var first = indexWriter.next();
+        Written first = indexWriter.next();
         assertThat(first.writeType).isEqualTo(WriteType.Add);
         assertThat(first.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromScan));
 
-        var second = indexWriter.next();
+        Written second = indexWriter.next();
         assertThat(second.writeType).isEqualTo(WriteType.Update);
         assertThat(second.values()).containsExactlyInAnyOrderEntriesOf(entriesOf(fromTx));
 
@@ -278,12 +279,12 @@ public class FulltextIndexPopulatorTest {
     private enum WriteType {
         Update,
         Add
-    };
+    }
 
     private class CapturingIndexWriter implements LucenePartitionIndexWriter {
 
-        List<Written> written = new ArrayList<>();
-        LuceneDocumentsFactory documentsFactory = new Lucene10DocumentsFactory();
+        final List<Written> written = new ArrayList<>();
+        final LuceneDocumentsFactory documentsFactory = new Lucene10DocumentsFactory();
 
         @Override
         public LuceneDocumentsFactory documentsFactory() {
@@ -345,7 +346,7 @@ public class FulltextIndexPopulatorTest {
         }
     }
 
-    private Map<String, Object> entriesOf(EagerValueIndexEntryUpdate update) {
+    private static Map<String, Object> entriesOf(EagerValueIndexEntryUpdate update) {
         Map<String, Object> entries = new HashMap<>();
         int propertyIndex = 0;
         for (Value value : update.values()) {
@@ -356,7 +357,7 @@ public class FulltextIndexPopulatorTest {
 
     @FunctionalInterface
     public interface Throwing<T extends Throwable> {
-        public void run() throws T;
+        void run() throws T;
     }
 
     private static <T extends Throwable> Future<?> onThread(Throwing<T> runnable) {

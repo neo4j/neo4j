@@ -22,13 +22,16 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.Objects;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import org.apache.commons.lang3.mutable.MutableDouble;
+import org.apache.lucene.util.VectorUtil;
 import org.assertj.core.data.Percentage;
-import org.eclipse.collections.api.RichIterable;
-import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -49,7 +52,7 @@ class Neo4jVectorSimilarityFunctionTest {
             this.similarityFunction = similarityFunction;
         }
 
-        abstract RichIterable<AnyValue> invalidVectors();
+        abstract Iterable<AnyValue> invalidVectors();
 
         @ParameterizedTest
         @MethodSource
@@ -59,7 +62,7 @@ class Neo4jVectorSimilarityFunctionTest {
                     .isNull();
         }
 
-        abstract RichIterable<AnyValue> validVectors();
+        abstract Iterable<AnyValue> validVectors();
 
         @ParameterizedTest
         @MethodSource
@@ -73,17 +76,17 @@ class Neo4jVectorSimilarityFunctionTest {
         @MethodSource
         void validPairs(float[] lhs, float[] rhs) {
             // temporary measure
-            final var luceneVectorUtilClass = org.apache.lucene.util.VectorUtil.class;
+            final Class<VectorUtil> luceneVectorUtilClass = org.apache.lucene.util.VectorUtil.class;
             luceneVectorUtilClass.getClassLoader().setClassAssertionStatus(luceneVectorUtilClass.getName(), false);
 
-            final var ref = new MutableDouble();
+            MutableDouble ref = new MutableDouble();
 
             // lhs vs rhs
             assertThatCode(() -> ref.setValue(similarityFunction.compare(lhs, rhs)))
                     .as("valid pairs of vectors should be comparable")
                     .doesNotThrowAnyException();
 
-            final var score = ref.doubleValue();
+            double score = ref.doubleValue();
             assertThat(Double.isFinite(score)).as("score should be finite").isTrue();
 
             // rhs vs lhs
@@ -91,30 +94,32 @@ class Neo4jVectorSimilarityFunctionTest {
                     .as("valid pairs of vectors should be comparable")
                     .doesNotThrowAnyException();
 
-            final var commutativeScore = ref.doubleValue();
+            double commutativeScore = ref.doubleValue();
             assertThat(Double.isFinite(commutativeScore))
                     .as("score should be finite")
                     .isTrue();
 
             // should be 'equal'
-            assertThat(commutativeScore).isCloseTo(score, Percentage.withPercentage(1e-12));
+            assertThat(commutativeScore).isCloseTo(score, Percentage.withPercentage(1.0e-12));
         }
 
         Iterable<Arguments> validPairs() {
-            final var vectors = validVectors()
-                    .asLazy()
-                    .collect(similarityFunction::maybeToValidVector)
-                    .select(Objects::nonNull) // sanity check
-                    .toSortedSet(Comparator.<float[]>comparingInt(array -> array.length)
-                            .thenComparing(Arrays::compare))
-                    .toList();
+            SortedSet<float[]> sortedVectors = new TreeSet<>(
+                    Comparator.<float[]>comparingInt(array -> array.length).thenComparing(Arrays::compare));
+            for (AnyValue candidate : validVectors()) {
+                float[] vector = similarityFunction.maybeToValidVector(candidate);
+                if (vector != null) {
+                    sortedVectors.add(vector);
+                }
+            }
+            List<float[]> vectors = List.copyOf(sortedVectors);
 
-            final var pairs = Lists.mutable.<Arguments>empty();
-            final var numberOfVectors = vectors.size();
+            Collection<Arguments> pairs = new ArrayList<>();
+            int numberOfVectors = vectors.size();
             for (int i = 0; i < numberOfVectors; i++) {
-                final var lhs = vectors.get(i);
+                float[] lhs = vectors.get(i);
                 for (int j = i; j < numberOfVectors; j++) {
-                    final var rhs = vectors.get(j);
+                    float[] rhs = vectors.get(j);
                     if (lhs.length != rhs.length) {
                         // exhausted these dimensional vectors
                         break;
@@ -136,12 +141,12 @@ class Neo4jVectorSimilarityFunctionTest {
         }
 
         @Override
-        RichIterable<AnyValue> invalidVectors() {
+        Iterable<AnyValue> invalidVectors() {
             return VectorTestUtils.EUCLIDEAN_INVALID_VECTORS;
         }
 
         @Override
-        RichIterable<AnyValue> validVectors() {
+        Iterable<AnyValue> validVectors() {
             return VectorTestUtils.EUCLIDEAN_VALID_VECTORS;
         }
     }
@@ -154,12 +159,12 @@ class Neo4jVectorSimilarityFunctionTest {
         }
 
         @Override
-        RichIterable<AnyValue> invalidVectors() {
+        Iterable<AnyValue> invalidVectors() {
             return VectorTestUtils.SIMPLE_COSINE_INVALID_VECTORS;
         }
 
         @Override
-        RichIterable<AnyValue> validVectors() {
+        Iterable<AnyValue> validVectors() {
             return VectorTestUtils.SIMPLE_COSINE_VALID_VECTORS;
         }
     }
@@ -172,12 +177,12 @@ class Neo4jVectorSimilarityFunctionTest {
         }
 
         @Override
-        RichIterable<AnyValue> invalidVectors() {
+        Iterable<AnyValue> invalidVectors() {
             return VectorTestUtils.L2_NORM_COSINE_INVALID_VECTORS;
         }
 
         @Override
-        RichIterable<AnyValue> validVectors() {
+        Iterable<AnyValue> validVectors() {
             return VectorTestUtils.L2_NORM_COSINE_VALID_VECTORS;
         }
     }

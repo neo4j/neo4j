@@ -47,10 +47,10 @@ public class LuceneDirectoryTest {
     @ParameterizedTest
     @EnumSource(LuceneContext.class)
     void shouldLogMergesWhenScheduled(LuceneContext luceneContext) throws IOException, InterruptedException {
-        var logProvider = new AssertableLogProvider();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
 
-        var directoryFactory = luceneContext.directoryFactory();
-        try (var directory = directoryFactory.inMemoryDirectory()) {
+        LuceneDirectoryFactory directoryFactory = luceneContext.directoryFactory();
+        try (LuceneDirectory directory = directoryFactory.inMemoryDirectory()) {
             runTest(logProvider, luceneContext, directory, iw -> iw.forceMerge(1));
         }
 
@@ -67,10 +67,10 @@ public class LuceneDirectoryTest {
     @ParameterizedTest
     @EnumSource(LuceneContext.class)
     void shouldLogMergeErrors(LuceneContext luceneContext) throws IOException, InterruptedException {
-        var logProvider = new AssertableLogProvider();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
 
-        var directoryFactory = luceneContext.directoryFactory();
-        try (var directory = directoryFactory.openPersistent(tmpDir)) {
+        LuceneDirectoryFactory directoryFactory = luceneContext.directoryFactory();
+        try (LuceneDirectory directory = directoryFactory.openPersistent(tmpDir)) {
 
             assertThatThrownBy(() -> runTest(logProvider, luceneContext, directory, iw -> {
                         // remove some index files so that merging will fail
@@ -106,18 +106,18 @@ public class LuceneDirectoryTest {
             ThrowingConsumer<LuceneIndexWriter, ? extends IOException> testBlock)
             throws IOException {
 
-        var indexWriterConfig = new LuceneIndexWriterConfig(new KeywordAnalyzer());
+        LuceneIndexWriterConfig indexWriterConfig = new LuceneIndexWriterConfig(new KeywordAnalyzer());
         indexWriterConfig
                 .setLogProvider(logProvider)
                 .setMergingParameters(
                         1.0, 1.0, LOG_BYTE_SIZED, 32, 32, 1024, 8.0, 10); // parameters to avoid merge during indexing
 
-        try (var indexWriter = directory.newWriter(indexWriterConfig)) {
+        try (LuceneIndexWriter indexWriter = directory.newWriter(indexWriterConfig)) {
 
-            var documentsFactory = luceneContext.documentsFactory();
+            LuceneDocumentsFactory documentsFactory = luceneContext.documentsFactory();
 
             for (String id : List.of("1", "2")) {
-                var doc = documentsFactory.newDocument();
+                LuceneDocument doc = documentsFactory.newDocument();
                 doc.addStringField("id", id, true);
                 indexWriter.addDocument(doc);
                 indexWriter.commit();

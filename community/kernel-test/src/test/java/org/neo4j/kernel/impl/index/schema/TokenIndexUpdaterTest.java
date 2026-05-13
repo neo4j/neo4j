@@ -39,6 +39,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveArrays;
+import org.neo4j.collection.PrimitiveArrays.RemovalsAndAdditions;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
@@ -93,13 +94,14 @@ class TokenIndexUpdaterTest {
     void addAndSearchSequenceOfNodes() throws Exception {
         int labelId = 2;
         // GIVEN
-        try (var updater = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
+        try (TokenIndexUpdater updater = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
             updater.initialize(
                     context -> tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false, CursorContext.NULL_CONTEXT);
 
             // WHEN
             for (long i = 0; i < NODE_COUNT; i++) {
-                var update = TokenIndexEntryUpdate.tokenChange(i, null, EMPTY_INT_ARRAY, new int[] {labelId});
+                TokenIndexEntryUpdate update =
+                        TokenIndexEntryUpdate.tokenChange(i, null, EMPTY_INT_ARRAY, new int[] {labelId});
                 updater.process(update);
             }
         }
@@ -163,9 +165,9 @@ class TokenIndexUpdaterTest {
     void shouldTracePageCacheAccess() throws Exception {
         // Given
         int nodeCount = 5;
-        var cacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
-        var cursorContext = contextFactory.create("tracePageCacheAccessOnWrite");
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER);
+        CursorContext cursorContext = contextFactory.create("tracePageCacheAccessOnWrite");
 
         // When
         try (TokenIndexUpdater writer = new TokenIndexUpdater(nodeCount, idLayout)) {
@@ -211,7 +213,7 @@ class TokenIndexUpdaterTest {
         int numberOfNodesInEach = 5;
         int labelId = 1;
         int[] labels = {labelId};
-        var idLayout = this.idLayout;
+        DefaultTokenIndexIdLayout idLayout = this.idLayout;
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
             writer.initialize(
                     context -> tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false, CursorContext.NULL_CONTEXT);
@@ -253,7 +255,7 @@ class TokenIndexUpdaterTest {
             labels = flipRandom(labels, LABEL_COUNT, random.random());
         }
         expected[nodeId] = labels;
-        var removalsAndAdditions = PrimitiveArrays.toRemovalsAndAdditions(before, getLabels(labels));
+        RemovalsAndAdditions removalsAndAdditions = PrimitiveArrays.toRemovalsAndAdditions(before, getLabels(labels));
         return TokenIndexEntryUpdate.tokenChange(
                 nodeId, null, removalsAndAdditions.removals(), removalsAndAdditions.additions());
     }

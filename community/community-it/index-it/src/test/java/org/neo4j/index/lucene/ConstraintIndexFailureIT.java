@@ -84,11 +84,12 @@ class ConstraintIndexFailureIT {
             GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
             // when
             try (Transaction tx = db.beginTx()) {
-                var e = assertThrows(ConstraintViolationException.class, () -> createData(entityType, tx));
-                var cause = e.getCause();
+                ConstraintViolationException e =
+                        assertThrows(ConstraintViolationException.class, () -> createData(entityType, tx));
+                Throwable cause = e.getCause();
                 assertThat(cause).isInstanceOf(UnableToValidateConstraintException.class);
                 assertThat(cause.getCause()).isInstanceOf(IndexBrokenKernelException.class);
-                var causeCause = (IndexBrokenKernelException) cause.getCause();
+                IndexBrokenKernelException causeCause = (IndexBrokenKernelException) cause.getCause();
                 assertThat(causeCause.getMessage())
                         .contains("The index is in a failed state:")
                         .contains(INITIAL_STATE_FAILURE_MESSAGE);
@@ -101,7 +102,7 @@ class ConstraintIndexFailureIT {
         }
     }
 
-    private void createConstraint(EntityType entityType, TransactionImpl tx) throws KernelException {
+    private static void createConstraint(EntityType entityType, TransactionImpl tx) throws KernelException {
         switch (entityType) {
             case NODE ->
                 IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider(
@@ -112,7 +113,7 @@ class ConstraintIndexFailureIT {
         }
     }
 
-    private void createData(EntityType entityType, Transaction tx) {
+    private static void createData(EntityType entityType, Transaction tx) {
         switch (entityType) {
             case NODE -> tx.createNode(label("Label1")).setProperty("key1", "value1");
             case RELATIONSHIP -> {

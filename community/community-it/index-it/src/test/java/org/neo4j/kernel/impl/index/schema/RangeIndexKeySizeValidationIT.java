@@ -59,6 +59,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexType;
@@ -143,7 +144,7 @@ public class RangeIndexKeySizeValidationIT {
         startDb(pageSize);
         List<String> failureMessages = new ArrayList<>();
         NamedDynamicValueGenerator[] dynamicValueGenerators = NamedDynamicValueGenerator.values();
-        var sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         for (NamedDynamicValueGenerator generator : dynamicValueGenerators) {
             if (!includeVectorTypes && generator.isVectorType) {
                 continue;
@@ -345,7 +346,7 @@ public class RangeIndexKeySizeValidationIT {
             for (int propKey = 0; propKey < propKeys.length; propKey++) {
                 values.put(propKeys[propKey], propValues[propKey]);
             }
-            try (var nodes = tx.findNodes(LABEL_ONE, values)) {
+            try (ResourceIterator<Node> nodes = tx.findNodes(LABEL_ONE, values)) {
                 if (ableToWrite) {
                     assertTrue(nodes.hasNext());
                     Node node = nodes.next();

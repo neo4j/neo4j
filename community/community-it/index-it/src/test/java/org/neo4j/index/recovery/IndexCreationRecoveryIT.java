@@ -32,12 +32,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -77,15 +84,16 @@ class IndexCreationRecoveryIT {
     @Test
     void shouldEnsurePopulateIndexRecreation() throws Exception {
         // given
-        var label = Label.label("L");
-        var key = "k";
-        var indexName = "mine";
-        var nodeValue = "I'm here";
-        var nodeId = new MutableLong();
-        try (var fsSnapshot = createIndexedDataThenSnapshotFSAndShutDown(label, indexName, key, nodeValue, nodeId)) {
+        Label label = Label.label("L");
+        String key = "k";
+        String indexName = "mine";
+        String nodeValue = "I'm here";
+        MutableLong nodeId = new MutableLong();
+        try (EphemeralFileSystemAbstraction fsSnapshot =
+                createIndexedDataThenSnapshotFSAndShutDown(label, indexName, key, nodeValue, nodeId)) {
             // when
-            var monitors = new Monitors();
-            var barrier = new CountDownLatch(1);
+            Monitors monitors = new Monitors();
+            CountDownLatch barrier = new CountDownLatch(1);
             monitors.addMonitorListener(new IndexMonitor.MonitorAdapter() {
                 @Override
                 public void indexPopulationJobStarting(IndexDescriptor[] indexDescriptors) {
@@ -111,21 +119,21 @@ class IndexCreationRecoveryIT {
                             .anyMatch(index -> index.getName().equals(indexName));
                 }
             });
-            var dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
+            DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                     .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fsSnapshot))
                     .setMonitors(monitors)
                     .build();
             try {
                 // then
-                var db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
+                GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
                 awaitIndexPopulations(db);
-                try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-                    var ktx = tx.kernelTransaction();
-                    var index = ktx.schemaRead().indexGetForName(indexName);
-                    var session = ktx.dataRead().indexReadSession(index);
-                    try (var cursor =
+                try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+                    KernelTransaction ktx = tx.kernelTransaction();
+                    IndexDescriptor index = ktx.schemaRead().indexGetForName(indexName);
+                    IndexReadSession session = ktx.dataRead().indexReadSession(index);
+                    try (NodeValueIndexCursor cursor =
                             ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                        var keyId = ktx.tokenRead().propertyKey(key);
+                        int keyId = ktx.tokenRead().propertyKey(key);
                         ktx.dataRead()
                                 .nodeIndexSeek(
                                         ktx.queryContext(), session, cursor, unconstrained(), exact(keyId, nodeValue));
@@ -141,19 +149,19 @@ class IndexCreationRecoveryIT {
 
     private EphemeralFileSystemAbstraction createIndexedDataThenSnapshotFSAndShutDown(
             Label label, String indexName, String key, Object value, MutableLong nodeId) {
-        var dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                 .build();
         EphemeralFileSystemAbstraction fsSnapshot;
         try {
-            var db = dbms.database(DEFAULT_DATABASE_NAME);
-            try (var tx = db.beginTx()) {
+            GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
+            try (Transaction tx = db.beginTx()) {
                 tx.schema().indexFor(label).on(key).withName(indexName).create();
                 tx.commit();
             }
             awaitIndexPopulations(db);
-            try (var tx = db.beginTx()) {
-                var node = tx.createNode(label);
+            try (Transaction tx = db.beginTx()) {
+                Node node = tx.createNode(label);
                 nodeId.setValue(node.getId());
                 node.setProperty(key, value);
                 tx.commit();
@@ -166,7 +174,7 @@ class IndexCreationRecoveryIT {
     }
 
     private static void awaitIndexPopulations(GraphDatabaseService db) {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
         }
     }

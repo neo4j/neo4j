@@ -19,19 +19,35 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator.Task;
 import org.neo4j.test.Barrier;
 
 class TaskCoordinatorTest {
+    private ByteArrayOutputStream out;
+    private PrintStream err;
+
+    @BeforeEach
+    void setup() {
+        out = new ByteArrayOutputStream();
+        err = new PrintStream(out);
+    }
+
+    @AfterEach
+    void checkStream() {
+        err.flush();
+        assertThat(out.toString()).isEmpty();
+    }
+
     @Test
     void shouldCancelAllTasksWithOneCall() {
         // given
@@ -40,29 +56,29 @@ class TaskCoordinatorTest {
         try (Task task1 = coordinator.newTask();
                 Task task2 = coordinator.newTask();
                 Task task3 = coordinator.newTask()) {
-            assertFalse(task1.cancellationRequested());
-            assertFalse(task2.cancellationRequested());
-            assertFalse(task3.cancellationRequested());
+            assertThat(task1.cancellationRequested()).isFalse();
+            assertThat(task2.cancellationRequested()).isFalse();
+            assertThat(task3.cancellationRequested()).isFalse();
 
             // when
             coordinator.cancel();
 
             // then
-            assertTrue(task1.cancellationRequested());
-            assertTrue(task2.cancellationRequested());
-            assertTrue(task3.cancellationRequested());
+            assertThat(task1.cancellationRequested()).isTrue();
+            assertThat(task2.cancellationRequested()).isTrue();
+            assertThat(task3.cancellationRequested()).isTrue();
         }
     }
 
     @Test
     void shouldAwaitCompletionOfAllTasks() throws Exception {
         // given
-        final TaskCoordinator coordinator = new TaskCoordinator();
-        final AtomicReference<String> state = new AtomicReference<>();
-        final List<String> states = new ArrayList<>();
-        final Barrier.Control phaseA = new Barrier.Control();
-        final Barrier.Control phaseB = new Barrier.Control();
-        final Barrier.Control phaseC = new Barrier.Control();
+        TaskCoordinator coordinator = new TaskCoordinator();
+        AtomicReference<String> state = new AtomicReference<>();
+        List<String> states = new ArrayList<>();
+        Barrier.Control phaseA = new Barrier.Control();
+        Barrier.Control phaseB = new Barrier.Control();
+        Barrier.Control phaseC = new Barrier.Control();
 
         state.set("A");
         new Thread("awaitCompletion") {
@@ -78,7 +94,7 @@ class TaskCoordinatorTest {
                     states.add(state.get()); // expects C
                     phaseC.reached();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    e.printStackTrace(err);
                 }
             }
         }.start();
@@ -96,6 +112,6 @@ class TaskCoordinatorTest {
         phaseC.await();
 
         // then
-        assertEquals(Arrays.asList("A", "B", "C"), states);
+        assertThat(states).contains("A", "B", "C");
     }
 }

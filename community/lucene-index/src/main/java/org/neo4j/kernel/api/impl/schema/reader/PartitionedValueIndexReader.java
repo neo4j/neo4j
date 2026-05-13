@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.reader;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -89,7 +88,7 @@ public class PartitionedValueIndexReader implements ValueIndexReader {
     @Override
     public void validateQuery(IndexQueryConstraints constraints, PropertyIndexQuery... query)
             throws IndexNotApplicableKernelException {
-        for (var reader : indexReaders) {
+        for (ValueIndexReader reader : indexReaders) {
             reader.validateQuery(constraints, query);
         }
     }
@@ -131,8 +130,7 @@ public class PartitionedValueIndexReader implements ValueIndexReader {
     @Override
     public void close() {
         try {
-            List<AutoCloseable> resources = new ArrayList<>(indexReaders);
-            IOUtils.closeAll(resources);
+            IOUtils.closeAll(indexReaders);
         } catch (IOException e) {
             throw new IndexReaderCloseException(e);
         }

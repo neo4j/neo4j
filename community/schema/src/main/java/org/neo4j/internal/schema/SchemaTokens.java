@@ -57,9 +57,9 @@ public record SchemaTokens(
      */
     public static SchemaTokens collect(
             Collection<IndexCommand.Create> indexes, Collection<ConstraintCommand.Create> constraints) {
-        final var labels = Sets.mutable.<String>empty();
-        final var relationships = Sets.mutable.<String>empty();
-        final var properties = Sets.mutable.<String>empty();
+        MutableSet<String> labels = Sets.mutable.empty();
+        MutableSet<String> relationships = Sets.mutable.empty();
+        MutableSet<String> properties = Sets.mutable.empty();
         collectIndexes(labels, relationships, properties, indexes);
         collectConstraints(labels, relationships, properties, constraints);
         return new SchemaTokens(labels.toImmutable(), relationships.toImmutable(), properties.toImmutable());
@@ -70,7 +70,7 @@ public record SchemaTokens(
             MutableSet<String> relationships,
             MutableSet<String> properties,
             Collection<IndexCommand.Create> indexes) {
-        for (var index : indexes) {
+        for (IndexCommand.Create index : indexes) {
             switch (index) {
                 case NodeRange nodeRange -> {
                     labels.add(nodeRange.label());
@@ -127,7 +127,7 @@ public record SchemaTokens(
             MutableSet<String> relationships,
             MutableSet<String> properties,
             Collection<ConstraintCommand.Create> constraints) {
-        for (var constraint : constraints) {
+        for (ConstraintCommand.Create constraint : constraints) {
             switch (constraint) {
                 case NodeKey constraintCommand -> {
                     labels.add(constraintCommand.label());

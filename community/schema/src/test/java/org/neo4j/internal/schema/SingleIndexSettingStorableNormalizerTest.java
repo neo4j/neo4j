@@ -58,23 +58,23 @@ class SingleIndexSettingStorableNormalizerTest {
 
         @Test
         void passthroughInvalid() {
-            final RecordWithSetting record = new Pending(setting, FAKE_VALUE, Values.NO_VALUE);
+            RecordWithSetting record = new Pending(setting, FAKE_VALUE, Values.NO_VALUE);
             assertThat(processor.processForVerification(record)).isSameAs(record);
         }
 
         @Test
         void passthroughValidForAuthoritativeRead() {
-            final RecordWithSetting record = new Valid(setting, FAKE_VALUE, Values.NO_VALUE);
+            RecordWithSetting record = new Valid(setting, FAKE_VALUE, Values.NO_VALUE);
             assertThat(processor.processForAuthoritativeRead(record)).isSameAs(record);
         }
     }
 
     @Nested
     class EnumToNameStorableNormalizerTest extends SingleStorableNormalizerTestBase {
-        public static Set<Lookup> LOOKUP;
+        public static final Set<Lookup> LOOKUP;
 
         static {
-            final Set<Lookup> lookup = EnumSet.allOf(Lookup.class);
+            Set<Lookup> lookup = EnumSet.allOf(Lookup.class);
             lookup.remove(Lookup.BAR);
             LOOKUP = Collections.unmodifiableSet(lookup);
         }
@@ -87,7 +87,7 @@ class SingleIndexSettingStorableNormalizerTest {
         @NullSource
         @EnumSource(names = "BAR")
         void invalidValues(Lookup value) {
-            final RecordWithSetting record = new Valid(setting, value, Values.NO_VALUE);
+            RecordWithSetting record = new Valid(setting, value, Values.NO_VALUE);
 
             processForVerificationAndAssertRecord(record, InvalidValue.class)
                     .extracting(InvalidValue::requirement)
@@ -97,7 +97,7 @@ class SingleIndexSettingStorableNormalizerTest {
 
         @Test
         void incorrectType() {
-            final RecordWithSetting record = new Valid(setting, FAKE_VALUE, Values.NO_VALUE);
+            RecordWithSetting record = new Valid(setting, FAKE_VALUE, Values.NO_VALUE);
 
             processForVerificationAndAssertRecord(record, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -107,9 +107,9 @@ class SingleIndexSettingStorableNormalizerTest {
         @ParameterizedTest
         @EnumSource(mode = EXCLUDE, names = "BAR")
         void validValuesForVerification(Lookup value) {
-            final Value storable = Values.doubleValue(Math.PI); // doesn't matter
-            final Value processedStorable = Values.utf8Value(value.name());
-            final RecordWithSetting record = new Valid(setting, value, storable);
+            Value storable = Values.doubleValue(Math.PI); // doesn't matter
+            Value processedStorable = Values.utf8Value(value.name());
+            RecordWithSetting record = new Valid(setting, value, storable);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)

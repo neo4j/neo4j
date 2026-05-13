@@ -61,14 +61,14 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
 
         this.extractors = extractors;
         this.processor = processor;
-        this.implicitSettings = Collections.unmodifiableList(Arrays.asList(implicitSettings));
+        this.implicitSettings = Collections.unmodifiableList(Arrays.asList(implicitSettings)); // avoid copy
     }
 
     private static void assertProcessorCoversAllExtractors(
             IndexSettingExtractors extractors, ValidatingIndexSettingsProcessor processor) {
-        final Set<IndexSetting> settings = processor.settings();
-        final Set<String> missingSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
-        for (final IndexSetting setting : extractors.settings()) {
+        Set<IndexSetting> settings = processor.settings();
+        Set<String> missingSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
+        for (IndexSetting setting : extractors.settings()) {
             if (!settings.contains(setting)) {
                 missingSettings.add(setting.getSettingName());
             }
@@ -85,10 +85,10 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
     }
 
     private static void assertNoDuplicateImplicitSettings(IndexSettingEntry... implicitSettings) {
-        final Set<String> duplicateSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
-        final Set<IndexSetting> seenImplicitSettings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
-        for (final IndexSettingEntry implicit : implicitSettings) {
-            final IndexSetting setting = implicit.setting();
+        Set<String> duplicateSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
+        Set<IndexSetting> seenImplicitSettings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
+        for (IndexSettingEntry implicit : implicitSettings) {
+            IndexSetting setting = implicit.setting();
             if (!seenImplicitSettings.add(setting)) {
                 duplicateSettings.add(setting.getSettingName());
             }
@@ -100,10 +100,10 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
 
     private static void assertNoDuplicateHandledSettings(
             ValidatingIndexSettingsProcessor processor, IndexSettingEntry... implicitSettings) {
-        final Set<IndexSetting> settings = processor.settings();
-        final Set<String> handledSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
-        for (final IndexSettingEntry implicit : implicitSettings) {
-            final IndexSetting setting = implicit.setting();
+        Set<IndexSetting> settings = processor.settings();
+        Set<String> handledSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
+        for (IndexSettingEntry implicit : implicitSettings) {
+            IndexSetting setting = implicit.setting();
             if (settings.contains(setting)) {
                 handledSettings.add(setting.getSettingName());
             }
@@ -119,33 +119,33 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
     }
 
     public IndexSettingRecordsByState validate(SettingsAccessor accessor) {
-        final Set<String> expectedSettingNames = extractors.settingNames();
-        final Collection<UnrecognizedSetting> unrecognizedSettings = new ArrayList<>();
-        for (final String settingName : accessor.settingNames()) {
+        Set<String> expectedSettingNames = extractors.settingNames();
+        Collection<UnrecognizedSetting> unrecognizedSettings = new ArrayList<>();
+        for (String settingName : accessor.settingNames()) {
             if (!expectedSettingNames.contains(settingName)) {
                 unrecognizedSettings.add(new UnrecognizedSetting(settingName));
             }
         }
 
-        final KnownIndexSettingRecords recordWithSettings = extractors.extractForValidation(accessor);
+        KnownIndexSettingRecords recordWithSettings = extractors.extractForValidation(accessor);
         processor.updateForVerification(recordWithSettings);
 
-        for (final IndexSettingEntry entry : implicitSettings) {
+        for (IndexSettingEntry entry : implicitSettings) {
             recordWithSettings.upsert(new Valid(entry.setting(), entry.value(), null));
         }
 
-        final IndexSettingRecords records = recordWithSettings.toIndexSettingRecords();
+        IndexSettingRecords records = recordWithSettings.toIndexSettingRecords();
         records.upsertAll(unrecognizedSettings); // unrecognized settings should overwrite and take precedence
         return records.groupByState();
     }
 
     @Override
     public Iterable<Valid> interpretAuthoritative(SettingsAccessor accessor) {
-        final KnownIndexSettingRecords records = extractors.extractForAuthoritativeRead(accessor);
+        KnownIndexSettingRecords records = extractors.extractForAuthoritativeRead(accessor);
         processor.updateForAuthoritativeRead(records);
 
-        final SortedSet<Valid> validRecords = new TreeSet<>();
-        for (final IndexSettingRecord record : records) {
+        SortedSet<Valid> validRecords = new TreeSet<>();
+        for (IndexSettingRecord record : records) {
             switch (record) {
                 case Valid valid -> validRecords.add(valid);
                 case null, default ->
@@ -157,7 +157,7 @@ public class DefaultIndexSettingsValidator implements IndexSettingsValidator {
             }
         }
 
-        for (final IndexSettingEntry entry : implicitSettings) {
+        for (IndexSettingEntry entry : implicitSettings) {
             validRecords.add(new Valid(entry.setting(), entry.value(), null));
         }
 

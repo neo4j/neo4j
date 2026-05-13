@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -44,8 +45,13 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -103,18 +109,19 @@ class EventuallyConsistentFulltextIT {
     }
 
     private void awaitIndexUpdatesUpToThisPoint() {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.execute(AWAIT_REFRESH);
         }
     }
 
     private void assertAllNodesVisibleInIndexes(int numNodes) throws KernelException {
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED);
-                var cursor = tx.kernelTransaction().cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
-            var ktx = tx.kernelTransaction();
-            for (var indexName : new String[] {INDEX_NAME_1, INDEX_NAME_2}) {
-                var index = ktx.schemaRead().indexGetForName(indexName);
-                var session = ktx.dataRead().indexReadSession(index);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                NodeValueIndexCursor cursor =
+                        tx.kernelTransaction().cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            for (String indexName : new String[] {INDEX_NAME_1, INDEX_NAME_2}) {
+                IndexDescriptor index = ktx.schemaRead().indexGetForName(indexName);
+                IndexReadSession session = ktx.dataRead().indexReadSession(index);
                 ktx.dataRead()
                         .nodeIndexSeek(
                                 ktx.queryContext(),
@@ -137,7 +144,7 @@ class EventuallyConsistentFulltextIT {
         for (int t = 0; t < numThreads; t++) {
             tasks.add(() -> {
                 for (int r = 0; r < numTransactionsPerThread; r++) {
-                    try (var tx = db.beginTx()) {
+                    try (Transaction tx = db.beginTx()) {
                         for (int i = 0; i < txSize; i++) {
                             createFulltextIndexedNode(tx);
                         }
@@ -148,18 +155,18 @@ class EventuallyConsistentFulltextIT {
             });
         }
 
-        try (var executor = Executors.newFixedThreadPool(numThreads)) {
+        try (ExecutorService executor = Executors.newFixedThreadPool(numThreads)) {
             Futures.getAll(executor.invokeAll(tasks));
         }
         return numThreads * numTransactionsPerThread * txSize;
     }
 
-    private void createFulltextIndexedNode(Transaction tx) {
+    private static void createFulltextIndexedNode(Transaction tx) {
         tx.createNode(LABEL1, LABEL2).setProperty(KEY, "Marker " + UUID.randomUUID());
     }
 
     private void createFulltextIndexes() {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema()
                     .indexFor(LABEL1)
                     .on(KEY)
@@ -174,7 +181,7 @@ class EventuallyConsistentFulltextIT {
                     .create();
             tx.commit();
         }
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(1, TimeUnit.MINUTES);
         }
     }

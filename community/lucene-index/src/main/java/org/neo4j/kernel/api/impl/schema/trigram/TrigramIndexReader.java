@@ -83,7 +83,7 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
         Preconditions.checkState(
                 propertyKeyIds.length == 1,
                 "Text index does not support composite indexing. Tried to query index with multiple property keys.");
-        final var value = propertyValues[0].asObject().toString();
+        String value = propertyValues[0].asObject().toString();
         queryContext.addExactTrigram(value);
 
         try {
@@ -94,7 +94,7 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
         }
     }
 
-    BoundedIterable<Long> newAllEntriesValueReader(long fromIdInclusive, long toIdExclusive) throws IOException {
+    BoundedIterable<Long> newAllEntriesValueReader(long fromIdInclusive, long toIdExclusive) {
         return newAllEntriesValueReaderForPartition(
                 LuceneDocumentsFactory.ENTITY_ID_KEY,
                 getIndexSearcher(),

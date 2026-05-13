@@ -52,8 +52,8 @@ public class FulltextIndexCapability implements IndexCapability {
     public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
         Preconditions.requireNonEmpty(valueCategories);
         Preconditions.requireNoNullElements(valueCategories);
-        var anyValidCategory = false;
-        for (final var valueCategory : valueCategories) {
+        boolean anyValidCategory = false;
+        for (ValueCategory valueCategory : valueCategories) {
             switch (valueCategory) {
                 case TEXT, TEXT_ARRAY -> anyValidCategory = true;
                 default -> {}

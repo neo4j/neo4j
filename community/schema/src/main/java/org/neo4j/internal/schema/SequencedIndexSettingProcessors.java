@@ -39,8 +39,8 @@ public class SequencedIndexSettingProcessors implements IndexSettingsProcessor {
 
     /// Merges provided [IndexSettingsProcessor] into a single [IndexSettingsProcessor]
     public static SequencedIndexSettingProcessors mergeProcessors(IndexSettingsProcessor... processors) {
-        final SequencedCollection<IndexSettingsProcessor> sequencedProcessors = Arrays.asList(processors);
-        final SortedSet<IndexSetting> settings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
+        SequencedCollection<IndexSettingsProcessor> sequencedProcessors = Arrays.asList(processors);
+        SortedSet<IndexSetting> settings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
         visitSettings(sequencedProcessors, settings::addAll, Consumers.ignoreValue());
         return new SequencedIndexSettingProcessors(sequencedProcessors, settings);
     }
@@ -49,16 +49,16 @@ public class SequencedIndexSettingProcessors implements IndexSettingsProcessor {
     /// there is at least one [ValidatingIndexSettingsProcessor] for each [IndexSetting]
     /// @see #mergeProcessors(IndexSettingsProcessor...)
     public static ValidatingIndexSettingsProcessor mergeToValidatingProcessor(IndexSettingsProcessor... processors) {
-        final SequencedCollection<IndexSettingsProcessor> sequencedProcessors = Arrays.asList(processors);
-        final SortedSet<IndexSetting> settings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
-        final SortedSet<IndexSetting> validatedSettings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
+        SequencedCollection<IndexSettingsProcessor> sequencedProcessors = Arrays.asList(processors);
+        SortedSet<IndexSetting> settings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
+        SortedSet<IndexSetting> validatedSettings = new TreeSet<>(INDEX_SETTING_COMPARATOR);
         visitSettings(sequencedProcessors, settings::addAll, validatedSettings::addAll);
 
         // by construction validatedSettings is a subset of settings
         if (validatedSettings.size() != settings.size()) {
             settings.removeAll(validatedSettings);
-            final SortedSet<String> settingNames = new TreeSet<>(CASE_INSENSITIVE_ORDER);
-            for (final IndexSetting setting : settings) {
+            SortedSet<String> settingNames = new TreeSet<>(CASE_INSENSITIVE_ORDER);
+            for (IndexSetting setting : settings) {
                 settingNames.add(setting.getSettingName());
             }
 
@@ -71,7 +71,7 @@ public class SequencedIndexSettingProcessors implements IndexSettingsProcessor {
                                     settingNames));
         }
 
-        final IndexSettingsProcessor delegate = new SequencedIndexSettingProcessors(sequencedProcessors, settings);
+        IndexSettingsProcessor delegate = new SequencedIndexSettingProcessors(sequencedProcessors, settings);
         return new ValidatingIndexSettingsProcessor() {
             @Override
             public void updateForVerification(KnownIndexSettingRecords records) {
@@ -98,14 +98,14 @@ public class SequencedIndexSettingProcessors implements IndexSettingsProcessor {
 
     @Override
     public void updateForVerification(KnownIndexSettingRecords records) {
-        for (final IndexSettingsProcessor processor : processors) {
+        for (IndexSettingsProcessor processor : processors) {
             processor.updateForVerification(records);
         }
     }
 
     @Override
     public void updateForAuthoritativeRead(KnownIndexSettingRecords records) {
-        for (final IndexSettingsProcessor processor : processors) {
+        for (IndexSettingsProcessor processor : processors) {
             processor.updateForAuthoritativeRead(records);
         }
     }
@@ -119,7 +119,7 @@ public class SequencedIndexSettingProcessors implements IndexSettingsProcessor {
             Iterable<IndexSettingsProcessor> processors,
             Consumer<Set<IndexSetting>> visitSettings,
             Consumer<Set<IndexSetting>> visitValidatedSettings) {
-        for (final IndexSettingsProcessor processor : processors) {
+        for (IndexSettingsProcessor processor : processors) {
             visitSettings.accept(processor.settings());
             if (processor instanceof ValidatingIndexSettingsProcessor) {
                 visitValidatedSettings.accept(processor.settings());

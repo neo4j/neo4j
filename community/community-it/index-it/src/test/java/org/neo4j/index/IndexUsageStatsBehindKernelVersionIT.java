@@ -34,10 +34,16 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.ZippedStoreCommunity;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -68,18 +74,18 @@ public class IndexUsageStatsBehindKernelVersionIT {
     @Test
     void shouldReportDefaultValuesWhenKernelVersionIsOld() throws KernelException, IOException {
         // Given
-        var storeWithOldKernelVersion = ZippedStoreCommunity.REC_AF11_V50_EMPTY;
+        ZippedStoreCommunity storeWithOldKernelVersion = ZippedStoreCommunity.REC_AF11_V50_EMPTY;
         storeWithOldKernelVersion.unzip(testDirectory.homePath());
         GraphDatabaseAPI db = database();
-        var indexName = createIndex(db);
+        String indexName = createIndex(db);
 
         // When
         singleIndexRead(db, indexName);
         triggerReportUsageStatistics(db);
 
         // Then
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var stats = getIndexUsageStats(tx, indexName);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            IndexUsageStats stats = getIndexUsageStats(tx, indexName);
             assertThat(stats.trackedSince()).isEqualTo(0);
             assertThat(stats.lastRead()).isEqualTo(0);
             assertThat(stats.readCount()).isEqualTo(0);
@@ -89,10 +95,10 @@ public class IndexUsageStatsBehindKernelVersionIT {
     @Test
     void assertDeliverCorrectValueAfterUpgradeToLatestKernelVersion() throws Exception {
         // Given
-        var storeWithOldKernelVersion = ZippedStoreCommunity.REC_AF11_V50_EMPTY;
+        ZippedStoreCommunity storeWithOldKernelVersion = ZippedStoreCommunity.REC_AF11_V50_EMPTY;
         storeWithOldKernelVersion.unzip(testDirectory.homePath());
         GraphDatabaseAPI db = database();
-        var indexName = createIndex(db);
+        String indexName = createIndex(db);
 
         // When
         UpgradeTestUtil.upgradeDatabase(
@@ -102,23 +108,23 @@ public class IndexUsageStatsBehindKernelVersionIT {
         triggerReportUsageStatistics(db);
 
         // Then
-        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
-            var stats = getIndexUsageStats(tx, indexName);
+        try (InternalTransaction tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            IndexUsageStats stats = getIndexUsageStats(tx, indexName);
             assertThat(stats.trackedSince()).isGreaterThan(0);
             assertThat(stats.lastRead()).isGreaterThan(0);
             assertThat(stats.readCount()).isEqualTo(1);
         }
     }
 
-    private IndexUsageStats getIndexUsageStats(InternalTransaction tx, String indexName)
+    private static IndexUsageStats getIndexUsageStats(InternalTransaction tx, String indexName)
             throws IndexNotFoundKernelException {
-        var ktx = tx.kernelTransaction();
-        var index = ktx.schemaRead().indexGetForName(indexName);
+        KernelTransaction ktx = tx.kernelTransaction();
+        IndexDescriptor index = ktx.schemaRead().indexGetForName(indexName);
         return ktx.schemaRead().indexUsageStats(index);
     }
 
-    private String createIndex(GraphDatabaseAPI db) {
-        var indexName = "index";
+    private static String createIndex(GraphDatabaseAPI db) {
+        String indexName = "index";
         try (Transaction tx = db.beginTx()) {
             tx.schema()
                     .indexFor(Label.label("Label"))
@@ -133,15 +139,16 @@ public class IndexUsageStatsBehindKernelVersionIT {
         return indexName;
     }
 
-    private void singleIndexRead(GraphDatabaseAPI db, String indexName) throws KernelException {
+    private static void singleIndexRead(GraphDatabaseAPI db, String indexName) throws KernelException {
         try (Transaction tx = db.beginTx()) {
-            var ktx = ((TransactionImpl) tx).kernelTransaction();
-            var schemaRead = ktx.schemaRead();
-            var dataRead = ktx.dataRead();
+            KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
+            SchemaRead schemaRead = ktx.schemaRead();
+            Read dataRead = ktx.dataRead();
 
-            var descriptor = schemaRead.indexGetForName(indexName);
-            var indexReadSession = dataRead.indexReadSession(descriptor);
-            try (var cursor = ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
+            IndexDescriptor descriptor = schemaRead.indexGetForName(indexName);
+            IndexReadSession indexReadSession = dataRead.indexReadSession(descriptor);
+            try (NodeValueIndexCursor cursor =
+                    ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
                 dataRead.nodeIndexSeek(
                         QueryContext.NULL_CONTEXT,
                         indexReadSession,
@@ -163,7 +170,7 @@ public class IndexUsageStatsBehindKernelVersionIT {
         return (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
     }
 
-    private void triggerReportUsageStatistics(GraphDatabaseAPI db) {
+    private static void triggerReportUsageStatistics(GraphDatabaseAPI db) {
         db.getDependencyResolver().resolveDependency(IndexingService.class).reportUsageStatistics();
     }
 }

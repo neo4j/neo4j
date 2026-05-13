@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.ResultList;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
@@ -41,7 +42,7 @@ class VectorSSFGenericTest extends VectorSSFTestBase {
         createTestNode(Map.of("id", 2, "name", "Osbert", EMBEDDING_NAME, EMBEDDINGS.get(2)));
         createTestNode(Map.of("id", 3, "rating", 7.83, EMBEDDING_NAME, EMBEDDINGS.get(3)));
 
-        var result = queryNodeIndex();
+        ResultList result = queryNodeIndex();
         assertThat(result).hasSize(3);
     }
 
@@ -58,10 +59,10 @@ class VectorSSFGenericTest extends VectorSSFTestBase {
         createTestNode(Map.of("id", 30, "name", "Puff", "age", 500, EMBEDDING_NAME, EMBEDDINGS.get(4)));
         createTestNode(Map.of("id", 40, "rating", 7.83, EMBEDDING_NAME, EMBEDDINGS.get(5)));
 
-        var unfiltered = queryNodeIndex();
+        ResultList unfiltered = queryNodeIndex();
         assertThat(unfiltered).hasSize(5);
 
-        var filtered = queryNodeIndex(exactQuery("age", Values.of(1000)));
+        ResultList filtered = queryNodeIndex(exactQuery("age", Values.of(1000)));
         assertThat(filtered)
                 .singleElement()
                 .extracting(result -> result.getValue("story"))

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -99,7 +100,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            var bothEntitiesResult = new String[] {entityIdA, entityIdB};
+            String[] bothEntitiesResult = new String[] {entityIdA, entityIdB};
             Arrays.sort(bothEntitiesResult);
             entityUtil.assertQueryFindsIdsInOrder(tx, "value", bothEntitiesResult);
 
@@ -129,7 +130,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
         }
         try (Transaction tx = db.beginTx()) {
             entityUtil.createEntityWithProperty(tx, "value");
-            try (var resultStream = entityUtil.queryIndex(tx, "value").stream()) {
+            try (Stream<Map<String, Object>> resultStream = entityUtil.queryIndex(tx, "value").stream()) {
                 populationScanFinished.await();
                 populationScanFinished.release();
                 assertThat(resultStream.count()).isEqualTo(2);

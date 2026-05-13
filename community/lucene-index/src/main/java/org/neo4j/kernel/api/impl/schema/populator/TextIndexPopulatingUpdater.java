@@ -29,7 +29,9 @@ import org.neo4j.kernel.api.impl.schema.writer.LucenePartitionIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 
 /**
  * A {@link TextIndexPopulatingUpdater} used for non-unique Lucene schema indexes.
@@ -53,15 +55,15 @@ public class TextIndexPopulatingUpdater implements IndexUpdater {
 
     @Override
     public void process(IndexEntryUpdate update) {
-        final var valueUpdate = asValueUpdate(update);
+        ValueIndexEntryUpdate valueUpdate = asValueUpdate(update);
         if (valueUpdate == null) {
             return;
         }
 
         try {
-            final var entityId = valueUpdate.getEntityId();
-            final var values = valueUpdate.values();
-            final var updateMode = valueUpdate.updateMode();
+            long entityId = valueUpdate.getEntityId();
+            Value[] values = valueUpdate.values();
+            UpdateMode updateMode = valueUpdate.updateMode();
             switch (updateMode) {
                 case ADDED ->
                     writer.updateDocument(
@@ -81,7 +83,7 @@ public class TextIndexPopulatingUpdater implements IndexUpdater {
 
     @Override
     public ValueIndexEntryUpdate asValueUpdate(IndexEntryUpdate update) {
-        final var valueUpdate = IndexUpdater.super.asValueUpdate(update);
+        ValueIndexEntryUpdate valueUpdate = IndexUpdater.super.asValueUpdate(update);
         return !ignoreStrategy.ignore(valueUpdate) ? ignoreStrategy.toEquivalentUpdate(valueUpdate) : null;
     }
 }

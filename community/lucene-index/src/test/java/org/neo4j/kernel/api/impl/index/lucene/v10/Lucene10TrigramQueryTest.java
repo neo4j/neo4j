@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index.lucene.v10;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.HashSet;
+import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
@@ -39,13 +40,13 @@ class Lucene10TrigramQueryTest {
     @Test
     void shouldHandleLargeSearchStrings() {
         // Given
-        var size = LuceneIndexValueValidator.MAX_TERM_LENGTH;
+        int size = LuceneIndexValueValidator.MAX_TERM_LENGTH;
 
         // When
-        var query = new Lucene10QueryContext().trigramSearch(random.nextAlphaNumericString(size));
+        Lucene10QueryContext query = new Lucene10QueryContext().trigramSearch(random.nextAlphaNumericString(size));
 
         // Then
-        var terms = new HashSet<Term>();
+        Set<Term> terms = new HashSet<>();
         query.build().visit(QueryVisitor.termCollector(terms));
         assertThat(terms.size()).isGreaterThanOrEqualTo(1).isLessThanOrEqualTo(IndexSearcher.getMaxClauseCount());
     }

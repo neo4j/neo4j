@@ -62,7 +62,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         ValueCreatorUtil.sort(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         try (NodeValueIterator result = query(
                 reader,
                 ValueCreatorUtil.rangeQuery(valueOf(updates[0]), true, valueOf(updates[updates.length - 1]), false))) {
@@ -79,7 +79,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         ValueCreatorUtil.sort(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         try (NodeValueIterator result = query(
                 reader,
                 ValueCreatorUtil.rangeQuery(valueOf(updates[0]), true, valueOf(updates[updates.length - 1]), true))) {
@@ -95,7 +95,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         ValueCreatorUtil.sort(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         try (NodeValueIterator result = query(
                 reader,
                 ValueCreatorUtil.rangeQuery(valueOf(updates[0]), false, valueOf(updates[updates.length - 1]), false))) {
@@ -112,7 +112,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         ValueCreatorUtil.sort(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         try (NodeValueIterator result = query(
                 reader,
                 ValueCreatorUtil.rangeQuery(valueOf(updates[0]), false, valueOf(updates[updates.length - 1]), true))) {
@@ -128,7 +128,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         processAll(updates[0], updates[1], updates[updates.length - 1], updates[updates.length - 2]);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         try (NodeValueIterator result = query(
                 reader,
                 ValueCreatorUtil.rangeQuery(valueOf(updates[2]), true, valueOf(updates[updates.length - 3]), true))) {
@@ -145,7 +145,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         ValueCreatorUtil.sort(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         PropertyIndexQuery outerQuery =
                 ValueCreatorUtil.rangeQuery(valueOf(updates[2]), true, valueOf(updates[3]), true);
@@ -177,7 +177,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         ValueCreatorUtil.sort(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         PropertyIndexQuery query1 = ValueCreatorUtil.rangeQuery(valueOf(updates[4]), true, valueOf(updates[5]), true);
         PropertyIndexQuery query2 = ValueCreatorUtil.rangeQuery(valueOf(updates[2]), true, valueOf(updates[3]), true);
@@ -218,7 +218,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         EagerValueIndexEntryUpdate[] updates = someUpdatesSingleTypeNoDuplicates(supportedTypesExcludingNonOrderable());
         processAll(updates);
         ValueCreatorUtil.sort(updates);
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
 
         // when
         try (NodeValueIterator iter = new NodeValueIterator()) {
@@ -251,7 +251,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates(someUpdates);
 
         // when
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             PropertyIndexQuery.AllEntriesPredicate supportedQuery = PropertyIndexQuery.allEntries();
 
             expectIndexOrder(allValues, reader, IndexOrder.ASCENDING, supportedQuery);
@@ -267,7 +267,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         processAll(updates);
 
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         try (NodeValueIterator result = query(reader, PropertyIndexQuery.exists(0))) {
             // then
             assertEntityIdHits(extractEntityIds(updates, alwaysTrue()), result);
@@ -277,7 +277,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
     @Test
     void shouldReturnNoEntriesForExistsPredicateForEmptyIndex() throws Exception {
         // when
-        var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
         long[] actual;
         try (NodeValueIterator result = query(reader, PropertyIndexQuery.exists(0))) {
             // then
@@ -332,8 +332,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
         return update.values()[0];
     }
 
-    private static IndexProgressor.EntityValueClient filterClient(
-            final NodeValueIterator iter, final PropertyIndexQuery filter) {
+    private static IndexProgressor.EntityValueClient filterClient(NodeValueIterator iter, PropertyIndexQuery filter) {
         return new IndexProgressor.EntityValueClient() {
             @Override
             public void initializeQuery(

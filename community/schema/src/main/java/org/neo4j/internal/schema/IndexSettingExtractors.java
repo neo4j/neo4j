@@ -58,12 +58,12 @@ public class IndexSettingExtractors {
     private final Set<String> settingNames;
 
     public IndexSettingExtractors(IndexSettingExtractor... extractors) {
-        final SortedMap<IndexSetting, IndexSettingExtractor> sortedExtractors = new TreeMap<>(INDEX_SETTING_COMPARATOR);
-        final SortedSet<String> settingNames = new TreeSet<>(CASE_INSENSITIVE_ORDER);
-        final SortedSet<String> duplicateSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
-        for (final IndexSettingExtractor extractor : extractors) {
-            final IndexSetting setting = extractor.setting();
-            final String settingName = setting.getSettingName();
+        SortedMap<IndexSetting, IndexSettingExtractor> sortedExtractors = new TreeMap<>(INDEX_SETTING_COMPARATOR);
+        SortedSet<String> settingNames = new TreeSet<>(CASE_INSENSITIVE_ORDER);
+        SortedSet<String> duplicateSettings = new TreeSet<>(CASE_INSENSITIVE_ORDER);
+        for (IndexSettingExtractor extractor : extractors) {
+            IndexSetting setting = extractor.setting();
+            String settingName = setting.getSettingName();
             if (!settingNames.add(settingName)) {
                 duplicateSettings.add(settingName);
             }
@@ -81,8 +81,8 @@ public class IndexSettingExtractors {
     /// Extracts the values from the [SettingsAccessor] into a mutable collection
     /// @see IndexSettingExtractor#extractForValidation(SettingsAccessor)
     public KnownIndexSettingRecords extractForValidation(SettingsAccessor accessor) {
-        final KnownIndexSettingRecords records = new KnownIndexSettingRecords();
-        for (final IndexSettingExtractor extractor : extractors.values()) {
+        KnownIndexSettingRecords records = new KnownIndexSettingRecords();
+        for (IndexSettingExtractor extractor : extractors.values()) {
             records.upsert(extractor.extractForValidation(accessor));
         }
         return records;
@@ -91,8 +91,8 @@ public class IndexSettingExtractors {
     /// Extracts the values from the [SettingsAccessor] into a mutable collection
     /// @see IndexSettingExtractor#extractForAuthoritativeRead(SettingsAccessor)
     public KnownIndexSettingRecords extractForAuthoritativeRead(SettingsAccessor accessor) {
-        final KnownIndexSettingRecords records = new KnownIndexSettingRecords();
-        for (final IndexSettingExtractor extractor : extractors.values()) {
+        KnownIndexSettingRecords records = new KnownIndexSettingRecords();
+        for (IndexSettingExtractor extractor : extractors.values()) {
             records.upsert(extractor.extractForAuthoritativeRead(accessor));
         }
         return records;
@@ -132,7 +132,7 @@ public class IndexSettingExtractors {
                 return new MissingSetting(setting);
             }
 
-            final AnyValue value = accessor.get(setting);
+            AnyValue value = accessor.get(setting);
             if (value == null || value == Values.NO_VALUE) {
                 return new MissingSetting(setting);
             }
@@ -155,7 +155,7 @@ public class IndexSettingExtractors {
             if (obj == null || this.getClass() != obj.getClass()) {
                 return false;
             }
-            final RawIndexSettingExtractor that = (RawIndexSettingExtractor) obj;
+            RawIndexSettingExtractor that = (RawIndexSettingExtractor) obj;
             return Objects.equals(this.setting, that.setting);
         }
     }
@@ -171,11 +171,11 @@ public class IndexSettingExtractors {
 
         @Override
         public RecordWithSetting extractForValidation(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
-            if (!(unprocessed.rawValue() instanceof final BooleanValue booleanValue)) {
+            if (!(unprocessed.rawValue() instanceof BooleanValue booleanValue)) {
                 return new IncorrectType(unprocessed, BooleanValue.class);
             }
 
@@ -184,12 +184,12 @@ public class IndexSettingExtractors {
 
         @Override
         public RecordWithSetting extractForAuthoritativeRead(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
 
-            final BooleanValue booleanValue = (BooleanValue) unprocessed.rawValue();
+            BooleanValue booleanValue = (BooleanValue) unprocessed.rawValue();
             return new Valid(unprocessed, booleanValue.booleanValue(), booleanValue);
         }
     }
@@ -208,22 +208,22 @@ public class IndexSettingExtractors {
 
         @Override
         public RecordWithSetting extractForValidation(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
-            if (!(unprocessed.rawValue() instanceof final IntegralValue integralValue)) {
+            if (!(unprocessed.rawValue() instanceof IntegralValue integralValue)) {
                 return new IncorrectType(unprocessed, IntegralValue.class);
             }
 
-            if (integralValue instanceof final IntValue intValue) {
+            if (integralValue instanceof IntValue intValue) {
                 return new Pending(unprocessed, intValue.intValue(), intValue);
             }
 
-            final int value;
-            if (integralValue instanceof final LongValue longValue) {
+            int value;
+            if (integralValue instanceof LongValue longValue) {
                 // LongValue::intValue will always throw, go via long
-                final long primitiveLong = longValue.longValue();
+                long primitiveLong = longValue.longValue();
                 if (!INTEGER_RANGE.contains(primitiveLong)) {
                     return new InvalidValue(unprocessed, primitiveLong, new DefaultRequirement<>(INTEGER_RANGE));
                 }
@@ -237,12 +237,12 @@ public class IndexSettingExtractors {
 
         @Override
         public RecordWithSetting extractForAuthoritativeRead(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
 
-            final IntegralValue integralValue = (IntegralValue) unprocessed.rawValue();
+            IntegralValue integralValue = (IntegralValue) unprocessed.rawValue();
             return new Valid(unprocessed, (int) integralValue.longValue(), integralValue);
         }
     }
@@ -258,30 +258,30 @@ public class IndexSettingExtractors {
 
         @Override
         public RecordWithSetting extractForValidation(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
-            if (!(unprocessed.rawValue() instanceof final NumberValue numberValue)) {
+            if (!(unprocessed.rawValue() instanceof NumberValue numberValue)) {
                 return new IncorrectType(unprocessed, NumberValue.class);
             }
 
-            if (numberValue instanceof final DoubleValue doubleValue) {
+            if (numberValue instanceof DoubleValue doubleValue) {
                 return new Pending(unprocessed, doubleValue.doubleValue(), doubleValue);
             }
 
-            final double value = numberValue.doubleValue();
+            double value = numberValue.doubleValue();
             return new Pending(unprocessed, value, Values.doubleValue(value));
         }
 
         @Override
         public RecordWithSetting extractForAuthoritativeRead(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
 
-            final NumberValue numberValue = (NumberValue) unprocessed.rawValue();
+            NumberValue numberValue = (NumberValue) unprocessed.rawValue();
             return new Valid(unprocessed, numberValue.doubleValue(), numberValue);
         }
     }
@@ -297,11 +297,11 @@ public class IndexSettingExtractors {
 
         @Override
         public RecordWithSetting extractForValidation(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
-            if (!(unprocessed.rawValue() instanceof final TextValue textValue)) {
+            if (!(unprocessed.rawValue() instanceof TextValue textValue)) {
                 return new IncorrectType(unprocessed, TextValue.class);
             }
 
@@ -310,12 +310,12 @@ public class IndexSettingExtractors {
 
         @Override
         public RecordWithSetting extractForAuthoritativeRead(SettingsAccessor accessor) {
-            final RecordWithSetting record = extractRawValue(accessor);
-            if (!(record instanceof final Unprocessed unprocessed)) {
+            RecordWithSetting record = extractRawValue(accessor);
+            if (!(record instanceof Unprocessed unprocessed)) {
                 return record;
             }
 
-            final TextValue textValue = (TextValue) unprocessed.rawValue();
+            TextValue textValue = (TextValue) unprocessed.rawValue();
             return new Valid(unprocessed, textValue.stringValue(), textValue);
         }
     }

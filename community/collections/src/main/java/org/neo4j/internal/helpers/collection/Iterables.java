@@ -54,8 +54,9 @@ public final class Iterables {
         throw new AssertionError("no instance");
     }
 
-    private static Iterable<Object> EMPTY = Collections::emptyIterator;
+    private static final Iterable<Object> EMPTY = Collections::emptyIterator;
 
+    @SuppressWarnings("unchecked")
     public static <T> Iterable<T> empty() {
         return (Iterable<T>) EMPTY;
     }
@@ -116,13 +117,13 @@ public final class Iterables {
         return concat(Arrays.asList((Iterable<T>[]) iterables));
     }
 
-    public static <T> Iterable<T> concat(final Iterable<? extends Iterable<T>> iterables) {
+    public static <T> Iterable<T> concat(Iterable<? extends Iterable<T>> iterables) {
         return new CombiningIterable<>(iterables);
     }
 
-    public static <T, C extends T> Iterable<T> append(final C item, final Iterable<T> iterable) {
+    public static <T, C extends T> Iterable<T> append(C item, Iterable<T> iterable) {
         return () -> {
-            final Iterator<T> iterator = iterable.iterator();
+            Iterator<T> iterator = iterable.iterator();
 
             return new Iterator<>() {
                 T last = item;
@@ -164,7 +165,7 @@ public final class Iterables {
         return list.toArray((T[]) Array.newInstance(componentType, list.size()));
     }
 
-    public static <T> ResourceIterable<T> asResourceIterable(final Iterable<T> iterable) {
+    public static <T> ResourceIterable<T> asResourceIterable(Iterable<T> iterable) {
         if (iterable instanceof ResourceIterable<?>) {
             return (ResourceIterable<T>) iterable;
         }
@@ -236,7 +237,7 @@ public final class Iterables {
             Iterable<?> values, CharSequence delimiter, CharSequence prefix, CharSequence suffix) {
         Iterator<?> it = values.iterator();
         try {
-            final StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             if (!prefix.isEmpty()) {
                 sb.append(prefix);
             }
@@ -508,16 +509,16 @@ public final class Iterables {
         }
     }
 
-    public static Iterable<Long> asIterable(final long... array) {
+    public static Iterable<Long> asIterable(long... array) {
         return () -> Iterators.asIterator(array);
     }
 
-    public static Iterable<Integer> asIterable(final int... array) {
+    public static Iterable<Integer> asIterable(int... array) {
         return () -> Iterators.asIterator(array);
     }
 
     @SafeVarargs
-    public static <T> Iterable<T> asIterable(final T... array) {
+    public static <T> Iterable<T> asIterable(T... array) {
         return () -> Iterators.iterator(array);
     }
 
@@ -525,7 +526,7 @@ public final class Iterables {
         return () -> Iterators.asUnmodifiable(iterable.iterator());
     }
 
-    public static <T> ResourceIterable<T> resourceIterable(final Iterable<T> iterable) {
+    public static <T> ResourceIterable<T> resourceIterable(Iterable<T> iterable) {
         return new AbstractResourceIterable<>() {
             @Override
             protected ResourceIterator<T> newIterator() {
@@ -541,7 +542,7 @@ public final class Iterables {
         };
     }
 
-    public static <T> Iterable<T> option(final T item) {
+    public static <T> Iterable<T> option(T item) {
         if (item == null) {
             return Collections.emptyList();
         }
@@ -593,7 +594,7 @@ public final class Iterables {
      */
     public static <V> void forEach(Iterable<V> iterable, Consumer<V> consumer) {
         try {
-            for (final var item : iterable) {
+            for (V item : iterable) {
                 consumer.accept(item);
             }
         } finally {
@@ -634,7 +635,7 @@ public final class Iterables {
     public static <T> List<T> union(List<T> list1, List<T> list2) {
         requireNonNull(list1);
         requireNonNull(list2);
-        var result = new ArrayList<T>(list1.size() + list2.size());
+        List<T> result = new ArrayList<>(list1.size() + list2.size());
         result.addAll(list1);
         result.addAll(list2);
         return result;

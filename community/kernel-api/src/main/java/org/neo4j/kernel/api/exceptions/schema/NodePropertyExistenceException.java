@@ -53,7 +53,7 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
             ConstraintDescriptor descriptor,
             ConstraintValidationException.Phase phase,
             long nodeId) {
-        var propIds = schema.getPropertyIds();
+        int[] propIds = schema.getPropertyIds();
         // This might be a way to expose hidden properties to the user with roles with no access to those properties
         // TODO: check for user rights
         String[] propKeyNames = new String[propIds.length];

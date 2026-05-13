@@ -34,10 +34,17 @@ import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.SettingsAccessor.IndexSettingObjectMapAccessor;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectory;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectoryFactory;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneDirectoryReader;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocument;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriterConfig;
+import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodec;
 import org.neo4j.kernel.api.impl.index.lucene.v10.LuceneDirectoryReaderAccess;
 import org.neo4j.kernel.api.impl.index.lucene.v10.codec.Lucene10Codec;
 import org.neo4j.values.storable.Float32Vector;
@@ -47,8 +54,8 @@ import org.neo4j.values.storable.Values;
 public class Lucene10CodecsTest {
 
     static Stream<Named<Boolean>> indexRadsWithSameCodecValuesAsWasWritten() {
-        var noQuantization = named("No quantization", false);
-        var scalarQuantization = named("Scalar quantization", true);
+        Named<Boolean> noQuantization = named("No quantization", false);
+        Named<Boolean> scalarQuantization = named("Scalar quantization", true);
         return Stream.of(noQuantization, scalarQuantization);
     }
 
@@ -61,25 +68,27 @@ public class Lucene10CodecsTest {
         Float32Vector float32Vector = Values.float32Vector(vectorValues);
         Value[] values = new Value[] {float32Vector};
 
-        var indexSettings = new IndexSettingObjectMapAccessor(Map.of(
+        SettingsAccessor indexSettings = new IndexSettingObjectMapAccessor(Map.of(
                 IndexSetting.vector_Quantization_Enabled(),
                 quantizationEnabled,
                 IndexSetting.vector_Dimensions(),
                 dimensions));
-        var config = VectorIndexVersion.V3_0.indexSettingValidator().validateToTypedConfig(indexSettings);
+        VectorIndexConfig config =
+                VectorIndexVersion.V3_0.indexSettingValidator().validateToTypedConfig(indexSettings);
 
-        var context = LuceneContext.LUCENE_10;
-        var codec = context.codecsFactory().codecFor(config);
-        var writerConfig = new LuceneIndexWriterConfig(new KeywordAnalyzer()).setCodec(codec);
+        LuceneContext context = LuceneContext.LUCENE_10;
+        LuceneCodec codec = context.codecsFactory().codecFor(config);
+        LuceneIndexWriterConfig writerConfig = new LuceneIndexWriterConfig(new KeywordAnalyzer()).setCodec(codec);
         writerConfig.setMergingParameters(1.0, 10, LOG_BYTE_SIZED, 10, 10, 10, 8.0, 10);
-        var documentStructure = VectorDocumentStructures.documentStructureFor(VectorIndexVersion.V3_0);
-        var documentFactory = context.documentsFactory();
-        var directoryFactory = context.directoryFactory();
+        VectorDocumentStructure documentStructure =
+                VectorDocumentStructures.documentStructureFor(VectorIndexVersion.V3_0);
+        LuceneDocumentsFactory documentFactory = context.documentsFactory();
+        LuceneDirectoryFactory directoryFactory = context.directoryFactory();
 
-        try (var directory = directoryFactory.inMemoryDirectory()) {
+        try (LuceneDirectory directory = directoryFactory.inMemoryDirectory()) {
 
             // write a document with vectors
-            try (var indexWriter = directory.newWriter(writerConfig)) {
+            try (LuceneIndexWriter indexWriter = directory.newWriter(writerConfig)) {
                 LuceneDocument vectorDocument = documentFactory.createVectorDocument(
                         documentStructure, 1, Neo4jVectorSimilarityFunction.EUCLIDEAN, values);
 
@@ -88,7 +97,7 @@ public class Lucene10CodecsTest {
             }
 
             // open new reader, which reads the codec from the segment
-            try (var indexReader = directory.open()) {
+            try (LuceneDirectoryReader indexReader = directory.open()) {
                 SegmentInfos segmentInfos = LuceneDirectoryReaderAccess.getSegmentInfos(indexReader);
                 Codec writeCodec = ((Lucene10Codec) codec).codec();
                 Codec readCodec = segmentInfos.info(0).info.getCodec();

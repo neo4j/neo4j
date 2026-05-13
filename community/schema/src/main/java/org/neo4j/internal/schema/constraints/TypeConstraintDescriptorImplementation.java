@@ -137,7 +137,7 @@ public class TypeConstraintDescriptorImplementation extends ConstraintDescriptor
         if (graphTypeDependence == DEPENDENT
                 && schema.entityType() == NODE
                 && other instanceof NodeLabelExistenceConstraintDescriptorImplementation) {
-            var that = other.asNodeLabelExistenceConstraint();
+            NodeLabelExistenceConstraintDescriptor that = other.asNodeLabelExistenceConstraint();
             if (this.schema.getLabelId() == that.requiredLabelId()) {
                 return true;
             }
@@ -172,11 +172,8 @@ public class TypeConstraintDescriptorImplementation extends ConstraintDescriptor
             return false;
         }
 
-        if (that.enforcesPropertyType()
-                && !this.propertyType.equals(that.asPropertyTypeConstraint().propertyType())) {
-            return false;
-        }
-        return true;
+        return !that.enforcesPropertyType()
+                || this.propertyType.equals(that.asPropertyTypeConstraint().propertyType());
     }
 
     @Override

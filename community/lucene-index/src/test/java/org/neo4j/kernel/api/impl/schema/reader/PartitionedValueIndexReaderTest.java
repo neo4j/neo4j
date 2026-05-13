@@ -205,8 +205,8 @@ class PartitionedValueIndexReaderTest {
     @MethodSource("needStoreFilters")
     void propagateNeedStoreFilter1(BooleanList needStoreFilters, boolean needStoreFilter)
             throws IndexNotApplicableKernelException {
-        var query = mock(PropertyIndexQuery.class);
-        var client = new GatheringNodeValueClient();
+        PropertyIndexQuery query = mock(PropertyIndexQuery.class);
+        GatheringNodeValueClient client = new GatheringNodeValueClient();
 
         // Update mocked sub-readers with value for needStoreFilter
         setNeedStoreFilter(indexReader1, needStoreFilters.get(0));
@@ -223,7 +223,7 @@ class PartitionedValueIndexReaderTest {
             throws IndexNotApplicableKernelException {
         doAnswer(invocation -> {
                     // This is out outer client
-                    var invokedClient = (BridgingIndexProgressor) invocation.getArgument(0);
+                    BridgingIndexProgressor invokedClient = invocation.getArgument(0);
                     invokedClient.initializeQuery(
                             schemaIndexDescriptor, invokedClient, false, needStoreFilter, null, (PropertyIndexQuery)
                                     null);
@@ -270,13 +270,7 @@ class PartitionedValueIndexReaderTest {
         return new PartitionedValueIndexReader(schemaIndexDescriptor, getPartitionReaders(), NO_USAGE_TRACKING);
     }
 
-    private static class SimpleSampler implements IndexSampler {
-        private final long sampleValue;
-
-        SimpleSampler(long sampleValue) {
-            this.sampleValue = sampleValue;
-        }
-
+    private record SimpleSampler(long sampleValue) implements IndexSampler {
         @Override
         public IndexSample sampleIndex(CursorContext cursorContext, AtomicBoolean stopped) {
             return new IndexSample(sampleValue, sampleValue, sampleValue);

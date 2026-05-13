@@ -44,9 +44,9 @@ import org.neo4j.values.storable.LocalDateTimeArray;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeArray;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.ScalarValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeArray;
@@ -54,7 +54,6 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.UUIDArray;
 import org.neo4j.values.storable.UUIDValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 public sealed interface TypeRepresentation permits ConstrainableType, SpecialTypes {
 
@@ -97,7 +96,7 @@ public sealed interface TypeRepresentation permits ConstrainableType, SpecialTyp
         LIST_POINT_ORDER,
 
         LIST_ANY_ORDER,
-        ANY_ORDER;
+        ANY_ORDER
     }
 
     Set<TypeRepresentation> CONSTRAINABLE_LIST_TYPES = Set.of(
@@ -130,79 +129,43 @@ public sealed interface TypeRepresentation permits ConstrainableType, SpecialTyp
     static TypeRepresentation infer(Value value) {
         // Should always be the narrowest type in the type representation
         // that applies to the value
-        if (value == null || value == Values.NO_VALUE) {
-            return SpecialTypes.NULL;
-        } else if (value instanceof ScalarValue) {
-            if (value instanceof BooleanValue) {
-                return SchemaValueType.BOOLEAN;
-            } else if (value instanceof TextValue) {
-                return SchemaValueType.STRING;
-            } else if (value instanceof IntegralValue) {
-                return SchemaValueType.INTEGER;
-            } else if (value instanceof UUIDValue) {
-                return SchemaValueType.UUID;
-            } else if (value instanceof FloatingPointValue) {
-                return SchemaValueType.FLOAT;
-            } else if (value instanceof DateValue) {
-                return SchemaValueType.DATE;
-            } else if (value instanceof DurationValue) {
-                return SchemaValueType.DURATION;
-            } else if (value instanceof LocalDateTimeValue) {
-                return SchemaValueType.LOCAL_DATETIME;
-            } else if (value instanceof DateTimeValue) {
-                return SchemaValueType.ZONED_DATETIME;
-            } else if (value instanceof TimeValue) {
-                return SchemaValueType.ZONED_TIME;
-            } else if (value instanceof LocalTimeValue) {
-                return SchemaValueType.LOCAL_TIME;
-            } else if (value instanceof PointValue) {
-                return SchemaValueType.POINT;
-            } else if (value instanceof Int8Vector v) {
-                return VectorType.int8Vector(v.dimensions());
-            } else if (value instanceof Int16Vector v) {
-                return VectorType.int16Vector(v.dimensions());
-            } else if (value instanceof Int32Vector v) {
-                return VectorType.int32Vector(v.dimensions());
-            } else if (value instanceof Int64Vector v) {
-                return VectorType.int64Vector(v.dimensions());
-            } else if (value instanceof Float32Vector v) {
-                return VectorType.float32Vector(v.dimensions());
-            } else if (value instanceof Float64Vector v) {
-                return VectorType.float64Vector(v.dimensions());
-            }
-        } else if (value instanceof ArrayValue array) {
-            if (array.isEmpty()) {
-                return SpecialTypes.LIST_NOTHING;
-            } else if (value instanceof BooleanArray) {
-                return SchemaValueType.LIST_BOOLEAN;
-            } else if (value instanceof TextArray) {
-                return SchemaValueType.LIST_STRING;
-            } else if (value instanceof UUIDArray) {
-                return SchemaValueType.LIST_UUID;
-            } else if (value instanceof IntegralArray) {
-                return SchemaValueType.LIST_INTEGER;
-            } else if (value instanceof FloatingPointArray) {
-                return SchemaValueType.LIST_FLOAT;
-            } else if (value instanceof DateArray) {
-                return SchemaValueType.LIST_DATE;
-            } else if (value instanceof DurationArray) {
-                return SchemaValueType.LIST_DURATION;
-            } else if (value instanceof LocalDateTimeArray) {
-                return SchemaValueType.LIST_LOCAL_DATETIME;
-            } else if (value instanceof DateTimeArray) {
-                return SchemaValueType.LIST_ZONED_DATETIME;
-            } else if (value instanceof TimeArray) {
-                return SchemaValueType.LIST_ZONED_TIME;
-            } else if (value instanceof LocalTimeArray) {
-                return SchemaValueType.LIST_LOCAL_TIME;
-            } else if (value instanceof PointArray) {
-                return SchemaValueType.LIST_POINT;
-            }
-
-            return SpecialTypes.LIST_ANY;
-        }
-
-        return SpecialTypes.ANY;
+        return switch (value) {
+            case null -> SpecialTypes.NULL;
+            case NoValue ignored -> SpecialTypes.NULL;
+            case BooleanValue ignored -> SchemaValueType.BOOLEAN;
+            case TextValue ignored -> SchemaValueType.STRING;
+            case IntegralValue ignored -> SchemaValueType.INTEGER;
+            case UUIDValue ignored -> SchemaValueType.UUID;
+            case FloatingPointValue ignored -> SchemaValueType.FLOAT;
+            case DateValue ignored -> SchemaValueType.DATE;
+            case DurationValue ignored -> SchemaValueType.DURATION;
+            case LocalDateTimeValue ignored -> SchemaValueType.LOCAL_DATETIME;
+            case DateTimeValue ignored -> SchemaValueType.ZONED_DATETIME;
+            case TimeValue ignored -> SchemaValueType.ZONED_TIME;
+            case LocalTimeValue ignored -> SchemaValueType.LOCAL_TIME;
+            case PointValue ignored -> SchemaValueType.POINT;
+            case Int8Vector int8Vector -> VectorType.int8Vector(int8Vector.dimensions());
+            case Int16Vector int16Vector -> VectorType.int16Vector(int16Vector.dimensions());
+            case Int32Vector int32Vector -> VectorType.int32Vector(int32Vector.dimensions());
+            case Int64Vector int64Vector -> VectorType.int64Vector(int64Vector.dimensions());
+            case Float32Vector float32Vector -> VectorType.float32Vector(float32Vector.dimensions());
+            case Float64Vector float64Vector -> VectorType.float64Vector(float64Vector.dimensions());
+            case ArrayValue arrayValue when arrayValue.isEmpty() -> SpecialTypes.LIST_NOTHING;
+            case BooleanArray ignored -> SchemaValueType.LIST_BOOLEAN;
+            case TextArray ignored -> SchemaValueType.LIST_STRING;
+            case UUIDArray ignored -> SchemaValueType.LIST_UUID;
+            case IntegralArray ignored -> SchemaValueType.LIST_INTEGER;
+            case FloatingPointArray ignored -> SchemaValueType.LIST_FLOAT;
+            case DateArray ignored -> SchemaValueType.LIST_DATE;
+            case DurationArray ignored -> SchemaValueType.LIST_DURATION;
+            case LocalDateTimeArray ignored -> SchemaValueType.LIST_LOCAL_DATETIME;
+            case DateTimeArray ignored -> SchemaValueType.LIST_ZONED_DATETIME;
+            case TimeArray ignored -> SchemaValueType.LIST_ZONED_TIME;
+            case LocalTimeArray ignored -> SchemaValueType.LIST_LOCAL_TIME;
+            case PointArray ignored -> SchemaValueType.LIST_POINT;
+            case ArrayValue ignored -> SpecialTypes.LIST_ANY;
+            default -> SpecialTypes.ANY;
+        };
     }
 
     /**
@@ -235,7 +198,7 @@ public sealed interface TypeRepresentation permits ConstrainableType, SpecialTyp
     }
 
     static boolean hasVectorTypes(PropertyTypeSet set) {
-        for (var member : set) {
+        for (ConstrainableType member : set) {
             if (member instanceof VectorType) {
                 return true;
             }
@@ -250,7 +213,7 @@ public sealed interface TypeRepresentation permits ConstrainableType, SpecialTyp
      * @throws IllegalArgumentException if the set violates the business rules.
      */
     static void validate(PropertyTypeSet set) {
-        var size = set.size();
+        int size = set.size();
 
         if (size == 0) {
             throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"

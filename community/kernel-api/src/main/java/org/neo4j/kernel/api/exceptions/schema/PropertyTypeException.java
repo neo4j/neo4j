@@ -80,8 +80,8 @@ public class PropertyTypeException extends ConstraintValidationException {
             TokenNameLookup tokenNameLookup,
             Value value,
             Phase phase) {
-        final var schema = descriptor.schema();
-        final boolean isNode = schema.entityType() == EntityType.NODE;
+        SchemaDescriptor schema = descriptor.schema();
+        boolean isNode = schema.entityType() == EntityType.NODE;
         ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N78)
                 .withParam(GqlParams.StringParam.entityType, isNode ? "NODE" : "RELATIONSHIP")
                 .withParam(GqlParams.NumberParam.entityId, entityId)

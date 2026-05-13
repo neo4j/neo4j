@@ -54,9 +54,8 @@ public class IndexTxStateLookupTest {
     private static final Random random = new Random();
 
     protected static Stream<Arguments> argumentsProvider() {
-        List<Arguments> parameters = new ArrayList<>();
-        parameters.addAll(asList(
-                Arguments.of(new String("name"), new String("name")),
+        List<Arguments> parameters = new ArrayList<>(asList(
+                Arguments.of("name", "name"),
                 Arguments.of(7, 7L),
                 Arguments.of(9L, 9),
                 Arguments.of(2, 2.0),
@@ -74,9 +73,9 @@ public class IndexTxStateLookupTest {
                 Arguments.of(splitStrings(TRIGGER_LAZY), splitChars(TRIGGER_LAZY)),
                 Arguments.of(splitChars(TRIGGER_LAZY), splitStrings(TRIGGER_LAZY)),
                 Arguments.of(stringArray("foo", "bar"), stringArray("foo", "bar"))));
-        Class[] numberTypes = {byte.class, short.class, int.class, long.class, float.class, double.class};
-        for (Class lhs : numberTypes) {
-            for (Class rhs : numberTypes) {
+        List<Class<?>> numberTypes = asList(byte.class, short.class, int.class, long.class, float.class, double.class);
+        for (Class<?> lhs : numberTypes) {
+            for (Class<?> rhs : numberTypes) {
                 parameters.add(randomNumbers(3, lhs, rhs));
                 parameters.add(randomNumbers(200, lhs, rhs));
             }
@@ -129,22 +128,14 @@ public class IndexTxStateLookupTest {
     }
 
     private static Object convert(int value, Class<?> type) {
-        switch (type.getName()) {
-            case "byte":
-                return (byte) value;
-            case "short":
-                return (short) value;
-            case "int":
-                return value;
-            case "long":
-                return (long) value;
-            case "float":
-                return (float) value;
-            case "double":
-                return (double) value;
-            default:
-                return value;
-        }
+        return switch (type.getName()) {
+            case "byte" -> (byte) value;
+            case "short" -> (short) value;
+            case "long" -> (long) value;
+            case "float" -> (float) value;
+            case "double" -> (double) value;
+            default -> value;
+        };
     }
 
     private static NamedObject splitStrings(String string) {

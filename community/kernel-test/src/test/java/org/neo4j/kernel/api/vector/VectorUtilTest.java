@@ -64,14 +64,14 @@ class VectorUtilTest {
     @ParameterizedTest
     @MethodSource("l2Norm")
     void magnitude(VectorCandidate vector, float expected) {
-        final float magnitude = VectorUtil.magnitude(vector);
+        float magnitude = VectorUtil.magnitude(vector);
         assertThat(magnitude).isCloseTo(expected, CLOSENESS);
     }
 
     @ParameterizedTest
     @MethodSource
     void l1NormalizedVector(VectorCandidate vector, VectorCandidate expected) {
-        final VectorCandidate normalized = VectorUtil.l1NormalizedVector(vector);
+        VectorCandidate normalized = VectorUtil.l1NormalizedVector(vector);
         assertThat(normalized.dimensions()).isEqualTo(vector.dimensions()).isEqualTo(expected.dimensions());
         assertThat(normalized).satisfies(n -> {
             for (int i = 0; i < normalized.dimensions(); i++) {
@@ -82,73 +82,76 @@ class VectorUtilTest {
 
     static Stream<Arguments> l1NormalizedVector() {
         return Stream.of(
-                Arguments.of(vector(1.f, 0.f, 0.f, 0.f), vector(1.f, 0.f, 0.f, 0.f)),
-                Arguments.of(vector(1.f, 1.f, 0.f, 0.f), vector(0.5f, 0.5f, 0.f, 0.f)),
-                Arguments.of(vector(1.f, 1.f, 1.f, 0.f), vector(1.f / 3.f, 1.f / 3.f, 1.f / 3.f, 0.f)),
-                Arguments.of(vector(1.f, 1.f, 1.f, 1.f), vector(0.25f, 0.25f, 0.25f, 0.25f)),
-                Arguments.of(vector(4.f, 0.f, 0.f, 0.f), vector(1.f, 0.f, 0.f, 0.f)),
-                Arguments.of(vector(4.f, 4.f, 0.f, 0.f), vector(0.5f, 0.5f, 0.f, 0.f)),
-                Arguments.of(vector(4.f, 4.f, 4.f, 0.f), vector(1.f / 3.f, 1.f / 3.f, 1.f / 3.f, 0.f)),
-                Arguments.of(vector(4.f, 4.f, 4.f, 4.f), vector(0.25f, 0.25f, 0.25f, 0.25f)),
-                Arguments.of(vector(1.f, 2.f, 3.f, 4.f), vector(0.1f, 0.2f, 0.3f, 0.4f)),
-                Arguments.of(vector(-1.f, 2.f, -3.f, 4.f), vector(-0.1f, 0.2f, -0.3f, 0.4f)));
+                Arguments.of(vector(1.0f, 0.0f, 0.0f, 0.0f), vector(1.0f, 0.0f, 0.0f, 0.0f)),
+                Arguments.of(vector(1.0f, 1.0f, 0.0f, 0.0f), vector(0.5f, 0.5f, 0.0f, 0.0f)),
+                Arguments.of(vector(1.0f, 1.0f, 1.0f, 0.0f), vector(1.0f / 3.0f, 1.0f / 3.0f, 1.0f / 3.0f, 0.0f)),
+                Arguments.of(vector(1.0f, 1.0f, 1.0f, 1.0f), vector(0.25f, 0.25f, 0.25f, 0.25f)),
+                Arguments.of(vector(4.0f, 0.0f, 0.0f, 0.0f), vector(1.0f, 0.0f, 0.0f, 0.0f)),
+                Arguments.of(vector(4.0f, 4.0f, 0.0f, 0.0f), vector(0.5f, 0.5f, 0.0f, 0.0f)),
+                Arguments.of(vector(4.0f, 4.0f, 4.0f, 0.0f), vector(1.0f / 3.0f, 1.0f / 3.0f, 1.0f / 3.0f, 0.0f)),
+                Arguments.of(vector(4.0f, 4.0f, 4.0f, 4.0f), vector(0.25f, 0.25f, 0.25f, 0.25f)),
+                Arguments.of(vector(1.0f, 2.0f, 3.0f, 4.0f), vector(0.1f, 0.2f, 0.3f, 0.4f)),
+                Arguments.of(vector(-1.0f, 2.0f, -3.0f, 4.0f), vector(-0.1f, 0.2f, -0.3f, 0.4f)));
     }
 
     @ParameterizedTest
     @MethodSource
     void l2Distance(VectorCandidate vector1, VectorCandidate vector2, float expected) {
-        final float distance = VectorUtil.l2Distance(vector1, vector2);
+        float distance = VectorUtil.l2Distance(vector1, vector2);
         assertThat(distance).isCloseTo(expected, CLOSENESS);
     }
 
     static Stream<Arguments> l2Distance() {
         return Stream.of(
-                Arguments.of(origin(42), origin(42), 0.f),
-                Arguments.of(basisUnitVector(42, 23), basisUnitVector(42, 23), 0.f),
-                Arguments.of(basisUnitVector(42, 0), origin(42), 1.f),
-                Arguments.of(vector(1.f, 0.f, 0.f, 0.f), origin(4), 1.f),
-                Arguments.of(vector(1.f, 1.f, 0.f, 0.f), origin(4), (float) Math.sqrt(2.0)),
-                Arguments.of(vector(1.f, 1.f, 1.f, 0.f), origin(4), (float) Math.sqrt(3.0)),
-                Arguments.of(vector(1.f, 1.f, 1.f, 1.f), origin(4), 2.f),
-                Arguments.of(vector(4.f, 0.f, 0.f, 0.f), origin(4), 4.f),
-                Arguments.of(vector(4.f, 4.f, 0.f, 0.f), origin(4), 4.f * (float) Math.sqrt(2.0)),
-                Arguments.of(vector(4.f, 4.f, 4.f, 0.f), origin(4), 4.f * (float) Math.sqrt(3.0)),
-                Arguments.of(vector(4.f, 4.f, 4.f, 4.f), origin(4), 8.f),
-                Arguments.of(vector(1.f, 2.f, 3.f, 4.f), origin(4), (float) Math.sqrt(30.0)),
-                Arguments.of(vector(-1.f, 2.f, -3.f, 4.f), origin(4), (float) Math.sqrt(30.0)),
-                Arguments.of(vector(1.f, 2.f, 3.f, 4.f), vector(-1.f, 2.f, -3.f, 4.f), 2.f * (float) Math.sqrt(10.0)),
-                Arguments.of(vector(-0.5f, 1.5f, -4.f, -2.f), vector(1.f, 2.25f, -0.75f, 1.125f), (float)
+                Arguments.of(origin(42), origin(42), 0.0f),
+                Arguments.of(basisUnitVector(42, 23), basisUnitVector(42, 23), 0.0f),
+                Arguments.of(basisUnitVector(42, 0), origin(42), 1.0f),
+                Arguments.of(vector(1.0f, 0.0f, 0.0f, 0.0f), origin(4), 1.0f),
+                Arguments.of(vector(1.0f, 1.0f, 0.0f, 0.0f), origin(4), (float) Math.sqrt(2.0)),
+                Arguments.of(vector(1.0f, 1.0f, 1.0f, 0.0f), origin(4), (float) Math.sqrt(3.0)),
+                Arguments.of(vector(1.0f, 1.0f, 1.0f, 1.0f), origin(4), 2.0f),
+                Arguments.of(vector(4.0f, 0.0f, 0.0f, 0.0f), origin(4), 4.0f),
+                Arguments.of(vector(4.0f, 4.0f, 0.0f, 0.0f), origin(4), 4.0f * (float) Math.sqrt(2.0)),
+                Arguments.of(vector(4.0f, 4.0f, 4.0f, 0.0f), origin(4), 4.0f * (float) Math.sqrt(3.0)),
+                Arguments.of(vector(4.0f, 4.0f, 4.0f, 4.0f), origin(4), 8.0f),
+                Arguments.of(vector(1.0f, 2.0f, 3.0f, 4.0f), origin(4), (float) Math.sqrt(30.0)),
+                Arguments.of(vector(-1.0f, 2.0f, -3.0f, 4.0f), origin(4), (float) Math.sqrt(30.0)),
+                Arguments.of(
+                        vector(1.0f, 2.0f, 3.0f, 4.0f),
+                        vector(-1.0f, 2.0f, -3.0f, 4.0f),
+                        2.0f * (float) Math.sqrt(10.0)),
+                Arguments.of(vector(-0.5f, 1.5f, -4.0f, -2.0f), vector(1.0f, 2.25f, -0.75f, 1.125f), (float)
                         Math.sqrt(23.140625)),
-                Arguments.of(vector(16.f, 23.f, 42.f, 55.55f), vector(13.f, 23.f, 46.f, 55.55f), 5.f));
+                Arguments.of(vector(16.0f, 23.0f, 42.0f, 55.55f), vector(13.0f, 23.0f, 46.0f, 55.55f), 5.0f));
     }
 
     @ParameterizedTest
     @MethodSource
     void l2Norm(VectorCandidate vector, float expected) {
-        final float norm = VectorUtil.l2Norm(vector);
+        float norm = VectorUtil.l2Norm(vector);
         assertThat(norm).isCloseTo(expected, CLOSENESS);
     }
 
     static Stream<Arguments> l2Norm() {
         return Stream.of(
-                Arguments.of(origin(42), 0.f),
-                Arguments.of(basisUnitVector(42, 0), 1.f),
-                Arguments.of(vector(1.f, 0.f, 0.f, 0.f), 1.f),
-                Arguments.of(vector(1.f, 1.f, 0.f, 0.f), (float) Math.sqrt(2.0)),
-                Arguments.of(vector(1.f, 1.f, 1.f, 0.f), (float) Math.sqrt(3.0)),
-                Arguments.of(vector(1.f, 1.f, 1.f, 1.f), 2.f),
-                Arguments.of(vector(4.f, 0.f, 0.f, 0.f), 4.f),
-                Arguments.of(vector(4.f, 4.f, 0.f, 0.f), 4.f * (float) Math.sqrt(2.0)),
-                Arguments.of(vector(4.f, 4.f, 4.f, 0.f), 4.f * (float) Math.sqrt(3.0)),
-                Arguments.of(vector(4.f, 4.f, 4.f, 4.f), 8.f),
-                Arguments.of(vector(1.f, 2.f, 3.f, 4.f), (float) Math.sqrt(30.0)),
-                Arguments.of(vector(-1.f, 2.f, -3.f, 4.f), (float) Math.sqrt(30.0)));
+                Arguments.of(origin(42), 0.0f),
+                Arguments.of(basisUnitVector(42, 0), 1.0f),
+                Arguments.of(vector(1.0f, 0.0f, 0.0f, 0.0f), 1.0f),
+                Arguments.of(vector(1.0f, 1.0f, 0.0f, 0.0f), (float) Math.sqrt(2.0)),
+                Arguments.of(vector(1.0f, 1.0f, 1.0f, 0.0f), (float) Math.sqrt(3.0)),
+                Arguments.of(vector(1.0f, 1.0f, 1.0f, 1.0f), 2.0f),
+                Arguments.of(vector(4.0f, 0.0f, 0.0f, 0.0f), 4.0f),
+                Arguments.of(vector(4.0f, 4.0f, 0.0f, 0.0f), 4.0f * (float) Math.sqrt(2.0)),
+                Arguments.of(vector(4.0f, 4.0f, 4.0f, 0.0f), 4.0f * (float) Math.sqrt(3.0)),
+                Arguments.of(vector(4.0f, 4.0f, 4.0f, 4.0f), 8.0f),
+                Arguments.of(vector(1.0f, 2.0f, 3.0f, 4.0f), (float) Math.sqrt(30.0)),
+                Arguments.of(vector(-1.0f, 2.0f, -3.0f, 4.0f), (float) Math.sqrt(30.0)));
     }
 
     @ParameterizedTest
     @MethodSource
     void l2NormalizedVector(VectorCandidate vector, VectorCandidate expected) {
-        final VectorCandidate normalized = VectorUtil.l2NormalizedVector(vector);
+        VectorCandidate normalized = VectorUtil.l2NormalizedVector(vector);
         assertThat(normalized.dimensions()).isEqualTo(vector.dimensions()).isEqualTo(expected.dimensions());
         assertThat(normalized).satisfies(n -> {
             for (int i = 0; i < normalized.dimensions(); i++) {
@@ -159,44 +162,44 @@ class VectorUtilTest {
 
     static Stream<Arguments> l2NormalizedVector() {
         return Stream.of(
-                Arguments.of(vector(1.f, 0.f, 0.f, 0.f), vector(1.f, 0.f, 0.f, 0.f)),
+                Arguments.of(vector(1.0f, 0.0f, 0.0f, 0.0f), vector(1.0f, 0.0f, 0.0f, 0.0f)),
                 Arguments.of(
-                        vector(1.f, 1.f, 0.f, 0.f),
-                        vector((float) Math.sqrt(2.0) / 2.f, (float) Math.sqrt(2.0) / 2.f, 0.f, 0.f)),
+                        vector(1.0f, 1.0f, 0.0f, 0.0f),
+                        vector((float) Math.sqrt(2.0) / 2.0f, (float) Math.sqrt(2.0) / 2.0f, 0.0f, 0.0f)),
                 Arguments.of(
-                        vector(1.f, 1.f, 1.f, 0.f),
+                        vector(1.0f, 1.0f, 1.0f, 0.0f),
                         vector(
-                                (float) Math.sqrt(3.0) / 3.f,
-                                (float) Math.sqrt(3.0) / 3.f,
-                                (float) Math.sqrt(3.0) / 3.f,
-                                0.f)),
-                Arguments.of(vector(1.f, 1.f, 1.f, 1.f), vector(0.5f, 0.5f, 0.5f, 0.5f)),
-                Arguments.of(vector(4.f, 0.f, 0.f, 0.f), vector(1.f, 0.f, 0.f, 0.f)),
+                                (float) Math.sqrt(3.0) / 3.0f,
+                                (float) Math.sqrt(3.0) / 3.0f,
+                                (float) Math.sqrt(3.0) / 3.0f,
+                                0.0f)),
+                Arguments.of(vector(1.0f, 1.0f, 1.0f, 1.0f), vector(0.5f, 0.5f, 0.5f, 0.5f)),
+                Arguments.of(vector(4.0f, 0.0f, 0.0f, 0.0f), vector(1.0f, 0.0f, 0.0f, 0.0f)),
                 Arguments.of(
-                        vector(4.f, 4.f, 0.f, 0.f),
-                        vector((float) Math.sqrt(2.0) / 2.f, (float) Math.sqrt(2.0) / 2.f, 0.f, 0.f)),
+                        vector(4.0f, 4.0f, 0.0f, 0.0f),
+                        vector((float) Math.sqrt(2.0) / 2.0f, (float) Math.sqrt(2.0) / 2.0f, 0.0f, 0.0f)),
                 Arguments.of(
-                        vector(4.f, 4.f, 4.f, 0.f),
+                        vector(4.0f, 4.0f, 4.0f, 0.0f),
                         vector(
-                                (float) Math.sqrt(3.0) / 3.f,
-                                (float) Math.sqrt(3.0) / 3.f,
-                                (float) Math.sqrt(3.0) / 3.f,
-                                0.f)),
-                Arguments.of(vector(4.f, 4.f, 4.f, 4.f), vector(0.5f, 0.5f, 0.5f, 0.5f)),
+                                (float) Math.sqrt(3.0) / 3.0f,
+                                (float) Math.sqrt(3.0) / 3.0f,
+                                (float) Math.sqrt(3.0) / 3.0f,
+                                0.0f)),
+                Arguments.of(vector(4.0f, 4.0f, 4.0f, 4.0f), vector(0.5f, 0.5f, 0.5f, 0.5f)),
                 Arguments.of(
-                        vector(1.f, 2.f, 3.f, 4.f),
+                        vector(1.0f, 2.0f, 3.0f, 4.0f),
                         vector(
-                                (float) Math.sqrt(30.0) / 30.f,
-                                (float) Math.sqrt(30.0) / 15.f,
-                                (float) Math.sqrt(30) / 10.f,
-                                (float) Math.sqrt(30.0) * 2.f / 15.f)),
+                                (float) Math.sqrt(30.0) / 30.0f,
+                                (float) Math.sqrt(30.0) / 15.0f,
+                                (float) Math.sqrt(30) / 10.0f,
+                                (float) Math.sqrt(30.0) * 2.0f / 15.0f)),
                 Arguments.of(
-                        vector(-1.f, 2.f, -3.f, 4.f),
+                        vector(-1.0f, 2.0f, -3.0f, 4.0f),
                         vector(
-                                (float) -Math.sqrt(30.0) / 30.f,
-                                (float) Math.sqrt(30.0) / 15.f,
-                                (float) -Math.sqrt(30) / 10.f,
-                                (float) Math.sqrt(30.0) * 2.f / 15.f)));
+                                (float) -Math.sqrt(30.0) / 30.0f,
+                                (float) Math.sqrt(30.0) / 15.0f,
+                                (float) -Math.sqrt(30) / 10.0f,
+                                (float) Math.sqrt(30.0) * 2.0f / 15.0f)));
     }
 
     @ParameterizedTest
@@ -208,7 +211,7 @@ class VectorUtilTest {
     @ParameterizedTest
     @MethodSource("binaryFunctions")
     void nullVector(BiConsumer<VectorCandidate, VectorCandidate> function) {
-        final VectorCandidate vector = randomVector(random.random());
+        VectorCandidate vector = randomVector(random.random());
         assertThrowsNullVector(() -> function.accept(vector, null));
         assertThrowsNullVector(() -> function.accept(null, vector));
     }
@@ -226,10 +229,10 @@ class VectorUtilTest {
     @ParameterizedTest
     @MethodSource("unaryFunctions")
     void nonPositiveDimensions(Consumer<VectorCandidate> function) {
-        final VectorCandidate dimensionless = vectorCandidate();
+        VectorCandidate dimensionless = vectorCandidate();
         assertThrowsNonPositiveDimensions(() -> function.accept(dimensionless));
 
-        final VectorCandidate negative = mock(VectorCandidate.class);
+        VectorCandidate negative = mock(VectorCandidate.class);
         when(negative.dimensions()).thenReturn(-1);
         assertThrowsNonPositiveDimensions(() -> function.accept(negative));
     }
@@ -237,10 +240,10 @@ class VectorUtilTest {
     @ParameterizedTest
     @MethodSource("binaryFunctions")
     void nonPositiveDimensions(BiConsumer<VectorCandidate, VectorCandidate> function) {
-        final VectorCandidate dimensionless = vectorCandidate();
+        VectorCandidate dimensionless = vectorCandidate();
         assertThrowsNonPositiveDimensions(() -> function.accept(dimensionless, dimensionless));
 
-        final VectorCandidate negative = mock(VectorCandidate.class);
+        VectorCandidate negative = mock(VectorCandidate.class);
         when(negative.dimensions()).thenReturn(-1);
         assertThrowsNonPositiveDimensions(() -> function.accept(negative, negative));
     }
@@ -258,12 +261,12 @@ class VectorUtilTest {
     @ParameterizedTest
     @MethodSource("binaryFunctions")
     void mismatchDimensions(BiConsumer<VectorCandidate, VectorCandidate> function) {
-        final Pair<VectorCandidate, VectorCandidate> vectors = randomMismatchDimensions();
+        Pair<VectorCandidate, VectorCandidate> vectors = randomMismatchDimensions();
         assertThrowsMismatchDimensions(() -> function.accept(vectors.getOne(), vectors.getTwo()));
     }
 
     Pair<VectorCandidate, VectorCandidate> randomMismatchDimensions() {
-        final int dimensions1 = randomDimensions(random.random());
+        int dimensions1 = randomDimensions(random.random());
         int dimensions2;
         do {
             dimensions2 = randomDimensions(random.random());
@@ -303,8 +306,8 @@ class VectorUtilTest {
 
     @RepeatedTest(5)
     void originCheck() {
-        final int dimensions = randomDimensions(random.random());
-        final int base = random.nextInt(0, dimensions);
+        int dimensions = randomDimensions(random.random());
+        int base = random.nextInt(0, dimensions);
         assertThat(VectorUtil.origin(origin(dimensions))).isTrue();
         assertThat(VectorUtil.origin(basisUnitVector(dimensions, base))).isFalse();
         // not origin by construction
@@ -313,8 +316,8 @@ class VectorUtilTest {
 
     @RepeatedTest(5)
     void validVectors() {
-        final int dimensions = randomDimensions(random.random());
-        final int base = random.nextInt(0, dimensions);
+        int dimensions = randomDimensions(random.random());
+        int base = random.nextInt(0, dimensions);
         assertThat(VectorUtil.valid(origin(dimensions))).isTrue();
         assertThat(VectorUtil.valid(basisUnitVector(dimensions, base))).isTrue();
         assertThat(VectorUtil.valid(randomVector(random.random(), dimensions))).isTrue();
@@ -327,14 +330,14 @@ class VectorUtilTest {
     }
 
     static Stream<Named<VectorCandidate>> invalidVectors() {
-        final VectorCandidate negative = mock(VectorCandidate.class);
+        VectorCandidate negative = mock(VectorCandidate.class);
         when(negative.dimensions()).thenReturn(-1);
         return Stream.of(
                 Named.of("null", null),
                 Named.of("dimensionless", vectorCandidate()),
                 Named.of("negative dimensions", negative),
-                Named.of("NaN element", vectorCandidate(1.f, Float.NaN, 3.f)),
-                Named.of("-Inf element", vectorCandidate(1.f, Float.NEGATIVE_INFINITY, 3.f)),
-                Named.of("+Inf element", vectorCandidate(1.f, Float.POSITIVE_INFINITY, 3.f)));
+                Named.of("NaN element", vectorCandidate(1.0f, Float.NaN, 3.0f)),
+                Named.of("-Inf element", vectorCandidate(1.0f, Float.NEGATIVE_INFINITY, 3.0f)),
+                Named.of("+Inf element", vectorCandidate(1.0f, Float.POSITIVE_INFINITY, 3.0f)));
     }
 }

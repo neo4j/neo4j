@@ -232,7 +232,7 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport {
     }
 
     private void createIndexes() {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema()
                     .indexFor(LABEL)
                     .on(PROP)
@@ -247,7 +247,7 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport {
                     .create();
             tx.commit();
         }
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexOnline(NODE_INDEX_NAME, 1, TimeUnit.MINUTES);
             tx.schema().awaitIndexOnline(REL_INDEX_NAME, 1, TimeUnit.MINUTES);
         }

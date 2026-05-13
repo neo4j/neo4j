@@ -72,6 +72,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.logging.InternalLog;
@@ -95,7 +96,7 @@ import org.neo4j.values.storable.Values;
 
 public class FulltextIndexProvider extends IndexProvider {
     public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = values -> {
-        for (final var value : values) {
+        for (Value value : values) {
             if (value != null
                     && (value.valueGroup().category() == ValueCategory.TEXT
                             || value.valueGroup().category() == ValueCategory.TEXT_ARRAY)) {
@@ -228,7 +229,8 @@ public class FulltextIndexProvider extends IndexProvider {
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
         PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
-        var index = new MinimalDatabaseIndex<>(indexStorage, descriptor, config, logProvider);
+        DatabaseIndex<ValueIndexReader> index =
+                new MinimalDatabaseIndex<>(indexStorage, descriptor, config, logProvider);
         log.debug("Creating dropper for fulltext schema index: %s", descriptor);
         return new LuceneMinimalIndexAccessor<>(descriptor, index, isReadOnly());
     }
@@ -271,7 +273,8 @@ public class FulltextIndexProvider extends IndexProvider {
             return new FulltextIndexPopulator(descriptor, fulltextIndex, propertyNames, UPDATE_IGNORE_STRATEGY);
         } catch (Exception e) {
             PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
-            var index = new MinimalDatabaseIndex<FulltextIndexReader>(indexStorage, descriptor, config, logProvider);
+            MinimalDatabaseIndex<FulltextIndexReader> index =
+                    new MinimalDatabaseIndex<>(indexStorage, descriptor, config, logProvider);
             log.debug("Creating failed index populator for fulltext schema index: %s", descriptor, e);
             return new FailedFulltextIndexPopulator(descriptor, index, e);
         }
@@ -318,7 +321,7 @@ public class FulltextIndexProvider extends IndexProvider {
 
     @Override
     public StoreMigrationParticipant storeMigrationParticipant(
-            final FileSystemAbstraction fs,
+            FileSystemAbstraction fs,
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             StorageEngineFactory storageEngineFactory,
@@ -423,7 +426,7 @@ public class FulltextIndexProvider extends IndexProvider {
         indexUpdateSink.awaitUpdateApplication();
     }
 
-    public Stream<AnalyzerProvider> listAvailableAnalyzers() {
+    public static Stream<AnalyzerProvider> listAvailableAnalyzers() {
         return Services.loadAll(AnalyzerProvider.class).stream();
     }
 }

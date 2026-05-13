@@ -21,14 +21,15 @@ package org.neo4j.kernel.api.impl.schema.trigram;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
 import org.neo4j.kernel.api.impl.schema.writer.LucenePartitionIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 
 class TrigramIndexPopulatingUpdater implements IndexUpdater {
     private final LucenePartitionIndexWriter writer;
@@ -48,17 +49,17 @@ class TrigramIndexPopulatingUpdater implements IndexUpdater {
 
     @Override
     public void process(IndexEntryUpdate update) {
-        final var valueUpdate = asValueUpdate(update);
+        ValueIndexEntryUpdate valueUpdate = asValueUpdate(update);
         if (valueUpdate == null) {
             return;
         }
 
         try {
-            final var entityId = valueUpdate.getEntityId();
-            var values = valueUpdate.values();
-            final var value = values[0];
+            long entityId = valueUpdate.getEntityId();
+            Value[] values = valueUpdate.values();
+            Value value = values[0];
             validator.validate(entityId, value);
-            final var updateMode = valueUpdate.updateMode();
+            UpdateMode updateMode = valueUpdate.updateMode();
             switch (updateMode) {
                 case ADDED ->
                     writer.updateDocument(
@@ -79,10 +80,10 @@ class TrigramIndexPopulatingUpdater implements IndexUpdater {
 
     @Override
     public ValueIndexEntryUpdate asValueUpdate(IndexEntryUpdate update) {
-        final var valueUpdate = IndexUpdater.super.asValueUpdate(update);
+        ValueIndexEntryUpdate valueUpdate = IndexUpdater.super.asValueUpdate(update);
         return !ignoreStrategy.ignore(valueUpdate) ? ignoreStrategy.toEquivalentUpdate(valueUpdate) : null;
     }
 
     @Override
-    public void close() throws IndexEntryConflictException {}
+    public void close() {}
 }

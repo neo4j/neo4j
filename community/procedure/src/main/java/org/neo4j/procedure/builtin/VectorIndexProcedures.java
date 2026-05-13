@@ -119,7 +119,7 @@ public class VectorIndexProcedures {
         Objects.requireNonNull(propertyKey, "'propertyKey' must not be null");
         Objects.requireNonNull(vectorDimension, "'vectorDimension' must not be null");
 
-        final var version = VectorIndexVersion.latestSupportedVersion(kernelVersion);
+        VectorIndexVersion version = VectorIndexVersion.latestSupportedVersion(kernelVersion);
         Preconditions.checkState(
                 version != VectorIndexVersion.UNKNOWN, "Vector index version `%s` is not a valid version.");
         Preconditions.checkArgument(
@@ -153,7 +153,7 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        final var query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
@@ -176,7 +176,7 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        final var query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
@@ -198,7 +198,7 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        final var query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
@@ -221,7 +221,7 @@ public class VectorIndexProcedures {
                     Long numberOfNearestNeighbours,
             @Name(value = "query", description = "The object to find approximate matches for.") AnyValue candidateQuery)
             throws KernelException {
-        final var query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        VectorCandidate query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
         if (callContext.isSystemDatabase()) {
             return Stream.empty();
         }
@@ -241,7 +241,7 @@ public class VectorIndexProcedures {
                     new NullPointerException("'query' must not be null"));
         }
 
-        final var query = VectorCandidate.maybeFrom(candidateQuery);
+        VectorCandidate query = VectorCandidate.maybeFrom(candidateQuery);
         if (query == null) {
             throw new IllegalArgumentException("'query' must be a non-null numerical array");
         }
@@ -294,7 +294,7 @@ public class VectorIndexProcedures {
                     "'vector' must not be NO_VALUE, which is treated as null",
                     new NullPointerException("'vector' must not be null"));
         }
-        final var vector = VectorCandidate.maybeFrom(candidateVector);
+        VectorCandidate vector = VectorCandidate.maybeFrom(candidateVector);
         if (vector == null) {
             throw new IllegalArgumentException("'vector' must be a non-null numerical array");
         }
@@ -303,7 +303,7 @@ public class VectorIndexProcedures {
     }
 
     private IndexDescriptor getValidIndex(String name) {
-        final var index = ktx.schemaRead().indexGetForName(name);
+        IndexDescriptor index = ktx.schemaRead().indexGetForName(name);
         if (index == IndexDescriptor.NO_INDEX || index.getIndexType() != IndexType.VECTOR) {
             throw new IllegalArgumentException("There is no such vector schema index: " + name);
         }
@@ -387,12 +387,12 @@ public class VectorIndexProcedures {
             this.ktx = ktx;
             this.kernelVersion = kernelVersion;
 
-            final var index = ktx.schemaRead().indexGetForName(name);
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(name);
             if (index == IndexDescriptor.NO_INDEX || index.getIndexType() != IndexType.VECTOR) {
                 throw new IllegalArgumentException("There is no such vector schema index: " + name);
             }
 
-            final var entityTypeFromIndex = index.schema().entityType();
+            EntityType entityTypeFromIndex = index.schema().entityType();
             if (entityTypeFromIndex != entityType) {
                 throw new IllegalArgumentException(
                         "The '%s' index (%s) is an index on %s, so it cannot be queried for nodes."
@@ -422,8 +422,8 @@ public class VectorIndexProcedures {
         abstract Stream<NEIGHBOR> stream(CURSOR cursor, int k);
 
         Stream<NEIGHBOR> query(int k, VectorCandidate query) throws KernelException {
-            final var validatedQuery = CypherCoercions.validateAndConvertVectorIndexQuery(index, kernelVersion, query);
-            final var cursor = cursor(ktx.cursors(), ktx.cursorContext(), ktx.memoryTracker());
+            float[] validatedQuery = CypherCoercions.validateAndConvertVectorIndexQuery(index, kernelVersion, query);
+            CURSOR cursor = cursor(ktx.cursors(), ktx.cursorContext(), ktx.memoryTracker());
             seek(
                     ktx.dataRead(),
                     ktx.queryContext(),
@@ -440,7 +440,7 @@ public class VectorIndexProcedures {
             // held by the index populator. Also, if the index was created in this transaction, then we will never see
             // it come online in this transaction anyway.
             // Indexes don't come online until the transaction that creates them has committed.
-            final var txStateHolder = (TxStateHolder) ktx;
+            TxStateHolder txStateHolder = (TxStateHolder) ktx;
             if ((!txStateHolder.hasTxStateWithChanges()
                     || !txStateHolder
                             .txState()
@@ -547,9 +547,9 @@ public class VectorIndexProcedures {
 
         @Override
         default boolean tryAdvance(Consumer<? super NEIGHBOR> action) {
-            final var cursor = cursor();
+            Cursor cursor = cursor();
             while (cursor.next()) {
-                final var neighbor = neighbor();
+                NEIGHBOR neighbor = neighbor();
                 if (neighbor != null) {
                     action.accept(neighbor);
                     return true;
@@ -584,7 +584,7 @@ public class VectorIndexProcedures {
         }
 
         default Stream<NEIGHBOR> stream() {
-            final var stream = StreamSupport.stream(this, false);
+            Stream<NEIGHBOR> stream = StreamSupport.stream(this, false);
             return stream.onClose(cursor()::close);
         }
     }

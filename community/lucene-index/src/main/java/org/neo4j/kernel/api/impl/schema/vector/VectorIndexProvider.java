@@ -109,7 +109,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     public IndexPrototype validatePrototype(IndexPrototype prototype) {
         prototype = super.validatePrototype(prototype);
         // construction handles validation
-        final VectorIndexConfig vectorIndexConfig =
+        VectorIndexConfig vectorIndexConfig =
                 settingsValidator().validateToTypedConfig(new IndexConfigAccessor(prototype.getIndexConfig()));
         // replaces provided config with validated config with set defaults
         return prototype.withIndexConfig(vectorIndexConfig.config());
@@ -126,16 +126,16 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour,
             IndexPopulator.Configuration configuration) {
-        final VectorIndexConfig vectorIndexConfig = settingsValidator()
+        VectorIndexConfig vectorIndexConfig = settingsValidator()
                 .interpretAuthoritativeToTypedConfig(new IndexConfigAccessor(descriptor.getIndexConfig()));
-        final OptionalInt dimensions = vectorIndexConfig.dimensions();
+        OptionalInt dimensions = vectorIndexConfig.dimensions();
 
-        final LuceneCodec codec = luceneContext.codecsFactory().codecFor(vectorIndexConfig);
-        final IndexWriterConfigBuilder writerConfigBuilder = new IndexWriterConfigBuilder(
+        LuceneCodec codec = luceneContext.codecsFactory().codecFor(vectorIndexConfig);
+        IndexWriterConfigBuilder writerConfigBuilder = new IndexWriterConfigBuilder(
                         IndexWriterConfigMode.VECTOR_POPULATION, config)
                 .withLogProvider(logProvider)
                 .withCodec(codec);
-        final DatabaseIndex<VectorIndexReader> luceneIndex = VectorIndexBuilder.create(
+        DatabaseIndex<VectorIndexReader> luceneIndex = VectorIndexBuilder.create(
                         descriptor, vectorIndexConfig, documentStructure, codec, readOnlyChecker, config, logProvider)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
@@ -146,8 +146,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             throw WriteOperationsNotAllowedException.noWriteOperationAllowed();
         }
 
-        final IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, dimensions);
-        final Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
+        IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, dimensions);
+        Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, documentStructure, similarityFunction);
     }
 
@@ -161,21 +161,21 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        final VectorIndexConfig vectorIndexConfig = settingsValidator()
+        VectorIndexConfig vectorIndexConfig = settingsValidator()
                 .interpretAuthoritativeToTypedConfig(new IndexConfigAccessor(descriptor.getIndexConfig()));
-        final LuceneCodec codec = luceneContext.codecsFactory().codecFor(vectorIndexConfig);
+        LuceneCodec codec = luceneContext.codecsFactory().codecFor(vectorIndexConfig);
         VectorIndexBuilder builder = VectorIndexBuilder.create(
                         descriptor, vectorIndexConfig, documentStructure, codec, readOnlyChecker, config, logProvider)
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
         }
-        final DatabaseIndex<VectorIndexReader> luceneIndex = builder.build();
+        DatabaseIndex<VectorIndexReader> luceneIndex = builder.build();
         luceneIndex.open();
         forceMergeSegments(scheduler, luceneIndex);
 
-        final IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, vectorIndexConfig.dimensions());
-        final Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
+        IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, vectorIndexConfig.dimensions());
+        Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
         return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, documentStructure, similarityFunction);
     }
 
@@ -197,7 +197,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             VectorIndexVersion version,
             IndexConfig config,
             TypedIndexSettingsValidator<VectorIndexConfig> indexSettingsValidator) {
-        final VectorIndexConfig vectorIndexConfig =
+        VectorIndexConfig vectorIndexConfig =
                 indexSettingsValidator.interpretAuthoritativeToTypedConfig(new IndexConfigAccessor(config));
         return new VectorIndexCapability(
                 new IgnoreStrategy(version, vectorIndexConfig.dimensions()), vectorIndexConfig.similarityFunction());
@@ -215,12 +215,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             }
 
             // Vector value
-            final Value value = values[0];
-            if (!version.acceptsValueInstanceType(value) || hasInvalidDimensions(VectorCandidate.maybeFrom(value))) {
-                return true;
-            }
-
-            return false;
+            Value value = values[0];
+            return !version.acceptsValueInstanceType(value) || hasInvalidDimensions(VectorCandidate.maybeFrom(value));
         }
 
         private boolean hasInvalidDimensions(VectorCandidate candidate) {
@@ -231,8 +227,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
     }
 
-    private Neo4jVectorSimilarityFunction vectorSimilarityFunctionFrom(VectorIndexConfig vectorIndexConfig) {
-        final VectorSimilarityFunction vectorSimilarityFunction = vectorIndexConfig.similarityFunction();
+    private static Neo4jVectorSimilarityFunction vectorSimilarityFunctionFrom(VectorIndexConfig vectorIndexConfig) {
+        VectorSimilarityFunction vectorSimilarityFunction = vectorIndexConfig.similarityFunction();
         if (vectorSimilarityFunction instanceof Neo4jVectorSimilarityFunction sf) {
             return sf;
         }
@@ -259,7 +255,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
      */
     private static void forceMergeSegments(DatabaseIndex<?> luceneIndex) throws IOException {
         IOException exception = null;
-        for (final AbstractIndexPartition partition : luceneIndex.getPartitions()) {
+        for (AbstractIndexPartition partition : luceneIndex.getPartitions()) {
             try {
                 partition.getIndexWriter().forceMerge(Integer.MAX_VALUE);
             } catch (IOException e) {

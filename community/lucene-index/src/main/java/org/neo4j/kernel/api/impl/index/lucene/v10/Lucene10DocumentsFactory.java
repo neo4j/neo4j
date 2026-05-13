@@ -74,12 +74,13 @@ public class Lucene10DocumentsFactory implements LuceneDocumentsFactory {
 
     @Override
     public LuceneDocument createTrigramDocument(long id, Value value) {
-        var document = new Lucene10Document();
+        Lucene10Document document = new Lucene10Document();
         document.addStringField(ENTITY_ID_KEY, Long.toString(id), false);
         document.addNumericDocValuesField(ENTITY_ID_KEY, id);
         if (value.valueGroup() == ValueGroup.TEXT) {
-            var tokenStream = new Lucene10TrigramTokenStream(value.asObject().toString());
-            var valueField = new TrigramField(TRIGRAM_VALUE_KEY, tokenStream);
+            Lucene10TrigramTokenStream tokenStream =
+                    new Lucene10TrigramTokenStream(value.asObject().toString());
+            TrigramField valueField = new TrigramField(TRIGRAM_VALUE_KEY, tokenStream);
             document.document.add(valueField);
         }
 

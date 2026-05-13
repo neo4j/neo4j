@@ -45,11 +45,11 @@ public abstract class SingleIndexSettingConverter<FROM> extends SingleIndexSetti
     /// Converts values from [RecordWithStorable] using [#convert(FROM)]
     @Override
     public RecordWithSetting processForVerification(RecordWithSetting record) {
-        if (!(record instanceof final RecordWithStorable hasStorable)) {
+        if (!(record instanceof RecordWithStorable hasStorable)) {
             return record;
         }
 
-        final Object value = hasStorable.value();
+        Object value = hasStorable.value();
         if (value == null) {
             return new InvalidValue(hasStorable, new ClassRequirement(fromType));
         }
@@ -57,7 +57,7 @@ public abstract class SingleIndexSettingConverter<FROM> extends SingleIndexSetti
             return new IncorrectType(hasStorable, fromType);
         }
 
-        final Object convertedValue = convert(hasStorable.valueAs(fromType));
+        Object convertedValue = convert(hasStorable.valueAs(fromType));
         return switch (hasStorable) {
             case Pending pending -> new Pending(pending, convertedValue);
             case Valid valid -> new Valid(valid, convertedValue);
@@ -66,11 +66,11 @@ public abstract class SingleIndexSettingConverter<FROM> extends SingleIndexSetti
 
     @Override
     public RecordWithSetting processForAuthoritativeRead(RecordWithSetting record) {
-        if (!(record instanceof final Valid valid)) {
+        if (!(record instanceof Valid valid)) {
             return record;
         }
 
-        final Object convertedValue = convert(valid.valueAs(fromType));
+        Object convertedValue = convert(valid.valueAs(fromType));
         return new Valid(valid, convertedValue);
     }
 
@@ -82,16 +82,16 @@ public abstract class SingleIndexSettingConverter<FROM> extends SingleIndexSetti
 
         @Override
         public RecordWithSetting processForVerification(RecordWithSetting record) {
-            if (!(record instanceof final RecordWithStorable hasStorable)) {
+            if (!(record instanceof RecordWithStorable hasStorable)) {
                 return record;
             }
 
-            final Object value = hasStorable.value();
+            Object value = hasStorable.value();
             if (value != null && !fromType.isInstance(value)) {
                 return new IncorrectType(hasStorable, fromType);
             }
 
-            final Object convertedValue = convert(hasStorable.valueAs(fromType));
+            Object convertedValue = convert(hasStorable.valueAs(fromType));
             return switch (hasStorable) {
                 case Pending pending -> new Pending(pending, convertedValue);
                 case Valid valid -> new Valid(valid, convertedValue);

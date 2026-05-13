@@ -50,7 +50,7 @@ public class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndex
         this.descriptor = descriptor;
         this.config = config;
 
-        final var writerConfigBuilder =
+        IndexWriterConfigBuilder writerConfigBuilder =
                 new IndexWriterConfigBuilder(IndexWriterConfigMode.TEXT, config).withLogProvider(logProvider);
         this.writerConfigFactory = writerConfigBuilder::build;
     }
@@ -87,7 +87,7 @@ public class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndex
      */
     public DatabaseIndex<ValueIndexReader> build() {
         PartitionedIndexStorage storage = storageBuilder.build();
-        var index = new TrigramIndex(
+        TrigramIndex index = new TrigramIndex(
                 storage, descriptor, new WritableIndexPartitionFactory(writerConfigFactory), config, logProvider);
         return new WritableDatabaseIndex<>(index, readOnlyChecker, permanentlyReadOnly);
     }

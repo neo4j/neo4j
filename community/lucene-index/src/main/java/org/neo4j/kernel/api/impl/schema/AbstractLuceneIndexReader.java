@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -32,6 +33,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher.InRangeEntityConsumer;
@@ -68,11 +70,11 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
             IndexQueryConstraints constraints,
             PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
-        final var predicate = validateSingleQuery(constraints, predicates);
+        PropertyIndexQuery predicate = validateSingleQuery(constraints, predicates);
         reportIndexQueried(queryContext, predicates);
 
-        final var progressor = indexProgressor(queryFactory, constraints, client, predicates);
-        final var needStoreFilter = needStoreFilter(predicate);
+        IndexProgressor progressor = indexProgressor(queryFactory, constraints, client, predicates);
+        boolean needStoreFilter = needStoreFilter(predicate);
         client.initializeQuery(descriptor, progressor, false, needStoreFilter, constraints, predicate);
     }
 
@@ -112,7 +114,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
 
     protected <E extends Exception> E invalidCompositeQuery(
             Function<String, E> constructor, PropertyIndexQuery... predicates) {
-        final var indexType = descriptor.getIndexType();
+        IndexType indexType = descriptor.getIndexType();
         return constructor.apply(("Tried to query a %s index with a composite query. "
                         + "Composite queries are not supported by a %s index. "
                         + "Query was: %s ")
@@ -120,13 +122,13 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     }
 
     protected <E extends Exception> E invalidQuery(Function<String, E> constructor, PropertyIndexQuery predicate) {
-        final var indexType = descriptor.getIndexType();
+        IndexType indexType = descriptor.getIndexType();
         return constructor.apply("Index query not supported for %s index. Query: %s".formatted(indexType, predicate));
     }
 
     protected <E extends Exception> E invalidVectorQueryProperty(
             Function<String, E> constructor, PropertyIndexQuery invalidPredicate, PropertyIndexQuery... predicates) {
-        final var indexType = descriptor.getIndexType();
+        IndexType indexType = descriptor.getIndexType();
         return constructor.apply(("Tried to query a %s index with a query property which is not part of the index. "
                         + "Invalid property predicate was: %s. "
                         + "Query was: %s ")
@@ -135,14 +137,15 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
 
     protected <E extends Exception> E invalidVectorQueryFilter(
             Function<String, E> constructor,
-            java.util.List<IndexQueryType> validFilterTypes,
+            List<IndexQueryType> validFilterTypes,
             PropertyIndexQuery invalidPredicate,
             PropertyIndexQuery... predicates) {
-        final var indexType = descriptor.getIndexType();
+        IndexType indexType = descriptor.getIndexType();
         String validTypes = String.join(
                 " or ", validFilterTypes.stream().map(Enum::toString).toList());
         return constructor.apply(
-                ("Tried to query a %s index with a query predicate which is not an accepted filter type (must be of type "
+                ("Tried to query a %s index with a query predicate which is not an accepted filter type "
+                                + "(must be of type "
                                 + validTypes
                                 + "). "
                                 + "Invalid filter type was: %s. "
@@ -152,14 +155,13 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     }
 
     protected <E extends Exception> E nullVectorQueryFilter(
-            Function<String, E> constructor,
-            java.util.List<IndexQueryType> validFilterTypes,
-            PropertyIndexQuery... predicates) {
-        final var indexType = descriptor.getIndexType();
+            Function<String, E> constructor, List<IndexQueryType> validFilterTypes, PropertyIndexQuery... predicates) {
+        IndexType indexType = descriptor.getIndexType();
         String validTypes = String.join(
                 " or ", validFilterTypes.stream().map(Enum::toString).toList());
         return constructor.apply(
-                ("Tried to query a %s index with a query predicate which is not an accepted filter type (must be of type "
+                ("Tried to query a %s index with a query predicate which is not an accepted filter type "
+                                + "(must be of type "
                                 + validTypes
                                 + "). "
                                 + "Invalid filter type was: null."
@@ -187,7 +189,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     @Override
     public void close() {}
 
-    protected BoundedIterable<Long> newAllEntriesValueReaderForPartition(
+    protected static BoundedIterable<Long> newAllEntriesValueReaderForPartition(
             String field,
             LuceneIndexSearcher searcher,
             LuceneQueryContext queryContext,

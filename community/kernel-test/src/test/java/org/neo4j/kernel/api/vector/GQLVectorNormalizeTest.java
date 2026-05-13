@@ -53,21 +53,21 @@ public class GQLVectorNormalizeTest {
 
     static Stream<Arguments> nonFiniteNormInvalid() {
         final float manhattanMax = Float.MAX_VALUE / 4;
-        final float overManhattanMax = Math.nextUp(manhattanMax);
-        final float underManhattanMax = Math.nextDown(manhattanMax);
-        final VectorCandidate manhattanMaxVector = vector(manhattanMax, manhattanMax, manhattanMax, manhattanMax);
-        final VectorCandidate overManhattanMaxVector =
+        float overManhattanMax = Math.nextUp(manhattanMax);
+        float underManhattanMax = Math.nextDown(manhattanMax);
+        VectorCandidate manhattanMaxVector = vector(manhattanMax, manhattanMax, manhattanMax, manhattanMax);
+        VectorCandidate overManhattanMaxVector =
                 vector(overManhattanMax, overManhattanMax, overManhattanMax, overManhattanMax);
-        final VectorCandidate underManhattanMaxVector =
+        VectorCandidate underManhattanMaxVector =
                 vector(underManhattanMax, underManhattanMax, underManhattanMax, underManhattanMax);
 
-        final float euclideanMax = (float) Math.sqrt(manhattanMax);
-        final float overEuclideanMax = Math.nextUp(euclideanMax);
-        final float underEuclideanMax = Math.nextDown(euclideanMax);
-        final VectorCandidate euclideanMaxVector = vector(euclideanMax, euclideanMax, euclideanMax, euclideanMax);
-        final VectorCandidate overEuclideanMaxVector =
+        float euclideanMax = (float) Math.sqrt(manhattanMax);
+        float overEuclideanMax = Math.nextUp(euclideanMax);
+        float underEuclideanMax = Math.nextDown(euclideanMax);
+        VectorCandidate euclideanMaxVector = vector(euclideanMax, euclideanMax, euclideanMax, euclideanMax);
+        VectorCandidate overEuclideanMaxVector =
                 vector(overEuclideanMax, overEuclideanMax, overEuclideanMax, overEuclideanMax);
-        final VectorCandidate underEuclideanMaxVector =
+        VectorCandidate underEuclideanMaxVector =
                 vector(underEuclideanMax, underEuclideanMax, underEuclideanMax, underEuclideanMax);
 
         return Stream.of(

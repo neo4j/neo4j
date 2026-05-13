@@ -62,7 +62,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
 
     @Override
     NativeIndexPopulator<KEY> createPopulator(PageCache pageCache) throws IOException {
-        var cacheTracer = PageCacheTracer.NULL;
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DatabaseIndexContext context = DatabaseIndexContext.builder(
                         pageCache,
                         fs,

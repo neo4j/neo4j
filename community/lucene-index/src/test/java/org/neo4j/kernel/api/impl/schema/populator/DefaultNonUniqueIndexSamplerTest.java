@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
 class DefaultNonUniqueIndexSamplerTest {
-    private final String value = "aaa";
+    private static final String VALUE = "aaa";
 
     @Test
     void shouldSampleNothing() {
@@ -48,7 +48,7 @@ class DefaultNonUniqueIndexSamplerTest {
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
 
         // when
-        sampler.include(value, 2);
+        sampler.include(VALUE, 2);
 
         // then
         assertSampledValues(sampler, 2, 1, 2);
@@ -60,8 +60,8 @@ class DefaultNonUniqueIndexSamplerTest {
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
 
         // when
-        sampler.include(value, 5);
-        sampler.include(value, 4);
+        sampler.include(VALUE, 5);
+        sampler.include(VALUE, 4);
         sampler.include("bbb", 3);
 
         // then
@@ -74,8 +74,8 @@ class DefaultNonUniqueIndexSamplerTest {
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(1);
 
         // when
-        sampler.include(value, 5);
-        sampler.include(value, 4);
+        sampler.include(VALUE, 5);
+        sampler.include(VALUE, 4);
         sampler.include("bbb", 3);
 
         // then
@@ -87,12 +87,12 @@ class DefaultNonUniqueIndexSamplerTest {
     void shouldExcludeValuesFromTheCurrentSampling1() {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
-        sampler.include(value, 5);
-        sampler.include(value, 4);
+        sampler.include(VALUE, 5);
+        sampler.include(VALUE, 4);
         sampler.include("bbb", 3);
 
         // when
-        sampler.exclude(value, 3);
+        sampler.exclude(VALUE, 3);
 
         // then
         assertSampledValues(sampler, 9, 2, 9);
@@ -102,12 +102,12 @@ class DefaultNonUniqueIndexSamplerTest {
     void shouldExcludeValuesFromTheCurrentSampling2() {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
-        sampler.include(value, 1);
-        sampler.include(value, 4);
+        sampler.include(VALUE, 1);
+        sampler.include(VALUE, 4);
         sampler.include("bbb", 1);
 
         // when
-        sampler.exclude(value, 4);
+        sampler.exclude(VALUE, 4);
 
         // then
         assertSampledValues(sampler, 2, 2, 2);
@@ -119,8 +119,8 @@ class DefaultNonUniqueIndexSamplerTest {
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(10);
 
         // when
-        sampler.exclude(value, 1);
-        sampler.include(value, 1);
+        sampler.exclude(VALUE, 1);
+        sampler.include(VALUE, 1);
 
         // then
         assertSampledValues(sampler, 1, 1, 1);

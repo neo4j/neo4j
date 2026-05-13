@@ -127,7 +127,7 @@ public class ExistenceConstraintDescriptorImplementation extends ConstraintDescr
         if (graphTypeDependence == DEPENDENT
                 && schema.entityType() == NODE
                 && other instanceof NodeLabelExistenceConstraintDescriptorImplementation) {
-            var that = other.asNodeLabelExistenceConstraint();
+            NodeLabelExistenceConstraintDescriptor that = other.asNodeLabelExistenceConstraint();
             if (this.schema.getLabelId() == that.requiredLabelId()) {
                 return true;
             }
@@ -158,11 +158,7 @@ public class ExistenceConstraintDescriptorImplementation extends ConstraintDescr
             return false;
         }
 
-        if (that.isIndexBackedConstraint()) {
-            return false;
-        }
-
-        return true;
+        return !that.isIndexBackedConstraint();
     }
 
     @Override

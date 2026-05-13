@@ -38,7 +38,7 @@ public class IndexNotFoundKernelException extends KernelException {
 
     public static IndexNotFoundKernelException indexIsStillPopulating(
             String indexPopulationJobDescription, String indexName) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N63)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N63)
                 .withParam(GqlParams.StringParam.idx, indexName)
                 .build();
         return new IndexNotFoundKernelException(
@@ -46,28 +46,28 @@ public class IndexNotFoundKernelException extends KernelException {
     }
 
     public static IndexNotFoundKernelException indexIsStillPopulating(IndexDescriptor descriptor) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N63)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N63)
                 .withParam(GqlParams.StringParam.idx, descriptor.getName())
                 .build();
         return new IndexNotFoundKernelException(gql, descriptor + " is still populating", descriptor);
     }
 
     public static IndexNotFoundKernelException indexDroppedWhileSampling() {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N64)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N64)
                 .build();
         return new IndexNotFoundKernelException(gql, "Index dropped while sampling.", null);
     }
 
     // KNL-054 (also KNL-049, which has to accept a slight change in "legacy" error message)
     public static IndexNotFoundKernelException indexNotFound(IndexDescriptor index) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N69)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N69)
                 .withParam(GqlParams.StringParam.idxDescrOrName, index.getName())
                 .build();
         return new IndexNotFoundKernelException(gql, "Index does not exist: " + index.getName(), index);
     }
 
     public static IndexNotFoundKernelException indexNotFound(String name) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N69)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N69)
                 .withParam(GqlParams.StringParam.idxDescrOrName, name)
                 .build();
         return new IndexNotFoundKernelException(gql, "Index does not exist: " + name, IndexDescriptor.NO_INDEX);
@@ -75,7 +75,7 @@ public class IndexNotFoundKernelException extends KernelException {
 
     // KNL-053
     public static IndexNotFoundKernelException indexNotFound() {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N69)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N69)
                 // No index description or name available
                 .build();
         return new IndexNotFoundKernelException(gql, "No index was found", null);
@@ -83,7 +83,7 @@ public class IndexNotFoundKernelException extends KernelException {
 
     // KNL-055
     public static IndexNotFoundKernelException indexDroppedInThisTransaction(IndexDescriptor index) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N12)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N12)
                 .withParam(GqlParams.StringParam.idx, index.getName())
                 .build();
         return new IndexNotFoundKernelException(

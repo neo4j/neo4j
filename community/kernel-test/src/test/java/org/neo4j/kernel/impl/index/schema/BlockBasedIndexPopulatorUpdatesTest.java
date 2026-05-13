@@ -79,7 +79,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
             .withName("constraint")
             .withIndexType(indexType())
             .materialise(1);
-    final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
+    static final TokenNameLookup TOKEN_NAME_LOOKUP = SIMPLE_NAME_LOOKUP;
 
     @Inject
     private FileSystemAbstraction fs;
@@ -107,7 +107,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         IndexDirectoryStructure directoryStructure =
                 directoriesByProvider(directory.homePath()).forProvider(providerDescriptor);
         indexFiles = new IndexFiles(fs, directoryStructure, INDEX_DESCRIPTOR.getId());
-        var pageCacheTracer = PageCacheTracer.NULL;
+        PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         databaseIndexContext = DatabaseIndexContext.builder(
                         pageCache,
                         fs,

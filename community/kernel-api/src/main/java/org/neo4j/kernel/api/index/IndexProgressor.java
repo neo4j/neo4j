@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import java.util.Iterator;
-import java.util.List;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -157,7 +156,7 @@ public interface IndexProgressor extends AutoCloseable {
         private final Iterator<IndexProgressor> iterator;
         private IndexProgressor current;
 
-        public ConcatenatingIndexProgressor(List<IndexProgressor> progressors) {
+        public ConcatenatingIndexProgressor(Iterable<IndexProgressor> progressors) {
             this.iterator = progressors.iterator();
         }
 

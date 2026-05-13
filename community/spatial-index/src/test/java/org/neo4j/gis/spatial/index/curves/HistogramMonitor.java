@@ -20,7 +20,7 @@
 package org.neo4j.gis.spatial.index.curves;
 
 public class HistogramMonitor implements SpaceFillingCurveMonitor {
-    private int[] counts;
+    private final int[] counts;
     private int highestDepth;
     private long searchArea;
     private long coveredArea;

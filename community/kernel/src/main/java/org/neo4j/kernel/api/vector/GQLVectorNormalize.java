@@ -35,8 +35,8 @@ public enum GQLVectorNormalize implements VectorNormalize {
                 return false;
             }
 
-            final float norm = VectorUtil.l2Norm(vector);
-            return Float.isFinite(norm) && norm > 0.f;
+            float norm = VectorUtil.l2Norm(vector);
+            return Float.isFinite(norm) && norm > 0.0f;
         }
     },
 
@@ -52,8 +52,8 @@ public enum GQLVectorNormalize implements VectorNormalize {
                 return false;
             }
 
-            final float norm = VectorUtil.l1Norm(vector);
-            return Float.isFinite(norm) && norm > 0.f;
+            float norm = VectorUtil.l1Norm(vector);
+            return Float.isFinite(norm) && norm > 0.0f;
         }
     }
 }

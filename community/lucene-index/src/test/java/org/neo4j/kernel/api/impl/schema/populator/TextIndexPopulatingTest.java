@@ -48,7 +48,7 @@ class TextIndexPopulatingTest {
     @ParameterizedTest
     @EnumSource
     void additionsDeliveredToIndexWriter(LuceneContext luceneContext) throws Exception {
-        var documentsFactory = luceneContext.documentsFactory();
+        LuceneDocumentsFactory documentsFactory = luceneContext.documentsFactory();
         LucenePartitionIndexWriter writer = mock(LucenePartitionIndexWriter.class);
         when(writer.documentsFactory()).thenReturn(documentsFactory);
 
@@ -67,7 +67,7 @@ class TextIndexPopulatingTest {
     @ParameterizedTest
     @EnumSource
     void changesDeliveredToIndexWriter(LuceneContext luceneContext) throws Exception {
-        var documentsFactory = luceneContext.documentsFactory();
+        LuceneDocumentsFactory documentsFactory = luceneContext.documentsFactory();
         LucenePartitionIndexWriter writer = mock(LucenePartitionIndexWriter.class);
         when(writer.documentsFactory()).thenReturn(documentsFactory);
 

@@ -56,9 +56,13 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -228,23 +232,23 @@ class IndexPopulationIT {
     @SkipOnSpd(reason = "monitors are not called on graph shard")
     void concurrentUpdatesPopulationOfManyIndexesOnSameSchema() throws InterruptedException, KernelException {
         Label nodeLabel = Label.label("nodeLabel");
-        var propertyName = "testProperty";
-        var rangeIndex = "rangeIndex";
-        var textIndex = "textIndex";
-        var concurrentValue = "concurrentValue";
+        String propertyName = "testProperty";
+        String rangeIndex = "rangeIndex";
+        String textIndex = "textIndex";
+        String concurrentValue = "concurrentValue";
 
         CountDownLatch blockLatch = new CountDownLatch(1);
         CountDownLatch signalLatch = new CountDownLatch(1);
 
         monitors.addMonitorListener(new PopulationScanCompleteBlock(rangeIndex, blockLatch, signalLatch));
 
-        try (var transaction = database.beginTx()) {
-            var node = transaction.createNode(nodeLabel);
+        try (Transaction transaction = database.beginTx()) {
+            Node node = transaction.createNode(nodeLabel);
             node.setProperty(propertyName, "initialValue");
             transaction.commit();
         }
 
-        try (var transaction = database.beginTx()) {
+        try (Transaction transaction = database.beginTx()) {
             transaction
                     .schema()
                     .indexFor(nodeLabel)
@@ -266,8 +270,8 @@ class IndexPopulationIT {
 
         // scan complete
         // new transaction can add to the concurrent queue that will be processed on flip
-        try (var concurrentUpdater = database.beginTx()) {
-            var node = concurrentUpdater.createNode(nodeLabel);
+        try (Transaction concurrentUpdater = database.beginTx()) {
+            Node node = concurrentUpdater.createNode(nodeLabel);
             node.setProperty(propertyName, concurrentValue);
             concurrentUpdater.commit();
         }
@@ -283,15 +287,15 @@ class IndexPopulationIT {
     }
 
     private boolean nodeValueExistsInIndex(String propertyName, String value, String indexName) throws KernelException {
-        try (var transaction = database.beginTx()) {
-            var ktx = ((TransactionImpl) transaction).kernelTransaction();
+        try (Transaction transaction = database.beginTx()) {
+            KernelTransaction ktx = ((TransactionImpl) transaction).kernelTransaction();
             TokenRead tokenRead = ktx.tokenRead();
             int propertyId = tokenRead.propertyKey(propertyName);
-            var query = PropertyIndexQuery.exact(propertyId, utf8Value(value.getBytes(UTF_8)));
+            ExactPredicate query = PropertyIndexQuery.exact(propertyId, utf8Value(value.getBytes(UTF_8)));
 
-            var index = ktx.schemaRead().indexGetForName(indexName);
-            try (var cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
-                var indexSession = ktx.dataRead().indexReadSession(index);
+            IndexDescriptor index = ktx.schemaRead().indexGetForName(indexName);
+            try (NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
+                IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
                 ktx.dataRead().nodeIndexSeek(ktx.queryContext(), indexSession, cursor, unconstrained(), query);
                 return cursor.next();
             }

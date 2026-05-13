@@ -57,7 +57,7 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
     private void setUp(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             int before = random.nextInt(1, ZEBRAS);
             for (int i = 0; i < before; i++) {
                 entityUtil.createEntityWithProperty(tx, "zebra donkey");
@@ -81,7 +81,7 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
 
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, totalEntities - 1);
             }
             tx.commit();
@@ -95,7 +95,7 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
 
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, 0);
             }
             tx.commit();
@@ -108,10 +108,10 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
         setUp(entityUtil);
 
         try (Transaction tx = db.beginTx()) {
-            var limit = random.nextInt(1, totalEntities + 1);
+            int limit = random.nextInt(1, totalEntities + 1);
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, limit - 1);
             }
             tx.commit();
@@ -122,7 +122,7 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
         // all zebras collected
         assertThat(list).hasSize(1 + extraZebras);
         // top zebra is first
-        assertThat(list.get(0).getElementId()).isEqualTo(topEntity);
+        assertThat(list.getFirst().getElementId()).isEqualTo(topEntity);
         // all zebras are unique
         assertThat(list.stream().map(Entity::getElementId).collect(Collectors.toSet()))
                 .hasSize(list.size());

@@ -55,7 +55,7 @@ public final class RelationshipEndpointLabelMissingLabelException extends Constr
             long relationshipReference,
             long nodeReference,
             TokenNameLookup tokenNameLookup) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NB4)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22NB4)
                 .withParam(GqlParams.NumberParam.entityId1, relationshipReference)
                 .withParam(
                         GqlParams.StringParam.relType,

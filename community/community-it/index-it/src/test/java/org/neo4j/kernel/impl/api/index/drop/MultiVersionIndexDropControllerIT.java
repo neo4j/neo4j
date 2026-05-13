@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -88,8 +89,8 @@ class MultiVersionIndexDropControllerIT {
 
         awaitIndexes();
 
-        var indexDescriptors = getIndexDescriptors(label);
-        var indexProvider = getIndexProvider(indexDescriptors);
+        List<IndexDescriptor> indexDescriptors = getIndexDescriptors(label);
+        IndexProvider indexProvider = getIndexProvider(indexDescriptors);
 
         indexDropController = new MultiVersionIndexDropController(
                 jobScheduler,
@@ -109,7 +110,7 @@ class MultiVersionIndexDropControllerIT {
 
         assertThat(indexDropController.getAsyncDeleteQueue()).hasSize(3);
 
-        var directoryStructure = indexProvider.directoryStructure();
+        IndexDirectoryStructure directoryStructure = indexProvider.directoryStructure();
         for (IndexDescriptor indexDescriptor : indexDescriptors) {
             Path indexDirectory = directoryStructure.directoryForIndex(indexDescriptor.getId());
             assertTrue(
@@ -130,8 +131,8 @@ class MultiVersionIndexDropControllerIT {
 
         awaitIndexes();
 
-        var indexDescriptors = getIndexDescriptors(label);
-        var indexProvider = getIndexProvider(indexDescriptors);
+        List<IndexDescriptor> indexDescriptors = getIndexDescriptors(label);
+        IndexProvider indexProvider = getIndexProvider(indexDescriptors);
 
         AtomicLong oldestValue = new AtomicLong(5);
         indexDropController = new MultiVersionIndexDropController(
@@ -166,7 +167,7 @@ class MultiVersionIndexDropControllerIT {
         indexDropController.maintenance();
         assertThat(indexDropController.getAsyncDeleteQueue()).hasSize(1);
 
-        var directoryStructure = indexProvider.directoryStructure();
+        IndexDirectoryStructure directoryStructure = indexProvider.directoryStructure();
         assertFalse(fileSystem.fileExists(
                 directoryStructure.directoryForIndex(indexDescriptors.get(0).getId())));
         assertFalse(fileSystem.fileExists(
@@ -188,7 +189,7 @@ class MultiVersionIndexDropControllerIT {
 
         awaitIndexes();
 
-        var indexDescriptors = getIndexDescriptors(label);
+        List<IndexDescriptor> indexDescriptors = getIndexDescriptors(label);
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         indexDropController = new MultiVersionIndexDropController(
@@ -229,7 +230,7 @@ class MultiVersionIndexDropControllerIT {
 
         awaitIndexes();
 
-        var indexDescriptors = getIndexDescriptors(label);
+        List<IndexDescriptor> indexDescriptors = getIndexDescriptors(label);
 
         AtomicLong oldestValue = new AtomicLong(5);
         indexDropController = new MultiVersionIndexDropController(
@@ -254,7 +255,7 @@ class MultiVersionIndexDropControllerIT {
     }
 
     private IndexProvider getIndexProvider(List<IndexDescriptor> indexDescriptors) {
-        return providerMap.lookup(indexDescriptors.get(0).getIndexProvider());
+        return providerMap.lookup(indexDescriptors.getFirst().getIndexProvider());
     }
 
     private List<IndexDescriptor> getIndexDescriptors(Label label) {

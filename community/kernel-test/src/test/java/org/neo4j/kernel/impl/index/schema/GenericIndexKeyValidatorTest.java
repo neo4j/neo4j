@@ -75,7 +75,7 @@ class GenericIndexKeyValidatorTest {
                 new GenericIndexKeyValidator(48, descriptor, layout, SIMPLE_NAME_LOOKUP, ElementIdMapper.PLACEHOLDER);
 
         // when
-        var e = assertThrows(
+        IllegalArgumentException e = assertThrows(
                 IllegalArgumentException.class,
                 () -> validator.validate(42, intValue(10), epochDate(100), stringValue("abcdefghijklmnopqrstuvw")));
         assertThat(e.getMessage()).contains("Property value is too large to index");

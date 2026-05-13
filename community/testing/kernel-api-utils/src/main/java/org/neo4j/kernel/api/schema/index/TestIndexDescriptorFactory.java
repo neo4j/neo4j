@@ -49,7 +49,7 @@ public class TestIndexDescriptorFactory {
     }
 
     public static IndexDescriptor forSchema(long id, IndexType indexType, SchemaDescriptor schema) {
-        final var index = IndexPrototype.forSchema(schema)
+        IndexDescriptor index = IndexPrototype.forSchema(schema)
                 .withIndexType(indexType)
                 .withName("index_" + id)
                 .materialise(id);
@@ -61,8 +61,8 @@ public class TestIndexDescriptorFactory {
     }
 
     public static IndexDescriptor uniqueForSchema(IndexType indexType, SchemaDescriptor schema) {
-        final var id = randomId();
-        final var index = IndexPrototype.uniqueForSchema(schema)
+        long id = randomId();
+        IndexDescriptor index = IndexPrototype.uniqueForSchema(schema)
                 .withIndexType(indexType)
                 .withName("index_" + id)
                 .materialise(id);
@@ -98,7 +98,7 @@ public class TestIndexDescriptorFactory {
     }
 
     private static class TestIndexConfigCompleter implements IndexConfigCompleter {
-        public static final TestIndexConfigCompleter INSTANCE = new TestIndexConfigCompleter();
+        public static final IndexConfigCompleter INSTANCE = new TestIndexConfigCompleter();
 
         private static final IndexCapability CAPABILITY = new IndexCapability() {
             @Override

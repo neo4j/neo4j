@@ -39,7 +39,7 @@ public class KnownIndexSettingRecords implements Iterable<RecordWithSetting> {
 
     public <RECORD extends RecordWithSetting> RECORD upsert(RECORD record) {
         Preconditions.requireNonNull(record, "record must not be null");
-        final IndexSetting setting = Preconditions.requireNonNull(record.setting(), "setting must not be null");
+        IndexSetting setting = Preconditions.requireNonNull(record.setting(), "setting must not be null");
         records.put(setting, record);
         return record;
     }
@@ -47,9 +47,9 @@ public class KnownIndexSettingRecords implements Iterable<RecordWithSetting> {
     public RecordWithSetting upsertWith(IndexSetting setting, RecordProcessor processor) {
         Preconditions.requireNonNull(setting, "setting must not be null");
         Preconditions.requireNonNull(processor, "processor must not be null");
-        final RecordWithSetting missing = new MissingSetting(setting);
-        final RecordWithSetting record = Objects.requireNonNullElse(records.get(setting), missing);
-        final RecordWithSetting processedRecord = Objects.requireNonNullElse(processor.process(record), missing);
+        RecordWithSetting missing = new MissingSetting(setting);
+        RecordWithSetting record = Objects.requireNonNullElse(records.get(setting), missing);
+        RecordWithSetting processedRecord = Objects.requireNonNullElse(processor.process(record), missing);
         return record.equals(processedRecord) ? record : upsert(processedRecord);
     }
 
@@ -59,7 +59,7 @@ public class KnownIndexSettingRecords implements Iterable<RecordWithSetting> {
     }
 
     public IndexSettingRecords toIndexSettingRecords() {
-        final IndexSettingRecords records = new IndexSettingRecords();
+        IndexSettingRecords records = new IndexSettingRecords();
         records.upsertAll(this);
         return records;
     }

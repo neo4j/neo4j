@@ -91,7 +91,7 @@ public class CreateConstraintFailureException extends SchemaKernelException {
                         String.format("Unexpected constraint type: %s", constraint.type()));
         }
 
-        var gqlStatusCause = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N27)
+        ErrorGqlStatusObject gqlStatusCause = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N27)
                 .withParam(GqlParams.StringParam.feat, String.format("%s constraint", constraintType))
                 .withParam(GqlParams.StringParam.edition, "community edition")
                 .build();
@@ -131,7 +131,8 @@ public class CreateConstraintFailureException extends SchemaKernelException {
             String causeString,
             ErrorGqlStatusObject gqlStatusCause) {
         String constraintString = constraint.userDescription(tokenNameLookup);
-        var gqlStatusBuilder = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N11)
+        ErrorGqlStatusObjectImplementation.Builder gqlStatusBuilder = ErrorGqlStatusObjectImplementation.from(
+                        GqlStatusInfoCodes.STATUS_50N11)
                 .withParam(
                         GqlParams.StringParam.constrDescrOrName,
                         constraint.getName() != null ? constraint.getName() : constraintString);
@@ -147,7 +148,7 @@ public class CreateConstraintFailureException extends SchemaKernelException {
 
     @Override
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
-        final var sb = new StringBuilder("Unable to create ").append(constraint.userDescription(tokenNameLookup));
+        StringBuilder sb = new StringBuilder("Unable to create ").append(constraint.userDescription(tokenNameLookup));
         if (getCause() instanceof KernelException kernelCause) {
             sb.append(':').append(System.lineSeparator()).append(kernelCause.getUserMessage(tokenNameLookup));
         } else if (cause != null) {

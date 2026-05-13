@@ -37,7 +37,7 @@ public final class RelationshipEndpointLabelMissingLabelExceptionTest {
 
     @Test
     public void shouldGetCorrectUserMessage() {
-        var kernelToken = mock(TokenNameLookup.class);
+        TokenNameLookup kernelToken = mock(TokenNameLookup.class);
 
         when(kernelToken.relationshipTypeGetName(REL_TYPE_ID)).thenReturn("RelationshipType");
         when(kernelToken.labelGetName(LABEL_ID)).thenReturn("EndpointLabel");
@@ -46,7 +46,7 @@ public final class RelationshipEndpointLabelMissingLabelExceptionTest {
         RelationshipEndpointLabelConstraintDescriptor relationshipEndpointLabelConstraintDescriptor =
                 ConstraintDescriptorFactory.relationshipEndpointLabelForRelType(
                         REL_TYPE_ID, LABEL_ID, EndpointType.START);
-        var userMessage = RelationshipEndpointLabelMissingLabelException.endpointLabelPresenceVerificationFailed(
+        String userMessage = RelationshipEndpointLabelMissingLabelException.endpointLabelPresenceVerificationFailed(
                         relationshipEndpointLabelConstraintDescriptor,
                         ConstraintValidationException.Phase.VERIFICATION,
                         relationshipReference,

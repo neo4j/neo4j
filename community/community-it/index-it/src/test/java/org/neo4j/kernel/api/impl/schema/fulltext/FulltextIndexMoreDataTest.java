@@ -51,7 +51,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         if (before) {
             createSomeZebras(entityUtil);
         }
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             topEntity = entityUtil.createEntityWithProperty(tx, "zebra zebra zebra zebra donkey");
 
             tx.commit();
@@ -62,7 +62,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
     }
 
     private void createSomeZebras(EntityUtil entityUtil) {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             for (int i = 0; i < ZEBRAS; i++) {
                 entityUtil.createEntityWithProperty(tx, "zebra donkey");
             }
@@ -78,7 +78,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, ZEBRAS * 2);
             }
             tx.commit();
@@ -87,7 +87,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // top hit
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, 0);
             }
             tx.commit();
@@ -95,10 +95,10 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
 
         // top hits
         try (Transaction tx = db.beginTx()) {
-            var limit = random.nextInt(1, ZEBRAS);
+            int limit = random.nextInt(1, ZEBRAS);
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, limit - 1);
             }
             tx.commit();
@@ -113,7 +113,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, ZEBRAS);
             }
             tx.commit();
@@ -122,7 +122,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // top hit
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, 0);
             }
             tx.commit();
@@ -130,10 +130,10 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
 
         // top hits
         try (Transaction tx = db.beginTx()) {
-            var limit = random.nextInt(1, ZEBRAS);
+            int limit = random.nextInt(1, ZEBRAS);
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, limit - 1);
             }
             tx.commit();
@@ -148,7 +148,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, ZEBRAS);
             }
             tx.commit();
@@ -157,7 +157,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // top hit
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, 0);
             }
             tx.commit();
@@ -165,10 +165,10 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
 
         // top hits
         try (Transaction tx = db.beginTx()) {
-            var limit = random.nextInt(1, ZEBRAS);
+            int limit = random.nextInt(1, ZEBRAS);
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().toList();
+                List<Entity> list = iterator.stream().toList();
                 assertSearchResults(list, limit - 1);
             }
             tx.commit();
@@ -179,7 +179,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
         // all zebras collected
         assertThat(list).hasSize(1 + extraZebras);
         // top zebra is first
-        assertThat(list.get(0).getElementId()).isEqualTo(topEntity);
+        assertThat(list.getFirst().getElementId()).isEqualTo(topEntity);
         // all zebras are unique
         assertThat(list.stream().map(Entity::getElementId).collect(Collectors.toSet()))
                 .hasSize(list.size());

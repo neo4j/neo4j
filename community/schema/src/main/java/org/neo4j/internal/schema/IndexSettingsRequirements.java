@@ -29,7 +29,7 @@ public class IndexSettingsRequirements {
     private IndexSettingsRequirements() {}
 
     public static class DefaultRequirement<T> implements IndexSettingsRequirement<T> {
-        protected T requirement;
+        protected final T requirement;
 
         public DefaultRequirement(T requirement) {
             this.requirement = requirement;
@@ -47,9 +47,9 @@ public class IndexSettingsRequirements {
 
         @Override
         public String toString() {
-            final Class<?> type = getClass();
-            final String simpleName = type.getSimpleName();
-            final String typeName = simpleName.isBlank() ? type.getTypeName() : simpleName;
+            Class<?> type = getClass();
+            String simpleName = type.getSimpleName();
+            String typeName = simpleName.isBlank() ? type.getTypeName() : simpleName;
             return "%s[requirement=%s]".formatted(typeName, requirement);
         }
 
@@ -63,7 +63,7 @@ public class IndexSettingsRequirements {
             if (object == null || this.getClass() != object.getClass()) {
                 return false;
             }
-            final DefaultRequirement<?> that = (DefaultRequirement<?>) object;
+            DefaultRequirement<?> that = (DefaultRequirement<?>) object;
             return Objects.equals(this.requirement, that.requirement);
         }
     }

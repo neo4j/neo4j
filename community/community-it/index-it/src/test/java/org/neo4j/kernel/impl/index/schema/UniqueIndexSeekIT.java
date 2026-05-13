@@ -101,7 +101,7 @@ class UniqueIndexSeekIT {
 
             generateRandomData(database, type, nameProperty);
 
-            var dbName = database.databaseName();
+            String dbName = database.databaseName();
             assertNotNull(indexExtensionFactory.getIndexProvider(dbName));
             assertThat(numberOfClosedReaders()).isGreaterThan(0L);
             assertThat(numberOfOpenReaders()).isGreaterThan(0L);

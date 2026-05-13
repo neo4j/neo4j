@@ -44,6 +44,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
@@ -55,6 +56,8 @@ import org.neo4j.internal.schema.SchemaUserDescription;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.logging.AssertableLogProvider;
@@ -62,6 +65,7 @@ import org.neo4j.logging.LogAssertions;
 import org.neo4j.storageengine.api.EagerValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
@@ -132,8 +136,8 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     @ParameterizedTest
     @MethodSource("unsupportedPredicates")
     void readerShouldThrowOnUnsupportedPredicates(PropertyIndexQuery predicate) {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
-            var e = assertThrows(
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> {
                         try (SimpleEntityValueClient client = new SimpleEntityValueClient()) {
@@ -164,8 +168,8 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
 
     @Test
     void readerShouldThrowOnUnsupportedCompositePredicates() {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
-            var e = assertThrows(
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> reader.query(
                             new SimpleEntityValueClient(),
@@ -192,9 +196,9 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     @ParameterizedTest
     @MethodSource("unsupportedOrders")
     void readerShouldThrowOnUnsupportedOrder(IndexOrder indexOrder) {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact(0, PointValue.MAX_VALUE);
-            var e = assertThrows(
+            IndexNotApplicableKernelException e = assertThrows(
                     IndexNotApplicableKernelException.class,
                     () -> {
                         try (SimpleEntityValueClient client = new SimpleEntityValueClient()) {
@@ -227,14 +231,14 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     void updaterShouldIgnoreUnsupportedTypes(ValueType unsupportedType) throws Exception {
         // given  an empty index
         // when   an unsupported value type is added
-        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-            final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+        try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            Value unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
             updater.process(
                     EagerValueIndexEntryUpdate.add(idGenerator().getAsLong(), INDEX_DESCRIPTOR, unsupportedValue));
         }
 
         // then   it should not be indexed, and thus not visible
-        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+        try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
             assertThat(reader).isEmpty();
         }
     }
@@ -244,26 +248,26 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     void updaterShouldChangeUnsupportedToSupportedByAdd(ValueType unsupportedType) throws Exception {
         // given  an empty index
         // when   an unsupported value type is added
-        final var entityId = idGenerator().getAsLong();
-        final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
-        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+        long entityId = idGenerator().getAsLong();
+        Value unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+        try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
             updater.process(EagerValueIndexEntryUpdate.add(entityId, INDEX_DESCRIPTOR, unsupportedValue));
         }
 
         // then   it should not be indexed, and thus not visible
-        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+        try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
             assertThat(reader).isEmpty();
         }
 
         // when   the unsupported value type is changed to a supported value type
-        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-            final var supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
+        try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            Value supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
             updater.process(
                     EagerValueIndexEntryUpdate.change(entityId, INDEX_DESCRIPTOR, unsupportedValue, supportedValue));
         }
 
         // then   it should be added to the index, and thus now visible
-        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+        try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
             assertThat(reader).containsExactlyInAnyOrder(entityId);
         }
     }
@@ -273,26 +277,26 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     void updaterShouldChangeSupportedToUnsupportedByRemove(ValueType unsupportedType) throws Exception {
         // given  an empty index
         // when   a supported value type is added
-        final var entityId = idGenerator().getAsLong();
-        final var supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
-        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+        long entityId = idGenerator().getAsLong();
+        Value supportedValue = random.randomValues().nextValueOfTypes(SUPPORTED_TYPES);
+        try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
             updater.process(EagerValueIndexEntryUpdate.add(entityId, INDEX_DESCRIPTOR, supportedValue));
         }
 
         // then   it should be added to the index, and thus visible
-        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+        try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
             assertThat(reader).containsExactlyInAnyOrder(entityId);
         }
 
         // when   the supported value type is changed to an unsupported value type
-        try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-            final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
+        try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+            Value unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
             updater.process(
                     EagerValueIndexEntryUpdate.change(entityId, INDEX_DESCRIPTOR, supportedValue, unsupportedValue));
         }
 
         // then   it should be removed from the index, and thus no longer visible
-        try (var reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
+        try (BoundedIterable<Long> reader = accessor.newAllEntriesValueReader(CursorContext.NULL_CONTEXT)) {
             assertThat(reader).isEmpty();
         }
     }

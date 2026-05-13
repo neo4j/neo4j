@@ -197,7 +197,7 @@ public class SchemaCalculator {
                     int propertyKey = propertyCursor.propertyKey();
 
                     Value currentValue = propertyCursor.propertyValue();
-                    var key = new RelationshipTypePropertyKey(typeId, propertyKey);
+                    RelationshipTypePropertyKey key = new RelationshipTypePropertyKey(typeId, propertyKey);
                     updateValueTypeInMapping(
                             currentValue,
                             key,
@@ -228,7 +228,7 @@ public class SchemaCalculator {
 
                     propertyIds.addAll(oldPropertyKeySet);
                     propertyIds.forEach(id -> {
-                        var key = new RelationshipTypePropertyKey(typeId, id);
+                        RelationshipTypePropertyKey key = new RelationshipTypePropertyKey(typeId, id);
                         relMappings
                                 .relationshipTypeIdANDPropertyTypeIdToValueType
                                 .get(key)
@@ -257,7 +257,7 @@ public class SchemaCalculator {
                 while (propertyCursor.next()) {
                     Value currentValue = propertyCursor.propertyValue();
                     int propertyKeyId = propertyCursor.propertyKey();
-                    var key = new LabelSetPropertyKey(labels, propertyKeyId);
+                    LabelSetPropertyKey key = new LabelSetPropertyKey(labels, propertyKeyId);
                     updateValueTypeInMapping(
                             currentValue,
                             key,
@@ -288,7 +288,7 @@ public class SchemaCalculator {
 
                     propertyIds.addAll(oldPropertyKeySet);
                     propertyIds.forEach(id -> {
-                        var key = new LabelSetPropertyKey(labels, id);
+                        LabelSetPropertyKey key = new LabelSetPropertyKey(labels, id);
                         nodeMappings
                                 .labelSetANDNodePropertyKeyIdToValueType
                                 .get(key)

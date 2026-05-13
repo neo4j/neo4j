@@ -51,7 +51,7 @@ class RangeBlockBasedIndexPopulatorUpdatesTest extends GenericBlockBasedIndexPop
                 heapBufferFactory((int) kibiBytes(40)),
                 config,
                 INSTANCE,
-                tokenNameLookup,
+                TOKEN_NAME_LOOKUP,
                 ElementIdMapper.PLACEHOLDER,
                 BlockBasedIndexPopulator.NO_MONITOR,
                 Sets.immutable.empty(),

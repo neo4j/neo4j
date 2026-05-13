@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.extension.DbmsExtension;
@@ -44,12 +45,12 @@ class NodeScanIT {
 
     @Test
     void trackPageCacheAccessOnNodeLabelScan() throws KernelException {
-        var testLabel = Label.label("testLabel");
+        Label testLabel = Label.label("testLabel");
         try (KernelTransaction tx = kernel.beginTransaction(IMPLICIT, read())) {
-            var cursorContext = tx.cursorContext();
+            CursorContext cursorContext = tx.cursorContext();
             assertThat(cursorContext.getCursorTracer().pins()).isZero();
 
-            var label = tx.tokenRead().nodeLabel(testLabel.name());
+            int label = tx.tokenRead().nodeLabel(testLabel.name());
 
             IndexDescriptor index = tx.schemaRead()
                     .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)

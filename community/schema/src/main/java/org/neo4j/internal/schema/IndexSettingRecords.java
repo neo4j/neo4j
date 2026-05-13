@@ -34,13 +34,13 @@ public class IndexSettingRecords implements Iterable<IndexSettingRecord> {
 
     public <RECORD extends IndexSettingRecord> RECORD upsert(RECORD record) {
         Preconditions.requireNonNull(record, "record must not be null");
-        final String settingName = Preconditions.requireNonNull(record.settingName(), "setting must not be null");
+        String settingName = Preconditions.requireNonNull(record.settingName(), "setting must not be null");
         records.put(settingName, record);
         return record;
     }
 
     public void upsertAll(Iterable<? extends IndexSettingRecord> records) {
-        for (final IndexSettingRecord record : records) {
+        for (IndexSettingRecord record : records) {
             upsert(record);
         }
     }

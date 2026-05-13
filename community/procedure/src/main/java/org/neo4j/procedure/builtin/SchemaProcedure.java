@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.memory.ProcedureMemory;
+import org.neo4j.procedure.memory.ProcedureMemory.HeapTrackingCollectionFactory;
 import org.neo4j.procedure.memory.ProcedureMemoryTracker;
 import org.neo4j.token.api.TokenConstants;
 
@@ -65,7 +66,7 @@ public class SchemaProcedure {
     static final long MEMORY_ESTIMATION_FACTOR_VIRTUAL_RELATIONSHIP = 50;
 
     public SchemaProcedure(
-            final InternalTransaction internalTransaction, ProcedureMemory memory, ProcedureMemoryTracker tracker) {
+            InternalTransaction internalTransaction, ProcedureMemory memory, ProcedureMemoryTracker tracker) {
         this.internalTransaction = internalTransaction;
         this.memory = memory;
         this.tracker = tracker;
@@ -73,11 +74,11 @@ public class SchemaProcedure {
     }
 
     public GraphResult buildSchemaGraph() {
-        final var collections = memory.collections();
-        final HeapTracking.Map<String, VirtualNodeHack> nodes = collections.newHeapTrackingUnifiedMap();
-        final HeapTracking.Map<String, Map<VirtualRelationshipHack, Object>> relationships =
+        HeapTrackingCollectionFactory collections = memory.collections();
+        HeapTracking.Map<String, VirtualNodeHack> nodes = collections.newHeapTrackingUnifiedMap();
+        HeapTracking.Map<String, Map<VirtualRelationshipHack, Object>> relationships =
                 collections.newHeapTrackingUnifiedMap();
-        final KernelTransaction kernelTransaction = internalTransaction.kernelTransaction();
+        KernelTransaction kernelTransaction = internalTransaction.kernelTransaction();
         AccessMode mode = kernelTransaction.securityContext().mode();
 
         try (KernelTransaction.Revertable ignore = kernelTransaction.overrideWith(SecurityContext.AUTH_DISABLED)) {
@@ -88,7 +89,7 @@ public class SchemaProcedure {
             HeapTracking.List<LabelNameId> labelNamesAndIds = collections.newHeapTrackingArrayList();
 
             // Get all labels that are in use as seen by a super user
-            List<Label> labelsInUse = collections.newHeapTrackingArrayList();
+            HeapTracking.List<Label> labelsInUse = collections.newHeapTrackingArrayList();
             labelsInUse.addAll(stream(LABELS.inUse(
                             kernelTransaction.dataRead(),
                             kernelTransaction.schemaRead(),
@@ -195,11 +196,12 @@ public class SchemaProcedure {
             List<Node> nodes,
 
             @Description(
-                    "A list of virtual relationships representing all combinations between start and end nodes in the database.")
+                    "A list of virtual relationships representing all combinations between start and end nodes in the"
+                            + " database.")
             List<Relationship> relationships) {}
 
     private VirtualNodeHack getOrCreateLabel(
-            String label, Map<String, Object> properties, final Map<String, VirtualNodeHack> nodeMap) {
+            String label, Map<String, Object> properties, Map<String, VirtualNodeHack> nodeMap) {
         if (nodeMap.containsKey(label)) {
             return nodeMap.get(label);
         }
@@ -214,7 +216,7 @@ public class SchemaProcedure {
             VirtualNodeHack startNode,
             VirtualNodeHack endNode,
             String relType,
-            final Map<String, Map<VirtualRelationshipHack, Object>> relationshipMap) {
+            Map<String, Map<VirtualRelationshipHack, Object>> relationshipMap) {
         Map<VirtualRelationshipHack, Object> relationshipsForType;
         if (!relationshipMap.containsKey(relType)) {
             relationshipsForType = memory.collections().newHeapTrackingUnifiedMap();
@@ -229,8 +231,7 @@ public class SchemaProcedure {
     }
 
     private GraphResult getGraphResult(
-            final Map<String, VirtualNodeHack> nodeMap,
-            final Map<String, Map<VirtualRelationshipHack, Object>> relationshipMap) {
+            Map<String, VirtualNodeHack> nodeMap, Map<String, Map<VirtualRelationshipHack, Object>> relationshipMap) {
         List<Relationship> relationships = new ArrayList<>();
         for (Map<VirtualRelationshipHack, Object> relationship : relationshipMap.values()) {
             relationships.addAll(relationship.keySet());
@@ -261,7 +262,7 @@ public class SchemaProcedure {
         private final RelationshipType relationshipType;
         private final Map<String, Object> propertyMap = HashMap.newHashMap(1);
 
-        private VirtualRelationshipHack(final Node startNode, final Node endNode, final String type) {
+        private VirtualRelationshipHack(Node startNode, Node endNode, String type) {
             this.id = MIN_ID.getAndDecrement();
             this.startNode = startNode;
             this.endNode = endNode;
@@ -364,7 +365,7 @@ public class SchemaProcedure {
         private final long id;
         private final Label label;
 
-        private VirtualNodeHack(final String label, Map<String, Object> properties) {
+        private VirtualNodeHack(String label, Map<String, Object> properties) {
             this.id = MIN_ID.getAndDecrement();
             this.label = Label.label(label);
             propertyMap.putAll(properties);

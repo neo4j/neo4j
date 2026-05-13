@@ -194,14 +194,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         try (Transaction tx = db.beginTx()) {
             Integer countryLabelId = labelsNameIdMap.get(COUNTRY_LABEL);
             Integer colorLabelId = labelsNameIdMap.get(COLOR_LABEL);
-            try (var indexReader = getIndexReader(propertyId, countryLabelId)) {
+            try (ValueIndexReader indexReader = getIndexReader(propertyId, countryLabelId)) {
                 assertThat(indexReader.countIndexedEntities(
                                 0, NULL_CONTEXT, new int[] {propertyId}, Values.of("Sweden")))
                         .as("Should be removed by concurrent remove.")
                         .isEqualTo(0);
             }
 
-            try (var indexReader = getIndexReader(propertyId, colorLabelId)) {
+            try (ValueIndexReader indexReader = getIndexReader(propertyId, colorLabelId)) {
                 assertThat(indexReader.countIndexedEntities(
                                 3, NULL_CONTEXT, new int[] {propertyId}, Values.of("green")))
                         .as("Should be removed by concurrent remove.")
@@ -229,14 +229,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         try (Transaction tx = db.beginTx()) {
             Integer countryLabelId = labelsNameIdMap.get(COUNTRY_LABEL);
             Integer carLabelId = labelsNameIdMap.get(CAR_LABEL);
-            try (var indexReader = getIndexReader(propertyId, countryLabelId)) {
+            try (ValueIndexReader indexReader = getIndexReader(propertyId, countryLabelId)) {
                 assertThat(indexReader.countIndexedEntities(
                                 otherNodes[0].getId(), NULL_CONTEXT, new int[] {propertyId}, Values.of("Denmark")))
                         .as("Should be added by concurrent add.")
                         .isEqualTo(1);
             }
 
-            try (var indexReader = getIndexReader(propertyId, carLabelId)) {
+            try (ValueIndexReader indexReader = getIndexReader(propertyId, carLabelId)) {
                 assertThat(indexReader.countIndexedEntities(
                                 otherNodes[1].getId(), NULL_CONTEXT, new int[] {propertyId}, Values.of("BMW")))
                         .as("Should be added by concurrent add.")
@@ -265,20 +265,20 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         try (Transaction tx = db.beginTx()) {
             Integer colorLabelId = labelsNameIdMap.get(COLOR_LABEL);
             Integer carLabelId = labelsNameIdMap.get(CAR_LABEL);
-            try (var indexReader = getIndexReader(propertyId, colorLabelId)) {
+            try (ValueIndexReader indexReader = getIndexReader(propertyId, colorLabelId)) {
                 assertThat(indexReader.countIndexedEntities(
                                 color2.getId(), NULL_CONTEXT, new int[] {propertyId}, Values.of("green")))
                         .as(format("Should be deleted by concurrent change. Reader is: %s, ", indexReader))
                         .isEqualTo(0);
             }
-            try (var indexReader = getIndexReader(propertyId, colorLabelId)) {
+            try (ValueIndexReader indexReader = getIndexReader(propertyId, colorLabelId)) {
                 assertThat(indexReader.countIndexedEntities(
                                 color2.getId(), NULL_CONTEXT, new int[] {propertyId}, Values.of("pink")))
                         .as("Should be updated by concurrent change.")
                         .isEqualTo(1);
             }
 
-            try (var indexReader = getIndexReader(propertyId, carLabelId)) {
+            try (ValueIndexReader indexReader = getIndexReader(propertyId, carLabelId)) {
                 assertThat(indexReader.countIndexedEntities(
                                 car2.getId(), NULL_CONTEXT, new int[] {propertyId}, Values.of("SAAB")))
                         .as("Should be added by concurrent change.")
@@ -314,7 +314,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         labelsNameIdMap.remove(COLOR_LABEL);
         waitAndActivateIndexes(labelsNameIdMap, propertyId);
 
-        var e = assertThrows(IndexNotFoundKernelException.class, () -> {
+        IndexNotFoundKernelException e = assertThrows(IndexNotFoundKernelException.class, () -> {
             Iterator<IndexDescriptor> iterator =
                     schemaCache.indexesForSchema(SchemaDescriptors.forLabel(labelToDropId, propertyId));
             while (iterator.hasNext()) {
@@ -409,7 +409,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         }
     }
 
-    private DynamicIndexStoreView dynamicIndexStoreViewWrapper(
+    private static DynamicIndexStoreView dynamicIndexStoreViewWrapper(
             Runnable customAction,
             StorageEngine storageEngine,
             IndexingService.IndexProxyProvider indexProxies,
@@ -461,12 +461,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
             IndexType indexType,
             Map<String, Integer> labelNameIdMap,
             int propertyId) {
-        final IndexProviderMap indexProviderMap = getIndexProviderMap();
+        IndexProviderMap indexProviderMap = getIndexProviderMap();
         IndexProvider indexProvider = indexProviderMap.lookup(provider.name());
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         List<IndexDescriptor> list = new ArrayList<>();
         for (Integer labelId : labelNameIdMap.values()) {
-            final LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, propertyId);
+            LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, propertyId);
             IndexDescriptor index = IndexPrototype.forSchema(schema, providerDescriptor)
                     .withIndexType(indexType)
                     .withName("index_" + labelId)
@@ -687,7 +687,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                 try (Transaction transaction = db.beginTx()) {
                     Node node = transaction.getNodeById(update.getEntityId());
                     for (int labelId : labelsNameIdMap.values()) {
-                        var index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId))
+                        IndexDescriptor index = IndexPrototype.forSchema(
+                                        SchemaDescriptors.forLabel(labelId, propertyId))
                                 .withName("0")
                                 .materialise(0);
                         for (IndexEntryUpdate indexUpdate :

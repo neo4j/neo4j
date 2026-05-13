@@ -63,6 +63,7 @@ import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryParseException;
+import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10TrigramTokenStream.CodePointBuffer;
 import org.neo4j.kernel.api.impl.schema.TextDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
 import org.neo4j.util.Preconditions;
@@ -121,7 +122,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
     @Override
     public Lucene10QueryContext addConstantMustTerm(String field, String text) {
         ensureBooleanBuilder();
-        var termQuery = new ConstantScoreQuery(new TermQuery(new Term(field, text)));
+        ConstantScoreQuery termQuery = new ConstantScoreQuery(new TermQuery(new Term(field, text)));
         booleanBuilder.add(termQuery, BooleanClause.Occur.MUST);
         return this;
     }
@@ -188,7 +189,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         return this;
     }
 
-    private Query annQuery(
+    private static Query annQuery(
             VectorDocumentStructure documentStructure, float[] query, int k, int efSearch, Query filter) {
         assert efSearch >= k : "efSearch must be >= k";
         String field = documentStructure.vectorValueKeyFor(query.length);
@@ -226,7 +227,8 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         singleQuery = single;
     }
 
-    private Query parseFulltextQuery(String query, String[] propertyNames, Analyzer analyzer) throws ParseException {
+    private static Query parseFulltextQuery(String query, String[] propertyNames, Analyzer analyzer)
+            throws ParseException {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(propertyNames, analyzer);
         multiFieldQueryParser.setAllowLeadingWildcard(true);
         return multiFieldQueryParser.parse(query);
@@ -237,7 +239,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
             return MatchAllDocsQuery.INSTANCE;
         }
 
-        var codePointBuffer = Lucene10TrigramTokenStream.getCodePoints(searchString);
+        CodePointBuffer codePointBuffer = Lucene10TrigramTokenStream.getCodePoints(searchString);
 
         if (codePointBuffer.codePointCount() < 3) {
             String searchTerm = QueryParserBase.escape(searchString);
@@ -364,8 +366,8 @@ public class Lucene10QueryContext implements LuceneQueryContext {
                     return AcceptStatus.NO;
                 }
 
-                final byte first = substring.bytes[substring.offset];
-                final int max = term.offset + term.length - substring.length;
+                byte first = substring.bytes[substring.offset];
+                int max = term.offset + term.length - substring.length;
                 for (int pos = term.offset; pos <= max; pos++) {
                     // find first byte
                     if (term.bytes[pos] != first) {
@@ -377,7 +379,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
                     // Now we have the first byte match, look at the rest
                     if (pos <= max) {
                         int i = pos + 1;
-                        final int end = pos + substring.length;
+                        int end = pos + substring.length;
                         for (int j = substring.offset + 1; i < end && term.bytes[i] == substring.bytes[j]; j++, i++) {
                             // do nothing
                         }
@@ -546,12 +548,12 @@ public class Lucene10QueryContext implements LuceneQueryContext {
 
             @Override
             public float getMaxScore(int upTo) {
-                return 0f;
+                return 0.0f;
             }
 
             @Override
             public float score() {
-                return 0f;
+                return 0.0f;
             }
         }
 
@@ -575,12 +577,12 @@ public class Lucene10QueryContext implements LuceneQueryContext {
 
             @Override
             public float getMaxScore(int upTo) {
-                return 0f;
+                return 0.0f;
             }
 
             @Override
             public float score() {
-                return 0f;
+                return 0.0f;
             }
         }
 

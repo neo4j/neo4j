@@ -68,7 +68,7 @@ public interface IndexCapability {
     default boolean areValuesAccepted(Value... values) {
         Preconditions.requireNonEmpty(values);
         Preconditions.requireNoNullElements(values);
-        final var categories = new ValueCategory[values.length];
+        ValueCategory[] categories = new ValueCategory[values.length];
         for (int i = 0; i < values.length; i++) {
             categories[i] = values[i].valueGroup().category();
         }

@@ -55,9 +55,10 @@ public class PropertyTypeSet implements Iterable<ConstrainableType>, Serializabl
             return empty();
         }
 
-        var lookup = Set.copyOf(types);
-        var uniqueTypes = lookup.stream().sorted(TypeRepresentation::compare).toList();
-        var acceptsEmptyList = types.stream().anyMatch(TypeRepresentation::isList);
+        Set<? extends ConstrainableType> lookup = Set.copyOf(types);
+        List<? extends ConstrainableType> uniqueTypes =
+                lookup.stream().sorted(TypeRepresentation::compare).toList();
+        boolean acceptsEmptyList = types.stream().anyMatch(TypeRepresentation::isList);
 
         return new PropertyTypeSet(lookup, uniqueTypes, acceptsEmptyList);
     }
@@ -75,8 +76,8 @@ public class PropertyTypeSet implements Iterable<ConstrainableType>, Serializabl
             return "NOTHING";
         }
 
-        var joiner = new StringJoiner(" | ");
-        for (var type : types) {
+        StringJoiner joiner = new StringJoiner(" | ");
+        for (ConstrainableType type : types) {
             joiner.add(type.userDescription());
         }
         return joiner.toString();
@@ -138,6 +139,7 @@ public class PropertyTypeSet implements Iterable<ConstrainableType>, Serializabl
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Iterator<ConstrainableType> iterator() {
         return (Iterator<ConstrainableType>) types.iterator();
     }

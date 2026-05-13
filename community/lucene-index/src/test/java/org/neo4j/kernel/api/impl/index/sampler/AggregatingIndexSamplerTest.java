@@ -44,13 +44,7 @@ class AggregatingIndexSamplerTest {
         return new TestIndexSampler(value);
     }
 
-    private static class TestIndexSampler implements IndexSampler {
-        private final long value;
-
-        TestIndexSampler(long value) {
-            this.value = value;
-        }
-
+    private record TestIndexSampler(long value) implements IndexSampler {
         @Override
         public IndexSample sampleIndex(CursorContext cursorContext, AtomicBoolean stopped) {
             return new IndexSample(value, value, value * 2);

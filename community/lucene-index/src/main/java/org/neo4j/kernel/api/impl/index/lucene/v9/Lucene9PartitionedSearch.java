@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SequencedCollection;
 import java.util.function.LongPredicate;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.kernel.api.impl.index.collector.ScoredEntityIterator;
@@ -103,13 +104,14 @@ class Lucene9PartitionedSearch implements LucenePartitionedSearch {
 
         private Optional<TermStatistics> computeTermStatistics(Term term) {
             TermStatistics result;
-            List<TermStatistics> statistics = new ArrayList<>(searches.size());
+            SequencedCollection<TermStatistics> statistics = new ArrayList<>(searches.size());
             for (PreparedSearch preparedSearch : searches) {
                 IndexSearcher searcher = preparedSearch.indexSearcher;
                 try {
                     TermStates context = TermStates.build(searcher, term, true);
                     if (context.docFreq() > 0) {
-                        var statistic = searcher.termStatistics(term, context.docFreq(), context.totalTermFreq());
+                        TermStatistics statistic =
+                                searcher.termStatistics(term, context.docFreq(), context.totalTermFreq());
                         statistics.add(statistic);
                     }
                 } catch (IOException e) {

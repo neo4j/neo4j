@@ -87,7 +87,7 @@ public class IndexSettingUtil {
         Map<String, Value> collectingMap = new HashMap<>();
         for (Map.Entry<IndexSetting, Object> entry : indexConfiguration.entrySet()) {
             IndexSetting setting = entry.getKey();
-            final Value value = asIndexSettingValue(setting, entry.getValue());
+            Value value = asIndexSettingValue(setting, entry.getValue());
             collectingMap.put(setting.getSettingName(), value);
         }
         return IndexConfig.with(collectingMap);
@@ -100,8 +100,8 @@ public class IndexSettingUtil {
     public static IndexConfig toIndexConfigFromStringObjectMap(Map<String, Object> configMap) {
         Map<IndexSetting, Object> collectingMap = new HashMap<>();
         for (Map.Entry<String, Object> entry : configMap.entrySet()) {
-            final String key = entry.getKey();
-            final IndexSetting indexSetting = asIndexSetting(key);
+            String key = entry.getKey();
+            IndexSetting indexSetting = asIndexSetting(key);
             collectingMap.put(indexSetting, entry.getValue());
         }
         return toIndexConfigFromIndexSettingObjectMap(collectingMap);
@@ -154,7 +154,7 @@ public class IndexSettingUtil {
     }
 
     private static IndexSetting asIndexSetting(String key) {
-        final IndexSetting indexSetting = fromString(key);
+        IndexSetting indexSetting = fromString(key);
         if (indexSetting == null) {
             throw InvalidArgumentException.invalidIndexConfig(key, List.copyOf(INDEX_SETTING_REVERSE_LOOKUP.keySet()));
         }
@@ -168,7 +168,7 @@ public class IndexSettingUtil {
     }
 
     private static Value parse(IndexSetting indexSetting, Object value) {
-        final Class<?> type = indexSetting.getType();
+        Class<?> type = indexSetting.getType();
         try {
             if (type == Boolean.class) {
                 return parseAsBoolean(value);
@@ -199,16 +199,16 @@ public class IndexSettingUtil {
     }
 
     private static IntValue parseAsInteger(Object value) throws IndexSettingParseException {
-        if (value instanceof Number) {
-            return Values.intValue(((Number) value).intValue());
+        if (value instanceof Number number) {
+            return Values.intValue(number.intValue());
         }
         throw new IndexSettingParseException("Could not parse value '" + value + "' of type "
                 + value.getClass().getSimpleName() + " as integer.");
     }
 
     private static DoubleValue parseAsDouble(Object value) throws IndexSettingParseException {
-        if (value instanceof Number) {
-            return Values.doubleValue(((Number) value).doubleValue());
+        if (value instanceof Number number) {
+            return Values.doubleValue(number.doubleValue());
         }
         throw new IndexSettingParseException("Could not parse value '" + value + "' of type "
                 + value.getClass().getSimpleName() + " as double.");
@@ -216,45 +216,45 @@ public class IndexSettingUtil {
 
     private static DoubleArray parseAsDoubleArray(Object value) throws IndexSettingParseException {
         // Primitive arrays
-        if (value instanceof byte[]) {
-            final double[] doubleArray = toDoubleArray((byte[]) value);
+        if (value instanceof byte[] array) {
+            double[] doubleArray = toDoubleArray(array);
             return doubleArray(doubleArray);
         }
-        if (value instanceof short[]) {
-            final double[] doubleArray = toDoubleArray((short[]) value);
+        if (value instanceof short[] array) {
+            double[] doubleArray = toDoubleArray(array);
             return doubleArray(doubleArray);
         }
-        if (value instanceof int[]) {
-            final double[] doubleArray = toDoubleArray((int[]) value);
+        if (value instanceof int[] array) {
+            double[] doubleArray = toDoubleArray(array);
             return doubleArray(doubleArray);
         }
-        if (value instanceof long[]) {
-            final double[] doubleArray = toDoubleArray((long[]) value);
+        if (value instanceof long[] array) {
+            double[] doubleArray = toDoubleArray(array);
             return doubleArray(doubleArray);
         }
-        if (value instanceof float[]) {
-            final double[] doubleArray = toDoubleArray((float[]) value);
+        if (value instanceof float[] array) {
+            double[] doubleArray = toDoubleArray(array);
             return doubleArray(doubleArray);
         }
-        if (value instanceof double[]) {
-            return doubleArray((double[]) value);
+        if (value instanceof double[] array) {
+            return doubleArray(array);
         }
 
         // Non primitive arrays
-        if (value instanceof final Number[] numberArray) {
-            final double[] doubleArray = new double[numberArray.length];
-            for (int i = 0; i < numberArray.length; i++) {
-                doubleArray[i] = numberArray[i].doubleValue();
+        if (value instanceof Number[] array) {
+            double[] doubleArray = new double[array.length];
+            for (int i = 0; i < array.length; i++) {
+                doubleArray[i] = array[i].doubleValue();
             }
             return doubleArray(doubleArray);
         }
 
         // Collection
-        if (value instanceof final Collection<?> collection) {
-            final double[] doubleArray = new double[collection.size()];
-            final Iterator<?> iterator = collection.iterator();
+        if (value instanceof Collection<?> collection) {
+            double[] doubleArray = new double[collection.size()];
+            Iterator<?> iterator = collection.iterator();
             for (int i = 0; iterator.hasNext(); i++) {
-                final Object next = iterator.next();
+                Object next = iterator.next();
                 if (next instanceof Number) {
                     doubleArray[i] = ((Number) next).doubleValue();
                 } else {
@@ -269,14 +269,14 @@ public class IndexSettingUtil {
     }
 
     private static BooleanValue parseAsBoolean(Object value) throws IndexSettingParseException {
-        if (value instanceof Boolean) {
-            return booleanValue((Boolean) value);
+        if (value instanceof Boolean bool) {
+            return booleanValue(bool);
         }
         throw new IndexSettingParseException("Could not parse value '" + value + "' as boolean.");
     }
 
     private static double[] toDoubleArray(byte[] value) {
-        final double[] doubleArray = new double[value.length];
+        double[] doubleArray = new double[value.length];
         for (int i = 0; i < value.length; i++) {
             doubleArray[i] = value[i];
         }
@@ -284,7 +284,7 @@ public class IndexSettingUtil {
     }
 
     private static double[] toDoubleArray(short[] value) {
-        final double[] doubleArray = new double[value.length];
+        double[] doubleArray = new double[value.length];
         for (int i = 0; i < value.length; i++) {
             doubleArray[i] = value[i];
         }
@@ -292,7 +292,7 @@ public class IndexSettingUtil {
     }
 
     private static double[] toDoubleArray(int[] value) {
-        final double[] doubleArray = new double[value.length];
+        double[] doubleArray = new double[value.length];
         for (int i = 0; i < value.length; i++) {
             doubleArray[i] = value[i];
         }
@@ -300,7 +300,7 @@ public class IndexSettingUtil {
     }
 
     private static double[] toDoubleArray(long[] value) {
-        final double[] doubleArray = new double[value.length];
+        double[] doubleArray = new double[value.length];
         for (int i = 0; i < value.length; i++) {
             doubleArray[i] = value[i];
         }
@@ -308,7 +308,7 @@ public class IndexSettingUtil {
     }
 
     private static double[] toDoubleArray(float[] value) {
-        final double[] doubleArray = new double[value.length];
+        double[] doubleArray = new double[value.length];
         for (int i = 0; i < value.length; i++) {
             doubleArray[i] = value[i];
         }

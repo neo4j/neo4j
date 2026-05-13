@@ -106,7 +106,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
             .withName("index")
             .materialise(1);
     public static final int SUFFICIENTLY_LARGE_BUFFER_SIZE = (int) ByteUnit.kibiBytes(50);
-    final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
+    static final TokenNameLookup TOKEN_NAME_LOOKUP = SIMPLE_NAME_LOOKUP;
 
     @Inject
     Actor merger;
@@ -147,7 +147,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
         IndexDirectoryStructure directoryStructure =
                 directoriesByProvider(testDir.homePath()).forProvider(providerDescriptor);
         indexFiles = new IndexFiles(fs, directoryStructure, INDEX_DESCRIPTOR.getId());
-        var pageCacheTracer = PageCacheTracer.NULL;
+        PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         databaseIndexContext = DatabaseIndexContext.builder(
                         pageCache,
                         fs,
@@ -266,7 +266,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
             assertEquals(0.7f, populator.progress(PopulationProgress.DONE).getProgress(), 0.1f);
             monitor.mergeFinishedBarrier.release();
             mergeFuture.get();
-            assertEquals(1f, populator.progress(PopulationProgress.DONE).getProgress(), 0f);
+            assertEquals(1.0f, populator.progress(PopulationProgress.DONE).getProgress(), 0.0f);
         } finally {
             populator.close(true, NULL_CONTEXT);
         }

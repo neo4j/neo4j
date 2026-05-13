@@ -133,8 +133,8 @@ class MultipleOpenCursorsTest {
                 List<Long> actual2 = asList(cursor2);
 
                 // then
-                indexCoordinator.assertExistsResult(actual1);
-                indexCoordinator.assertExistsResult(actual2);
+                IndexCoordinator.assertExistsResult(actual1);
+                IndexCoordinator.assertExistsResult(actual2);
             }
 
             tx.commit();
@@ -196,11 +196,11 @@ class MultipleOpenCursorsTest {
 
                     try (NodeValueIndexCursor cursor2 = indexCoordinator.queryExists(ktx)) {
                         List<Long> actual2 = asList(cursor2);
-                        indexCoordinator.assertExistsResult(actual2);
+                        IndexCoordinator.assertExistsResult(actual2);
                     }
                 }
                 // then
-                indexCoordinator.assertExistsResult(actual1);
+                IndexCoordinator.assertExistsResult(actual1);
             }
             tx.commit();
         }
@@ -269,8 +269,8 @@ class MultipleOpenCursorsTest {
                     exhaustInterleaved(cursor1, actual1, cursor2, actual2);
 
                     // then
-                    indexCoordinator.assertExistsResult(actual1);
-                    indexCoordinator.assertExistsResult(actual2);
+                    IndexCoordinator.assertExistsResult(actual1);
+                    IndexCoordinator.assertExistsResult(actual2);
                 }
             }
             tx.commit();
@@ -501,7 +501,7 @@ class MultipleOpenCursorsTest {
                     ktx,
                     indexDescriptor,
                     PropertyIndexQuery.range(
-                            stringPropId1, stringProp1Values[0], true, stringProp1Values[numberOfNodes / 2], false));
+                            stringPropId1, stringProp1Values[0], true, stringProp1Values[NUMBER_OF_NODES / 2], false));
         }
 
         @Override
@@ -517,7 +517,7 @@ class MultipleOpenCursorsTest {
         @Override
         void assertRangeResult(List<Long> actual) {
             List<Long> expected = new ArrayList<>();
-            for (long i = 0; i < numberOfNodes / 2; i++) {
+            for (long i = 0; i < NUMBER_OF_NODES / 2; i++) {
                 expected.add(i);
             }
             assertSameContent(actual, expected);
@@ -559,7 +559,7 @@ class MultipleOpenCursorsTest {
                     ktx,
                     indexDescriptor,
                     PropertyIndexQuery.range(
-                            numberPropId1, numberProp1Values[0], true, numberProp1Values[numberOfNodes / 2], false));
+                            numberPropId1, numberProp1Values[0], true, numberProp1Values[NUMBER_OF_NODES / 2], false));
         }
 
         @Override
@@ -575,7 +575,7 @@ class MultipleOpenCursorsTest {
         @Override
         void assertRangeResult(List<Long> actual) {
             List<Long> expected = new ArrayList<>();
-            for (long i = 0; i < numberOfNodes / 2; i++) {
+            for (long i = 0; i < NUMBER_OF_NODES / 2; i++) {
                 expected.add(i);
             }
             assertSameContent(actual, expected);
@@ -600,7 +600,7 @@ class MultipleOpenCursorsTest {
     }
 
     private abstract static class IndexCoordinator {
-        final int numberOfNodes = 100;
+        static final int NUMBER_OF_NODES = 100;
 
         final Label indexLabel;
         final String numberProp1;
@@ -608,10 +608,10 @@ class MultipleOpenCursorsTest {
         final String stringProp1;
         final String stringProp2;
 
-        Number[] numberProp1Values;
-        Number[] numberProp2Values;
-        String[] stringProp1Values;
-        String[] stringProp2Values;
+        final Number[] numberProp1Values;
+        final Number[] numberProp2Values;
+        final String[] stringProp1Values;
+        final String[] stringProp2Values;
 
         int indexedLabelId;
         int numberPropId1;
@@ -628,10 +628,10 @@ class MultipleOpenCursorsTest {
             this.stringProp1 = stringProp1;
             this.stringProp2 = stringProp2;
 
-            this.numberProp1Values = new Number[numberOfNodes];
-            this.numberProp2Values = new Number[numberOfNodes];
-            this.stringProp1Values = new String[numberOfNodes];
-            this.stringProp2Values = new String[numberOfNodes];
+            this.numberProp1Values = new Number[NUMBER_OF_NODES];
+            this.numberProp2Values = new Number[NUMBER_OF_NODES];
+            this.stringProp1Values = new String[NUMBER_OF_NODES];
+            this.stringProp2Values = new String[NUMBER_OF_NODES];
 
             // EXISTING DATA:
             // 100 nodes with properties:
@@ -639,7 +639,7 @@ class MultipleOpenCursorsTest {
             // numberProp2: 0-99
             // stringProp1: "string-0"-"string-99"
             // stringProp2: "string-0"-"string-99"
-            for (int i = 0; i < numberOfNodes; i++) {
+            for (int i = 0; i < NUMBER_OF_NODES; i++) {
                 numberProp1Values[i] = i;
                 numberProp2Values[i] = i;
                 stringProp1Values[i] = "string-" + String.format("%02d", i);
@@ -649,7 +649,7 @@ class MultipleOpenCursorsTest {
 
         void init(GraphDatabaseAPI db) {
             try (Transaction tx = db.beginTx()) {
-                for (int i = 0; i < numberOfNodes; i++) {
+                for (int i = 0; i < NUMBER_OF_NODES; i++) {
                     Node node = tx.createNode(indexLabel);
                     node.setProperty(numberProp1, numberProp1Values[i]);
                     node.setProperty(numberProp2, numberProp2Values[i]);
@@ -695,9 +695,9 @@ class MultipleOpenCursorsTest {
 
         abstract void assertRangeResult(List<Long> result);
 
-        void assertExistsResult(List<Long> actual) {
+        static void assertExistsResult(List<Long> actual) {
             List<Long> expected = new ArrayList<>();
-            for (long i = 0; i < numberOfNodes; i++) {
+            for (long i = 0; i < NUMBER_OF_NODES; i++) {
                 expected.add(i);
             }
             assertSameContent(actual, expected);

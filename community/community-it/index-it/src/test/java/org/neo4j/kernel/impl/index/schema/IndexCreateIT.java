@@ -93,12 +93,12 @@ public class IndexCreateIT extends KernelIntegrationTest {
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
+        SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
                 org.neo4j.common.EntityType.NODE,
                 new int[] {labelId0, labelId1, labelId2, labelId1, labelId3},
                 new int[] {propId});
         // then
-        var e = assertThrows(
+        RepeatedLabelInSchemaException e = assertThrows(
                 RepeatedLabelInSchemaException.class,
                 () -> schemaWrite.indexCreate(IndexPrototype.forSchema(descriptor)));
         assertThat(e.gqlStatus()).isEqualTo("22N76");
@@ -121,12 +121,12 @@ public class IndexCreateIT extends KernelIntegrationTest {
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
+        SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
                 org.neo4j.common.EntityType.RELATIONSHIP,
                 new int[] {relTypeId0, relTypeId1, relTypeId2, relTypeId1, relTypeId3},
                 new int[] {propId});
         // then
-        var e = assertThrows(
+        RepeatedRelationshipTypeInSchemaException e = assertThrows(
                 RepeatedRelationshipTypeInSchemaException.class,
                 () -> schemaWrite.indexCreate(IndexPrototype.forSchema(descriptor)));
         assertThat(e.gqlStatus()).isEqualTo("22N76");
@@ -149,12 +149,12 @@ public class IndexCreateIT extends KernelIntegrationTest {
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final SemanticSearchSchemaDescriptor descriptor =
+        SemanticSearchSchemaDescriptor descriptor =
                 SchemaDescriptors.forSemanticSearch(org.neo4j.common.EntityType.NODE, new int[] {labelId}, new int[] {
                     propId0, propId1, propId2, propId1, propId3
                 });
         // then
-        var e = assertThrows(
+        RepeatedPropertyInSchemaException e = assertThrows(
                 RepeatedPropertyInSchemaException.class,
                 () -> schemaWrite.indexCreate(IndexPrototype.forSchema(descriptor)));
         assertThat(e.gqlStatus()).isEqualTo("22N76");

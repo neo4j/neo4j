@@ -110,7 +110,7 @@ public abstract class SingleIndexSettingProcessor implements IndexSettingsProces
 
         @Override
         public RecordWithSetting processForVerification(RecordWithSetting record) {
-            if (!(record instanceof final MissingSetting missing)) {
+            if (!(record instanceof MissingSetting missing)) {
                 return record;
             }
 
@@ -119,7 +119,7 @@ public abstract class SingleIndexSettingProcessor implements IndexSettingsProces
 
         @Override
         public RecordWithSetting processForAuthoritativeRead(RecordWithSetting record) {
-            if (valueForAuthoritativeRead == null || !(record instanceof final MissingSetting missing)) {
+            if (valueForAuthoritativeRead == null || !(record instanceof MissingSetting missing)) {
                 return record;
             }
 
@@ -139,7 +139,7 @@ public abstract class SingleIndexSettingProcessor implements IndexSettingsProces
 
         @Override
         public RecordWithSetting processForVerification(RecordWithSetting record) {
-            if (!(record instanceof final Pending pending)) {
+            if (!(record instanceof Pending pending)) {
                 return record;
             }
 

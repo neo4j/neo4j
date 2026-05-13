@@ -22,26 +22,29 @@ package org.neo4j.kernel.api.impl.index.lucene.v10;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.SequencedCollection;
+import java.util.concurrent.Future;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MergeScheduler.MergeSource;
 import org.apache.lucene.index.MergeTrigger;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10Directory.OnThreadConcurrentMergeScheduler;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.Barrier.Control;
 import org.neo4j.test.OtherThreadExecutor;
 
 class Lucene10OnThreadConcurrentMergeSchedulerTest {
     @Test
     void shouldMergeSourcesConcurrently() throws Exception {
         // given
-        try (var scheduler = new OnThreadConcurrentMergeScheduler();
-                var t2 = new OtherThreadExecutor("T2")) {
-            var barrier = new Barrier.Control();
-            var source = new ControlledMergeSource(barrier, 2, MergeBarrierPoint.MERGE);
-            var t2MergeFuture = t2.executeDontWait(() -> {
+        try (OnThreadConcurrentMergeScheduler scheduler = new OnThreadConcurrentMergeScheduler();
+                OtherThreadExecutor t2 = new OtherThreadExecutor("T2")) {
+            Control barrier = new Barrier.Control();
+            MergeSource source = new ControlledMergeSource(barrier, 2, MergeBarrierPoint.MERGE);
+            Future<Object> t2MergeFuture = t2.executeDontWait(() -> {
                 scheduler.merge(source, MergeTrigger.EXPLICIT);
                 return null;
             });
@@ -58,12 +61,12 @@ class Lucene10OnThreadConcurrentMergeSchedulerTest {
     @Test
     void shouldGetNextMergeSynchronized() throws Exception {
         // given
-        try (var scheduler = new OnThreadConcurrentMergeScheduler();
-                var t2 = new OtherThreadExecutor("T2");
-                var t3 = new OtherThreadExecutor("T3")) {
-            var barrier = new Barrier.Control();
-            var source = new ControlledMergeSource(barrier, 2, MergeBarrierPoint.NEXT_MERGE);
-            var t2MergeFuture = t2.executeDontWait(() -> {
+        try (OnThreadConcurrentMergeScheduler scheduler = new OnThreadConcurrentMergeScheduler();
+                OtherThreadExecutor t2 = new OtherThreadExecutor("T2");
+                OtherThreadExecutor t3 = new OtherThreadExecutor("T3")) {
+            Control barrier = new Barrier.Control();
+            MergeSource source = new ControlledMergeSource(barrier, 2, MergeBarrierPoint.NEXT_MERGE);
+            Future<Object> t2MergeFuture = t2.executeDontWait(() -> {
                 scheduler.merge(source, MergeTrigger.EXPLICIT);
                 return null;
             });
@@ -71,7 +74,7 @@ class Lucene10OnThreadConcurrentMergeSchedulerTest {
 
             // when first merge now waiting in getting next merge, then other threads needs to wait
             // for that to complete before getting their next merge
-            var t3MergeFuture = t3.executeDontWait(() -> {
+            Future<Object> t3MergeFuture = t3.executeDontWait(() -> {
                 scheduler.merge(source, MergeTrigger.EXPLICIT);
                 return null;
             });
@@ -89,7 +92,7 @@ class Lucene10OnThreadConcurrentMergeSchedulerTest {
         private final int numMerges;
         private final MergeBarrierPoint barrierPoint;
         private final Barrier.Control barrier;
-        private final List<MergePolicy.OneMerge> merges = new ArrayList<>();
+        private final SequencedCollection<OneMerge> merges = new ArrayList<>();
 
         public ControlledMergeSource(Barrier.Control barrier, int numMerges, MergeBarrierPoint barrierPoint) {
             this.barrier = barrier;
@@ -99,13 +102,13 @@ class Lucene10OnThreadConcurrentMergeSchedulerTest {
 
         @Override
         public MergePolicy.OneMerge getNextMerge() {
-            var currentlyHandedOutMerges = merges.size();
+            int currentlyHandedOutMerges = merges.size();
             if (barrierPoint == MergeBarrierPoint.NEXT_MERGE && currentlyHandedOutMerges == 0) {
                 barrier.reached();
             }
 
             if (currentlyHandedOutMerges < numMerges) {
-                var merge = mock(MergePolicy.OneMerge.class);
+                OneMerge merge = mock(MergePolicy.OneMerge.class);
                 merges.add(merge);
                 return merge;
             }
@@ -121,8 +124,8 @@ class Lucene10OnThreadConcurrentMergeSchedulerTest {
         }
 
         @Override
-        public void merge(MergePolicy.OneMerge oneMerge) throws IOException {
-            if (barrierPoint == MergeBarrierPoint.MERGE && oneMerge == merges.get(0)) {
+        public void merge(MergePolicy.OneMerge oneMerge) {
+            if (barrierPoint == MergeBarrierPoint.MERGE && oneMerge == merges.getFirst()) {
                 barrier.reached();
             }
         }

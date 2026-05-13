@@ -66,7 +66,7 @@ public final class IndexWriterConfigBuilder {
     }
 
     public LuceneIndexWriterConfig build() {
-        final LuceneIndexWriterConfig writerConfig = new LuceneIndexWriterConfig(analyzer).setLogProvider(logProvider);
+        LuceneIndexWriterConfig writerConfig = new LuceneIndexWriterConfig(analyzer).setLogProvider(logProvider);
         if (codec != null) {
             writerConfig.setCodec(codec);
         }

@@ -37,7 +37,7 @@ public class Neo4j202604NoneVectorCodec extends FilterCodec implements Lucene10C
     /// Used for writing and created programmatically when creating the IndexWriter
     public Neo4j202604NoneVectorCodec(VectorIndexConfig config) {
         super(CODEC_NAME, new Lucene104Codec());
-        final int maxDimensions = config.maxDimensions();
+        int maxDimensions = config.maxDimensions();
         this.vectorFormat = new LuceneKnnVectorFormatV2(maxDimensions, config.hnsw());
     }
 

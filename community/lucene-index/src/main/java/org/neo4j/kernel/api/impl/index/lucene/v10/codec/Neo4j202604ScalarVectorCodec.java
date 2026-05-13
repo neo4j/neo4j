@@ -37,7 +37,7 @@ public class Neo4j202604ScalarVectorCodec extends FilterCodec implements Lucene1
     /// Used for writing and created programmatically when creating the IndexWriter
     public Neo4j202604ScalarVectorCodec(VectorIndexConfig config) {
         super(CODEC_NAME, new Lucene104Codec());
-        final int maxDimensions = config.maxDimensions();
+        int maxDimensions = config.maxDimensions();
         this.vectorFormat = new LuceneKnnScalarQuantizedVectorFormatV2(maxDimensions, config.hnsw());
     }
 

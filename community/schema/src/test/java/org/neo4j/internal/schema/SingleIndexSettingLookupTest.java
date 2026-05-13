@@ -56,7 +56,7 @@ public class SingleIndexSettingLookupTest {
 
         @Test
         void incorrectType() {
-            final RecordWithSetting record = new Pending(setting, FAKE_VALUE, Values.NO_VALUE);
+            RecordWithSetting record = new Pending(setting, FAKE_VALUE, Values.NO_VALUE);
 
             processForVerificationAndAssertRecord(record, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -73,14 +73,14 @@ public class SingleIndexSettingLookupTest {
         @ParameterizedTest
         @ValueSource(strings = {"INCORRECT", "VALUE", "foo"})
         void invalidValues(String value) {
-            final RecordWithSetting record = new Pending(setting, value, Values.utf8Value(value));
+            RecordWithSetting record = new Pending(setting, value, Values.utf8Value(value));
 
-            final ObjectAssert<InvalidValue> invalidValueAssert =
+            ObjectAssert<InvalidValue> invalidValueAssert =
                     processForVerificationAndAssertRecord(record, InvalidValue.class);
             invalidValueAssert.extracting(RecordWithValue::value).isEqualTo(value);
 
-            final Set<String> valid = new HashSet<>();
-            for (final Lookup entry : Lookup.values()) {
+            Set<String> valid = new HashSet<>();
+            for (Lookup entry : Lookup.values()) {
                 valid.add(entry.name());
             }
             invalidValueAssert
@@ -92,8 +92,8 @@ public class SingleIndexSettingLookupTest {
         @ParameterizedTest
         @EnumSource
         void validPendingValues(Lookup value) {
-            final Value storable = Values.utf8Value(value.name());
-            final RecordWithSetting record = new Pending(setting, value.name(), storable);
+            Value storable = Values.utf8Value(value.name());
+            RecordWithSetting record = new Pending(setting, value.name(), storable);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -103,8 +103,8 @@ public class SingleIndexSettingLookupTest {
         @ParameterizedTest
         @EnumSource
         void validValidValues(Lookup value) {
-            final Value storable = Values.utf8Value(value.name());
-            final RecordWithSetting record = new Valid(setting, value.name(), storable);
+            Value storable = Values.utf8Value(value.name());
+            RecordWithSetting record = new Valid(setting, value.name(), storable);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)

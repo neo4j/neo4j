@@ -436,11 +436,11 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forLabel(
+                    LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(
                             tokenHolders.labelForName(label), tokenHolders.propertiesForName(properties));
-                    final var backingIndex =
+                    IndexPrototype backingIndex =
                             backingIndex(schema, providerDescriptor == null ? RANGE_DESCRIPTOR : providerDescriptor);
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name,
                             ConstraintDescriptorFactory.uniqueForSchema(schema, backingIndex.getIndexType()),
                             tokenHolders);
@@ -468,9 +468,9 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forLabel(
+                    LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(
                             tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name, ConstraintDescriptorFactory.existsForSchema(schema, isDependent), tokenHolders);
                     return new ConstraintPrototype(constraintDescriptor);
                 }
@@ -505,11 +505,11 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forLabel(
+                    LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(
                             tokenHolders.labelForName(label), tokenHolders.propertiesForName(properties));
-                    final var backingIndex =
+                    IndexPrototype backingIndex =
                             backingIndex(schema, providerDescriptor == null ? RANGE_DESCRIPTOR : providerDescriptor);
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name,
                             ConstraintDescriptorFactory.keyForSchema(schema, backingIndex.getIndexType()),
                             tokenHolders);
@@ -543,9 +543,9 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forLabel(
+                    LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(
                             tokenHolders.labelForName(label), tokenHolders.propertyForName(property));
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name,
                             ConstraintDescriptorFactory.typeForSchema(schema, propertyTypes, isDependent),
                             tokenHolders);
@@ -582,11 +582,11 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forRelType(
+                    RelationTypeSchemaDescriptor schema = SchemaDescriptors.forRelType(
                             tokenHolders.relationshipForName(type), tokenHolders.propertiesForName(properties));
-                    final var backingIndex =
+                    IndexPrototype backingIndex =
                             backingIndex(schema, providerDescriptor == null ? RANGE_DESCRIPTOR : providerDescriptor);
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name,
                             ConstraintDescriptorFactory.uniqueForSchema(schema, backingIndex.getIndexType()),
                             tokenHolders);
@@ -615,9 +615,9 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forRelType(
+                    RelationTypeSchemaDescriptor schema = SchemaDescriptors.forRelType(
                             tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name, ConstraintDescriptorFactory.existsForSchema(schema, isDependent), tokenHolders);
                     return new ConstraintPrototype(constraintDescriptor);
                 }
@@ -652,11 +652,11 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forRelType(
+                    RelationTypeSchemaDescriptor schema = SchemaDescriptors.forRelType(
                             tokenHolders.relationshipForName(type), tokenHolders.propertiesForName(properties));
-                    final var backingIndex =
+                    IndexPrototype backingIndex =
                             backingIndex(schema, providerDescriptor == null ? RANGE_DESCRIPTOR : providerDescriptor);
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name,
                             ConstraintDescriptorFactory.keyForSchema(schema, backingIndex.getIndexType()),
                             tokenHolders);
@@ -690,9 +690,9 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
-                    final var schema = SchemaDescriptors.forRelType(
+                    RelationTypeSchemaDescriptor schema = SchemaDescriptors.forRelType(
                             tokenHolders.relationshipForName(type), tokenHolders.propertyForName(property));
-                    final var constraintDescriptor = withName(
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name,
                             ConstraintDescriptorFactory.typeForSchema(schema, propertyTypes, isDependent),
                             tokenHolders);
@@ -751,8 +751,9 @@ public sealed interface SchemaCommand extends Serializable {
                 public ConstraintPrototype toPrototype(TokenHolders tokenHolders) {
                     int relationshipId = tokenHolders.relationshipForName(type);
                     int requiredLabelId = tokenHolders.labelForName(requiredLabel);
-                    final var schema = SchemaDescriptors.forRelationshipEndpointLabel(relationshipId);
-                    final var constraintDescriptor = withName(
+                    RelationshipEndpointLabelSchemaDescriptor schema =
+                            SchemaDescriptors.forRelationshipEndpointLabel(relationshipId);
+                    ConstraintDescriptor constraintDescriptor = withName(
                             name,
                             ConstraintDescriptorFactory.relationshipEndpointLabelForSchema(
                                     schema, requiredLabelId, endpointType),
@@ -765,7 +766,7 @@ public sealed interface SchemaCommand extends Serializable {
 
     record GraphType(
             Set<? extends ConstraintCommand.Create> addedConstraints,
-            Set<? extends SchemaCommand.ConstraintCommand.Drop> droppedConstraints,
+            Set<ConstraintCommand.Drop> droppedConstraints,
             Operation op)
             implements SchemaCommand.ConstraintCommand {
         @Override

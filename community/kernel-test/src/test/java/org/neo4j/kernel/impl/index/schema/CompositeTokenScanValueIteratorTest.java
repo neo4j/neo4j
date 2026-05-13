@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -242,34 +243,34 @@ class CompositeTokenScanValueIteratorTest {
     @ParameterizedTest
     void mustReportCorrectValuesRandomized(boolean trueForAll) {
         // given a couple of iterators, one per tokenId
-        var numIterators = random.nextInt(2, 10);
+        int numIterators = random.nextInt(2, 10);
         List<long[]> data = new ArrayList<>();
         List<PrimitiveLongResourceIterator> iterators = new ArrayList<>();
-        for (var tokenId = 0; tokenId < numIterators; tokenId++) {
-            var ids = randomIds(1_000, 4);
+        for (int tokenId = 0; tokenId < numIterators; tokenId++) {
+            long[] ids = randomIds(1_000, 4);
             data.add(ids);
             iterators.add(iterator(tokenId, ids));
         }
 
         // when
-        var composite = new CompositeTokenScanValueIterator(iterators, trueForAll);
+        CompositeTokenScanValueIterator composite = new CompositeTokenScanValueIterator(iterators, trueForAll);
 
         // then
         assertThat(PrimitiveLongCollections.asArray(composite)).isEqualTo(calculateExpectedIds(data, trueForAll));
     }
 
     private long[] calculateExpectedIds(List<long[]> data, boolean trueForAll) {
-        var size = data.stream()
+        int size = data.stream()
                 .mapToInt(ids -> toIntExact(ids[ids.length - 1] + 1))
                 .max()
                 .getAsInt();
-        var counts = new int[size];
+        int[] counts = new int[size];
         data.forEach(ids -> {
-            for (var id : ids) {
+            for (long id : ids) {
                 counts[toIntExact(id)]++;
             }
         });
-        var matchingIds = LongLists.mutable.empty();
+        MutableLongList matchingIds = LongLists.mutable.empty();
         int filter = trueForAll ? data.size() : 1;
         for (int i = 0; i < counts.length; i++) {
             if (counts[i] >= filter) {
@@ -280,7 +281,7 @@ class CompositeTokenScanValueIteratorTest {
     }
 
     private long[] randomIds(int numEntries, int maxIdStep) {
-        var ids = new long[numEntries];
+        long[] ids = new long[numEntries];
         for (int i = 0, nextId = random.nextInt(maxIdStep);
                 i < numEntries;
                 i++, nextId += random.nextInt(1, maxIdStep)) {

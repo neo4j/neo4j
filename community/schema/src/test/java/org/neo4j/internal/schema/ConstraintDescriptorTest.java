@@ -108,8 +108,9 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
         // GIVEN
         RelationshipEndpointLabelConstraintDescriptor descriptor =
                 relationshipEndpointLabelForRelType(REL_TYPE_ID, LABEL_ID, endpointType);
-        var constraint = descriptor.withId(RULE_ID);
-        var relationshipEndpointLabelConstraint = constraint.asRelationshipEndpointLabelConstraint();
+        RelationshipEndpointLabelConstraintDescriptor constraint = descriptor.withId(RULE_ID);
+        RelationshipEndpointLabelConstraintDescriptor relationshipEndpointLabelConstraint =
+                constraint.asRelationshipEndpointLabelConstraint();
 
         assertThat(constraint.getId()).isEqualTo(RULE_ID);
         assertThat(constraint.schema()).isEqualTo(descriptor.schema());
@@ -141,8 +142,9 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
     void shouldCreateNodeLabelExistenceConstraint() {
         // GIVEN
         NodeLabelExistenceConstraintDescriptor descriptor = nodeLabelExistenceForLabel(LABEL_ID, 11);
-        var constraint = descriptor.withId(RULE_ID);
-        var nodeLabelExistenceConstraint = constraint.asNodeLabelExistenceConstraint();
+        NodeLabelExistenceConstraintDescriptor constraint = descriptor.withId(RULE_ID);
+        NodeLabelExistenceConstraintDescriptor nodeLabelExistenceConstraint =
+                constraint.asNodeLabelExistenceConstraint();
 
         assertThat(constraint.getId()).isEqualTo(RULE_ID);
         assertThat(constraint.schema()).isEqualTo(descriptor.schema());

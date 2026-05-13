@@ -152,14 +152,15 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
         }
 
         // when
-        final SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
+        SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
                 org.neo4j.common.EntityType.RELATIONSHIP,
                 new int[] {relTypeId0, relTypeId1, relTypeId2, relTypeId1, relTypeId3},
                 new int[] {propId});
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            var e = assertThrows(RepeatedRelationshipTypeInSchemaException.class, () -> tx.schemaWrite()
-                    .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
+            RepeatedRelationshipTypeInSchemaException e =
+                    assertThrows(RepeatedRelationshipTypeInSchemaException.class, () -> tx.schemaWrite()
+                            .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
                     .isEqualTo(
@@ -181,14 +182,15 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
         }
 
         // when
-        final SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
+        SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
                 org.neo4j.common.EntityType.RELATIONSHIP,
                 new int[] {relTypeId},
                 new int[] {propId0, propId1, propId2, propId1, propId3});
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            var e = assertThrows(RepeatedPropertyInSchemaException.class, () -> tx.schemaWrite()
-                    .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
+            RepeatedPropertyInSchemaException e =
+                    assertThrows(RepeatedPropertyInSchemaException.class, () -> tx.schemaWrite()
+                            .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
                     .isEqualTo(

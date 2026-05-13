@@ -84,10 +84,10 @@ class ScoredEntityIteratorTest {
 
     @Test
     void mergeShouldHandleEmptyIterators() {
-        StubValuesIterator one = new StubValuesIterator();
-        StubValuesIterator two =
+        ValuesIterator one = new StubValuesIterator();
+        ValuesIterator two =
                 new StubValuesIterator().add(1, 5).add(2, 4).add(3, 3).add(4, 2).add(5, 1);
-        StubValuesIterator three = new StubValuesIterator();
+        ValuesIterator three = new StubValuesIterator();
 
         ValuesIterator concat = ScoredEntityIterator.mergeIterators(Lists.fixedSize.of(one, two, three));
 
@@ -102,9 +102,9 @@ class ScoredEntityIteratorTest {
 
     @Test
     void mergeShouldHandleAllEmptyIterators() {
-        StubValuesIterator one = new StubValuesIterator();
-        StubValuesIterator two = new StubValuesIterator();
-        StubValuesIterator three = new StubValuesIterator();
+        ValuesIterator one = new StubValuesIterator();
+        ValuesIterator two = new StubValuesIterator();
+        ValuesIterator three = new StubValuesIterator();
 
         ValuesIterator concat = ScoredEntityIterator.mergeIterators(Lists.fixedSize.of(one, two, three));
         assertThat(concat.hasNext()).isFalse();

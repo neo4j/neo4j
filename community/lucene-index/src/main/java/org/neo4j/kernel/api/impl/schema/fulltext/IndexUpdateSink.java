@@ -70,7 +70,7 @@ public class IndexUpdateSink {
         long jobId = nextJobId.getAndIncrement();
         Runnable eventualUpdate = () -> {
             try (indexUpdater) {
-                for (var update : updates) {
+                for (IndexEntryUpdate update : updates) {
                     indexUpdater.process(update);
                 }
             } catch (IndexEntryConflictException e) {
@@ -85,7 +85,7 @@ public class IndexUpdateSink {
         };
 
         try {
-            var monitoringParams = JobMonitoringParams.systemJob(
+            JobMonitoringParams monitoringParams = JobMonitoringParams.systemJob(
                     "Background update of index '" + index.getDescriptor().getName() + "'");
             scheduler.schedule(Group.INDEX_UPDATING, monitoringParams, eventualUpdate);
         } catch (Exception e) {

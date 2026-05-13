@@ -61,7 +61,7 @@ public class SingleIndexSettingValidatorTest {
 
         @Test
         void incorrectType() {
-            final RecordWithSetting record = new Pending(setting, FAKE_VALUE, Values.NO_VALUE);
+            RecordWithSetting record = new Pending(setting, FAKE_VALUE, Values.NO_VALUE);
 
             processForVerificationAndAssertRecord(record, IncorrectType.class)
                     .extracting(IncorrectType::targetType)
@@ -82,10 +82,10 @@ public class SingleIndexSettingValidatorTest {
         @NullSource
         @MethodSource
         void invalidValues(Integer value) {
-            final Value storable = Values.unsafeOf(value, true);
-            final RecordWithSetting record = new Pending(setting, value, storable);
+            Value storable = Values.unsafeOf(value, true);
+            RecordWithSetting record = new Pending(setting, value, storable);
 
-            final ObjectAssert<InvalidValue> invalidValueAssert =
+            ObjectAssert<InvalidValue> invalidValueAssert =
                     processForVerificationAndAssertRecord(record, InvalidValue.class);
             invalidValueAssert.extracting(RecordWithValue::value).isEqualTo(value);
 
@@ -97,15 +97,15 @@ public class SingleIndexSettingValidatorTest {
         }
 
         static IntStream invalidValues() {
-            final int half = Math.ceilDiv(MAX - MIN, 2);
+            int half = Math.ceilDiv(MAX - MIN, 2);
             return IntStream.concat(IntStream.range(MIN - half, MIN), IntStream.rangeClosed(MAX + 1, MAX + half));
         }
 
         @ParameterizedTest
         @MethodSource("validValues")
         void validValuesForVerification(int value) {
-            final Value storable = Values.intValue(value);
-            final RecordWithSetting record = new Pending(setting, value, storable);
+            Value storable = Values.intValue(value);
+            RecordWithSetting record = new Pending(setting, value, storable);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -115,8 +115,8 @@ public class SingleIndexSettingValidatorTest {
         @ParameterizedTest
         @MethodSource("validValues")
         void validValuesForAuthoritativeReadShouldPassthrough(int value) {
-            final Value storable = Values.intValue(value);
-            final RecordWithSetting record = new Valid(setting, value, storable);
+            Value storable = Values.intValue(value);
+            RecordWithSetting record = new Valid(setting, value, storable);
 
             assertThat(processor.processForAuthoritativeRead(record)).isSameAs(record);
         }
@@ -139,11 +139,10 @@ public class SingleIndexSettingValidatorTest {
         @NullSource
         @MethodSource
         void invalidValues(OptionalInt value) {
-            final Value storable =
-                    value != null && value.isPresent() ? Values.intValue(value.getAsInt()) : Values.NO_VALUE;
-            final RecordWithSetting record = new Pending(setting, value, storable);
+            Value storable = value != null && value.isPresent() ? Values.intValue(value.getAsInt()) : Values.NO_VALUE;
+            RecordWithSetting record = new Pending(setting, value, storable);
 
-            final ObjectAssert<InvalidValue> invalidValueAssert =
+            ObjectAssert<InvalidValue> invalidValueAssert =
                     processForVerificationAndAssertRecord(record, InvalidValue.class);
             invalidValueAssert.extracting(RecordWithValue::value).isEqualTo(value);
 
@@ -155,7 +154,7 @@ public class SingleIndexSettingValidatorTest {
         }
 
         static Stream<OptionalInt> invalidValues() {
-            final int half = Math.ceilDiv(MAX - MIN, 2);
+            int half = Math.ceilDiv(MAX - MIN, 2);
             return IntStream.concat(IntStream.range(MIN - half, MIN), IntStream.rangeClosed(MAX + 1, MAX + half))
                     .mapToObj(OptionalInt::of);
         }
@@ -163,8 +162,8 @@ public class SingleIndexSettingValidatorTest {
         @ParameterizedTest
         @MethodSource("validValues")
         void validValuesForVerification(OptionalInt value) {
-            final Value storable = value.isPresent() ? Values.intValue(value.getAsInt()) : Values.NO_VALUE;
-            final RecordWithSetting record = new Pending(setting, value, storable);
+            Value storable = value.isPresent() ? Values.intValue(value.getAsInt()) : Values.NO_VALUE;
+            RecordWithSetting record = new Pending(setting, value, storable);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -174,8 +173,8 @@ public class SingleIndexSettingValidatorTest {
         @ParameterizedTest
         @MethodSource("validValues")
         void validValuesForAuthoritativeReadShouldPassthrough(OptionalInt value) {
-            final Value storable = value.isPresent() ? Values.intValue(value.getAsInt()) : Values.NO_VALUE;
-            final RecordWithSetting record = new Valid(setting, value, storable);
+            Value storable = value.isPresent() ? Values.intValue(value.getAsInt()) : Values.NO_VALUE;
+            RecordWithSetting record = new Valid(setting, value, storable);
 
             assertThat(processor.processForAuthoritativeRead(record)).isSameAs(record);
         }
@@ -200,10 +199,10 @@ public class SingleIndexSettingValidatorTest {
         @NullSource
         @MethodSource
         void invalidValues(Double value) {
-            final Value storable = Values.unsafeOf(value, true);
-            final RecordWithSetting record = new Pending(setting, value, storable);
+            Value storable = Values.unsafeOf(value, true);
+            RecordWithSetting record = new Pending(setting, value, storable);
 
-            final ObjectAssert<InvalidValue> invalidValueAssert =
+            ObjectAssert<InvalidValue> invalidValueAssert =
                     processForVerificationAndAssertRecord(record, InvalidValue.class);
             invalidValueAssert.extracting(RecordWithValue::value).isEqualTo(value);
 
@@ -215,9 +214,9 @@ public class SingleIndexSettingValidatorTest {
         }
 
         static DoubleStream invalidValues() {
-            final int count = 10;
-            final double delta = (MIN + MAX) / 2 / count;
-            final DoubleStream.Builder builder = DoubleStream.builder();
+            int count = 10;
+            double delta = (MIN + MAX) / 2 / count;
+            DoubleStream.Builder builder = DoubleStream.builder();
             for (int i = count; i > 0; i--) {
                 builder.add(MIN - i * delta);
             }
@@ -230,8 +229,8 @@ public class SingleIndexSettingValidatorTest {
         @ParameterizedTest
         @MethodSource("validValues")
         void validValuesForVerification(double value) {
-            final Value storable = Values.doubleValue(value);
-            final RecordWithSetting record = new Pending(setting, value, storable);
+            Value storable = Values.doubleValue(value);
+            RecordWithSetting record = new Pending(setting, value, storable);
 
             processForVerificationAndAssertRecord(record, Valid.class)
                     .extracting(RecordWithValue::value, RecordWithStorable::storable)
@@ -241,17 +240,17 @@ public class SingleIndexSettingValidatorTest {
         @ParameterizedTest
         @MethodSource("validValues")
         void validValuesForAuthoritativeReadShouldPassthrough(double value) {
-            final Value storable = Values.doubleValue(value);
-            final RecordWithSetting record = new Valid(setting, value, storable);
+            Value storable = Values.doubleValue(value);
+            RecordWithSetting record = new Valid(setting, value, storable);
 
             assertThat(processor.processForAuthoritativeRead(record)).isSameAs(record);
         }
 
         static DoubleStream validValues() {
-            final int count = 18;
-            final double min = Math.nextUp(MIN);
-            final double delta = (min + Math.nextDown(MAX)) / count;
-            final DoubleStream.Builder builder = DoubleStream.builder();
+            int count = 18;
+            double min = Math.nextUp(MIN);
+            double delta = (min + Math.nextDown(MAX)) / count;
+            DoubleStream.Builder builder = DoubleStream.builder();
             builder.add(MIN);
             for (int i = 0; i < count; i++) {
                 builder.add(min + i * delta);

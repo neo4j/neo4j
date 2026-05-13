@@ -86,7 +86,7 @@ public abstract class TextIndexCapability implements IndexCapability {
     @Override
     public double getCostMultiplier(IndexQueryType... queryTypes) {
         Preconditions.checkState(queryTypes.length == 1, "Does not support composite queries");
-        var queryType = queryTypes[0];
+        IndexQueryType queryType = queryTypes[0];
         return switch (queryType) {
             case STRING_SUFFIX, STRING_CONTAINS -> costMultiplierGood();
             case EXACT, RANGE, STRING_PREFIX -> costMultiplierBad();

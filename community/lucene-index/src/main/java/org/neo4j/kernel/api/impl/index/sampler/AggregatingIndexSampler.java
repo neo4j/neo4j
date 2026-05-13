@@ -43,7 +43,7 @@ public class AggregatingIndexSampler implements IndexSampler {
         return indexSamplers.parallelStream()
                 .map(sampler -> sampleIndex(sampler, cursorContext, stopped))
                 .reduce(AggregatingIndexSampler::combine)
-                .get();
+                .orElseThrow();
     }
 
     private static IndexSample sampleIndex(IndexSampler sampler, CursorContext cursorContext, AtomicBoolean stopped) {

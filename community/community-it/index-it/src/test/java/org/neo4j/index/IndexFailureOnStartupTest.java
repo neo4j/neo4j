@@ -29,9 +29,11 @@ import static org.neo4j.index.SabotageNativeIndex.nativeIndexDirectoryStructure;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -112,7 +114,7 @@ public class IndexFailureOnStartupTest {
     class ArchiveIndex {
 
         @ExtensionCallback
-        void configure(TestDatabaseManagementServiceBuilder builder) {
+        static void configure(TestDatabaseManagementServiceBuilder builder) {
             builder.setConfig(GraphDatabaseInternalSettings.archive_failed_index, true);
         }
 
@@ -145,7 +147,7 @@ public class IndexFailureOnStartupTest {
     }
 
     private void sabotageNativeIndexAndRestartDbms() {
-        var openOptions = db.getDependencyResolver()
+        ImmutableSet<OpenOption> openOptions = db.getDependencyResolver()
                 .resolveDependency(StorageEngine.class)
                 .getOpenOptions();
         controller.restartDbms(db.databaseName(), builder -> {

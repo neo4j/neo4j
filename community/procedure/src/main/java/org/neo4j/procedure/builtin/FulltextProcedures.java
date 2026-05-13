@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.fulltext.FulltextIndexProvider;
@@ -91,11 +90,7 @@ public class FulltextProcedures {
     @Description("List the available analyzers that the full-text indexes can be configured with.")
     @Procedure(name = "db.index.fulltext.listAvailableAnalyzers", mode = READ)
     public Stream<AvailableAnalyzer> listAvailableAnalyzers() {
-        IndexingService indexingService = resolver.resolveDependency(IndexingService.class);
-        IndexProviderDescriptor fulltextProvider = indexingService.getFulltextProvider();
-        FulltextIndexProvider indexProvider =
-                (FulltextIndexProvider) indexingService.getIndexProvider(fulltextProvider);
-        return indexProvider.listAvailableAnalyzers().map(AvailableAnalyzer::new);
+        return FulltextIndexProvider.listAvailableAnalyzers().map(AvailableAnalyzer::new);
     }
 
     @SystemProcedure

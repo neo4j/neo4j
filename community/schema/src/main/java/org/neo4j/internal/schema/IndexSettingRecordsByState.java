@@ -38,16 +38,16 @@ public class IndexSettingRecordsByState implements Iterable<IndexSettingRecord> 
 
     protected final SortedMap<State, SortedSet<IndexSettingRecord>> records;
 
-    IndexSettingRecordsByState(IndexSettingRecords records) {
-        final SortedMap<State, SortedSet<IndexSettingRecord>> sortedRecords = new TreeMap<>();
-        for (final IndexSettingRecord record : records) {
+    IndexSettingRecordsByState(Iterable<IndexSettingRecord> records) {
+        SortedMap<State, SortedSet<IndexSettingRecord>> sortedRecords = new TreeMap<>();
+        for (IndexSettingRecord record : records) {
             sortedRecords.computeIfAbsent(record.state(), NEW_RECORD_SORTED_SET).add(record);
         }
         this.records = Collections.unmodifiableSortedMap(sortedRecords);
     }
 
     public Iterable<IndexSettingRecord> get(State state) {
-        final SortedSet<IndexSettingRecord> recordsForState = records.get(state);
+        SortedSet<IndexSettingRecord> recordsForState = records.get(state);
         return recordsForState != null ? Collections.unmodifiableSortedSet(recordsForState) : Iterables.empty();
     }
 
@@ -56,7 +56,7 @@ public class IndexSettingRecordsByState implements Iterable<IndexSettingRecord> 
     }
 
     public boolean invalid() {
-        for (final State state : records.keySet()) {
+        for (State state : records.keySet()) {
             if (state != State.VALID) {
                 return true;
             }
@@ -65,13 +65,13 @@ public class IndexSettingRecordsByState implements Iterable<IndexSettingRecord> 
     }
 
     public Invalid getFirstInvalidRecordOrNull() {
-        for (final Entry<State, SortedSet<IndexSettingRecord>> entry : records.entrySet()) {
+        for (Entry<State, SortedSet<IndexSettingRecord>> entry : records.entrySet()) {
             if (entry.getKey() == State.VALID) {
                 continue;
             }
 
-            final IndexSettingRecord record = entry.getValue().getFirst();
-            if (!(record instanceof final Invalid invalid)) {
+            IndexSettingRecord record = entry.getValue().getFirst();
+            if (!(record instanceof Invalid invalid)) {
                 throw new IllegalStateException("%s has %s state but was not an instance of %s"
                         .formatted(record, record.state(), Invalid.class.getSimpleName()));
             }
@@ -81,14 +81,14 @@ public class IndexSettingRecordsByState implements Iterable<IndexSettingRecord> 
     }
 
     public Iterable<Invalid> invalidRecords() {
-        final SortedSet<Invalid> invalidRecords = new TreeSet<>();
-        for (final Entry<State, SortedSet<IndexSettingRecord>> entry : records.entrySet()) {
+        SortedSet<Invalid> invalidRecords = new TreeSet<>();
+        for (Entry<State, SortedSet<IndexSettingRecord>> entry : records.entrySet()) {
             if (entry.getKey() == State.VALID) {
                 continue;
             }
 
-            for (final IndexSettingRecord record : entry.getValue()) {
-                if (!(record instanceof final Invalid invalid)) {
+            for (IndexSettingRecord record : entry.getValue()) {
+                if (!(record instanceof Invalid invalid)) {
                     throw new IllegalStateException("%s has %s state but was not an instance of %s"
                             .formatted(record, record.state(), Invalid.class.getSimpleName()));
                 }
@@ -99,14 +99,14 @@ public class IndexSettingRecordsByState implements Iterable<IndexSettingRecord> 
     }
 
     public Iterable<Valid> validRecords() {
-        final SortedSet<IndexSettingRecord> shouldBeValidRecords = records.get(State.VALID);
+        SortedSet<IndexSettingRecord> shouldBeValidRecords = records.get(State.VALID);
         if (shouldBeValidRecords == null) {
             return Iterables.empty();
         }
 
-        final SortedSet<Valid> validRecords = new TreeSet<>();
-        for (final IndexSettingRecord record : shouldBeValidRecords) {
-            if (!(record instanceof final Valid valid)) {
+        SortedSet<Valid> validRecords = new TreeSet<>();
+        for (IndexSettingRecord record : shouldBeValidRecords) {
+            if (!(record instanceof Valid valid)) {
                 throw new IllegalStateException("%s has %s state but was not an instance of %s"
                         .formatted(record, State.VALID, Valid.class.getSimpleName()));
             }

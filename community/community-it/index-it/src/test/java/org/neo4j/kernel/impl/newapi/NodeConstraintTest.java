@@ -195,13 +195,13 @@ public class NodeConstraintTest extends ConstraintTestBase<WriteTestSupport> {
         }
 
         // when
-        final SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
+        SemanticSearchSchemaDescriptor descriptor = SchemaDescriptors.forSemanticSearch(
                 org.neo4j.common.EntityType.NODE,
                 new int[] {labelId0, labelId1, labelId2, labelId1, labelId3},
                 new int[] {propId});
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            var e = assertThrows(RepeatedLabelInSchemaException.class, () -> tx.schemaWrite()
+            RepeatedLabelInSchemaException e = assertThrows(RepeatedLabelInSchemaException.class, () -> tx.schemaWrite()
                     .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
@@ -224,14 +224,15 @@ public class NodeConstraintTest extends ConstraintTestBase<WriteTestSupport> {
         }
 
         // when
-        final SemanticSearchSchemaDescriptor descriptor =
+        SemanticSearchSchemaDescriptor descriptor =
                 SchemaDescriptors.forSemanticSearch(org.neo4j.common.EntityType.NODE, new int[] {labelId}, new int[] {
                     propId0, propId1, propId2, propId1, propId3
                 });
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            var e = assertThrows(RepeatedPropertyInSchemaException.class, () -> tx.schemaWrite()
-                    .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
+            RepeatedPropertyInSchemaException e =
+                    assertThrows(RepeatedPropertyInSchemaException.class, () -> tx.schemaWrite()
+                            .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
                     .isEqualTo(

@@ -40,6 +40,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveArrays;
+import org.neo4j.collection.PrimitiveArrays.RemovalsAndAdditions;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.schema.AllIndexProviderDescriptors;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -185,7 +186,8 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
                     }
                     int[] afterTokens = TokenIndexUtility.generateRandomTokens(random);
                     entityTokens.put(entityId, Arrays.copyOf(afterTokens, afterTokens.length));
-                    var removalsAndAdditions = PrimitiveArrays.toRemovalsAndAdditions(beforeTokens, afterTokens);
+                    RemovalsAndAdditions removalsAndAdditions =
+                            PrimitiveArrays.toRemovalsAndAdditions(beforeTokens, afterTokens);
                     updater.process(TokenIndexEntryUpdate.tokenChange(
                             entityId, null, removalsAndAdditions.removals(), removalsAndAdditions.additions()));
                 }

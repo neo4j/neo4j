@@ -127,7 +127,8 @@ class TextIndexIT {
     @ParameterizedTest
     @EnumSource
     void updateMultiplePartitionedIndex(LuceneContext luceneContext) throws IOException {
-        try (var index = TextIndexBuilder.create(descriptor, writable(), config, NullLogProvider.getInstance())
+        try (DatabaseIndex<ValueIndexReader> index = TextIndexBuilder.create(
+                        descriptor, writable(), config, NullLogProvider.getInstance())
                 .withFileSystem(fileSystem)
                 .withLuceneContext(luceneContext)
                 .withIndexRootFolder(testDir.directory("partitionedIndexForUpdates"))
@@ -152,7 +153,8 @@ class TextIndexIT {
     @EnumSource
     void createPopulateDropIndex(LuceneContext luceneContext) throws Exception {
         Path crudOperation = testDir.directory("indexCRUDOperation");
-        try (var crudIndex = TextIndexBuilder.create(descriptor, writable(), config, NullLogProvider.getInstance())
+        try (DatabaseIndex<ValueIndexReader> crudIndex = TextIndexBuilder.create(
+                        descriptor, writable(), config, NullLogProvider.getInstance())
                 .withFileSystem(fileSystem)
                 .withLuceneContext(luceneContext)
                 .withIndexRootFolder(crudOperation.resolve("crudIndex"))
@@ -175,7 +177,8 @@ class TextIndexIT {
     @ParameterizedTest
     @EnumSource
     void createFailPartitionedIndex(LuceneContext luceneContext) throws Exception {
-        try (var failedIndex = TextIndexBuilder.create(descriptor, writable(), config, NullLogProvider.getInstance())
+        try (DatabaseIndex<ValueIndexReader> failedIndex = TextIndexBuilder.create(
+                        descriptor, writable(), config, NullLogProvider.getInstance())
                 .withFileSystem(fileSystem)
                 .withLuceneContext(luceneContext)
                 .withIndexRootFolder(testDir.directory("failedIndexFolder").resolve("failedIndex"))
@@ -202,7 +205,7 @@ class TextIndexIT {
                 .withFileSystem(fileSystem)
                 .withLuceneContext(luceneContext)
                 .withIndexRootFolder(indexRootFolder);
-        try (var reopenIndex = textIndexBuilder.build()) {
+        try (DatabaseIndex<ValueIndexReader> reopenIndex = textIndexBuilder.build()) {
             reopenIndex.open();
 
             addDocumentToIndex(luceneContext, reopenIndex, 1);
@@ -242,7 +245,8 @@ class TextIndexIT {
     }
 
     private TextIndexAccessor createDefaultIndexAccessor(LuceneContext luceneContext) throws IOException {
-        var index = TextIndexBuilder.create(descriptor, writable(), config, NullLogProvider.getInstance())
+        DatabaseIndex<ValueIndexReader> index = TextIndexBuilder.create(
+                        descriptor, writable(), config, NullLogProvider.getInstance())
                 .withFileSystem(fileSystem)
                 .withLuceneContext(luceneContext)
                 .withIndexRootFolder(testDir.directory("testIndex"))

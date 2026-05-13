@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.Race;
 
@@ -132,7 +133,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport {
             KernelTransaction ktx = kernelTransaction(tx);
             IndexReadSession index =
                     ktx.dataRead().indexReadSession(ktx.schemaRead().indexGetForName(RELS_INDEX_NAME));
-            try (var bobCursor =
+            try (RelationshipValueIndexCursor bobCursor =
                     ktx.cursors().allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
                 ktx.dataRead()
                         .relationshipIndexSeek(
@@ -147,7 +148,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport {
                 }
                 assertEquals(BOB_THREADS * ENTITIES_PER_THREAD, bobCount);
             }
-            try (var aliceCursor =
+            try (RelationshipValueIndexCursor aliceCursor =
                     ktx.cursors().allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
                 ktx.dataRead()
                         .relationshipIndexSeek(

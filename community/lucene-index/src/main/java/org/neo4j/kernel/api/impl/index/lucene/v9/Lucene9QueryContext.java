@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryParseException;
+import org.neo4j.kernel.api.impl.index.lucene.v9.Lucene9TrigramTokenStream.CodePointBuffer;
 import org.neo4j.kernel.api.impl.schema.TextDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
 import org.neo4j.shaded.lucene9.analysis.CharacterUtils;
@@ -109,7 +110,7 @@ public class Lucene9QueryContext implements LuceneQueryContext {
     @Override
     public Lucene9QueryContext addConstantMustTerm(String field, String text) {
         ensureBooleanBuilder();
-        var termQuery = new ConstantScoreQuery(new TermQuery(new Term(field, text)));
+        ConstantScoreQuery termQuery = new ConstantScoreQuery(new TermQuery(new Term(field, text)));
         booleanBuilder.add(termQuery, BooleanClause.Occur.MUST);
         return this;
     }
@@ -204,7 +205,8 @@ public class Lucene9QueryContext implements LuceneQueryContext {
         singleQuery = single;
     }
 
-    private Query parseFulltextQuery(String query, String[] propertyNames, Analyzer analyzer) throws ParseException {
+    private static Query parseFulltextQuery(String query, String[] propertyNames, Analyzer analyzer)
+            throws ParseException {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(propertyNames, loadAnalyzer(analyzer));
         multiFieldQueryParser.setAllowLeadingWildcard(true);
         return multiFieldQueryParser.parse(query);
@@ -215,7 +217,7 @@ public class Lucene9QueryContext implements LuceneQueryContext {
             return new MatchAllDocsQuery();
         }
 
-        var codePointBuffer = Lucene9TrigramTokenStream.getCodePoints(searchString);
+        CodePointBuffer codePointBuffer = Lucene9TrigramTokenStream.getCodePoints(searchString);
 
         if (codePointBuffer.codePointCount() < 3) {
             String searchTerm = QueryParserBase.escape(searchString);
@@ -342,8 +344,8 @@ public class Lucene9QueryContext implements LuceneQueryContext {
                     return AcceptStatus.NO;
                 }
 
-                final byte first = substring.bytes[substring.offset];
-                final int max = term.offset + term.length - substring.length;
+                byte first = substring.bytes[substring.offset];
+                int max = term.offset + term.length - substring.length;
                 for (int pos = term.offset; pos <= max; pos++) {
                     // find first byte
                     if (term.bytes[pos] != first) {
@@ -355,7 +357,7 @@ public class Lucene9QueryContext implements LuceneQueryContext {
                     // Now we have the first byte match, look at the rest
                     if (pos <= max) {
                         int i = pos + 1;
-                        final int end = pos + substring.length;
+                        int end = pos + substring.length;
                         for (int j = substring.offset + 1; i < end && term.bytes[i] == substring.bytes[j]; j++, i++) {
                             // do nothing
                         }

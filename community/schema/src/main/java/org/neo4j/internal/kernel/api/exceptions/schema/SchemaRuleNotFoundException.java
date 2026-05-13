@@ -45,7 +45,7 @@ public class SchemaRuleNotFoundException extends SchemaRuleException {
 
     public static SchemaRuleNotFoundException schemaRuleNotFound(
             SchemaDescriptorSupplier schemaThing, TokenNameLookup tokenNameLookup) {
-        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N21)
+        ErrorGqlStatusObject gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N21)
                 .withParam(GqlParams.StringParam.schemaDescrType, SchemaRuleException.describe(schemaThing))
                 .withParam(
                         GqlParams.StringParam.schemaDescr, schemaThing.schema().userDescription(tokenNameLookup))

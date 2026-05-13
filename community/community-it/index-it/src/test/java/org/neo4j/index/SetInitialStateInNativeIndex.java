@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.Configuration;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -53,7 +54,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction {
             IndexDirectoryStructure indexDirectoryStructure,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        var config = MuninnPageCache.config(100);
+        Configuration config = MuninnPageCache.config(100);
         try (PageCache pageCache = StandalonePageCacheFactory.createPageCache(
                 fs, JobSchedulerFactory.createInitialisedScheduler(), PageCacheTracer.NULL, config)) {
             int filesChanged = setInitialState(fs, indexDirectoryStructure.rootDirectory(), pageCache, openOptions);

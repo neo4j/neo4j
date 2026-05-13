@@ -63,6 +63,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionProviders;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -120,14 +122,14 @@ public class IndexAccessorUsageStatsTest {
     private final DefaultIndexUsageTracking usageTracking = new DefaultIndexUsageTracking(clock);
 
     // For index setup
-    private final Config config = Config.defaults();
-    private final IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 1))
+    private static final Config CONFIG = Config.defaults();
+    private static final IndexDescriptor DESCRIPTOR = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 1))
             .withName("testIndex")
             .materialise(1);
-    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
-    private final TokenNameLookup nameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-    private final ImmutableSet<OpenOption> openOptions = Sets.immutable.empty();
-    private final StorageEngineIndexingBehaviour indexingBehaviour = StorageEngineIndexingBehaviour.EMPTY;
+    private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig(CONFIG);
+    private static final TokenNameLookup NAME_LOOKUP = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+    private static final ImmutableSet<OpenOption> OPEN_OPTIONS = Sets.immutable.empty();
+    private static final StorageEngineIndexingBehaviour INDEXING_BEHAVIOUR = StorageEngineIndexingBehaviour.EMPTY;
     private StaticIndexProviderMap providerMap;
 
     @BeforeEach
@@ -141,14 +143,14 @@ public class IndexAccessorUsageStatsTest {
             throws IndexNotApplicableKernelException, IOException {
         // Given
         try (IndexAccessor accessor = createIndexAccessor(descriptor);
-                var reader = accessor.newValueReader(usageTracking)) {
+                ValueIndexReader reader = accessor.newValueReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 propertyQuery(reader, clock, query);
             }
         }
-        var usageStats = usageTracking.getAndReset();
-        var expectedLastUsedTime = clock.millis();
+        IndexUsageStats usageStats = usageTracking.getAndReset();
+        long expectedLastUsedTime = clock.millis();
         clock.forward(deltaMillis, MILLISECONDS);
 
         // Then
@@ -160,14 +162,14 @@ public class IndexAccessorUsageStatsTest {
     void propertyIndexShouldIncrementUsageCountOnIndexSeek(
             IndexProviderDescriptor providerDescriptor, PropertyIndexQuery query)
             throws IOException, IndexNotApplicableKernelException {
-        var provider = providerMap.lookup(providerDescriptor);
-        var completeDescriptor = provider.completeConfiguration(descriptor, indexingBehaviour);
+        IndexProvider provider = providerMap.lookup(providerDescriptor);
+        IndexDescriptor completeDescriptor = provider.completeConfiguration(DESCRIPTOR, INDEXING_BEHAVIOUR);
         assumeThat(completeDescriptor.getCapability().supportPartitionedScan(query))
                 .isTrue();
 
         // Given
-        try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newValueReader(usageTracking)) {
+        try (IndexAccessor indexAccessor = createIndexAccessor(providerDescriptor);
+                ValueIndexReader reader = indexAccessor.newValueReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 partitionedPropertyQuery(reader, query);
@@ -175,8 +177,8 @@ public class IndexAccessorUsageStatsTest {
         } catch (UnsupportedOperationException e) {
             Assumptions.assumeTrue(false, "Partitioned index seek is not supported by this reader");
         }
-        var usageStats = usageTracking.getAndReset();
-        var expectedLastUsedTime = clock.millis();
+        IndexUsageStats usageStats = usageTracking.getAndReset();
+        long expectedLastUsedTime = clock.millis();
         clock.forward(deltaMillis, MILLISECONDS);
 
         // Then
@@ -187,15 +189,15 @@ public class IndexAccessorUsageStatsTest {
     @MethodSource("tokenIndexAccessors")
     void tokenIndexShouldIncrementUsageCountOnQuery(IndexProviderDescriptor providerDescriptor) throws IOException {
         // Given
-        try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking)) {
+        try (IndexAccessor indexAccessor = createIndexAccessor(providerDescriptor);
+                TokenIndexReader reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 tokenQuery(reader, clock);
             }
         }
-        var usageStats = usageTracking.getAndReset();
-        var expectedLastUsedTime = clock.millis();
+        IndexUsageStats usageStats = usageTracking.getAndReset();
+        long expectedLastUsedTime = clock.millis();
         clock.forward(deltaMillis, MILLISECONDS);
 
         // Then
@@ -207,14 +209,14 @@ public class IndexAccessorUsageStatsTest {
     void tokenIndexShouldNotIncrementUsageCountOnQueryWithRange(IndexProviderDescriptor providerDescriptor)
             throws IOException {
         // Given
-        try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking)) {
+        try (IndexAccessor indexAccessor = createIndexAccessor(providerDescriptor);
+                TokenIndexReader reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 tokenQueryWithRange(reader, clock);
             }
         }
-        var usageStats = usageTracking.getAndReset();
+        IndexUsageStats usageStats = usageTracking.getAndReset();
         clock.forward(deltaMillis, MILLISECONDS);
 
         // Then
@@ -226,15 +228,15 @@ public class IndexAccessorUsageStatsTest {
     void tokenIndexShouldIncrementUsageCountOnPartitionedEntityTokenScan(IndexProviderDescriptor providerDescriptor)
             throws IOException {
         // Given
-        try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking)) {
+        try (IndexAccessor indexAccessor = createIndexAccessor(providerDescriptor);
+                TokenIndexReader reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 partitionedEntityTokenScan(reader, clock);
             }
         }
-        var usageStats = usageTracking.getAndReset();
-        var expectedLastUsedTime = clock.millis();
+        IndexUsageStats usageStats = usageTracking.getAndReset();
+        long expectedLastUsedTime = clock.millis();
         clock.forward(deltaMillis, MILLISECONDS);
 
         // Then
@@ -246,16 +248,17 @@ public class IndexAccessorUsageStatsTest {
     void tokenIndexShouldIncrementUsageCountOnPartitionedEntityTokenScanWithLeadingPartition(
             IndexProviderDescriptor providerDescriptor) throws IOException {
         // Given
-        try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking)) {
+        try (IndexAccessor indexAccessor = createIndexAccessor(providerDescriptor);
+                TokenIndexReader reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
-            var leadingPartition = reader.entityTokenScan(1, CursorContext.NULL_CONTEXT, new TokenPredicate(1));
+            PartitionedTokenScan leadingPartition =
+                    reader.entityTokenScan(1, CursorContext.NULL_CONTEXT, new TokenPredicate(1));
             for (int i = 0; i < queryCount; i++) {
                 partitionedEntityTokenScanWithLeadingPartition(reader, clock, leadingPartition);
             }
         }
-        var usageStats = usageTracking.getAndReset();
-        var expectedLastUsedTime = clock.millis();
+        IndexUsageStats usageStats = usageTracking.getAndReset();
+        long expectedLastUsedTime = clock.millis();
         clock.forward(deltaMillis, MILLISECONDS);
 
         // Then
@@ -286,17 +289,17 @@ public class IndexAccessorUsageStatsTest {
     }
 
     private IndexAccessor createIndexAccessor(IndexProviderDescriptor providerDescriptor) throws IOException {
-        var provider = providerMap.lookup(providerDescriptor);
-        var completeDescriptor = provider.completeConfiguration(descriptor, indexingBehaviour);
-        var populator = provider.getPopulator(
+        IndexProvider provider = providerMap.lookup(providerDescriptor);
+        IndexDescriptor completeDescriptor = provider.completeConfiguration(DESCRIPTOR, INDEXING_BEHAVIOUR);
+        IndexPopulator populator = provider.getPopulator(
                 completeDescriptor,
-                samplingConfig,
+                SAMPLING_CONFIG,
                 SchemaTestUtil.defaultHeapBufferFactory(),
                 EmptyMemoryTracker.INSTANCE,
-                nameLookup,
+                NAME_LOOKUP,
                 ElementIdMapper.PLACEHOLDER,
-                openOptions,
-                indexingBehaviour);
+                OPEN_OPTIONS,
+                INDEXING_BEHAVIOUR);
         try {
             populator.create();
         } finally {
@@ -304,14 +307,14 @@ public class IndexAccessorUsageStatsTest {
         }
         return provider.getOnlineAccessor(
                 completeDescriptor,
-                samplingConfig,
-                nameLookup,
+                SAMPLING_CONFIG,
+                NAME_LOOKUP,
                 ElementIdMapper.PLACEHOLDER,
-                openOptions,
-                indexingBehaviour);
+                OPEN_OPTIONS,
+                INDEXING_BEHAVIOUR);
     }
 
-    private void tokenQuery(TokenIndexReader reader, FakeClock clock) {
+    private static void tokenQuery(TokenIndexReader reader, FakeClock clock) {
         clock.forward(deltaMillis, MILLISECONDS);
         try (SimpleEntityTokenClient client = new SimpleEntityTokenClient()) {
             reader.query(
@@ -319,7 +322,7 @@ public class IndexAccessorUsageStatsTest {
         }
     }
 
-    private void tokenQueryWithRange(TokenIndexReader reader, FakeClock clock) {
+    private static void tokenQueryWithRange(TokenIndexReader reader, FakeClock clock) {
         clock.forward(deltaMillis, MILLISECONDS);
         try (SimpleEntityTokenClient client = new SimpleEntityTokenClient()) {
             reader.query(
@@ -331,12 +334,12 @@ public class IndexAccessorUsageStatsTest {
         }
     }
 
-    private void partitionedEntityTokenScan(TokenIndexReader reader, FakeClock clock) {
+    private static void partitionedEntityTokenScan(TokenIndexReader reader, FakeClock clock) {
         clock.forward(deltaMillis, MILLISECONDS);
         reader.entityTokenScan(1, CursorContext.NULL_CONTEXT, new TokenPredicate(1));
     }
 
-    private void partitionedEntityTokenScanWithLeadingPartition(
+    private static void partitionedEntityTokenScanWithLeadingPartition(
             TokenIndexReader reader, FakeClock clock, PartitionedTokenScan leadingPartition) {
         clock.forward(deltaMillis, MILLISECONDS);
         reader.entityTokenScan(leadingPartition, new TokenPredicate(2));
@@ -348,7 +351,7 @@ public class IndexAccessorUsageStatsTest {
         reader.valueSeek(1, QueryContext.NULL_CONTEXT, indexQuery);
     }
 
-    private void propertyQuery(ValueIndexReader reader, FakeClock clock, PropertyIndexQuery query)
+    private static void propertyQuery(ValueIndexReader reader, FakeClock clock, PropertyIndexQuery query)
             throws IndexNotApplicableKernelException {
         clock.forward(deltaMillis, MILLISECONDS);
         try (SimpleEntityValueClient client = new SimpleEntityValueClient()) {
@@ -376,8 +379,8 @@ public class IndexAccessorUsageStatsTest {
     private StaticIndexProviderMap createIndexProviderMap() {
         return StaticIndexProviderMapFactory.create(
                 lifeSupport,
-                config,
-                KernelVersionProviders.latestFromConfig(config),
+                CONFIG,
+                KernelVersionProviders.latestFromConfig(CONFIG),
                 pageCache,
                 fs,
                 NullLogService.getInstance(),
@@ -393,9 +396,11 @@ public class IndexAccessorUsageStatsTest {
     }
 
     private static TokenHolders getTokenHolders() {
-        var propTokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_PROPERTY_KEY);
-        var labelTokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_LABEL);
-        var relTypetokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_RELATIONSHIP_TYPE);
+        CreatingTokenHolder propTokenHolder =
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_PROPERTY_KEY);
+        CreatingTokenHolder labelTokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_LABEL);
+        CreatingTokenHolder relTypetokenHolder =
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_RELATIONSHIP_TYPE);
         return new TokenHolders(propTokenHolder, labelTokenHolder, relTypetokenHolder);
     }
 }

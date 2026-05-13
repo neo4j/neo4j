@@ -36,6 +36,7 @@ import org.assertj.core.api.AbstractBooleanAssert;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator;
+import org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.ResultList;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
@@ -52,13 +53,13 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
 
     @Test
     public void checkCypherDateTimesOrder() {
-        var allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
+        List<String> allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
 
         long previousEpoch = Long.MIN_VALUE;
         String previousDate = null;
         DateTimeValue previousDateTime = DateTimeValue.MIN_VALUE;
-        for (var date : allDateTimes) {
-            var dateTime = DateTimeValue.parse(date, ZoneId::systemDefault);
+        for (String date : allDateTimes) {
+            DateTimeValue dateTime = DateTimeValue.parse(date, ZoneId::systemDefault);
             long epoch = dateTime.asObjectCopy().toEpochSecond();
             assertThat(previousEpoch)
                     .as(
@@ -80,12 +81,12 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
 
     @Test
     public void checkCypherTimesOrder() {
-        var allDateTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
+        List<String> allDateTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
 
         String previousDate = null;
         TimeValue previousTime = TimeValue.MIN_VALUE;
-        for (var date : allDateTimes) {
-            var time = TimeValue.parse(date, ZoneId::systemDefault);
+        for (String date : allDateTimes) {
+            TimeValue time = TimeValue.parse(date, ZoneId::systemDefault);
             assertThat(Values.COMPARATOR.compare(previousTime, time))
                     .as("Expected %s(%s) strictly < %s(%s)", previousDate, previousTime, date, time)
                     .isNegative();
@@ -100,7 +101,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
 
     @Test
     public void checkSSFExactParameterDateTimesOrderRespectsCypher() throws Exception {
-        var allDateTimes = generateTestZonedDateTimeStrings();
+        List<String> allDateTimes = generateTestZonedDateTimeStrings();
         assertThatSSFExactParameterOrderRespectsCypher(
                         "birthdate", allDateTimes, datetime -> DateTimeValue.parse(datetime, ZoneId::systemDefault))
                 .isTrue();
@@ -109,7 +110,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     @Test
     public void checkSSFExactParameterTimesOrderRespectsCypher() throws Exception {
 
-        var allTimes = generateTestZonedTimeStrings();
+        List<String> allTimes = generateTestZonedTimeStrings();
         assertThatSSFExactParameterOrderRespectsCypher(
                         "alarmtime", allTimes, time -> TimeValue.parse(time, ZoneId::systemDefault))
                 .isTrue();
@@ -118,7 +119,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     @Test
     public void checkSSFRangeParameterDateTimesOrderRespectsCypher() throws Exception {
 
-        var allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
+        List<String> allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
         assertThatSSFRangeParameterOrderRespectsCypher(
                         "birthdatetime", allDateTimes, dateTime -> DateTimeValue.parse(dateTime, ZoneId::systemDefault))
                 .isTrue();
@@ -128,7 +129,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     /// checkSSFRangeParameterDateTimesOrderRespectsCypher
     @Test
     public void checkTemporalWithZoneFix() throws Exception {
-        var allDateTimes = List.of(
+        List<String> allDateTimes = List.of(
                 "2019-06-02T21:00:00.000[Atlantic/Cape_Verde]",
                 "2019-06-02T21:00:00.000[Etc/GMT+1]",
                 "2019-06-02T22:00:00.000+0000",
@@ -136,13 +137,13 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
                 "2019-06-02T22:00:00.000[Africa/Accra]",
                 "2019-06-02T22:00:00.000[Africa/Bamako]");
 
-        var names = randomNames(allDateTimes.size());
+        List<String> names = randomNames(allDateTimes.size());
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "name", "birthdatetime");
         // Don't USE embedding 0, as we always query for that...
-        var embeddings = EMBEDDINGS.count() - 1;
-        try (final Transaction tx = db.beginTx()) {
+        int embeddings = EMBEDDINGS.count() - 1;
+        try (Transaction tx = db.beginTx()) {
             for (int i = 0; i < allDateTimes.size(); i++) {
-                var datetime = DateTimeValue.parse(allDateTimes.get(i), ZoneId::systemDefault);
+                DateTimeValue datetime = DateTimeValue.parse(allDateTimes.get(i), ZoneId::systemDefault);
                 createTestNode(
                         tx,
                         Map.of(
@@ -157,9 +158,9 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
             }
             tx.commit();
         }
-        var fromTime = DateTimeValue.parse(allDateTimes.get(2), ZoneId::systemDefault);
-        var toTime = DateTimeValue.parse(allDateTimes.get(4), ZoneId::systemDefault);
-        var midTime = DateTimeValue.parse(allDateTimes.get(3), ZoneId::systemDefault);
+        DateTimeValue fromTime = DateTimeValue.parse(allDateTimes.get(2), ZoneId::systemDefault);
+        DateTimeValue toTime = DateTimeValue.parse(allDateTimes.get(4), ZoneId::systemDefault);
+        DateTimeValue midTime = DateTimeValue.parse(allDateTimes.get(3), ZoneId::systemDefault);
         assertThat(Values.COMPARATOR.compare(fromTime, toTime)).isNegative();
         assertThat(Values.COMPARATOR.compare(fromTime, midTime)).isNegative();
         assertThat(Values.COMPARATOR.compare(midTime, toTime)).isNegative();
@@ -176,8 +177,8 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
         assertThatCypherDateTimes(allDateTimes.get(3), ComparisonOperator.GREATER_THAN, allDateTimes.get(4))
                 .isFalse();
 
-        var RESULT_SIZE = 50;
-        var results = queryNodeIndex(
+        int RESULT_SIZE = 50;
+        ResultList results = queryNodeIndex(
                 RESULT_SIZE, allQuery("name"), rangeQuery("birthdatetime", fromTime, true, toTime, true));
         results.sort(Comparator.comparing(v -> ((Integer) v.getValue("id").asObjectCopy())));
         assertThat(results).hasSize(3);
@@ -186,7 +187,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     @Test
     public void checkSSFOpenLowerRangeParameterDateTimesOrderRespectsCypher() throws Exception {
 
-        var allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
+        List<String> allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
         assertThatSSFOpenLowerRangeParameterOrderRespectsCypher(
                         "birthdatetime", allDateTimes, datetime -> DateTimeValue.parse(datetime, ZoneId::systemDefault))
                 .isTrue();
@@ -195,7 +196,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     @Test
     public void checkSSFRangeParameterTimesOrderRespectsCypher() throws Exception {
 
-        var allTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
+        List<String> allTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
         assertThatSSFRangeParameterOrderRespectsCypher(
                         "alarmtime", allTimes, time -> TimeValue.parse(time, ZoneId::systemDefault))
                 .isTrue();
@@ -203,7 +204,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
 
     @Test
     public void checkSSFOpenLowerRangeParameterTimesOrderRespectsCypher() throws Exception {
-        var allTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
+        List<String> allTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
         assertThatSSFOpenLowerRangeParameterOrderRespectsCypher(
                         "alarmtime", allTimes, time -> TimeValue.parse(time, ZoneId::systemDefault))
                 .isTrue();
@@ -212,7 +213,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     @Test
     public void checkSSFOpenUpperRangeParameterTimesOrderRespectsCypher() throws Exception {
 
-        var allTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
+        List<String> allTimes = sortByTimeZoneOffsetAndId(generateTestZonedTimeStrings());
         assertThatSSFOpenUpperRangeParameterOrderRespectsCypher(
                         "alarmtime", allTimes, time -> TimeValue.parse(time, ZoneId::systemDefault))
                 .isTrue();
@@ -221,32 +222,32 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     @Test
     public void checkSSFOpenUpperRangeParameterDateTimesOrderRespectsCypher() throws Exception {
 
-        var allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
+        List<String> allDateTimes = sortByDateTimeZoneOffsetAndId(generateTestZonedDateTimeStrings());
         assertThatSSFOpenUpperRangeParameterOrderRespectsCypher(
                         "birthdatetime", allDateTimes, datetime -> DateTimeValue.parse(datetime, ZoneId::systemDefault))
                 .isTrue();
     }
 
     private AbstractBooleanAssert<?> assertThatCypherDateTimes(String lhs, ComparisonOperator op, String rhs) {
-        final String query = "RETURN " + op.toPredicateString("datetime($lhs)", "datetime($rhs)") + " AS comp;";
+        String query = "RETURN " + op.toPredicateString("datetime($lhs)", "datetime($rhs)") + " AS comp;";
         return assertThat((Boolean) db.executeTransactionally(
                 query, Map.of("lhs", lhs, "rhs", rhs), r -> r.columnAs("comp").next()));
     }
 
     private AbstractBooleanAssert<?> assertThatCypherTimes(String lhs, ComparisonOperator op, String rhs) {
-        final String query = "RETURN " + op.toPredicateString("time($lhs)", "time($rhs)") + " AS comp;";
+        String query = "RETURN " + op.toPredicateString("time($lhs)", "time($rhs)") + " AS comp;";
         return assertThat((Boolean) db.executeTransactionally(
                 query, Map.of("lhs", lhs, "rhs", rhs), r -> r.columnAs("comp").next()));
     }
 
     private <T extends Value> AbstractBooleanAssert<?> assertThatSSFExactParameterOrderRespectsCypher(
             String fieldName, List<String> inputs, Function<String, T> mapper) throws Exception {
-        var names = randomNames(inputs.size());
+        List<String> names = randomNames(inputs.size());
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "name", fieldName);
         createNodesForExactAndRangeParameterChecks(fieldName, inputs, mapper, names);
 
         for (int i = 0; i < inputs.size(); i++) {
-            var time = mapper.apply(inputs.get(i));
+            T time = mapper.apply(inputs.get(i));
             assertThat(queryNodeIndex(allQuery("name"), exactQuery(fieldName, time)))
                     .as("%d name %s %s %s", i, names.get(i), fieldName, time)
                     .hasSize(1)
@@ -258,10 +259,10 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     private <T extends Value> void createNodesForExactAndRangeParameterChecks(
             String fieldName, List<String> inputs, Function<String, T> mapper, List<String> names) {
 
-        var embeddings = EMBEDDINGS.count() - 1;
-        try (final Transaction tx = db.beginTx()) {
+        int embeddings = EMBEDDINGS.count() - 1;
+        try (Transaction tx = db.beginTx()) {
             for (int i = 0; i < inputs.size(); i++) {
-                var timeValue = mapper.apply(inputs.get(i));
+                T timeValue = mapper.apply(inputs.get(i));
                 createTestNode(
                         tx,
                         Map.of(
@@ -281,7 +282,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     private <T extends Value> AbstractBooleanAssert<?> assertThatSSFRangeParameterOrderRespectsCypher(
             String fieldName, List<String> inputs, Function<String, T> mapper) throws Exception {
 
-        var names = randomNames(inputs.size());
+        List<String> names = randomNames(inputs.size());
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "name", fieldName);
         createNodesForExactAndRangeParameterChecks(fieldName, inputs, mapper, names);
 
@@ -291,16 +292,16 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
             int lower = random.nextInt(inputs.size());
             int delta = random.nextInt(Math.min(inputs.size() - lower, resultSize - 1));
             int upper = lower + delta;
-            var fromTime = mapper.apply(inputs.get(lower));
-            var toTime = mapper.apply(inputs.get(upper));
-            var results =
+            T fromTime = mapper.apply(inputs.get(lower));
+            T toTime = mapper.apply(inputs.get(upper));
+            ResultList results =
                     queryNodeIndex(resultSize, allQuery("name"), rangeQuery(fieldName, fromTime, true, toTime, true));
             results.sort(Comparator.comparing(v -> ((Integer) v.getValue("id").asObjectCopy())));
             assertThat(results)
                     .as("%d: From %d(%s) to %d(%s)", i, lower, fromTime, upper, toTime)
                     .hasSize(upper - lower + 1);
             int j = lower;
-            for (var result : results) {
+            for (VectorSSFQueryResult result : results) {
                 assertThat(result).has(field("name", names.get(j)));
                 j += 1;
             }
@@ -311,14 +312,14 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     private <T extends Value> List<Integer> createNodesForOpenRangeCheck(
             String fieldName, List<String> inputs, Function<String, T> mapper, List<String> names, int numberToCreate) {
 
-        var embeddings = EMBEDDINGS.count() - 1;
+        int embeddings = EMBEDDINGS.count() - 1;
         int creationCount = 0;
         List<Integer> timesWithNode = new ArrayList<>();
         double creationProbability = ((double) numberToCreate) / inputs.size();
-        try (final Transaction tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             for (int i = 0; i < inputs.size(); i++) {
                 if (random.nextDouble() < creationProbability && creationCount < numberToCreate) {
-                    var datetime = mapper.apply(inputs.get(i));
+                    T datetime = mapper.apply(inputs.get(i));
                     createTestNode(
                             tx,
                             Map.of(
@@ -342,7 +343,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     private <T extends Value> AbstractBooleanAssert<?> assertThatSSFOpenLowerRangeParameterOrderRespectsCypher(
             String fieldName, List<String> inputs, Function<String, T> mapper) throws Exception {
 
-        var names = randomNames(inputs.size());
+        List<String> names = randomNames(inputs.size());
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "name", fieldName);
         int RESULT_SIZE = 50;
         List<Integer> timesWithNode = createNodesForOpenRangeCheck(fieldName, inputs, mapper, names, RESULT_SIZE);
@@ -351,12 +352,12 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
         int repeat = 100;
         for (int i = 0; i < repeat; i++) {
             int upper = random.nextInt(inputs.size());
-            var toTime = mapper.apply(inputs.get(upper));
-            var results = queryNodeIndex(
+            T toTime = mapper.apply(inputs.get(upper));
+            ResultList results = queryNodeIndex(
                     RESULT_SIZE, allQuery("name"), rangeQuery(fieldName, Values.NO_VALUE, true, toTime, true));
             results.sort(Comparator.comparing(v -> ((Integer) v.getValue("id").asObjectCopy())));
             int expected = 0;
-            for (var nodeIndex : timesWithNode) {
+            for (Integer nodeIndex : timesWithNode) {
                 if (nodeIndex > upper) break;
                 expected += 1;
             }
@@ -364,8 +365,8 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
                     .as("%d: From NO_VALUE to %d(%s)", i, upper, toTime)
                     .hasSize(expected);
             int j = 0;
-            for (var result : results) {
-                var name = names.get(timesWithNode.get(j));
+            for (VectorSSFQueryResult result : results) {
+                String name = names.get(timesWithNode.get(j));
                 assertThat(result).has(field("name", name));
                 j += 1;
             }
@@ -374,7 +375,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     }
 
     private List<String> randomNames(int count) {
-        var names = new ArrayList<String>(count);
+        List<String> names = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             names.add(random.nextAlphaNumericString(4, 12));
         }
@@ -384,7 +385,7 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
     private <T extends Value> AbstractBooleanAssert<?> assertThatSSFOpenUpperRangeParameterOrderRespectsCypher(
             String fieldName, List<String> inputs, Function<String, T> mapper) throws Exception {
 
-        var names = randomNames(inputs.size());
+        List<String> names = randomNames(inputs.size());
 
         createNodeVectorIndex(VECTOR_INDEX_NAME, EMBEDDINGS.dimensions(), EMBEDDING_NAME, "name", fieldName);
         int RESULT_SIZE = 50;
@@ -393,12 +394,12 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
         int repeat = 100;
         for (int i = 0; i < repeat; i++) {
             int lower = random.nextInt(inputs.size());
-            var fromTime = mapper.apply(inputs.get(lower));
-            var results = queryNodeIndex(
+            T fromTime = mapper.apply(inputs.get(lower));
+            ResultList results = queryNodeIndex(
                     RESULT_SIZE, allQuery("name"), rangeQuery(fieldName, fromTime, true, Values.NO_VALUE, true));
             results.sort(Comparator.comparing(v -> ((Integer) v.getValue("id").asObjectCopy())));
             int firstExpectedIndex = 0;
-            for (var nodeIndex : timesWithNode) {
+            for (Integer nodeIndex : timesWithNode) {
                 if (nodeIndex >= lower) break;
                 firstExpectedIndex += 1;
             }
@@ -407,8 +408,8 @@ public class VectorSSFTemporalCompatibilityTest extends VectorSSFTestBase {
                     .as("%d: From %d(%s) to NO_VALUE", i, lower, fromTime)
                     .hasSize(expected);
             int j = firstExpectedIndex;
-            for (var result : results) {
-                var name = names.get(timesWithNode.get(j));
+            for (VectorSSFQueryResult result : results) {
+                String name = names.get(timesWithNode.get(j));
                 assertThat(result).has(field("name", name));
                 j += 1;
             }

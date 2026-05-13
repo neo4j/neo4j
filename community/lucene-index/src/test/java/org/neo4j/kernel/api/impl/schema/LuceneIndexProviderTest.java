@@ -54,11 +54,16 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.text.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.logging.NullLogProvider;
@@ -93,7 +98,7 @@ class LuceneIndexProviderTest {
     @ParameterizedTest
     @EnumSource
     void shouldFailToInvokePopulatorInReadOnlyMode(LuceneContext luceneContext) {
-        var config = Config.defaults();
+        Config config = Config.defaults();
         TextIndexProvider readOnlyIndexProvider =
                 getLuceneIndexProvider(config, DirectoryFactory.inMemory(luceneContext), fileSystem, graphDbDir);
         assertThrows(
@@ -152,11 +157,11 @@ class LuceneIndexProviderTest {
     @EnumSource
     void shouldHandleConcurrentUpdates(LuceneContext luceneContext) throws Throwable {
         // Given an active lucene index populator
-        var config = Config.defaults();
-        var provider = createIndexProvider(luceneContext, config);
-        var samplingConfig = new IndexSamplingConfig(config);
-        var bufferFactory = heapBufferFactory((int) kibiBytes(100));
-        var populator = provider.getPopulator(
+        Config config = Config.defaults();
+        TextIndexProvider provider = createIndexProvider(luceneContext, config);
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
+        ByteBufferFactory bufferFactory = heapBufferFactory((int) kibiBytes(100));
+        IndexPopulator populator = provider.getPopulator(
                 descriptor,
                 samplingConfig,
                 bufferFactory,
@@ -165,13 +170,13 @@ class LuceneIndexProviderTest {
                 ElementIdMapper.PLACEHOLDER,
                 Sets.immutable.empty(),
                 StorageEngineIndexingBehaviour.EMPTY);
-        var race = new Race();
+        Race race = new Race();
 
         // And the underlying index files are created
         populator.create();
 
         // When multiple threads are populating the index
-        var nextEntityId = new AtomicLong();
+        AtomicLong nextEntityId = new AtomicLong();
         race.addContestants(2, throwing(() -> {
             for (int value = 0; value < 3000; value++) {
                 populator.add(
@@ -182,7 +187,7 @@ class LuceneIndexProviderTest {
 
         // And updated concurrently
         race.addContestant(throwing(() -> {
-            try (var updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
+            try (IndexUpdater updater = populator.newPopulatingUpdater(NULL_CONTEXT)) {
                 for (int value = 0; value < 1000; value++) {
                     updater.process(EagerValueIndexEntryUpdate.change(
                             value, descriptor, stringValue(String.valueOf(value)), stringValue(String.valueOf(value))));
@@ -193,7 +198,7 @@ class LuceneIndexProviderTest {
 
         // Then the index population completes
         assertThat(populator.progress(DONE).getCompleted()).isEqualTo(1);
-        var sample = populator.sample(NULL_CONTEXT);
+        IndexSample sample = populator.sample(NULL_CONTEXT);
         assertThat(sample.sampleSize()).isBetween(6000L, 7000L);
         assertThat(sample.uniqueValues()).isEqualTo(3000L);
         assertThat(sample.indexSize()).isGreaterThanOrEqualTo(6000L);
@@ -201,8 +206,8 @@ class LuceneIndexProviderTest {
     }
 
     private TextIndexProvider createIndexProvider(LuceneContext luceneContext, Config config) {
-        var directoryFactory = DirectoryFactory.inMemory(luceneContext);
-        var directoryStructureFactory = directoriesByProvider(testDir.homePath());
+        DirectoryFactory directoryFactory = DirectoryFactory.inMemory(luceneContext);
+        Factory directoryStructureFactory = directoriesByProvider(testDir.homePath());
         return new TextIndexProvider(
                 fileSystem,
                 directoryFactory,

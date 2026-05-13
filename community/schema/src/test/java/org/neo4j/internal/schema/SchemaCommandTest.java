@@ -40,6 +40,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.MutableSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -215,8 +216,8 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createRangeNode(String name) {
-        final var label = random.among(LABELS);
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        String label = random.among(LABELS);
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
         assertThat(new NodeRange(name, label, properties, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -231,8 +232,8 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createRangeRelationship(String name) {
-        final var type = random.among(TYPES);
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        String type = random.among(TYPES);
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
         assertThat(new RelationshipRange(name, type, properties, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -247,8 +248,8 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createTextNode(String name) {
-        final var label = random.among(LABELS);
-        final var property = random.among(PROPERTIES);
+        String label = random.among(LABELS);
+        String property = random.among(PROPERTIES);
         assertThat(new NodeText(name, label, property, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -263,8 +264,8 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createTextRelationship(String name) {
-        final var type = random.among(TYPES);
-        final var property = random.among(PROPERTIES);
+        String type = random.among(TYPES);
+        String property = random.among(PROPERTIES);
         assertThat(new RelationshipText(name, type, property, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -279,9 +280,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createPointNode(String name) {
-        final var label = random.among(LABELS);
-        final var property = random.among(PROPERTIES);
-        final var config = random.among(POINT_CONFIGS);
+        String label = random.among(LABELS);
+        String property = random.among(PROPERTIES);
+        IndexConfig config = random.among(POINT_CONFIGS);
 
         assertThat(new NodePoint(name, label, property, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -297,9 +298,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createPointRelationship(String name) {
-        final var type = random.among(TYPES);
-        final var property = random.among(PROPERTIES);
-        final var config = random.among(POINT_CONFIGS);
+        String type = random.among(TYPES);
+        String property = random.among(PROPERTIES);
+        IndexConfig config = random.among(POINT_CONFIGS);
 
         assertThat(new RelationshipPoint(name, type, property, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -315,9 +316,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createFulltextNode(String name) {
-        final var labels = listFrom(LABELS, random.nextInt(1, 3));
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
-        final var config = random.among(FULLTEXT_CONFIGS);
+        List<String> labels = listFrom(LABELS, random.nextInt(1, 3));
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        IndexConfig config = random.among(FULLTEXT_CONFIGS);
 
         assertThat(new NodeFulltext(name, labels, properties, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -333,9 +334,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createFulltextNodeV2(String name) {
-        final var labels = listFrom(LABELS, random.nextInt(1, 3));
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
-        final var config = random.among(FULLTEXT_CONFIGS);
+        List<String> labels = listFrom(LABELS, random.nextInt(1, 3));
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        IndexConfig config = random.among(FULLTEXT_CONFIGS);
 
         assertThat(new NodeFulltext(name, labels, properties, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -351,9 +352,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createFulltextRelationship(String name) {
-        final var types = listFrom(TYPES, random.nextInt(1, 3));
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
-        final var config = random.among(FULLTEXT_CONFIGS);
+        List<String> types = listFrom(TYPES, random.nextInt(1, 3));
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        IndexConfig config = random.among(FULLTEXT_CONFIGS);
 
         assertThat(new RelationshipFulltext(name, types, properties, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -369,9 +370,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createFulltextRelationshipV2(String name) {
-        final var types = listFrom(TYPES, random.nextInt(1, 3));
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
-        final var config = random.among(FULLTEXT_CONFIGS);
+        List<String> types = listFrom(TYPES, random.nextInt(1, 3));
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        IndexConfig config = random.among(FULLTEXT_CONFIGS);
 
         assertThat(new RelationshipFulltext(name, types, properties, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -387,9 +388,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createVectorNode(String name) {
-        final var label = random.among(LABELS);
-        final var property = random.among(PROPERTIES);
-        final var config = random.among(VECTOR_CONFIGS);
+        String label = random.among(LABELS);
+        String property = random.among(PROPERTIES);
+        IndexConfig config = random.among(VECTOR_CONFIGS);
 
         assertThat(new NodeVector(name, label, property, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -405,9 +406,9 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void createVectorRelationship(String name) {
-        final var type = random.among(TYPES);
-        final var property = random.among(PROPERTIES);
-        final var config = random.among(VECTOR_CONFIGS);
+        String type = random.among(TYPES);
+        String property = random.among(PROPERTIES);
+        IndexConfig config = random.among(VECTOR_CONFIGS);
 
         assertThat(new RelationshipVector(name, type, property, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
                 .satisfies(p -> {
@@ -423,18 +424,18 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void nodeUniqueness(String name) {
-        final var label = random.among(LABELS);
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        String label = random.among(LABELS);
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
 
         assertThat(new NodeUniqueness(name, label, properties, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(UniquenessConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.UNDESIGNATED);
                     assertSchema(constraint.schema(), EntityType.NODE, List.of(label), properties);
 
-                    final var backingIndex = prototype.backingIndex();
+                    IndexPrototype backingIndex = prototype.backingIndex();
                     assertThat(backingIndex)
                             .as("should return the backing index")
                             .isNotNull();
@@ -449,18 +450,18 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void relationshipUniqueness(String name) {
-        final var type = random.among(TYPES);
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        String type = random.among(TYPES);
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
 
         assertThat(new RelationshipUniqueness(name, type, properties, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(UniquenessConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.UNDESIGNATED);
                     assertSchema(constraint.schema(), EntityType.RELATIONSHIP, List.of(type), properties);
 
-                    final var backingIndex = prototype.backingIndex();
+                    IndexPrototype backingIndex = prototype.backingIndex();
                     assertThat(backingIndex)
                             .as("should return the backing index")
                             .isNotNull();
@@ -475,18 +476,18 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void nodeKey(String name) {
-        final var label = random.among(LABELS);
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        String label = random.among(LABELS);
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
 
         assertThat(new NodeKey(name, label, properties, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(KeyConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.UNDESIGNATED);
                     assertSchema(constraint.schema(), EntityType.NODE, List.of(label), properties);
 
-                    final var backingIndex = prototype.backingIndex();
+                    IndexPrototype backingIndex = prototype.backingIndex();
                     assertThat(backingIndex)
                             .as("should return the backing index")
                             .isNotNull();
@@ -501,18 +502,18 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void relationshipKey(String name) {
-        final var type = random.among(TYPES);
-        final var properties = listFrom(PROPERTIES, random.nextInt(1, 5));
+        String type = random.among(TYPES);
+        List<String> properties = listFrom(PROPERTIES, random.nextInt(1, 5));
 
         assertThat(new RelationshipKey(name, type, properties, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(KeyConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.UNDESIGNATED);
                     assertSchema(constraint.schema(), EntityType.RELATIONSHIP, List.of(type), properties);
 
-                    final var backingIndex = prototype.backingIndex();
+                    IndexPrototype backingIndex = prototype.backingIndex();
                     assertThat(backingIndex)
                             .as("should return the backing index")
                             .isNotNull();
@@ -527,12 +528,12 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void nodeExistence(String name) {
-        final var label = random.among(LABELS);
-        final var property = random.among(PROPERTIES);
+        String label = random.among(LABELS);
+        String property = random.among(PROPERTIES);
 
         assertThat(new NodeExistence(name, label, property, false, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(ExistenceConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.INDEPENDENT);
@@ -544,7 +545,7 @@ class SchemaCommandTest {
                 });
         assertThat(new NodeExistence(name, label, property, true, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(ExistenceConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.DEPENDENT);
@@ -559,12 +560,12 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void relationshipExistence(String name) {
-        final var type = random.among(TYPES);
-        final var property = random.among(PROPERTIES);
+        String type = random.among(TYPES);
+        String property = random.among(PROPERTIES);
 
         assertThat(new RelationshipExistence(name, type, property, false, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(ExistenceConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.INDEPENDENT);
@@ -576,7 +577,7 @@ class SchemaCommandTest {
                 });
         assertThat(new RelationshipExistence(name, type, property, true, IF_NOT_EXISTS).toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(ExistenceConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.DEPENDENT);
@@ -591,14 +592,14 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void nodePropertyType(String name) {
-        final var label = random.among(LABELS);
-        final var property = random.among(PROPERTIES);
-        final var propertyTypes = random.among(PROPERTY_TYPES);
+        String label = random.among(LABELS);
+        String property = random.among(PROPERTIES);
+        PropertyTypeSet propertyTypes = random.among(PROPERTY_TYPES);
 
         assertThat(new NodePropertyType(name, label, property, propertyTypes, false, IF_NOT_EXISTS)
                         .toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(TypeConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.INDEPENDENT);
@@ -613,7 +614,7 @@ class SchemaCommandTest {
         assertThat(new NodePropertyType(name, label, property, propertyTypes, true, IF_NOT_EXISTS)
                         .toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(TypeConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.DEPENDENT);
@@ -630,14 +631,14 @@ class SchemaCommandTest {
     @ParameterizedTest
     @MethodSource("names")
     void relationshipPropertyType(String name) {
-        final var type = random.among(TYPES);
-        final var property = random.among(PROPERTIES);
-        final var propertyTypes = random.among(PROPERTY_TYPES);
+        String type = random.among(TYPES);
+        String property = random.among(PROPERTIES);
+        PropertyTypeSet propertyTypes = random.among(PROPERTY_TYPES);
 
         assertThat(new RelationshipPropertyType(name, type, property, propertyTypes, false, IF_NOT_EXISTS)
                         .toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(TypeConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.INDEPENDENT);
@@ -652,7 +653,7 @@ class SchemaCommandTest {
         assertThat(new RelationshipPropertyType(name, type, property, propertyTypes, true, IF_NOT_EXISTS)
                         .toPrototype(tokenHolders))
                 .satisfies(prototype -> {
-                    final var constraint = prototype.descriptor();
+                    ConstraintDescriptor constraint = prototype.descriptor();
                     assertThat(constraint).isInstanceOf(TypeConstraintDescriptor.class);
                     assertConstraintName(constraint.getName(), name);
                     assertThat(constraint.graphTypeDependence()).isEqualTo(GraphTypeDependence.DEPENDENT);
@@ -668,10 +669,10 @@ class SchemaCommandTest {
 
     @Test
     void schemaTokens() {
-        var id = 1;
-        final var labels = Sets.mutable.<String>empty();
-        final var relationships = Sets.mutable.<String>empty();
-        final var properties = Sets.mutable.<String>empty();
+        int id = 1;
+        MutableSet<String> labels = Sets.mutable.empty();
+        MutableSet<String> relationships = Sets.mutable.empty();
+        MutableSet<String> properties = Sets.mutable.empty();
         List<IndexCommand.Create> indexes = List.of(
                 new NodeLookup("command" + id++, IF_NOT_EXISTS),
                 new RelationshipLookup("command" + id++, IF_NOT_EXISTS),
@@ -778,20 +779,20 @@ class SchemaCommandTest {
                         random.among(PROPERTY_TYPES),
                         false,
                         IF_NOT_EXISTS));
-        final var tokens = SchemaTokens.collect(indexes, constraints);
+        SchemaTokens tokens = SchemaTokens.collect(indexes, constraints);
         assertThat(tokens.labels()).containsAll(labels);
         assertThat(tokens.relationships()).containsAll(relationships);
         assertThat(tokens.properties()).containsAll(properties);
     }
 
     private static String track(String[] options, MutableSet<String> tokens, RandomSupport random) {
-        final var option = random.among(options);
+        String option = random.among(options);
         tokens.add(option);
         return option;
     }
 
     private static List<String> trackAll(String[] options, MutableSet<String> tokens, RandomSupport random) {
-        final var values = listFrom(options, random.nextInt(1, 4), random);
+        List<String> values = listFrom(options, random.nextInt(1, 4), random);
         tokens.addAll(values);
         return values;
     }
@@ -822,18 +823,18 @@ class SchemaCommandTest {
                 .as("should have the correct entity type")
                 .isEqualTo(entityType);
 
-        final var tokenHolder =
+        TokenHolder tokenHolder =
                 entityType == EntityType.NODE ? tokenHolders.labelTokens() : tokenHolders.relationshipTypeTokens();
-        final var tokenIds = IntSets.mutable.of();
-        for (var token : tokens) {
+        MutableIntSet tokenIds = IntSets.mutable.of();
+        for (String token : tokens) {
             tokenIds.add(tokenHolder.getIdByName(token));
         }
         assertThat(IntSets.mutable.with(schema.getEntityTokenIds()))
                 .as("should have the correct entity tokens")
                 .isEqualTo(tokenIds);
 
-        final var propertyIds = IntSets.mutable.of();
-        for (var property : properties) {
+        MutableIntSet propertyIds = IntSets.mutable.of();
+        for (String property : properties) {
             propertyIds.add(tokenHolders.propertyKeyTokens().getIdByName(property));
         }
         assertThat(IntSets.mutable.with(schema.getPropertyIds()))
@@ -846,7 +847,7 @@ class SchemaCommandTest {
     }
 
     private static <T> List<T> listFrom(T[] items, int count, RandomSupport random) {
-        final var result = Sets.mutable.<T>withInitialCapacity(count);
+        MutableSet<T> result = Sets.mutable.withInitialCapacity(count);
         while (result.size() < count) {
             result.add(random.among(items));
         }
@@ -854,15 +855,15 @@ class SchemaCommandTest {
     }
 
     private static TokenHolder createTokens(String type, String... tokens) throws Exception {
-        final var holder = new RegisteringCreatingTokenHolder(tokenCreator(), type);
-        for (var token : tokens) {
+        RegisteringCreatingTokenHolder holder = new RegisteringCreatingTokenHolder(tokenCreator(), type);
+        for (String token : tokens) {
             holder.getOrCreateId(token);
         }
         return holder;
     }
 
     private static TokenCreator tokenCreator() {
-        final var counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger();
         return (name, internal) -> counter.getAndIncrement();
     }
 

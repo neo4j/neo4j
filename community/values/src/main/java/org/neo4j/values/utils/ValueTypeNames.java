@@ -80,7 +80,7 @@ public class ValueTypeNames {
             return ofClass((Class<? extends Value>) type);
         }
 
-        final String simpleName = type.getSimpleName();
+        String simpleName = type.getSimpleName();
         return simpleName.isBlank() ? type.getTypeName() : simpleName;
     }
 
