@@ -19,20 +19,22 @@
  */
 package org.neo4j.shell.expect;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Test;
 
-public class RegexCompareTest {
+class RegexCompareTest {
     @Test
-    public void testRegexCompare() {
+    void regexCompare() {
         ExpectTestExtension.assertEqualInteraction("Hej", "Hej");
         ExpectTestExtension.assertEqualInteraction("12Hej", "${regex:\\d\\d}Hej");
         ExpectTestExtension.assertEqualInteraction("blablaHej", "${regex:.*}Hej");
         ExpectTestExtension.assertEqualInteraction("Hej!", "Hej${regex:.}");
-        assertThrows(
-                AssertionError.class, () -> ExpectTestExtension.assertEqualInteraction("12Hej", "${regex:\\d}Hej"));
-        assertThrows(AssertionError.class, () -> ExpectTestExtension.assertEqualInteraction("Hej!", "Hej."));
-        assertThrows(AssertionError.class, () -> ExpectTestExtension.assertEqualInteraction("Hej", ".*"));
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> ExpectTestExtension.assertEqualInteraction("12Hej", "${regex:\\d}Hej"));
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> ExpectTestExtension.assertEqualInteraction("Hej!", "Hej."));
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> ExpectTestExtension.assertEqualInteraction("Hej", ".*"));
     }
 }

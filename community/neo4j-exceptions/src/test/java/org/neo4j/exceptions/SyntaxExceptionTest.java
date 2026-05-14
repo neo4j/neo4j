@@ -20,8 +20,8 @@
 package org.neo4j.exceptions;
 
 import static java.lang.System.lineSeparator;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -36,7 +36,7 @@ class SyntaxExceptionTest {
     void messageWithoutOffset() {
         String message = "Message";
         SyntaxException e = new SyntaxException(dummyGql, message);
-        assertEquals(message, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(message);
     }
 
     @Test
@@ -48,7 +48,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "", "^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -60,7 +60,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "", "^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -72,7 +72,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "", "^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -84,7 +84,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -96,7 +96,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -108,7 +108,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -120,7 +120,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -132,7 +132,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -144,7 +144,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -156,7 +156,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "Some random text.", "^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -168,7 +168,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "Some random text.", "^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -180,7 +180,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -192,7 +192,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "             ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -204,7 +204,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -216,7 +216,7 @@ class SyntaxExceptionTest {
 
         String expected = formatExpectedString("Message", "The error is here.", "                  ^");
 
-        assertEquals(expected, e.getMessage());
+        assertThat(e.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -226,7 +226,7 @@ class SyntaxExceptionTest {
         ObjectOutputStream stream = new ObjectOutputStream(OutputStream.nullOutputStream());
 
         // Then
-        assertDoesNotThrow(() -> stream.writeObject(e));
+        assertThatCode(() -> stream.writeObject(e)).doesNotThrowAnyException();
     }
 
     private static String formatExpectedString(String messageLine, String errorLine, String caretLine) {

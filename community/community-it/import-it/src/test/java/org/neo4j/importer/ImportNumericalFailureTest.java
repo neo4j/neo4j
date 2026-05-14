@@ -19,9 +19,10 @@
  */
 package org.neo4j.importer;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.cli.CommandTestUtils.withSuppressedOutput;
-import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -43,9 +45,8 @@ class ImportNumericalFailureTest {
     @Inject
     private DatabaseLayout databaseLayout;
 
-    static List<String[]> parameters() {
-        List<String[]> params = new ArrayList<>();
-
+    static List<Arguments> parameters() {
+        List<Arguments> params = new ArrayList<>();
         for (String type : Arrays.asList("int", "long", "short", "byte", "float", "double")) {
             for (String val : Arrays.asList(
                     " 1 7 ", " -1 7 ", " - 1 ", "   ", "   -  ", "-", "1. 0", "1 .", ".", "1E 10", " . 1")) {
@@ -54,19 +55,11 @@ class ImportNumericalFailureTest {
                     continue;
                 }
 
-                final String error;
-                if (type.equals("float") || type.equals("double")) {
-                    error = "Not a number: \"" + val + "\"";
-                } else {
-                    error = "Not an integer: \"" + val + "\"";
-                }
+                final String error = (type.equals("float") || type.equals("double"))
+                        ? "Not a number: \"" + val + "\""
+                        : "Not an integer: \"" + val + "\"";
 
-                String[] args = new String[3];
-                args[0] = type;
-                args[1] = val;
-                args[2] = error;
-
-                params.add(args);
+                params.add(arguments(type, val, error));
             }
         }
         return params;
@@ -82,17 +75,15 @@ class ImportNumericalFailureTest {
             writer.println("PERSON," + val);
         }
 
-        Exception exception = assertThrows(
-                Exception.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         databaseLayout.databaseDirectory().toAbsolutePath(),
                         "--report-file",
                         databaseLayout.file("import.report").toAbsolutePath().toString(),
                         "--quote",
                         "'",
                         "--nodes",
-                        data.toAbsolutePath().toString()));
-        assertExceptionContains(exception, expectedError, InputException.class);
+                        data.toAbsolutePath().toString()))
+                .satisfies(e -> assertExceptionContains(e, expectedError, InputException.class));
     }
 
     private static Path file(DatabaseLayout databaseLayout, String name) {
@@ -105,5 +96,22 @@ class ImportNumericalFailureTest {
             CommandLine.populateCommand(cmd, arguments);
             cmd.execute();
         });
+    }
+
+    static void assertExceptionContains(Throwable e, String message, Class<? extends Exception> type) {
+        Throwable current = e;
+        boolean found = false;
+        while (current != null) {
+            if (type.isInstance(current)
+                    && current.getMessage() != null
+                    && current.getMessage().contains(message)) {
+                found = true;
+                break;
+            }
+            current = current.getCause();
+        }
+        assertThat(found)
+                .as("Expected exception chain to contain %s with message containing '%s'", type, message)
+                .isTrue();
     }
 }

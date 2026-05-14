@@ -19,17 +19,15 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 
 class TestPriorityMap {
     @Test
-    void testIt() {
+    void it() {
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
         map.put(0, 5d);
         map.put(1, 4d);
@@ -37,7 +35,7 @@ class TestPriorityMap {
         map.put(1, 3d);
         assertEntry(map.pop(), 1, 3d);
         assertEntry(map.pop(), 0, 5d);
-        assertNull(map.pop());
+        assertThat(map.pop()).isNull();
 
         int start = 0;
         int a = 1;
@@ -81,11 +79,11 @@ class TestPriorityMap {
         boolean putResult = map.put(1, 1.5d);
 
         // THEN
-        assertTrue(putResult);
+        assertThat(putResult).isTrue();
         Entry<Integer, Double> top = map.pop();
-        assertNull(map.peek());
-        assertEquals(1, top.getEntity().intValue());
-        assertEquals(1.5d, top.getPriority(), 0.00001);
+        assertThat(map.peek()).isNull();
+        assertThat(top.getEntity().intValue()).isOne();
+        assertThat(top.getPriority()).isCloseTo(1.5d, within(0.00001));
     }
 
     @Test
@@ -93,12 +91,12 @@ class TestPriorityMap {
         // GIVEN
         int entity = 5;
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder(false, false);
-        assertTrue(map.put(entity, 3d));
-        assertTrue(map.put(entity, 2d));
+        assertThat(map.put(entity, 3d)).isTrue();
+        assertThat(map.put(entity, 2d)).isTrue();
 
         // WHEN
-        assertTrue(map.put(entity, 5d));
-        assertTrue(map.put(entity, 4d));
+        assertThat(map.put(entity, 5d)).isTrue();
+        assertThat(map.put(entity, 4d)).isTrue();
 
         // THEN
         assertEntry(map.pop(), entity, 2d);
@@ -115,15 +113,15 @@ class TestPriorityMap {
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder(false, false);
 
         // WHEN
-        assertTrue(map.put(first, 1d));
-        assertTrue(map.put(second, 2d));
-        assertTrue(map.put(first, 3d));
+        assertThat(map.put(first, 1d)).isTrue();
+        assertThat(map.put(second, 2d)).isTrue();
+        assertThat(map.put(first, 3d)).isTrue();
 
         // THEN
         assertEntry(map.pop(), first, 1d);
         assertEntry(map.pop(), second, 2d);
         assertEntry(map.pop(), first, 3d);
-        assertNull(map.peek());
+        assertThat(map.peek()).isNull();
     }
 
     @Test
@@ -134,20 +132,20 @@ class TestPriorityMap {
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder(false, false);
 
         // WHEN
-        assertTrue(map.put(first, 3d));
-        assertTrue(map.put(second, 2d));
-        assertTrue(map.put(first, 1d));
+        assertThat(map.put(first, 3d)).isTrue();
+        assertThat(map.put(second, 2d)).isTrue();
+        assertThat(map.put(first, 1d)).isTrue();
 
         // THEN
         assertEntry(map.pop(), first, 1d);
         assertEntry(map.pop(), second, 2d);
         assertEntry(map.pop(), first, 3d);
-        assertNull(map.peek());
+        assertThat(map.peek()).isNull();
     }
 
     private static void assertEntry(Entry<Integer, Double> entry, Integer entity, Double priority) {
-        assertNotNull(entry);
-        assertEquals(entity, entry.getEntity());
-        assertEquals(priority, entry.getPriority());
+        assertThat(entry).isNotNull();
+        assertThat(entry.getEntity()).isEqualTo(entity);
+        assertThat(entry.getPriority()).isEqualTo(priority);
     }
 }

@@ -27,12 +27,12 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.cli.CommandTestUtils.capturingExecutionContext;
@@ -49,8 +49,6 @@ import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
-import static org.neo4j.internal.helpers.Exceptions.chain;
-import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
@@ -234,9 +232,7 @@ class ImportCommandTest {
         Configuration config = COMMAS;
 
         // When csv is imported
-        var e = assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         dbName,
                         "--nodes",
                         nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
@@ -245,9 +241,11 @@ class ImportCommandTest {
                         "--relationships",
                         relationshipData(true, config, nodeIds, TRUE, true)
                                 .toAbsolutePath()
-                                .toString()));
-        assertThat(e).hasCauseInstanceOf(CsvImportException.class);
-        assertThat(e.getCause()).hasCauseInstanceOf(DirectoryNotEmptyException.class);
+                                .toString()))
+                .isInstanceOf(CommandFailedException.class)
+                .hasCauseInstanceOf(CsvImportException.class)
+                .cause()
+                .hasCauseInstanceOf(DirectoryNotEmptyException.class);
     }
 
     private void assertTokenIndexesCreated() {
@@ -633,9 +631,7 @@ class ImportCommandTest {
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
         var ctx = capturingCtx();
-        var e = assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         ctx,
                         "--delimiter",
                         "TAB",
@@ -648,10 +644,14 @@ class ImportCommandTest {
                         "--relationships",
                         relationshipHeader(config).toAbsolutePath() + ","
                                 + relationshipData(false, config, nodeIds, TRUE, true)
-                                        .toAbsolutePath()));
-        assertTrue(ctx.outAsString().contains("IMPORT FAILED"));
-        assertFalse(ctx.errAsString().contains(e.getClass().getName()));
-        assertTrue(e.getCause().getMessage().contains("Row has more columns than expected based on the header."));
+                                        .toAbsolutePath()))
+                .isInstanceOf(CommandFailedException.class)
+                .satisfies(e -> {
+                    assertThat(ctx.outAsString()).contains("IMPORT FAILED");
+                    assertThat(ctx.errAsString()).doesNotContain(e.getClass().getName());
+                    assertThat(e.getCause().getMessage())
+                            .contains("Row has more columns than expected based on the header.");
+                });
     }
 
     @Test
@@ -937,13 +937,13 @@ class ImportCommandTest {
         Path nodeData2 = nodeData(false, config, nodeIds, lines(4, nodeIds.size()));
 
         // WHEN
-        var e = assertThrows(
-                Exception.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         "--nodes",
                         nodeHeaderFile.toAbsolutePath() + "," + nodeData1.toAbsolutePath() + ","
-                                + nodeData2.toAbsolutePath()));
-        assertExceptionContains(e, "'a' is defined more than once", DuplicateInputIdException.class);
+                                + nodeData2.toAbsolutePath()))
+                .rootCause()
+                .isInstanceOf(DuplicateInputIdException.class)
+                .hasMessageContaining("'a' is defined more than once");
     }
 
     @Test
@@ -1074,13 +1074,13 @@ class ImportCommandTest {
         Path relationshipData = relationshipData(true, config, relationships.iterator(), TRUE, true);
 
         // WHEN importing data where some relationships refer to missing nodes
-        var e = assertThrows(
-                Exception.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         "--nodes", nodeData.toAbsolutePath().toString(),
                         "--bad-tolerance", "1",
-                        "--relationships", relationshipData.toAbsolutePath().toString()));
-        assertExceptionContains(e, relationshipData.toAbsolutePath().toString(), InputException.class);
+                        "--relationships", relationshipData.toAbsolutePath().toString()))
+                .rootCause()
+                .isInstanceOf(InputException.class)
+                .hasMessageContaining(relationshipData.toAbsolutePath().toString());
     }
 
     @Test
@@ -1099,15 +1099,15 @@ class ImportCommandTest {
         Path relationshipData2 = relationshipData(false, config, relationships.iterator(), lines(2, 5), true);
 
         // WHEN importing data where some relationships refer to missing nodes
-        var e = assertThrows(
-                Exception.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         "--nodes",
                         nodeData.toAbsolutePath().toString(),
                         "--skip-bad-relationships=false",
                         "--relationships",
-                        relationshipData1.toAbsolutePath() + "," + relationshipData2.toAbsolutePath()));
-        assertExceptionContains(e, relationshipData1.toAbsolutePath().toString(), InputException.class);
+                        relationshipData1.toAbsolutePath() + "," + relationshipData2.toAbsolutePath()))
+                .rootCause()
+                .isInstanceOf(InputException.class)
+                .hasMessageContaining(relationshipData1.toAbsolutePath().toString());
     }
 
     @Test
@@ -1215,10 +1215,10 @@ class ImportCommandTest {
         Path data = data(":ID,name", "1,\"This is a line with\nnewlines in\"");
 
         // WHEN
-        var e = assertThrows(
-                Exception.class,
-                () -> runImport("--nodes", data.toAbsolutePath().toString()));
-        assertExceptionContains(e, "Multi-line", IllegalMultilineFieldException.class);
+        assertThatThrownBy(() -> runImport("--nodes", data.toAbsolutePath().toString()))
+                .rootCause()
+                .isInstanceOf(IllegalMultilineFieldException.class)
+                .hasMessageContaining("Multi-line");
     }
 
     @ParameterizedTest
@@ -1398,17 +1398,19 @@ class ImportCommandTest {
         Path data = data(":ID,name", "1,\"one\ntwo\nthree\"", "2,four");
 
         var ctx = capturingCtx();
-        var e = assertThrows(
-                CommandFailedException.class,
-                () -> runImport(ctx, "--nodes", data.toAbsolutePath().toString(), "--multiline-fields=false"));
-        // This happens at the end of the error handling process for all AbstractCommand calls (assuming exception
-        // extends ConsoleFriendlyException.
-        e.prettyPrint(ctx.err());
+        assertThatThrownBy(
+                        () -> runImport(ctx, "--nodes", data.toAbsolutePath().toString(), "--multiline-fields=false"))
+                .isInstanceOf(CommandFailedException.class)
+                // This happens at the end of the error handling process for all AbstractCommand calls (assuming
+                // exception extends ConsoleFriendlyException).
+                .satisfies(e -> ((CommandFailedException) e).prettyPrint(ctx.err()))
+                .cause()
+                .isInstanceOf(CsvImportException.class)
+                .hasCauseInstanceOf(InputException.class);
 
         // THEN
-        assertThat(e.getCause()).isInstanceOf(CsvImportException.class).hasCauseInstanceOf(InputException.class);
-        assertTrue(ctx.errAsString().contains("Detected field which spanned multiple lines"));
-        assertTrue(ctx.errAsString().contains("multiline-fields"));
+        assertThat(ctx.errAsString()).contains("Detected field which spanned multiple lines");
+        assertThat(ctx.errAsString()).contains("multiline-fields");
     }
 
     @Test
@@ -1487,15 +1489,14 @@ class ImportCommandTest {
         int unbalancedStartLine = 10;
 
         // WHEN
-        var e = assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         "--nodes",
                         nodeDataWithMissingQuote(2 * unbalancedStartLine, unbalancedStartLine)
                                 .toAbsolutePath()
-                                .toString()));
-        assertThat(e).hasCauseInstanceOf(CsvImportException.class);
-        assertThat(e.getCause())
+                                .toString()))
+                .isInstanceOf(CommandFailedException.class)
+                .hasCauseInstanceOf(CsvImportException.class)
+                .cause()
                 .hasCauseInstanceOf(InputException.class)
                 .hasMessageContaining("Multi-line fields are illegal");
     }
@@ -1531,15 +1532,16 @@ class ImportCommandTest {
         int unbalancedStartLine = 10;
 
         // WHEN
-        var e = assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         "--nodes",
                         nodeDataWithMissingQuote(unbalancedStartLine, unbalancedStartLine)
                                 .toAbsolutePath()
-                                .toString()));
-        assertThat(e).hasCauseInstanceOf(CsvImportException.class);
-        assertThat(e.getCause()).hasCauseInstanceOf(InputException.class).hasMessageContaining("Multi-line fields");
+                                .toString()))
+                .isInstanceOf(CommandFailedException.class)
+                .hasCauseInstanceOf(CsvImportException.class)
+                .cause()
+                .hasCauseInstanceOf(InputException.class)
+                .hasMessageContaining("Multi-line fields");
     }
 
     @Test
@@ -1576,9 +1578,8 @@ class ImportCommandTest {
         int unbalancedStartLine = 10;
 
         // WHEN
-        assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatExceptionOfType(CommandFailedException.class)
+                .isThrownBy(() -> runImport(
                         "--multiline-fields",
                         "true",
                         "--nodes",
@@ -1706,15 +1707,17 @@ class ImportCommandTest {
         lines.add("id," + "l".repeat(2_000) + ",Person");
 
         // WHEN
-        var e = assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         "--nodes",
                         data(lines.toArray(new String[0])).toAbsolutePath().toString(),
                         "--read-buffer-size",
-                        "1k"));
-        assertThat(e.getCause()).isInstanceOf(CsvImportException.class).hasCauseInstanceOf(IllegalStateException.class);
-        assertThat(e.getCause().getCause()).hasMessageContaining("input data");
+                        "1k"))
+                .isInstanceOf(CommandFailedException.class)
+                .cause()
+                .isInstanceOf(CsvImportException.class)
+                .hasCauseInstanceOf(IllegalStateException.class)
+                .cause()
+                .hasMessageContaining("input data");
     }
 
     @Test
@@ -1795,9 +1798,8 @@ class ImportCommandTest {
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
         var ctx = capturingCtx();
-        assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatExceptionOfType(CommandFailedException.class)
+                .isThrownBy(() -> runImport(
                         ctx,
                         "--nodes",
                         nodeHeader(config).toAbsolutePath() + ","
@@ -2136,15 +2138,14 @@ class ImportCommandTest {
             writer.println(":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte");
             writer.println("1,1,DC,9999999999,123456789");
         });
-        var e = assertThrows(
-                CommandFailedException.class,
-                () -> runImport(
+        assertThatThrownBy(() -> runImport(
                         "--normalize-types", "false",
                         "--nodes", nodeData.toAbsolutePath().toString(),
-                        "--relationships", relationshipData.toAbsolutePath().toString()));
-        String message = e.getCause().getMessage();
-        assertThat(message).contains("1000000");
-        assertThat(message).contains("too big");
+                        "--relationships", relationshipData.toAbsolutePath().toString()))
+                .isInstanceOf(CommandFailedException.class)
+                .cause()
+                .hasMessageContaining("1000000")
+                .hasMessageContaining("too big");
     }
 
     @Test
@@ -3389,15 +3390,6 @@ class ImportCommandTest {
                         null);
             }
         };
-    }
-
-    static void assertExceptionContains(Exception e, String message, Class<? extends Exception> type) throws Exception {
-        if (!contains(e, message, type)) { // Rethrow the exception since we'd like to see what it was instead
-            throw chain(
-                    e,
-                    new Exception(
-                            format("Expected exception to contain cause '%s', %s. but was %s", message, type, e)));
-        }
     }
 
     private String randomType() {

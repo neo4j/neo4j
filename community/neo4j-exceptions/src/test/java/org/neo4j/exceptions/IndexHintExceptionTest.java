@@ -19,7 +19,7 @@
  */
 package org.neo4j.exceptions;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.ANY;
@@ -49,7 +49,7 @@ class IndexHintExceptionTest {
             String expected) {
         String actual =
                 IndexHintException.indexFormatString(variableName, labelOrRelType, properties, entityType, indexType);
-        assertEquals(expected, actual);
+        assertThat(actual).isEqualTo(expected);
     }
 
     static Stream<Arguments> testCases() {

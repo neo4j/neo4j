@@ -19,10 +19,8 @@
  */
 package org.neo4j.monitoring;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.util.Iterator;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -35,7 +33,8 @@ class ExceptionHandlerServiceTest {
 
     @Test
     void noHandlers() {
-        assertDoesNotThrow(() -> exceptionHandlerService.raiseException("Test", new RuntimeException()));
+        assertThatCode(() -> exceptionHandlerService.raiseException("Test", new RuntimeException()))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -48,32 +47,32 @@ class ExceptionHandlerServiceTest {
         // Only 1
         exceptionHandlerService.addExceptionHandler(exceptionHandler1);
         exceptionHandlerService.raiseException("Test", new RuntimeException());
-        assertEquals(1, invokeCounter1.intValue());
-        assertEquals(0, invokeCounter2.intValue());
+        assertThat(invokeCounter1.intValue()).isOne();
+        assertThat(invokeCounter2.intValue()).isZero();
 
         // Both 1 and 2
         exceptionHandlerService.addExceptionHandler(exceptionHandler2);
         exceptionHandlerService.raiseException("Test", new RuntimeException());
-        assertEquals(2, invokeCounter1.intValue());
-        assertEquals(1, invokeCounter2.intValue());
+        assertThat(invokeCounter1.intValue()).isEqualTo(2);
+        assertThat(invokeCounter2.intValue()).isOne();
 
         // Only 2
         exceptionHandlerService.removeExceptionHandler(exceptionHandler1);
         exceptionHandlerService.raiseException("Test", new RuntimeException());
-        assertEquals(2, invokeCounter1.intValue());
-        assertEquals(2, invokeCounter2.intValue());
+        assertThat(invokeCounter1.intValue()).isEqualTo(2);
+        assertThat(invokeCounter2.intValue()).isEqualTo(2);
 
         // None
         exceptionHandlerService.removeExceptionHandler(exceptionHandler2);
         exceptionHandlerService.raiseException("Test", new RuntimeException());
-        assertEquals(2, invokeCounter1.intValue());
-        assertEquals(2, invokeCounter2.intValue());
+        assertThat(invokeCounter1.intValue()).isEqualTo(2);
+        assertThat(invokeCounter2.intValue()).isEqualTo(2);
     }
 
     @Test
     void correctException() {
         RuntimeException exception = new RuntimeException();
-        ExceptionHandler handler = (message, e) -> assertEquals(exception, e);
+        ExceptionHandler handler = (message, e) -> assertThat(e).isEqualTo(exception);
         exceptionHandlerService.addExceptionHandler(handler);
         exceptionHandlerService.raiseException("Test", exception);
     }
@@ -89,10 +88,10 @@ class ExceptionHandlerServiceTest {
         exceptionHandlerService.addExceptionHandler(exceptionHandler);
 
         exceptionHandlerService.raiseException("Test", new RuntimeException());
-        assertEquals(1, invokeCounter.intValue());
+        assertThat(invokeCounter.intValue()).isOne();
         Iterator<String> logLines = logProvider.logLines();
         String next = logLines.next();
-        assertTrue(next.contains("Error raised during error handling"));
-        assertFalse(logLines.hasNext());
+        assertThat(next).contains("Error raised during error handling");
+        assertThat(logLines).isExhausted();
     }
 }

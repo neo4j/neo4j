@@ -22,7 +22,7 @@ package org.neo4j.shell.expect;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.regex.Pattern.compile;
 import static org.apache.commons.io.IOUtils.resourceToString;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.shell.expect.ExpectTestExtension.CYPHER_SHELL_PATH;
 
 import java.io.FileNotFoundException;

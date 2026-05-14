@@ -58,15 +58,15 @@ class BoltLocalResultStreamTest {
     }
 
     @Test
-    void testBasicResultStream() {
+    void basicResultStream() {
         List<String> result = inTx(tx -> tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A").stream()
                 .map(r -> r.get("A").asString())
                 .collect(Collectors.toList()));
-        assertThat(result).isEqualTo(List.of("r0", "r1", "r2", "r3", "r4"));
+        assertThat(result).containsExactlyElementsOf(List.of("r0", "r1", "r2", "r3", "r4"));
     }
 
     @Test
-    void testRxResultStream() {
+    void rxResultStream() {
         List<String> result =
                 inRxTx(tx -> Mono.fromDirect(flowPublisherToFlux(tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A")))
                         .flatMapMany(reactiveResult -> flowPublisherToFlux(reactiveResult.records()))
@@ -77,11 +77,11 @@ class BoltLocalResultStreamTest {
                         .map(r -> r.get("A").asString())
                         .collect(Collectors.toList()));
 
-        assertThat(result).isEqualTo(List.of("r0", "r1", "r2", "r3", "r4"));
+        assertThat(result).containsExactlyElementsOf(List.of("r0", "r1", "r2", "r3", "r4"));
     }
 
     @Test
-    void testPartialStream() {
+    void partialStream() {
         List<String> result =
                 inRxTx(tx -> Mono.fromDirect(flowPublisherToFlux(tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A")))
                         .flatMapMany(reactiveResult -> flowPublisherToFlux(reactiveResult.records()))
@@ -92,7 +92,7 @@ class BoltLocalResultStreamTest {
                         .map(r -> r.get("A").asString())
                         .collect(Collectors.toList()));
 
-        assertThat(result).isEqualTo(List.of("r0", "r1"));
+        assertThat(result).containsExactlyElementsOf(List.of("r0", "r1"));
     }
 
     private static <T> T inTx(Function<TransactionContext, T> workload) {

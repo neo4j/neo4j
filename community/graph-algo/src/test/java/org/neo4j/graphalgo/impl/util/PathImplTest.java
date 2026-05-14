@@ -20,9 +20,6 @@
 package org.neo4j.graphalgo.impl.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,20 +46,20 @@ class PathImplTest {
         Node node = createNode(1337L);
         Path path = PathImpl.singular(node);
 
-        assertEquals(node, path.startNode());
-        assertEquals(node, path.endNode());
+        assertThat(path.startNode()).isEqualTo(node);
+        assertThat(path.endNode()).isEqualTo(node);
 
         Iterator<Node> forwardIterator = path.nodes().iterator();
 
-        assertTrue(forwardIterator.hasNext());
-        assertEquals(node, forwardIterator.next());
-        assertFalse(forwardIterator.hasNext());
+        assertThat(forwardIterator).hasNext();
+        assertThat(forwardIterator.next()).isEqualTo(node);
+        assertThat(forwardIterator).isExhausted();
 
         Iterator<Node> reverseIterator = path.reverseNodes().iterator();
 
-        assertTrue(reverseIterator.hasNext());
-        assertEquals(node, reverseIterator.next());
-        assertFalse(reverseIterator.hasNext());
+        assertThat(reverseIterator).hasNext();
+        assertThat(reverseIterator.next()).isEqualTo(node);
+        assertThat(reverseIterator).isExhausted();
     }
 
     @Test
@@ -75,8 +72,8 @@ class PathImplTest {
         Path secondPath = new PathImpl.Builder(node).push(relationship).build();
 
         // When Then
-        assertEquals(firstPath, secondPath);
-        assertEquals(secondPath, firstPath);
+        assertThat(secondPath).isEqualTo(firstPath);
+        assertThat(firstPath).isEqualTo(secondPath);
     }
 
     @Test
@@ -97,7 +94,7 @@ class PathImplTest {
     }
 
     @Test
-    void testPathReverseNodes() {
+    void pathReverseNodes() {
         when(transaction.newNodeEntity(Mockito.anyLong())).thenAnswer(new NodeAnswer());
 
         Path path = new PathImpl.Builder(createNodeEntity(1))
@@ -108,14 +105,14 @@ class PathImplTest {
         Iterable<Node> nodes = path.reverseNodes();
         List<Node> nodeList = Iterables.asList(nodes);
 
-        assertEquals(3, nodeList.size());
-        assertEquals(3, nodeList.get(0).getId());
-        assertEquals(2, nodeList.get(1).getId());
-        assertEquals(1, nodeList.get(2).getId());
+        assertThat(nodeList).hasSize(3);
+        assertThat(nodeList.get(0).getId()).isEqualTo(3);
+        assertThat(nodeList.get(1).getId()).isEqualTo(2);
+        assertThat(nodeList.get(2).getId()).isOne();
     }
 
     @Test
-    void testPathNodes() {
+    void pathNodes() {
         when(transaction.newNodeEntity(Mockito.anyLong())).thenAnswer(new NodeAnswer());
 
         Path path = new PathImpl.Builder(createNodeEntity(1))
@@ -126,10 +123,10 @@ class PathImplTest {
         Iterable<Node> nodes = path.nodes();
         List<Node> nodeList = Iterables.asList(nodes);
 
-        assertEquals(3, nodeList.size());
-        assertEquals(1, nodeList.get(0).getId());
-        assertEquals(2, nodeList.get(1).getId());
-        assertEquals(3, nodeList.get(2).getId());
+        assertThat(nodeList).hasSize(3);
+        assertThat(nodeList.get(0).getId()).isOne();
+        assertThat(nodeList.get(1).getId()).isEqualTo(2);
+        assertThat(nodeList.get(2).getId()).isEqualTo(3);
     }
 
     private RelationshipEntity createRelationshipEntity(int startNodeId, int endNodeId) {

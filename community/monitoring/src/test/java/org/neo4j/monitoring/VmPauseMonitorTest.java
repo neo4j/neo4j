@@ -21,7 +21,7 @@ package org.neo4j.monitoring;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -51,23 +51,21 @@ class VmPauseMonitorTest {
     }
 
     @Test
-    void testCtorParametersValidation() {
-        assertThrows(
-                NullPointerException.class, () -> new VmPauseMonitor(ofSeconds(1), ofSeconds(1), null, jobScheduler));
-        assertThrows(NullPointerException.class, () -> new VmPauseMonitor(ofSeconds(1), ofSeconds(1), EMPTY, null));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new VmPauseMonitor(ofSeconds(0), ofSeconds(1), EMPTY, jobScheduler));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new VmPauseMonitor(ofSeconds(1), ofSeconds(-1), EMPTY, jobScheduler));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new VmPauseMonitor(ofSeconds(-1), ofSeconds(1), EMPTY, jobScheduler));
+    void ctorParametersValidation() {
+        assertThatExceptionOfType(NullPointerException.class)
+                .isThrownBy(() -> new VmPauseMonitor(ofSeconds(1), ofSeconds(1), null, jobScheduler));
+        assertThatExceptionOfType(NullPointerException.class)
+                .isThrownBy(() -> new VmPauseMonitor(ofSeconds(1), ofSeconds(1), EMPTY, null));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new VmPauseMonitor(ofSeconds(0), ofSeconds(1), EMPTY, jobScheduler));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new VmPauseMonitor(ofSeconds(1), ofSeconds(-1), EMPTY, jobScheduler));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new VmPauseMonitor(ofSeconds(-1), ofSeconds(1), EMPTY, jobScheduler));
     }
 
     @Test
-    void testStartAndStop() {
+    void startAndStop() {
         vmPauseMonitor.start();
         vmPauseMonitor.stop();
 
@@ -76,7 +74,7 @@ class VmPauseMonitorTest {
     }
 
     @Test
-    void testRestart() {
+    void restart() {
         vmPauseMonitor.start();
         vmPauseMonitor.stop();
         vmPauseMonitor.start();
@@ -86,29 +84,25 @@ class VmPauseMonitorTest {
     }
 
     @Test
-    void testFailStopWithoutStart() {
-        assertThrows(IllegalStateException.class, vmPauseMonitor::stop);
+    void failStopWithoutStart() {
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(vmPauseMonitor::stop);
     }
 
     @Test
-    void testFailOnDoubleStart() {
-        assertThrows(IllegalStateException.class, () -> {
-            vmPauseMonitor.start();
-            vmPauseMonitor.start();
-        });
+    void failOnDoubleStart() {
+        vmPauseMonitor.start();
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> vmPauseMonitor.start());
     }
 
     @Test
-    void testFailOnDoubleStop() {
-        assertThrows(IllegalStateException.class, () -> {
-            vmPauseMonitor.start();
-            vmPauseMonitor.stop();
-            vmPauseMonitor.stop();
-        });
+    void failOnDoubleStop() {
+        vmPauseMonitor.start();
+        vmPauseMonitor.stop();
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> vmPauseMonitor.stop());
     }
 
     @Test
-    void testNotifyListener() throws Exception {
+    void notifyListener() throws Exception {
         Mockito.doReturn(false, true).when(vmPauseMonitor).isStopped();
         vmPauseMonitor.monitor();
         Mockito.verify(monitor).pauseDetected(any(VmPauseInfo.class));
