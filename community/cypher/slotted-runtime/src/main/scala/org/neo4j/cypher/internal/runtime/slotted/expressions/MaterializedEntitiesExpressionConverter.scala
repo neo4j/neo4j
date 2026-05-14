@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.functions.Function
 import org.neo4j.cypher.internal.expressions.functions.Keys
 import org.neo4j.cypher.internal.expressions.functions.Labels
+import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.physicalplanning
 import org.neo4j.cypher.internal.physicalplanning.ast.PropertyProjectionEntry
@@ -106,10 +107,11 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
     self: ExpressionConverters
   ): Option[commands.expressions.Expression] =
     (expression, invocation.arguments.headOption) match {
-      case (Keys, Some(arg))   => Some(MaterializedEntityKeysFunction(self.toCommandExpression(id, arg)))
-      case (Labels, Some(arg)) => Some(MaterializedEntityLabelsFunction(self.toCommandExpression(id, arg)))
-      case (Type, Some(arg))   => Some(MaterializedEntityTypeFunction(self.toCommandExpression(id, arg)))
-      case _                   => None
+      case (Keys, Some(arg))       => Some(MaterializedEntityKeysFunction(self.toCommandExpression(id, arg)))
+      case (Labels, Some(arg))     => Some(MaterializedEntityLabelsFunction(self.toCommandExpression(id, arg)))
+      case (Type, Some(arg))       => Some(MaterializedEntityTypeFunction(self.toCommandExpression(id, arg)))
+      case (Properties, Some(arg)) => Some(MaterializedPropertiesFunction(self.toCommandExpression(id, arg)))
+      case _                       => None
     }
 
   private def toCommandProperty(
@@ -381,6 +383,31 @@ case class MaterializedEntityTypeFunction(relExpression: Expression) extends Nul
   override def arguments: Seq[Expression] = Seq(relExpression)
 
   override def children: Seq[AstNode[_]] = Seq(relExpression)
+}
+
+final case class MaterializedPropertiesFunction(mapExpression: Expression) extends Expression {
+
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
+    mapExpression.apply(row, state) match {
+      case node: NodeValue        => node.properties()
+      case rel: RelationshipValue => rel.properties()
+      case map: MapValue          => map
+      case value =>
+        CypherFunctions.properties(
+          value,
+          state.query,
+          state.cursors.nodeCursor,
+          state.cursors.relationshipScanCursor,
+          state.cursors.propertyCursor
+        )
+    }
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(MaterializedPropertiesFunction(mapExpression.rewrite(f)))
+
+  override def arguments: Seq[Expression] = Seq(mapExpression)
+
+  override def children: Seq[AstNode[_]] = Seq(mapExpression)
 }
 
 case class MaterializedPropertyProjectionExpression(mapExpression: Expression, entries: Seq[PropertyProjectionEntry])
