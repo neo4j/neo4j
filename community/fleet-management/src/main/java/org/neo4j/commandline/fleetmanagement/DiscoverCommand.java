@@ -42,19 +42,19 @@ import picocli.CommandLine;
 
 @CommandLine.Command(
         name = "discover",
-        header = "Discover and list Neo4j servers",
+        header = "Discover and list Neo4j servers.",
         description =
                 "Listen for Neo4j fleet discovery broadcasts on the local network and list all discovered Neo4j servers.")
 public class DiscoverCommand extends AbstractCommand {
-    @CommandLine.Option(names = "--timeout", description = "Timeout in seconds", defaultValue = "60")
+    @CommandLine.Option(names = "--timeout", description = "Timeout in seconds.", defaultValue = "60")
     int timeout;
 
-    @CommandLine.Option(names = "--format", description = "Output format (pretty, csv, json)", defaultValue = "Pretty")
+    @CommandLine.Option(names = "--format", description = "Output format (pretty, csv, json).", defaultValue = "Pretty")
     Format format;
 
     @CommandLine.Option(
             names = "--filename",
-            description = "Optional filename to which discovered servers will be written")
+            description = "Optional filename to which discovered servers will be written.")
     Path filename;
 
     public DiscoverCommand(ExecutionContext ctx) {
