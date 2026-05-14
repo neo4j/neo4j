@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.vector;
 
-import static org.neo4j.test.extension.SkipOnSpd.Note.temporary;
-
-import org.neo4j.test.extension.SkipOnSpd;
-
-@SkipOnSpd(notes = temporary, reason = "IN [...] filtering not supported via CYPHER")
 public class VectorSSFExactInSetTest extends VectorSSFExactTest {
 
     VectorSSFExactInSetTest() {

@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.extractor;
 import static org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.field;
-import static org.neo4j.test.extension.SkipOnSpd.Note.temporary;
 import static org.neo4j.values.storable.DurationValue.duration;
 
 import java.time.ZoneId;
@@ -45,7 +44,6 @@ import org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.ResultList;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
-import org.neo4j.test.extension.SkipOnSpd;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.TemporalValue;
@@ -53,7 +51,6 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-@SkipOnSpd(notes = temporary, reason = "IN [...] filtering not supported via CYPHER")
 @RandomSupportExtension
 public class VectorSSFInSetTest extends VectorSSFTestBase {
 
