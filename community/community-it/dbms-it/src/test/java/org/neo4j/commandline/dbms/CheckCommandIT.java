@@ -152,10 +152,11 @@ class CheckCommandIT {
                                                        has an extension of '.report'.
                                                        Default: .
                               --max-off-heap-memory=<size>
-                                                     Maximum memory that the command can use for page cache and various caching data structures
-                                                       to improve performance. Value can be plain numbers, such as 10000000 or, for example,
-                                                       20G for 20 gigabytes, or 70%, which will amount to 70% of currently free memory on the
-                                                       machine.
+                                                     Maximum off-heap memory that the command can use for page cache and various caching data
+                                                       structures to improve performance. Use this option to tune the command memory usage; the
+                                                       command does not use the server.memory.pagecache.size configuration setting for this
+                                                       purpose. Values can be plain numbers, such as 10000000, or, for example, 20G for 20
+                                                       gigabytes, or 70%, which will amount to 70% of currently free memory on the machine.
                                                        Default: 90%
                               --threads=<number of threads>
                                                      Number of threads used to check the consistency. Default: The number of CPUs on the

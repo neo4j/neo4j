@@ -72,9 +72,12 @@ public interface Converters {
 
     class MaxOffHeapMemoryConverter implements ITypeConverter<Long> {
         public static final String DESCRIPTION =
-                "Maximum memory that the command can use for page cache and various caching data structures to improve "
-                        + "performance. Values can be plain numbers, such as 10000000, or, for example, 20G for 20 gigabytes, or 70%%, which "
+                "Maximum off-heap memory that the command can use for page cache and various caching data structures "
+                        + "to improve performance. Use this option to tune the command memory usage; the command does "
+                        + "not use the server.memory.pagecache.size configuration setting for this purpose. Values can "
+                        + "be plain numbers, such as 10000000, or, for example, 20G for 20 gigabytes, or 70%%, which "
                         + "will amount to 70%% of currently free memory on the machine.";
+
         public static final String OPTION_NAME = "--max-off-heap-memory";
 
         @Override
