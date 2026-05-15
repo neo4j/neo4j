@@ -154,7 +154,7 @@
     <oshi-common.version>7.1.0</oshi-common.version>
     <parallel.tests>false</parallel.tests>
     <parquet-floor.version>1.65</parquet-floor.version>
-    <parquet.version>1.17.0</parquet.version>
+    <parquet.version>1.17.1</parquet.version>
     <picocli.version>4.7.7</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <protobuf.version>4.34.1</protobuf.version>
