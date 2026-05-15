@@ -167,7 +167,8 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       parsesIn[ast.Statements] {
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
-          val expectedClauses = showCurrentGraphType(None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
+          val expectedClauses =
+            showCurrentGraphType(asGraph = false, None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -176,7 +177,8 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       parsesIn[ast.Statements] {
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
-          val expectedClauses = clauseSeq :+ showCurrentGraphType(None, yieldAll = false, List.empty, None)(pos)
+          val expectedClauses =
+            clauseSeq :+ showCurrentGraphType(asGraph = false, None, yieldAll = false, List.empty, None)(pos)
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -213,7 +215,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       ("SHOW SETTINGS set", showSetting(Right(varFor("set")), _, _, _, _)),
       ("SHOW TRANSACTIONS tx", showTx(Right(varFor("tx")), _, _, _, _)),
       ("TERMINATE TRANSACTION tx", terminateTx(Right(varFor("tx")), _, _, _, _)),
-      ("SHOW CURRENT GRAPH TYPE", showCurrentGraphType _),
+      ("SHOW CURRENT GRAPH TYPE", showCurrentGraphType(false, _, _, _, _)),
       ("SHOW DATABASE foo", showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _))
     )
   } {
@@ -1147,7 +1149,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       "UNION " +
       "SHOW CONSTRAINTS YIELD a7, b7 AS c7, d7 AS d7, e7 AS f7, g7 AS e7 ORDER BY a7, b7, d7, e7 WHERE a7 AND b7 AND d7 AND e7 RETURN a " +
       "UNION " +
-      "SHOW CURRENT GRAPH TYPE YIELD a8, b8 AS c8, d8 AS d8, e8 AS f8, g8 AS e8 ORDER BY a8, b8, d8, e8 WHERE a8 AND b8 AND d8 AND e8 RETURN a"
+      "SHOW CURRENT GRAPH TYPE AS GRAPH YIELD a8, b8 AS c8, d8 AS d8, e8 AS f8, g8 AS e8 ORDER BY a8, b8, d8, e8 WHERE a8 AND b8 AND d8 AND e8 RETURN a"
   ) {
     val showTxClause = showTx(
       Left(List.empty),
@@ -1382,6 +1384,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       ))
     )
     val showCurrentGraphTypeClause = showCurrentGraphType(
+      asGraph = true,
       None,
       yieldAll = false,
       List(

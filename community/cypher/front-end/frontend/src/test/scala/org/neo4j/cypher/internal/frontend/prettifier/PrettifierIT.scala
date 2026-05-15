@@ -2091,6 +2091,23 @@ class PrettifierIT extends AbstractPrettifierTest {
         |  SKIP 1
         |  LIMIT 10
         |  WHERE type = "OPEN"""".stripMargin
+    ),
+    FailsInCypher5(
+      "show current graph type as graph",
+      "SHOW CURRENT GRAPH TYPE AS GRAPH"
+    ),
+    FailsInCypher5(
+      "show current graph type as graph where nodes = []",
+      """SHOW CURRENT GRAPH TYPE AS GRAPH
+        |  WHERE nodes = []""".stripMargin
+    ),
+    FailsInCypher5(
+      "show current graph type as graph yield relationships order by relationships skip 1 limit 1",
+      """SHOW CURRENT GRAPH TYPE AS GRAPH
+        |YIELD relationships
+        |  ORDER BY relationships ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin
     )
   ) ++ Seq[Test](
     // show procedures

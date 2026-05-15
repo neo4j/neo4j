@@ -98,12 +98,13 @@ class CombineCommandsParserTestBase extends AdministrationAndSchemaCommandParser
     ast.ShowIndexesClause(indexType, where.map(_._1), yieldItems, yieldAll, yieldWith)
 
   protected def showCurrentGraphType(
+    asGraph: Boolean,
     where: Option[(ast.Where, InputPosition)],
     yieldAll: Boolean,
     yieldItems: List[ast.CommandResultItem],
     yieldWith: Option[ast.With]
   ): InputPosition => ast.CommandClause =
-    ast.ShowCurrentGraphTypeClause(where.map(_._1), yieldItems, yieldAll, yieldWith)
+    ast.ShowCurrentGraphTypeClause(asGraph, where.map(_._1), yieldItems, yieldAll, yieldWith)
 
   protected def showDatabase(
     dbScope: DatabaseScope,

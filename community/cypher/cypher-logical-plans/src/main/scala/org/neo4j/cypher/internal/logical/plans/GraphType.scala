@@ -185,39 +185,7 @@ object GraphType {
     if (elementTypes.isEmpty && constraints.isEmpty) "{}"
     else {
       val elementTypeStrings = getElementTypesStrings(elementTypes)
-      val constraintStrings = constraints.toList.sorted.map(c => {
-        val name = c.name.map(n =>
-          // constraint names are parsed as variables, so use that to get proper prettifying in the stringifier
-          s" ${stringifier(Variable(n)(InputPosition.NONE, Variable.isIsolatedDefault))}"
-        ).getOrElse("")
-        val (elemType, variable) = c.reference match {
-          case n: NodeElementTypeReferenceByLabel =>
-            (s"(n:${stringifier(n.labelName)})", "n")
-          case n: NodeElementTypeReferenceByIdentifyingLabel =>
-            (s"(n:${stringifier(n.labelName)} =>)", "n")
-          case r: RelationshipElementTypeReferenceByLabel =>
-            (s"()-[r:${stringifier(r.relTypeName)}]->()", "r")
-          case r: RelationshipElementTypeReferenceByIdentifyingLabel =>
-            (s"()-[r:${stringifier(r.relTypeName)} =>]->()", "r")
-        }
-        val props = c.properties.map(p => s"$variable.${stringifier(p)}")
-        val propertiesString = if (props.size == 1) props.head else props.mkString("(", ", ", ")")
-        val assertion = c.constraintType.predicate
-        val options = c.options match {
-          case ast.NoOptions               => ""
-          case ast.OptionsParam(parameter) => s" OPTIONS ${stringifier(parameter)}"
-          case ast.OptionsMap(innerMap) =>
-            val mapString = innerMap.map({
-              case (s, e) =>
-                // maps in the expression have PropertyKeyName for the keys,
-                // so use that to get proper prettifying in the stringifier of the map keys
-                s"${stringifier(PropertyKeyName(s)(InputPosition.NONE))}: ${stringifier(e)}"
-            }).mkString("{", ", ", "}")
-            s" OPTIONS $mapString"
-        }
-
-        s"CONSTRAINT$name FOR $elemType REQUIRE $propertiesString $assertion$options"
-      })
+      val constraintStrings = getConstraintsStrings(constraints)
 
       s"{ ${(elementTypeStrings ++ constraintStrings).mkString(", ")} }"
     }
@@ -289,6 +257,45 @@ object GraphType {
         }
     }
   }
+
+  // Returns an ordered list of constraint strings
+  def getConstraintsStrings(constraints: Set[GraphTypeCreateConstraint]): List[String] = {
+    constraints.toList.sorted.map(c => {
+      val name = c.name.map(n =>
+        // constraint names are parsed as variables, so use that to get proper prettifying in the stringifier
+        s" ${stringifier(Variable(n)(InputPosition.NONE, Variable.isIsolatedDefault))}"
+      ).getOrElse("")
+      val (elemType, variable) = c.reference match {
+        case n: NodeElementTypeReferenceByLabel =>
+          (s"(n:${stringifier(n.labelName)})", "n")
+        case n: NodeElementTypeReferenceByIdentifyingLabel =>
+          (s"(n:${stringifier(n.labelName)} =>)", "n")
+        case r: RelationshipElementTypeReferenceByLabel =>
+          (s"()-[r:${stringifier(r.relTypeName)}]->()", "r")
+        case r: RelationshipElementTypeReferenceByIdentifyingLabel =>
+          (s"()-[r:${stringifier(r.relTypeName)} =>]->()", "r")
+      }
+      val props = c.properties.map(p => s"$variable.${stringifier(p)}")
+      val propertiesString = if (props.size == 1) props.head else props.mkString("(", ", ", ")")
+      val assertion = c.constraintType.predicate
+      val options = c.options match {
+        case ast.NoOptions               => ""
+        case ast.OptionsParam(parameter) => s" OPTIONS ${stringifier(parameter)}"
+        case ast.OptionsMap(innerMap) =>
+          val mapString = innerMap.map({
+            case (s, e) =>
+              // maps in the expression have PropertyKeyName for the keys,
+              // so use that to get proper prettifying in the stringifier of the map keys
+              s"${stringifier(PropertyKeyName(s)(InputPosition.NONE))}: ${stringifier(e)}"
+          }).mkString("{", ", ", "}")
+          s" OPTIONS $mapString"
+      }
+
+      s"CONSTRAINT$name FOR $elemType REQUIRE $propertiesString $assertion$options"
+    })
+  }
+
+  def stringifyPropertyName(property: PropertyKeyName): String = stringifier(property)
 }
 
 case class GraphTypeForSet(

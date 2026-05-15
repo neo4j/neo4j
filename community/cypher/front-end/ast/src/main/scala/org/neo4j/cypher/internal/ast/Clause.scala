@@ -2927,12 +2927,13 @@ object ShowConstraintsClause {
 
 case class ShowCurrentGraphTypeClause(
   originalColumns: List[ShowAndTerminateColumn],
+  asGraph: Boolean,
   where: Option[Where],
   yieldItems: List[CommandResultItem],
   yieldAll: Boolean,
   yieldWith: Option[With]
 )(val position: InputPosition) extends CommandClause {
-  override def name: String = "SHOW CURRENT GRAPH TYPE"
+  override def name: String = if (asGraph) "SHOW CURRENT GRAPH TYPE AS GRAPH" else "SHOW CURRENT GRAPH TYPE"
 
   private val columns = originalColumns.map(c => ShowColumn(c.name, c.cypherType)(position))
 
@@ -2952,17 +2953,25 @@ case class ShowCurrentGraphTypeClause(
 
 object ShowCurrentGraphTypeClause {
   val specificationColumn = "specification"
+  val nodesColumn = "nodes"
+  val relationshipsColumn = "relationships"
 
   def apply(
+    asGraph: Boolean,
     where: Option[Where],
     yieldItems: List[CommandResultItem],
     yieldAll: Boolean,
     yieldWith: Option[With]
   )(position: InputPosition): ShowCurrentGraphTypeClause = {
-    // There are currently only one column, which is returned by default
-    val columns = List(ShowAndTerminateColumn(specificationColumn))
 
-    ShowCurrentGraphTypeClause(columns, where, yieldItems, yieldAll, yieldWith)(position)
+    val columns =
+      if (asGraph) List(
+        ShowAndTerminateColumn(nodesColumn, CTList(CTNode)),
+        ShowAndTerminateColumn(relationshipsColumn, CTList(CTRelationship))
+      )
+      else List(ShowAndTerminateColumn(specificationColumn))
+
+    ShowCurrentGraphTypeClause(columns, asGraph, where, yieldItems, yieldAll, yieldWith)(position)
   }
 }
 

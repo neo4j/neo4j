@@ -1114,7 +1114,7 @@ showConstraintsEnd
    ;
 
 showCurrentGraphTypeCommand
-   : CURRENT GRAPH TYPE showCommandYieldWhere?
+   : CURRENT GRAPH TYPE (AS GRAPH)? showCommandYieldWhere?
    ;
 
 showProcedures

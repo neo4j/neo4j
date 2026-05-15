@@ -29,7 +29,14 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
 
   test("SHOW CURRENT GRAPH TYPE") {
     assertAst(
-      singleQuery(ShowCurrentGraphTypeClause(None, List.empty, yieldAll = false, None)(defaultPos)),
+      singleQuery(ShowCurrentGraphTypeClause(asGraph = false, None, List.empty, yieldAll = false, None)(defaultPos)),
+      supportedInCypher5 = false
+    )
+  }
+
+  test("SHOW CURRENT GRAPH TYPE AS GRAPH") {
+    assertAst(
+      singleQuery(ShowCurrentGraphTypeClause(asGraph = true, None, List.empty, yieldAll = false, None)(defaultPos)),
       supportedInCypher5 = false
     )
   }
@@ -38,7 +45,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         use(List("db"), resolveStrictly = true),
-        ShowCurrentGraphTypeClause(None, List.empty, yieldAll = false, None)(pos)
+        ShowCurrentGraphTypeClause(asGraph = false, None, List.empty, yieldAll = false, None)(pos)
       ),
       supportedInCypher5 = false
     )
@@ -49,16 +56,23 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
   test("SHOW CURRENT GRAPH TYPE WHERE true") {
     assertAst(
       singleQuery(
-        ShowCurrentGraphTypeClause(Some(where(literalBoolean(true))), List.empty, yieldAll = false, None)(defaultPos)
+        ShowCurrentGraphTypeClause(
+          asGraph = false,
+          Some(where(literalBoolean(true))),
+          List.empty,
+          yieldAll = false,
+          None
+        )(defaultPos)
       ),
       supportedInCypher5 = false
     )
   }
 
-  test("SHOW CURRENT GRAPH TYPE WHERE something = 'somethingElse'") {
+  test("SHOW CURRENT GRAPH TYPE AS GRAPH WHERE something = 'somethingElse'") {
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = true,
           Some(where(equals(varFor("something"), literalString("somethingElse")))),
           List.empty,
           yieldAll = false,
@@ -73,6 +87,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("column")),
           yieldAll = false,
@@ -87,6 +102,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("type", Some("CURRENT")), commandResultItem("specification", Some("GRAPH"))),
           yieldAll = false,
@@ -100,16 +116,23 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
   test("SHOW CURRENT GRAPH TYPE YIELD *") {
     assertAst(
       singleQuery(
-        ShowCurrentGraphTypeClause(None, List.empty, yieldAll = true, Some(withFromYield(returnAllItems)))(defaultPos)
+        ShowCurrentGraphTypeClause(
+          asGraph = false,
+          None,
+          List.empty,
+          yieldAll = true,
+          Some(withFromYield(returnAllItems))
+        )(defaultPos)
       ),
       supportedInCypher5 = false
     )
   }
 
-  test("SHOW CURRENT GRAPH TYPE YIELD * ORDER BY specification OFFSET 2 LIMIT 5") {
+  test("SHOW CURRENT GRAPH TYPE AS GRAPH YIELD * ORDER BY specification OFFSET 2 LIMIT 5") {
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = true,
           None,
           List.empty,
           yieldAll = true,
@@ -132,6 +155,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
       singleQuery(
         use(List("db"), resolveStrictly = true),
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("type"), commandResultItem("specification", Some("spec"))),
           yieldAll = false,
@@ -153,6 +177,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
       singleQuery(
         use(List("db"), resolveStrictly = true),
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("type"), commandResultItem("specification", Some("spec"))),
           yieldAll = false,
@@ -174,6 +199,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -192,6 +218,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -210,6 +237,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("a")),
           yieldAll = false,
@@ -228,6 +256,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -253,6 +282,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -273,6 +303,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -303,6 +334,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("type", Some("specification")), commandResultItem("specification", Some("type"))),
           yieldAll = false,
@@ -323,6 +355,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           None,
           List(commandResultItem("name")),
           yieldAll = false,
@@ -339,6 +372,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
     assertAst(
       singleQuery(
         ShowCurrentGraphTypeClause(
+          asGraph = false,
           Some(where(equals(varFor("type"), literalString("OPEN")))),
           List.empty,
           yieldAll = false,
@@ -353,7 +387,13 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
   test("SHOW CURRENT GRAPH TYPE WHERE true RETURN *") {
     assertAst(
       singleQuery(
-        ShowCurrentGraphTypeClause(Some(where(literalBoolean(true))), List.empty, yieldAll = false, None)(defaultPos),
+        ShowCurrentGraphTypeClause(
+          asGraph = false,
+          Some(where(literalBoolean(true))),
+          List.empty,
+          yieldAll = false,
+          None
+        )(defaultPos),
         returnAll
       ),
       supportedInCypher5 = false
@@ -363,7 +403,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
   test("SHOW CURRENT GRAPH TYPE RETURN *") {
     assertAst(
       singleQuery(
-        ShowCurrentGraphTypeClause(None, List.empty, yieldAll = false, None)(defaultPos),
+        ShowCurrentGraphTypeClause(asGraph = false, None, List.empty, yieldAll = false, None)(defaultPos),
         returnAll
       ),
       supportedInCypher5 = false
@@ -373,7 +413,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
   test("SHOW CURRENT GRAPH TYPE RETURN type as something") {
     assertAst(
       singleQuery(
-        ShowCurrentGraphTypeClause(None, List.empty, yieldAll = false, None)(defaultPos),
+        ShowCurrentGraphTypeClause(asGraph = false, None, List.empty, yieldAll = false, None)(defaultPos),
         return_(aliasedReturnItem("type", "something"))
       ),
       supportedInCypher5 = false
@@ -383,7 +423,7 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
   test("SHOW CURRENT GRAPH TYPE USE db") {
     assertAst(
       singleQuery(
-        ShowCurrentGraphTypeClause(None, List.empty, yieldAll = false, None)(defaultPos),
+        ShowCurrentGraphTypeClause(asGraph = false, None, List.empty, yieldAll = false, None)(defaultPos),
         use(List("db"), resolveStrictly = true)
       ),
       supportedInCypher5 = false
@@ -576,6 +616,34 @@ class ShowCurrentGraphTypeCommandParserTest extends AdministrationAndSchemaComma
             "'DELETE', 'DETACH', 'FILTER', 'FINISH', 'FOR', 'FOREACH', 'INSERT', 'LET', 'LIMIT', 'MATCH', 'MERGE', 'NEXT', " +
             "'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SHOW', 'SKIP', 'TERMINATE', 'UNION', " +
             "'UNWIND', 'USE', 'WITH' or <EOF>."
+        )
+    }
+  }
+
+  test("SHOW CURRENT GRAPH TYPE AS") {
+    failsParsing[Statements].in {
+      case Cypher5 => showCurrentGraphTypeCypher5Error
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input '': expected 'GRAPH' (",
+          GqlStatusInfoCodes.STATUS_42I06,
+          "error: syntax error or access rule violation - invalid input. Invalid input '', expected: 'GRAPH'."
+        )
+    }
+  }
+
+  test("SHOW CURRENT GRAPH TYPE GRAPH") {
+    failsParsing[Statements].in {
+      case Cypher5 => showCurrentGraphTypeCypher5Error
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input 'GRAPH': expected 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FILTER', " +
+            "'FINISH', 'FOR', 'FOREACH', 'AS GRAPH', 'INSERT', 'LET', 'LIMIT', 'MATCH', 'MERGE', 'NEXT', 'NODETACH', 'OFFSET', " +
+            "'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SHOW', 'SKIP', 'TERMINATE', 'UNION', 'UNWIND', 'USE', " +
+            "'WHERE', 'WITH', 'YIELD' or <EOF> (",
+          GqlStatusInfoCodes.STATUS_42I06,
+          "error: syntax error or access rule violation - invalid input. Invalid input 'GRAPH', " +
+            "expected: 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FILTER', 'FINISH', 'FOR', 'FOREACH', " +
+            "'AS GRAPH', 'INSERT', 'LET', 'LIMIT', 'MATCH', 'MERGE', 'NEXT', 'NODETACH', 'OFFSET', 'OPTIONAL', " +
+            "'REMOVE', 'RETURN', 'SET', 'SHOW', 'SKIP', 'TERMINATE', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH', 'YIELD' or <EOF>."
         )
     }
   }

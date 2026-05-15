@@ -2358,19 +2358,20 @@ class AstGenerator(
 
   def _showCurrentGraphType: Gen[Query] = for {
     use <- option(_use)
+    asGraph <- boolean
     yields <- _eitherYieldOrWhere
     yieldAll <- boolean
   } yield {
     val showClauses = yields match {
       case Some(Right(w)) =>
-        Seq(ShowCurrentGraphTypeClause(Some(w), List.empty, yieldAll = false, None)(pos))
+        Seq(ShowCurrentGraphTypeClause(asGraph, Some(w), List.empty, yieldAll = false, None)(pos))
       case Some(Left((y, r))) =>
         val (w, yi) = turnYieldToWith(y)
-        Seq(ShowCurrentGraphTypeClause(None, yi, yieldAll = false, Some(w))(pos)) ++ r
+        Seq(ShowCurrentGraphTypeClause(asGraph, None, yi, yieldAll = false, Some(w))(pos)) ++ r
       case _ if yieldAll =>
-        Seq(ShowCurrentGraphTypeClause(None, List.empty, yieldAll = true, Some(getFullWithStarFromYield))(pos))
+        Seq(ShowCurrentGraphTypeClause(asGraph, None, List.empty, yieldAll = true, Some(getFullWithStarFromYield))(pos))
       case _ =>
-        Seq(ShowCurrentGraphTypeClause(None, List.empty, yieldAll = false, None)(pos))
+        Seq(ShowCurrentGraphTypeClause(asGraph, None, List.empty, yieldAll = false, None)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     SingleQuery(fullClauses)(pos)
@@ -2538,6 +2539,7 @@ class AstGenerator(
       DefaultDatabaseScope()(pos),
       HomeDatabaseScope()(pos)
     )
+    asGraph <- boolean
     yields <- _yield
     yieldAll <- boolean
     clauseCypher5 <- const((item: List[CommandResultItem], all: Boolean, w: With) =>
@@ -2556,7 +2558,7 @@ class AstGenerator(
       (item: List[CommandResultItem], all: Boolean, w: With) =>
         ShowIndexesClause(indexType, None, item, all, Some(w))(pos),
       (item: List[CommandResultItem], all: Boolean, w: With) =>
-        ShowCurrentGraphTypeClause(None, item, all, Some(w))(pos),
+        ShowCurrentGraphTypeClause(asGraph, None, item, all, Some(w))(pos),
       (item: List[CommandResultItem], all: Boolean, w: With) =>
         ShowDatabasesClause(scope, None, item, all, Some(w), cypher5ColumnsOnly = false)(pos)
     )

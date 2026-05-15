@@ -362,7 +362,9 @@ trait DdlShowBuilder extends Cypher25ParserListener {
     ctx: Cypher25Parser.ShowCurrentGraphTypeCommandContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYieldWhere()))
-      .buildShowCurrentGraphTypeClause(pos(ctx.getParent))
+      // We only need to check for the existence of AS, since currently the only thing that can follow AS is GRAPH
+      // if we later expand on what things can follow the AS we would need to update this check
+      .buildShowCurrentGraphTypeClause(ctx.AS() != null, pos(ctx.getParent))
   }
 
   final override def exitShowProcedures(
@@ -608,8 +610,9 @@ object DdlShowBuilder {
         returnCypher5Columns = false
       )(position)
 
-    def buildShowCurrentGraphTypeClause(position: InputPosition): Clause =
+    def buildShowCurrentGraphTypeClause(asGraph: Boolean, position: InputPosition): Clause =
       ShowCurrentGraphTypeClause(
+        asGraph,
         where,
         yieldedItems,
         yieldAll,

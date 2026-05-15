@@ -292,9 +292,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       // show current graph type only combinations
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        showCurrentGraphType(false, _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        showCurrentGraphType(false, _, _, _, _)
+      ),
+      CommandCombinationsNoNames(
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _),
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _)
+      ),
+      CommandCombinationsNoNames(
+        "SHOW CURRENT GRAPH TYPE",
+        showCurrentGraphType(false, _, _, _, _),
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _)
       )
     ) ++ Seq(
       // show databases only combinations
@@ -386,11 +398,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW TRANSACTIONS",
         showTx(Left(List.empty), _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        showCurrentGraphType(false, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        showCurrentGraphType(false, _, _, _, _),
         "SHOW TRANSACTIONS 'db1-transaction-123'",
         showTx(Right(literalString("db1-transaction-123")), _, _, _, _)
       ),
@@ -458,12 +470,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
         terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _),
-        "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        showCurrentGraphType(false, _, _, _, _),
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
         terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _)
       ),
@@ -532,11 +544,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW SETTINGS",
         showSetting(Left(List.empty), _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        showCurrentGraphType(false, _, _, _, _)
       ),
       CommandCombinationsNoNames(
-        "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _),
         "SHOW SETTINGS $setting",
         showSetting(Right(parameter("setting", CTAny)), _, _, _, _)
       ),
@@ -593,11 +605,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW BUILT IN FUNCTIONS EXECUTABLE BY CURRENT USER",
         showFunction(ast.BuiltInFunctions, Some(ast.CurrentUser), _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        showCurrentGraphType(false, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        showCurrentGraphType(false, _, _, _, _),
         "SHOW FUNCTIONS",
         showFunction(ast.AllFunctions, None, _, _, _, _)
       ),
@@ -639,8 +651,8 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         showIndex(ast.AllIndexes, _, _, _, _)
       ),
       CommandCombinationsNoNames(
-        "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _),
         "SHOW PROCEDURES",
         showProcedure(None, _, _, _, _)
       ),
@@ -648,7 +660,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW PROCEDURES",
         showProcedure(None, _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        showCurrentGraphType(false, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW DEFAULT DATABASE",
@@ -678,12 +690,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       CommandCombinationsNoNames(
         "SHOW ALL CONSTRAINTS",
         showConstraint(ast.AllConstraints, _, _, _, _),
-        "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        showCurrentGraphType(false, _, _, _, _),
         "SHOW CONSTRAINTS",
         showConstraint(ast.AllConstraints, _, _, _, _)
       ),
@@ -701,16 +713,16 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       ),
       // show indexes combined with remaining commands
       CommandCombinationsNoNames(
-        "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _),
         "SHOW INDEXES",
         showIndex(ast.AllIndexes, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW FULLTEXT INDEXES",
         showIndex(ast.FulltextIndexes, _, _, _, _),
-        "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        "SHOW CURRENT GRAPH TYPE AS GRAPH",
+        showCurrentGraphType(true, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW DATABASES",
@@ -727,7 +739,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       // show current graph type combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType,
+        showCurrentGraphType(false, _, _, _, _),
         "SHOW DATABASES",
         showDatabase(ast.AllDatabasesScope()(pos), _, _, _, _)
       ),
@@ -735,7 +747,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW HOME DATABASE",
         showDatabase(ast.HomeDatabaseScope()(pos), _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
-        showCurrentGraphType
+        showCurrentGraphType(false, _, _, _, _)
       )
     )
 
@@ -2220,6 +2232,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         ))
       ),
       showCurrentGraphType(
+        asGraph = false,
         None,
         yieldAll = false,
         List(
@@ -2617,6 +2630,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showCurrentGraphType(
+        asGraph = false,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2680,6 +2694,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showCurrentGraphType(
+        asGraph = false,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2743,6 +2758,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showCurrentGraphType(
+        asGraph = false,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2806,6 +2822,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showCurrentGraphType(
+        asGraph = false,
         None,
         yieldAll = false,
         List(commandResultItem("a")),

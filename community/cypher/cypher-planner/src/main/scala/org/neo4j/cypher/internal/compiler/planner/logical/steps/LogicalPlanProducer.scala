@@ -3207,7 +3207,14 @@ case class LogicalPlanProducer(
       case s: ShowCurrentGraphTypeClause =>
         val (relevantVariables, showColumns, yieldColumns) =
           removeUnneededVariables(s.unfilteredColumns.columns, s.yieldItems)
-        ShowCurrentGraphType(showColumns, yieldColumns, s.yieldAll, relevantVariables, inner.availableSymbols)
+        ShowCurrentGraphType(
+          s.asGraph,
+          showColumns,
+          yieldColumns,
+          s.yieldAll,
+          relevantVariables,
+          inner.availableSymbols
+        )
       case s: ShowProceduresClause =>
         val (relevantVariables, showColumns, yieldColumns) =
           removeUnneededVariables(s.unfilteredColumns.columns, s.yieldItems)

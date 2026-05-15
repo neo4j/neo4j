@@ -73,13 +73,16 @@ case class ShowConstraints(
 }
 
 case class ShowCurrentGraphType(
+  asGraph: Boolean,
   defaultColumns: List[CommandDefaultColumn],
   yieldColumns: List[CommandYieldColumn],
   yieldAll: Boolean,
   columnVariables: Set[LogicalVariable],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends CommandLogicalPlan(idGen, argumentIds) {
-  override def commandDescription: String = "SHOW CURRENT GRAPH TYPE"
+
+  override def commandDescription: String =
+    if (asGraph) "SHOW CURRENT GRAPH TYPE AS GRAPH" else "SHOW CURRENT GRAPH TYPE"
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): ShowCurrentGraphType =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))

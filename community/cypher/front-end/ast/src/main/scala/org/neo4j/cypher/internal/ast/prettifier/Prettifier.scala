@@ -1532,7 +1532,7 @@ case class Prettifier(
       val ind = indented()
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
       val yielded = yieldAsString(s.yieldItems, s.yieldAll, s.yieldWith)
-      s"${INDENT}SHOW CURRENT GRAPH TYPE$where$yielded"
+      s"$INDENT${s.name}$where$yielded"
     }
 
     def asString(s: ShowProceduresClause): String = {

@@ -963,31 +963,36 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
   }
 
   test("Show current graph type", Tags.NoSpdOverride) {
-    // WHEN
-    val exception = the[RuntimeUnsupportedException] thrownBy {
-      execute("CYPHER 25 SHOW CURRENT GRAPH TYPE")
-    }
+    Seq(
+      "SHOW CURRENT GRAPH TYPE",
+      "SHOW CURRENT GRAPH TYPE AS GRAPH"
+    ).foreach(query => {
+      // WHEN
+      val exception = the[RuntimeUnsupportedException] thrownBy {
+        execute(s"CYPHER 25 $query")
+      }
 
-    // THEN
-    exception should be(gqlException(
-      "51N27: 'SHOW CURRENT GRAPH TYPE' is not supported in community edition.",
-      gqlStatus(
-        GqlStatusInfoCodes.STATUS_51N27,
-        "error: system configuration or operation exception - not supported in this edition. " +
-          "'SHOW CURRENT GRAPH TYPE' is not supported in community edition."
-      )
-    ))
-    val cause = exception.getCause
-    cause should not be null
-    cause shouldBe a[CantCompileQueryException]
-    cause.asInstanceOf[CantCompileQueryException] should be(gqlException(
-      "51N27: 'SHOW CURRENT GRAPH TYPE' is not supported in community edition.",
-      gqlStatus(
-        GqlStatusInfoCodes.STATUS_51N27,
-        "error: system configuration or operation exception - not supported in this edition. " +
-          "'SHOW CURRENT GRAPH TYPE' is not supported in community edition."
-      )
-    ))
+      // THEN
+      exception should be(gqlException(
+        s"51N27: '$query' is not supported in community edition.",
+        gqlStatus(
+          GqlStatusInfoCodes.STATUS_51N27,
+          "error: system configuration or operation exception - not supported in this edition. " +
+            s"'$query' is not supported in community edition."
+        )
+      ))
+      val cause = exception.getCause
+      cause should not be null
+      cause shouldBe a[CantCompileQueryException]
+      cause.asInstanceOf[CantCompileQueryException] should be(gqlException(
+        s"51N27: '$query' is not supported in community edition.",
+        gqlStatus(
+          GqlStatusInfoCodes.STATUS_51N27,
+          "error: system configuration or operation exception - not supported in this edition. " +
+            s"'$query' is not supported in community edition."
+        )
+      ))
+    })
   }
 
   test("Graph type commands are not available in Cypher 5") {

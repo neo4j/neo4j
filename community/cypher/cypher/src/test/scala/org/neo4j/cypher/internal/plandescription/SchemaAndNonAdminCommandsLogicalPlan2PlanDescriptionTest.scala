@@ -4877,23 +4877,30 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
   test("ShowCurrentGraphType") {
     assertGood(
       attach(
-        ShowCurrentGraphType(List.empty, List.empty, yieldAll = false, Set.empty, Set.empty),
+        ShowCurrentGraphType(asGraph = false, List.empty, List.empty, yieldAll = false, Set.empty, Set.empty),
         1.0
       ),
-      planDescription(id, "ShowCurrentGraphType", Seq.empty, Seq(details("defaultColumns")), Set.empty)
+      planDescription(
+        id,
+        "ShowCurrentGraphType",
+        Seq.empty,
+        Seq(details("graphTypeAsString, defaultColumns")),
+        Set.empty
+      )
     )
 
     assertGood(
       attach(
-        ShowCurrentGraphType(List.empty, List.empty, yieldAll = true, Set.empty, Set.empty),
+        ShowCurrentGraphType(asGraph = false, List.empty, List.empty, yieldAll = true, Set.empty, Set.empty),
         1.0
       ),
-      planDescription(id, "ShowCurrentGraphType", Seq.empty, Seq(details("allColumns")), Set.empty)
+      planDescription(id, "ShowCurrentGraphType", Seq.empty, Seq(details("graphTypeAsString, allColumns")), Set.empty)
     )
 
     assertGood(
       attach(
         ShowCurrentGraphType(
+          asGraph = true,
           List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy"), commandDefaultColumn("vvv")),
           List(
             CommandYieldColumn("xxx", "xxx"),
@@ -4910,7 +4917,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "ShowCurrentGraphType",
         Seq.empty,
-        Seq(details("columns(xxx, yyy AS zzz, vvv)")),
+        Seq(details("graphTypeAsGraph, columns(xxx, yyy AS zzz, vvv)")),
         Set("xxx", "zzz", "vvv")
       )
     )

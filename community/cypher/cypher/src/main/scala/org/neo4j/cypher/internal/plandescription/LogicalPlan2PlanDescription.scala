@@ -1852,11 +1852,13 @@ case class LogicalPlan2PlanDescription(
 
       case s: ShowCurrentGraphType =>
         val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
+        val commandDescription = if (s.asGraph) pretty"graphTypeAsGraph" else pretty"graphTypeAsString"
+
         PlanDescriptionImpl(
           id,
           "ShowCurrentGraphType",
           children,
-          Seq(Details(pretty"$colsDescription")),
+          Seq(Details(pretty"$commandDescription, $colsDescription")),
           variables,
           withRawCardinalities,
           withDistinctness
