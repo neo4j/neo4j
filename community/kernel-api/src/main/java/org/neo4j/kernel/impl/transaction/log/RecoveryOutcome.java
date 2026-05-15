@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.storageengine.api.OpenTransactionMetadata;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 public interface RecoveryOutcome {
@@ -27,7 +28,7 @@ public interface RecoveryOutcome {
 
     long[] notClosedTransactionIds();
 
-    long lastCommittingTransactionId();
+    TransactionId lastCommittingTransactionId();
 
     OutOfOrderSequence.NumberWithMeta lastClosedGapFree();
 
@@ -42,7 +43,7 @@ public interface RecoveryOutcome {
         }
 
         @Override
-        public long lastCommittingTransactionId() {
+        public TransactionId lastCommittingTransactionId() {
             throw new UnsupportedOperationException();
         }
 

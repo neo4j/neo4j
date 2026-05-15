@@ -65,10 +65,9 @@ public class KernelTransactionMonitor extends TransactionMonitor<KernelTransacti
         this.indexingService = indexingService;
         this.databaseHealth = databaseHealth;
         this.multiVersion = multiVersion;
-        this.oldestVisibilityHorizon.setRelease(
-                transactionIdStore.getHighestEverClosedTransaction().id());
-        this.oldestCleanupHorizon.setRelease(
-                transactionIdStore.getHighestEverClosedTransaction().id());
+        long highestGapFreeClosedTransactionId = transactionIdStore.getHighestGapFreeClosedTransactionId();
+        this.oldestVisibilityHorizon.setRelease(highestGapFreeClosedTransactionId);
+        this.oldestCleanupHorizon.setRelease(transactionIdStore.getHighestGapFreeClosedTransactionId());
     }
 
     @Override

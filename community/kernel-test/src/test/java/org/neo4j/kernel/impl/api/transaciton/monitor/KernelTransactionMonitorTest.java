@@ -133,8 +133,7 @@ class KernelTransactionMonitorTest {
     @Test
     void defaultVisibilityBoundaryComesFromHighestEverClosed() {
         var transactionIdStore = mock(TransactionIdStore.class);
-        when(transactionIdStore.getHighestEverClosedTransaction())
-                .thenReturn(new TransactionId(42, 42, LatestVersions.LATEST_KERNEL_VERSION, 42, 42, 42));
+        when(transactionIdStore.getHighestGapFreeClosedTransactionId()).thenReturn(42L);
 
         var kernelTransactions = mock(KernelTransactions.class);
         var transactionMonitor = new KernelTransactionMonitor(

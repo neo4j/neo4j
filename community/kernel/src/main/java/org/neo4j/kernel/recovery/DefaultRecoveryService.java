@@ -186,7 +186,7 @@ public class DefaultRecoveryService implements RecoveryService {
                 contextFactory.init(() -> new TransactionIdSnapshot(lastRecoveredTxId), () -> lastRecoveredTxId);
             } else {
                 transactionIdStore.setLastCommittedAndClosedTransactionId(
-                        recoveryOutcome.lastCommittingTransactionId(),
+                        recoveryOutcome.lastCommittingTransactionId().id(),
                         recoveryOutcome.lastClosedGapFree().number(),
                         recoveryOutcome.notClosedTransactionIds(),
                         highestTransactionRecoveredBatch.appendIndex(),
@@ -204,7 +204,7 @@ public class DefaultRecoveryService implements RecoveryService {
                 contextFactory.init(
                         () -> new TransactionIdSnapshot(
                                 recoveryOutcome.lastClosedGapFree().number(),
-                                recoveryOutcome.lastCommittingTransactionId(),
+                                recoveryOutcome.lastCommittingTransactionId().id(),
                                 recoveryOutcome.notClosedTransactionIds()),
                         () -> recoveryOutcome.lastClosedGapFree().number());
             }

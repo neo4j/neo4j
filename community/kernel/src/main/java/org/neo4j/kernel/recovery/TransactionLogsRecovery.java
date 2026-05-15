@@ -67,6 +67,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.TransactionIdTracker.PartialLastTransactionChunk;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.OpenTransactionMetadata;
+import org.neo4j.storageengine.api.TransactionId;
 
 /**
  * This is the process of doing a recovery on the transaction log and store, and is executed
@@ -219,9 +220,17 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             notClosedTransactionIds[index++] = transactionInfo.transactionId();
         }
         Arrays.sort(notClosedTransactionIds);
+
+        var transactionBatchInfo = recoveryContextTracker.getLastHighestTransactionBatchInfo();
         return new PartialRecoveryOutcome(
                 notClosedTransactionIds,
-                recoveryContextTracker.getLastHighestTransactionBatchInfo().txId(),
+                new TransactionId(
+                        transactionBatchInfo.txId(),
+                        transactionBatchInfo.appendIndex(),
+                        transactionBatchInfo.kernelVersion(),
+                        transactionBatchInfo.checksum(),
+                        transactionBatchInfo.timeWritten(),
+                        transactionBatchInfo.consensusIndex()),
                 recoveryContextTracker.gapFreeClosedTransactionInfo(),
                 recoveryContextTracker.getEarliestOpenTransactionMetadata());
     }

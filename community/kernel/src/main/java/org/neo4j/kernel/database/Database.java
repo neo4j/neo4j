@@ -491,7 +491,8 @@ public class Database extends AbstractDatabase {
             } else {
                 recoveredTxId = recoveryOutcome.lastClosedGapFree().number();
                 notClosedTransactionIds = recoveryOutcome.notClosedTransactionIds();
-                highestEverObserved = recoveryOutcome.lastCommittingTransactionId();
+                highestEverObserved =
+                        recoveryOutcome.lastCommittingTransactionId().id();
             }
             initialiseContextFactory(
                     () -> new TransactionIdSnapshot(recoveredTxId, highestEverObserved, notClosedTransactionIds),

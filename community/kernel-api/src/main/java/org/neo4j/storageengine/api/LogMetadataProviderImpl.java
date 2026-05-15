@@ -68,11 +68,10 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
         this.lastCommittedBatch = new HighestAppendBatch(lastBatch);
         this.appendIndex = new AtomicLong(lastBatch.appendIndex());
 
-        var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
-        highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
-        highestClosedTransaction = new HighestTransactionId(lastCommittedTx);
-
         if (recoveryOutcome.isEmpty()) {
+            var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
+            highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
+            highestClosedTransaction = new HighestTransactionId(lastCommittedTx);
             lastCommittingTx = new AtomicLong(lastCommittedTx.id());
             var logPosition = logTailMetadata.getLastTransactionLogPosition();
             var initialMeta = new Meta(
@@ -88,6 +87,10 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
             return;
         }
 
+        TransactionId lastCommittedTransactionId = recoveryOutcome.lastCommittingTransactionId();
+        highestClosedTransaction = new HighestTransactionId(lastCommittedTransactionId);
+        highestCommittedTransaction = new HighestTransactionId(lastCommittedTransactionId);
+
         lastClosedBatch = new ArrayQueueOutOfOrderSequence(
                 lastBatch.appendIndex(),
                 128,
@@ -101,10 +104,9 @@ public class LogMetadataProviderImpl implements LogMetadataProvider {
                         lastBatch.appendIndex()));
 
         long[] notClosedTransactionIds = recoveryOutcome.notClosedTransactionIds();
-        long lastCommittingTransactionId = recoveryOutcome.lastCommittingTransactionId();
         var numberWithMeta = recoveryOutcome.lastClosedGapFree();
         var earliestOpenTxMetadata = recoveryOutcome.earliestOpenTransaction();
-        lastCommittingTx = new AtomicLong(lastCommittingTransactionId);
+        lastCommittingTx = new AtomicLong(lastCommittedTransactionId.id());
         lastClosedTx = new ArrayQueueOutOfOrderSequence(
                 numberWithMeta.number(), 128, numberWithMeta.meta(), notClosedTransactionIds);
 
