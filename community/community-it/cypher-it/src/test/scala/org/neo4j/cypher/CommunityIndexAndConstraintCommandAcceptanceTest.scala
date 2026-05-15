@@ -69,7 +69,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
       .foreach(i => i.drop())
   })
 
-  private def anyMap(elems: (String, Any)*): Map[String, Any] = Map[String, Any](elems *)
+  private def anyMap(elems: (String, Any)*): Map[String, Any] = Map[String, Any](elems*)
 
   private def assertVectorIndexDimensionsNotSpecifiedWarning(result: RewindableExecutionResult): Unit = {
     val vectorIndexDimensionsNotSpecifiedDescription =

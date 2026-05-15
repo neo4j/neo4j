@@ -319,7 +319,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
                 execute(query)
                 retry = false
               } catch {
-                case e: DeadlockDetectedException => e
+                case e: DeadlockDetectedException => ()
                 case t: Throwable                 => throw new RuntimeException(t)
               }
             }

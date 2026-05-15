@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.scalatest.BeforeAndAfterAll
 
-trait CypherITTestSuite extends CypherFunSuite
+trait CypherITTestSuite extends CypherFunSuiteWithMacroShadowing
+    with BeforeAndAfterAll // fixes "accidental override" errors, can be removed after Scala 3 migration is complete

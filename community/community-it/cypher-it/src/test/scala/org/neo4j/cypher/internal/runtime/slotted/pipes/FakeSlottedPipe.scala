@@ -63,8 +63,6 @@ case class FakeSlottedPipe(slots: SlotConfiguration, data: Iterable[Map[Any, Any
 
             case RefSlot(offset, _, _) =>
               result.setRefAt(offset, ValueUtils.of(value))
-
-            case _ => throw new IllegalArgumentException(s"Failed to find slot for $key -> $value")
           }
         case (cachedProp: ASTCachedProperty, value) =>
           slots.cachedPropSlot(cachedProp.runtimeKey).foreach(refSlot =>

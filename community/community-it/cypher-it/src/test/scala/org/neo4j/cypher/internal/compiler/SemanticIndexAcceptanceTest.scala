@@ -137,7 +137,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
       dimension <- Gen.oneOf(allNonGeographicCRSDimensions)
       coordinates <- Gen.listOfN(dimension, arbitrary[Double].retryUntil(java.lang.Double.isFinite(_)))
       crs <- Gen.oneOf(allNonGeographicCRS(dimension))
-    } yield Values.pointValue(crs, coordinates *)
+    } yield Values.pointValue(crs, coordinates*)
 
   def wgs84_3D_pointGen: Gen[PointValue] =
     for {
@@ -253,6 +253,6 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
   }
 
   private def modifyPoint(f: Double => Double)(in: PointValue): PointValue =
-    Values.pointValue(in.getCoordinateReferenceSystem, in.coordinate().map(f) *)
+    Values.pointValue(in.getCoordinateReferenceSystem, in.coordinate().map(f)*)
 
 }

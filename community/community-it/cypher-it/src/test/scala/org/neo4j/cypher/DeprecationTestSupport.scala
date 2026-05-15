@@ -28,10 +28,8 @@ import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.SeverityLevel
 import org.neo4j.kernel.api.exceptions.NotificationCategory
 import org.neo4j.notifications.StandardGqlStatusObject
-import org.scalatest.Suite
-import org.scalatest.matchers.should.Matchers
 
-trait DeprecationTestSupport extends Suite with Matchers {
+trait DeprecationTestSupport extends CypherITTestSuite {
 
   protected val dbms: FeatureDatabaseManagementService
 
