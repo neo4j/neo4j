@@ -27,6 +27,7 @@ import org.neo4j.cypher.ExecutionEngineTestSupport
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.util.CacheCountsTestSupport
+import org.neo4j.cypher.util.Reason
 import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N02
@@ -456,7 +457,13 @@ class CypherQueryCachesTest extends CypherITTestSuite with GraphDatabaseTestSupp
     result2.gqlStatusObjects should be(List(StandardGqlStatusObject.OMITTED_RESULT))
   }
 
-  test("query language", SkipOnSpd(note = Note.temporary)) {
+  test(
+    "query language",
+    SkipOnSpd(
+      note = Note.irrelevant,
+      reason = Some(Reason.CommunityOnly)
+    )
+  ) {
     val query1 = "return 1 as x"
     val query2 = "return 2 as x"
     val systemDefaultLanguages = GraphDatabaseSettings.CypherVersion.values()

@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.assertj.core.api.Assertions.assertThat
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
+import org.neo4j.cypher.util.Reason
 import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
@@ -207,7 +208,7 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
 
   test(
     "should give proper error message when trying to use Node Key constraint on community",
-    SkipOnSpd(note = Note.temporary)
+    SkipOnSpd(note = Note.irrelevant, reason = Some(Reason.CommunityOnly))
   ) {
     expectError(
       "CREATE CONSTRAINT FOR (n:Person) REQUIRE (n.firstname) IS NODE KEY",

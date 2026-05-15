@@ -21,17 +21,16 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.util.SkipOnSpd
+import org.neo4j.cypher.util.DontRunOnSpdBuild
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.notifications.NotificationCodeWithDescription.runtimeUnsupported
-import org.neo4j.test.extension.SkipOnSpd.Note
 
 import java.lang.Boolean.TRUE
 
-class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
+class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite with DontRunOnSpdBuild {
 
-  test("Should say when an enterprise runtime is not supported on community", SkipOnSpd(note = Note.temporary)) {
+  test("Should say when an enterprise runtime is not supported on community") {
     val result = execute("CYPHER runtime=pipelined EXPLAIN RETURN 1")
     val runtimeUnsupportedNotification = runtimeUnsupported(
       InputPosition.empty,
@@ -42,7 +41,7 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
     result should containNotifications(runtimeUnsupportedNotification)
   }
 
-  test("can also be configured to fail hard", SkipOnSpd(note = Note.temporary)) {
+  test("can also be configured to fail hard") {
     restartWithConfig(Map(GraphDatabaseSettings.cypher_hints_error -> TRUE))
     eengine = createEngine(graph)
 

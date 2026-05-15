@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.KernelException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.test.extension.SkipOnSpd.Note
 
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -143,7 +142,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     }
   }
 
-  test("detach delete should be atomic", SkipOnSpd(note = Note.temporary)) {
+  test("detach delete should be atomic") {
     val NUM_NODES = 13
     val NUM_EXECUTIONS = 10
 
@@ -203,8 +202,9 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
       }
     case ex: CypherExecutionException =>
       ex.status == Status.Statement.EntityNotFound
-    case ex: NotFoundException => true
-    case _                     => false
+    case _: NotFoundException       => true
+    case _: EntityNotFoundException => true
+    case _                          => false
   }
 
   private def prettyPrintErrors(errors: Seq[Throwable]): String = {

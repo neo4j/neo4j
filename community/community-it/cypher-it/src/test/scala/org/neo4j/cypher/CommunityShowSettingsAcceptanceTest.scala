@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
+import org.neo4j.cypher.util.Reason
 import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
@@ -162,7 +163,10 @@ class CommunityShowSettingsAcceptanceTest extends ExecutionEngineFunSuite with S
     result should be(List(Map("settingName" -> expectedSetting("name"))))
   }
 
-  test("should not show enterprise settings in community", SkipOnSpd(note = Note.temporary)) {
+  test(
+    "should not show enterprise settings in community",
+    SkipOnSpd(note = Note.irrelevant, reason = Some(Reason.CommunityOnly))
+  ) {
     // WHEN
     val result = execute(
       "SHOW SETTINGS 'browser.allow_outgoing_connections' YIELD name, startupValue"

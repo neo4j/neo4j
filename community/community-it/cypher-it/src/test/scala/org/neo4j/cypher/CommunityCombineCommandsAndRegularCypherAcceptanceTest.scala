@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.InvalidS
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.Reparsesable_42I67
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
-import org.neo4j.cypher.util.SkipOnSpd
+import org.neo4j.cypher.util.DontRunOnSpdBuild
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.exceptions.NotSystemDatabaseException
@@ -33,11 +33,12 @@ import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.schema.AnalyzerProvider
 import org.neo4j.service.Services
-import org.neo4j.test.extension.SkipOnSpd.Note
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class CommunityCombineCommandsAndRegularCypherAcceptanceTest extends CommunityCombineCommandsAcceptanceTestBase {
+// No need to run on SPD, we already have an enterprise version of this test: CombineCommandsAndRegularCypherAcceptanceTest
+class CommunityCombineCommandsAndRegularCypherAcceptanceTest extends CommunityCombineCommandsAcceptanceTestBase
+    with DontRunOnSpdBuild {
   // Tests for combining listing and terminating commands with regular Cypher
 
   test("Should fail to combine Cypher with commands in Cypher 5 ") {
@@ -74,7 +75,7 @@ class CommunityCombineCommandsAndRegularCypherAcceptanceTest extends CommunityCo
     ))
   }
 
-  test("Should fail to combine Cypher with show current graph type in community", SkipOnSpd(note = Note.temporary)) {
+  test("Should fail to combine Cypher with show current graph type in community") {
     // WHEN
     val exceptionAfter = the[RuntimeUnsupportedException] thrownBy {
       execute("SHOW CURRENT GRAPH TYPE YIELD specification MATCH (n) RETURN *")
@@ -214,7 +215,7 @@ class CommunityCombineCommandsAndRegularCypherAcceptanceTest extends CommunityCo
     }
   }
 
-  test("Should show functions and regular cypher with UNION", SkipOnSpd(note = Note.temporary)) {
+  test("Should show functions and regular cypher with UNION") {
     // WHEN
     val result = execute(
       """SHOW FUNCTIONS
@@ -260,7 +261,7 @@ class CommunityCombineCommandsAndRegularCypherAcceptanceTest extends CommunityCo
     ))
   }
 
-  test("Should show databases and procedure call on system database", SkipOnSpd(note = Note.temporary)) {
+  test("Should show databases and procedure call on system database") {
     // GIVEN
     val query =
       """SHOW DATABASES

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.InvalidS
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.Reparsesable_42I67
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
-import org.neo4j.cypher.util.SkipOnSpd
+import org.neo4j.cypher.util.DontRunOnSpdBuild
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.exceptions.NotSystemDatabaseException
@@ -33,9 +33,10 @@ import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.test.DoubleLatch
-import org.neo4j.test.extension.SkipOnSpd.Note
 
-class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCommandsAcceptanceTestBase {
+// Not needed to run with SPD, already have an enterprise version of this test: CombineMultipleCommandsAcceptanceTest
+class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCommandsAcceptanceTestBase
+    with DontRunOnSpdBuild {
   // Tests for combining listing and terminating commands
 
   test("Should show and terminate transaction with id from show") {
@@ -271,7 +272,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     }
   }
 
-  test("Should show functions and terminate transactions", SkipOnSpd(note = Note.temporary)) {
+  test("Should show functions and terminate transactions") {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -301,7 +302,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     }
   }
 
-  test("Should show functions and show settings", SkipOnSpd(note = Note.temporary)) {
+  test("Should show functions and show settings") {
     // GIVEN
     val expectedSetting = allSettings(graph).head
 
@@ -324,7 +325,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     result should be(expected)
   }
 
-  test("Should show transactions and show procedures", SkipOnSpd(note = Note.temporary)) {
+  test("Should show transactions and show procedures") {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -353,7 +354,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     }
   }
 
-  test("Should show procedures and terminate transactions", SkipOnSpd(note = Note.temporary)) {
+  test("Should show procedures and terminate transactions") {
     // GIVEN
     val (unwindQuery, latch) = setupUserWithOneTransaction()
 
@@ -383,7 +384,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     }
   }
 
-  test("Should show procedures and show settings", SkipOnSpd(note = Note.temporary)) {
+  test("Should show procedures and show settings") {
     // GIVEN
     val expectedSetting = allSettings(graph).head
 
@@ -406,7 +407,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     result should be(expected)
   }
 
-  test("Should show functions and show procedures", SkipOnSpd(note = Note.temporary)) {
+  test("Should show functions and show procedures") {
     // GIVEN
     val expectedProcedure = allProceduresNames.head
 
@@ -498,7 +499,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     ))
   }
 
-  test("Should show functions and show constraints", SkipOnSpd(note = Note.temporary)) {
+  test("Should show functions and show constraints") {
     // GIVEN
     graph.createNodeUniquenessConstraintWithName("my_constraint1", "L", "p1")
     graph.createNodeUniquenessConstraintWithName("my_constraint2", "L", "p2")
@@ -615,7 +616,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     ))
   }
 
-  test("Should show functions and show indexes", SkipOnSpd(note = Note.temporary)) {
+  test("Should show functions and show indexes") {
     // GIVEN
     graph.createNodeIndexWithName("my_index1", "L", "p1")
     graph.createNodeIndexWithName("my_index2", "L", "p2")
@@ -690,7 +691,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     ))
   }
 
-  test("Should show databases and procedures on system database", SkipOnSpd(note = Note.temporary)) {
+  test("Should show databases and procedures on system database") {
     // GIVEN
     val query =
       """SHOW PROCEDURES
@@ -830,7 +831,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     }
   }
 
-  test("Should combine all show and terminate commands - system database", SkipOnSpd(note = Note.temporary)) {
+  test("Should combine all show and terminate commands - system database") {
     // GIVEN
     val expectedSetting = allSettings(graph).head
     val expectedProcedure = allProceduresNames.head
@@ -926,7 +927,7 @@ class CommunityCombineMultipleCommandsAcceptanceTest extends CommunityCombineCom
     }
   }
 
-  test("Should fail to combine commands with show current graph type in community", SkipOnSpd(note = Note.temporary)) {
+  test("Should fail to combine commands with show current graph type in community") {
     Seq(
       "SHOW TRANSACTIONS YIELD transactionId",
       "SHOW PROCEDURES YIELD name",
