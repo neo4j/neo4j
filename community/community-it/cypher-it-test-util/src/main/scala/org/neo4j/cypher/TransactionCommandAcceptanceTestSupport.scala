@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDE
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.kernel.database.DatabaseReferenceImpl.GraphShard
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.neo4j.test.DoubleLatch
@@ -58,6 +59,13 @@ class TransactionCommandAcceptanceTestSupport extends ExecutionEngineFunSuite wi
 
   protected val threading: Threading = new Threading()
 
+  // Under SPD, transactions on the default database actually run on the graph shard,
+  // and the default enterprise runtime is pipelined rather than slotted.
+  protected def defaultDb: String =
+    if (runOnSpd) GraphShard.graphShardName(DEFAULT_DATABASE_NAME) else DEFAULT_DATABASE_NAME
+  protected def defaultDbTxPrefix: String = s"$defaultDb-transaction-"
+  protected def defaultRuntime: String = if (runOnSpd) "pipelined" else "slotted"
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     threading.before()
@@ -76,7 +84,7 @@ class TransactionCommandAcceptanceTestSupport extends ExecutionEngineFunSuite wi
     transactionId: String,
     username: String,
     query: String,
-    database: String = DEFAULT_DATABASE_NAME,
+    database: String = defaultDb,
     numColumns: Int = 10,
     cypherVersion: CypherVersion = dbmsDefaultQueryLanguage
   ): Unit = {
@@ -130,7 +138,7 @@ class TransactionCommandAcceptanceTestSupport extends ExecutionEngineFunSuite wi
     username: String,
     query: String,
     runtime: String,
-    database: String = DEFAULT_DATABASE_NAME,
+    database: String = defaultDb,
     planner: String = "idp",
     queryAllocatedBytesIsNull: Boolean = false,
     cypherVersion: CypherVersion = dbmsDefaultQueryLanguage
@@ -180,7 +188,9 @@ class TransactionCommandAcceptanceTestSupport extends ExecutionEngineFunSuite wi
       if (queryAllocatedBytesIsNull) currentQueryAllocatedBytes should be(null)
       else {
         currentQueryAllocatedBytes.isInstanceOf[Long] should be(true)
-        (currentQueryAllocatedBytes.asInstanceOf[Long] > 0L) should be(true)
+        // SPD shard txs may not track allocated bytes for the originating query.
+        val lowerBound = if (runOnSpd) 0L else 1L
+        (currentQueryAllocatedBytes.asInstanceOf[Long] >= lowerBound) should be(true)
       }
     }
     withClue("allocatedDirectBytes") {

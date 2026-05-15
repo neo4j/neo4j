@@ -31,13 +31,13 @@ import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.cypher.testing.api.CypherExecutorException
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService.TestApiKind
-import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.driver.exceptions.Neo4jException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.database.DatabaseReferenceImpl.GraphShard
+import org.neo4j.kernel.database.DatabaseReferenceImpl.PropertyShard
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
-import org.neo4j.test.extension.SkipOnSpd.Note
 import org.scalatest.BeforeAndAfterAll
 
 class CommunityQueryRoutingBoltAcceptanceTest extends CommunityQueryRoutingAcceptanceTest
@@ -201,10 +201,7 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
     }
   }
 
-  test(
-    "should route show database command to System database when it's the only command",
-    SkipOnSpd(note = Note.temporary)
-  ) {
+  test("should route show database command to System database when it's the only command") {
     val query = "SHOW DATABASES YIELD name RETURN name"
     val query2 = "SHOW DATABASES YIELD name"
     val query3 = "SHOW DATABASES"
@@ -215,7 +212,7 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
         Seq(query, query2).foreach { query =>
           withClue(cv.description + " " + query + " " + sessionDbName + ": ") {
             val result = execute(sessionDbName, cv.description + " " + query)
-            result.toList should equal(List(Map("name" -> "neo4j"), Map("name" -> "system")))
+            result.toList should equal(expectedDatabaseNameRows)
           }
         }
 
@@ -229,10 +226,7 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
     }
   }
 
-  test(
-    "should not route show database command to System database when it's part of a larger query",
-    SkipOnSpd(note = Note.temporary)
-  ) {
+  test("should not route show database command to System database when it's part of a larger query") {
     val prefix = "CYPHER 25 "
     val query1 =
       "SHOW DATABASES YIELD name CALL db.index.fulltext.listAvailableAnalyzers() YIELD analyzer RETURN DISTINCT name"
@@ -245,13 +239,13 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
         execute(
           SYSTEM_DATABASE_NAME,
           prefix + query
-        ).toList should equal(List(Map("name" -> "neo4j"), Map("name" -> "system")))
+        ).toList should equal(expectedDatabaseNameRows)
 
         // On default, with explicit routing
         execute(
           DEFAULT_DATABASE_NAME,
           s"$prefix USE $SYSTEM_DATABASE_NAME $query"
-        ).toList should equal(List(Map("name" -> "neo4j"), Map("name" -> "system")))
+        ).toList should equal(expectedDatabaseNameRows)
 
         // On default
         val exception = the[CypherExecutorException] thrownBy {
@@ -286,6 +280,19 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherITTestSuite
 
   private def execute(sessionDatabaseName: String, query: String): Seq[Map[String, AnyRef]] = {
     db.executorFactory.executor(sessionDatabaseName).execute(query, Map.empty, result => result.records())
+  }
+
+  // Default + system, plus the graph and property shards when running under SPD.
+  private def expectedDatabaseNameRows: List[Map[String, String]] = {
+    val expectedShardCount = if (runOnSpd) 3 else 0
+    val names =
+      if (runOnSpd)
+        List(DEFAULT_DATABASE_NAME, GraphShard.graphShardName(DEFAULT_DATABASE_NAME)) ++
+          (0 until expectedShardCount).map(i => PropertyShard.propertyShardName(DEFAULT_DATABASE_NAME, i)) :+
+          SYSTEM_DATABASE_NAME
+      else
+        List(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME)
+    names.map(name => Map("name" -> name))
   }
 
   def failWithError(
