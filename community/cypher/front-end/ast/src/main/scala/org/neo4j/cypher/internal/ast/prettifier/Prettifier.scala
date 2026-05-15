@@ -1929,11 +1929,6 @@ object Prettifier {
     }
   }
 
-  def escapeName(name: Either[String, Parameter]): String = name match {
-    case Left(s)  => backtickEmpty(s)
-    case Right(p) => s"$$${backtickEmpty(p.name)}"
-  }
-
   def escapeName(name: DatabaseName): String = name match {
     case NamespacedName(names, Some(namespace)) =>
       backtickEmpty(namespace) + "." + backtickEmpty(names.mkString("."))

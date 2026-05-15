@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.SchemaCommandRuntime.getPrettyPropertyPattern
 import org.neo4j.cypher.internal.SchemaCommandRuntime.indexContext
 import org.neo4j.cypher.internal.SchemaCommandRuntime.propertyToId
 import org.neo4j.cypher.internal.ast.Options
-import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -71,6 +70,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.schema
 import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
+import org.neo4j.util.Stringifier
 import org.neo4j.values.virtual.MapValue
 
 import scala.util.Try
@@ -239,7 +239,7 @@ object IndexCommandPlanner {
       } else {
         // Notify on non-existing index, replace potential parameter names with their actual value
         Set(IndexOrConstraintDoesNotExistNotification(
-          s"DROP INDEX ${Prettifier.escapeName(Left(indexName))} IF EXISTS",
+          s"DROP INDEX ${Stringifier.backtickEmpty(indexName)} IF EXISTS",
           indexName
         ))
       }

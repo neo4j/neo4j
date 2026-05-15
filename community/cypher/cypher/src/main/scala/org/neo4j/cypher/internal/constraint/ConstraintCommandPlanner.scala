@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.ast.RelationshipKey
 import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.ast.RelationshipPropertyType
 import org.neo4j.cypher.internal.ast.RelationshipPropertyUniqueness
-import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -68,6 +67,7 @@ import org.neo4j.internal.schema.ConstraintType.RELATIONSHIP_ENDPOINT_LABEL
 import org.neo4j.internal.schema.ConstraintType.UNIQUE
 import org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS
 import org.neo4j.internal.schema.SchemaCommand.ConstraintCommand.Create
+import org.neo4j.util.Stringifier
 import org.neo4j.values.virtual.MapValue
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -290,7 +290,7 @@ object ConstraintCommandPlanner {
       } else {
         // Notify on non-existing constraint, replace potential parameter names with their actual value
         Set(IndexOrConstraintDoesNotExistNotification(
-          s"DROP CONSTRAINT ${Prettifier.escapeName(Left(constraintName))} IF EXISTS",
+          s"DROP CONSTRAINT ${Stringifier.backtickEmpty(constraintName)} IF EXISTS",
           constraintName
         ))
       }
