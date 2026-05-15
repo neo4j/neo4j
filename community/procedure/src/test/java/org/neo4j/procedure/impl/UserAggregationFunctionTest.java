@@ -21,10 +21,7 @@ package org.neo4j.procedure.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Fail.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -71,8 +68,7 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-@SuppressWarnings({"WeakerAccess", "unused"})
-public class UserAggregationFunctionTest {
+class UserAggregationFunctionTest {
     private ProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
     private final DependencyResolver dependencyResolver = new Dependencies();
@@ -91,7 +87,7 @@ public class UserAggregationFunctionTest {
         List<CallableUserAggregationFunction> function = compile(SingleAggregationFunction.class);
 
         // Then
-        assertEquals(1, function.size());
+        assertThat(function).hasSize(1);
         assertThat(function.get(0).signature())
                 .isEqualTo(functionSignature(new QualifiedName("org", "neo4j", "procedure", "impl", "collectCool"))
                         .in("name", Neo4jTypes.NTString)
@@ -148,7 +144,7 @@ public class UserAggregationFunctionTest {
         List<CallableUserAggregationFunction> functions = compile(PrivateConstructorButNoFunctions.class);
 
         // Then
-        assertEquals(0, functions.size());
+        assertThat(functions).isEmpty();
     }
 
     @Test
@@ -290,8 +286,7 @@ public class UserAggregationFunctionTest {
                 compile(FunctionWithOverriddenName.class).get(0);
 
         // Then
-        assertEquals(
-                "org.mystuff.thisisActuallyTheName", method.signature().name().toString());
+        assertThat(method.signature().name()).hasToString("org.mystuff.thisisActuallyTheName");
     }
 
     @Test
@@ -384,9 +379,14 @@ public class UserAggregationFunctionTest {
             String name = func.signature().name().name();
             func.createReducer(prepareContext());
             switch (name) {
-                case "newFunc" -> assertFalse(func.signature().deprecated().isPresent(), "Should not be deprecated");
+                case "newFunc" ->
+                    assertThat(func.signature().deprecated().isPresent())
+                            .as("Should not be deprecated")
+                            .isFalse();
                 case "oldFunc", "badFunc" -> {
-                    assertTrue(func.signature().deprecated().isPresent(), "Should be deprecated");
+                    assertThat(func.signature().deprecated().isPresent())
+                            .as("Should be deprecated")
+                            .isTrue();
                     assertThat(func.signature().deprecated()).contains("newFunc");
                 }
                 default -> fail("Unexpected function: " + name);

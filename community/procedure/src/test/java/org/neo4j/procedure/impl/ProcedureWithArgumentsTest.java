@@ -21,7 +21,6 @@ package org.neo4j.procedure.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
@@ -53,8 +52,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.VirtualValues;
 
-@SuppressWarnings("WeakerAccess")
-public class ProcedureWithArgumentsTest {
+class ProcedureWithArgumentsTest {
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
 
@@ -64,7 +62,7 @@ public class ProcedureWithArgumentsTest {
         List<CallableProcedure> procedures = compile(ClassWithProcedureWithSimpleArgs.class);
 
         // Then
-        assertEquals(1, procedures.size());
+        assertThat(procedures).hasSize(1);
         assertThat(procedures.get(0).signature())
                 .isEqualTo(procedureSignature(new QualifiedName("org", "neo4j", "procedure", "impl", "listCoolPeople"))
                         .in("name", Neo4jTypes.NTString)

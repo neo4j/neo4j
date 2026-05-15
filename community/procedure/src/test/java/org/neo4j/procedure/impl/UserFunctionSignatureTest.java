@@ -19,8 +19,8 @@
  */
 package org.neo4j.procedure.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 
 import org.junit.jupiter.api.Test;
@@ -37,21 +37,19 @@ class UserFunctionSignatureTest {
 
     @Test
     void inputSignatureShouldNotBeModifiable() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> signature.inputSignature().add(FieldSignature.inputField("in2", Neo4jTypes.NTAny)));
+        assertThatThrownBy(() -> signature.inputSignature().add(FieldSignature.inputField("in2", Neo4jTypes.NTAny)))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     void toStringShouldMatchCypherSyntax() {
         // When
-        String toStr = functionSignature(new QualifiedName("org", "myProcedure"))
+        UserFunctionSignature signature = functionSignature(new QualifiedName("org", "myProcedure"))
                 .in("in", Neo4jTypes.NTList(Neo4jTypes.NTString))
                 .out(Neo4jTypes.NTNumber)
-                .build()
-                .toString();
+                .build();
 
         // Then
-        assertEquals("org.myProcedure(in :: LIST<STRING>) :: INTEGER | FLOAT", toStr);
+        assertThat(signature).hasToString("org.myProcedure(in :: LIST<STRING>) :: INTEGER | FLOAT");
     }
 }

@@ -21,10 +21,7 @@ package org.neo4j.procedure.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Fail.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -71,8 +68,7 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
 
-@SuppressWarnings({"WeakerAccess", "unused"})
-public class UserFunctionTest {
+class UserFunctionTest {
     private ProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
     private final DependencyResolver dependencyResolver = new Dependencies();
@@ -109,7 +105,7 @@ public class UserFunctionTest {
         List<CallableUserFunction> function = compile(SingleReadOnlyFunction.class);
 
         // Then
-        assertEquals(1, function.size());
+        assertThat(function).hasSize(1);
         assertThat(function.get(0).signature())
                 .isEqualTo(functionSignature(new QualifiedName("org", "neo4j", "procedure", "impl", "listCoolPeople"))
                         .out(Neo4jTypes.NTList(Neo4jTypes.NTAny))
@@ -134,7 +130,7 @@ public class UserFunctionTest {
         List<CallableUserFunction> functions = compile(PrivateConstructorButNoFunctions.class);
 
         // Then
-        assertEquals(0, functions.size());
+        assertThat(functions).isEmpty();
     }
 
     @Test
@@ -216,8 +212,7 @@ public class UserFunctionTest {
         CallableUserFunction proc = compile(FunctionWithOverriddenName.class).get(0);
 
         // Then
-        assertEquals(
-                "org.mystuff.thisisActuallyTheName", proc.signature().name().toString());
+        assertThat(proc.signature().name()).hasToString("org.mystuff.thisisActuallyTheName");
     }
 
     @Test
@@ -306,11 +301,15 @@ public class UserFunctionTest {
             func.apply(prepareContext(), new AnyValue[0]);
             switch (name) {
                 case "newFunc":
-                    assertFalse(func.signature().deprecated().isPresent(), "Should not be deprecated");
+                    assertThat(func.signature().deprecated().isPresent())
+                            .as("Should not be deprecated")
+                            .isFalse();
                     break;
                 case "oldFunc":
                 case "badFunc":
-                    assertTrue(func.signature().deprecated().isPresent(), "Should be deprecated");
+                    assertThat(func.signature().deprecated().isPresent())
+                            .as("Should be deprecated")
+                            .isTrue();
                     assertThat(func.signature().deprecated()).contains("newFunc");
                     break;
                 default:

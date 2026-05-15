@@ -19,7 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,6 +40,6 @@ class ListConnectionResultTest {
         when(connection.clientAddress()).thenReturn(clientAddress);
 
         var result = new ListConnectionResult(connection, ZoneId.systemDefault());
-        assertEquals(StringUtils.EMPTY, result.clientAddress);
+        assertThat(result.clientAddress).isEmpty();
     }
 }

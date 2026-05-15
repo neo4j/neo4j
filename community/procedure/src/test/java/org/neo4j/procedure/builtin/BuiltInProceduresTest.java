@@ -22,9 +22,7 @@ package org.neo4j.procedure.builtin;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doReturn;
@@ -204,14 +202,15 @@ class BuiltInProceduresTest {
     @Test
     void lookupComponentProviders() {
         var view = procs.getCurrentView();
-        assertNotNull(view.lookupComponentProvider(Transaction.class, true));
-        assertNotNull(view.lookupComponentProvider(Transaction.class, false));
+        assertThat(view.lookupComponentProvider(Transaction.class, true)).isNotNull();
+        assertThat(view.lookupComponentProvider(Transaction.class, false)).isNotNull();
 
-        assertNull(view.lookupComponentProvider(Statement.class, true));
-        assertNull(view.lookupComponentProvider(Statement.class, false));
+        assertThat(view.lookupComponentProvider(Statement.class, true)).isNull();
+        assertThat(view.lookupComponentProvider(Statement.class, false)).isNull();
 
-        assertNull(view.lookupComponentProvider(DependencyResolver.class, true));
-        assertNotNull(view.lookupComponentProvider(DependencyResolver.class, false));
+        assertThat(view.lookupComponentProvider(DependencyResolver.class, true)).isNull();
+        assertThat(view.lookupComponentProvider(DependencyResolver.class, false))
+                .isNotNull();
     }
 
     @Test
@@ -254,7 +253,7 @@ class BuiltInProceduresTest {
         when(tokens.labelsGetAllTokens()).thenThrow(runtimeException);
 
         // When
-        assertThrows(ProcedureException.class, () -> call("db.labels"));
+        assertThatThrownBy(() -> call("db.labels")).isInstanceOf(ProcedureException.class);
     }
 
     @Test
@@ -264,7 +263,7 @@ class BuiltInProceduresTest {
         when(tokens.propertyKeyGetAllTokens()).thenThrow(runtimeException);
 
         // When
-        assertThrows(ProcedureException.class, () -> call("db.propertyKeys"));
+        assertThatThrownBy(() -> call("db.propertyKeys")).isInstanceOf(ProcedureException.class);
     }
 
     @Test
@@ -274,7 +273,7 @@ class BuiltInProceduresTest {
         when(tokens.relationshipTypesGetAllTokens()).thenThrow(runtimeException);
 
         // When
-        assertThrows(ProcedureException.class, () -> call("db.relationshipTypes"));
+        assertThatThrownBy(() -> call("db.relationshipTypes")).isInstanceOf(ProcedureException.class);
     }
 
     @Test

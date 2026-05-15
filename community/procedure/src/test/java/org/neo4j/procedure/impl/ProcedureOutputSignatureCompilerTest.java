@@ -32,8 +32,7 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 
-@SuppressWarnings("WeakerAccess")
-public class ProcedureOutputSignatureCompilerTest {
+class ProcedureOutputSignatureCompilerTest {
     public static class SingleStringFieldRecord {
         public String name;
 

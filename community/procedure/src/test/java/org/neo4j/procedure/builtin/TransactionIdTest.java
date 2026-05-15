@@ -20,7 +20,7 @@
 package org.neo4j.procedure.builtin;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -38,11 +38,12 @@ class TransactionIdTest {
 
     @Test
     void doesNotConstructWithNullDatabaseName() {
-        assertThrows(NullPointerException.class, () -> TransactionId.formatTransactionId(null, 12L));
+        assertThatThrownBy(() -> TransactionId.formatTransactionId(null, 12L)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void doesNotConstructNegativeTransactionIds() {
-        assertThrows(InvalidArgumentsException.class, () -> TransactionId.formatTransactionId("neo4j", -15L));
+        assertThatThrownBy(() -> TransactionId.formatTransactionId("neo4j", -15L))
+                .isInstanceOf(InvalidArgumentsException.class);
     }
 }

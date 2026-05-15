@@ -21,9 +21,9 @@ package org.neo4j.procedure.impl;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
@@ -188,15 +188,15 @@ class Cypher5TypeCheckersTest {
     @MethodSource("parameters")
     void shouldDetectCorrectTypeAndMap(Type javaClass, Neo4jTypes.AnyType expected) throws Throwable {
         var actual = new Cypher5TypeCheckers().checkerFor(javaClass).type();
-        assertEquals(expected, actual);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @ParameterizedTest(name = "{1} as {0} -> {2}")
     @MethodSource("defaultValues")
-    void shouldConvertDefaultValue(Type javaClass, String defaultValue, Object expected) throws Throwable {
+    void shouldConvertDefaultValue(Type javaClass, String defaultValue, DefaultParameterValue expected)
+            throws Throwable {
         var maybeParsedValue = new Cypher5TypeCheckers().converterFor(javaClass).defaultValue(defaultValue);
-        assertTrue(maybeParsedValue.isPresent());
-        assertEquals(expected, maybeParsedValue.get());
+        assertThat(maybeParsedValue).isPresent().hasValue(expected);
     }
 
     @ParameterizedTest(name = "{1} as {0} -> {2}")

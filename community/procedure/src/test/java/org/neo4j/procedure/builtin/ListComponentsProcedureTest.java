@@ -19,7 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -94,9 +94,9 @@ class ListComponentsProcedureTest {
             var row = filterByComponentName(Iterators.asList(result), "Neo4j Kernel");
 
             var versions = (ListValue) row[1];
-            assertEquals(1, versions.intSize());
-            assertEquals("5.27.0", ((TextValue) versions.value(0)).stringValue());
-            assertEquals("community", ((TextValue) row[2]).stringValue());
+            assertThat(versions.intSize()).isEqualTo(1);
+            assertThat(((TextValue) versions.value(0)).stringValue()).isEqualTo("5.27.0");
+            assertThat(((TextValue) row[2]).stringValue()).isEqualTo("community");
         }
     }
 
@@ -109,10 +109,10 @@ class ListComponentsProcedureTest {
             var row = filterByComponentName(Iterators.asList(result), "Cypher");
 
             var versions = (ListValue) row[1];
-            assertEquals(2, versions.intSize());
-            assertEquals("5", ((TextValue) versions.value(0)).stringValue());
-            assertEquals("25", ((TextValue) versions.value(1)).stringValue());
-            assertEquals("", ((TextValue) row[2]).stringValue());
+            assertThat(versions.intSize()).isEqualTo(2);
+            assertThat(((TextValue) versions.value(0)).stringValue()).isEqualTo("5");
+            assertThat(((TextValue) versions.value(1)).stringValue()).isEqualTo("25");
+            assertThat(((TextValue) row[2]).stringValue()).isEmpty();
         }
     }
 
@@ -125,10 +125,10 @@ class ListComponentsProcedureTest {
             var row = filterByComponentName(Iterators.asList(result), "Cypher");
 
             var versions = (ListValue) row[1];
-            assertEquals(2, versions.intSize());
-            assertEquals("5", ((TextValue) versions.value(0)).stringValue());
-            assertEquals("25", ((TextValue) versions.value(1)).stringValue());
-            assertEquals("", ((TextValue) row[2]).stringValue());
+            assertThat(versions.intSize()).isEqualTo(2);
+            assertThat(((TextValue) versions.value(0)).stringValue()).isEqualTo("5");
+            assertThat(((TextValue) versions.value(1)).stringValue()).isEqualTo("25");
+            assertThat(((TextValue) row[2]).stringValue()).isEmpty();
         }
     }
 

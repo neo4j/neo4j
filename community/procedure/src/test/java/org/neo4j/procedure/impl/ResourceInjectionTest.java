@@ -55,8 +55,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Values;
 
-@SuppressWarnings("WeakerAccess")
-public class ResourceInjectionTest {
+class ResourceInjectionTest {
     private ProcedureCompiler compiler;
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));

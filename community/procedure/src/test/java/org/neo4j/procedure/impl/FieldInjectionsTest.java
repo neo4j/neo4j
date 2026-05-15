@@ -19,9 +19,8 @@
  */
 package org.neo4j.procedure.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -60,7 +59,7 @@ class FieldInjectionsTest {
         List<FieldSetter> setters = injections.setters(ProcedureWithStaticFields.class);
 
         // Then
-        assertEquals(0, setters.size());
+        assertThat(setters).isEmpty();
     }
 
     @Test
@@ -76,7 +75,7 @@ class FieldInjectionsTest {
         // Then
         new Outer().classWithSyntheticField();
         for (FieldSetter setter : setters) {
-            assertFalse(setter.field().isSynthetic());
+            assertThat(setter.field().isSynthetic()).isFalse();
         }
     }
 

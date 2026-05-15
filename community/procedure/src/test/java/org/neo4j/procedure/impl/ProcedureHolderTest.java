@@ -21,8 +21,6 @@ package org.neo4j.procedure.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -96,8 +94,9 @@ class ProcedureHolderTest {
 
         // and then
         procHolder.put(qualifiedName, QueryLanguage.ALL, item, false);
-        assertNull(procHolder.getByKey(lowerCaseName, QueryLanguage.CYPHER_5));
-        assertThrows(NoSuchElementException.class, () -> procHolder.idOfKey(lowerCaseName, QueryLanguage.CYPHER_5));
+        assertThat(procHolder.getByKey(lowerCaseName, QueryLanguage.CYPHER_5)).isNull();
+        assertThatThrownBy(() -> procHolder.idOfKey(lowerCaseName, QueryLanguage.CYPHER_5))
+                .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
@@ -147,9 +146,9 @@ class ProcedureHolderTest {
         var renewed = ProcedureHolder.tombstone(procHolder, Predicates.alwaysTrue());
 
         // then
-        assertNull(renewed.getById(id));
+        assertThat(renewed.getById(id)).isNull();
         for (var scope : QueryLanguage.values()) {
-            assertNull(renewed.getByKey(qn, scope));
+            assertThat(renewed.getByKey(qn, scope)).isNull();
             assertThatThrownBy(() -> renewed.idOfKey(qn, scope)).isInstanceOf(NoSuchElementException.class);
         }
     }

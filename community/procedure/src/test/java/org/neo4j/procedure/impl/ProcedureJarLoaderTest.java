@@ -20,8 +20,8 @@
 package org.neo4j.procedure.impl;
 
 import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -96,9 +96,8 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-@SuppressWarnings("WeakerAccess")
 @TestDirectoryExtension
-public class ProcedureJarLoaderTest {
+class ProcedureJarLoaderTest {
     @Inject
     private TestDirectory testDirectory;
 
@@ -620,7 +619,7 @@ public class ProcedureJarLoaderTest {
         ProcedureJarLoader.Callables callables = jarloader.loadProceduresFromDir(null);
 
         // then
-        assertEquals(0, callables.procedures().size() + callables.functions().size());
+        assertThat(callables.procedures().size() + callables.functions().size()).isZero();
     }
 
     static Stream<Arguments> namespaceLimits() {
@@ -663,7 +662,8 @@ public class ProcedureJarLoaderTest {
                 ClassWithDependencyAndNoProcedure.class);
 
         // then
-        assertThrows(ProcedureException.class, () -> jarloader.loadProceduresFromDir(testDirectory.absolutePath()));
+        assertThatThrownBy(() -> jarloader.loadProceduresFromDir(testDirectory.absolutePath()))
+                .isInstanceOf(ProcedureException.class);
     }
 
     @Test
@@ -677,10 +677,11 @@ public class ProcedureJarLoaderTest {
                 ClassWithDependencyAndNoProcedure.class);
 
         // then
-        assertDoesNotThrow(() -> {
-            var callables = jarloader.loadProceduresFromDir(testDirectory.absolutePath());
-            assertEquals(1, callables.procedures().size());
-        });
+        assertThatCode(() -> {
+                    var callables = jarloader.loadProceduresFromDir(testDirectory.absolutePath());
+                    assertThat(callables.procedures()).hasSize(1);
+                })
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -692,7 +693,8 @@ public class ProcedureJarLoaderTest {
                 jarDirectory.resolve("missing_dependency.jar"), ClassWithDependencyAndOneProcedure.class);
 
         // then
-        assertThrows(ProcedureException.class, () -> jarloader.loadProceduresFromDir(testDirectory.absolutePath()));
+        assertThatThrownBy(() -> jarloader.loadProceduresFromDir(testDirectory.absolutePath()))
+                .isInstanceOf(ProcedureException.class);
     }
 
     @ParameterizedTest
@@ -706,14 +708,17 @@ public class ProcedureJarLoaderTest {
                 DynamicallyLoadedLongFunc.class,
                 ClassWithDynamicallyLoadedDependency.class);
         // Then we should be able to load and run the function
-        assertDoesNotThrow(() -> {
-            ProcedureJarLoader.Callables callables = jarloader.loadProceduresFromDir(testDirectory.absolutePath());
-            CallableUserFunction reflectiveFunction = callables.functions().getFirst();
-            TextValue dynamicLoadedClassName = Values.utf8Value(byteBuddyRemappedNames.getFirst());
-            AnyValue functionResult =
-                    reflectiveFunction.apply(prepareContext(), new AnyValue[] {dynamicLoadedClassName});
-            assertEquals(100L, functionResult.map(valueMapper));
-        });
+        assertThatCode(() -> {
+                    ProcedureJarLoader.Callables callables =
+                            jarloader.loadProceduresFromDir(testDirectory.absolutePath());
+                    CallableUserFunction reflectiveFunction =
+                            callables.functions().getFirst();
+                    TextValue dynamicLoadedClassName = Values.utf8Value(byteBuddyRemappedNames.getFirst());
+                    AnyValue functionResult =
+                            reflectiveFunction.apply(prepareContext(), new AnyValue[] {dynamicLoadedClassName});
+                    assertThat(functionResult.map(valueMapper)).isEqualTo(100L);
+                })
+                .doesNotThrowAnyException();
     }
 
     @ParameterizedTest
@@ -723,14 +728,17 @@ public class ProcedureJarLoaderTest {
         // Given
         JarBuilder.createJarFor(
                 jarDirectory.resolve("missing_dynamic_dependency.jar"), ClassWithDynamicallyLoadedDependency.class);
-        ProcedureException thrown = assertThrows(ProcedureException.class, () -> {
-            ProcedureJarLoader.Callables callables = jarloader.loadProceduresFromDir(testDirectory.absolutePath());
-            CallableUserFunction reflectiveFunction = callables.functions().getFirst();
-            TextValue dynamicLoadedClassName = Values.utf8Value("org.neo4j.BadClass");
-            // Should throw when it can't resolve class
-            reflectiveFunction.apply(prepareContext(), new AnyValue[] {dynamicLoadedClassName});
-        });
-        assertInstanceOf(ClassNotFoundException.class, thrown.getCause());
+        assertThatThrownBy(() -> {
+                    ProcedureJarLoader.Callables callables =
+                            jarloader.loadProceduresFromDir(testDirectory.absolutePath());
+                    CallableUserFunction reflectiveFunction =
+                            callables.functions().getFirst();
+                    TextValue dynamicLoadedClassName = Values.utf8Value("org.neo4j.BadClass");
+                    // Should throw when it can't resolve class
+                    reflectiveFunction.apply(prepareContext(), new AnyValue[] {dynamicLoadedClassName});
+                })
+                .isInstanceOf(ProcedureException.class)
+                .hasCauseInstanceOf(ClassNotFoundException.class);
     }
 
     private org.neo4j.kernel.api.procedure.Context prepareContext() {

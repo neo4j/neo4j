@@ -19,9 +19,8 @@
  */
 package org.neo4j.procedure.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 import org.junit.jupiter.api.Test;
@@ -30,24 +29,21 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
-@SuppressWarnings("WeakerAccess")
-public class ProcedureSignatureTest {
+class ProcedureSignatureTest {
     private static final QualifiedName PROCEDURE_NAME = new QualifiedName("org", "myProcedure");
     private static final ProcedureSignature signature =
             procedureSignature(PROCEDURE_NAME).in("a", Neo4jTypes.NTAny).build();
 
     @Test
     void inputSignatureShouldNotBeModifiable() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> signature.inputSignature().add(FieldSignature.inputField("b", Neo4jTypes.NTAny)));
+        assertThatThrownBy(() -> signature.inputSignature().add(FieldSignature.inputField("b", Neo4jTypes.NTAny)))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     void outputSignatureShouldNotBeModifiable() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> signature.outputSignature().add(FieldSignature.outputField("b", Neo4jTypes.NTAny)));
+        assertThatThrownBy(() -> signature.outputSignature().add(FieldSignature.outputField("b", Neo4jTypes.NTAny)))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -63,21 +59,21 @@ public class ProcedureSignatureTest {
                 .out(ProcedureSignature.VOID)
                 .build();
 
-        assertEquals(sig2, sig2clone);
-        assertNotEquals(sig1, sig2);
+        assertThat(sig2clone).isEqualTo(sig2);
+        assertThat(sig2).isNotEqualTo(sig1);
     }
 
     @Test
     void toStringShouldMatchCypherSyntax() {
         // When
-        String toStr = procedureSignature(PROCEDURE_NAME)
+        ProcedureSignature signature = procedureSignature(PROCEDURE_NAME)
                 .in("inputArg", Neo4jTypes.NTList(Neo4jTypes.NTString))
                 .out("outputArg", Neo4jTypes.NTNumber)
-                .build()
-                .toString();
+                .build();
 
         // Then
-        assertEquals("org.myProcedure(inputArg :: LIST<STRING>) :: (outputArg :: INTEGER | FLOAT)", toStr);
+        assertThat(signature)
+                .hasToString("org.myProcedure(inputArg :: LIST<STRING>) :: (outputArg :: INTEGER | FLOAT)");
     }
 
     @Test
@@ -88,10 +84,7 @@ public class ProcedureSignatureTest {
                 .out(ProcedureSignature.VOID)
                 .build();
 
-        // When
-        String toStr = proc.toString();
-
         // Then
-        assertEquals("org.myProcedure(inputArg :: LIST<STRING>)", toStr);
+        assertThat(proc).hasToString("org.myProcedure(inputArg :: LIST<STRING>)");
     }
 }

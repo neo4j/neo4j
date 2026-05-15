@@ -20,7 +20,7 @@
 package org.neo4j.procedure.builtin;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -81,9 +81,12 @@ class ResampleIndexProcedureTest {
     void shouldThrowAnExceptionIfTheIndexDoesNotExist() {
         when(schemaRead.indexGetForName(anyString())).thenReturn(IndexDescriptor.NO_INDEX);
 
-        ProcedureException exception =
-                assertThrows(ProcedureException.class, () -> procedure.resampleIndex("index_42"));
-        assertThat(exception.status()).isEqualTo(Status.Schema.IndexNotFound);
+        assertThatThrownBy(() -> procedure.resampleIndex("index_42"))
+                .isInstanceOf(ProcedureException.class)
+                .satisfies(ex -> {
+                    ProcedureException pe = (ProcedureException) ex;
+                    assertThat(pe.status()).isEqualTo(Status.Schema.IndexNotFound);
+                });
     }
 
     @Test

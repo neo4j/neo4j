@@ -20,7 +20,7 @@
 package org.neo4j.procedure.builtin;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -36,41 +36,57 @@ class QueryIdTest {
 
     @Test
     void doesNotParseNegativeQueryIds() {
-        var e = assertThrows(
-                InvalidArgumentsException.class, () -> QueryId.parse("query--12", ARGUMENT_NAME, PROCEDURE_NAME));
-        assertThat(e).hasMessageContaining("Negative ids are not supported (expected format: query-<id>)");
-        assertGql(e, "query--12");
+        assertThatThrownBy(() -> QueryId.parse("query--12", ARGUMENT_NAME, PROCEDURE_NAME))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessageContaining("Negative ids are not supported (expected format: query-<id>)")
+                .satisfies(ex -> {
+                    InvalidArgumentsException e = (InvalidArgumentsException) ex;
+                    assertGql(e, "query--12");
+                });
     }
 
     @Test
     void doesNotParseWrongPrefix() {
-        var e = assertThrows(
-                InvalidArgumentsException.class, () -> QueryId.parse("querr-12", ARGUMENT_NAME, PROCEDURE_NAME));
-        assertThat(e).hasMessageContaining("Expected prefix query-");
-        assertGql(e, "querr-12");
+        assertThatThrownBy(() -> QueryId.parse("querr-12", ARGUMENT_NAME, PROCEDURE_NAME))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessageContaining("Expected prefix query-")
+                .satisfies(ex -> {
+                    InvalidArgumentsException e = (InvalidArgumentsException) ex;
+                    assertGql(e, "querr-12");
+                });
     }
 
     @Test
     void doesNotParseRandomText() {
-        var e = assertThrows(
-                InvalidArgumentsException.class, () -> QueryId.parse("blarglbarf", ARGUMENT_NAME, PROCEDURE_NAME));
-        assertThat(e).hasMessageContaining("Expected prefix query-");
-        assertGql(e, "blarglbarf");
+        assertThatThrownBy(() -> QueryId.parse("blarglbarf", ARGUMENT_NAME, PROCEDURE_NAME))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessageContaining("Expected prefix query-")
+                .satisfies(ex -> {
+                    InvalidArgumentsException e = (InvalidArgumentsException) ex;
+                    assertGql(e, "blarglbarf");
+                });
     }
 
     @Test
     void doesNotParseTrailingRandomText() {
-        var e = assertThrows(
-                InvalidArgumentsException.class, () -> QueryId.parse("query-12  ", ARGUMENT_NAME, PROCEDURE_NAME));
-        assertThat(e).hasMessageContaining("Could not parse id query-12   (expected format: query-<id>)");
-        assertGql(e, "query-12  ");
+        assertThatThrownBy(() -> QueryId.parse("query-12  ", ARGUMENT_NAME, PROCEDURE_NAME))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessageContaining("Could not parse id query-12   (expected format: query-<id>)")
+                .satisfies(ex -> {
+                    InvalidArgumentsException e = (InvalidArgumentsException) ex;
+                    assertGql(e, "query-12  ");
+                });
     }
 
     @Test
     void doesNotParseEmptyText() {
-        var e = assertThrows(InvalidArgumentsException.class, () -> QueryId.parse("", ARGUMENT_NAME, PROCEDURE_NAME));
-        assertThat(e).hasMessageContaining("Expected prefix query-");
-        assertGql(e, "");
+        assertThatThrownBy(() -> QueryId.parse("", ARGUMENT_NAME, PROCEDURE_NAME))
+                .isInstanceOf(InvalidArgumentsException.class)
+                .hasMessageContaining("Expected prefix query-")
+                .satisfies(ex -> {
+                    InvalidArgumentsException e = (InvalidArgumentsException) ex;
+                    assertGql(e, "");
+                });
     }
 
     private void assertGql(InvalidArgumentsException e, String providedQueryId) {
