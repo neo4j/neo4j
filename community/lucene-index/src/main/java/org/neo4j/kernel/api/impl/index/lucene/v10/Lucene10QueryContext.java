@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index.lucene.v10;
 import static org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory.TRIGRAM_VALUE_KEY;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharacterUtils;
@@ -38,11 +39,15 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FilterDocIdSetIterator;
 import org.apache.lucene.search.FilterWeight;
+import org.apache.lucene.search.FullPrecisionFloatVectorSimilarityValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -194,11 +199,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         assert efSearch >= k : "efSearch must be >= k";
         String field = documentStructure.vectorValueKeyFor(query.length);
         Query vectorQuery = new KnnFloatVectorQuery(field, query, efSearch, filter);
-        if (efSearch > k) {
-            vectorQuery = new NonEmptyQuery(vectorQuery);
-            vectorQuery = RescoreTopNQuery.createFullPrecisionRescorerQuery(vectorQuery, query, field, k);
-        }
-        return vectorQuery;
+        return efSearch > k ? new RescoreOrEmptyQuery(vectorQuery, query, field, k) : vectorQuery;
     }
 
     public Query build() {
@@ -438,6 +439,93 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         }
     }
 
+    private static class RescoreOrEmptyQuery extends Query {
+        private final Query delegate;
+
+        RescoreOrEmptyQuery(Query vectorQuery, float[] query, String field, int n) {
+            // cannot use RescoreTopNQuery::createFullPrecisionRescorerQuery due to null VectorSimilarityFunction
+            this.delegate =
+                    new RescoreTopNQuery(new NonEmptyQuery(vectorQuery), new VectorValuesSource(query, field), n);
+        }
+
+        @Override
+        public Query rewrite(IndexSearcher indexSearcher) throws IOException {
+            return indexSearcher.getIndexReader().leaves().isEmpty()
+                    ? MatchNoDocsQuery.INSTANCE
+                    : delegate.rewrite(indexSearcher);
+        }
+
+        @Override
+        public String toString(String field) {
+            return delegate.toString(field);
+        }
+
+        @Override
+        public void visit(QueryVisitor visitor) {
+            delegate.visit(visitor);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof RescoreOrEmptyQuery that && this.delegate.equals(that.delegate);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(classHash(), delegate);
+        }
+    }
+
+    private static class VectorValuesSource extends DoubleValuesSource {
+        private final DoubleValuesSource delegate;
+        private final float[] queryVector;
+        private final String fieldName;
+
+        VectorValuesSource(float[] vector, String fieldName) {
+            this.delegate = new FullPrecisionFloatVectorSimilarityValuesSource(vector, fieldName);
+            this.queryVector = vector;
+            this.fieldName = fieldName;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + '('
+                    + "fieldName=" + fieldName
+                    + " queryVector=" + Arrays.toString(queryVector)
+                    + ')';
+        }
+
+        @Override
+        public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+            return delegate.getValues(ctx, scores);
+        }
+
+        @Override
+        public boolean needsScores() {
+            return delegate.needsScores();
+        }
+
+        @Override
+        public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
+            return delegate.rewrite(reader);
+        }
+
+        @Override
+        public int hashCode() {
+            return delegate.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof VectorValuesSource that && this.delegate.equals(that.delegate);
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+            return delegate.isCacheable(ctx);
+        }
+    }
+
     // needs to be in (LuceneIndexWriter.MAX_DOCS, DocIdSetIterator.NO_MORE_DOCS)
     // which is a range of docs that can't exist
     static final int FAKE_DOC = DocIdSetIterator.NO_MORE_DOCS - 1;
@@ -449,7 +537,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
     private static final class NonEmptyQuery extends Query {
         private final Query delegate;
 
-        private NonEmptyQuery(Query delegate) {
+        NonEmptyQuery(Query delegate) {
             this.delegate = delegate;
         }
 
@@ -476,7 +564,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof NonEmptyQuery that && delegate.equals(that.delegate);
+            return obj instanceof NonEmptyQuery that && this.delegate.equals(that.delegate);
         }
 
         @Override
@@ -486,7 +574,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
 
         private static final class NonEmptyWeight extends FilterWeight {
 
-            private NonEmptyWeight(Weight delegate) {
+            NonEmptyWeight(Weight delegate) {
                 super(delegate);
             }
 
@@ -503,7 +591,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
             private final ScorerSupplier delegate;
             private final int docIdBase;
 
-            private NonEmptyScorerSupplier(ScorerSupplier delegate, int docIdBase) {
+            NonEmptyScorerSupplier(ScorerSupplier delegate, int docIdBase) {
                 this.delegate = delegate;
                 this.docIdBase = docIdBase;
             }
@@ -532,7 +620,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         private static final class NonEmptyScorer extends Scorer {
             private final DocIdSetIterator iterator;
 
-            private NonEmptyScorer(Scorer delegate, int docIdBase) {
+            NonEmptyScorer(Scorer delegate, int docIdBase) {
                 iterator = new NonEmptyDocIdSetIterator(delegate.iterator(), docIdBase);
             }
 
@@ -560,7 +648,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
         private static final class FakeEntryScorer extends Scorer {
             private final DocIdSetIterator iterator;
 
-            private FakeEntryScorer(int docIdBase) {
+            FakeEntryScorer(int docIdBase) {
                 int fake = FAKE_DOC - docIdBase;
                 iterator = DocIdSetIterator.range(fake, fake + 1);
             }
@@ -594,7 +682,7 @@ public class Lucene10QueryContext implements LuceneQueryContext {
 
             private int doc = NOT_STARTED;
 
-            private NonEmptyDocIdSetIterator(DocIdSetIterator delegate, int docIdBase) {
+            NonEmptyDocIdSetIterator(DocIdSetIterator delegate, int docIdBase) {
                 super(delegate);
                 this.delegate = delegate;
                 this.docIdBase = docIdBase;
