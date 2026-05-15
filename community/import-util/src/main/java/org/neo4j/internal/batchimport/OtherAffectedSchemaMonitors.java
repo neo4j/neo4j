@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.IntFunction;
 import java.util.function.LongPredicate;
@@ -50,8 +51,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
@@ -61,18 +60,14 @@ import org.neo4j.internal.schema.constraints.RelationshipEndpointLabelConstraint
 import org.neo4j.internal.schema.constraints.TypeRepresentation;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.storageengine.api.EagerValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.Value;
 
@@ -96,40 +91,6 @@ import org.neo4j.values.storable.Value;
  * {@link SchemaMonitor#indexUpdate(IndexEntryUpdate)}.
  */
 public class OtherAffectedSchemaMonitors implements SchemaMonitors {
-
-    @FunctionalInterface
-    public interface NodeLabelChecker extends Closeable {
-        boolean nodeHasLabel(long nodeId, int labelId);
-
-        @Override
-        default void close() {}
-
-        NodeLabelChecker NO_CHECKER = (nodeId, labelId) -> true;
-    }
-
-    public record DefaultNodeLabelChecker(TokenIndexReader reader, CursorContext ctx) implements NodeLabelChecker {
-        @Override
-        public boolean nodeHasLabel(long nodeId, int labelId) {
-            try (var client = new SimpleEntityTokenClient()) {
-                // Set reference node missing (will be set to nodeId if found)..
-                client.reference = -1;
-                reader.query(
-                        client,
-                        IndexQueryConstraints.unconstrained(),
-                        new TokenPredicate(labelId),
-                        new EntityRange(nodeId, nodeId + 1),
-                        ctx);
-                while (client.next()) {}
-                return client.reference == nodeId;
-            }
-        }
-
-        @Override
-        public void close() {
-            IOUtils.closeAllUnchecked(reader, ctx);
-        }
-    }
-
     private final SchemaCache schemaCache;
     private final EntityType entityType;
     private final LongToLongFunction indexedEntityIdConverter;
@@ -161,30 +122,18 @@ public class OtherAffectedSchemaMonitors implements SchemaMonitors {
             Predicate<IndexDescriptor> excludedIndexes,
             Config config,
             IndexPopulator.Configuration indexPopulatorConfiguration,
-            IntFunction<NodeLabelChecker> nodeLabelCheckerFactory,
-            boolean
-                    skipGraphTypeConstraints /* TODO(graphTypes): Fix graph type enforcement in incremental importer */) {
+            IntFunction<NodeLabelChecker> nodeLabelCheckerFactory) {
         this.schemaCache = schemaCache;
         this.entityType = entityType;
         this.indexedEntityIdConverter = indexedEntityIdConverter;
         this.generateNonUniqueIndexUpdates = generateNonUniqueIndexUpdates;
 
         this.propertyConstraints = new ImportPropertyConstraintEnforcer(schemaCache, entityType);
-        this.requiredNodeLabels = skipGraphTypeConstraints
-                ? IntObjectMaps.immutable.<IntSet>empty()
-                : buildRequiredNodeLabels(schemaCache);
+        this.requiredNodeLabels = buildRequiredNodeLabels(schemaCache);
 
-        this.nodeLabelCheckerFactory = nodeLabelCheckerFactory;
-        this.requiredStartEndpointLabels = skipGraphTypeConstraints
-                ? IntIntMaps.immutable.empty()
-                : buildRequiredEndpointLabel(schemaCache, EndpointType.START);
-        this.requiredEndEndpointLabels = skipGraphTypeConstraints
-                ? IntIntMaps.immutable.empty()
-                : buildRequiredEndpointLabel(schemaCache, EndpointType.END);
-
-        assert (requiredStartEndpointLabels.isEmpty() && requiredEndEndpointLabels.isEmpty())
-                        || nodeLabelCheckerFactory != null
-                : "To check endpoint constraints we require a nodeLabelCheckerFactory";
+        this.requiredStartEndpointLabels = buildRequiredEndpointLabel(schemaCache, EndpointType.START);
+        this.requiredEndEndpointLabels = buildRequiredEndpointLabel(schemaCache, EndpointType.END);
+        this.nodeLabelCheckerFactory = Objects.requireNonNull(nodeLabelCheckerFactory);
 
         this.indexBuilder = new ImportIndexBuilder(
                 fileSystem,
@@ -241,7 +190,11 @@ public class OtherAffectedSchemaMonitors implements SchemaMonitors {
      */
     @Override
     public SchemaMonitor newMonitor(int workerId) {
-        return new OtherAffectedSchemaMonitor(nodeLabelCheckerFactory.apply(workerId));
+        if (requiredStartEndpointLabels.notEmpty() || requiredEndEndpointLabels.notEmpty()) {
+            return new OtherAffectedSchemaMonitor(nodeLabelCheckerFactory.apply(workerId));
+        }
+        // Since there are no conditions to verify, we don't need to allocate a NodeLabelChecker
+        return new OtherAffectedSchemaMonitor(null);
     }
 
     /**
@@ -444,6 +397,12 @@ public class OtherAffectedSchemaMonitors implements SchemaMonitors {
 
         private boolean checkRelationshipEndpointLabels(
                 SchemaMonitor.Relationship relationship, ViolationVisitor violationVisitor) {
+            if (nodeLabelChecker == null) {
+                // Skip, if there is no nodeLabelChecker (the entity itself is not sufficient to determine if the
+                // constraints holds).
+                return true;
+            }
+
             int relType = relationship.relationshipType();
 
             boolean okStart = true;
@@ -607,5 +566,14 @@ public class OtherAffectedSchemaMonitors implements SchemaMonitors {
             }
             return true;
         }
+    }
+
+    public interface NodeLabelChecker extends Closeable {
+        boolean nodeHasLabel(long nodeId, int labelId);
+
+        @Override
+        default void close() {}
+
+        IntFunction<NodeLabelChecker> DISABLED_NODE_CHECKER_FACTORY = (ignored) -> null;
     }
 }

@@ -44,7 +44,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
 public class TokenIndexImporter implements IndexImporter {
@@ -97,11 +96,6 @@ public class TokenIndexImporter implements IndexImporter {
                 }
             }
         };
-    }
-
-    @Override
-    public TokenIndexReader reader() {
-        return accessor.newTokenReader(IndexUsageTracking.NO_USAGE_TRACKING);
     }
 
     @Override
