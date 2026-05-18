@@ -155,7 +155,7 @@ object pegClause {
 
         scope.withChildren(scope.children ++ graphSelectionScopes).addReferences(additionalImportingWithRefs)
 
-      case call @ ScopeClauseSubqueryCall(_, isImportingAll, importedVariables, inTransactionsParameters, _) =>
+      case call @ ScopeClauseSubqueryCall(_, isImportingAll, importedVariables, inTransactionsParameters, _, _) =>
         val innerQueryIncoming =
           if (isImportingAll) incoming.constantChildContext()
           else RegularContext(

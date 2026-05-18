@@ -96,13 +96,11 @@ sealed trait RegularContext extends WorkingContext {
   @inline def replaceWith(replacement: Set[LogicalVariable]): RegularContext =
     RegularContext(constants, replacement, localCallables)
 
-  @inline def checkIfVariablesAreAlreadyDeclaredAsConstant(newVariables: Iterable[LogicalVariable])
-    : Seq[SemanticError] = {
-    checkIfVariablesAreAlreadyDeclaredIn(
-      constants,
-      newVariables,
-      SemanticError.variableShadowingOuterScope
-    )
+  @inline def checkIfVariablesAreAlreadyDeclaredAsConstant(
+    newVariables: Iterable[LogicalVariable],
+    errorFunc: (String, InputPosition) => SemanticError = SemanticError.variableShadowingOuterScope
+  ): Seq[SemanticError] = {
+    checkIfVariablesAreAlreadyDeclaredIn(constants, newVariables, errorFunc)
   }
 
   @inline def checkIfVariablesAreAlreadyDeclaredAsVariable(

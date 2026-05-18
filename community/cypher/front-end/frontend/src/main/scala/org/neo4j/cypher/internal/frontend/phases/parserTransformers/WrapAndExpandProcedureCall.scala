@@ -21,10 +21,12 @@ import org.neo4j.cypher.internal.ast.AdditiveProjection
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.FreeProjection
+import org.neo4j.cypher.internal.ast.Optional
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnAddedInRewrite
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.RewrittenOptional
 import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
@@ -76,16 +78,23 @@ case object WrapAndExpandProcedureCall extends StatementRewriter with ParsePipel
   private val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case query @ SingleQuery(clauses) =>
       val newClauses = clauses.flatMap {
-        case unresolved @ UnresolvedCall(_, _, Some(_), _, _, true) =>
+        case unresolved @ UnresolvedCall(_, _, Some(_), _, _, Optional) =>
           val pos = unresolved.position
-          val expandedCall = expandWhere(unresolved.copy(optional = false)(pos))
+          val expandedCall = expandWhere(unresolved.copy(optionalState = RewrittenOptional)(pos))
           val returnItems = unresolved.returnVariables.explicitVariables.map(x => AliasedReturnItem(x))
           val returnClause =
             if (returnItems.nonEmpty)
               Seq(Return(ReturnItems(FreeProjection, returnItems)(pos), ReturnAddedInRewrite)(pos))
             else Seq.empty
           val innerQuery = SingleQuery(expandedCall ++ returnClause)(pos)
-          Seq(ScopeClauseSubqueryCall(innerQuery, isImportingAll = true, Seq.empty, None, optional = true)(pos))
+          Seq(ScopeClauseSubqueryCall(
+            innerQuery,
+            isImportingAll = true,
+            Seq.empty,
+            None,
+            optional = true,
+            addedInRewriteOptionalCall = true
+          )(pos))
         case unresolved: UnresolvedCall =>
           expandWhere(unresolved)
         case x => Seq(x)

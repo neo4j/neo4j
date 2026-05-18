@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.LocalFieldSignature
 import org.neo4j.cypher.internal.ast.LocalFunctionDefinition
 import org.neo4j.cypher.internal.ast.LocalProcedureDefinition
+import org.neo4j.cypher.internal.ast.NonOptional
+import org.neo4j.cypher.internal.ast.Optional
 import org.neo4j.cypher.internal.ast.ParsedAsFilter
 import org.neo4j.cypher.internal.ast.ParsedAsLet
 import org.neo4j.cypher.internal.ast.PartQuery
@@ -1025,7 +1027,7 @@ class RewriteLocalProcedureCallsTest extends CypherPlannerTestSuite with TestNam
       declaredArguments,
       declaredResults,
       yieldAll,
-      optional
+      if (optional) Optional else NonOptional
     )(pos)
   }
 
@@ -1045,7 +1047,7 @@ class RewriteLocalProcedureCallsTest extends CypherPlannerTestSuite with TestNam
       declaredArguments,
       declaredResults,
       yieldAll,
-      optional
+      if (optional) Optional else NonOptional
     )(pos)
   }
 

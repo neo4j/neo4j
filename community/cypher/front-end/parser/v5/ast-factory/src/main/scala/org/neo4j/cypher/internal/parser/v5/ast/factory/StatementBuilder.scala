@@ -40,8 +40,10 @@ import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.ast.NonOptional
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
+import org.neo4j.cypher.internal.ast.Optional
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParsedAsLimit
 import org.neo4j.cypher.internal.ast.ParsedAsOrderBy
@@ -547,7 +549,7 @@ trait StatementBuilder extends Cypher5ParserListener {
       procedureResults,
       isStandalone = false,
       yieldAll,
-      ctx.OPTIONAL() != null
+      if (ctx.OPTIONAL() != null) Optional else NonOptional
     )(pos(ctx))
   }
 

@@ -56,7 +56,7 @@ case class CreateIrExpressions(
   private def instance(importedVariablesByLastCallSubquery: Seq[LogicalVariable] = Seq.empty): Rewriter = topDown(
     Rewriter.lift {
 
-      case q @ ScopeClauseSubqueryCall(innerQuery, _, importedVariables, _, _) =>
+      case q @ ScopeClauseSubqueryCall(innerQuery, _, importedVariables, _, _, _) =>
         val innerRewriter = instance(importedVariables)
         q.copy(innerQuery = innerQuery.endoRewrite(innerRewriter))(q.position)
 

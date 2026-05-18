@@ -135,7 +135,7 @@ case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
           _,
           _,
           _,
-          optional
+          _
         ) =>
         seq =>
           TraverseChildren(
@@ -144,7 +144,7 @@ case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
                 case _ @Some(warning) => Set(ProcedureWarningNotification(f.position, name.fullName, warning))
                 case _                => Set.empty
               }) // Redundant usage of optional (on void proc)
-              ++ (if (optional && result.isEmpty) {
+              ++ (if (f.optional && result.isEmpty) {
                     Set(RedundantOptionalProcedure(f.position, name.fullName))
                   } else {
                     Set.empty

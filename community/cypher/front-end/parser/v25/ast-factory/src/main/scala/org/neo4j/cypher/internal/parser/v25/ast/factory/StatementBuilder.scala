@@ -53,8 +53,10 @@ import org.neo4j.cypher.internal.ast.LocalProcedureDefinition
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NextStatement
+import org.neo4j.cypher.internal.ast.NonOptional
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
+import org.neo4j.cypher.internal.ast.Optional
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParsedAsFilter
 import org.neo4j.cypher.internal.ast.ParsedAsLet
@@ -761,7 +763,7 @@ trait StatementBuilder extends Cypher25ParserListener {
       procedureResults,
       isStandalone = false,
       yieldAll,
-      ctx.OPTIONAL() != null
+      if (ctx.OPTIONAL() != null) Optional else NonOptional
     )(pos(ctx))
   }
 

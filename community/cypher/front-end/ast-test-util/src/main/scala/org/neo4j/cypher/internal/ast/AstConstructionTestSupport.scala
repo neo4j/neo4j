@@ -1644,7 +1644,7 @@ trait AstConstructionTestSupport {
         where.map(p => Where(p)(pos))
       )(pos)),
       standalone,
-      optional = optional
+      optionalState = if (optional) Optional else NonOptional
     )(pos)
 
   def unresolvedCall(
@@ -1662,7 +1662,7 @@ trait AstConstructionTestSupport {
         ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)), where.map(p => Where(p)(pos)))(pos)
       ),
       standalone,
-      optional = optional
+      optionalState = if (optional) Optional else NonOptional
     )(pos)
 
   def call(

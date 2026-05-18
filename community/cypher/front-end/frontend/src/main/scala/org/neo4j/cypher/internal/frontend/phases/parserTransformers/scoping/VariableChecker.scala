@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.CreateOrInsert
@@ -27,11 +28,12 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.RewrittenOptional
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.ast.StrictlyAdditiveProjection
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.Union
-import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
@@ -81,6 +83,13 @@ case class VariableChecker(
           val outerNames = acc.foreachContext.allowedToShadow.map(_.name)
           val bodyLocalDeclared = (constants ++ variables).filterNot(v => outerNames.contains(v.name))
           incoming.checkIfVariablesAreAlreadyDeclaredAsConstant(bodyLocalDeclared.toSet)
+        // An optional procedure call is wrapped in a subquery by rewriting,
+        // so should throw 42N59 instead of 42N07. The latter is muted below using a flag.
+        case c: CallClause if c.optionalState == RewrittenOptional =>
+          incoming.checkIfVariablesAreAlreadyDeclaredAsConstant(
+            (constants ++ variables).toSet,
+            SemanticError.variableAlreadyDeclared
+          )
         case _ =>
           incoming.checkIfVariablesAreAlreadyDeclaredAsConstant((constants ++ variables).toSet)
       }
@@ -90,9 +99,11 @@ case class VariableChecker(
           incoming.checkIfVariablesAreAlreadyDeclaredAsVariable(variables)
         case pc: ProjectionClause if pc.returnItems.projectionType == StrictlyAdditiveProjection =>
           incoming.checkIfVariablesAreAlreadyDeclaredAsVariable(variables)
-        case _: UnresolvedCall => incoming.checkIfVariablesHaveMultipleDeclarations(variables)
-        case _: Unwind         => incoming.checkIfVariablesAreAlreadyDeclaredAsVariable(variables)
-        case _: Search         => incoming.checkIfVariablesAreAlreadyDeclaredAsVariable(variables)
+        case _: CallClause => incoming.checkIfVariablesHaveMultipleDeclarations(variables)
+        case _: Unwind     => incoming.checkIfVariablesAreAlreadyDeclaredAsVariable(variables)
+        case _: Search     => incoming.checkIfVariablesAreAlreadyDeclaredAsVariable(variables)
+        // Mutes the error caused by rewriting optional call procedures
+        case call: ScopeClauseSubqueryCall if call.addedInRewriteOptionalCall => Seq.empty
         case _: SubqueryCall =>
           incoming.checkIfVariablesAreAlreadyDeclaredAsVariable(
             variables,

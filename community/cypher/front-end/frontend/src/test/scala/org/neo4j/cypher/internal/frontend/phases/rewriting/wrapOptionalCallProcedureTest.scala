@@ -20,6 +20,9 @@ import org.neo4j.cypher.internal.ast.AddedInRewriteProcCall
 import org.neo4j.cypher.internal.ast.DefaultWith
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnAddedInRewrite
+import org.neo4j.cypher.internal.ast.RewrittenOptional
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
+import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
@@ -41,8 +44,9 @@ class wrapOptionalCallProcedureTest extends CypherFunSuite with RewriteTest {
       "OPTIONAL CALL (*) { CALL foo() YIELD a, b RETURN a AS a, b AS b } FINISH",
       additionalExpectedAstUpdates = expectedStatement => {
         expectedStatement.endoRewrite(bottomUp(Rewriter.lift {
-          case r: Return =>
-            r.copy(returnType = ReturnAddedInRewrite)(r.position)
+          case r: Return                  => r.copy(returnType = ReturnAddedInRewrite)(r.position)
+          case c: UnresolvedCall          => c.copy(optionalState = RewrittenOptional)(c.position)
+          case c: ScopeClauseSubqueryCall => c.copy(addedInRewriteOptionalCall = true)(c.position)
         }))
       }
     )
@@ -51,10 +55,10 @@ class wrapOptionalCallProcedureTest extends CypherFunSuite with RewriteTest {
       "OPTIONAL CALL (*) { CALL foo() YIELD a, b WITH * WHERE a > 0 RETURN a AS a, b AS b } FINISH",
       additionalExpectedAstUpdates = expectedStatement => {
         expectedStatement.endoRewrite(bottomUp(Rewriter.lift {
-          case w: With if w.withType == DefaultWith =>
-            w.copy(withType = AddedInRewriteProcCall)(w.position)
-          case r: Return =>
-            r.copy(returnType = ReturnAddedInRewrite)(r.position)
+          case w: With if w.withType == DefaultWith => w.copy(withType = AddedInRewriteProcCall)(w.position)
+          case r: Return                            => r.copy(returnType = ReturnAddedInRewrite)(r.position)
+          case c: UnresolvedCall                    => c.copy(optionalState = RewrittenOptional)(c.position)
+          case c: ScopeClauseSubqueryCall           => c.copy(addedInRewriteOptionalCall = true)(c.position)
         }))
       }
     )
@@ -69,8 +73,7 @@ class wrapOptionalCallProcedureTest extends CypherFunSuite with RewriteTest {
           // The original/rewritten statement will have AddedInRewriteProcCall,
           // the explicit WITH in the expected will have DefaultWith
           // so let's update that before checking the equality
-          case w: With if w.withType == DefaultWith =>
-            w.copy(withType = AddedInRewriteProcCall)(w.position)
+          case w: With if w.withType == DefaultWith => w.copy(withType = AddedInRewriteProcCall)(w.position)
         }))
       }
     )

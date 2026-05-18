@@ -277,7 +277,7 @@ trait VariableCheckerUtil {
 
         def unapply(scope: WorkingScope): Option[(Seq[LogicalVariable], RegularContext)] =
           scope match {
-            case StatementScope(ScopeClauseSubqueryCall(_, false, imports, _, _), incoming, _, _, _, _, _, _) =>
+            case StatementScope(ScopeClauseSubqueryCall(_, false, imports, _, _, _), incoming, _, _, _, _, _, _) =>
               Some((imports, incoming))
             case StatementScope(ImportingWithSubqueryCall(innerQuery, _, _), incoming, _, _, _, _, _, _) =>
               Some((innerQuery.importColumns, incoming))

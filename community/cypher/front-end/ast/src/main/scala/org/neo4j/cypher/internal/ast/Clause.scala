@@ -1710,13 +1710,19 @@ case class Unwind(
       }
 }
 
+sealed trait OptionalState
+case object NonOptional extends OptionalState
+case object Optional extends OptionalState
+case object RewrittenOptional extends OptionalState
+
 abstract class CallClause extends Clause {
   override def name = "CALL"
 
   def procedureName: ProcedureName
   def containsNoUpdates: Boolean
   def yieldAll: Boolean
-  def optional: Boolean
+  def optionalState: OptionalState
+  def optional: Boolean = optionalState == Optional
 }
 
 case class UnresolvedCall(
@@ -1728,7 +1734,7 @@ case class UnresolvedCall(
   isStandalone: Boolean = false,
   // YIELD *
   override val yieldAll: Boolean = false,
-  override val optional: Boolean = false
+  override val optionalState: OptionalState = NonOptional
 )(val position: InputPosition) extends CallClause {
 
   def fullName: String = procedureName.fullName
@@ -2501,7 +2507,8 @@ case class ScopeClauseSubqueryCall(
   isImportingAll: Boolean,
   importedVariables: Seq[LogicalVariable],
   override val inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters],
-  override val optional: Boolean
+  override val optional: Boolean,
+  addedInRewriteOptionalCall: Boolean = false
 )(val position: InputPosition) extends SubqueryCall {
 
   override def isCorrelated: Boolean = {

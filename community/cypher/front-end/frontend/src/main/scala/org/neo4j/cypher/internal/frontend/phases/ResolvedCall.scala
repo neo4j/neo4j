@@ -20,15 +20,17 @@ import org.neo4j.cypher.internal.ast.AbstractFieldSignature
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.LocalFieldSignature
 import org.neo4j.cypher.internal.ast.LocalProcedureDefinition
+import org.neo4j.cypher.internal.ast.NonOptional
+import org.neo4j.cypher.internal.ast.OptionalState
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.semantics.*
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
-import org.neo4j.cypher.internal.ast.semantics._
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
@@ -238,7 +240,7 @@ case class ResolvedNonLocalCall(
   override val declaredResults: Boolean = true,
   // YIELD *
   override val yieldAll: Boolean = false,
-  override val optional: Boolean = false
+  override val optionalState: OptionalState = NonOptional
 )(val position: InputPosition) extends ResolvedCall[ResolvedNonLocalCall] {
   override def procedureName: ProcedureName = signature.name
 
@@ -340,7 +342,7 @@ case class ResolvedLocalCall(
   override val declaredResults: Boolean = true,
   // YIELD *
   override val yieldAll: Boolean = false,
-  override val optional: Boolean = false
+  override val optionalState: OptionalState = NonOptional
 )(val position: InputPosition) extends ResolvedCall[ResolvedLocalCall] {
 
   override def inputFieldSignatures: Seq[AbstractFieldSignature] = inputSignature
