@@ -52,8 +52,18 @@ public class ConnectMessage {
     @JsonPropertyDescription("Build profile of the Fleet Manager module")
     public String buildProfile;
 
+    @JsonProperty("is_system_db_writer")
+    @JsonPropertyDescription("Does this server allow writing to system DB?")
+    public boolean isSystemDbWriter;
+
     public ConnectMessage(
-            String serverId, String name, String dbmsId, String serverVersion, String projectId, String pluginVersion) {
+            String serverId,
+            String name,
+            String dbmsId,
+            String serverVersion,
+            String projectId,
+            String pluginVersion,
+            boolean isSystemDbWriter) {
         this.serverId = serverId;
         this.name = name;
         this.dbmsId = dbmsId;
@@ -61,5 +71,6 @@ public class ConnectMessage {
         this.projectId = projectId;
         this.pluginVersion = pluginVersion;
         this.buildProfile = "embedded";
+        this.isSystemDbWriter = isSystemDbWriter;
     }
 }

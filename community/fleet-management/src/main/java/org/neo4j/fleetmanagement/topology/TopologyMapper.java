@@ -145,10 +145,17 @@ public class TopologyMapper {
                 .flatMap(List::stream)
                 .filter(db -> Objects.equals(db.name, "system"))
                 .map(db -> db.databaseId)
+                .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
 
         return dbmsId;
+    }
+
+    public boolean isSystemDbWriter(String serverId) {
+        var databasesByServer = transactor.getDatabases();
+        return databasesByServer.getOrDefault(serverId, List.of()).stream()
+                .anyMatch(db -> db.name.equals("system") && db.writer);
     }
 
     private Server getThisServer(Dbms dbms) {

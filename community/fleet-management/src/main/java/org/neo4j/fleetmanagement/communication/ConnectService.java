@@ -77,19 +77,22 @@ public class ConnectService extends BaseService {
         String serverId;
         String dbmsId;
         String fleetManagerVersion;
+        boolean isSystemDbWriter;
         try {
             serverVersion = topologyMapper.getServerVersion();
             serverId = topologyMapper.getServerId();
             dbmsId = TopologyMapper.getDbmsId(transactor::getDatabases);
             fleetManagerVersion = FleetManagerVersion.getFleetManagerVersion();
+            isSystemDbWriter = topologyMapper.isSystemDbWriter(serverId);
         } catch (Exception e) {
             this.userLog.error("Fleet manager failed to connect - exception in mapTopology: ", e);
             return;
         }
 
-        var projectId = upstream.getApiKey().projectId();
-        ConnectMessage msg =
-                new ConnectMessage(serverId, "plugin", dbmsId, serverVersion, projectId, fleetManagerVersion);
+        var apiKey = upstream.getApiKey();
+        var projectId = apiKey.projectId();
+        ConnectMessage msg = new ConnectMessage(
+                serverId, "plugin", dbmsId, serverVersion, projectId, fleetManagerVersion, isSystemDbWriter);
         try {
             String payload = objectMapper.writeValueAsString(msg);
             this.fleetManagerLog.debug("Fleet manager connecting.");

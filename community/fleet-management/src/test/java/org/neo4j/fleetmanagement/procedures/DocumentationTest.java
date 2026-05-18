@@ -31,6 +31,6 @@ public class DocumentationTest {
         documentation.generateDocumentation().forEach(System.out::println);
         Stream<Documentation.DocumentationResult> result = documentation.generateDocumentation();
         Assertions.assertEquals(
-                163, result.count(), "Payload messages have changed, consider updating the documentation");
+                164, result.count(), "Payload messages have changed, consider updating the documentation");
     }
 }
