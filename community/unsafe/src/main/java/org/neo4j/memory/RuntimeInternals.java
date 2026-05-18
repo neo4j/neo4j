@@ -20,6 +20,7 @@
 package org.neo4j.memory;
 
 import static com.sun.jna.Platform.is64Bit;
+import static org.neo4j.internal.helpers.VarHandleUtils.getVarHandle;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -101,9 +102,12 @@ final class RuntimeInternals {
         // Compensate for compressed string in Java 9+
         VarHandle stringValueArray;
         try {
-            stringValueArray = MethodHandles.privateLookupIn(String.class, MethodHandles.lookup())
-                    .findVarHandle(String.class, "value", byte[].class);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+            stringValueArray = getVarHandle(
+                    MethodHandles.privateLookupIn(String.class, MethodHandles.lookup()),
+                    String.class,
+                    "value",
+                    byte[].class);
+        } catch (RuntimeException | IllegalAccessException e) {
             stringValueArray = null;
         }
         STRING_VALUE_ARRAY = stringValueArray;
