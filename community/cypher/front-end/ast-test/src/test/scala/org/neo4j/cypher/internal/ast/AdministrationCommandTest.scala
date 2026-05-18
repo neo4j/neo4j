@@ -237,7 +237,10 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
   object attrLoader {
 
     def loadAuthAttributes(): List[AuthAttribute] = {
-      loadSubClassesRec(typeOf[AuthAttribute])
+      val discovered = loadSubClassesRec(typeOf[AuthAttribute])
+      // Scala 3 does not reliably populate knownDirectSubclasses for this hierarchy in tests.
+      if (discovered.nonEmpty) discovered
+      else List(Password(null, false)(null), PasswordChange(false)(null), AuthId(null)(null))
     }
 
     def loadSubClassesRec(tpe: Type): List[AuthAttribute] = {

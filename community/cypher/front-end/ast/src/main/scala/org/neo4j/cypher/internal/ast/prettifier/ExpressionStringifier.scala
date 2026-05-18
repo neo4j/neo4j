@@ -312,7 +312,7 @@ private class DefaultExpressionStringifier(
     override def includes(symbol: String): Boolean = symbol.nonEmpty && (symbols contains symbol)
   }
 
-  private case object NoEagerConsumption extends EagerConsumption {
+  private val NoEagerConsumption: EagerConsumption = new EagerConsumption {
     override def includes(symbol: String): Boolean = false
   }
   @inline private def noEagerConsumption(cypher: String): (String, EagerConsumption) = (cypher, NoEagerConsumption)
@@ -865,7 +865,7 @@ private class DefaultExpressionStringifier(
   }
 
   sealed private trait Binding
-  private case object Syntactic extends Binding
+  private val Syntactic: Binding = new Binding {}
   private case class Precedence(level: Int) extends Binding
 
   private def binding(in: Expression): Binding = in match {
@@ -1024,6 +1024,9 @@ private class DefaultExpressionStringifier(
 
 object ExpressionStringifier {
 
+  val failingExtender: Expression => String =
+    e => throw new IllegalStateException(s"failed to pretty print $e")
+
   def apply(
     extensionStringifier: ExpressionStringifier.Extension,
     alwaysParens: Boolean,
@@ -1041,11 +1044,28 @@ object ExpressionStringifier {
   )
 
   def apply(
-    extender: Expression => String = failingExtender,
     alwaysParens: Boolean = false,
     alwaysBacktick: Boolean = false,
     preferSingleQuotes: Boolean = false,
     sensitiveParamsAsParams: Boolean = false
+  ): ExpressionStringifier =
+    apply(failingExtender, alwaysParens, alwaysBacktick, preferSingleQuotes, sensitiveParamsAsParams)
+
+  def apply(extender: Expression => String): ExpressionStringifier =
+    apply(
+      extender,
+      alwaysParens = false,
+      alwaysBacktick = false,
+      preferSingleQuotes = false,
+      sensitiveParamsAsParams = false
+    )
+
+  def apply(
+    extender: Expression => String,
+    alwaysParens: Boolean,
+    alwaysBacktick: Boolean,
+    preferSingleQuotes: Boolean,
+    sensitiveParamsAsParams: Boolean
   ): ExpressionStringifier = new DefaultExpressionStringifier(
     Extension.simple(extender),
     alwaysParens,
@@ -1072,7 +1092,4 @@ object ExpressionStringifier {
       def apply(ctx: ExpressionStringifier)(expression: Expression): String = func(expression)
     }
   }
-
-  val failingExtender: Expression => String =
-    e => throw new IllegalStateException(s"failed to pretty print $e")
 }

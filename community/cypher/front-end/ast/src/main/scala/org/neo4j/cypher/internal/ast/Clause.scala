@@ -158,6 +158,7 @@ import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -207,10 +208,6 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
   private val stringifier = ExpressionStringifier()
 
-  object SetExtractor {
-    def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
-  }
-
   private def checkIfMixingLabelExpressionWithOldSyntax(
     state: SemanticState
   ): SemanticCheck = {
@@ -243,14 +240,15 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
       def semanticCheck: SemanticCheck = when(legacy.nonEmpty && gpm.nonEmpty) {
         // we prefer the new way, so we will only error on the "legacy" expressions
-        val maybeErrorDetails = legacy.map { ls =>
+        val detailsSet: Set[(String, String, InputPosition)] = legacy.map { ls =>
           (ls.labelExprAndReplacement._1, ls.labelExprAndReplacement._2, ls.position)
-        } match {
-          case SetExtractor()                            => None
-          case set: Set[(String, String, InputPosition)] =>
-            // we report all errors on the first position as we will later on throw away everything but the first error.
-            Some((set.map(_._1), set.map(_._2), set.head._3))
         }
+        val maybeErrorDetails =
+          if (detailsSet.isEmpty) None
+          else {
+            // we report all errors on the first position as we will later on throw away everything but the first error.
+            Some((detailsSet.map(_._1), detailsSet.map(_._2), detailsSet.head._3))
+          }
         maybeErrorDetails match {
           case Some((labelExpressions, replacements, pos)) =>
             // We may have multiple conflicts, both with IS and with label expression symbols.
@@ -1616,7 +1614,7 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   override def name = "REMOVE"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    items.semanticCheck chain checkIfMixingIsWithMultipleLabels
+    items.semanticCheck chain checkIfMixingIsWithMultipleLabels()
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(items.map(_.mapExpressions(f)))(this.position)
@@ -1860,7 +1858,9 @@ sealed trait ProjectionClause extends HorizonClause {
 
   def returnItems: ReturnItems
 
-  lazy val isAggregating: Boolean = returnItems.directlyContainsAggregate || distinct || groupBy.isDefined
+  private val isAggregatingLazy: LazyVal[Boolean] =
+    LazyVal(returnItems.directlyContainsAggregate || distinct || groupBy.isDefined)
+  def isAggregating: Boolean = isAggregatingLazy.value
 
   def groupBy: Option[GroupBy]
 
@@ -2597,8 +2597,9 @@ sealed trait CommandClause extends Clause with SemanticAnalysisTooling {
   protected def originalColumns: List[ShowAndTerminateColumn]
 
   // Used for semantic check
-  protected lazy val columnsAsMap: Map[String, CypherType] =
-    originalColumns.map(column => column.name -> column.cypherType).toMap[String, CypherType]
+  private val columnsAsMapLazy: LazyVal[Map[String, CypherType]] =
+    LazyVal(originalColumns.map(column => column.name -> column.cypherType).toMap[String, CypherType])
+  protected def columnsAsMap: Map[String, CypherType] = columnsAsMapLazy.value
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     if (yieldItems.nonEmpty) yieldItems.foldSemanticCheck(_.semanticCheck(columnsAsMap))

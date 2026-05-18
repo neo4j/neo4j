@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 
 sealed trait WorkingContext {
   def allSymbols: Set[LogicalVariable]
@@ -41,7 +42,8 @@ sealed trait RegularContext extends WorkingContext {
   def projectionPart: ProjectionPart
   def getProjectionSpecification: Option[ProjectionSpecification]
 
-  lazy val constantsAndVariables: Set[LogicalVariable] = constants union variables
+  private val constantsAndVariablesLazy: LazyVal[Set[LogicalVariable]] = LazyVal(constants union variables)
+  def constantsAndVariables: Set[LogicalVariable] = constantsAndVariablesLazy.value
   override def allSymbols: Set[LogicalVariable] = constantsAndVariables
   override def allSymbolsAndKeys: Set[LogicalVariable] = constantSymbols ++ variables
 

@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.VectorFilterExpression.VectorFilter
 import org.neo4j.cypher.internal.notification.IdentifierShadowsVariableNotification
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
@@ -94,7 +95,7 @@ case class Search(
         // We only parse the index name as an identifier (saved as StringLiteral) or string Parameter
         // This is the same exception as for create index for this case
         SemanticCheck.error(SemanticError.invalidEntityType(
-          ExpressionStringifier().apply(exp),
+          ExpressionStringifier()(exp),
           "index name",
           Seq("STRING NOT NULL"),
           "index name must be a String, or a String parameter.",
@@ -182,41 +183,38 @@ case class Search(
       )
   }
 
-  private object CheckedVectorFilterExpression {
+  private val emptyCheckedVectorFilterExpression: LazyVal[CheckedVectorFilterExpression] =
+    LazyVal(CheckedVectorFilterExpression(SemanticCheck.success, Seq.empty))
 
-    val empty: CheckedVectorFilterExpression =
-      CheckedVectorFilterExpression(SemanticCheck.success, Seq.empty)
-
-    def apply(
-      variable: LogicalVariable,
-      rhs: Expression,
-      filterExpression: VectorFilterExpression
-    ): CheckedVectorFilterExpression = {
-      filterExpression match {
-        case InSet(_, _) => CheckedVectorFilterExpression(
-            checkWhereVariable(variable) chain expectType(CTList(CTAny).covariant, rhs),
-            Seq(filterExpression)
-          )
-        case _ => CheckedVectorFilterExpression(
-            checkWhereVariable(variable) chain checkRhs(rhs),
-            Seq(filterExpression)
-          )
-      }
+  private def checkedVectorFilterExpression(
+    variable: LogicalVariable,
+    rhs: Expression,
+    filterExpression: VectorFilterExpression
+  ): CheckedVectorFilterExpression = {
+    filterExpression match {
+      case InSet(_, _) => CheckedVectorFilterExpression(
+          checkWhereVariable(variable) chain expectType(CTList(CTAny).covariant, rhs),
+          Seq(filterExpression)
+        )
+      case _ => CheckedVectorFilterExpression(
+          checkWhereVariable(variable) chain checkRhs(rhs),
+          Seq(filterExpression)
+        )
     }
-
-    def apply(error: SemanticError): CheckedVectorFilterExpression =
-      CheckedVectorFilterExpression(error, Seq.empty)
   }
+
+  private def checkedVectorFilterExpression(error: SemanticError): CheckedVectorFilterExpression =
+    CheckedVectorFilterExpression(error, Seq.empty)
 
   private def asFilterExpressions(expression: Expression): CheckedVectorFilterExpression =
     expression match {
       case VectorFilterExpression(variable: LogicalVariable, rhs: Expression, operator: VectorFilterExpression) =>
-        CheckedVectorFilterExpression(variable, rhs, operator)
+        checkedVectorFilterExpression(variable, rhs, operator)
       case And(lhs, rhs) => asFilterExpressions(lhs) ++ asFilterExpressions(rhs)
       case Ands(exprs) =>
-        exprs.map(asFilterExpressions).foldLeft(CheckedVectorFilterExpression.empty)(_ ++ _)
+        exprs.map(asFilterExpressions).foldLeft(emptyCheckedVectorFilterExpression.value)(_ ++ _)
       case expr =>
-        CheckedVectorFilterExpression(SemanticError.singleStageWithInvalidPredicate(expr, expr.position))
+        checkedVectorFilterExpression(SemanticError.singleStageWithInvalidPredicate(expr, expr.position))
     }
 
   private def checkWhereVariable(variable: LogicalVariable): SemanticCheck =

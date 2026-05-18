@@ -276,7 +276,7 @@ import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.BASE_INDENT
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.NL
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.authRuleSetClausesToString
-import org.neo4j.cypher.internal.ast.prettifier.Prettifier.escapeName
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier.escapeDatabaseName
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.stringifyOptions
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.userTagsActionAsString
 import org.neo4j.cypher.internal.expressions.CoerceTo
@@ -587,7 +587,7 @@ case class Prettifier(
             s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}"
           else ""
         val homeDatabaseString = userOptions.homeDatabase.map {
-          case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeName(name)}"
+          case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeDatabaseName(name)}"
           case _                           => None
         }.getOrElse("")
 
@@ -659,7 +659,7 @@ case class Prettifier(
           case RemoveHomeDatabaseAction => " REMOVE HOME DATABASE"
         }.getOrElse("")
         val setHomeDatabaseString = userOptions.homeDatabase.collectFirst {
-          case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeName(name)}"
+          case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeDatabaseName(name)}"
         }.getOrElse("")
 
         val externalAuthString = externalAuths.sortBy(_.provider).map { auth =>
@@ -874,9 +874,9 @@ case class Prettifier(
         val maybeCypherVersion = defaultCypherVersion.map(cv => s" DEFAULT LANGUAGE ${cv.description}").getOrElse("")
         ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS$maybeCypherVersion$maybeTopologyString$formattedOptions${waitUntilComplete.name}"
+            s"${x.name} ${Prettifier.escapeDatabaseName(dbName)} IF NOT EXISTS$maybeCypherVersion$maybeTopologyString$formattedOptions${waitUntilComplete.name}"
           case _ =>
-            s"${x.name} ${Prettifier.escapeName(dbName)}$maybeCypherVersion$maybeTopologyString$maybeShardString$formattedOptions${waitUntilComplete.name}"
+            s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}$maybeCypherVersion$maybeTopologyString$maybeShardString$formattedOptions${waitUntilComplete.name}"
         }
 
       case x @ CreateCompositeDatabase(name, ifExistsDo, options, waitUntilComplete, defaultCypherVersion) =>
@@ -886,11 +886,11 @@ case class Prettifier(
           case IfExistsInvalidSyntax | IfExistsDoNothing => " IF NOT EXISTS"
           case _                                         => ""
         }
-        s"${x.name} ${escapeName(name)}$ifExists$maybeCypherVersion$formattedOptions${waitUntilComplete.name}"
+        s"${x.name} ${escapeDatabaseName(name)}$ifExists$maybeCypherVersion$formattedOptions${waitUntilComplete.name}"
 
       case x @ DropDatabase(dbName, ifExists, _, aliasAction, additionalAction, waitUntilComplete) =>
         val maybeIfExists = if (ifExists) " IF EXISTS" else ""
-        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists ${aliasAction.name} ${additionalAction.name}${waitUntilComplete.name}"
+        s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}$maybeIfExists ${aliasAction.name} ${additionalAction.name}${waitUntilComplete.name}"
 
       case x @ AlterDatabase(
           dbName,
@@ -914,21 +914,21 @@ case class Prettifier(
         val formattedOptions = asIndividualOptions(options)
         val formattedOptionsToRemove = optionsToRemove.map(o => s" REMOVE OPTION ${backtickEmpty(o)}").mkString("")
         val maybeShards = shardDefinition.map(s => Prettifier.extractAlterShardDefinition(s)).getOrElse("")
-        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists$maybeAccessString$maybeTopologyString$maybeShards$formattedOptions$formattedOptionsToRemove$maybeCypherVersion${waitUntilComplete.name}"
+        s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}$maybeIfExists$maybeAccessString$maybeTopologyString$maybeShards$formattedOptions$formattedOptionsToRemove$maybeCypherVersion${waitUntilComplete.name}"
 
       case x @ StartDatabase(dbName, waitUntilComplete) =>
-        s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
+        s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}${waitUntilComplete.name}"
 
       case x @ StopDatabase(dbName, waitUntilComplete) =>
-        s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
+        s"${x.name} ${Prettifier.escapeDatabaseName(dbName)}${waitUntilComplete.name}"
 
       case x @ CreateLocalDatabaseAlias(aliasName, targetName, ifExistsDo, properties) =>
         val propertiesString = propertiesMapToString("PROPERTIES", properties)
         ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeName(targetName)}$propertiesString"
+            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)}$propertiesString"
           case _ =>
-            s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE ${Prettifier.escapeName(targetName)}$propertiesString"
+            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)}$propertiesString"
         }
 
       case x @ CreateRemoteDatabaseAlias(
@@ -957,23 +957,23 @@ case class Prettifier(
 
         ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeName(targetName)} AT $urlString " +
+            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)} AT $urlString " +
               credentials + driverSettingsString + defaultLanguageString + propertiesString
           case _ =>
-            s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE ${Prettifier.escapeName(targetName)} AT $urlString " +
+            s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} FOR DATABASE ${Prettifier.escapeDatabaseName(targetName)} AT $urlString " +
               credentials + driverSettingsString + defaultLanguageString + propertiesString
         }
 
       case x @ DropDatabaseAlias(aliasName, ifExists) =>
-        if (ifExists) s"${x.name} ${Prettifier.escapeName(aliasName)} IF EXISTS FOR DATABASE"
-        else s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE"
+        if (ifExists) s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF EXISTS FOR DATABASE"
+        else s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} FOR DATABASE"
 
       case x @ AlterLocalDatabaseAlias(aliasName, targetName, ifExists, properties) =>
-        val target = targetName.map(tgt => "TARGET " + Prettifier.escapeName(tgt)).getOrElse("")
+        val target = targetName.map(tgt => "TARGET " + Prettifier.escapeDatabaseName(tgt)).getOrElse("")
         val propertiesString = propertiesMapToString("PROPERTIES", properties)
         if (ifExists)
-          s"${x.name} ${Prettifier.escapeName(aliasName)} IF EXISTS SET DATABASE $target$propertiesString"
-        else s"${x.name} ${Prettifier.escapeName(aliasName)} SET DATABASE $target$propertiesString"
+          s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF EXISTS SET DATABASE $target$propertiesString"
+        else s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} SET DATABASE $target$propertiesString"
 
       case x @ AlterRemoteDatabaseAlias(
           aliasName,
@@ -993,7 +993,7 @@ case class Prettifier(
               case Some(Right(parameter)) => s" AT ${expr(parameter)}"
               case _                      => ""
             }
-            s" TARGET ${Prettifier.escapeName(targetName)}$urlString"
+            s" TARGET ${Prettifier.escapeDatabaseName(targetName)}$urlString"
           case None => ""
         }
 
@@ -1014,12 +1014,12 @@ case class Prettifier(
         val defaultLanguageString = defaultLanguage.map(cv => s" DEFAULT LANGUAGE ${cv.description}").getOrElse("")
 
         if (ifExists)
-          s"${x.name} ${Prettifier.escapeName(aliasName)} IF EXISTS SET DATABASE$targetString$userString$passwordString$driverSettingsString$defaultLanguageString$propertiesString"
+          s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} IF EXISTS SET DATABASE$targetString$userString$passwordString$driverSettingsString$defaultLanguageString$propertiesString"
         else
-          s"${x.name} ${Prettifier.escapeName(aliasName)} SET DATABASE$targetString$userString$passwordString$driverSettingsString$defaultLanguageString$propertiesString"
+          s"${x.name} ${Prettifier.escapeDatabaseName(aliasName)} SET DATABASE$targetString$userString$passwordString$driverSettingsString$defaultLanguageString$propertiesString"
 
       case x @ ShowAliases(aliasName, yields, _) =>
-        val an = aliasName.map(an => s" ${escapeName(an)}").getOrElse("")
+        val an = aliasName.map(an => s" ${escapeDatabaseName(an)}").getOrElse("")
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$an FOR DATABASE$y$r"
 
@@ -1583,7 +1583,7 @@ case class Prettifier(
     def asString(s: ShowDatabasesClause): String = {
       val ind = indented()
       val optionalName = s.dbScope match {
-        case SingleNamedDatabaseScope(dbName) => s" ${Prettifier.escapeName(dbName)}"
+        case SingleNamedDatabaseScope(dbName) => s" ${Prettifier.escapeDatabaseName(dbName)}"
         case _                                => ""
       }
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
@@ -1911,25 +1911,25 @@ object Prettifier {
   }
 
   private def extractDbScope(dbScope: DatabaseScope): (String, Boolean, Boolean) = dbScope match {
-    case SingleNamedDatabaseScope(name)         => (escapeName(name), false, false)
+    case SingleNamedDatabaseScope(name)         => (escapeDatabaseName(name), false, false)
     case AllDatabasesScope()                    => ("*", false, false)
     case DefaultDatabaseScope()                 => ("DEFAULT", true, false)
     case HomeDatabaseScope()                    => ("HOME", true, false)
-    case NamedDatabasesScope(Seq(databaseName)) => (escapeName(databaseName), false, false)
+    case NamedDatabasesScope(Seq(databaseName)) => (escapeDatabaseName(databaseName), false, false)
     case NamedDatabasesScope(databaseNames)     => (escapeNames(databaseNames), false, true)
   }
 
   private def extractGraphScope(graphScope: GraphScope): String = {
     graphScope match {
-      case SingleNamedGraphScope(name)  => s"GRAPH ${escapeName(name)}"
+      case SingleNamedGraphScope(name)  => s"GRAPH ${escapeDatabaseName(name)}"
       case AllGraphsScope()             => "GRAPH *"
       case HomeGraphScope()             => "HOME GRAPH"
-      case NamedGraphsScope(Seq(graph)) => s"GRAPH ${escapeName(graph)}"
+      case NamedGraphsScope(Seq(graph)) => s"GRAPH ${escapeDatabaseName(graph)}"
       case NamedGraphsScope(graphs)     => s"GRAPHS ${escapeNames(graphs)}"
     }
   }
 
-  def escapeName(name: DatabaseName): String = name match {
+  def escapeDatabaseName(name: DatabaseName): String = name match {
     case NamespacedName(names, Some(namespace)) =>
       backtickEmpty(namespace) + "." + backtickEmpty(names.mkString("."))
     case NamespacedName(names, None) => backtickEmpty(names.mkString("."))
@@ -1945,7 +1945,7 @@ object Prettifier {
   private def escapeNames(names: Seq[Expression]): String = names.map(escapeName).mkString(", ")
 
   private def escapeNames(names: Seq[DatabaseName])(implicit d: DummyImplicit): String =
-    names.map(databaseName => escapeName(databaseName)).mkString(", ")
+    names.map(databaseName => escapeDatabaseName(databaseName)).mkString(", ")
 
   def extractTopology(topology: Topology): String = {
     val primariesString = topology.primaries.flatMap {

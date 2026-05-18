@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -82,7 +83,8 @@ final case class SemanticTable(
   resolvedRelTypeNames: Map[String, RelTypeId] = Map.empty
 ) extends TokenTable {
 
-  override lazy val hashCode: Int = ScalaRunTime._hashCode(this)
+  private val hashCodeLazy: LazyVal[Int] = LazyVal(ScalaRunTime._hashCode(this))
+  override def hashCode: Int = hashCodeLazy.value
 
   override def id(labelName: LabelName): Option[LabelId] = resolvedLabelNames.get(labelName.name)
 

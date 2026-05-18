@@ -53,6 +53,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.collections</groupId>
       <artifactId>eclipse-collections</artifactId>
       <scope>test</scope>
@@ -176,6 +181,7 @@
               <ignoredUnusedDeclaredDependencies>
                 <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.module:jackson-module-scala_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-cache</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.awaitility:awaitility</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>

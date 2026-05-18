@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NoValue
@@ -65,7 +66,8 @@ object NamespacedName {
 }
 
 case class ParameterName(expression: Expression)(val position: InputPosition) extends DatabaseName {
-  lazy val parameter: Parameter = expression.asInstanceOf[Parameter]
+  private val parameterLazy: LazyVal[Parameter] = LazyVal(expression.asInstanceOf[Parameter])
+  def parameter: Parameter = parameterLazy.value
 
   // This will not work if the parameter has been slotted (ParameterFromSlot), but that is only used for SHOW DATABASES
   // and in that case we will not use this method

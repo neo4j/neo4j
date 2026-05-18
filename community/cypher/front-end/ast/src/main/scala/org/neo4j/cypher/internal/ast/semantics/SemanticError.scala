@@ -2439,7 +2439,8 @@ object SemanticError {
   }
 
   def singleStageWithInvalidPredicate(expr: Expression, position: InputPosition): SemanticError = {
-    val exprString = And.flatten(expr).map(ExpressionStringifier().apply).mkString(" AND ")
+    val stringifier = ExpressionStringifier()
+    val exprString = And.flatten(expr).map(stringifier.apply).mkString(" AND ")
     SemanticError(
       GqlHelper.getGql42001_42I73(exprString, position.offset, position.line, position.column),
       s"The vector search filter predicate '$exprString' must consist of one or more property predicates joined by AND, and the combined property predicates for each property must specify either an exact value (e.g. x.prop = 1), a half-bounded range (e.g. x.prop >= 1), or a bounded range (e.g. x.prop > 1 AND x.prop < 100). Note that this is not an exhaustive list of valid predicates, see documentation for all rules.",

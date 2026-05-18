@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
+import java.lang.Double._
+
 // Skip/Limit
 trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {
   self: ASTNode =>
@@ -203,8 +205,10 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
             case (false, true)  => " non-zero"
             case (false, false) => " positive"
           }
-          val lowerBound =
-            if (acceptsNegative) Double.MinValue else if (acceptsZero) 0 else 1
+          val lowerBound: java.lang.Number =
+            if (acceptsNegative) valueOf(Double.MinValue)
+            else if (acceptsZero) valueOf(0.0d)
+            else valueOf(1.0d)
           SemanticAnalysisToolingErrorWithGqlInfo.specifiedNumberOutOfRangeError(
             name,
             "NUMBER",

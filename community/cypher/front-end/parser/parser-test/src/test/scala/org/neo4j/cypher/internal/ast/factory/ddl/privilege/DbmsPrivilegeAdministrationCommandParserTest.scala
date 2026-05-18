@@ -121,11 +121,11 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
     }
 
   private val databaseActionPrivileges: Seq[(String, Boolean => AdministrationAction, Boolean)] =
-    Seq(
-      ("ALTER DATABASE", AlterDatabaseAction),
-      ("SET DATABASE ACCESS", SetDatabaseAccessAction),
-      ("SET DATABASE DEFAULT LANGUAGE", SetDatabaseDefaultLanguageAction),
-      ("ALTER COMPOSITE DATABASE", AlterCompositeDatabaseAction)
+    Seq[(String, Boolean => AdministrationAction)](
+      ("ALTER DATABASE", AlterDatabaseAction.apply),
+      ("SET DATABASE ACCESS", SetDatabaseAccessAction.apply),
+      ("SET DATABASE DEFAULT LANGUAGE", SetDatabaseDefaultLanguageAction.apply),
+      ("ALTER COMPOSITE DATABASE", AlterCompositeDatabaseAction.apply)
     ).map { case (privilege, action) => (privilege, action, true) }
 
   private def supportedInCypher5(action: AdministrationAction): Boolean =

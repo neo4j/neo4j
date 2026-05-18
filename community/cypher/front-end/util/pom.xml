@@ -241,12 +241,27 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <failOnWarning>true</failOnWarning>
+          <!-- dependency:analyze-only can mark Scala/TeaVM (and related) deps as unused; list them here as groupId:artifactId instead of removing. -->
           <ignoredUnusedDeclaredDependencies>
+            <dependency>org.apache.commons:commons-lang3</dependency>
+            <dependency>org.eclipse.collections:eclipse-collections</dependency>
+            <dependency>org.eclipse.collections:eclipse-collections-api</dependency>
+            <dependency>org.neo4j:neo4j-common</dependency>
+            <dependency>org.neo4j:neo4j-exceptions</dependency>
+            <dependency>org.neo4j:neo4j-gql-status</dependency>
+            <dependency>org.ow2.asm:asm</dependency>
+            <dependency>org.scala-lang:scala-library</dependency>
             <dependency>org.scala-lang:scala3-library_3</dependency>
             <dependency>org.neo4j:neo4j-test-util-scala3</dependency>
             <dependency>co.helmethair:scalatest-junit-runner</dependency>
             <dependency>org.scalatest:scalatest_3</dependency>
+            <dependency>org.teavm:teavm-interop</dependency>
+            <dependency>org.teavm:teavm-metaprogramming-api</dependency>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <ignoredNonTestScopedDependency>org.scala-lang:scala-library</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.scala-lang:scala3-library_3</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
       <!-- JUnit Jupiter must not discover ScalaTest *Test classes (reflection can fail before ScalaTest engine runs). -->

@@ -337,6 +337,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala3-library_3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
       <scope>test</scope>

@@ -79,7 +79,7 @@ sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooli
 // Indexes
 
 sealed trait CreateIndex extends SchemaCommand {
-  override lazy val commandDescription: String = "CREATE " + indexType.command
+  override def commandDescription: String = "CREATE " + indexType.command
 
   // To anonymize the name
   val name: Option[Expression]
@@ -564,7 +564,7 @@ case class DropIndexOnName(
 // Constraints
 
 sealed trait CreateConstraint extends SchemaCommand {
-  override lazy val commandDescription: String = "CREATE CONSTRAINT ... " + constraintType.predicate
+  override def commandDescription: String = "CREATE CONSTRAINT ... " + constraintType.predicate
 
   // To anonymize the name
   val name: Option[Expression]
@@ -879,7 +879,7 @@ case class AlterCurrentGraphType(
   operation: AlterOperation,
   useGraph: Option[GraphSelection] = None
 )(val position: InputPosition) extends SchemaCommand {
-  override val commandDescription: String = "ALTER CURRENT GRAPH TYPE " + operation.name
+  override val commandDescription: String = "ALTER CURRENT GRAPH TYPE " + operation.name()
 
   override def semanticCheck: SemanticCheck =
     requireFeatureSupport(

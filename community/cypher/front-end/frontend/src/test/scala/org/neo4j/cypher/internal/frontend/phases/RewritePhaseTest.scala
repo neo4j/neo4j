@@ -53,7 +53,9 @@ case class PhaseTestConfig(
 trait RewritePhaseTest extends CypherVersionTestSupport {
   self: CypherFunSuite with AstConstructionTestSupport =>
 
-  val prettifier: Prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
+  val prettifier: Prettifier = Prettifier(
+    ExpressionStringifier((e: Expression) => e.asCanonicalStringVal)
+  )
 
   private val plannerName = new PlannerName {
     override def name: String = "fake"

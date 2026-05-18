@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizeHasLabelsAndHasType
@@ -39,7 +40,9 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 class normalizePredicatesTest extends CypherFunSuite with TestName with AstRewritingTestSupport {
 
-  private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
+  private val prettifier = Prettifier(
+    ExpressionStringifier((e: Expression) => e.asCanonicalStringVal)
+  )
 
   def rewriter(semanticState: SemanticState): Rewriter = {
     val anonVarNameGen = new AnonymousVariableNameGenerator

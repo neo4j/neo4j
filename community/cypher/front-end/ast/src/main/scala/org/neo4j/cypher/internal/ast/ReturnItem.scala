@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 
 /**
  *
@@ -160,7 +161,8 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
     case _                  => None
   }
   val name: String = alias.map(_.name) getOrElse { inputText.trim }
-  lazy val groupingName: String = ExpressionStringifier().apply(expression)
+  private val groupingNameLazy: LazyVal[String] = LazyVal(ExpressionStringifier()(expression))
+  def groupingName: String = groupingNameLazy.value
 
   override def asCanonicalStringVal: String = expression.asCanonicalStringVal
 

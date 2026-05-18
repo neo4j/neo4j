@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 
 import scala.collection.immutable.ListSet
 
@@ -57,10 +58,13 @@ sealed trait ProjectionItem {
   def aliasString: String = alias.map(a => s"its alias `${a.name}`").getOrElse("an alias")
 
   // Recognizable expressions
-  lazy val isRecognizable: Boolean = expression match {
-    case _: Literal | _: Parameter | _: LogicalVariable | Property(_: LogicalVariable, _) => true
-    case _                                                                                => false
+  private val isRecognizableLazy: LazyVal[Boolean] = LazyVal {
+    expression match {
+      case _: Literal | _: Parameter | _: LogicalVariable | Property(_: LogicalVariable, _) => true
+      case _                                                                                => false
+    }
   }
+  def isRecognizable: Boolean = isRecognizableLazy.value
 
   private def stringifiedName(expression: Expression): String =
     ProjectionItem.SyntheticNamePrefix +
@@ -68,8 +72,9 @@ sealed trait ProjectionItem {
       ProjectionItem.SyntheticNameSuffix
 
   // Synthetic variable used to refer to a recognizable expression by name when the user did not supply an alias.
-  lazy val referenceableVariable: LogicalVariable =
-    Variable(stringifiedName(expression))(expression.position, isIsolated = false)
+  private val referenceableVariableLazy: LazyVal[LogicalVariable] =
+    LazyVal(Variable(stringifiedName(expression))(expression.position, isIsolated = false))
+  def referenceableVariable: LogicalVariable = referenceableVariableLazy.value
 
   def isSubclauseRecognizable(expr: Expression): Boolean = expr match {
     case lv: LogicalVariable                 => alias.contains(lv) || lv == expression || lv == referenceableVariable
@@ -184,14 +189,17 @@ case class ProjectionSpecification(
     visible.filterNot(v => preferredNames.contains(v.name)) union subclauseScopeSymbols
   }
 
-  private lazy val groupingKeyByExpression: Map[Expression, GroupingKey] =
-    firstWinsMap(groupingKeys.iterator.map(gk => gk.expression -> gk))
+  private val groupingKeyByExpressionLazy: LazyVal[Map[Expression, GroupingKey]] =
+    LazyVal(firstWinsMap(groupingKeys.iterator.map(gk => gk.expression -> gk)))
+  private def groupingKeyByExpression: Map[Expression, GroupingKey] = groupingKeyByExpressionLazy.value
 
-  private lazy val groupingKeyByAlias: Map[LogicalVariable, GroupingKey] =
-    firstWinsMap(groupingKeys.iterator.flatMap(gk => gk.alias.iterator.map(_ -> gk)))
+  private val groupingKeyByAliasLazy: LazyVal[Map[LogicalVariable, GroupingKey]] =
+    LazyVal(firstWinsMap(groupingKeys.iterator.flatMap(gk => gk.alias.iterator.map(_ -> gk))))
+  private def groupingKeyByAlias: Map[LogicalVariable, GroupingKey] = groupingKeyByAliasLazy.value
 
-  private lazy val allItemByExpression: Map[Expression, ProjectionItem] =
-    firstWinsMap(allItems.iterator.map(i => i.expression -> i))
+  private val allItemByExpressionLazy: LazyVal[Map[Expression, ProjectionItem]] =
+    LazyVal(firstWinsMap(allItems.iterator.map(i => i.expression -> i)))
+  private def allItemByExpression: Map[Expression, ProjectionItem] = allItemByExpressionLazy.value
 
   private def firstWinsMap[K, V](pairs: Iterator[(K, V)]): Map[K, V] =
     pairs.foldLeft(Map.empty[K, V]) { case (m, (k, v)) => if (m.contains(k)) m else m.updated(k, v) }

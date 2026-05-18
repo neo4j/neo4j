@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.Rewriter
@@ -39,7 +40,9 @@ trait RewriteTest extends AstRewritingTestSupport {
   def rewriterUnderTest(query: String): Rewriter = rewriterUnderTest
   def rewriterUnderTest(query: Statement): Rewriter = rewriterUnderTest
 
-  val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
+  val prettifier = Prettifier(
+    ExpressionStringifier((e: Expression) => e.asCanonicalStringVal)
+  )
 
   protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val (expected, result) = getRewrite(originalQuery, expectedQuery)

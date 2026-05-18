@@ -117,7 +117,7 @@ object AdministrationCommand extends SemanticAnalysisTooling {
       case _: StringLiteral                            => success
       case p: Parameter if p.parameterType == CTString => success
       case exp => SemanticCheck.error(SemanticError.invalidEntityType(
-          ExpressionStringifier().apply(exp),
+          ExpressionStringifier()(exp),
           value,
           Seq("STRING NOT NULL"),
           s"$value must be a String, or a String parameter.",
@@ -398,14 +398,14 @@ sealed trait UserAuth extends SemanticAnalysisTooling {
   protected def newStyleAuth: List[Auth]
   protected def oldStyleAuth: Option[Auth]
 
-  protected val externalAuths: List[ExternalAuth] =
+  protected[ast] val externalAuths: List[ExternalAuth] =
     newStyleAuth.filter(_.provider != NATIVE_AUTH).map(a => ExternalAuth(a.provider, a.authAttributes)(a.position))
 
   private val allNativeAuths: List[NativeAuth] =
     (newStyleAuth.filter(_.provider == NATIVE_AUTH) ++ oldStyleAuth).map(a => NativeAuth(a.authAttributes)(a.position))
 
   // semantic check makes sure at most one exists
-  protected val nativeAuth: Option[NativeAuth] = allNativeAuths.headOption
+  protected[ast] val nativeAuth: Option[NativeAuth] = allNativeAuths.headOption
 
   protected val allAuths: Seq[AuthImpl] = externalAuths ++ allNativeAuths
 
@@ -1902,7 +1902,7 @@ final case class CreateDatabase(
   override def semanticCheck: SemanticCheck =
     (ifExistsDo match {
       case IfExistsInvalidSyntax =>
-        val name = Prettifier.escapeName(dbName)
+        val name = Prettifier.escapeDatabaseName(dbName)
         SemanticCheck.error(SemanticError.bothOrReplaceAndIfNotExists("database", name, position))
       case _ =>
         super.semanticCheck chain
@@ -1962,7 +1962,7 @@ final case class CreateCompositeDatabase(
   override def semanticCheck: SemanticCheck = SemanticCheck.fromContext { context =>
     ifExistsDo match {
       case IfExistsInvalidSyntax =>
-        val name = Prettifier.escapeName(databaseName)
+        val name = Prettifier.escapeDatabaseName(databaseName)
         SemanticCheck.error(SemanticError.bothOrReplaceAndIfNotExists("composite database", name, position))
       case _ =>
         databaseName match {
@@ -2232,7 +2232,7 @@ final case class CreateLocalDatabaseAlias(
     case IfExistsInvalidSyntax =>
       SemanticCheck.error(SemanticError.bothOrReplaceAndIfNotExists(
         "alias",
-        Prettifier.escapeName(aliasName),
+        Prettifier.escapeDatabaseName(aliasName),
         position
       ))
     case _ => super.semanticCheck chain
@@ -2291,7 +2291,7 @@ final case class CreateRemoteDatabaseAlias(
     case IfExistsInvalidSyntax =>
       SemanticCheck.error(SemanticError.bothOrReplaceAndIfNotExists(
         "alias",
-        Prettifier.escapeName(aliasName),
+        Prettifier.escapeDatabaseName(aliasName),
         position
       ))
     case _ => AliasDriverSettingsCheck.findInvalidDriverSettings(driverSettings) match {
@@ -2365,10 +2365,10 @@ final case class AlterRemoteDatabaseAlias(
           url.isDefined || username.isDefined || password.isDefined || driverSettings.isDefined || defaultLanguage.isDefined
         if (isLocalAlias && isRemoteAlias) {
           AdministrationCommandSemanticAnalysis.invalidInputError(
-            Prettifier.escapeName(aliasName),
+            Prettifier.escapeDatabaseName(aliasName),
             "database alias",
             List("url of a remote alias target"),
-            s"Failed to alter the specified database alias '${Prettifier.escapeName(aliasName)}': url needs to be defined to alter a remote alias target.",
+            s"Failed to alter the specified database alias '${Prettifier.escapeDatabaseName(aliasName)}': url needs to be defined to alter a remote alias target.",
             position
           )
         } else {

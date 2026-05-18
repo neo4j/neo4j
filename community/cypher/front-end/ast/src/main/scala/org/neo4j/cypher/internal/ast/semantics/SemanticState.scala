@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.util.CrossCompilation
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.helpers.TreeElem
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -124,31 +125,40 @@ object ExpressionTypeInfo {
    *
    * By caching ExpressionTypeInfo we can reuse instances that e.g. simply express that an Expression is a Boolean.
    * For large and complex queries this can significantly reduce memory consumption.
+   *
+   * A bounded LRU is used so that the cache cannot grow without limit on long-lived JVM processes.
+   * Caffeine is not used under TeaVM (semantic analysis JS build); see [[CrossCompilation.isTeaVM]].
    */
-  private lazy val cache: Cache[(TypeSpec, Option[TypeSpec]), ExpressionTypeInfo] =
-    Caffeine.newBuilder()
-      .maximumSize(100)
-      .build()
+  private def makeCache(): Cache[(TypeSpec, Option[TypeSpec]), ExpressionTypeInfo] = {
+    if (CrossCompilation.isTeaVM()) {
+      null
+    } else {
+      Caffeine
+        .newBuilder()
+        .maximumSize(100)
+        .build[(TypeSpec, Option[TypeSpec]), ExpressionTypeInfo]()
+    }
+  }
+
+  private val cache: LazyVal[Cache[(TypeSpec, Option[TypeSpec]), ExpressionTypeInfo]] = LazyVal(makeCache())
 
   def apply(specified: TypeSpec, expected: Option[TypeSpec] = None): ExpressionTypeInfo =
     if (CrossCompilation.isTeaVM()) {
       new ExpressionTypeInfo(specified, expected)
     } else {
-      cache.get((specified, expected), _ => new ExpressionTypeInfo(specified, expected))
+      cache.value.get((specified, expected), _ => new ExpressionTypeInfo(specified, expected))
     }
 }
 
 final case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec]) {
 
-  lazy val actual: TypeSpec =
-    expected
-      .map(specified intersectOrCoerce _)
-      .getOrElse(specified)
+  private val actualLazy: LazyVal[TypeSpec] =
+    LazyVal(expected.map(specified intersectOrCoerce _).getOrElse(specified))
+  def actual: TypeSpec = actualLazy.value
 
-  lazy val actualNoCoercion: TypeSpec =
-    expected
-      .map(specified intersect _)
-      .getOrElse(specified)
+  private val actualNoCoercionLazy: LazyVal[TypeSpec] =
+    LazyVal(expected.map(specified intersect _).getOrElse(specified))
+  def actualNoCoercion: TypeSpec = actualNoCoercionLazy.value
 
   def expect(types: TypeSpec): ExpressionTypeInfo = ExpressionTypeInfo(specified, Some(types))
 
@@ -379,11 +389,12 @@ object SemanticState {
 
   implicit val ScopeZipper: TopLevelScopeZipper.type = TopLevelScopeZipper
 
-  lazy val clean: SemanticState = SemanticState(
+  private val cleanLazy: LazyVal[SemanticState] = LazyVal(SemanticState(
     Scope.empty.location,
     ASTAnnotationMap.empty,
     ASTAnnotationMap.empty
-  )
+  ))
+  def clean: SemanticState = cleanLazy.value
 
   def cleanWithFeatures(features: Set[SemanticFeature]): SemanticState = SemanticState(
     Scope.empty.location,

@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.util.CallableName
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ProcedureName
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -145,7 +146,7 @@ case class LocalProcedureDefinition(
             queryOuterState, // outer = clean+params (used for imports + shadowing *warnings*)
             definitionOuterState,
             optional = false
-          ) ifOkChain checkReturnColumnsAgainstOutputSignature
+          ) ifOkChain checkReturnColumnsAgainstOutputSignature()
     } yield {
       innerChecked
     }
@@ -272,7 +273,8 @@ case class LocalFieldSignature(
   /**
    * Returns value of `typ` if non-empty, otherwise ctAny.
    */
-  lazy val getType: CypherType = typ.getOrElse(CTAny)
+  private val getTypeLazy: LazyVal[CypherType] = LazyVal(typ.getOrElse(CTAny))
+  override def getType: CypherType = getTypeLazy.value
 
   def hasDefault: Boolean = default.nonEmpty
 }

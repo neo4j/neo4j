@@ -227,7 +227,7 @@ case class GraphType(types: Set[GraphTypeEntry], constraints: Set[GraphTypeConst
   }
 
   override def semanticCheck: SemanticCheck =
-    semanticCheck(types) chain semanticCheck(constraints) chain checkElements chain checkConstraints
+    semanticCheck(types) chain semanticCheck(constraints) chain checkElements() chain checkConstraints()
 }
 
 object GraphType {

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState.RecordedScopes
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Ref
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 
 case class ScopeState(
   workingScope: WorkingScope,
@@ -30,8 +31,11 @@ case class ScopeState(
   explainScope: Option[WorkingScope] = None
 ) {
 
-  private lazy val recordedScopesByStructure: Map[PositionedNode[ASTNode], WorkingScope] =
-    recordedScopes.iterator.map { case (ref, scope) => PositionedNode(ref.value) -> scope }.toMap
+  private val recordedScopesByStructureLazy: LazyVal[Map[PositionedNode[ASTNode], WorkingScope]] =
+    LazyVal(recordedScopes.iterator.map { case (ref, scope) => PositionedNode(ref.value) -> scope }.toMap)
+
+  private def recordedScopesByStructure: Map[PositionedNode[ASTNode], WorkingScope] =
+    recordedScopesByStructureLazy.value
 
   private def scopeOf(ast: ASTNode): WorkingScope =
     recordedScopes.getOrElse(Ref(ast), recordedScopesByStructure(PositionedNode(ast)))

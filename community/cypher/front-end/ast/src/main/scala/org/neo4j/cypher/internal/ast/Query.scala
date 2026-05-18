@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.notification.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.helpers.LazyVal
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.gqlstatus.GqlHelper
 import org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME
@@ -268,7 +269,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def getEmittingResultClauses: ResultEmitter = ResultEmitter.SingleClause(clauses.last)
 
-  lazy val partitionedClauses: SingleQuery.PartitionedClauses = SingleQuery.partitionClauses(clauses)
+  private val partitionedClausesLazy: LazyVal[SingleQuery.PartitionedClauses] =
+    LazyVal(SingleQuery.partitionClauses(clauses))
+  def partitionedClauses: SingleQuery.PartitionedClauses = partitionedClausesLazy.value
 
   /**
    * The query is correlated if it imports variables from a parent query, this can happen if:
@@ -951,17 +954,25 @@ object SingleQuery {
     clausesExceptImportingWithAndLeadingGraphSelection: Seq[Clause]
   ) {
 
-    lazy val leadingGraphSelection: Option[GraphSelection] =
-      initialGraphSelection.orElse(subsequentGraphSelection)
+    private val leadingGraphSelectionLazy: LazyVal[Option[GraphSelection]] =
+      LazyVal(initialGraphSelection.orElse(subsequentGraphSelection))
+    def leadingGraphSelection: Option[GraphSelection] = leadingGraphSelectionLazy.value
 
-    lazy val clausesExceptImportingWithAndInitialGraphSelection: Seq[Clause] =
-      subsequentGraphSelection.toSeq ++ clausesExceptImportingWithAndLeadingGraphSelection
+    private val clausesExceptImportingWithAndInitialGraphSelectionLazy: LazyVal[Seq[Clause]] =
+      LazyVal(subsequentGraphSelection.toSeq ++ clausesExceptImportingWithAndLeadingGraphSelection)
 
-    lazy val clausesExceptInitialGraphSelection: Seq[Clause] =
-      importingWith.toSeq ++ subsequentGraphSelection ++ clausesExceptImportingWithAndLeadingGraphSelection
+    def clausesExceptImportingWithAndInitialGraphSelection: Seq[Clause] =
+      clausesExceptImportingWithAndInitialGraphSelectionLazy.value
 
-    lazy val clausesExceptImportingWith: Seq[Clause] =
-      initialGraphSelection.toSeq ++ subsequentGraphSelection ++ clausesExceptImportingWithAndLeadingGraphSelection
+    private val clausesExceptInitialGraphSelectionLazy: LazyVal[Seq[Clause]] =
+      LazyVal(importingWith.toSeq ++ subsequentGraphSelection ++ clausesExceptImportingWithAndLeadingGraphSelection)
+    def clausesExceptInitialGraphSelection: Seq[Clause] = clausesExceptInitialGraphSelectionLazy.value
+
+    private val clausesExceptImportingWithLazy: LazyVal[Seq[Clause]] =
+      LazyVal(
+        initialGraphSelection.toSeq ++ subsequentGraphSelection ++ clausesExceptImportingWithAndLeadingGraphSelection
+      )
+    def clausesExceptImportingWith: Seq[Clause] = clausesExceptImportingWithLazy.value
   }
 
   private def partitionClauses(clauses: Seq[Clause]): PartitionedClauses =
@@ -1385,7 +1396,7 @@ sealed trait UnmappedUnion extends Union {
       res._unionMappings = this.unionMappings
     }
 
-    res
+    res.asInstanceOf[UnmappedUnion.this.type]
   }
 
   override def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
@@ -1793,7 +1804,7 @@ case class NextStatement(queries: Seq[Query])(val position: InputPosition) exten
           } chain
           check(lastQuery)
       )) chain
-      noteFinalScope chain
+      noteFinalScope() chain
       recordCurrentScope(this)
   }
 

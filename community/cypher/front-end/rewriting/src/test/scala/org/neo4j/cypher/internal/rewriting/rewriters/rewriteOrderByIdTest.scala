@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.RewriteOrderById
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
@@ -28,7 +29,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class rewriteOrderByIdTest extends CypherFunSuite with AstRewritingTestSupport {
 
-  private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
+  private val prettifier = Prettifier(
+    ExpressionStringifier((e: Expression) => e.asCanonicalStringVal)
+  )
 
   test("Rewrites ORDER BY ID(node)") {
     assertRewrite("MATCH (n) RETURN n ORDER BY id(n)", "MATCH (n) RETURN n ORDER BY n")
