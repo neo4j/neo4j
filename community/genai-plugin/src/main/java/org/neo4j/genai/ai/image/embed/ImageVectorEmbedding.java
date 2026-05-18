@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.ai.text.embed.VectorEmbedding;
+import org.neo4j.genai.util.GenAIProcedureException;
 import org.neo4j.genai.util.HttpService;
 import org.neo4j.genai.util.ResourceLoader;
 import org.neo4j.genai.util.monitor.Monitors;
@@ -146,12 +147,14 @@ public class ImageVectorEmbedding {
                     ResourceLoader.openResource(resource, urlAccessChecker, genAIConfig, securityContext)) {
                 return Base64.getEncoder().encodeToString(is.readAllBytes());
             }
+        } catch (GenAIProcedureException e) {
+            throw e;
         } catch (URLAccessValidationError | SecurityException | AuthorizationViolationException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new GenAIProcedureException(e.getMessage(), e);
         } catch (NoSuchFileException | FileNotFoundException e) {
-            throw new RuntimeException("File not found: " + resource);
+            throw new GenAIProcedureException("File not found: " + resource);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read resource: " + resource, e);
+            throw new GenAIProcedureException("Failed to read resource: " + resource, e);
         }
     }
 

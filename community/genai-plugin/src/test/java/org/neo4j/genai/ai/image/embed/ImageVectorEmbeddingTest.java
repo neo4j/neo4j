@@ -21,6 +21,7 @@ package org.neo4j.genai.ai.image.embed;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -36,6 +38,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.collections.api.factory.Maps;
 import org.junit.jupiter.api.AfterAll;
@@ -464,6 +469,161 @@ public class ImageVectorEmbeddingTest implements GenAITestExtension {
         assertThatThrownBy(() -> db.executeTransactionally(
                         query, Map.of(), r -> r.stream().toList()))
                 .hasMessageContaining("File not found: file:///does-not-exist.bin");
+    }
+
+    @Test
+    void shouldEmbedLocalZipFile() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/test-image.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("test-image.bin"));
+            zos.write(new byte[] {116, 101, 115, 116});
+            zos.closeEntry();
+        }
+
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.image.embed('file:///test-image.zip', 'vertexai', conf) IS :: VECTOR<FLOAT32> AS result
+                """;
+        assertThat(db.executeTransactionally(query, Map.of(), consume()))
+                .as("Query:%n```%n%s%n```%n", query)
+                .singleElement(resultMap())
+                .containsEntry("result", true);
+    }
+
+    @Test
+    void shouldEmbedZipFromResource() throws IOException {
+        Path zipFile = testDirectory.directory("inside").resolve("pelle.jpeg.zip");
+        Files.copy(getClass().getResourceAsStream("/org/neo4j/genai/ai/image/embed/pelle.jpeg.zip"), zipFile);
+
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.image.embed('file:///pelle.jpeg.zip', 'vertexai', conf) IS :: VECTOR<FLOAT32> AS result
+                """;
+
+        wireMock.stubFor(post(urlEqualTo(
+                        "/v1/projects/gem/locations/tasman/publishers/google/models/multimodalembedding:predict"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"predictions\": [{\"imageEmbedding\": [" + "0.1,".repeat(127) + "0.1]}]}")));
+
+        assertThat(db.executeTransactionally(query, Map.of(), consume()))
+                .as("Query:%n```%n%s%n```%n", query)
+                .singleElement(resultMap())
+                .containsEntry("result", true);
+    }
+
+    @Test
+    void shouldEmbedLocalGzipFile() throws IOException {
+        Path gzFile = testDirectory.createFile("inside/test-image.bin.gz");
+        try (var gos = new GZIPOutputStream(Files.newOutputStream(gzFile))) {
+            gos.write(new byte[] {116, 101, 115, 116});
+        }
+
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.image.embed('file:///test-image.bin.gz', 'vertexai', conf) IS :: VECTOR<FLOAT32> AS result
+                """;
+        assertThat(db.executeTransactionally(query, Map.of(), consume()))
+                .as("Query:%n```%n%s%n```%n", query)
+                .singleElement(resultMap())
+                .containsEntry("result", true);
+    }
+
+    @Test
+    void shouldEmbedZipFileFromWebUrl() throws IOException {
+        byte[] zipBytes = createZipBytes("test-image.bin", new byte[] {116, 101, 115, 116});
+        this.wireMock.stubFor(get(urlEqualTo("/web-test.zip"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/zip")
+                        .withBody(zipBytes)));
+
+        String webUrl = this.wireMock.baseUrl() + "/web-test.zip";
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.image.embed($url, 'vertexai', conf) IS :: VECTOR<FLOAT32> AS result
+                """;
+        assertThat(db.executeTransactionally(query, Map.of("url", webUrl), consume()))
+                .as("Query:%n```%n%s%n```%n", query)
+                .singleElement(resultMap())
+                .containsEntry("result", true);
+    }
+
+    @Test
+    void shouldEmbedGzipFileFromWebUrl() throws IOException {
+        byte[] gzBytes = createGzipBytes(new byte[] {116, 101, 115, 116});
+        this.wireMock.stubFor(get(urlEqualTo("/web-test.bin.gz"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/gzip")
+                        .withBody(gzBytes)));
+
+        String webUrl = this.wireMock.baseUrl() + "/web-test.bin.gz";
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.image.embed($url, 'vertexai', conf) IS :: VECTOR<FLOAT32> AS result
+                """;
+        assertThat(db.executeTransactionally(query, Map.of("url", webUrl), consume()))
+                .as("Query:%n```%n%s%n```%n", query)
+                .singleElement(resultMap())
+                .containsEntry("result", true);
+    }
+
+    @Test
+    void shouldFailForZipWithMultipleEntries() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/multiple.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("file1.bin"));
+            zos.write(new byte[] {1, 2});
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("file2.bin"));
+            zos.write(new byte[] {3, 4});
+            zos.closeEntry();
+        }
+
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.image.embed('file:///multiple.zip', 'vertexai', conf) AS result
+                """;
+        assertThatThrownBy(() -> db.executeTransactionally(
+                        query, Map.of(), r -> r.stream().toList()))
+                .hasMessageContaining("ZIP archive contains more than one file");
+    }
+
+    @Test
+    void shouldFailForZipWithNoSuitableEntry() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/empty.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("emptydir/"));
+            zos.closeEntry();
+        }
+
+        final var query = """
+                WITH { token: 'dummy-vertex-token', model: 'multimodalembedding', region: 'tasman', project: 'gem', publisher: 'google' } AS conf
+                RETURN ai.image.embed('file:///empty.zip', 'vertexai', conf) AS result
+                """;
+        assertThatThrownBy(() -> db.executeTransactionally(
+                        query, Map.of(), r -> r.stream().toList()))
+                .hasMessageContaining("No suitable file found in ZIP archive");
+    }
+
+    private static byte[] createZipBytes(String entryName, byte[] content) throws IOException {
+        var baos = new ByteArrayOutputStream();
+        try (var zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry(entryName));
+            zos.write(content);
+            zos.closeEntry();
+        }
+        return baos.toByteArray();
+    }
+
+    private static byte[] createGzipBytes(byte[] content) throws IOException {
+        var baos = new ByteArrayOutputStream();
+        try (var gos = new GZIPOutputStream(baos)) {
+            gos.write(content);
+        }
+        return baos.toByteArray();
     }
 
     @Test

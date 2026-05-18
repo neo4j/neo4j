@@ -30,11 +30,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -939,5 +944,187 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
         var row = result.getFirst();
         assertThat(row.get("resource")).isEqualTo(fileText);
         assertThat(row.get("vector")).isNotNull();
+    }
+
+    @Test
+    void shouldEmbedLocalZipFile() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/test.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("content.txt"));
+            zos.write(fileText.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+
+        var result = db.executeTransactionally(
+                QUERY, Map.of("file", "file:///test.zip"), res -> res.stream().toList());
+
+        assertThat(result).hasSize(1);
+        var row = result.getFirst();
+        assertThat(row.get("resource")).isEqualTo(fileText);
+        assertThat(row.get("vector")).isNotNull();
+    }
+
+    @Test
+    void shouldEmbedLocalGzipFile() throws IOException {
+        Path gzFile = testDirectory.createFile("inside/test.txt.gz");
+        try (var gos = new GZIPOutputStream(Files.newOutputStream(gzFile))) {
+            gos.write(fileText.getBytes(StandardCharsets.UTF_8));
+        }
+
+        var result = db.executeTransactionally(QUERY, Map.of("file", "file:///test.txt.gz"), res -> res.stream()
+                .toList());
+
+        assertThat(result).hasSize(1);
+        var row = result.getFirst();
+        assertThat(row.get("resource")).isEqualTo(fileText);
+        assertThat(row.get("vector")).isNotNull();
+    }
+
+    @Test
+    void shouldEmbedZipFileFromWebUrl() throws IOException {
+        byte[] zipBytes = createZipBytes("content.txt", fileText);
+        this.wireMock.stubFor(get(urlEqualTo("/web-test.zip"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/zip")
+                        .withBody(zipBytes)));
+
+        String webUrl = this.wireMock.baseUrl() + "/web-test.zip";
+        var result = db.executeTransactionally(
+                QUERY, Map.of("file", webUrl), res -> res.stream().toList());
+
+        assertThat(result).hasSize(1);
+        var row = result.getFirst();
+        assertThat(row.get("resource")).isEqualTo(fileText);
+        assertThat(row.get("vector")).isNotNull();
+    }
+
+    @Test
+    void shouldEmbedGzipFileFromWebUrl() throws IOException {
+        byte[] gzBytes = createGzipBytes(fileText);
+        this.wireMock.stubFor(get(urlEqualTo("/web-test.txt.gz"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/gzip")
+                        .withBody(gzBytes)));
+
+        String webUrl = this.wireMock.baseUrl() + "/web-test.txt.gz";
+        var result = db.executeTransactionally(
+                QUERY, Map.of("file", webUrl), res -> res.stream().toList());
+
+        assertThat(result).hasSize(1);
+        var row = result.getFirst();
+        assertThat(row.get("resource")).isEqualTo(fileText);
+        assertThat(row.get("vector")).isNotNull();
+    }
+
+    @Test
+    void shouldFailForZipWithMultipleEntries() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/multiple.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("file1.txt"));
+            zos.write("content1".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("file2.txt"));
+            zos.write("content2".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+
+        assertThatThrownBy(() ->
+                        db.executeTransactionally(QUERY, Map.of("file", "file:///multiple.zip"), res -> res.stream()
+                                .toList()))
+                .hasMessageContaining("ZIP archive contains more than one file");
+    }
+
+    @Test
+    void shouldFailForZipWithNoSuitableEntry() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/empty.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("emptydir/"));
+            zos.closeEntry();
+        }
+
+        assertThatThrownBy(() -> db.executeTransactionally(QUERY, Map.of("file", "file:///empty.zip"), res -> {
+                    res.accept(row -> true);
+                    return null;
+                }))
+                .hasMessageContaining("No suitable file found in ZIP archive");
+    }
+
+    @Test
+    void shouldSkipMacOsJunkAndUseFirstSuitableZipEntry() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/macos.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("__MACOSX/._content.txt"));
+            zos.write(new byte[0]);
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("content.txt"));
+            zos.write(fileText.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+
+        var result = db.executeTransactionally(
+                QUERY, Map.of("file", "file:///macos.zip"), res -> res.stream().toList());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().get("resource")).isEqualTo(fileText);
+    }
+
+    @Test
+    void shouldFailForLargeZipFile() throws IOException {
+        Path zipFile = testDirectory.createFile("inside/large.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            zos.putNextEntry(new ZipEntry("large.txt"));
+            // 100 MiB + 1 byte
+            long size = 100 * 1024 * 1024 + 1;
+            byte[] buffer = new byte[8192];
+            for (long i = 0; i < size; i += buffer.length) {
+                int toWrite = (int) Math.min(buffer.length, size - i);
+                zos.write(buffer, 0, toWrite);
+            }
+            zos.closeEntry();
+        }
+
+        assertThatThrownBy(
+                        () -> db.executeTransactionally(QUERY, Map.of("file", "file:///large.zip"), res -> res.stream()
+                                .toList()))
+                .hasMessageContaining("Decompressed file size exceeds the limit of 100.0MiB");
+    }
+
+    @Test
+    void shouldFailForLargeGzipFile() throws IOException {
+        Path gzipFile = testDirectory.createFile("inside/large.gz");
+        try (var gos = new GZIPOutputStream(Files.newOutputStream(gzipFile))) {
+            // 100 MiB + 1 byte
+            long size = 100 * 1024 * 1024 + 1;
+            byte[] buffer = new byte[8192];
+            for (long i = 0; i < size; i += buffer.length) {
+                int toWrite = (int) Math.min(buffer.length, size - i);
+                gos.write(buffer, 0, toWrite);
+            }
+        }
+
+        assertThatThrownBy(
+                        () -> db.executeTransactionally(QUERY, Map.of("file", "file:///large.gz"), res -> res.stream()
+                                .toList()))
+                .hasMessageContaining("Decompressed file size exceeds the limit of 100.0MiB");
+    }
+
+    private static byte[] createZipBytes(String entryName, String content) throws IOException {
+        var baos = new ByteArrayOutputStream();
+        try (var zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry(entryName));
+            zos.write(content.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+        return baos.toByteArray();
+    }
+
+    private static byte[] createGzipBytes(String content) throws IOException {
+        var baos = new ByteArrayOutputStream();
+        try (var gos = new GZIPOutputStream(baos)) {
+            gos.write(content.getBytes(StandardCharsets.UTF_8));
+        }
+        return baos.toByteArray();
     }
 }

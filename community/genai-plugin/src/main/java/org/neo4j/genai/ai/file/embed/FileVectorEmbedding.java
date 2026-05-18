@@ -36,6 +36,7 @@ import org.neo4j.genai.GenAIConfig;
 import org.neo4j.genai.ai.text.embed.VectorEmbedding;
 import org.neo4j.genai.ai.text.tokenChunking.RecursiveTokenSplitter;
 import org.neo4j.genai.ai.text.tokenChunking.TextChunkConfig;
+import org.neo4j.genai.util.GenAIProcedureException;
 import org.neo4j.genai.util.ResourceLoader;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.security.URLAccessChecker;
@@ -104,12 +105,14 @@ public class FileVectorEmbedding {
         InputStream inputStream;
         try {
             inputStream = openFile(file);
+        } catch (GenAIProcedureException e) {
+            throw e;
         } catch (URLAccessValidationError | SecurityException | AuthorizationViolationException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new GenAIProcedureException(e.getMessage(), e);
         } catch (NoSuchFileException | FileNotFoundException e) {
-            throw new RuntimeException("File not found: " + file);
+            throw new GenAIProcedureException("File not found: " + file);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to read file: " + file, e);
+            throw new GenAIProcedureException("Failed to read file: " + file, e);
         }
 
         try {
