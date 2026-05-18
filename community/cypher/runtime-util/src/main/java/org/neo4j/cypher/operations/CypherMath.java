@@ -65,13 +65,6 @@ public final class CypherMath {
             return NO_VALUE;
         }
 
-        // Generic error message expected type
-        List<String> expectedTypes = List.of(
-                FloatingPointValue.CYPHER_TYPE_NAME,
-                IntegralValue.CYPHER_TYPE_NAME,
-                StringValue.CYPHER_TYPE_NAME,
-                ListValue.CYPHER_TYPE_NAME);
-
         if (lhs instanceof NumberValue l && rhs instanceof NumberValue r) {
             try {
                 return l.plus(r);
@@ -122,12 +115,8 @@ public final class CypherMath {
         }
 
         // Temporal values
-        if (lhs instanceof TemporalValue<?, ?> lhsTemporal) {
-            if (rhs instanceof DurationValue rhsDuration) {
-                return lhsTemporal.plus(rhsDuration);
-            }
-            expectedTypes =
-                    List.of(StringValue.CYPHER_TYPE_NAME, DurationValue.CYPHER_TYPE_NAME, ListValue.CYPHER_TYPE_NAME);
+        if (lhs instanceof TemporalValue<?, ?> lhsTemporal && rhs instanceof DurationValue rhsDuration) {
+            return lhsTemporal.plus(rhsDuration);
         }
         if (lhs instanceof DurationValue lhsDuration) {
             if (rhs instanceof TemporalValue<?, ?> rhsTemporal) {
@@ -136,6 +125,14 @@ public final class CypherMath {
             if (rhs instanceof DurationValue rhsDuration) {
                 return lhsDuration.add(rhsDuration);
             }
+        }
+
+        // No matching case — build the expectedTypes list specific to the lhs type and throw.
+        final List<String> expectedTypes;
+        if (lhs instanceof TemporalValue<?, ?>) {
+            expectedTypes =
+                    List.of(StringValue.CYPHER_TYPE_NAME, DurationValue.CYPHER_TYPE_NAME, ListValue.CYPHER_TYPE_NAME);
+        } else if (lhs instanceof DurationValue) {
             expectedTypes = List.of(
                     StringValue.CYPHER_TYPE_NAME,
                     DurationValue.CYPHER_TYPE_NAME,
@@ -145,12 +142,18 @@ public final class CypherMath {
                     DateTimeValue.CYPHER_TYPE_NAME,
                     LocalDateTimeValue.CYPHER_TYPE_NAME,
                     ListValue.CYPHER_TYPE_NAME);
-        }
-
-        // Only lists can be added to nodes, relationships and maps.
-        // Positive cases are covered under 'List addition' above
-        if (lhs instanceof VirtualNodeValue || lhs instanceof VirtualRelationshipValue || lhs instanceof MapValue) {
+        } else if (lhs instanceof VirtualNodeValue
+                || lhs instanceof VirtualRelationshipValue
+                || lhs instanceof MapValue) {
+            // Only lists can be added to nodes, relationships and maps.
+            // Positive cases are covered under 'List addition' above.
             expectedTypes = List.of(ListValue.CYPHER_TYPE_NAME);
+        } else {
+            expectedTypes = List.of(
+                    FloatingPointValue.CYPHER_TYPE_NAME,
+                    IntegralValue.CYPHER_TYPE_NAME,
+                    StringValue.CYPHER_TYPE_NAME,
+                    ListValue.CYPHER_TYPE_NAME);
         }
 
         if (lhs == null) {
@@ -229,10 +232,6 @@ public final class CypherMath {
             return NO_VALUE;
         }
 
-        // Generic error message expected type
-        List<String> expectedTypes = List.of(
-                FloatingPointValue.CYPHER_TYPE_NAME, IntegralValue.CYPHER_TYPE_NAME, DurationValue.CYPHER_TYPE_NAME);
-
         if (lhs instanceof NumberValue lhsNumber && rhs instanceof NumberValue rhsNumber) {
             try {
                 return lhsNumber.times(rhsNumber);
@@ -241,16 +240,22 @@ public final class CypherMath {
             }
         }
         // Temporal values
-        if (lhs instanceof DurationValue lhsDuration) {
-            if (rhs instanceof NumberValue rhsNumber) {
-                return lhsDuration.mul(rhsNumber);
-            }
-            expectedTypes = List.of(FloatingPointValue.CYPHER_TYPE_NAME, IntegralValue.CYPHER_TYPE_NAME);
+        if (lhs instanceof DurationValue lhsDuration && rhs instanceof NumberValue rhsNumber) {
+            return lhsDuration.mul(rhsNumber);
         }
-        if (rhs instanceof DurationValue rhsDuration) {
-            if (lhs instanceof NumberValue lhsNumber) {
-                return rhsDuration.mul(lhsNumber);
-            }
+        if (rhs instanceof DurationValue rhsDuration && lhs instanceof NumberValue lhsNumber) {
+            return rhsDuration.mul(lhsNumber);
+        }
+
+        // No matching case — build the expectedTypes list specific to the lhs type and throw.
+        final List<String> expectedTypes;
+        if (lhs instanceof DurationValue) {
+            expectedTypes = List.of(FloatingPointValue.CYPHER_TYPE_NAME, IntegralValue.CYPHER_TYPE_NAME);
+        } else {
+            expectedTypes = List.of(
+                    FloatingPointValue.CYPHER_TYPE_NAME,
+                    IntegralValue.CYPHER_TYPE_NAME,
+                    DurationValue.CYPHER_TYPE_NAME);
         }
 
         if (lhs == null) {
