@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -38,32 +36,21 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
-import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
-import org.neo4j.bolt.testing.client.UnwiredTestConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.boltmessages.AccessMode;
 import org.neo4j.boltmessages.notifications.DisabledNotificationsConfig;
-import org.neo4j.boltmessages.request.authentication.HelloMessage;
-import org.neo4j.boltmessages.request.authentication.LogonMessage;
-import org.neo4j.boltmessages.request.connection.RoutingContext;
 import org.neo4j.boltmessages.request.streaming.PullMessage;
 import org.neo4j.boltmessages.request.transaction.BeginMessage;
 import org.neo4j.boltmessages.request.transaction.CommitMessage;
 import org.neo4j.boltmessages.request.transaction.RollbackMessage;
 import org.neo4j.boltmessages.request.transaction.RunMessage;
-import org.neo4j.boltmessages.response.RecordMessage;
-import org.neo4j.boltmessages.response.ResponseMessage;
-import org.neo4j.boltmessages.response.SuccessMessage;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.notifications.StandardGqlStatusObject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
@@ -80,16 +67,11 @@ import org.neo4j.values.virtual.RelationshipValue;
 @IncludeTransport({TransportType.LOCAL})
 @ParameterizedClass
 @MethodSource("values")
-public class Neo4jValuesLocalChannelIT {
+public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
     private final AnyValue param;
 
     public Neo4jValuesLocalChannelIT(AnyValue param) {
         this.param = param;
-    }
-
-    @SettingsFunction
-    protected void customizeSettings(Map<Setting<?>, Object> settings) {
-        settings.put(BoltConnectorInternalSettings.enable_object_messages_local_connector, true);
     }
 
     @TransportTest
@@ -268,140 +250,6 @@ public class Neo4jValuesLocalChannelIT {
         Assumptions.assumeTrue(
                 !(this.param instanceof MapValue) && !(param instanceof ListValue),
                 "Maps and heterogeneous lists are not supported as Node properties");
-    }
-
-    @SafeVarargs
-    private static void assertSuccess(ResponseMessage message, Consumer<SuccessMessage>... assertions) {
-        Assertions.assertInstanceOf(SuccessMessage.class, message);
-        SuccessMessage successMessage = (SuccessMessage) message;
-        for (Consumer<SuccessMessage> assertion : assertions) {
-            assertion.accept(successMessage);
-        }
-    }
-
-    @SafeVarargs
-    private static Consumer<SuccessMessage> assertSuccessHasFields(String... fields) {
-        return assertSuccessField("fields", anyValue -> {
-            Assertions.assertInstanceOf(ListValue.class, anyValue);
-            var fieldsList = (ListValue) anyValue;
-            Assertions.assertEquals(fields.length, fieldsList.intSize());
-            for (var i = 0; i < fields.length; i++) {
-                Assertions.assertInstanceOf(StringValue.class, fieldsList.value(i));
-                var field = ((StringValue) fieldsList.value(i)).stringValue();
-                Assertions.assertEquals(fields[i], field);
-            }
-        });
-    }
-
-    private static Consumer<SuccessMessage> assertSuccessHasTFirst() {
-        return assertSuccessField("t_first", anyValue -> Assertions.assertInstanceOf(LongValue.class, anyValue));
-    }
-
-    private static Consumer<SuccessMessage> assertSuccessHasTLast() {
-        return assertSuccessField("t_last", anyValue -> Assertions.assertInstanceOf(LongValue.class, anyValue));
-    }
-
-    private static Consumer<SuccessMessage> assertSuccessDb(String database) {
-        return assertSuccessField("db", anyValue -> {
-            Assertions.assertInstanceOf(StringValue.class, anyValue);
-            Assertions.assertEquals(database, ((StringValue) anyValue).stringValue());
-        });
-    }
-
-    private static Consumer<SuccessMessage> assertSuccessType(String type) {
-        return assertSuccessField("type", anyValue -> {
-            Assertions.assertInstanceOf(StringValue.class, anyValue);
-            Assertions.assertEquals(type, ((StringValue) anyValue).stringValue());
-        });
-    }
-
-    private static Consumer<SuccessMessage> assertSuccessHasBookmark() {
-        return assertSuccessField("bookmark", anyValue -> {
-            Assertions.assertInstanceOf(StringValue.class, anyValue);
-            Assertions.assertFalse(((StringValue) anyValue).stringValue().isEmpty());
-        });
-    }
-
-    @SafeVarargs
-    private static Consumer<SuccessMessage> assertSuccessHasStatuses(Map<String, AnyValue>... statuses) {
-        return assertSuccessField("statuses", anyValue -> {
-            Assertions.assertInstanceOf(ListValue.class, anyValue);
-            var statusesList = (ListValue) anyValue;
-            Assertions.assertEquals(statuses.length, statusesList.intSize());
-            for (var i = 0; i < statuses.length; i++) {
-                Assertions.assertInstanceOf(MapValue.class, statusesList.value(i));
-                var actual = ((MapValue) statusesList.value(i));
-                for (var key : actual.keySet()) {
-                    Assertions.assertEquals(
-                            statuses[0].get(key),
-                            actual.get(key),
-                            String.format("statuses[%d][%s] is not equal to actual[%d][%s]", i, key, i, key));
-                }
-            }
-        });
-    }
-
-    private static Consumer<SuccessMessage> assertSuccessEmpty() {
-        return successMessage -> {
-            Assertions.assertTrue(successMessage.metadata().isEmpty());
-        };
-    }
-
-    @SafeVarargs
-    private static Consumer<SuccessMessage> assertSuccessFields(String... fields) {
-        Consumer<SuccessMessage> result = ignored -> {};
-
-        for (String field : fields) {
-            result = result.andThen(assertSuccessField(field));
-        }
-
-        return result;
-    }
-
-    @SafeVarargs
-    private static Consumer<SuccessMessage> assertSuccessField(String field, Consumer<AnyValue>... assertions) {
-        return successMessage -> {
-            Assertions.assertTrue(
-                    successMessage.metadata().containsKey(field),
-                    () -> String.format("Metadata should contain field %s but it doesn't", field));
-            for (Consumer<AnyValue> assertion : assertions) {
-                assertion.accept(successMessage.metadata().get(field));
-            }
-        };
-    }
-
-    private static void assertRecord(ResponseMessage firstRecord, AnyValue... expectedValues) {
-        Function<AnyValue, BiConsumer<Integer, AnyValue>> assertion = expectedValue ->
-                (i, actual) -> Assertions.assertEquals(expectedValue, actual, String.format("Value at index %d", i));
-
-        var assertions = Stream.of(expectedValues).map(assertion).toArray(BiConsumer[]::new);
-
-        assertRecord(firstRecord, assertions);
-    }
-
-    @SafeVarargs
-    private static void assertRecord(
-            ResponseMessage firstRecord, BiConsumer<Integer, AnyValue>... expectedValueAssertion) {
-        Assertions.assertInstanceOf(RecordMessage.class, firstRecord);
-        RecordMessage recordMessage = (RecordMessage) firstRecord;
-        Assertions.assertEquals(expectedValueAssertion.length, recordMessage.values.intSize());
-        for (int i = 0; i < expectedValueAssertion.length; i++) {
-            expectedValueAssertion[i].accept(i, recordMessage.values.value(i));
-        }
-    }
-
-    private static Map<String, AnyValue> status(String status, String statusDescription) {
-        return Map.of(
-                "gql_status", Values.stringValue(status),
-                "status_description", Values.stringValue(statusDescription));
-    }
-
-    private static void login(UnwiredTestConnection unwired) {
-        unwired.sendRequest(new HelloMessage("test/embedded", List.of(), new RoutingContext(false, Map.of()), null))
-                .sendRequest(new LogonMessage(Map.of("scheme", "none")));
-
-        assertSuccess(unwired.receiveResponse(), assertSuccessFields("server", "connection_id", "hints"));
-        assertSuccess(unwired.receiveResponse(), assertSuccessEmpty());
     }
 
     private static BiConsumer<Integer, AnyValue> assertNode(

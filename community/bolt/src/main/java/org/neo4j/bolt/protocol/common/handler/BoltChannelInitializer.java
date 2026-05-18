@@ -31,6 +31,7 @@ import java.util.Set;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector;
+import org.neo4j.bolt.protocol.common.handler.messages.GoodbyeMessageHandler;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
@@ -126,6 +127,8 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
         if (this.connector.configuration().enableJavaObjectMessages()) {
             var protocol = this.connector.protocolRegistry().getLatest().orElseThrow();
             connection.selectProtocol(protocol, Set.of());
+
+            ch.pipeline().addLast(GoodbyeMessageHandler.HANDLER_NAME, new GoodbyeMessageHandler(logging));
 
             ch.pipeline().addLast("requestHandler", new RequestHandler(logging));
             return protocol;

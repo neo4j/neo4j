@@ -323,7 +323,10 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
                             new NotifyingChannelResponseMessageInboundHandler(this.responseMessageList, this.readLock));
             work.accept(this);
         } finally {
-            this.channel.pipeline().removeLast();
+            if (this.channel.pipeline().iterator().hasNext()) {
+                this.channel.pipeline().removeLast();
+            }
+
             this.channel.pipeline().addLast(INBOUND_HANDLER_NAME, getNotifyingChannelInboundHandler());
         }
     }
