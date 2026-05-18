@@ -29,10 +29,8 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static wiremock.org.hamcrest.CoreMatchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
@@ -69,7 +67,7 @@ import org.neo4j.test.utils.TestDirectory;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(TestDirectorySupportExtension.class)
 @Neo4jLayoutExtension
-public class SignedUploadGCPTest {
+class SignedUploadGCPTest {
 
     private int wiremockServerPort;
     private String wireMockServerAddress;
@@ -94,7 +92,7 @@ public class SignedUploadGCPTest {
     private Neo4jLayout neo4jLayout;
 
     @BeforeAll
-    public void setup() {
+    void setup() {
         Path homeDir = directory.homePath();
         Path confPath = directory.directory("conf");
         Path dumpDir = directory.directory("dumps");
@@ -107,7 +105,7 @@ public class SignedUploadGCPTest {
     }
 
     @BeforeEach
-    public void setupEach() throws IOException {
+    void setupEach() throws IOException {
         wireMockServer.start();
         storeSize = IOCommon.readSizeFromArchiveMetaData(ctx, dump);
         dumpFileSize = ctx.fs().getFileSize(dump);
@@ -119,12 +117,12 @@ public class SignedUploadGCPTest {
     }
 
     @AfterEach
-    public void tearDownEach() {
+    void tearDownEach() {
         wireMockServer.stop();
     }
 
     @Test
-    public void testGCPUploadHappyPath() {
+    void gcpUploadHappyPath() {
         ControlledProgressListener progressListener = new ControlledProgressListener();
         SignedUploadGCP.ProgressListenerFactory progressListenerFactory = (name, length) -> progressListener;
 
@@ -136,12 +134,12 @@ public class SignedUploadGCPTest {
 
         verify(postRequestedFor(urlEqualTo("/initiate")));
         verify(putRequestedFor(urlEqualTo("/upload")));
-        assertTrue(progressListener.closeCalled);
-        assertEquals(dumpFileSize, progressListener.progress);
+        assertThat(progressListener.closeCalled).isTrue();
+        assertThat(progressListener.progress).isEqualTo(dumpFileSize);
     }
 
     @Test
-    public void shouldHandleResumableFailureWhileUploading() {
+    void shouldHandleResumableFailureWhileUploading() {
         ControlledProgressListener progressListener = new ControlledProgressListener();
         SignedUploadGCP.ProgressListenerFactory progressListenerFactory = (name, length) -> progressListener;
 
@@ -150,17 +148,16 @@ public class SignedUploadGCPTest {
         SignedUploadGCP gcpSignedUpload = getGcpSignedUpload(progressListenerFactory);
         Source source = new Source(ctx.fs(), dump, storeSize);
 
-        ExportTestUtilities.assertThrows(
-                CommandFailedException.class,
-                containsString("You can re-try using the existing dump by running this command"),
-                () -> gcpSignedUpload.copy(true, source));
+        assertThatThrownBy(() -> gcpSignedUpload.copy(true, source))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("You can re-try using the existing dump by running this command");
 
         verify(postRequestedFor(urlEqualTo("/initiate")));
         verify(putRequestedFor(urlEqualTo("/upload")));
     }
 
     @Test
-    public void shouldHandleServerErrorWhileUploading() {
+    void shouldHandleServerErrorWhileUploading() {
         ControlledProgressListener progressListener = new ControlledProgressListener();
         SignedUploadGCP.ProgressListenerFactory progressListenerFactory = (name, length) -> progressListener;
         wireMockServer.stubFor(initiateRequest().willReturn(successfulInitiateResponse("/upload")));
@@ -178,17 +175,16 @@ public class SignedUploadGCPTest {
         SignedUploadGCP gcpSignedUpload = getGcpSignedUpload(progressListenerFactory);
         Source source = new Source(ctx.fs(), dump, storeSize);
 
-        ExportTestUtilities.assertThrows(
-                CommandFailedException.class,
-                containsString("Unexpected response code"),
-                () -> gcpSignedUpload.copy(true, source));
+        assertThatThrownBy(() -> gcpSignedUpload.copy(true, source))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Unexpected response code");
 
         verify(postRequestedFor(urlEqualTo("/initiate")));
         verify(putRequestedFor(urlEqualTo("/upload")));
     }
 
     @Test
-    public void shouldHandleInitiateUploadFailure() {
+    void shouldHandleInitiateUploadFailure() {
         ControlledProgressListener progressListener = new ControlledProgressListener();
         SignedUploadGCP.ProgressListenerFactory progressListenerFactory = (name, length) -> progressListener;
 
@@ -196,24 +192,23 @@ public class SignedUploadGCPTest {
         SignedUploadGCP gcpSignedUpload = getGcpSignedUpload(progressListenerFactory);
         Source source = new Source(ctx.fs(), dump, storeSize);
 
-        ExportTestUtilities.assertThrows(
-                CommandFailedException.class,
-                containsString("Unexpected response"),
-                () -> gcpSignedUpload.copy(true, source));
+        assertThatThrownBy(() -> gcpSignedUpload.copy(true, source))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Unexpected response");
 
         verify(postRequestedFor(urlEqualTo("/initiate")));
     }
 
     @Test
-    public void shouldGetCorrectVersionedEndpoint() {
+    void shouldGetCorrectVersionedEndpoint() {
         SignedUploadGCP signedUploadGCP =
                 new SignedUploadGCP(null, "https://my_signed_url", ctx, "bolt://uri", null, null, null);
         URL endpoint = signedUploadGCP.getCorrectVersionedEndpoint();
-        assertEquals("https://my_signed_url", endpoint.toString());
+        assertThat(endpoint).hasToString("https://my_signed_url");
     }
 
     @Test
-    public void shouldDefaultToList() {
+    void shouldDefaultToList() {
         SignedUploadGCP signedUploadGCP = new SignedUploadGCP(
                 new String[] {"https://my_list_signed_url"},
                 "https://my_signed_url",
@@ -223,7 +218,7 @@ public class SignedUploadGCPTest {
                 null,
                 null);
         URL endpoint = signedUploadGCP.getCorrectVersionedEndpoint();
-        assertEquals("https://my_list_signed_url", endpoint.toString());
+        assertThat(endpoint).hasToString("https://my_list_signed_url");
     }
 
     @Test
@@ -233,7 +228,7 @@ public class SignedUploadGCPTest {
                 + "</Message><Details>hello@hello.iam.gserviceaccount.com does not have storage.objects.delete "
                 + "access to the Google Cloud Storage object.</Details></Error>";
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(error.getBytes());
-        assertTrue(signedUploadGCP.canSkipToImport(byteArrayInputStream));
+        assertThat(signedUploadGCP.canSkipToImport(byteArrayInputStream)).isTrue();
     }
 
     @Test
@@ -242,11 +237,11 @@ public class SignedUploadGCPTest {
         String error = "<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied."
                 + "</Message><Details>Unexpected stuff</Details></Error>";
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(error.getBytes());
-        assertFalse(signedUploadGCP.canSkipToImport(byteArrayInputStream));
+        assertThat(signedUploadGCP.canSkipToImport(byteArrayInputStream)).isFalse();
     }
 
     @Test
-    void shouldThrowErrorParsingXEEVulnerableContent() throws IOException {
+    void shouldThrowErrorParsingXEEVulnerableContent() {
         SignedUploadGCP signedUploadGCP = getGcpSignedUpload(null);
         String error = "<?xml version='1.0' encoding='UTF-8'?>"
                 + "<!DOCTYPE foo [ <!ENTITY xxe SYSTEM \"file:///etc/ntp.conf\"> ]>"
@@ -255,10 +250,9 @@ public class SignedUploadGCPTest {
                 + "access to the Google Cloud Storage object.</Details></Error>";
 
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(error.getBytes());
-        ExportTestUtilities.assertThrows(
-                IOException.class,
-                containsString("Encountered invalid response from cloud import location"),
-                () -> signedUploadGCP.canSkipToImport(byteArrayInputStream));
+        assertThatThrownBy(() -> signedUploadGCP.canSkipToImport(byteArrayInputStream))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("Encountered invalid response from cloud import location");
     }
 
     private MappingBuilder initiateRequest() {

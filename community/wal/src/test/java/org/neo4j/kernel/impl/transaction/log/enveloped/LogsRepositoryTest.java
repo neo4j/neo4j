@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -73,9 +73,8 @@ class LogsRepositoryTest {
 
     @Test
     void shouldFailIfBaseDirIsAFile() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new LogsRepository(
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new LogsRepository(
                         testDirectory.getFileSystem(),
                         new SequentialFileNameHelper(testDirectory.createFile("file"), BASE_NAME)));
     }
@@ -108,7 +107,7 @@ class LogsRepositoryTest {
 
     @Test
     void shouldFailWitNoSuchFileExceptionIfNotExistingVersion() {
-        assertThrows(NoSuchFileException.class, () -> logRepository.openReadChannel(2));
+        assertThatExceptionOfType(NoSuchFileException.class).isThrownBy(() -> logRepository.openReadChannel(2));
     }
 
     @Test

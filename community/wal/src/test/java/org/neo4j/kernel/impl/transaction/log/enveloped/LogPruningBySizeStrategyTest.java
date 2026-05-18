@@ -96,7 +96,7 @@ class LogPruningBySizeStrategyTest {
         var logPruningBySizeStrategy = new LogPruningBySizeStrategy(fs, 12);
         var pruneConstraint = logPruningBySizeStrategy.newConstraint(0, 0, logsRepository.pathFor(0));
 
-        assertThat(checkConstraint(pruneConstraint)).isEqualTo(0);
+        assertThat(checkConstraint(pruneConstraint)).isZero();
     }
 
     @Test
@@ -108,7 +108,7 @@ class LogPruningBySizeStrategyTest {
         var logPruningBySizeStrategy = new LogPruningBySizeStrategy(fs, 18);
         var pruneConstraint = logPruningBySizeStrategy.newConstraint(0, 2, logsRepository.pathFor(0));
 
-        assertThat(checkConstraint(pruneConstraint)).isEqualTo(0);
+        assertThat(checkConstraint(pruneConstraint)).isZero();
     }
 
     @Test
@@ -120,7 +120,7 @@ class LogPruningBySizeStrategyTest {
         var logPruningBySizeStrategy = new LogPruningBySizeStrategy(fs, 16);
         var pruneConstraint = logPruningBySizeStrategy.newConstraint(0, 0, logsRepository.pathFor(0));
 
-        assertThat(checkConstraint(pruneConstraint)).isEqualTo(0);
+        assertThat(checkConstraint(pruneConstraint)).isZero();
     }
 
     private void createFileWithData(long version) throws IOException {

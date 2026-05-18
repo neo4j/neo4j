@@ -121,16 +121,16 @@ class FabricTransactionMonitorTest {
     }
 
     @Test
-    void testTransactionMonitorInteraction() {
+    void transactionMonitorInteraction() {
         var tx1 = transactionManager.begin(createTransactionInfo(Duration.ofSeconds(5)), bookmarkManager);
         // tx with the default timeout 10s
         var tx2 = transactionManager.begin(createTransactionInfo(null), bookmarkManager);
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
 
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.getTerminationMark()).isEmpty();
         assertThat(tx2.getTerminationMark()).isEmpty();
 
@@ -138,14 +138,14 @@ class FabricTransactionMonitorTest {
         transactionMonitor.run();
         verify(log, never()).warn(any(String.class), ArgumentMatchers.<Object>any());
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.getTerminationMark()).isEmpty();
         assertThat(tx2.getTerminationMark()).isEmpty();
 
         clock.forward(Duration.ofSeconds(4));
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(2);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(2);
         assertThat(tx1.getTerminationMark()).isPresent();
         assertThat(tx2.getTerminationMark()).isEmpty();
 
@@ -156,12 +156,12 @@ class FabricTransactionMonitorTest {
         verify(log, times(1)).warn(any(String.class), ArgumentMatchers.<Object>any());
 
         tx1.rollback();
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(1);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(1);
 
         clock.forward(Duration.ofSeconds(5));
         transactionMonitor.run();
 
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(1);
+        assertThat(transactionMonitor.getActiveTransactions()).hasSize(1);
         assertThat(tx1.getTerminationMark()).isPresent();
         assertThat(tx2.getTerminationMark()).isPresent();
 
@@ -172,7 +172,7 @@ class FabricTransactionMonitorTest {
         verify(log, times(2)).warn(any(String.class), ArgumentMatchers.<Object>any());
 
         tx2.rollback();
-        assertThat(transactionMonitor.getActiveTransactions()).size().isEqualTo(0);
+        assertThat(transactionMonitor.getActiveTransactions()).isEmpty();
     }
 
     private static FabricTransactionInfo createTransactionInfo(Duration timeout) {

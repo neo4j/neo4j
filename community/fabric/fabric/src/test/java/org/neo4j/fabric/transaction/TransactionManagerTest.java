@@ -20,8 +20,7 @@
 package org.neo4j.fabric.transaction;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -117,10 +116,10 @@ class TransactionManagerTest {
         tx3.markForTermination(Status.Transaction.Outdated);
         transactionManager.stop();
 
-        assertTrue(tx1.isOpen());
-        assertFalse(tx2.isOpen());
-        assertFalse(tx3.isOpen());
-        assertTrue(tx4.isOpen());
+        assertThat(tx1.isOpen()).isTrue();
+        assertThat(tx2.isOpen()).isFalse();
+        assertThat(tx3.isOpen()).isFalse();
+        assertThat(tx4.isOpen()).isTrue();
     }
 
     @Test

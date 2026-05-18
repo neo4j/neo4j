@@ -56,7 +56,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 @RandomSupportExtension
-public class EnvelopeLogRangeFuzzerIT {
+class EnvelopeLogRangeFuzzerIT {
 
     private static final int SEGMENT_BLOCK_SIZE = 512;
 
@@ -85,12 +85,12 @@ public class EnvelopeLogRangeFuzzerIT {
     }
 
     @RepeatedTest(10)
-    void testEven() throws IOException {
+    void even() throws IOException {
         getRangeAndCompare(new int[] {2, 16, 256, 1024});
     }
 
     @RepeatedTest(10)
-    void testUneven() throws IOException {
+    void uneven() throws IOException {
         getRangeAndCompare(new int[] {3, 13, 307, 1111});
     }
 

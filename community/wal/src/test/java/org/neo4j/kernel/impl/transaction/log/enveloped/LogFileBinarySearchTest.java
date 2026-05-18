@@ -117,7 +117,7 @@ class LogFileBinarySearchTest {
         envelopedLogFiles.initialise();
         try (var readChannel = envelopedLogFiles.openReadChannel(0)) {
             var currentLogHeader = readChannel.logHeader();
-            assertThat(currentLogHeader.getLogVersion()).isEqualTo(0);
+            assertThat(currentLogHeader.getLogVersion()).isZero();
             assertThat(currentLogHeader.getLastAppendIndex()).isEqualTo(-1);
         }
     }
@@ -369,7 +369,7 @@ class LogFileBinarySearchTest {
         envelopedLogFiles.currentWriteChannel().prepareForFlush().flush();
 
         // 1 is completed in first file, so we expect it to be removed
-        assertThat(envelopedLogFiles.prune(2)).isEqualTo(1);
+        assertThat(envelopedLogFiles.prune(2)).isOne();
 
         // 0 has been pruned entirley
         assertThat(envelopedLogFiles.openReadChannel(0)).isNull();

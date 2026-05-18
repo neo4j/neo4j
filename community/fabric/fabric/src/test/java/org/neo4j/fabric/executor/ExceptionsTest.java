@@ -20,7 +20,6 @@
 package org.neo4j.fabric.executor;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.ConstraintVerificationFailed;
 
@@ -36,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 class ExceptionsTest {
 
     @Test
-    void testGqlFallbackUnexpectedError() {
+    void gqlFallbackUnexpectedError() {
         var transformedException =
                 Exceptions.transformUnexpectedError(Status.General.UnknownError, new RuntimeException("msg-1"));
         assertThat(unpackExceptionMessages(transformedException)).contains("msg-1");
@@ -46,7 +45,7 @@ class ExceptionsTest {
     }
 
     @Test
-    void testGqlFallbackTransactionStartFailure() {
+    void gqlFallbackTransactionStartFailure() {
         var transformedException = Exceptions.transformTransactionStartFailure(new RuntimeException("msg-1"));
         assertThat(unpackExceptionMessages(transformedException)).contains("msg-1");
         assertThat(transformedException).isInstanceOf(ErrorGqlStatusObject.class);
@@ -55,21 +54,22 @@ class ExceptionsTest {
     }
 
     @Test
-    void testCompositeGqlExceptionTranslation() {
+    void compositeGqlExceptionTranslation() {
         var gqlException = InvalidArgumentsException.internalAlterServer("server");
         var translatedGqlException = FabricException.translateLocalError(gqlException);
-        assertEquals("50N00", translatedGqlException.gqlStatus());
-        assertEquals(InvalidArguments, translatedGqlException.status());
-        assertEquals("Server 'server' can't be altered: must specify options", translatedGqlException.getMessage());
+        assertThat(translatedGqlException.gqlStatus()).isEqualTo("50N00");
+        assertThat(translatedGqlException.status()).isEqualTo(InvalidArguments);
+        assertThat(translatedGqlException.getMessage())
+                .isEqualTo("Server 'server' can't be altered: must specify options");
     }
 
     @Test
-    void testCompositeExceptionTranslationForExceptionWithoutGqlStatus() {
+    void compositeExceptionTranslationForExceptionWithoutGqlStatus() {
         var notGqlException = new ConstraintViolationException("message", null);
         var translatedGqlException = FabricException.translateLocalError(notGqlException);
-        assertEquals("50N42", translatedGqlException.gqlStatus());
-        assertEquals(ConstraintVerificationFailed, translatedGqlException.status());
-        assertEquals("message", translatedGqlException.getMessage());
+        assertThat(translatedGqlException.gqlStatus()).isEqualTo("50N42");
+        assertThat(translatedGqlException.status()).isEqualTo(ConstraintVerificationFailed);
+        assertThat(translatedGqlException.getMessage()).isEqualTo("message");
     }
 
     private static List<String> unpackExceptionMessages(Exception exception) {

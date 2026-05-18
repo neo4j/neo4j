@@ -184,8 +184,8 @@ class EnvelopeReadChannelTest {
             assertThat(shortValue).isEqualTo(channel.getShort());
             assertThat(intValue).isEqualTo(channel.getInt());
             assertThat(longValue).isEqualTo(channel.getLong());
-            assertThat(floatValue).isEqualTo(channel.getFloat(), Offset.offset(0.1f));
-            assertThat(doubleValue).isEqualTo(channel.getDouble(), Offset.offset(0.1d));
+            assertThat(floatValue).isCloseTo(channel.getFloat(), Offset.offset(0.1f));
+            assertThat(doubleValue).isCloseTo(channel.getDouble(), Offset.offset(0.1d));
 
             final var bytes = new byte[bytesValue.length];
             channel.get(bytes, bytesValue.length);
@@ -1638,7 +1638,7 @@ class EnvelopeReadChannelTest {
             var version1 = channel.markAndGetVersion(marker1);
             assertThat(version1).isEqualTo(TEST_VERSION_1);
             assertThat(marker1.getByteOffset()).isEqualTo(segmentSize);
-            assertThat(marker1.getLogVersion()).isEqualTo(0);
+            assertThat(marker1.getLogVersion()).isZero();
 
             // read first envelope
             final var bytesRead = new byte[TEST_DATA_SIZE];
@@ -1649,7 +1649,7 @@ class EnvelopeReadChannelTest {
             var version2 = channel.markAndGetVersion(marker2);
             assertThat(version2).isEqualTo(TEST_VERSION_2);
             assertThat(marker2.getByteOffset()).isEqualTo(marker1.getByteOffset() + TEST_ENTRY_SIZE);
-            assertThat(marker2.getLogVersion()).isEqualTo(0);
+            assertThat(marker2.getLogVersion()).isZero();
 
             // read second envelope as last envelope of file
             channel.get(bytesRead, bytesRead.length);
@@ -1659,7 +1659,7 @@ class EnvelopeReadChannelTest {
             var version3 = channel.markAndGetVersion(marker3);
             assertThat(version3).isEqualTo(TEST_VERSION_3);
             assertThat(marker3.getByteOffset()).isEqualTo(segmentSize);
-            assertThat(marker3.getLogVersion()).isEqualTo(1);
+            assertThat(marker3.getLogVersion()).isOne();
 
             // read third envelope in new file
             channel.get(bytesRead, bytesRead.length);
@@ -1669,7 +1669,7 @@ class EnvelopeReadChannelTest {
             var version4 = channel.markAndGetVersion(marker4);
             assertThat(version4).isEqualTo(TEST_VERSION_4);
             assertThat(marker4.getByteOffset()).isEqualTo(marker3.getByteOffset() + TEST_ENTRY_SIZE);
-            assertThat(marker4.getLogVersion()).isEqualTo(1);
+            assertThat(marker4.getLogVersion()).isOne();
 
             // read fourth envelope in new file
             channel.get(bytesRead, bytesRead.length);
@@ -1883,7 +1883,7 @@ class EnvelopeReadChannelTest {
                     bytes1,
                     START_INDEX,
                     contentType);
-            assertThat(checksum).isEqualTo(0);
+            assertThat(checksum).isZero();
             checksum = writeHeaderAndPayload(
                     buffer,
                     EnvelopeType.FULL,
@@ -1892,7 +1892,7 @@ class EnvelopeReadChannelTest {
                     bytes2,
                     START_INDEX + 1,
                     contentType);
-            assertThat(checksum).isEqualTo(0);
+            assertThat(checksum).isZero();
             checksum = writeHeaderAndPayload(
                     buffer,
                     EnvelopeType.FULL,
@@ -1901,7 +1901,7 @@ class EnvelopeReadChannelTest {
                     bytes3,
                     START_INDEX + 2,
                     contentType);
-            assertThat(checksum).isEqualTo(0);
+            assertThat(checksum).isZero();
             // zero pad
             while (buffer.position() % segmentSize != 0) {
                 buffer.put((byte) 0);
@@ -1915,7 +1915,7 @@ class EnvelopeReadChannelTest {
                     bytes4,
                     START_INDEX + 3,
                     contentType);
-            assertThat(checksum).isEqualTo(0);
+            assertThat(checksum).isZero();
             checksum = writeHeaderAndPayload(
                     buffer,
                     EnvelopeType.MIDDLE,
@@ -1924,7 +1924,7 @@ class EnvelopeReadChannelTest {
                     bytes5,
                     START_INDEX + 3,
                     contentType);
-            assertThat(checksum).isEqualTo(0);
+            assertThat(checksum).isZero();
             checksum = writeHeaderAndPayload(
                     buffer,
                     EnvelopeType.END,
@@ -1933,7 +1933,7 @@ class EnvelopeReadChannelTest {
                     bytes6,
                     START_INDEX + 3,
                     contentType);
-            assertThat(checksum).isEqualTo(0);
+            assertThat(checksum).isZero();
         });
 
         var path2 = file(1);
@@ -1948,7 +1948,7 @@ class EnvelopeReadChannelTest {
                     bytes7,
                     START_INDEX + 4,
                     contentType);
-            assertThat(checksum).isEqualTo(0);
+            assertThat(checksum).isZero();
             // 'preallocate' some trailing zeros
             while (buffer.position() % segmentSize != 0) {
                 buffer.put((byte) 0);
@@ -1966,19 +1966,19 @@ class EnvelopeReadChannelTest {
             var readBytes1 = ByteBuffer.allocate(bytes1.length);
             channel.beginChecksum();
             channel.read(readBytes1);
-            assertThat(channel.endChecksumAndValidate()).isEqualTo(0);
+            assertThat(channel.endChecksumAndValidate()).isZero();
             assertThat(readBytes1.array()).isEqualTo(bytes1);
             // Read second full envelope in first data segment
             var readBytes2 = ByteBuffer.allocate(bytes2.length);
             channel.beginChecksum();
             channel.read(readBytes2);
-            assertThat(channel.endChecksumAndValidate()).isEqualTo(0);
+            assertThat(channel.endChecksumAndValidate()).isZero();
             assertThat(readBytes2.array()).isEqualTo(bytes2);
             // Read third full envelope in first data segment
             var readBytes3 = ByteBuffer.allocate(bytes3.length);
             channel.beginChecksum();
             channel.read(readBytes3);
-            assertThat(channel.endChecksumAndValidate()).isEqualTo(0);
+            assertThat(channel.endChecksumAndValidate()).isZero();
             assertThat(readBytes3.array()).isEqualTo(bytes3);
             // Read data that spans multiple envelopes and segments as one and also skips past padding
             byte[] concat = new byte[bytes4.length + bytes5.length + bytes6.length];
@@ -1988,14 +1988,14 @@ class EnvelopeReadChannelTest {
             var readBytesSpanning = ByteBuffer.allocate(concat.length);
             channel.beginChecksum();
             channel.read(readBytesSpanning);
-            assertThat(channel.endChecksumAndValidate()).isEqualTo(0);
+            assertThat(channel.endChecksumAndValidate()).isZero();
             assertThat(readBytesSpanning.array()).isEqualTo(concat);
             // Read data and bridge into next file with prevChecksum == 0
             var readBytes7 = ByteBuffer.allocate(bytes7.length);
             channel.beginChecksum();
             channel.read(readBytes7);
-            assertThat(channel.endChecksumAndValidate()).isEqualTo(0);
-            assertThat(channel.logHeader().getPreviousLogFileChecksum()).isEqualTo(0);
+            assertThat(channel.endChecksumAndValidate()).isZero();
+            assertThat(channel.logHeader().getPreviousLogFileChecksum()).isZero();
             assertThat(readBytes7.array()).isEqualTo(bytes7);
             var readBytes8 = ByteBuffer.allocate(4);
             // should correctly conclude rest of file is just preallocated zeros

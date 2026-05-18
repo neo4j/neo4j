@@ -34,12 +34,12 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-public class SignedUploadURLFactoryTest {
+class SignedUploadURLFactoryTest {
     @Inject
     TestDirectory directory;
 
     @Test
-    public void fromAuraResponseTest() {
+    void fromAuraResponseTest() {
         AuraJsonMapper.SignedURIBodyResponse signedURIbodyResponse = new AuraJsonMapper.SignedURIBodyResponse();
         signedURIbodyResponse.Provider = "AWS";
         Path dir = directory.homePath();
@@ -52,7 +52,7 @@ public class SignedUploadURLFactoryTest {
     }
 
     @Test
-    public void fromAuraGCPResponseTest() {
+    void fromAuraGCPResponseTest() {
         AuraJsonMapper.SignedURIBodyResponse signedURIbodyResponse = new AuraJsonMapper.SignedURIBodyResponse();
         signedURIbodyResponse.Provider = "GCP";
         Path dir = directory.homePath();

@@ -37,14 +37,9 @@ import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
-import static wiremock.org.hamcrest.CoreMatchers.allOf;
-import static wiremock.org.hamcrest.CoreMatchers.containsString;
-import static wiremock.org.hamcrest.MatcherAssert.assertThat;
-import static wiremock.org.hamcrest.Matchers.not;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
@@ -73,11 +68,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import wiremock.com.fasterxml.jackson.databind.ObjectMapper;
-import wiremock.org.hamcrest.CoreMatchers;
-import wiremock.org.hamcrest.Matcher;
 
 @TestDirectoryExtension
-public class AuraClientTest {
+class AuraClientTest {
 
     private static final int TEST_PORT = 8080;
     private static final String TEST_CONSOLE_URL = "http://localhost:" + TEST_PORT;
@@ -93,19 +86,8 @@ public class AuraClientTest {
     @Inject
     TestDirectory directory;
 
-    private static void assertThrows(
-            Class<? extends Exception> exceptionClass, Matcher<String> message, ThrowingRunnable action) {
-        try {
-            action.run();
-            fail("Should have failed");
-        } catch (Exception e) {
-            assertTrue(exceptionClass.isInstance(e));
-            assertThat(e.getMessage(), message);
-        }
-    }
-
     @BeforeEach
-    public void setup() {
+    void setup() {
         wireMock = new WireMockServer(TEST_PORT);
         WireMock.configureFor("localhost", TEST_PORT);
         wireMock.start();
@@ -115,7 +97,7 @@ public class AuraClientTest {
     }
 
     @AfterEach
-    public void teardown() {
+    void teardown() {
         wireMock.stop();
     }
 
@@ -181,7 +163,7 @@ public class AuraClientTest {
     }
 
     @Test
-    public void runHappyPathTest() throws CommandFailedException, IOException, InterruptedException {
+    void runHappyPathTest() throws CommandFailedException, IOException, InterruptedException {
         Path source = createDump();
         ExportTestUtilities.ControlledProgressListener progressListener =
                 new ExportTestUtilities.ControlledProgressListener();
@@ -227,9 +209,9 @@ public class AuraClientTest {
 
         verify(postRequestedFor(urlMatching(".*?/import/upload-complete$")));
 
-        assertTrue(progressListener.closeCalled);
-        assertEquals(100, progressListener.progress);
-        assertTrue(fs.fileExists(source));
+        assertThat(progressListener.closeCalled).isTrue();
+        assertThat(progressListener.progress).isEqualTo(100);
+        assertThat(fs.fileExists(source)).isTrue();
         progressListener.close();
     }
 
@@ -239,7 +221,7 @@ public class AuraClientTest {
         AuraClient auraClient = buildPreAuthenticatedTestAuraClient(null);
 
         // when/then
-        assertThrows(NullPointerException.class, CoreMatchers.any(String.class), () -> auraClient.authenticate(true));
+        assertThatThrownBy(() -> auraClient.authenticate(true)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -249,8 +231,8 @@ public class AuraClientTest {
         AuraClient auraClient = buildPreAuthenticatedTestAuraClient(token);
 
         // when/then
-        assertEquals(token, auraClient.authenticate(true));
-        assertEquals(0, wireMock.findAllUnmatchedRequests().size());
+        assertThat(auraClient.authenticate(true)).isEqualTo(token);
+        assertThat(wireMock.findAllUnmatchedRequests().size()).isZero();
     }
 
     @Test
@@ -260,10 +242,9 @@ public class AuraClientTest {
         wireMock.stubFor(authenticationRequest(true).willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                CoreMatchers.containsString("Invalid username/password credentials"),
-                () -> auraClient.authenticate(true));
+        assertThatThrownBy(() -> auraClient.authenticate(true))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Invalid username/password credentials");
     }
 
     @Test
@@ -273,10 +254,9 @@ public class AuraClientTest {
         wireMock.stubFor(authenticationRequest(true).willReturn(aResponse().withStatus(HTTP_NOT_FOUND)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                containsString("please check your Bolt URI"),
-                () -> auraClient.authenticate(true));
+        assertThatThrownBy(() -> auraClient.authenticate(true))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("please check your Bolt URI");
     }
 
     @Test
@@ -294,10 +274,10 @@ public class AuraClientTest {
                 initiateUploadTargetRequest("abc").willReturn(aResponse().withStatus(HTTP_NOT_FOUND)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                containsString("please contact support"),
-                () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
+        assertThatThrownBy(
+                        () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("please contact support");
     }
 
     @Test
@@ -315,10 +295,10 @@ public class AuraClientTest {
                 .willReturn(aResponse().withStatus(429)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                containsString("You can re-try using the existing dump by running this command"),
-                () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
+        assertThatThrownBy(
+                        () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("You can re-try using the existing dump by running this command");
     }
 
     @Test
@@ -336,10 +316,10 @@ public class AuraClientTest {
                 .willReturn(aResponse().withStatus(HTTP_NOT_FOUND)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                containsString("please contact support"),
-                () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse));
+        assertThatThrownBy(
+                        () -> auraClient.triggerGCPImportProtocol(true, source, crc32Sum, authorizationTokenResponse))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("please contact support");
     }
 
     @Test
@@ -353,10 +333,9 @@ public class AuraClientTest {
 
         wireMock.stubFor(initiateSizeRequest("fakeToken", 100000000).willReturn(response));
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                containsString("too big"),
-                () -> auraClient.checkSize(false, 100000000, "fakeToken"));
+        assertThatThrownBy(() -> auraClient.checkSize(false, 100000000, "fakeToken"))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("too big");
     }
 
     @Test
@@ -377,10 +356,9 @@ public class AuraClientTest {
         wireMock.stubFor(authenticationRequest(true).willReturn(aResponse().withStatus(HTTP_FORBIDDEN)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                containsString("administrative access"),
-                () -> auraClient.authenticate(false));
+        assertThatThrownBy(() -> auraClient.authenticate(false))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("administrative access");
     }
 
     @Test
@@ -390,10 +368,10 @@ public class AuraClientTest {
         wireMock.stubFor(authenticationRequest(true).willReturn(aResponse().withStatus(HTTP_INTERNAL_ERROR)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                allOf(containsString("Unexpected response"), containsString("Authorization")),
-                () -> auraClient.authenticate(false));
+        assertThatThrownBy(() -> auraClient.authenticate(false))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Unexpected response")
+                .hasMessageContaining("Authorization");
     }
 
     @Test
@@ -412,10 +390,9 @@ public class AuraClientTest {
                 initiateUploadTargetRequest(token).willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                containsString("authorization token is invalid"),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
+        assertThatThrownBy(() -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("authorization token is invalid");
     }
 
     @Test
@@ -442,14 +419,12 @@ public class AuraClientTest {
                         .withStatus(HTTP_UNPROCESSABLE_ENTITY)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                allOf(
-                        containsString(errorMessage),
-                        containsString(errorUrl),
-                        not(containsString(errorReason)),
-                        not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
+        assertThatThrownBy(() -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(errorMessage)
+                .hasMessageContaining(errorUrl)
+                .hasMessageNotContaining(errorReason)
+                .hasMessageNotContaining("..");
     }
 
     @Test
@@ -475,10 +450,9 @@ public class AuraClientTest {
                         .withStatus(HTTP_UNPROCESSABLE_ENTITY)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                not(containsString("null")),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
+        assertThatThrownBy(() -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageNotContaining("null");
     }
 
     @Test
@@ -496,13 +470,11 @@ public class AuraClientTest {
                 initiateUploadTargetRequest(token).willReturn(aResponse().withStatus(HTTP_UNPROCESSABLE_ENTITY)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                allOf(
-                        containsString("No content to map due to end-of-input"),
-                        not(containsString("null")),
-                        not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
+        assertThatThrownBy(() -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("No content to map due to end-of-input")
+                .hasMessageNotContaining("null")
+                .hasMessageNotContaining("..");
     }
 
     @Test
@@ -529,10 +501,9 @@ public class AuraClientTest {
                         .withStatus(HTTP_UNPROCESSABLE_ENTITY)));
 
         // when/then the final error message is well formatted with punctuation
-        assertThrows(
-                CommandFailedException.class,
-                containsString("Error: something bad happened. See: https://example.com/"),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
+        assertThatThrownBy(() -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Error: something bad happened. See: https://example.com/");
     }
 
     @Test
@@ -560,14 +531,12 @@ public class AuraClientTest {
                         .withStatus(HTTP_UNPROCESSABLE_ENTITY)));
 
         // when/then
-        assertThrows(
-                CommandFailedException.class,
-                allOf(
-                        containsString(errorMessage),
-                        containsString("Minimum storage space required: 0"),
-                        containsString("See: https://console.neo4j.io"),
-                        not(containsString(".."))),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token));
+        assertThatThrownBy(() -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, token))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(errorMessage)
+                .hasMessageContaining("Minimum storage space required: 0")
+                .hasMessageContaining("See: https://console.neo4j.io")
+                .hasMessageNotContaining("..");
     }
 
     @Test
@@ -583,10 +552,9 @@ public class AuraClientTest {
                 .willReturn(successfulInitiateUploadTargetResponse(signedURIPath)));
 
         // when
-        assertThrows(
-                CommandFailedException.class,
-                containsString("No consent to overwrite"),
-                () -> auraClient.authenticate(true));
+        assertThatThrownBy(() -> auraClient.authenticate(true))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("No consent to overwrite");
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user
         // consent
@@ -607,10 +575,11 @@ public class AuraClientTest {
         wireMock.stubFor(initiateUploadTargetRequest(authorizationTokenResponse)
                 .willReturn(aResponse().withStatus(HTTP_BAD_GATEWAY)));
         // when
-        assertThrows(
-                CommandFailedException.class,
-                allOf(containsString("Unexpected response"), containsString("Initiating upload target")),
-                () -> auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, authorizationTokenResponse));
+        assertThatThrownBy(() ->
+                        auraClient.initatePresignedUpload(crc32Sum, dbSize, sourceLength, authorizationTokenResponse))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Unexpected response")
+                .hasMessageContaining("Initiating upload target");
 
         // 1 initial call plus 2 retries are 3 expected calls
         wireMock.verify(
@@ -626,19 +595,21 @@ public class AuraClientTest {
         AuraClient auraClient = buildTestAuraClientWithMockSleeper(false);
 
         // when/then
-        assertEquals(0, auraClient.importStatusProgressEstimate("running", 1234500000L, 6789000000L));
-        assertEquals(1, auraClient.importStatusProgressEstimate("loading", 0, 1234567890));
+        assertThat(auraClient.importStatusProgressEstimate("running", 1234500000L, 6789000000L))
+                .isEqualTo(0);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 0, 1234567890))
+                .isEqualTo(1);
         // ...and when/then
-        assertEquals(2, auraClient.importStatusProgressEstimate("loading", 1, 98));
-        assertEquals(50, auraClient.importStatusProgressEstimate("loading", 49, 98));
-        assertEquals(98, auraClient.importStatusProgressEstimate("loading", 97, 98));
-        assertEquals(99, auraClient.importStatusProgressEstimate("loading", 98, 98));
-        assertEquals(99, auraClient.importStatusProgressEstimate("loading", 99, 98));
-        assertEquals(99, auraClient.importStatusProgressEstimate("loading", 100, 98));
+        assertThat(auraClient.importStatusProgressEstimate("loading", 1, 98)).isEqualTo(2);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 49, 98)).isEqualTo(50);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 97, 98)).isEqualTo(98);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 98, 98)).isEqualTo(99);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 99, 98)).isEqualTo(99);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 100, 98)).isEqualTo(99);
         // ...and when/then
-        assertEquals(1, auraClient.importStatusProgressEstimate("loading", 1, 196));
-        assertEquals(2, auraClient.importStatusProgressEstimate("loading", 2, 196));
-        assertEquals(50, auraClient.importStatusProgressEstimate("loading", 98, 196));
+        assertThat(auraClient.importStatusProgressEstimate("loading", 1, 196)).isEqualTo(1);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 2, 196)).isEqualTo(2);
+        assertThat(auraClient.importStatusProgressEstimate("loading", 98, 196)).isEqualTo(50);
     }
 
     private MappingBuilder initiateUploadTargetRequest(String authorizationTokenResponse) {

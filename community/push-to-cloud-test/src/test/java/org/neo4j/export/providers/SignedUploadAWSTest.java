@@ -27,7 +27,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static wiremock.org.hamcrest.CoreMatchers.containsString;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
@@ -62,7 +62,7 @@ import org.neo4j.test.utils.TestDirectory;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(TestDirectorySupportExtension.class)
 @Neo4jLayoutExtension
-public class SignedUploadAWSTest {
+class SignedUploadAWSTest {
 
     private int wiremockServerPort;
     private String wireMockServerAddress;
@@ -85,7 +85,7 @@ public class SignedUploadAWSTest {
     private Neo4jLayout neo4jLayout;
 
     @BeforeAll
-    public void setup() {
+    void setup() {
         Path homeDir = directory.homePath();
         Path confPath = directory.directory("conf");
         Path dumpDir = directory.directory("dumps");
@@ -98,7 +98,7 @@ public class SignedUploadAWSTest {
     }
 
     @BeforeEach
-    public void setupEach() throws IOException {
+    void setupEach() throws IOException {
         wireMockServer.start();
         storeSize = IOCommon.readSizeFromArchiveMetaData(ctx, dump);
         dumpFileSize = ctx.fs().getFileSize(dump);
@@ -113,13 +113,13 @@ public class SignedUploadAWSTest {
     }
 
     @AfterEach
-    public void tearDownEach() {
+    void tearDownEach() {
         wireMockServer.resetAll();
         wireMockServer.stop();
     }
 
     @Test
-    public void testAWSUploadHappyPathMultiPart() throws IOException {
+    void awsUploadHappyPathMultiPart() throws IOException {
         SignedUploadAWS signedUploadAWS =
                 new SignedUploadAWS(signedLinks, "uploadID", signedLinks.length, ctx, "bolt://localhost");
         long chunkSize = signedUploadAWS.getChunkSize(dumpFileSize);
@@ -132,7 +132,7 @@ public class SignedUploadAWSTest {
     }
 
     @Test
-    public void testAWSUploadWithRetryReUploadsCorrectChunk() throws IOException {
+    void awsUploadWithRetryReUploadsCorrectChunk() throws IOException {
 
         SignedUploadAWS signedUploadAWS =
                 new SignedUploadAWS(signedLinks, "uploadID", signedLinks.length, ctx, "bolt://localhost", millis -> {});
@@ -157,7 +157,7 @@ public class SignedUploadAWSTest {
     }
 
     @Test
-    public void testAWSUploadWithRetryReUploadsCorrectChunkInMiddle() throws IOException {
+    void awsUploadWithRetryReUploadsCorrectChunkInMiddle() throws IOException {
 
         // Because there are only 3 numbers in computer science 0, 1 and n.
         SignedUploadAWS signedUploadAWS =
@@ -191,7 +191,7 @@ public class SignedUploadAWSTest {
     }
 
     @Test
-    public void testCorrectlyErrorsAfterFiveAttempts() throws java.io.IOException {
+    void correctlyErrorsAfterFiveAttempts() throws IOException {
         SignedUploadAWS signedUploadAWS =
                 new SignedUploadAWS(signedLinks, "uploadID", signedLinks.length, ctx, "bolt://localhost", millis -> {});
         Source source = new Source(ctx.fs(), dump, storeSize);
@@ -200,11 +200,10 @@ public class SignedUploadAWSTest {
         setUpRequestChunks(chunkSize, chunks);
         wireMockServer.stubFor(uploadRequest().willReturn(failedInitiateResponse()));
 
-        ExportTestUtilities.assertThrows(
-                CommandFailedException.class,
-                containsString(
-                        "Failed to upload part to multipart url after 5 retries. Please check your Internet connection and try again."),
-                () -> signedUploadAWS.copy(false, source));
+        assertThatThrownBy(() -> signedUploadAWS.copy(false, source))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(
+                        "Failed to upload part to multipart url after 5 retries. Please check your Internet connection and try again.");
 
         wireMockServer.verify(
                 exactly(5), putRequestedFor(urlEqualTo("/signed1")).withRequestBody(binaryEqualTo(chunks[0])));

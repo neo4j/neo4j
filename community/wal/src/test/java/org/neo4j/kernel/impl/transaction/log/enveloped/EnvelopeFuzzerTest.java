@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
@@ -35,7 +36,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -150,7 +150,7 @@ class EnvelopeFuzzerTest {
                 }
                 dataStep.readAndValidate(envelopeReadChannel);
             }
-            Assertions.assertThatThrownBy(envelopeReadChannel::get)
+            assertThatThrownBy(envelopeReadChannel::get)
                     .as("Should not contain more data")
                     .isInstanceOf(ReadPastEndException.class);
         }

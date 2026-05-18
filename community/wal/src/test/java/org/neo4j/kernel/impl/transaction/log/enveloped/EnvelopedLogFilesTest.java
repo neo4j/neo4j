@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.setMaxStackTraceElementsDisplayed;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.enveloped.LogsRepository.BASE_VERSION;
 
@@ -34,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -152,7 +152,8 @@ class EnvelopedLogFilesTest {
 
     @Test
     void shouldFailOnGettingChannelBeforeInitialise() {
-        assertThrows(IllegalStateException.class, () -> envelopedLogFiles.currentWriteChannel());
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> envelopedLogFiles.currentWriteChannel());
     }
 
     @Test
@@ -186,7 +187,7 @@ class EnvelopedLogFilesTest {
         var latestLogIndex = envelopedLogFiles.initialise();
 
         // then
-        assertThat(latestLogIndex).isEqualTo(1);
+        assertThat(latestLogIndex).isOne();
     }
 
     @Test
@@ -232,7 +233,7 @@ class EnvelopedLogFilesTest {
         var latestLogIndex = envelopedLogFiles.initialise();
 
         // then
-        assertThat(latestLogIndex).isEqualTo(1);
+        assertThat(latestLogIndex).isOne();
     }
 
     @Test
@@ -404,7 +405,7 @@ class EnvelopedLogFilesTest {
         assertThat(itr.next()).isTrue();
         var logHeaderMetadata = itr.get();
         assertThat(logHeaderMetadata.logHeader().getLastAppendIndex()).isEqualTo(-1);
-        assertThat(logHeaderMetadata.version()).isEqualTo(0);
+        assertThat(logHeaderMetadata.version()).isZero();
 
         // the next file exits but is an empty pre-allocatd file and should be ignore
         assertThat(itr.next()).isFalse();
@@ -458,15 +459,15 @@ class EnvelopedLogFilesTest {
             var firstHeader = envelopeReadChannel.logHeader();
             envelopeReadChannel.goToNextEntry();
             assertThat(firstHeader.getLogVersion()).isEqualTo(envelopeReadChannel.getLogVersion());
-            assertThat(envelopeReadChannel.entryIndex()).isEqualTo(1);
+            assertThat(envelopeReadChannel.entryIndex()).isOne();
 
             envelopeReadChannel.goToNextEntry();
             var secondHeader = envelopeReadChannel.logHeader();
             assertThat(envelopeReadChannel.entryIndex()).isEqualTo(2);
             assertThat(secondHeader.getLogVersion()).isEqualTo(firstHeader.getLogVersion() + 1);
 
-            assertThat(secondHeader.getLastAppendIndex()).isEqualTo(1);
-            assertThat(secondHeader.getLastTerm()).isEqualTo(1);
+            assertThat(secondHeader.getLastAppendIndex()).isOne();
+            assertThat(secondHeader.getLastTerm()).isOne();
         }
     }
 
@@ -499,7 +500,7 @@ class EnvelopedLogFilesTest {
 
         try (var reader = envelopedLogFiles.openReadChannel()) {
             reader.alignWithStartEntry();
-            assertThat(reader.entryIndex()).isEqualTo(0); // points to first entry
+            assertThat(reader.entryIndex()).isZero(); // points to first entry
             LogHeader currentLogHeader = null;
             for (int i = 0; i < 3; i++) {
                 assertThat(reader.entryIndex()).isEqualTo(i);
@@ -524,7 +525,7 @@ class EnvelopedLogFilesTest {
         assertThat(mirroringRepository.logVersions(false)).hasSizeGreaterThan(2);
 
         try (var envelopeReadChannel = envelopedLogFiles.openReadChannel()) {
-            assertThat(envelopeReadChannel.getLogVersion()).isEqualTo(0);
+            assertThat(envelopeReadChannel.getLogVersion()).isZero();
         }
 
         mirroringRepository.deleteLogFilesTo(2);
@@ -552,7 +553,7 @@ class EnvelopedLogFilesTest {
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION, BASE_VERSION + 1);
 
         // 1 is completed in first file, so we expect it to be removed
-        assertThat(envelopedLogFiles.prune(2)).isEqualTo(1);
+        assertThat(envelopedLogFiles.prune(2)).isOne();
 
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION + 1);
 
@@ -636,7 +637,7 @@ class EnvelopedLogFilesTest {
         assertThat(mirroringRepository.isEmpty()).isFalse();
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION, BASE_VERSION + 1);
 
-        assertThat(envelopedLogFiles.prune(3)).isEqualTo(1);
+        assertThat(envelopedLogFiles.prune(3)).isOne();
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION + 1);
     }
 
@@ -685,7 +686,7 @@ class EnvelopedLogFilesTest {
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION, BASE_VERSION + 1);
 
         // 1 is completed in first file, so we expect it to be removed
-        assertThat(envelopedLogFiles.prune(2)).isEqualTo(1);
+        assertThat(envelopedLogFiles.prune(2)).isOne();
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION + 1);
         assertThat(envelopedLogFiles.prune(2)).isEqualTo(-1);
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION + 1);
@@ -709,7 +710,7 @@ class EnvelopedLogFilesTest {
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION, BASE_VERSION + 1);
 
         // 1 is completed in first file, so we expect it to be removed
-        assertThat(envelopedLogFiles.prune(2)).isEqualTo(1);
+        assertThat(envelopedLogFiles.prune(2)).isOne();
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION + 1);
         assertThat(envelopedLogFiles.prune(0)).isEqualTo(-1);
         assertThat(mirroringRepository.logVersions(false)).containsExactly(BASE_VERSION + 1);
@@ -830,7 +831,7 @@ class EnvelopedLogFilesTest {
             var readData = new byte[message2.length()];
             reader.read(ByteBuffer.wrap(readData));
             assertThat(new String(readData)).isEqualTo(message2);
-            assertThat(reader.entryIndex()).isEqualTo(0);
+            assertThat(reader.entryIndex()).isZero();
         }
     }
 
@@ -848,7 +849,7 @@ class EnvelopedLogFilesTest {
 
         mirroringRepository.deleteLogFilesTo(1);
 
-        assertThrows(IllegalArgumentException.class, () -> envelopedLogFiles.truncate(1));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> envelopedLogFiles.truncate(1));
     }
 
     @Test
@@ -878,12 +879,12 @@ class EnvelopedLogFilesTest {
             var readData = new byte[message1.length()];
             reader.read(ByteBuffer.wrap(readData));
             assertThat(new String(readData)).isEqualTo(message1);
-            assertThat(reader.entryIndex()).isEqualTo(0);
+            assertThat(reader.entryIndex()).isZero();
 
             readData = new byte[message2.length()];
             reader.read(ByteBuffer.wrap(readData));
             assertThat(new String(readData)).isEqualTo(message2);
-            assertThat(reader.entryIndex()).isEqualTo(1);
+            assertThat(reader.entryIndex()).isOne();
         }
     }
 
@@ -1120,7 +1121,7 @@ class EnvelopedLogFilesTest {
         var storeChannels = envelopedLogFiles.storeChannels(0, 4);
         try {
 
-            assertThat(storeChannels.fromIndex()).isEqualTo(0);
+            assertThat(storeChannels.fromIndex()).isZero();
             assertThat(storeChannels.toIndex()).isEqualTo(4);
             assertThat(storeChannels.toPosition()).isEqualTo(writeChannel.position());
             assertThat(storeChannels.storeChannels()).hasSize(10);
@@ -1183,7 +1184,7 @@ class EnvelopedLogFilesTest {
         var storeChannels = envelopedLogFiles.storeChannels(0, 2);
         try {
 
-            assertThat(storeChannels.fromIndex()).isEqualTo(0);
+            assertThat(storeChannels.fromIndex()).isZero();
             assertThat(storeChannels.toIndex()).isEqualTo(2);
             assertThat(storeChannels.toPosition()).isEqualTo(473);
             assertThat(storeChannels.storeChannels()).hasSize(7);
@@ -1244,7 +1245,7 @@ class EnvelopedLogFilesTest {
         writeData(writeChannel, new byte[] {'a'});
         writeData(writeChannel, new byte[] {'b'});
         writeChannel.prepareForFlush().flush();
-        Assertions.setMaxStackTraceElementsDisplayed(100);
+        setMaxStackTraceElementsDisplayed(100);
         assertThatThrownBy(() -> envelopedLogFiles.storeChannels(0, 3)).isInstanceOf(ReadPastEndException.class);
     }
 
@@ -1590,11 +1591,11 @@ class EnvelopedLogFilesTest {
         // when
         recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION);
         // should initialise to prev appendIndex 1
-        assertThat(envelopedLogFiles.initialise()).isEqualTo(1L);
+        assertThat(envelopedLogFiles.initialise()).isOne();
         writeChannel = envelopedLogFiles.currentWriteChannel();
 
         // then we expect it to have truncated and rolled to a new file
-        assertThat(mirroringRepository.logVersionsRange().to()).isEqualTo(1);
+        assertThat(mirroringRepository.logVersionsRange().to()).isOne();
         // and should be able to append without issues
         writeData(writeChannel, data); // write index 2 again
         assertThat(writeChannel.currentIndex()).isEqualTo(2);
@@ -1640,11 +1641,11 @@ class EnvelopedLogFilesTest {
         // when
         recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION);
         // should initialise to prev appendIndex 1
-        assertThat(envelopedLogFiles.initialise()).isEqualTo(1L);
+        assertThat(envelopedLogFiles.initialise()).isOne();
         writeChannel = envelopedLogFiles.currentWriteChannel();
 
         // then we expect it to have truncated and rolled to a new file
-        assertThat(mirroringRepository.logVersionsRange().to()).isEqualTo(1);
+        assertThat(mirroringRepository.logVersionsRange().to()).isOne();
         // and should be able to append without issues
         writeData(writeChannel, data); // write index 2 again (with small message)
         assertThat(writeChannel.currentIndex()).isEqualTo(2);
@@ -1691,11 +1692,11 @@ class EnvelopedLogFilesTest {
         // when
         recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION);
         // should initialise to prev appendIndex 1
-        assertThat(envelopedLogFiles.initialise()).isEqualTo(1L);
+        assertThat(envelopedLogFiles.initialise()).isOne();
         writeChannel = envelopedLogFiles.currentWriteChannel();
 
         // then we expect it to have truncated and rolled to a new file
-        assertThat(mirroringRepository.logVersionsRange().to()).isEqualTo(1);
+        assertThat(mirroringRepository.logVersionsRange().to()).isOne();
         // and should be able to append without issues
         writeData(writeChannel, data); // write index 2 again (with small message)
         assertThat(writeChannel.currentIndex()).isEqualTo(2);
@@ -1795,11 +1796,11 @@ class EnvelopedLogFilesTest {
         // when
         recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION);
         // should initialise to last appendIndex 1
-        assertThat(envelopedLogFiles.initialise()).isEqualTo(1L);
+        assertThat(envelopedLogFiles.initialise()).isOne();
         writeChannel = envelopedLogFiles.currentWriteChannel();
 
         // then we expect it to have just carried on with recreating file 1
-        assertThat(mirroringRepository.logVersionsRange().to()).isEqualTo(1);
+        assertThat(mirroringRepository.logVersionsRange().to()).isOne();
         // and should be able to re-append without issues
         writeData(writeChannel, data); // write index 2
         assertThat(writeChannel.currentIndex()).isEqualTo(2);
@@ -1925,7 +1926,7 @@ class EnvelopedLogFilesTest {
             assertThat(reader.currentTerm()).isEqualTo(82L);
             // move onto next file
             reader.goToNextEntry();
-            assertThat(reader.logHeader().getLogVersion()).isEqualTo(1L);
+            assertThat(reader.logHeader().getLogVersion()).isOne();
             assertThat(reader.logHeader().getLastTerm()).isEqualTo(82L);
             assertThat(reader.currentTerm()).isEqualTo(83L);
         }

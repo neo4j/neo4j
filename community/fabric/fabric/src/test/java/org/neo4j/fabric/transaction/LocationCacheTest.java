@@ -19,8 +19,7 @@
  */
 package org.neo4j.fabric.transaction;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -67,39 +66,39 @@ class LocationCacheTest {
 
     @Test
     void shouldHandleNonExistentGraph() {
-        assertNull(locationCache.locationOf(graph0, false));
+        assertThat(locationCache.locationOf(graph0, false)).isNull();
         verify(catalogManager, times(1))
                 .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
-        assertEquals(0, locationCache.size());
+        assertThat(locationCache.size()).isZero();
     }
 
     @Test
     void shouldCacheGraph() {
-        assertEquals(location1, locationCache.locationOf(graph1, false));
-        assertEquals(location1, locationCache.locationOf(graph1, false));
+        assertThat(locationCache.locationOf(graph1, false)).isEqualTo(location1);
+        assertThat(locationCache.locationOf(graph1, false)).isEqualTo(location1);
         verify(catalogManager, times(1))
                 .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
-        assertEquals(1, locationCache.size());
+        assertThat(locationCache.size()).isOne();
     }
 
     @Test
     void shouldNotDistinguishReadWrite() {
-        assertEquals(location1, locationCache.locationOf(graph1, false));
-        assertEquals(location1, locationCache.locationOf(graph1, true));
-        assertEquals(location1, locationCache.locationOf(graph1, false));
+        assertThat(locationCache.locationOf(graph1, false)).isEqualTo(location1);
+        assertThat(locationCache.locationOf(graph1, true)).isEqualTo(location1);
+        assertThat(locationCache.locationOf(graph1, false)).isEqualTo(location1);
         verify(catalogManager, times(1))
                 .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
-        assertEquals(1, locationCache.size());
+        assertThat(locationCache.size()).isOne();
     }
 
     @Test
     void shouldHandleMultipleGraphs() {
-        assertEquals(location1, locationCache.locationOf(graph1, false));
-        assertEquals(location1, locationCache.locationOf(graph1, true));
-        assertEquals(location2, locationCache.locationOf(graph2, true));
-        assertEquals(location2, locationCache.locationOf(graph2, true));
+        assertThat(locationCache.locationOf(graph1, false)).isEqualTo(location1);
+        assertThat(locationCache.locationOf(graph1, true)).isEqualTo(location1);
+        assertThat(locationCache.locationOf(graph2, true)).isEqualTo(location2);
+        assertThat(locationCache.locationOf(graph2, true)).isEqualTo(location2);
         verify(catalogManager, times(2))
                 .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
-        assertEquals(2, locationCache.size());
+        assertThat(locationCache.size()).isEqualTo(2);
     }
 }

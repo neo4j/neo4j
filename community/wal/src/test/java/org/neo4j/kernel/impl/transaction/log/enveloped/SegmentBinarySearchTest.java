@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 
 import java.io.IOException;
@@ -332,7 +332,8 @@ class SegmentBinarySearchTest {
 
         try (var readChannel = envelopedLogFiles.openReadChannel()) {
             var entryWhichDoesNotExist = 14;
-            assertThrows(ReadPastEndException.class, () -> readChannel.goToEntry(entryWhichDoesNotExist));
+            assertThatExceptionOfType(ReadPastEndException.class)
+                    .isThrownBy(() -> readChannel.goToEntry(entryWhichDoesNotExist));
         }
     }
 
@@ -439,7 +440,7 @@ class SegmentBinarySearchTest {
 
         try (var readChannel = envelopedLogFiles.openReadChannel(17)) {
             assertThat(readChannel.logHeader().getLastAppendIndex()).isEqualTo(12);
-            assertThrows(IllegalArgumentException.class, () -> readChannel.goToEntry(12));
+            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> readChannel.goToEntry(12));
         }
     }
 
@@ -448,7 +449,7 @@ class SegmentBinarySearchTest {
         envelopedLogFiles.initialise();
         try (var readChannel = envelopedLogFiles.openReadChannel()) {
             assertThat(readChannel.logHeader().getLastAppendIndex()).isEqualTo(-1);
-            assertThrows(ReadPastEndException.class, () -> readChannel.goToEntry(0));
+            assertThatExceptionOfType(ReadPastEndException.class).isThrownBy(() -> readChannel.goToEntry(0));
         }
     }
 

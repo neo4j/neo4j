@@ -1699,7 +1699,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             // Asking for segment size offset - should be turned into offset into current envelope
             channel.directPutAll(inData, segmentSize);
@@ -1749,7 +1749,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             // Asking a bit in and don't have data written up to that point
             channel.directPutAll(inData, 33);
@@ -1798,7 +1798,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             // No offset on the second one, it should then put its data directly after previously written data.
             channel.directPutAll(inData.limit(chunkSize), 0);
@@ -1848,7 +1848,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             // Offset on second write, but there is data before it, so it should not insert a startOffset envelope
             channel.directPutAll(inData.limit(chunkSize), 0);
@@ -1899,7 +1899,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             // Asking for segment size offset - should be turned into offset into current envelope
             channel.directPutAll(inData, segmentSize);
@@ -1955,7 +1955,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             int dataLimit = inData.limit();
             int splitPoint = inData.position() + 50;
@@ -2017,7 +2017,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             // Asking for segment size offset - should be turned into offset into current envelope
             channel.directPutAll(inData, segmentSize);
@@ -2083,7 +2083,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer realBuffer = buffer.getBuffer();
             assertThat(realBuffer.position())
                     .as("buffer is positioned at beginning")
-                    .isEqualTo(0);
+                    .isZero();
 
             // Asking for segment size offset - should be turned into offset into current envelope
             channel.directPutAll(inData, segmentSize);
@@ -2166,7 +2166,7 @@ class EnvelopeWriteChannelTest {
             channel.putTerm(term);
             channel.putContentType(KERNEL_CONTENT_TYPE);
             channel.put(payload1, payload1.length);
-            assertThat(channel.putChecksum()).isEqualTo(0);
+            assertThat(channel.putChecksum()).isZero();
 
             // write a second simple FULL envelope which leads to zero checksum
             channel.beginChecksumForWriting();
@@ -2174,7 +2174,7 @@ class EnvelopeWriteChannelTest {
             channel.putTerm(term);
             channel.putContentType(KERNEL_CONTENT_TYPE);
             channel.put(payload2, payload2.length);
-            assertThat(channel.putChecksum()).isEqualTo(0);
+            assertThat(channel.putChecksum()).isZero();
 
             // Write a multi-segment payload that will have zero checksum for each constituent envelope
             channel.beginChecksumForWriting();
@@ -2182,7 +2182,7 @@ class EnvelopeWriteChannelTest {
             channel.putTerm(term);
             channel.putContentType(KERNEL_CONTENT_TYPE);
             channel.put(payload3, payload3.length);
-            assertThat(channel.putChecksum()).isEqualTo(0);
+            assertThat(channel.putChecksum()).isZero();
         }
 
         try (var readChannel = new EnvelopeReadChannel(
@@ -2191,19 +2191,19 @@ class EnvelopeWriteChannelTest {
             var readBack1 = ByteBuffer.allocate(payload1.length);
             readChannel.beginChecksum();
             readChannel.read(readBack1);
-            assertThat(readChannel.endChecksumAndValidate()).isEqualTo(0);
+            assertThat(readChannel.endChecksumAndValidate()).isZero();
             assertThat(readBack1.array()).isEqualTo(payload1);
             // Validate second envelope
             var readBack2 = ByteBuffer.allocate(payload2.length);
             readChannel.beginChecksum();
             readChannel.read(readBack2);
-            assertThat(readChannel.endChecksumAndValidate()).isEqualTo(0);
+            assertThat(readChannel.endChecksumAndValidate()).isZero();
             assertThat(readBack2.array()).isEqualTo(payload2);
             // Validate third multi-segment payload
             var readBack3 = ByteBuffer.allocate(payload3.length);
             readChannel.beginChecksum();
             readChannel.read(readBack3);
-            assertThat(readChannel.endChecksumAndValidate()).isEqualTo(0);
+            assertThat(readChannel.endChecksumAndValidate()).isZero();
             assertThat(readBack3.array()).isEqualTo(payload3);
         }
     }
@@ -2732,7 +2732,7 @@ class EnvelopeWriteChannelTest {
             assertThat(buffer.getLong()).as("term").isEqualTo(chunk.term);
         } else {
             // START_OFFSET envelopes do not participate in the checksum chain
-            assertThat(previousPayloadChecksum).as("previousChecksum").isEqualTo(0);
+            assertThat(previousPayloadChecksum).as("previousChecksum").isZero();
             assertThat(buffer.getLong()).as("term").isEqualTo(chunk.term);
         }
         assertThat(buffer.get()).as("contentType").isEqualTo(chunk.contentType);

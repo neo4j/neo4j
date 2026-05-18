@@ -20,8 +20,6 @@
 package org.neo4j.internal.nativeimpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -34,7 +32,7 @@ class NativeAccessProviderTest {
     void linuxNativeAccessSelectedOnLinux() {
         NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
         assertThat(nativeAccess).isInstanceOf(LinuxNativeAccess.class);
-        assertTrue(nativeAccess.isAvailable());
+        assertThat(nativeAccess.isAvailable()).isTrue();
     }
 
     @Test
@@ -42,6 +40,6 @@ class NativeAccessProviderTest {
     void absentNativeAccessSelectedOnNonLinux() {
         NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
         assertThat(nativeAccess).isInstanceOf(AbsentNativeAccess.class);
-        assertFalse(nativeAccess.isAvailable());
+        assertThat(nativeAccess.isAvailable()).isFalse();
     }
 }

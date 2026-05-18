@@ -24,10 +24,6 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.commons.lang3.reflect.FieldUtils.getDeclaredField;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.nativeimpl.NativeAccess.ERROR;
 
 import java.io.FileDescriptor;
@@ -50,7 +46,7 @@ class LinuxNativeAccessTest {
     @Test
     @DisabledOnOs(OS.LINUX)
     void disabledOnNonLinux() {
-        assertFalse(nativeAccess.isAvailable());
+        assertThat(nativeAccess.isAvailable()).isFalse();
     }
 
     @Nested
@@ -61,7 +57,7 @@ class LinuxNativeAccessTest {
 
         @Test
         void availableOnLinux() {
-            assertTrue(nativeAccess.isAvailable());
+            assertThat(nativeAccess.isAvailable()).isTrue();
         }
 
         @Test
@@ -69,7 +65,7 @@ class LinuxNativeAccessTest {
             Path file = tempFile.resolve("file");
             int descriptor = getClosedDescriptor(file);
             var nativeCallResult = nativeAccess.tryPreallocateSpace(descriptor, 1024);
-            assertNotEquals(0, nativeCallResult.getErrorCode());
+            assertThat(nativeCallResult.getErrorCode()).isNotZero();
             assertThat(nativeCallResult.getErrorMessage()).isNotEmpty();
         }
 
@@ -77,16 +73,16 @@ class LinuxNativeAccessTest {
         void failToPreallocateOnLinuxForIncorrectDescriptor()
                 throws IOException, IllegalAccessException, ClassNotFoundException {
             var preallocateResult = nativeAccess.tryPreallocateSpace(0, 1024);
-            assertEquals(ERROR, preallocateResult.getErrorCode());
-            assertTrue(preallocateResult.isError());
+            assertThat(preallocateResult.getErrorCode()).isEqualTo(ERROR);
+            assertThat(preallocateResult.isError()).isTrue();
 
             var negativeDescriptor = nativeAccess.tryPreallocateSpace(-1, 1024);
-            assertEquals(ERROR, negativeDescriptor.getErrorCode());
-            assertTrue(negativeDescriptor.isError());
+            assertThat(negativeDescriptor.getErrorCode()).isEqualTo(ERROR);
+            assertThat(negativeDescriptor.isError()).isTrue();
 
             Path file = tempFile.resolveSibling("file");
             int descriptor = getClosedDescriptor(file);
-            assertNotEquals(0, nativeAccess.tryPreallocateSpace(descriptor, 1024));
+            assertThat(nativeAccess.tryPreallocateSpace(descriptor, 1024)).isNotEqualTo(0);
         }
 
         @Test
@@ -105,30 +101,31 @@ class LinuxNativeAccessTest {
             preallocate(file2, size2);
             preallocate(file3, size3);
 
-            assertEquals(size1, Files.size(file));
-            assertEquals(size2, Files.size(file2));
-            assertEquals(size3, Files.size(file3));
+            assertThat(Files.size(file)).isEqualTo(size1);
+            assertThat(Files.size(file2)).isEqualTo(size2);
+            assertThat(Files.size(file3)).isEqualTo(size3);
         }
 
         @Test
         void failToAdviseSequentialOnLinuxForIncorrectDescriptor()
                 throws IOException, IllegalAccessException, ClassNotFoundException {
             var nativeCallResult = nativeAccess.tryAdviseSequentialAccess(0);
-            assertEquals(ERROR, nativeCallResult.getErrorCode());
-            assertTrue(nativeCallResult.isError());
+            assertThat(nativeCallResult.getErrorCode()).isEqualTo(ERROR);
+            assertThat(nativeCallResult.isError()).isTrue();
 
             var negativeDescriptorResult = nativeAccess.tryAdviseSequentialAccess(-1);
-            assertEquals(ERROR, negativeDescriptorResult.getErrorCode());
-            assertTrue(negativeDescriptorResult.isError());
+            assertThat(negativeDescriptorResult.getErrorCode()).isEqualTo(ERROR);
+            assertThat(negativeDescriptorResult.isError()).isTrue();
 
             Path file = tempFile.resolve("sequentialFile");
             int descriptor = getClosedDescriptor(file);
-            assertNotEquals(0, nativeAccess.tryAdviseSequentialAccess(descriptor));
+            assertThat(nativeAccess.tryAdviseSequentialAccess(descriptor)).isNotEqualTo(0);
         }
 
         @Test
         void ootOfDiskErrorCheck() {
-            assertTrue(nativeAccess.errorTranslator().isOutOfDiskSpace(new NativeCallResult(28, "Out of space jam!")));
+            assertThat(nativeAccess.errorTranslator().isOutOfDiskSpace(new NativeCallResult(28, "Out of space jam!")))
+                    .isTrue();
         }
 
         @Test
@@ -138,20 +135,20 @@ class LinuxNativeAccessTest {
             try (Channel channel = FileChannel.open(file, READ, WRITE, CREATE)) {
                 int descriptor = getDescriptor(channel);
                 var nativeCallResult = nativeAccess.tryAdviseSequentialAccess(descriptor);
-                assertEquals(0, nativeCallResult.getErrorCode());
-                assertFalse(nativeCallResult.isError());
+                assertThat(nativeCallResult.getErrorCode()).isZero();
+                assertThat(nativeCallResult.isError()).isFalse();
             }
         }
 
         @Test
         void failToSkipCacheOnLinuxForIncorrectDescriptor()
                 throws IOException, IllegalAccessException, ClassNotFoundException {
-            assertEquals(ERROR, nativeAccess.tryEvictFromCache(0).getErrorCode());
-            assertEquals(ERROR, nativeAccess.tryEvictFromCache(-1).getErrorCode());
+            assertThat(nativeAccess.tryEvictFromCache(0).getErrorCode()).isEqualTo(ERROR);
+            assertThat(nativeAccess.tryEvictFromCache(-1).getErrorCode()).isEqualTo(ERROR);
 
             Path file = tempFile.resolve("file");
             int descriptor = getClosedDescriptor(file);
-            assertNotEquals(0, nativeAccess.tryEvictFromCache(descriptor));
+            assertThat(nativeAccess.tryEvictFromCache(descriptor)).isNotEqualTo(0);
         }
 
         @Test
@@ -159,7 +156,7 @@ class LinuxNativeAccessTest {
             Path file = tempFile.resolve("file");
             try (Channel channel = FileChannel.open(file, READ, WRITE, CREATE)) {
                 int descriptor = getDescriptor(channel);
-                assertFalse(nativeAccess.tryEvictFromCache(descriptor).isError());
+                assertThat(nativeAccess.tryEvictFromCache(descriptor).isError()).isFalse();
             }
         }
     }
@@ -167,7 +164,8 @@ class LinuxNativeAccessTest {
     private void preallocate(Path file, long bytes) throws IOException, IllegalAccessException, ClassNotFoundException {
         try (Channel channel = FileChannel.open(file, READ, WRITE, CREATE)) {
             int descriptor = getDescriptor(channel);
-            assertFalse(nativeAccess.tryPreallocateSpace(descriptor, bytes).isError());
+            assertThat(nativeAccess.tryPreallocateSpace(descriptor, bytes).isError())
+                    .isFalse();
         }
     }
 

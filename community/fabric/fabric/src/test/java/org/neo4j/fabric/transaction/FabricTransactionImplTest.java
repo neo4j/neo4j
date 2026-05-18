@@ -68,10 +68,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.Clocks;
 
-public class FabricTransactionImplTest {
+class FabricTransactionImplTest {
 
     @Test
-    void testChildrenAreTerminated() {
+    void childrenAreTerminated() {
         var config = Config.defaults();
         var bookmarkManager = mock(TransactionBookmarkManager.class);
 
@@ -103,7 +103,7 @@ public class FabricTransactionImplTest {
     }
 
     @Test
-    void testClosedChildrenAreNotTerminated() {
+    void closedChildrenAreNotTerminated() {
         var config = Config.defaults();
         var bookmarkManager = mock(TransactionBookmarkManager.class);
 
@@ -135,7 +135,7 @@ public class FabricTransactionImplTest {
     }
 
     @Test
-    void testTerminatedChildrenAreNotTerminated() {
+    void terminatedChildrenAreNotTerminated() {
         var config = Config.defaults();
         var bookmarkManager = mock(TransactionBookmarkManager.class);
 

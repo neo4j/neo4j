@@ -110,7 +110,7 @@ class LogPruningByEntryStrategyTest {
         var strategy = new LogPruningByEntryStrategy(fs, 4);
         var pruneConstraint = strategy.newConstraint(15, 0, logsRepository.pathFor(2));
 
-        assertThat(checkConstraint(pruneConstraint)).isEqualTo(0);
+        assertThat(checkConstraint(pruneConstraint)).isZero();
     }
 
     @Test
@@ -122,7 +122,7 @@ class LogPruningByEntryStrategyTest {
         var strategy = new LogPruningByEntryStrategy(fs, 256);
         var pruneConstraint = strategy.newConstraint(512, 0, logsRepository.pathFor(2));
 
-        assertThat(checkConstraint(pruneConstraint)).isEqualTo(0);
+        assertThat(checkConstraint(pruneConstraint)).isZero();
     }
 
     private void createFileWithHeader(long version, int prevIndex) throws IOException {

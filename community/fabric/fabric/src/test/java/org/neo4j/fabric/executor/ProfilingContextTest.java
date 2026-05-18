@@ -74,7 +74,7 @@ class ProfilingContextTest {
     }
 
     @Test
-    void testProfileHandling() throws IOException {
+    void profileHandling() throws IOException {
         recordProfile(1, "Query 1", 10, "Profile 1");
         recordProfile(1, "Query 1", 30, "Profile 2");
         recordProfile(1, "Query 1", 20, "Profile 3");
@@ -90,7 +90,7 @@ class ProfilingContextTest {
         profilingContext.close();
 
         var profiles = Files.list(profilesDir).toList();
-        assertThat(profiles.size()).isEqualTo(1);
+        assertThat(profiles).hasSize(1);
         var profileContent = Files.readString(profiles.get(0));
 
         var expected = """

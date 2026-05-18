@@ -39,12 +39,10 @@ import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.output.NullOutputStream.nullOutputStream;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
@@ -99,7 +97,7 @@ import picocli.CommandLine;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(TestDirectorySupportExtension.class)
 @Neo4jLayoutExtension
-public class UploadCommandTest {
+class UploadCommandTest {
 
     static final String ERROR_REASON_UNSUPPORTED_INDEXES = "LegacyIndexes";
     private static final int MOCK_SERVER_PORT = 8080;
@@ -133,14 +131,14 @@ public class UploadCommandTest {
     private Neo4jLayout neo4jLayout;
 
     @BeforeEach
-    public void setupEach() {
+    void setupEach() {
         wireMockServer = new WireMockServer(options().port(MOCK_SERVER_PORT).notifier(new ConsoleNotifier(false)));
         WireMock.configureFor("localhost", MOCK_SERVER_PORT);
         wireMockServer.start();
     }
 
     @BeforeAll
-    public void setup() throws IOException {
+    void setup() throws IOException {
         homeDir = directory.homePath();
         confPath = directory.directory("conf");
         Path configDir = directory.directory("config-dir");
@@ -156,12 +154,12 @@ public class UploadCommandTest {
     }
 
     @AfterEach
-    public void teardown() {
+    void teardown() {
         wireMockServer.stop();
     }
 
     @Test
-    public void happyPathGCPUploadCommandTest() {
+    void happyPathGCPUploadCommandTest() {
 
         String authResponse = "token";
         createAuraHappyPathStubs(authResponse);
@@ -179,7 +177,7 @@ public class UploadCommandTest {
         UploadCommand command = buildUploadCommand(auraURLFactory);
         String[] args = getNormalRuntimeArgs();
 
-        assertDoesNotThrow(() -> new CommandLine(command).execute(args));
+        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
 
         verifyCommonConsoleUrls();
         verifyGCPPresignedEndpoints();
@@ -223,7 +221,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void happyPathAWSUploadCommandTest() {
+    void happyPathAWSUploadCommandTest() {
 
         String authResponse = "token";
         createAuraHappyPathStubs(authResponse);
@@ -255,7 +253,7 @@ public class UploadCommandTest {
                 PushToCloudCLI.fakeCLI("username", "password", false));
 
         String[] args = getNormalRuntimeArgs();
-        assertDoesNotThrow(() -> new CommandLine(command).execute(args));
+        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
 
         verifyCommonConsoleUrls();
 
@@ -265,7 +263,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldHandleUploadStartTimeoutFailure() {
+    void shouldHandleUploadStartTimeoutFailure() {
 
         String authResponse = "token";
         createAuraHappyPathStubs(authResponse);
@@ -335,7 +333,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldHandleFailedImport() throws JsonProcessingException {
+    void shouldHandleFailedImport() throws JsonProcessingException {
 
         String authResponse = "token";
         createAuraHappyPathStubs(authResponse);
@@ -366,11 +364,11 @@ public class UploadCommandTest {
 
         String[] args = getNormalRuntimeArgs();
         CommandLine.populateCommand(command, args);
-        var exception = assertThrows(CommandFailedException.class, () -> command.execute());
-        String message = exception.getMessage();
-        assertTrue(message.contains(errorMessage));
-        assertFalse(message.contains(ERROR_REASON_UNSUPPORTED_INDEXES));
-        assertFalse(message.contains(".."));
+        assertThatExceptionOfType(CommandFailedException.class)
+                .isThrownBy(() -> command.execute())
+                .withMessageContaining(errorMessage)
+                .withMessageNotContaining(ERROR_REASON_UNSUPPORTED_INDEXES)
+                .withMessageNotContaining("..");
 
         verifyCommonConsoleUrls();
         verifyGCPPresignedEndpoints();
@@ -427,7 +425,7 @@ public class UploadCommandTest {
         int exitCode = new CommandLine(command).execute(args);
 
         // then
-        assertEquals(0, exitCode);
+        assertThat(exitCode).isZero();
         verify(postRequestedFor(urlMatching(".*?/import/auth$")));
         verify(postRequestedFor(urlMatching(".*?/import$"))
                 .withRequestBody(matchingJsonPath("$.FullSize", equalTo(String.valueOf(dbFullSize)))));
@@ -452,7 +450,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldReadUsernameAndPasswordFromUserInput() {
+    void shouldReadUsernameAndPasswordFromUserInput() {
         // given
         String username = "neo4j";
         String password = "abc";
@@ -480,7 +478,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldUseNeo4jAsDefaultUsernameIfUserHitsEnter() {
+    void shouldUseNeo4jAsDefaultUsernameIfUserHitsEnter() {
         // given
         createGCPHappyPathWireMockStubs("token");
         PushToCloudCLI pushToCloudCLI = mock(PushToCloudCLI.class);
@@ -509,7 +507,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldAcceptPasswordViaArgAndPromptForUsername() throws CommandFailedException {
+    void shouldAcceptPasswordViaArgAndPromptForUsername() {
         // given
         String username = "neo4juserviacli";
         createGCPHappyPathWireMockStubs("token");
@@ -537,7 +535,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldAcceptPasswordViaEnvAndPromptForUsername() {
+    void shouldAcceptPasswordViaEnvAndPromptForUsername() {
         // given
         String username = "neo4juserviacli";
         createGCPHappyPathWireMockStubs("token");
@@ -569,7 +567,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldAcceptUsernameViaArgAndPromptForPassword() throws CommandFailedException {
+    void shouldAcceptUsernameViaArgAndPromptForPassword() {
         // given
         String username = "neo4j";
         String password = "abc";
@@ -593,12 +591,12 @@ public class UploadCommandTest {
         new CommandLine(command).execute(args);
 
         // then
-        assertTrue(Files.exists(dump));
+        assertThat(dump).exists();
         verify(postRequestedFor(urlMatching(".*?/import/auth$")).withBasicAuth(new BasicCredentials("user", password)));
     }
 
     @Test
-    public void shouldAcceptUsernameViaEnvAndPromptForPassword() {
+    void shouldAcceptUsernameViaEnvAndPromptForPassword() {
         // given
         String username = "neo4jcliuser";
         String password = "abc";
@@ -621,12 +619,12 @@ public class UploadCommandTest {
         new CommandLine(command)
                 .setResourceBundle(new MapResourceBundle(environment))
                 .execute(args);
-        assertTrue(Files.exists(dump));
+        assertThat(dump).exists();
         verify(postRequestedFor(urlMatching(".*?/import/auth$")).withBasicAuth(new BasicCredentials("user", password)));
     }
 
     @Test
-    public void shouldAcceptOnlyUsernameAndPasswordFromCli() throws CommandFailedException {
+    void shouldAcceptOnlyUsernameAndPasswordFromCli() {
         // given
         String username = "neo4jcliuser";
         String password = "abc";
@@ -663,7 +661,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldAcceptOnlyUsernameAndPasswordFromEnv() {
+    void shouldAcceptOnlyUsernameAndPasswordFromEnv() {
         // given
         String username = "neo4jcliuser";
         String password = "abc";
@@ -693,7 +691,7 @@ public class UploadCommandTest {
     }
 
     @Test
-    public void shouldFailOnDumpPointingToMissingFile() throws CommandFailedException {
+    void shouldFailOnDumpPointingToMissingFile() {
         // given
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
@@ -708,12 +706,13 @@ public class UploadCommandTest {
                 PushToCloudCLI.fakeCLI("neo4j", "abc", false));
         CommandLine.populateCommand(command, args);
 
-        final var assertFailure = assertThatThrownBy(command::execute).isInstanceOf(CommandFailedException.class);
-        assertFailure.hasMessageContaining("Could not find any archive files");
+        assertThatThrownBy(command::execute)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Could not find any archive files");
     }
 
     @Test
-    public void shouldFailOnWrongDumpPath() throws CommandFailedException {
+    void shouldFailOnWrongDumpPath() {
         AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
         AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
         when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);

@@ -68,7 +68,7 @@ class LogFilesPrunerTest {
 
         var prunedVersion = new LogFilesPruner(logsRepository, ALWAYS_PRUNE).pruneUpTo(0, 0, 0, 0);
 
-        assertThat(prunedVersion).isEqualTo(0);
+        assertThat(prunedVersion).isZero();
         assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(1, 1));
     }
 

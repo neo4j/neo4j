@@ -16,20 +16,20 @@
  */
 package org.neo4j.export.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 
-public class IOCommonTest {
+class IOCommonTest {
 
     @Test
-    void testBase64Encode() {
+    void base64Encode() {
         String username = "mrbutcher";
         char[] password = "sausage".toCharArray();
         String out = IOCommon.base64Encode(username, password);
-        assertEquals("bXJidXRjaGVyOnNhdXNhZ2U=", out);
+        assertThat(out).isEqualTo("bXJidXRjaGVyOnNhdXNhZ2U=");
         String decoded = new String(Base64.getDecoder().decode(out));
-        assertEquals(decoded, "mrbutcher:sausage");
+        assertThat(decoded).isEqualTo("mrbutcher:sausage");
     }
 }
