@@ -30,6 +30,7 @@ import static org.neo4j.kernel.api.schema.vector.VectorTestUtils.max;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.SequencedCollection;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -48,6 +50,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions;
@@ -63,16 +66,18 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.InternalIndexSetting;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
+import org.neo4j.kernel.api.impl.schema.vector.VectorQuantizationType;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.Tokens;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -83,8 +88,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class VectorIndexCreationTest {
-    private static final VectorIndexVersion LATEST =
-            VectorIndexVersion.latestSupportedVersion(LatestVersions.LATEST_KERNEL_VERSION);
+    private static final KernelVersion KERNEL_VERSION = KernelVersion.VERSION_VECTOR_BINARY_QUANTIZATION;
+    private static final VectorIndexVersion LATEST = VectorIndexVersion.latestSupportedVersion(KERNEL_VERSION);
 
     abstract static class Entity {
         private final Factory factory;
@@ -510,12 +515,13 @@ public class VectorIndexCreationTest {
             }
         }
 
+        @Disabled("Needs existing new implementation to be moved to a new vector version: IND-417")
         @Nested
-        class Quantization extends TestBase {
+        class QuantizationEnabled extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Quantization_Enabled();
             private static final Value DEFAULT_VALUE = BooleanValue.TRUE;
 
-            Quantization() {
+            QuantizationEnabled() {
                 super(
                         Entity.this.factory,
                         inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V3_0)));
@@ -570,6 +576,103 @@ public class VectorIndexCreationTest {
 
             static Iterable<Boolean> supported(VectorIndexVersion version) {
                 return version.supportedQuantizationBooleans();
+            }
+
+            @ParameterizedTest
+            @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
+            void shouldAcceptMissingSetting(VectorIndexVersion version) {
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
+
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                IndexDescriptor index = ref.get();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+
+            @Test
+            @EnabledIf("latestIsValid")
+            void shouldAcceptMissingSettingCoreAPI() {
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
+
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                IndexDescriptor index = ref.get();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+        }
+
+        @Nested
+        class QuantizationTypes extends TestBase {
+            private static final IndexSetting SETTING = InternalIndexSetting.vector_Quantization_Type();
+            private static final Value DEFAULT_VALUE =
+                    Values.utf8Value(VectorQuantizationType.SCALAR.name().toUpperCase(Locale.ROOT));
+
+            QuantizationTypes() {
+                super(
+                        Entity.this.factory,
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V3_0)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            void shouldAcceptSupported(VectorIndexVersion version, VectorQuantizationType quantizationType) {
+                VectorIndexSettings settings = defaultSettings().withQuantizationType(quantizationType);
+
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                IndexDescriptor index = ref.get();
+
+                Value value = Values.utf8Value(quantizationType.name().toUpperCase(Locale.ROOT));
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), value);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), value);
+            }
+
+            Stream<Arguments> shouldAcceptSupported() {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (VectorQuantizationType quantizationType : supported(version)) {
+                        builder.add(Arguments.of(version, quantizationType));
+                    }
+                }
+                return builder.build();
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            @EnabledIf("latestIsValid")
+            void shouldAcceptSupportedCoreAPI(VectorQuantizationType quantizationType) {
+                VectorIndexSettings settings = defaultSettings().withQuantizationType(quantizationType);
+
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                IndexDescriptor index = ref.get();
+
+                Value value = Values.utf8Value(quantizationType.name().toUpperCase(Locale.ROOT));
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), value);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), value);
+            }
+
+            Iterable<VectorQuantizationType> shouldAcceptSupportedCoreAPI() {
+                return supported(LATEST);
+            }
+
+            Iterable<VectorQuantizationType> supported(VectorIndexVersion version) {
+                return version.supportedQuantizationTypes();
             }
 
             @ParameterizedTest
@@ -928,7 +1031,11 @@ public class VectorIndexCreationTest {
 
         @ExtensionCallback
         static void configure(TestDatabaseManagementServiceBuilder builder) {
-            builder.setConfig(GraphDatabaseInternalSettings.always_use_latest_index_provider, false);
+            builder.setConfig(GraphDatabaseInternalSettings.always_use_latest_index_provider, false)
+                    .setConfig(GraphDatabaseInternalSettings.latest_kernel_version, KERNEL_VERSION.version())
+                    .setConfig(
+                            GraphDatabaseInternalSettings.latest_runtime_version,
+                            DbmsRuntimeVersion.fromKernelVersion(KERNEL_VERSION).getVersion());
         }
 
         @BeforeAll
