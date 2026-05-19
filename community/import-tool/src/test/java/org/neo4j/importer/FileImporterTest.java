@@ -97,7 +97,7 @@ class FileImporterTest {
                     .withStdOut(NullPrintStream.INSTANCE)
                     .withStdErr(NullPrintStream.INSTANCE)
                     .withLogProvider(importContext)
-                    .addNodeFiles(emptySet(), new FileGroup(inputFile.toAbsolutePath()))
+                    .addNodeFiles(emptySet(), new FileGroup(new FileGroup.NumberedFile(0, inputFile.toAbsolutePath())))
                     .build();
 
             csvImporter.doImport(fullImport(), false);
@@ -151,7 +151,7 @@ class FileImporterTest {
                 .withPageCacheTracer(cacheTracer)
                 .withCursorContextFactory(
                         new CursorContextFactory(cacheTracer, new FixedVersionContextSupplier(BASE_TX_ID)))
-                .addNodeFiles(emptySet(), new FileGroup(inputFile.toAbsolutePath()))
+                .addNodeFiles(emptySet(), new FileGroup(new FileGroup.NumberedFile(0, inputFile.toAbsolutePath())))
                 .build();
 
         fileImporter.doImport(fullImport(), false);
@@ -172,7 +172,7 @@ class FileImporterTest {
                 .withStdOut(NullPrintStream.INSTANCE)
                 .withStdErr(NullPrintStream.INSTANCE)
                 .withReportFile(testDir.file("report.txt"))
-                .addNodeFiles(emptySet(), new FileGroup(nodes.toAbsolutePath()))
+                .addNodeFiles(emptySet(), new FileGroup(new FileGroup.NumberedFile(0, nodes.toAbsolutePath())))
                 .withBadTolerance(4)
                 .withSkipDuplicateNodes(true)
                 .build();
@@ -194,7 +194,7 @@ class FileImporterTest {
                 .withStdOut(NullPrintStream.INSTANCE)
                 .withStdErr(NullPrintStream.INSTANCE)
                 .withReportFile(testDir.file("report.txt"))
-                .addNodeFiles(emptySet(), new FileGroup(nodeFile.toAbsolutePath()))
+                .addNodeFiles(emptySet(), new FileGroup(new FileGroup.NumberedFile(0, nodeFile.toAbsolutePath())))
                 .withBadTolerance(4)
                 .withSkipDuplicateNodes(true);
         context.configure(importerBuilder);

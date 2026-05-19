@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -180,15 +179,19 @@ public class ParquetInput implements Input {
 
         var deduplicatedColumnData = new LinkedHashSet<ParquetData>();
         files.forEach((rawLabelsOrType, fileGroups) -> {
-            for (var fileGroup : fileGroups) {
-                for (var path : fileGroup.files()) {
-                    if (!isHeaderFile(path)) {
+            for (FileGroup fileGroup : fileGroups) {
+                for (FileGroup.NumberedFile path : fileGroup.files()) {
+                    if (!isHeaderFile(path.path())) {
                         var labelsOrType = keyExtractor.apply(rawLabelsOrType);
-                        var metadataKey = new ParquetColumnMetadataKey(path, labelsOrType);
+                        var metadataKey = new ParquetColumnMetadataKey(path.path(), labelsOrType);
                         var allMetadata = indexedMetadata.get(metadataKey);
                         for (ParquetColumnMetadata metadata : allMetadata) {
                             deduplicatedColumnData.add(new ParquetData(
-                                    entityType, labelsOrType, path, metadata.columns(), defaultTimezoneSupplier));
+                                    entityType,
+                                    labelsOrType,
+                                    path.path(),
+                                    metadata.columns(),
+                                    defaultTimezoneSupplier));
                         }
                     }
                 }
@@ -310,8 +313,7 @@ public class ParquetInput implements Input {
             var labels = labelsAndNodeFilesEntry.getKey();
             var hasLabelColumn = !labels.isEmpty() && labels.stream().anyMatch(label -> !label.isBlank());
             var nodeFiles = labelsAndNodeFilesEntry.getValue().stream()
-                    .map(FileGroup::files)
-                    .flatMap(Arrays::stream)
+                    .flatMap(FileGroup::streamPaths)
                     .collect(Collectors.toList());
 
             for (Path nodeFile : nodeFiles) {
@@ -456,8 +458,7 @@ public class ParquetInput implements Input {
             var hasTypeColumn = relType != null && !relType.isBlank();
             // parse all relationship headers and verify all ID spaces
             var relationshipFileList = typeAndRelationshipFilesEntry.getValue().stream()
-                    .map(FileGroup::files)
-                    .flatMap(Arrays::stream)
+                    .flatMap(FileGroup::streamPaths)
                     .collect(Collectors.toList());
             Set<String> mapColumns = new HashSet<>();
             Set<String> structColumns = new HashSet<>();
@@ -717,13 +718,13 @@ public class ParquetInput implements Input {
         for (Map.Entry<Set<String>, List<FileGroup>> nodePathEntries : nodeFiles.entrySet()) {
             mergedLabels.addAll(Collections.unmodifiableSet(nodePathEntries.getKey()));
             for (FileGroup nodeFileGroup : nodePathEntries.getValue()) {
-                for (Path nodePath : nodeFileGroup.files()) {
+                for (FileGroup.NumberedFile nodeFile : nodeFileGroup.files()) {
                     try {
                         // skip obvious csv head
-                        if (isHeaderFile(nodePath)) {
+                        if (isHeaderFile(nodeFile.path())) {
                             continue;
                         }
-                        var metadata = ParquetReader.readMetadata(ParquetImportInputFile.of(nodePath));
+                        var metadata = ParquetReader.readMetadata(ParquetImportInputFile.of(nodeFile.path()));
                         List<BlockMetaData> blocks = metadata.getBlocks();
                         for (BlockMetaData block : blocks) {
                             numberOfNodes += block.getRowCount();
@@ -752,13 +753,13 @@ public class ParquetInput implements Input {
         long totalRelationshipPropertiesSize = 0;
         for (Map.Entry<String, List<FileGroup>> relationshipFileEntries : relationshipFiles.entrySet()) {
             for (FileGroup relationshipFileGroup : relationshipFileEntries.getValue()) {
-                for (Path relationshipPath : relationshipFileGroup.files()) {
+                for (FileGroup.NumberedFile relationshipFile : relationshipFileGroup.files()) {
                     try {
                         // skip obvious csv headers
-                        if (isHeaderFile(relationshipPath)) {
+                        if (isHeaderFile(relationshipFile.path())) {
                             continue;
                         }
-                        var metadata = ParquetReader.readMetadata(ParquetImportInputFile.of(relationshipPath));
+                        var metadata = ParquetReader.readMetadata(ParquetImportInputFile.of(relationshipFile.path()));
                         for (BlockMetaData block : metadata.getBlocks()) {
                             numberOfRelationships += block.getRowCount();
                             var currentColumnCount = block.getColumns().size();

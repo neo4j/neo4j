@@ -831,9 +831,10 @@ public class ImportCommand {
 
         private FileImporter.Builder addInputData(FileSystemAbstraction fs, FileImporter.Builder importerBuilder) {
             var actualInputType = fileInputType;
-            for (var n : nodes) {
-                var fileGroup = n.toFileGroup(fs, patternStyle);
-                var inputType = resolveFileInputType(fileInputType, fileGroup);
+            for (NodeFilesGroup n : nodes) {
+                Path[] paths = n.toPathArray(fs, patternStyle);
+                FileGroup fileGroup = importerBuilder.toFileGroup(paths);
+                FileInputType inputType = resolveFileInputType(fileInputType, fileGroup);
                 if (actualInputType == null) {
                     actualInputType = inputType;
                 } else if (inputType != actualInputType) {
@@ -841,9 +842,10 @@ public class ImportCommand {
                 }
                 importerBuilder.addNodeFiles(n.key, fileGroup);
             }
-            for (var r : relationships) {
-                var fileGroup = r.toFileGroup(fs, patternStyle);
-                var inputType = resolveFileInputType(fileInputType, fileGroup);
+            for (RelationshipFilesGroup r : relationships) {
+                Path[] paths = r.toPathArray(fs, patternStyle);
+                FileGroup fileGroup = importerBuilder.toFileGroup(paths);
+                FileInputType inputType = resolveFileInputType(fileInputType, fileGroup);
                 if (inputType != actualInputType) {
                     throw unexpectedInputType(actualInputType, inputType, fileInputType != null, false, fileGroup);
                 }
@@ -875,7 +877,8 @@ public class ImportCommand {
                                     .formatted(
                                             expectedType,
                                             unexpectedType,
-                                            fileGroup.stream()
+                                            fileGroup
+                                                    .streamPaths()
                                                     .map(Path::getFileName)
                                                     .map(Objects::toString)
                                                     .collect(Collectors.joining(","))));
@@ -1062,13 +1065,14 @@ public class ImportCommand {
                     path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".parquet");
             if (expectedType == FileInputType.PARQUET) {
                 // Parquet imports allows the first path of a group to be a header CSV - which obvs isn't .parquet
-                return fileGroup.fileCount() == 1 || fileGroup.stream().skip(1).anyMatch(checkForParquet)
+                return fileGroup.fileCount() == 1
+                                || fileGroup.streamPaths().skip(1).anyMatch(checkForParquet)
                         ? FileInputType.PARQUET
                         : FileInputType.CSV;
             }
 
             // default to CSV otherwise
-            return fileGroup.stream().anyMatch(checkForParquet) ? FileInputType.PARQUET : FileInputType.CSV;
+            return fileGroup.streamPaths().anyMatch(checkForParquet) ? FileInputType.PARQUET : FileInputType.CSV;
         }
 
         static class EscapedCharacterConverter implements ITypeConverter<Character> {
@@ -1388,8 +1392,8 @@ public class ImportCommand {
             this.files = files;
         }
 
-        FileGroup toFileGroup(FileSystemAbstraction fs, PatternStyle patternStyle) {
-            return new FileGroup(parseFilesList(fs, files, patternStyle));
+        Path[] toPathArray(FileSystemAbstraction fs, PatternStyle patternStyle) {
+            return parseFilesList(fs, files, patternStyle);
         }
     }
 

@@ -27,8 +27,9 @@ import java.util.stream.Stream;
  * A group of files that have been specified together in one command line argument.
  * E.g. `--nodes file1,file2,file3` would be represented as one FileGroup.
  * They are internally viewed as a single stream of data. The first file must contain the header.
+ * Each file is assigned a global id.
  */
-public record FileGroup(Path... files) {
+public record FileGroup(NumberedFile... files) {
     /**
      * @return the number of files in the group
      */
@@ -37,9 +38,11 @@ public record FileGroup(Path... files) {
     }
 
     /**
-     * @return the files as a {@link Stream}
+     * @return the file paths as a {@link Stream}
      */
-    public Stream<Path> stream() {
-        return Arrays.stream(files);
+    public Stream<Path> streamPaths() {
+        return Arrays.stream(files).map(NumberedFile::path);
     }
+
+    public record NumberedFile(int globalId, Path path) {}
 }

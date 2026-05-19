@@ -254,10 +254,10 @@ class ParquetInputBatchImportIT {
         return new ParquetInput(
                 Map.of(
                         Set.of("STARTTHING"),
-                        List.of(new FileGroup(nodeGroup1)),
+                        List.of(new FileGroup(new FileGroup.NumberedFile(0, nodeGroup1))),
                         Set.of("ENDTHING"),
-                        List.of(new FileGroup(nodeGroup2))),
-                Map.of("", List.of(new FileGroup(relationships))),
+                        List.of(new FileGroup(new FileGroup.NumberedFile(1, nodeGroup2)))),
+                Map.of("", List.of(new FileGroup(new FileGroup.NumberedFile(2, relationships)))),
                 List.of(),
                 INTEGER,
                 Configuration.newBuilder().build(),
@@ -266,8 +266,8 @@ class ParquetInputBatchImportIT {
     }
 
     static Input parquet(Path nodes, Path relationships, IdType idType, Groups groups) {
-        FileGroup nodeFileGroup = new FileGroup(nodes);
-        FileGroup relationshipFileGroup = new FileGroup(relationships);
+        FileGroup nodeFileGroup = new FileGroup(new FileGroup.NumberedFile(0, nodes));
+        FileGroup relationshipFileGroup = new FileGroup(new FileGroup.NumberedFile(1, relationships));
         return new ParquetInput(
                 Map.of(Set.of(""), Collections.singletonList(nodeFileGroup)),
                 Map.of("", Collections.singletonList(relationshipFileGroup)),

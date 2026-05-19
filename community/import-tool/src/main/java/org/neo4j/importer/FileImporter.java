@@ -466,8 +466,8 @@ public class FileImporter {
             }
 
             for (FileGroup fileGroup : fileGroups) {
-                for (final Path file : fileGroup.files()) {
-                    printIndented(StorageUtils.toString(file), out);
+                for (FileGroup.NumberedFile file : fileGroup.files()) {
+                    printIndented(StorageUtils.toString(file.path()), out);
                 }
             }
             out.println();
@@ -492,7 +492,8 @@ public class FileImporter {
         relationshipFiles.forEach((defaultTypeName, fileGroups) -> {
             final var decorator = defaultRelationshipType(defaultTypeName);
             for (FileGroup fileGroup : fileGroups) {
-                final var data = data(decorator, inputEncoding, fileGroup.files());
+                final var data =
+                        data(decorator, inputEncoding, fileGroup.streamPaths().toArray(Path[]::new));
                 result.add(data);
             }
         });
@@ -504,7 +505,8 @@ public class FileImporter {
         nodeFiles.forEach((labels, fileGroups) -> {
             final var decorator = labels.isEmpty() ? NO_DECORATOR : additiveLabels(labels.toArray(new String[0]));
             for (FileGroup fileGroup : fileGroups) {
-                final var data = data(decorator, inputEncoding, fileGroup.files());
+                final var data =
+                        data(decorator, inputEncoding, fileGroup.streamPaths().toArray(Path[]::new));
                 result.add(data);
             }
         });
@@ -563,6 +565,18 @@ public class FileImporter {
         private FileInputType fileInputType = FileInputType.CSV;
         private ShardingArguments shardingArguments;
         private Monitor monitor = Monitor.NO_MONITOR;
+        private int globalFileIdCounter = 0;
+
+        /**
+         * Wraps a path array in a file group and assign each file in the group a global id.
+         */
+        public FileGroup toFileGroup(Path[] paths) {
+            FileGroup.NumberedFile[] numberedFiles = new FileGroup.NumberedFile[paths.length];
+            for (int i = 0; i < paths.length; i++) {
+                numberedFiles[i] = new FileGroup.NumberedFile(globalFileIdCounter++, paths[i]);
+            }
+            return new FileGroup(numberedFiles);
+        }
 
         public Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
             this.databaseLayout = databaseLayout;
