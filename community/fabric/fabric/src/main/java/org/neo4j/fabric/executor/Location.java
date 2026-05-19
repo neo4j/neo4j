@@ -39,6 +39,17 @@ public interface Location {
     }
 
     /**
+     * Resolves the database name for a remote internal location.
+     */
+    private static String internalRoutingName(DatabaseReferenceImpl.Internal databaseReference) {
+        if (databaseReference instanceof DatabaseReferenceImpl.VirtualSPD spd) {
+            // privilege checks are done against the virtual alias and must therefore be used.
+            return spd.alias().name();
+        }
+        return databaseReference.databaseId().name();
+    }
+
+    /**
      * A Local location refers to a graph/database running on this instance of Neo4j.
      */
     record Local(long graphId, DatabaseReferenceImpl.Internal databaseReference) implements Location {
@@ -71,7 +82,7 @@ public interface Location {
 
                 @Override
                 public String getDatabaseName() {
-                    return databaseReference.databaseId().name();
+                    return internalRoutingName(databaseReference);
                 }
             }
 
@@ -84,7 +95,7 @@ public interface Location {
 
                 @Override
                 public String getDatabaseName() {
-                    return databaseReference.databaseId().name();
+                    return internalRoutingName(databaseReference);
                 }
 
                 public RemoteUri getUri() {
