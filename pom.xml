@@ -603,6 +603,8 @@
               <jvmArg>-Xms256m</jvmArg>
               <jvmArg>-Xmx1024m</jvmArg>
               <jvmArg>-Xss4M</jvmArg>
+              <!-- Workaround for pthread_create call failure and hanging build on certain JDK 17 and operating system combinations -->
+              <jvmArg>-XX:+UseSerialGC</jvmArg>
             </jvmArgs>
             <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
           </configuration>
