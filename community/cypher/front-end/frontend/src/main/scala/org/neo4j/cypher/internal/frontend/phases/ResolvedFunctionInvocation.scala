@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocationLike
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
 import org.neo4j.cypher.internal.expressions.functions.{Function => BuiltInFunction}
 import org.neo4j.cypher.internal.util.FunctionName
@@ -85,7 +86,12 @@ case class ResolvedFunctionInvocation(
   override val callArguments: IndexedSeq[Expression],
   otherCypherVersionIfExists: Option[CypherVersion] = None
 )(val position: InputPosition)
-    extends Expression with UserDefinedFunctionInvocation with SemanticCheckableExpression {
+    extends Expression with FunctionInvocationLike with UserDefinedFunctionInvocation with SemanticCheckableExpression {
+
+  override def isUserDefined: Boolean = fcnSignature match {
+    case Some(signature) => signature.builtIn
+    case None            => false
+  }
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>

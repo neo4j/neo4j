@@ -16,13 +16,20 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-object IsAggregate {
+import org.neo4j.cypher.internal.util.FunctionName
 
-  def unapply(v: Any): Option[AnyRef] = v match {
-    case expr: CountStar                              => Some(expr)
-    case fi: FunctionInvocationLike if fi.isAggregate => Some(fi)
-    case _                                            => None
-  }
-
-  def apply(e: Expression): Boolean = unapply(e).nonEmpty
+/**
+ * Common parent for any AST node that represents a function call, whether or not the
+ * call has been resolved against a function signature.
+ *
+ * Implementations:
+ *  - [[FunctionInvocation]] — pre-resolution or built-in.
+ *  - org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation — resolved user-defined and temporals.
+ */
+trait FunctionInvocationLike extends Expression {
+  def functionName: FunctionName
+  def callArguments: Seq[Expression]
+  def isAggregate: Boolean
+  def isUserDefined: Boolean
+  def asUnresolvedFunction: FunctionInvocation
 }

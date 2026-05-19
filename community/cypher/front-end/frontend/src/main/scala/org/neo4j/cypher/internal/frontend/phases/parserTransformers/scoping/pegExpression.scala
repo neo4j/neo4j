@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocationLike
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.AggregatingFunction
-import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.DynamicLeaf
 import org.neo4j.cypher.internal.util.ASTNode
@@ -117,13 +115,9 @@ object pegExpression {
        */
       case cntStar: CountStar =>
         collect(incoming.expressionResultScope(cntStar, Seq.empty))
-      case fi @ FunctionInvocation(_, _, args, _, false, _, _) if fi.function.isInstanceOf[AggregatingFunction] =>
+      case fi: FunctionInvocationLike if fi.isAggregate =>
         val argIncoming = incoming.aggregatingConstantChildContext
-        val children = args.map(arg => apply(arg, argIncoming))
-        collect(incoming.expressionResultScope(fi, children))
-      case fi @ ResolvedFunctionInvocation(_, _, args, _) if fi.isAggregate =>
-        val argIncoming = incoming.aggregatingConstantChildContext
-        val children = args.map(arg => apply(arg, argIncoming))
+        val children = fi.callArguments.map(arg => apply(arg, argIncoming))
         collect(incoming.expressionResultScope(fi, children))
 
       /**

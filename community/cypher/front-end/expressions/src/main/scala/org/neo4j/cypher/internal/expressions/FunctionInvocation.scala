@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentOrder
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentUnordered
+import org.neo4j.cypher.internal.expressions.functions.AggregatingFunction
 import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction
 import org.neo4j.cypher.internal.expressions.functions.LocalFunction
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
@@ -77,8 +78,13 @@ case class FunctionInvocation(
   calledFromUseClause: Boolean = false,
   isShadowed: Boolean = false,
   maybeLocalFunction: Option[LocalFunction] = None // only set by ResolveLocalFunctions to Some(...)
-)(val position: InputPosition) extends Expression {
+)(val position: InputPosition) extends Expression with FunctionInvocationLike {
   val name: String = functionName.fullName
+
+  override def callArguments: Seq[Expression] = args
+  override def isAggregate: Boolean = distinct || function.isInstanceOf[AggregatingFunction]
+  override def isUserDefined: Boolean = false
+  override def asUnresolvedFunction: FunctionInvocation = this
 
   def function: functions.Function =
     maybeLocalFunction.getOrElse(
