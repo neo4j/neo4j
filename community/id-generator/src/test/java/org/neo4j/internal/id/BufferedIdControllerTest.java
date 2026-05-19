@@ -158,9 +158,9 @@ class BufferedIdControllerTest {
 
             controller.maintenance();
 
-            assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(1);
-            assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(1);
-            assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(1);
+            assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(2);
+            assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(2);
+            assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(2);
         }
     }
 

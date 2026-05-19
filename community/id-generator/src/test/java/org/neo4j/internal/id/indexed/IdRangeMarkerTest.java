@@ -444,7 +444,7 @@ class IdRangeMarkerTest {
         }
 
         // then
-        assertThat(freeIdFindState.snapshot().freeIdsNotification()).isGreaterThan(0);
+        assertThat(freeIdFindState.snapshot().notificationCount()).isGreaterThan(0);
         assertThat(gatherIds(IdRange.IdState.FREE)).isEqualTo(LongSets.immutable.of(5, 6, 7));
     }
 

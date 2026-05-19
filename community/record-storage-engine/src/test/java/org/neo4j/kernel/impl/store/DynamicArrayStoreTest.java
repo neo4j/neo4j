@@ -106,7 +106,7 @@ class DynamicArrayStoreTest {
                     cursorContext,
                     INSTANCE);
 
-            assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(1);
+            assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(2);
         }
     }
 

@@ -152,7 +152,7 @@ class PropertyCreatorTest {
 
     @Test
     void noPageCacheAccessOnCleanIdGenerator() {
-        assertZeroCursor();
+        assertCursorTracing(0);
 
         existingChain(
                 record(property(0, 0), property(1, 1), property(2, 2), property(3, 3)),
@@ -160,16 +160,16 @@ class PropertyCreatorTest {
 
         setProperty(10, 10);
 
-        assertZeroCursor();
+        assertCursorTracing(0);
     }
 
     @Test
     void pageCacheAccessOnPropertyCreation() {
-        assertZeroCursor();
+        assertCursorTracing(0);
         prepareDirtyGenerator(propertyStore);
 
         setProperty(10, 10);
-        assertOneCursor();
+        assertCursorTracing(2);
     }
 
     @Test
@@ -386,16 +386,10 @@ class PropertyCreatorTest {
         idGenerator.clearCache(true, NULL_CONTEXT);
     }
 
-    private void assertZeroCursor() {
-        assertThat(cursorContext.getCursorTracer().hits()).isZero();
-        assertThat(cursorContext.getCursorTracer().pins()).isZero();
-        assertThat(cursorContext.getCursorTracer().unpins()).isZero();
-    }
-
-    private void assertOneCursor() {
-        assertThat(cursorContext.getCursorTracer().hits()).isOne();
-        assertThat(cursorContext.getCursorTracer().pins()).isOne();
-        assertThat(cursorContext.getCursorTracer().unpins()).isOne();
+    private void assertCursorTracing(int count) {
+        assertThat(cursorContext.getCursorTracer().hits()).isEqualTo(count);
+        assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(count);
+        assertThat(cursorContext.getCursorTracer().unpins()).isEqualTo(count);
     }
 
     private void existingChain(ExpectedRecord... initialRecords) {

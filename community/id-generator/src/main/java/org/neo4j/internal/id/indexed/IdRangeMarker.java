@@ -326,7 +326,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
         } else if (type != TYPE_NONE) {
             writer.merge(key, value, merger);
             if (type == TYPE_FREE || type == TYPE_DELETED_AND_FREE || type == TYPE_UNALLOCATED) {
-                freeIdFindState.notifySeenFreedId(merger.largestSeenFreeIdsSlotSize());
+                freeIdFindState.recordFreedIds(merger.largestSeenFreeIdsSlotSize());
             }
         }
         type = TYPE_NONE;

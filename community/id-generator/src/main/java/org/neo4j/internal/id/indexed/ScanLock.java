@@ -34,13 +34,13 @@ abstract class ScanLock {
      */
     abstract boolean tryLock();
 
-    /**
-     * Releases the lock, if it was previous acquired in {@link #tryLock()}, i.e. if it returned {@code true}.
-     */
     void lock() {
         lock.lock();
     }
 
+    /**
+     * Releases the lock, if it was previous acquired in {@link #tryLock()}, i.e. if it returned {@code true}.
+     */
     void unlock() {
         lock.unlock();
     }

@@ -171,10 +171,11 @@ class IdCache {
         }
     }
 
-    int[] availableSpaceBySlotIndex() {
+    int[] availableSpaceBySlotIndex(int numPartitions) {
         int[] availableSpace = new int[slotSizes.length];
         for (int i = 0; i < availableSpace.length; i++) {
-            availableSpace[i] = queues[i].availableSpace();
+            int space = queues[i].availableSpace();
+            availableSpace[i] = space > 0 ? Math.max(1, space / numPartitions) : 0;
         }
         return availableSpace;
     }

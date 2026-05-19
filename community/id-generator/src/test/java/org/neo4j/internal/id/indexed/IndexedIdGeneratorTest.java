@@ -923,9 +923,9 @@ class IndexedIdGeneratorTest {
             idGenerator.maintenance(cursorContext, EMPTY_OLDEST_HORIZON_FACTORY);
 
             var cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.hits()).isOne();
-            assertThat(cursorTracer.pins()).isOne();
-            assertThat(cursorTracer.unpins()).isOne();
+            assertThat(cursorTracer.hits()).isEqualTo(2);
+            assertThat(cursorTracer.pins()).isEqualTo(2);
+            assertThat(cursorTracer.unpins()).isEqualTo(2);
         }
     }
 
@@ -995,9 +995,9 @@ class IndexedIdGeneratorTest {
             idGenerator.clearCache(true, NULL_CONTEXT);
             idGenerator.maintenance(cursorContext, EMPTY_OLDEST_HORIZON_FACTORY);
 
-            assertThat(cursorTracer.pins()).isOne();
-            assertThat(cursorTracer.unpins()).isOne();
-            assertThat(cursorTracer.hits()).isOne();
+            assertThat(cursorTracer.pins()).isEqualTo(2);
+            assertThat(cursorTracer.unpins()).isEqualTo(2);
+            assertThat(cursorTracer.hits()).isEqualTo(2);
         }
     }
 
@@ -1122,53 +1122,6 @@ class IndexedIdGeneratorTest {
         // then
         assertThat(IdValidator.hasReservedIdInRange(batchStartId, batchStartId + numberOfIds))
                 .isEqualTo(!caresAboutReservedId);
-    }
-
-    @Test
-    void shouldAwaitConcurrentOngoingMaintenanceIfToldTo() throws Exception {
-        // given
-        Barrier.Control barrier = new Barrier.Control();
-        AtomicBoolean enabled = new AtomicBoolean(false);
-        IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor() {
-            @Override
-            public void cached(long cachedId, int numberOfIds) {
-                if (enabled.compareAndSet(true, false)) {
-                    barrier.reached();
-                }
-            }
-        };
-        open(customization().with(monitor));
-        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
-            for (int i = 0; i < SMALL_CACHE_CAPACITY * 3; i++) {
-                marker.markDeletedAndFree(i);
-            }
-        }
-        for (int i = 0; i < SMALL_CACHE_CAPACITY; i++) {
-            idGenerator.nextId(NULL_CONTEXT);
-        }
-        // Now the cache shouldn't be full and there should be some IDs that maintenance could load
-
-        // when
-        enabled.set(true);
-        try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2");
-                OtherThreadExecutor t3 = new OtherThreadExecutor("T3")) {
-            Future<Object> t2Future = t2.executeDontWait(() -> {
-                idGenerator.maintenance(NULL_CONTEXT, EMPTY_OLDEST_HORIZON_FACTORY);
-                return null;
-            });
-            barrier.await();
-
-            // check that a maintenance call blocks
-            Future<Object> t3Future = t3.executeDontWait(() -> {
-                idGenerator.maintenance(NULL_CONTEXT, EMPTY_OLDEST_HORIZON_FACTORY);
-                return null;
-            });
-            t3.waitUntilWaiting(details -> details.isAt(FreeIdScanner.class, "tryLoadFreeIdsIntoCache"));
-            barrier.release();
-            t2Future.get();
-            t3Future.get();
-        }
     }
 
     @Test
@@ -2352,6 +2305,50 @@ class IndexedIdGeneratorTest {
                 assertThat(nextVal).isGreaterThan(prev);
                 prev = nextVal;
             }
+        }
+    }
+
+    @Test
+    void shouldAllowParallelFreeIdScanning() throws Exception {
+        // given
+        var barrier = new Barrier.Control();
+        var barrierEnabled = new AtomicBoolean();
+        var monitor = new IndexedIdGenerator.Monitor() {
+            @Override
+            public void markedAsReserved(long markedId, int numberOfIds) {
+                if (barrierEnabled.compareAndSet(true, false)) {
+                    barrier.reached();
+                }
+            }
+
+            @Override
+            public void scanPartitionsCreated(int numPartitions) {
+                assertThat(numPartitions).isGreaterThan(1);
+            }
+        };
+        open(customization().with(monitor));
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        var allocatedIds = LongLists.mutable.empty();
+        for (int i = 0; i < 30_000; i++) {
+            allocatedIds.add(idGenerator.nextId(NULL_CONTEXT));
+        }
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+            allocatedIds.forEach(marker::markUsed);
+            allocatedIds.forEach(marker::markDeletedAndFree);
+        }
+        idGenerator.clearCache(true, NULL_CONTEXT);
+
+        // when
+        try (var t2 = new OtherThreadExecutor("T2")) {
+            barrierEnabled.set(true);
+            var t2Allocation = t2.executeDontWait(() -> idGenerator.nextId(NULL_CONTEXT));
+            barrier.await();
+            long t1Id = idGenerator.nextId(NULL_CONTEXT);
+            barrier.release();
+            long t2Id = t2Allocation.get();
+
+            // then
+            assertThat(t1Id).isGreaterThan(t2Id);
         }
     }
 
