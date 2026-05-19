@@ -41,6 +41,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
@@ -55,6 +56,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.IncomparableRangePredica
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NotExistsPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.SingleInstantField;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.SingleIntegerField;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.TemporalOffsetWithId;
@@ -195,20 +197,131 @@ final class Lucene10FilterQueryBuilder {
         return singleValueQuery(propertyIndex, predicate.value());
     }
 
-    private Query queryForInSet(int propertyIndex, InSetPredicate predicate) {
+    class InSetBuilder {
+        private List<Long> longValues;
+        private List<Double> doubleValues;
+        private List<BytesRef> stringValues;
+        private List<Value> otherValues;
 
-        Value[] values = predicate.values();
-        List<Query> queries = new ArrayList<>(values.length);
-        for (Value value : values) {
-            Query valueQuery = singleValueQuery(propertyIndex, value);
-            if (!(valueQuery instanceof MatchNoDocsQuery)) {
-                queries.add(valueQuery);
+        void add(Value value) {
+            switch (value) {
+                case NoValue ignore -> {
+                    /*ignore*/
+                }
+                case IntegralValue i -> {
+                    addLong(i.longValue());
+                    addDouble(i.doubleValue());
+                }
+                case FloatingPointValue f -> {
+                    double doubleValue = f.doubleValue();
+                    addDouble(doubleValue);
+                    if ((NumberValues.numbersEqual(doubleValue, f.longValue()))) {
+                        addLong(f.longValue());
+                    }
+                }
+                case TextValue s -> addString(s.stringValue());
+                // for more complex types we give up
+                default -> addOtherValue(value);
             }
         }
-        return switch (queries.size()) {
+
+        Query build(int propertyIndex) {
+            List<Query> queries = new ArrayList<>();
+            int numberOfNestedQueries = 0;
+            if (nonEmpty(longValues)) {
+                numberOfNestedQueries++;
+                queries.add(Lucene10ValueFields.SingleLongField.newSetQuery(
+                        vectorDocumentStructure.integralValueKeyFor(propertyIndex), longValues));
+            }
+            if (nonEmpty(doubleValues)) {
+                numberOfNestedQueries++;
+                queries.add(Lucene10ValueFields.SingleDoubleField.newSetQuery(
+                        vectorDocumentStructure.floatingValueKeyFor(propertyIndex), doubleValues));
+            }
+            if (nonEmpty(stringValues)) {
+                numberOfNestedQueries++;
+                queries.add(new TermInSetQuery(vectorDocumentStructure.textValueKeyFor(propertyIndex), stringValues));
+            }
+            if (nonEmpty(otherValues)) {
+                for (Value value : otherValues) {
+                    Query valueQuery = singleValueQuery(propertyIndex, value);
+                    numberOfNestedQueries += nestingLevel(valueQuery);
+                    if (!(valueQuery instanceof MatchNoDocsQuery)) {
+                        queries.add(valueQuery);
+                    }
+                }
+            }
+            int maxSize = LuceneIndexSearcher.getMaxClauseCount();
+            if (numberOfNestedQueries > maxSize) {
+                // TODO: This no longer makes sense to be an integer out-of-bounds exception.
+                //      Since the nesting level matters it is not as simple as simple max value,
+                //      but rather dependent on the values that are passed in. We don't have anything
+                //      appropriate so I'll create a dedicated GQL error in a follow up PR.
+                throw InvalidArgumentException.integerNonNullOutOfBounds(
+                        "Expected an integer between %d and %d, but got: %d"
+                                .formatted(0, maxSize, numberOfNestedQueries),
+                        "size-of-predicate-list",
+                        0,
+                        maxSize,
+                        Values.longValue(numberOfNestedQueries).prettyPrint());
+            }
+
+            return anyQuery(queries);
+        }
+
+        private boolean nonEmpty(List<?> list) {
+            return list != null && !list.isEmpty();
+        }
+
+        private int nestingLevel(Query query) {
+            return switch (query) {
+                case null -> 0;
+                case BooleanQuery booleanQuery -> booleanQuery.clauses().size();
+                default -> 1;
+            };
+        }
+
+        private void addLong(long value) {
+            if (longValues == null) {
+                longValues = new ArrayList<>();
+            }
+            longValues.add(value);
+        }
+
+        private void addDouble(double value) {
+            if (doubleValues == null) {
+                doubleValues = new ArrayList<>();
+            }
+            doubleValues.add(value);
+        }
+
+        private void addString(String value) {
+            if (stringValues == null) {
+                stringValues = new ArrayList<>();
+            }
+            stringValues.add(new BytesRef(value));
+        }
+
+        private void addOtherValue(Value value) {
+            if (otherValues == null) {
+                otherValues = new ArrayList<>();
+            }
+            otherValues.add(value);
+        }
+    }
+
+    private Query queryForInSet(int propertyIndex, InSetPredicate predicate) {
+        Value[] values = predicate.values();
+        return switch (values.length) {
             case 0 -> MatchNoDocsQuery.INSTANCE;
-            case 1 -> queries.getFirst();
-            default -> anyQuery(queries);
+            case 1 -> singleValueQuery(propertyIndex, values[0]);
+            default -> {
+                InSetBuilder builder = new InSetBuilder();
+                for (Value value : values) {
+                    builder.add(value);
+                }
+                yield builder.build(propertyIndex);
+            }
         };
     }
 
@@ -445,12 +558,12 @@ final class Lucene10FilterQueryBuilder {
     /// Either `twzFrom` or `twzTo` may be `null`, in which case the range is not bounded
     /// in the relevant direction.
     ///
-    /// These range queries are required to be consistent with [org.neo4j.values.storable.Values#COMPARATOR]
-    /// for subclasses of [org.neo4j.values.storable.TemporalValue]
+    /// These range queries are required to be consistent with [Values#COMPARATOR]
+    /// for subclasses of [TemporalValue]
     ///
     /// A `TemporalWithZone` may have an offset component, and if it has an offset, it may also have a zone.
-    /// In particular, [org.neo4j.values.storable.DateTimeValue] and [org.neo4j.values.storable.TimeValue]
-    /// carry offsets (and [org.neo4j.values.storable.DateTimeValue] carries a [java.time.ZoneId]);
+    /// In particular, [DateTimeValue] and [TimeValue]
+    /// carry offsets (and [DateTimeValue] carries a [ZoneId]);
     ///
     /// The resulting query may be a single query, or an `anyQuery` of multiple queries.
     /// If no `ZoneOffset`s exist within the offset, the result will be a single range query on `instants`.

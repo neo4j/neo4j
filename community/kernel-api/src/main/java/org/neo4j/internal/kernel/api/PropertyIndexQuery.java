@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.AnyValue;
@@ -100,16 +99,6 @@ public abstract class PropertyIndexQuery implements IndexQuery {
     }
 
     public static InSetPredicate inSet(int propertyKeyId, Value[] values) {
-        if (values.length > InSetPredicate.MAX_SIZE) {
-
-            throw InvalidArgumentException.integerNonNullOutOfBounds(
-                    "Expected an integer between %d and %d, but got: %d"
-                            .formatted(0, InSetPredicate.MAX_SIZE, values.length),
-                    "size-of-predicate-list",
-                    0,
-                    InSetPredicate.MAX_SIZE,
-                    Values.longValue(values.length).prettyPrint());
-        }
         return new InSetPredicate(propertyKeyId, values);
     }
 
@@ -1051,7 +1040,6 @@ public abstract class PropertyIndexQuery implements IndexQuery {
     }
 
     public static final class InSetPredicate extends PropertyIndexQuery {
-        private static final int MAX_SIZE = 1024;
         private final Value[] values;
 
         private InSetPredicate(int propertyKeyId, Value[] values) {

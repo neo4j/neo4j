@@ -28,8 +28,11 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.Temporal;
+import java.util.Collection;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldExistsQuery;
@@ -131,6 +134,11 @@ final class Lucene10ValueFields {
             Preconditions.requireNonNull(field, "Field cannot be null");
             byte[] encodedValue = longToBytes(value);
             return new LongPointRangeQuery(field, encodedValue, encodedValue, 1);
+        }
+
+        static Query newSetQuery(String field, Collection<Long> values) {
+            Preconditions.requireNonNull(field, "Field cannot be null");
+            return LongPoint.newSetQuery(field, values);
         }
 
         static Query newRangeQuery(String field, long lowerValueInclusive, long upperValueInclusive) {
@@ -300,6 +308,11 @@ final class Lucene10ValueFields {
             Preconditions.requireNonNull(field, "Field cannot be null");
             byte[] encodedValue = doubleToBytes(value);
             return new DoublePointRangeQuery(field, encodedValue, encodedValue, 1);
+        }
+
+        static Query newSetQuery(String field, Collection<Double> values) {
+            Preconditions.requireNonNull(field, "Field cannot be null");
+            return DoublePoint.newSetQuery(field, values);
         }
 
         static Query newRangeQuery(String field, double lowerValueInclusive, double upperValueInclusive) {

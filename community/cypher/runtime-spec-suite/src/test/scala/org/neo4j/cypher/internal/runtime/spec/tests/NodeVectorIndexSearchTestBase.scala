@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DateTimeValue
 import org.neo4j.values.storable.DateValue
+import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.storable.LocalDateTimeValue
 import org.neo4j.values.storable.LocalTimeValue
 import org.neo4j.values.storable.NumberValue
@@ -68,6 +69,7 @@ import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.Values.shortValue
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.storable.VectorValue
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import java.time.Duration
@@ -2910,7 +2912,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
       nodeGraph(totalSize, "Foo").zipWithIndex.foreach({
         case (n, i) =>
-          write.nodeSetProperty(n.getId, idToken, longValue(i))
+          write.nodeSetProperty(n.getId, idToken, DurationValue.duration(i, i, i, i))
           write.nodeSetProperty(
             n.getId,
             vectorToken,
@@ -2920,7 +2922,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     }
 
     // when
-    val propFilter = 1L to 1024
+    val propFilter = (1L to 256).map(i => DurationValue.duration(i, i, i, i))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("id")
       .projection("n.id AS id")
@@ -2931,7 +2933,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(many(listOfInt(propFilter: _*)))
+        propertyFilter = Some(many(param("list")))
       )
       .build()
 
@@ -2941,7 +2943,8 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         runtime,
         parameters =
           Map(
-            "vector" -> randomVector
+            "vector" -> randomVector,
+            "list" -> VirtualValues.list(propFilter: _*)
           )
       )
 
@@ -2959,7 +2962,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       val idToken = tx.kernelTransaction().tokenRead().propertyKey("id")
       nodeGraph(totalSize, "Foo").zipWithIndex.foreach({
         case (n, i) =>
-          write.nodeSetProperty(n.getId, idToken, longValue(i))
+          write.nodeSetProperty(n.getId, idToken, DurationValue.duration(i, i, i, i))
           write.nodeSetProperty(
             n.getId,
             vectorToken,
@@ -2969,7 +2972,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
     }
 
     // when
-    val propFilter = 1L to 1025
+    val propFilter = (1L to 257).map(i => DurationValue.duration(i, i, i, i))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("id")
       .projection("n.id AS id")
@@ -2980,7 +2983,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
         indexName = "VectorIndex",
         vector = "$vector",
         limit = s"10000000",
-        propertyFilter = Some(many(listOfInt(propFilter: _*)))
+        propertyFilter = Some(many(param("list")))
       )
       .build()
 
@@ -2990,14 +2993,15 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       runtime,
       parameters =
         Map(
-          "vector" -> randomVector
+          "vector" -> randomVector,
+          "list" -> VirtualValues.list(propFilter: _*)
         )
     )) shouldBe gqlStatus(
       GqlStatusInfoCodes.STATUS_22003,
-      "error: data exception - numeric value out of range. The numeric value 1025 is outside the required range."
+      "error: data exception - numeric value out of range. The numeric value 1028 is outside the required range."
     ).withCause(
       GqlStatusInfoCodes.STATUS_22N03,
-      "error: data exception - specified numeric value out of range. Expected 'size-of-predicate-list' to be of type INTEGER NOT NULL and in the range 0 to 1024 but found 1025.",
+      "error: data exception - specified numeric value out of range. Expected 'size-of-predicate-list' to be of type INTEGER NOT NULL and in the range 0 to 1024 but found 1028.",
       fuzzyStatusDescr = true
     )
   }

@@ -21,13 +21,27 @@ package org.neo4j.kernel.impl.index.vector;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.nearestNeighbors;
 import static org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.extractor;
 import static org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.field;
 import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.ValueType.BOOLEAN;
+import static org.neo4j.values.storable.ValueType.DATE;
+import static org.neo4j.values.storable.ValueType.DATE_TIME;
+import static org.neo4j.values.storable.ValueType.DOUBLE;
+import static org.neo4j.values.storable.ValueType.DURATION;
+import static org.neo4j.values.storable.ValueType.FLOAT;
+import static org.neo4j.values.storable.ValueType.INT;
+import static org.neo4j.values.storable.ValueType.LOCAL_DATE_TIME;
+import static org.neo4j.values.storable.ValueType.LOCAL_TIME;
+import static org.neo4j.values.storable.ValueType.LONG;
+import static org.neo4j.values.storable.ValueType.STRING;
+import static org.neo4j.values.storable.ValueType.TIME;
 
 import java.time.ZoneId;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,16 +53,23 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.ResultList;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 @RandomSupportExtension
@@ -564,6 +585,104 @@ public class VectorSSFInSetTest extends VectorSSFTestBase {
                     .hasSize(expected.size())
                     .extracting(extractor("id"))
                     .containsExactlyInAnyOrderElementsOf(expected);
+        }
+    }
+
+    private FloatArray randomVector(int dimensions) {
+        float[] vector = new float[dimensions];
+        for (int i = 0; i < vector.length; i++) {
+            vector[i] = random.nextFloat();
+        }
+        // ensure not at exact origin (all zeros)
+        int index = random.nextInt(dimensions);
+        if (vector[index] == 0.0f) {
+            vector[index] = (random.nextBoolean()) ? Math.nextUp(vector[index]) : Math.nextDown(vector[index]);
+        }
+        return Values.floatArray(vector);
+    }
+
+    @Test
+    void mixedSetsWithSimpleTypesFuzzTests() throws Exception {
+        NodeVectorIndexMethods indexMethods = new NodeVectorIndexMethods();
+        int dimension = 128;
+        int size = 10000;
+        int iterations = 10;
+        ValueType[] simpleTypes = {INT, LONG, FLOAT, DOUBLE, STRING};
+        indexMethods.createTestIndex(VECTOR_INDEX_NAME, dimension, "embedding", "value");
+        Value[] allValues = new Value[size];
+        int embeddingToken, valueToken;
+        try (InternalTransaction tx = db.beginTransaction()) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            TokenWrite token = ktx.tokenWrite();
+            int[] label = new int[] {token.labelGetOrCreateForName(LABEL_NODE_1.name())};
+            embeddingToken = token.propertyKeyGetOrCreateForName("embedding");
+            valueToken = token.propertyKeyGetOrCreateForName("value");
+            for (int i = 0; i < size; i++) {
+                Value value = random.randomValues().nextValueOfTypes(simpleTypes);
+                allValues[i] = value;
+                Write write = ktx.dataWrite();
+                long node = write.nodeCreateWithLabels(label);
+                write.nodeSetProperty(node, embeddingToken, randomVector(dimension));
+                write.nodeSetProperty(node, valueToken, value);
+            }
+            tx.commit();
+        }
+
+        for (int i = 0; i < iterations; i++) {
+            int n = random.intBetween(0, size);
+            Value[] searchValues = random.selection(allValues, n, n, false);
+            ResultList result = queryNodeIndex(
+                    VECTOR_INDEX_NAME,
+                    nearestNeighbors(Integer.MAX_VALUE, randomVector(dimension).asObject()),
+                    PropertyIndexQuery.matchAllEntityFilter(),
+                    inSetQuery("value", searchValues));
+            assertThat(result.stream().map(v -> v.getValue("value")).toList())
+                    .hasSameElementsAs(Arrays.asList(searchValues));
+        }
+    }
+
+    @Test
+    void mixedSetsWithComplexTypesFuzzTests() throws Exception {
+        NodeVectorIndexMethods indexMethods = new NodeVectorIndexMethods();
+        int dimension = 128;
+        int size = 10000;
+        int iterations = 10;
+        indexMethods.createTestIndex(VECTOR_INDEX_NAME, dimension, "embedding", "value");
+        Value[] allValues = new Value[size];
+        ValueType[] allTypes = {
+            LONG, DOUBLE, STRING, BOOLEAN, DURATION, TIME, LOCAL_TIME, DATE_TIME, LOCAL_DATE_TIME, DATE
+        };
+        int embeddingToken, valueToken;
+        try (InternalTransaction tx = db.beginTransaction()) {
+            KernelTransaction ktx = tx.kernelTransaction();
+            Token token = ktx.token();
+            int[] label = new int[] {token.labelGetOrCreateForName(LABEL_NODE_1.name())};
+            embeddingToken = token.propertyKeyGetOrCreateForName("embedding");
+            valueToken = token.propertyKeyGetOrCreateForName("value");
+            for (int i = 0; i < size; i++) {
+                Value value = random.randomValues().nextValueOfTypes(allTypes);
+                allValues[i] = value;
+                Write write = ktx.dataWrite();
+                long node = write.nodeCreateWithLabels(label);
+                write.nodeSetProperty(node, embeddingToken, randomVector(dimension));
+                write.nodeSetProperty(node, valueToken, value);
+            }
+            tx.commit();
+        }
+
+        for (int i = 0; i < iterations; i++) {
+            // for "complex types" we only guarantee handling up to 256 items, worst case
+            // is when all items are duration which adds depth 4 level nesting, leading to
+            // exceeding the total nesting depth of 1024 set by lucene.
+            int n = random.intBetween(0, 256);
+            Value[] searchValues = random.selection(allValues, n, n, false);
+            ResultList result = queryNodeIndex(
+                    VECTOR_INDEX_NAME,
+                    nearestNeighbors(Integer.MAX_VALUE, randomVector(dimension).asObject()),
+                    PropertyIndexQuery.matchAllEntityFilter(),
+                    inSetQuery("value", searchValues));
+            assertThat(result.stream().map(v -> v.getValue("value")).toList())
+                    .hasSameElementsAs(Arrays.asList(searchValues));
         }
     }
 
