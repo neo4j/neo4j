@@ -25,6 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneSettings;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -34,6 +35,7 @@ import org.neo4j.logging.LogProvider;
 class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
     private final VectorIndexConfig vectorIndexConfig;
     private final VectorDocumentStructure documentStructure;
+    private final int maxEfSearch;
 
     VectorIndex(
             PartitionedIndexStorage indexStorage,
@@ -46,6 +48,7 @@ class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
         super(indexStorage, partitionFactory, descriptor, config, logProvider);
         this.vectorIndexConfig = vectorIndexConfig;
         this.documentStructure = documentStructure;
+        this.maxEfSearch = config.get(LuceneSettings.vector_hnsw_max_ef_search);
     }
 
     @Override
@@ -59,6 +62,6 @@ class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
             List<AbstractIndexPartition> partitions, IndexUsageTracking usageTracker) throws IOException {
         List<SearcherReference> searchers = acquireSearchers(partitions);
         return new VectorIndexReader(
-                descriptor, vectorIndexConfig, documentStructure, searchers, usageTracker, logProvider);
+                descriptor, vectorIndexConfig, documentStructure, maxEfSearch, searchers, usageTracker, logProvider);
     }
 }

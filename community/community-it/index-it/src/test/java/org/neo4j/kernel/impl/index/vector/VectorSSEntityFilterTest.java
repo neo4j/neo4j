@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.vector;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.entityFilter;
+import static org.neo4j.kernel.impl.index.vector.VectorSSEntityFilterTest.Vectors.entityFilter;
 import static org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.field;
 import static org.neo4j.test.extension.SkipOnSpd.Note.temporary;
 
@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
@@ -200,6 +201,10 @@ class VectorSSEntityFilterTest extends VectorSSFTestBase {
                     VECTOR_INDEX_NAME,
                     PropertyIndexQuery.nearestNeighbors(Integer.MAX_VALUE, randomQueryVector(dim)),
                     entityFilter(entities));
+        }
+
+        static EntityFilterPredicate entityFilter(long... entityIds) {
+            return PropertyIndexQuery.entityFilter(entityIds);
         }
 
         private float[] randomVector(int dim) {

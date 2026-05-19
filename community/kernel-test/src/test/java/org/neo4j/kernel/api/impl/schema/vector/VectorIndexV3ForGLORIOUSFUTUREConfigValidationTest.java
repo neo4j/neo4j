@@ -147,7 +147,7 @@ class VectorIndexV3ForGLORIOUSFUTUREConfigValidationTest {
                 .containsExactly(
                         OptionalInt.empty(),
                         VERSION.similarityFunction("COSINE"),
-                        2.0,
+                        1.5,
                         VectorQuantizationType.SCALAR,
                         new HnswConfig(16, 100));
 
@@ -347,7 +347,7 @@ class VectorIndexV3ForGLORIOUSFUTUREConfigValidationTest {
                 .hasMessageContainingAll(
                         DEFAULT_SEARCH_EXPANSION_FACTOR.getSettingName(),
                         "must be between 1.0 and",
-                        String.valueOf(Double.MAX_VALUE));
+                        String.valueOf(10_000.0));
     }
 
     @Test

@@ -299,9 +299,9 @@ public enum VectorIndexVersion {
                                                     1.0,
                                                     Map.ofEntries(
                                                             entry(VectorQuantizationType.NONE, 1.0),
-                                                            entry(VectorQuantizationType.SCALAR, 2.0),
-                                                            entry(VectorQuantizationType.BINARY, 8.0))),
-                                            defaultSearchExpansionFactorValidator(1.0, Double.MAX_VALUE),
+                                                            entry(VectorQuantizationType.SCALAR, 1.5),
+                                                            entry(VectorQuantizationType.BINARY, 2.0))),
+                                            defaultSearchExpansionFactorValidator(1.0, 10_000.0),
                                             hnswMDefault(16),
                                             hnswMValidator(1, maxHnswM()),
                                             hnswEfConstructionDefault(100),

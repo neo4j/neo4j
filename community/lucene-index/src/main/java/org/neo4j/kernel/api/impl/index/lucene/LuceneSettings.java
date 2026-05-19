@@ -200,4 +200,10 @@ public class LuceneSettings implements SettingsDeclaration {
     public static final Setting<Boolean> lucene_skip_population_during_sharded_import = newBuilder(
                     "internal.dbms.index.lucene.skip_population_during_sharded_import", BOOL, TRUE)
             .build();
+
+    @Internal
+    @Description("Determines the maximum value for the ef search of a nearest neighbor query")
+    public static final Setting<Integer> vector_hnsw_max_ef_search = newBuilder(
+                    "internal.dbms.index.vector.hnsw.max_ef_search", INT, 10_000)
+            .build();
 }

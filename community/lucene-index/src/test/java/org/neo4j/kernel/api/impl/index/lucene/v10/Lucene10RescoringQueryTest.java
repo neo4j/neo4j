@@ -41,6 +41,7 @@ import org.apache.lucene.search.RescoreTopNQuery;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexSearcher;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriterConfig;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneQueryContext;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneSettings;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneQueryFactory.VectorQueryFactory;
 import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
@@ -69,6 +71,7 @@ public class Lucene10RescoringQueryTest {
 
     private static final int TOP_K = 10;
     private static final double DEFAULT_SEARCH_EXPANSION = 8.0;
+    private static final int MAX_EF_SEARCH = Config.defaults().get(LuceneSettings.vector_hnsw_max_ef_search);
 
     private static final LuceneIndexWriterConfig WRITER_CONFIG =
             LuceneIndexWriterConfig.analyzerOnly(new KeywordAnalyzer());
@@ -107,17 +110,16 @@ public class Lucene10RescoringQueryTest {
     private static final class Params {
         final VectorQuantizationType quantizationType;
         final double searchExpansionFactor;
-        final boolean shouldRescore;
         final int efSearch;
+        final boolean shouldRescore;
 
         Params(VectorQuantizationType quantizationType, double searchExpansionFactor) {
             double effectiveSearchExpansionFactor =
                     Double.isNaN(searchExpansionFactor) ? DEFAULT_SEARCH_EXPANSION : searchExpansionFactor;
             this.quantizationType = quantizationType;
             this.searchExpansionFactor = searchExpansionFactor;
-            this.shouldRescore = !Objects.equals(quantizationType, VectorQuantizationType.NONE)
-                    && effectiveSearchExpansionFactor > 1.0;
-            this.efSearch = this.shouldRescore ? (int) Math.ceil(effectiveSearchExpansionFactor * TOP_K) : TOP_K;
+            this.efSearch = Math.max((int) Math.ceil(effectiveSearchExpansionFactor * TOP_K), TOP_K);
+            this.shouldRescore = !Objects.equals(quantizationType, VectorQuantizationType.NONE) && efSearch > TOP_K;
         }
 
         @Override
@@ -134,11 +136,7 @@ public class Lucene10RescoringQueryTest {
     @ParameterizedTest
     @MethodSource("annQueryParameters")
     void testAnnQuery(Params params) throws Exception {
-
-        float[] embedding = new float[DIMENSIONS];
-        for (int i = 0; i < embedding.length; i++) {
-            embedding[i] = random.nextFloat();
-        }
+        float[] embedding = randomEmbedding();
 
         try (DirectoryFactory directoryFactory = newInMemoryDirectoryFactory();
                 LuceneDirectory directory = directoryFactory.open(null)) {
@@ -151,13 +149,12 @@ public class Lucene10RescoringQueryTest {
             try (LuceneDirectoryReader indexReader = directory.open();
                     LuceneIndexSearcher indexSearcher = indexReader.newDirectSearcher()) {
 
-                VectorQueryFactory vectorQueryFactory =
-                        new VectorQueryFactory(DOCUMENT_STRUCTURE, params.quantizationType, DEFAULT_SEARCH_EXPANSION);
-                LuceneQueryContext queryContext = vectorQueryFactory.createQuery(
-                        indexSearcher,
-                        QUERY_CONSTRAINTS,
-                        IndexDescriptor.NO_INDEX,
-                        PropertyIndexQuery.nearestNeighbors(TOP_K, params.searchExpansionFactor, embedding));
+                LuceneQueryContext queryContext = vectorQueryFactory(params.quantizationType)
+                        .createQuery(
+                                indexSearcher,
+                                QUERY_CONSTRAINTS,
+                                IndexDescriptor.NO_INDEX,
+                                PropertyIndexQuery.nearestNeighbors(TOP_K, params.searchExpansionFactor, embedding));
 
                 Query query = query(queryContext);
 
@@ -172,7 +169,7 @@ public class Lucene10RescoringQueryTest {
                             params.efSearch,
                             embedding);
                 } else {
-                    assertKnnQuery(assertThat(query), TOP_K, embedding);
+                    assertKnnQuery(assertThat(query), params.efSearch, embedding);
                 }
 
                 ValuesIterator valuesIterator = indexSearcher.searchVectors(queryContext, QUERY_CONSTRAINTS);
@@ -181,13 +178,14 @@ public class Lucene10RescoringQueryTest {
         }
     }
 
+    private static VectorQueryFactory vectorQueryFactory(VectorQuantizationType quantizationType) {
+        return new VectorQueryFactory(DOCUMENT_STRUCTURE, quantizationType, DEFAULT_SEARCH_EXPANSION, MAX_EF_SEARCH);
+    }
+
     @ParameterizedTest
     @MethodSource("annQueryParameters")
     void testRescoringOnEmptyResults(Params params) throws Exception {
-        float[] embedding = new float[DIMENSIONS];
-        for (int i = 0; i < embedding.length; i++) {
-            embedding[i] = random.nextFloat();
-        }
+        float[] embedding = randomEmbedding();
 
         try (DirectoryFactory directoryFactory = newInMemoryDirectoryFactory();
                 LuceneDirectory directory = directoryFactory.open(null)) {
@@ -215,15 +213,14 @@ public class Lucene10RescoringQueryTest {
             try (LuceneDirectoryReader indexReader = directory.open();
                     LuceneIndexSearcher indexSearcher = indexReader.newDirectSearcher()) {
 
-                VectorQueryFactory vectorQueryFactory =
-                        new VectorQueryFactory(DOCUMENT_STRUCTURE, params.quantizationType, DEFAULT_SEARCH_EXPANSION);
-                LuceneQueryContext queryContext = vectorQueryFactory.createQuery(
-                        indexSearcher,
-                        QUERY_CONSTRAINTS,
-                        IndexDescriptor.NO_INDEX,
-                        PropertyIndexQuery.nearestNeighbors(TOP_K, params.searchExpansionFactor, embedding),
-                        PropertyIndexQuery.exact(0, Values.NaN) // never matches
-                        );
+                LuceneQueryContext queryContext = vectorQueryFactory(params.quantizationType)
+                        .createQuery(
+                                indexSearcher,
+                                QUERY_CONSTRAINTS,
+                                IndexDescriptor.NO_INDEX,
+                                PropertyIndexQuery.nearestNeighbors(TOP_K, params.searchExpansionFactor, embedding),
+                                PropertyIndexQuery.exact(0, Values.NaN) // never matches
+                                );
 
                 Query query = query(queryContext);
                 Query emptyFilter = new Builder()
@@ -242,13 +239,25 @@ public class Lucene10RescoringQueryTest {
                             embedding,
                             emptyFilter);
                 } else {
-                    assertKnnQuery(assertThat(query), TOP_K, embedding, emptyFilter);
+                    assertKnnQuery(assertThat(query), params.efSearch, embedding, emptyFilter);
                 }
 
                 ValuesIterator valuesIterator = indexSearcher.searchVectors(queryContext, QUERY_CONSTRAINTS);
                 assertThat(valuesIterator.hasNext()).as("non matching query").isFalse();
             }
         }
+    }
+
+    private float[] randomEmbedding() {
+        float[] embedding = new float[DIMENSIONS];
+        for (int i = 0; i < embedding.length; i++) {
+            embedding[i] = random.nextFloat();
+        }
+        int index = random.nextInt(DIMENSIONS);
+        if (embedding[index] == 0.0f) {
+            embedding[index] = random.nextBoolean() ? Math.nextDown(0.0f) : Math.nextUp(0.0f);
+        }
+        return embedding;
     }
 
     private static DirectoryFactory newInMemoryDirectoryFactory() {
@@ -267,10 +276,14 @@ public class Lucene10RescoringQueryTest {
             ObjectAssert<?> queryAssert, int maximumNumberOfResults, float[] embedding, Query expectedFilter) {
         queryAssert
                 .asInstanceOf(type(KnnFloatVectorQuery.class))
+                .as("number of results")
                 .returns(maximumNumberOfResults, KnnFloatVectorQuery::getK)
+                .as("filter")
                 .returns(expectedFilter, KnnFloatVectorQuery::getFilter)
+                .as("embedding field")
                 .returns(EMBEDDING_FIELD, KnnFloatVectorQuery::getField)
                 .extracting(KnnFloatVectorQuery::getTargetCopy, FLOAT_ARRAY)
+                .as("embedding")
                 .containsExactly(embedding);
     }
 }

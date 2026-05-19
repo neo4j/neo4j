@@ -57,11 +57,13 @@ import org.neo4j.values.storable.Value;
 class VectorIndexReader extends AbstractLuceneIndexReader {
     private final OptionalInt dimensions;
     private final List<SearcherReference> searchers;
+    private final int maxEfSearch;
 
     VectorIndexReader(
             IndexDescriptor descriptor,
             VectorIndexConfig vectorIndexConfig,
             VectorDocumentStructure documentStructure,
+            int maxEfSearch,
             List<SearcherReference> searchers,
             IndexUsageTracking usageTracker,
             LogProvider logProvider) {
@@ -71,10 +73,12 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
                 new LuceneQueryFactory.VectorQueryFactory(
                         documentStructure,
                         vectorIndexConfig.quantization(),
-                        vectorIndexConfig.defaultSearchExpansionFactor()),
+                        vectorIndexConfig.defaultSearchExpansionFactor(),
+                        maxEfSearch),
                 logProvider);
         this.dimensions = vectorIndexConfig.dimensions();
         this.searchers = searchers;
+        this.maxEfSearch = maxEfSearch;
     }
 
     @Override
@@ -188,10 +192,8 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     private IndexQueryConstraints adjustedConstraints(
             IndexQueryConstraints constraints, PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
-        return validateSingleQuery(constraints, predicates) instanceof NearestNeighborsPredicate nearestNeighbour
-                ? constraints.limit(Math.min(
-                        nearestNeighbour.numberOfNeighbors(),
-                        constraints.limit().orElse(Integer.MAX_VALUE)))
+        return validateSingleQuery(constraints, predicates) instanceof NearestNeighborsPredicate nearestNeighbor
+                ? constraints.limit(nearestNeighbor.numberOfNeighbors(constraints, maxEfSearch))
                 : constraints;
     }
 

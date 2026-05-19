@@ -124,15 +124,18 @@ public abstract class LuceneQueryFactory {
     public static class VectorQueryFactory extends LuceneQueryFactory {
         private final VectorDocumentStructure documentStructure;
         private final VectorQuantizationType quantizationType;
-        private final double defaultSearchExpansion;
+        private final double defaultSearchExpansionFactor;
+        private final int maxEfSearch;
 
         public VectorQueryFactory(
                 VectorDocumentStructure documentStructure,
                 VectorQuantizationType quantizationType,
-                double defaultSearchExpansion) {
+                double defaultSearchExpansionFactor,
+                int maxEfSearch) {
             this.documentStructure = documentStructure;
             this.quantizationType = quantizationType;
-            this.defaultSearchExpansion = defaultSearchExpansion;
+            this.defaultSearchExpansionFactor = defaultSearchExpansionFactor;
+            this.maxEfSearch = maxEfSearch;
         }
 
         @Override
@@ -147,20 +150,11 @@ public abstract class LuceneQueryFactory {
                 case NEAREST_NEIGHBORS -> {
                     NearestNeighborsPredicate nearestNeighborsPredicate =
                             (PropertyIndexQuery.NearestNeighborsPredicate) predicate;
-                    int k = Math.toIntExact(Math.min(
-                            nearestNeighborsPredicate.numberOfNeighbors(),
-                            constraints.limit().orElse(Integer.MAX_VALUE)));
-
-                    double searchExpansion =
-                            switch (this.quantizationType) {
-                                case NONE -> 1.0;
-                                case BINARY, SCALAR ->
-                                    nearestNeighborsPredicate.searchExpansion(defaultSearchExpansion);
-                            };
-
-                    // Values above 1.0 for searchExpansion enable rescoring and we are rounding up
-                    // so that small values still have an impact on small k values.
-                    int efSearch = searchExpansion > 1.0 ? (int) Math.ceil(searchExpansion * k) : k;
+                    int k = nearestNeighborsPredicate.numberOfNeighbors(constraints, maxEfSearch);
+                    double searchExpansionFactor =
+                            nearestNeighborsPredicate.searchExpansionFactorOrElse(defaultSearchExpansionFactor);
+                    int efSearch = Math.clamp((long) Math.ceil(searchExpansionFactor * k), k, maxEfSearch);
+                    boolean rescore = quantizationType != VectorQuantizationType.NONE && efSearch > k;
 
                     if (predicates.length > 1) {
                         yield searcher.newQueryContext()
@@ -169,12 +163,13 @@ public abstract class LuceneQueryFactory {
                                         nearestNeighborsPredicate.query(),
                                         k,
                                         efSearch,
+                                        rescore,
                                         extractEntityFilter(predicates),
                                         extractPropertyFilters(predicates));
                     } else {
                         yield searcher.newQueryContext()
                                 .approximateNearestNeighbors(
-                                        documentStructure, nearestNeighborsPredicate.query(), k, efSearch);
+                                        documentStructure, nearestNeighborsPredicate.query(), k, efSearch, rescore);
                     }
                 }
                 default -> throw invalidQuery(descriptor, predicate);

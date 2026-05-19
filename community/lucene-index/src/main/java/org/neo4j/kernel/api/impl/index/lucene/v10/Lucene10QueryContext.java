@@ -176,8 +176,8 @@ public class Lucene10QueryContext implements LuceneQueryContext {
 
     @Override
     public Lucene10QueryContext approximateNearestNeighbors(
-            VectorDocumentStructure documentStructure, float[] query, int k, int efSearch) {
-        assignSingle(annQuery(documentStructure, query, k, efSearch, null));
+            VectorDocumentStructure documentStructure, float[] query, int k, int efSearch, boolean rescore) {
+        assignSingle(annQuery(documentStructure, query, k, efSearch, rescore, null));
         return this;
     }
 
@@ -187,19 +187,25 @@ public class Lucene10QueryContext implements LuceneQueryContext {
             float[] query,
             int k,
             int efSearch,
+            boolean rescore,
             EntityFilterPredicate entityFilter,
             PropertyIndexQuery... filterQueries) {
         Query filters = Lucene10FilterQueryBuilder.build(documentStructure, entityFilter, filterQueries);
-        assignSingle(annQuery(documentStructure, query, k, efSearch, filters));
+        assignSingle(annQuery(documentStructure, query, k, efSearch, rescore, filters));
         return this;
     }
 
     private static Query annQuery(
-            VectorDocumentStructure documentStructure, float[] query, int k, int efSearch, Query filter) {
+            VectorDocumentStructure documentStructure,
+            float[] query,
+            int k,
+            int efSearch,
+            boolean rescore,
+            Query filter) {
         assert efSearch >= k : "efSearch must be >= k";
         String field = documentStructure.vectorValueKeyFor(query.length);
         Query vectorQuery = new KnnFloatVectorQuery(field, query, efSearch, filter);
-        return efSearch > k ? new RescoreOrEmptyQuery(vectorQuery, query, field, k) : vectorQuery;
+        return rescore ? new RescoreOrEmptyQuery(vectorQuery, query, field, k) : vectorQuery;
     }
 
     public Query build() {

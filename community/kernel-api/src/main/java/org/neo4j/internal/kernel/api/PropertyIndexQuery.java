@@ -26,6 +26,7 @@ import static org.neo4j.values.storable.Values.utf8Value;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.OptionalLong;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.neo4j.internal.schema.IndexQuery;
@@ -226,14 +227,14 @@ public abstract class PropertyIndexQuery implements IndexQuery {
     }
 
     public static NearestNeighborsPredicate nearestNeighbors(int k, float[] query) {
-        return new NearestNeighborsPredicate(k, query);
+        return nearestNeighbors(k, Double.NaN, query);
     }
 
-    public static NearestNeighborsPredicate nearestNeighbors(int k, double searchExpansion, float[] query) {
-        return new NearestNeighborsPredicate(k, searchExpansion, query);
+    public static NearestNeighborsPredicate nearestNeighbors(int k, double searchExpansionFactor, float[] query) {
+        return new NearestNeighborsPredicate(k, searchExpansionFactor, query);
     }
 
-    public static EntityFilterPredicate entityFilter(long... entities) {
+    public static EntityFilterPredicate entityFilter(long[] entities) {
         return new EntityFilterPredicate.MatchEntitySet(entities);
     }
 
@@ -241,7 +242,7 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         return EntityFilterPredicate.MatchAll.INSTANCE;
     }
 
-    public static ValueTuple asValueTuple(PropertyIndexQuery.ExactPredicate... query) {
+    public static ValueTuple asValueTuple(PropertyIndexQuery.ExactPredicate[] query) {
         Value[] values = new Value[query.length];
         for (int i = 0; i < query.length; i++) {
             values[i] = query[i].value();
@@ -914,17 +915,13 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
     public static final class NearestNeighborsPredicate extends PropertyIndexQuery {
         private final int k;
-        private final double searchExpansion;
+        private final double searchExpansionFactor;
         private final float[] query;
 
-        private NearestNeighborsPredicate(int k, float... query) {
-            this(k, Double.NaN, query);
-        }
-
-        private NearestNeighborsPredicate(int k, double searchExpansion, float... query) {
+        private NearestNeighborsPredicate(int k, double searchExpansionFactor, float... query) {
             super(TokenConstants.NO_TOKEN);
             this.k = k;
-            this.searchExpansion = searchExpansion;
+            this.searchExpansionFactor = searchExpansionFactor;
             this.query = query;
         }
 
@@ -944,12 +941,14 @@ public abstract class PropertyIndexQuery implements IndexQuery {
             return IndexQueryType.NEAREST_NEIGHBORS;
         }
 
-        public int numberOfNeighbors() {
-            return k;
+        public int numberOfNeighbors(IndexQueryConstraints constraints, int maxNeighbors) {
+            OptionalLong limit = constraints.limit();
+            long numberOfNeighbors = limit.isPresent() ? Math.min(k, limit.getAsLong()) : k;
+            return Math.clamp(numberOfNeighbors, 1, maxNeighbors);
         }
 
-        public double searchExpansion(double defaultValue) {
-            return Double.isNaN(searchExpansion) ? defaultValue : searchExpansion;
+        public double searchExpansionFactorOrElse(double defaultValue) {
+            return Double.isNaN(searchExpansionFactor) ? defaultValue : searchExpansionFactor;
         }
 
         public float[] query() {
@@ -970,13 +969,13 @@ public abstract class PropertyIndexQuery implements IndexQuery {
             NearestNeighborsPredicate that = (NearestNeighborsPredicate) o;
             return k == that.k
                     // NaN is a possible value, so using == to compare would be wrong
-                    && Double.compare(searchExpansion, that.searchExpansion) == 0
+                    && Double.compare(searchExpansionFactor, that.searchExpansionFactor) == 0
                     && Arrays.equals(query, that.query);
         }
 
         @Override
         public int hashCode() {
-            int result = Objects.hash(super.hashCode(), k, searchExpansion);
+            int result = Objects.hash(super.hashCode(), k, searchExpansionFactor);
             result = 31 * result + Arrays.hashCode(query);
             return result;
         }
