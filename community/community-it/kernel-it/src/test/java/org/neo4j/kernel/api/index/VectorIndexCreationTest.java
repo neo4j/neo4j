@@ -28,9 +28,10 @@ import static org.neo4j.kernel.api.schema.vector.VectorTestUtils.inclusiveVersio
 import static org.neo4j.kernel.api.schema.vector.VectorTestUtils.max;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
@@ -100,9 +101,9 @@ public class VectorIndexCreationTest {
 
             IndexProvider() {
                 super(Entity.this.factory, inclusiveVersionRangeFrom(minimumVersionForEntity));
-                final Set<VectorIndexVersion> validVersions = validVersions();
-                final Set<VectorIndexVersion> invalidVersions = new HashSet<>();
-                for (final VectorIndexVersion indexVersion : VectorIndexVersion.KNOWN_VERSIONS) {
+                Set<VectorIndexVersion> validVersions = validVersions();
+                Set<VectorIndexVersion> invalidVersions = EnumSet.noneOf(VectorIndexVersion.class);
+                for (VectorIndexVersion indexVersion : VectorIndexVersion.KNOWN_VERSIONS) {
                     if (!validVersions.contains(indexVersion)) {
                         invalidVersions.add(indexVersion);
                     }
@@ -181,11 +182,11 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldAcceptSupported(VectorIndexVersion version, int dimensions) {
-                final var settings = defaultSettings().withDimensions(dimensions);
+                VectorIndexSettings settings = defaultSettings().withDimensions(dimensions);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(dimensions));
@@ -195,9 +196,9 @@ public class VectorIndexCreationTest {
             }
 
             Stream<Arguments> shouldAcceptSupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final int dimension : supported(1, version.maxDimensions())) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (int dimension : supported(1, version.maxDimensions())) {
                         builder.add(Arguments.of(version, dimension));
                     }
                 }
@@ -208,11 +209,11 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldAcceptSupportedCoreAPI(int dimensions) {
-                final var settings = defaultSettings().withDimensions(dimensions);
+                VectorIndexSettings settings = defaultSettings().withDimensions(dimensions);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(dimensions));
@@ -232,14 +233,14 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldRejectUnsupported(VectorIndexVersion version, int dimensions) {
-                final var settings = defaultSettings().withDimensions(dimensions);
+                VectorIndexSettings settings = defaultSettings().withDimensions(dimensions);
                 assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
             }
 
             Stream<Arguments> shouldRejectUnsupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final int dimension : unsupportedDimensions(version)) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (int dimension : unsupportedDimensions(version)) {
                         builder.add(Arguments.of(version, dimension));
                     }
                 }
@@ -250,11 +251,11 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldRejectUnsupportedCoreAPI(int dimensions) {
-                final var settings = defaultSettings().withDimensions(dimensions);
+                VectorIndexSettings settings = defaultSettings().withDimensions(dimensions);
                 assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
             }
 
-            Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
+            static Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
                 return unsupportedDimensions(LATEST);
             }
 
@@ -288,14 +289,14 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldRequireSetting(VectorIndexVersion version) {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
                 assertMissingExpectedSetting(SETTING, () -> createVectorIndex(version, settings, propKeyIds[0]));
             }
 
             @Test
             @EnabledIf("latestIsValid")
             void shouldRequireSettingCoreAPI() {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
                 assertMissingExpectedSetting(SETTING, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
             }
         }
@@ -314,11 +315,11 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldAcceptMissingSetting(VectorIndexVersion version) {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertMissingSetting(SETTING, index.getIndexConfig());
@@ -329,11 +330,11 @@ public class VectorIndexCreationTest {
             @Test
             @EnabledIf("latestIsValid")
             void shouldAcceptMissingSettingCoreAPI() {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertMissingSetting(SETTING, index.getIndexConfig());
@@ -355,11 +356,11 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldAcceptSupported(VectorIndexVersion version, VectorSimilarityFunction similarityFunction) {
-                final var settings = defaultSettings().withSimilarityFunction(similarityFunction);
+                VectorIndexSettings settings = defaultSettings().withSimilarityFunction(similarityFunction);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(
@@ -372,9 +373,9 @@ public class VectorIndexCreationTest {
             }
 
             Stream<Arguments> shouldAcceptSupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final VectorSimilarityFunction similarityFunction : supported(version)) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (VectorSimilarityFunction similarityFunction : supported(version)) {
                         builder.add(Arguments.of(version, similarityFunction));
                     }
                 }
@@ -385,11 +386,11 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldAcceptSupportedCoreAPI(VectorSimilarityFunction similarityFunction) {
-                final var settings = defaultSettings().withSimilarityFunction(similarityFunction);
+                VectorIndexSettings settings = defaultSettings().withSimilarityFunction(similarityFunction);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(
@@ -413,22 +414,22 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldRejectUnsupported(VectorIndexVersion version) {
-                final var similarityFunctionName = "ClearlyThisIsNotASimilarityFunction";
-                final var settings = defaultSettings().withSimilarityFunction(similarityFunctionName);
+                final String similarityFunctionName = "ClearlyThisIsNotASimilarityFunction";
+                VectorIndexSettings settings = defaultSettings().withSimilarityFunction(similarityFunctionName);
                 assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
             }
 
             @Test
             @EnabledIf("latestIsValid")
             void shouldRejectUnsupportedCoreAPI() {
-                final var similarityFunctionName = "ClearlyThisIsNotASimilarityFunction";
-                final var settings = defaultSettings().withSimilarityFunction(similarityFunctionName);
+                final String similarityFunctionName = "ClearlyThisIsNotASimilarityFunction";
+                VectorIndexSettings settings = defaultSettings().withSimilarityFunction(similarityFunctionName);
                 assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
             }
 
             private static void assertUnsupported(VectorIndexVersion version, ThrowingCallable callable) {
-                final StringJoiner supported = new StringJoiner(", ", "[", "]");
-                for (final VectorSimilarityFunction similarityFunction : version.supportedSimilarityFunctions()) {
+                StringJoiner supported = new StringJoiner(", ", "[", "]");
+                for (VectorSimilarityFunction similarityFunction : version.supportedSimilarityFunctions()) {
                     supported.add(similarityFunction.functionName());
                 }
 
@@ -454,14 +455,14 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldRequireSetting(VectorIndexVersion version) {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
                 assertMissingExpectedSetting(SETTING, () -> createVectorIndex(version, settings, propKeyIds[0]));
             }
 
             @Test
             @EnabledIf("latestIsValid")
             void shouldRequireSettingCoreAPI() {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
                 assertMissingExpectedSetting(SETTING, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
             }
         }
@@ -481,11 +482,11 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldAcceptMissingSetting(VectorIndexVersion version) {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -496,11 +497,11 @@ public class VectorIndexCreationTest {
             @Test
             @EnabledIf("latestIsValid")
             void shouldAcceptMissingSettingCoreAPI() {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -523,11 +524,11 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldAcceptSupported(VectorIndexVersion version, boolean quantizationEnabled) {
-                final var settings = defaultSettings().withQuantizationEnabled(quantizationEnabled);
+                VectorIndexSettings settings = defaultSettings().withQuantizationEnabled(quantizationEnabled);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.getValue();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.booleanValue(quantizationEnabled));
@@ -537,9 +538,9 @@ public class VectorIndexCreationTest {
             }
 
             Stream<Arguments> shouldAcceptSupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final boolean quantizationEnabled : supported(version)) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (boolean quantizationEnabled : supported(version)) {
                         builder.add(Arguments.of(version, quantizationEnabled));
                     }
                 }
@@ -550,11 +551,11 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldAcceptSupportedCoreAPI(boolean quantizationEnabled) {
-                final var settings = defaultSettings().withQuantizationEnabled(quantizationEnabled);
+                VectorIndexSettings settings = defaultSettings().withQuantizationEnabled(quantizationEnabled);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.booleanValue(quantizationEnabled));
@@ -567,7 +568,7 @@ public class VectorIndexCreationTest {
                 return supported(LATEST);
             }
 
-            Iterable<Boolean> supported(VectorIndexVersion version) {
+            static Iterable<Boolean> supported(VectorIndexVersion version) {
                 return version.supportedQuantizationBooleans();
             }
 
@@ -575,11 +576,11 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldAcceptMissingSetting(VectorIndexVersion version) {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -590,11 +591,11 @@ public class VectorIndexCreationTest {
             @Test
             @EnabledIf("latestIsValid")
             void shouldAcceptMissingSettingCoreAPI() {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -617,10 +618,10 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldAcceptSupported(VectorIndexVersion version, int M) {
-                final var settings = defaultSettings().withHnswM(M);
-                final var ref = new MutableObject<IndexDescriptor>();
+                VectorIndexSettings settings = defaultSettings().withHnswM(M);
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(M));
@@ -629,9 +630,9 @@ public class VectorIndexCreationTest {
             }
 
             Stream<Arguments> shouldAcceptSupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final int M : supported(1, version.maxHnswM())) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (int M : supported(1, version.maxHnswM())) {
                         builder.add(Arguments.of(version, M));
                     }
                 }
@@ -642,10 +643,10 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldAcceptSupportedCoreAPI(int M) {
-                final var settings = defaultSettings().withHnswM(M);
-                final var ref = new MutableObject<IndexDescriptor>();
+                VectorIndexSettings settings = defaultSettings().withHnswM(M);
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(M));
@@ -665,11 +666,11 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldAcceptMissingSetting(VectorIndexVersion version) {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -680,11 +681,11 @@ public class VectorIndexCreationTest {
             @Test
             @EnabledIf("latestIsValid")
             void shouldAcceptMissingSettingCoreAPI() {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -695,14 +696,14 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldRejectUnsupported(VectorIndexVersion version, int M) {
-                final var settings = defaultSettings().withHnswM(M);
+                VectorIndexSettings settings = defaultSettings().withHnswM(M);
                 assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
             }
 
             Stream<Arguments> shouldRejectUnsupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final int M : unsupportedM(version)) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (int M : unsupportedM(version)) {
                         builder.add(Arguments.of(version, M));
                     }
                 }
@@ -713,11 +714,11 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldRejectUnsupportedCoreAPI(int M) {
-                final var settings = defaultSettings().withHnswM(M);
+                VectorIndexSettings settings = defaultSettings().withHnswM(M);
                 assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
             }
 
-            Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
+            static Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
                 return unsupportedM(LATEST);
             }
 
@@ -750,10 +751,10 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldAcceptSupported(VectorIndexVersion version, int efConstruction) {
-                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
-                final var ref = new MutableObject<IndexDescriptor>();
+                VectorIndexSettings settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(efConstruction));
@@ -763,9 +764,9 @@ public class VectorIndexCreationTest {
             }
 
             Stream<Arguments> shouldAcceptSupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final int efConstruction : supported(1, version.maxHnswEfConstruction())) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (int efConstruction : supported(1, version.maxHnswEfConstruction())) {
                         builder.add(Arguments.of(version, efConstruction));
                     }
                 }
@@ -776,10 +777,10 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldAcceptSupportedCoreAPI(int efConstruction) {
-                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
-                final var ref = new MutableObject<IndexDescriptor>();
+                VectorIndexSettings settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(efConstruction));
@@ -800,11 +801,11 @@ public class VectorIndexCreationTest {
             @MethodSource("validVersions")
             @EnabledIf("hasValidVersions")
             void shouldAcceptMissingSetting(VectorIndexVersion version) {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -815,11 +816,11 @@ public class VectorIndexCreationTest {
             @Test
             @EnabledIf("latestIsValid")
             void shouldAcceptMissingSettingCoreAPI() {
-                final var settings = defaultSettings().unset(SETTING);
+                VectorIndexSettings settings = defaultSettings().unset(SETTING);
 
-                final var ref = new MutableObject<IndexDescriptor>();
+                MutableObject<IndexDescriptor> ref = new MutableObject<>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
-                final var index = ref.get();
+                IndexDescriptor index = ref.get();
 
                 // config committed in tx
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
@@ -830,14 +831,14 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             void shouldRejectUnsupported(VectorIndexVersion version, int efConstruction) {
-                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                VectorIndexSettings settings = defaultSettings().withHnswEfConstruction(efConstruction);
                 assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
             }
 
             Stream<Arguments> shouldRejectUnsupported() {
-                final Stream.Builder<Arguments> builder = Stream.builder();
-                for (final VectorIndexVersion version : validVersions()) {
-                    for (final int efConstruction : unsupportedEfConstruction(version)) {
+                Stream.Builder<Arguments> builder = Stream.builder();
+                for (VectorIndexVersion version : validVersions()) {
+                    for (int efConstruction : unsupportedEfConstruction(version)) {
                         builder.add(Arguments.of(version, efConstruction));
                     }
                 }
@@ -848,11 +849,11 @@ public class VectorIndexCreationTest {
             @MethodSource
             @EnabledIf("latestIsValid")
             void shouldRejectUnsupportedCoreAPI(int efConstruction) {
-                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                VectorIndexSettings settings = defaultSettings().withHnswEfConstruction(efConstruction);
                 assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
             }
 
-            Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
+            static Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
                 return unsupportedEfConstruction(LATEST);
             }
 
@@ -926,14 +927,14 @@ public class VectorIndexCreationTest {
         }
 
         @ExtensionCallback
-        void configure(TestDatabaseManagementServiceBuilder builder) {
+        static void configure(TestDatabaseManagementServiceBuilder builder) {
             builder.setConfig(GraphDatabaseInternalSettings.always_use_latest_index_provider, false);
         }
 
         @BeforeAll
         void setup() throws Exception {
-            try (final var tx = db.beginTx()) {
-                final var ktx = ((InternalTransaction) tx).kernelTransaction();
+            try (Transaction tx = db.beginTx()) {
+                KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 tokenId = factory.tokenId(ktx);
                 propKeyIds = Tokens.Factories.PROPERTY_KEY.getIds(ktx, PROP_KEYS);
                 tx.commit();
@@ -942,7 +943,7 @@ public class VectorIndexCreationTest {
 
         @BeforeEach
         void dropAllIndexes() {
-            try (final var tx = db.beginTx()) {
+            try (Transaction tx = db.beginTx()) {
                 tx.schema().getIndexes().forEach(IndexDefinition::drop);
                 tx.commit();
             }
@@ -962,10 +963,10 @@ public class VectorIndexCreationTest {
 
         protected IndexDescriptor createVectorIndex(
                 VectorIndexVersion version, VectorIndexSettings settings, int... propKeyIds) throws KernelException {
-            final IndexDescriptor indexDescriptor;
-            try (final var tx = db.beginTx()) {
-                final var ktx = ((InternalTransaction) tx).kernelTransaction();
-                final var prototype = IndexPrototype.forSchema(factory.schemaDescriptor(tokenId, propKeyIds))
+            IndexDescriptor indexDescriptor;
+            try (Transaction tx = db.beginTx()) {
+                KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+                IndexPrototype prototype = IndexPrototype.forSchema(factory.schemaDescriptor(tokenId, propKeyIds))
                         .withIndexType(IndexType.VECTOR)
                         .withIndexProvider(version.descriptor())
                         .withIndexConfig(settings.toIndexConfig());
@@ -980,27 +981,27 @@ public class VectorIndexCreationTest {
         }
 
         protected IndexDescriptor createVectorIndex(VectorIndexSettings settings, List<String> propKeys) {
-            final IndexDescriptor indexDescriptor;
-            try (final var tx = db.beginTx()) {
-                final var index = createVectorIndex(factory.indexCreator(tx), settings, propKeys);
+            IndexDescriptor indexDescriptor;
+            try (Transaction tx = db.beginTx()) {
+                IndexDefinition index = createVectorIndex(factory.indexCreator(tx), settings, propKeys);
                 indexDescriptor = ((IndexDefinitionImpl) index).getIndexReference();
                 tx.commit();
             }
             return indexDescriptor;
         }
 
-        protected IndexDefinition createVectorIndex(
-                IndexCreator creator, VectorIndexSettings settings, List<String> propKeys) {
+        protected static IndexDefinition createVectorIndex(
+                IndexCreator creator, VectorIndexSettings settings, SequencedCollection<String> propKeys) {
             creator = creator.withIndexType(IndexType.VECTOR.toPublicApi()).withIndexConfiguration(settings.toMap());
-            for (final var propKey : propKeys) {
+            for (String propKey : propKeys) {
                 creator = creator.on(propKey);
             }
             return creator.create();
         }
 
         protected IndexDescriptor findIndex(String name) {
-            try (final var tx = db.beginTx()) {
-                final var index = tx.schema().getIndexByName(name);
+            try (Transaction tx = db.beginTx()) {
+                IndexDefinition index = tx.schema().getIndexByName(name);
                 return ((IndexDefinitionImpl) index).getIndexReference();
             }
         }

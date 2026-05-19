@@ -134,7 +134,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     }
 
     protected List<Long> query(PropertyIndexQuery... predicates) throws Exception {
-        var list = queryNoSort(predicates);
+        List<Long> list = queryNoSort(predicates);
         Collections.sort(list);
         return list;
     }

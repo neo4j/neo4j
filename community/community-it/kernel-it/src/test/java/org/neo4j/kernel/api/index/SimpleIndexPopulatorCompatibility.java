@@ -126,7 +126,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     void shouldBeAbleToDropAClosedIndexPopulator() {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(config);
-        final IndexPopulator p = indexProvider.getPopulator(
+        IndexPopulator p = indexProvider.getPopulator(
                 descriptor,
                 indexSamplingConfig,
                 SchemaTestUtil.defaultHeapBufferFactory(),
@@ -147,7 +147,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     void shouldApplyUpdatesIdempotently() throws Exception {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(config);
-        final Value propertyValue = Values.of("value1");
+        Value propertyValue = Values.of("value1");
         withPopulator(
                 indexProvider.getPopulator(
                         descriptor,
@@ -162,7 +162,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                     long nodeId = 1;
 
                     // update using populator...
-                    var update = add(nodeId, descriptor, propertyValue);
+                    EagerValueIndexEntryUpdate update = add(nodeId, descriptor, propertyValue);
                     p.add(singletonList(update), CursorContext.NULL_CONTEXT);
                     // ...is the same as update using updater
                     try (IndexUpdater updater = p.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {

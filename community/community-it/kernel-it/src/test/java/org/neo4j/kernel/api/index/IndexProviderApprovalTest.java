@@ -152,7 +152,7 @@ public abstract class IndexProviderApprovalTest {
         String errorMessage = currentValue.toString();
 
         if (!noIndexResult.equals(indexResult)) {
-            System.out.println("");
+            System.out.println();
         }
         assertEquals(noIndexResult, indexResult, errorMessage);
     }

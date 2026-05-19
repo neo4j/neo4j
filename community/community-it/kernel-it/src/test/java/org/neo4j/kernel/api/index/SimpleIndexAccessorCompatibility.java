@@ -132,8 +132,8 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
 
     @Test
     void tracePageCacheAccessOnConsistencyCheck() {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
         accessor.consistencyCheck(
                 ReporterFactories.noopReporterFactory(),
                 contextFactory,

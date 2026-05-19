@@ -31,7 +31,9 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -158,8 +160,9 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
 
     @Override
     public Value getPropertyValueFromStore(KernelTransaction tx, CursorFactory cursorFactory, long reference) {
-        try (var storeCursor = cursorFactory.allocateRelationshipScanCursor(NULL_CONTEXT);
-                var propertyCursor = cursorFactory.allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+        try (RelationshipScanCursor storeCursor = cursorFactory.allocateRelationshipScanCursor(NULL_CONTEXT);
+                PropertyCursor propertyCursor =
+                        cursorFactory.allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
             tx.dataRead().singleRelationship(reference, storeCursor);
             storeCursor.next();
             storeCursor.properties(propertyCursor);

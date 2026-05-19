@@ -43,7 +43,9 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -90,7 +92,7 @@ class CompositeIndexingIT {
     }
 
     void setup(PrototypeFactory prototypeFactory) throws Exception {
-        var prototype = prototypeFactory.build(labelId, relTypeId, propIds);
+        IndexPrototype prototype = prototypeFactory.build(labelId, relTypeId, propIds);
         try (Transaction tx = graphDatabaseAPI.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             if (prototype.isUnique()) {
@@ -220,12 +222,12 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldSeeEntityAddedByPropertyToIndexInTranslation(Params params) throws Exception {
         setup(params.prototypeFactory);
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         try (Transaction tx = graphDatabaseAPI.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            var entity = entityControl.createEntity(ktx, index);
+            long entity = entityControl.createEntity(ktx, index);
 
-            var found = entityControl.seek(ktx, index);
+            Set<Long> found = entityControl.seek(ktx, index);
             assertThat(found).containsExactly(entity);
         }
     }
@@ -234,12 +236,12 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldSeeEntityAddedByTokenToIndexInTransaction(Params params) throws Exception {
         setup(params.prototypeFactory);
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         try (Transaction tx = graphDatabaseAPI.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            var entity = entityControl.createEntityReverse(ktx, index);
+            long entity = entityControl.createEntityReverse(ktx, index);
 
-            var found = entityControl.seek(ktx, index);
+            Set<Long> found = entityControl.seek(ktx, index);
             assertThat(found).containsExactly(entity);
         }
     }
@@ -248,7 +250,7 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldNotSeeEntityThatWasDeletedInTransaction(Params params) throws Exception {
         setup(params.prototypeFactory);
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         long entity = createEntity(entityControl);
         try (Transaction tx = graphDatabaseAPI.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -262,7 +264,7 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldNotSeeEntityThatHasItsTokenRemovedInTransaction(Params params) throws Exception {
         // EntityControl::removeToken not supported
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         if (entityControl == EntityControl.RELATIONSHIP) {
             return;
         }
@@ -282,7 +284,7 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldNotSeeEntityThatHasAPropertyRemovedInTransaction(Params params) throws Exception {
         setup(params.prototypeFactory);
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         long entity = createEntity(entityControl);
         try (Transaction tx = graphDatabaseAPI.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -296,7 +298,7 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldSeeAllEntitiesAddedInTransaction(Params params) throws Exception {
         setup(params.prototypeFactory);
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         if (!index.isUnique()) // this test does not make any sense for UNIQUE indexes
         {
             try (Transaction tx = graphDatabaseAPI.beginTx()) {
@@ -315,7 +317,7 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldSeeAllEntitiesAddedBeforeTransaction(Params params) throws Exception {
         setup(params.prototypeFactory);
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         if (!index.isUnique()) // this test does not make any sense for UNIQUE indexes
         {
             long entity1 = createEntity(entityControl);
@@ -333,7 +335,7 @@ class CompositeIndexingIT {
     @MethodSource("params")
     void shouldNotSeeEntitiesLackingOneProperty(Params params) throws Exception {
         setup(params.prototypeFactory);
-        var entityControl = params.entityControl;
+        EntityControl entityControl = params.entityControl;
         long entity = createEntity(entityControl);
         try (Transaction tx = graphDatabaseAPI.beginTx()) {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -349,8 +351,8 @@ class CompositeIndexingIT {
     }
 
     private static class Params {
-        PrototypeFactory prototypeFactory;
-        EntityControl entityControl;
+        final PrototypeFactory prototypeFactory;
+        final EntityControl entityControl;
 
         Params(PrototypeFactory prototypeFactory, EntityControl entityControl) {
             this.prototypeFactory = prototypeFactory;
@@ -384,7 +386,7 @@ class CompositeIndexingIT {
             long createEntity(KernelTransaction ktx, IndexDescriptor index, boolean excludeFirstProperty)
                     throws KernelException {
                 Write write = ktx.dataWrite();
-                var nodeID = write.nodeCreate();
+                long nodeID = write.nodeCreate();
                 write.nodeAddLabel(nodeID, index.schema().getLabelId());
                 for (int propID : index.schema().getPropertyIds()) {
                     if (excludeFirstProperty) {
@@ -399,7 +401,7 @@ class CompositeIndexingIT {
             @Override
             long createEntityReverse(KernelTransaction ktx, IndexDescriptor index) throws KernelException {
                 Write write = ktx.dataWrite();
-                var nodeID = write.nodeCreate();
+                long nodeID = write.nodeCreate();
                 for (int propID : index.schema().getPropertyIds()) {
                     write.nodeSetProperty(nodeID, propID, Values.intValue(propID));
                 }
@@ -427,7 +429,7 @@ class CompositeIndexingIT {
             Set<Long> seek(KernelTransaction ktx, IndexDescriptor index) throws KernelException {
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
                 Set<Long> result = new HashSet<>();
-                try (var cursor =
+                try (NodeValueIndexCursor cursor =
                         ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
                     ktx.dataRead()
                             .nodeIndexSeek(
@@ -444,9 +446,9 @@ class CompositeIndexingIT {
             long createEntity(KernelTransaction ktx, IndexDescriptor index, boolean excludeFirstProperty)
                     throws KernelException {
                 Write write = ktx.dataWrite();
-                var from = write.nodeCreate();
-                var to = write.nodeCreate();
-                var rel = write.relationshipCreate(from, index.schema().getRelTypeId(), to);
+                long from = write.nodeCreate();
+                long to = write.nodeCreate();
+                long rel = write.relationshipCreate(from, index.schema().getRelTypeId(), to);
                 for (int propID : index.schema().getPropertyIds()) {
                     if (excludeFirstProperty) {
                         excludeFirstProperty = false;
@@ -481,7 +483,7 @@ class CompositeIndexingIT {
             Set<Long> seek(KernelTransaction ktx, IndexDescriptor index) throws KernelException {
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession(index);
                 Set<Long> result = new HashSet<>();
-                try (var cursor =
+                try (RelationshipValueIndexCursor cursor =
                         ktx.cursors().allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
                     ktx.dataRead()
                             .relationshipIndexSeek(

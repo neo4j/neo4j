@@ -46,6 +46,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -54,6 +55,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -67,6 +69,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
@@ -86,7 +89,7 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
     private static final String ADDRESS = "address";
     private static final String SINCE = "since";
 
-    protected AssertableLogProvider logProvider = new AssertableLogProvider();
+    protected final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     long mikeNodeId;
     long noahNodeId;
@@ -98,7 +101,7 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
 
     @Override
     public void createTestGraph(GraphDatabaseService db) {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             TokenWrite tokenWrite = getTokenWrite(tx);
             tokenWrite.labelGetOrCreateForName(PERSON.name());
             tokenWrite.relationshipTypeGetOrCreateForName(FRIEND.name());
@@ -109,7 +112,7 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
             throw new RuntimeException(e);
         }
 
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             TokenRead tokenRead = getTokenRead(tx);
             SchemaWrite schemaWrite = getSchemaWrite(tx);
             schemaWrite.indexCreate(IndexPrototype.forSchema(asSchemaDescriptor(tokenRead, PERSON, NAME))
@@ -125,53 +128,53 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
             throw new RuntimeException(e);
         }
 
-        try (var tx = db.beginTx()) {
-            var mike = tx.createNode(PERSON);
+        try (Transaction tx = db.beginTx()) {
+            Node mike = tx.createNode(PERSON);
             mike.setProperty(NAME, "Mike Smith");
             mike.setProperty(ADDRESS, "United Kingdom");
             mikeNodeId = mike.getId();
 
-            var james = tx.createNode(PERSON);
+            Node james = tx.createNode(PERSON);
             james.setProperty(NAME, "James Smith");
             james.setProperty(ADDRESS, "Heathrow, United Kingdom");
             james.createRelationshipTo(mike, FRIEND).setProperty(SINCE, "3 years");
 
-            var smith = tx.createNode(PERSON);
+            Node smith = tx.createNode(PERSON);
             smith.setProperty(NAME, "Smith James Luke");
             smith.setProperty(ADDRESS, "United Emirates");
             smith.createRelationshipTo(mike, FRIEND).setProperty(SINCE, "2 years, 2 months");
             smith.createRelationshipTo(james, FRIEND).setProperty(SINCE, "2 years");
 
-            var o = tx.createNode(PERSON);
+            Node o = tx.createNode(PERSON);
             o.setProperty(NAME, "o");
 
-            var bo = tx.createNode(PERSON);
+            Node bo = tx.createNode(PERSON);
             bo.setProperty(NAME, "Bo");
 
-            var bob = tx.createNode(PERSON);
+            Node bob = tx.createNode(PERSON);
             bob.setProperty(NAME, "Bob");
 
-            var noah = tx.createNode(PERSON);
+            Node noah = tx.createNode(PERSON);
             noah.setProperty(NAME, "Noah");
             noah.createRelationshipTo(mike, FRIEND).setProperty(SINCE, "4 years");
             noahNodeId = noah.getId();
 
-            var alex = tx.createNode(PERSON);
+            Node alex = tx.createNode(PERSON);
             alex.setProperty(NAME, "Alex");
 
-            var matt = tx.createNode(PERSON);
+            Node matt = tx.createNode(PERSON);
             matt.setProperty(NAME, 42);
             matt.createRelationshipTo(mike, FRIEND).setProperty(SINCE, 694_717_800);
 
-            var jack = tx.createNode(PERSON);
+            Node jack = tx.createNode(PERSON);
             jack.setProperty(NAME, "77");
             jack.createRelationshipTo(matt, FRIEND).setProperty(SINCE, "1 year");
 
-            var anonymous = tx.createNode(PERSON);
+            Node anonymous = tx.createNode(PERSON);
             anonymous.setProperty(NAME, "");
             anonymous.createRelationshipTo(jack, FRIEND).setProperty(SINCE, "");
 
-            var x = tx.createNode(PERSON);
+            Node x = tx.createNode(PERSON);
             x.setProperty(NAME, "");
 
             tx.commit();
@@ -180,8 +183,8 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
 
     @Test
     void shouldRejectInvalidConstraints() {
-        var query = exact(token.propertyKey(NAME), "Mike Smith");
-        var needsValue = constrained(IndexOrder.NONE, true);
+        ExactPredicate query = exact(token.propertyKey(NAME), "Mike Smith");
+        IndexQueryConstraints needsValue = constrained(IndexOrder.NONE, true);
 
         assertThatThrownBy(() -> indexedNodes(needsValue, query))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -345,7 +348,8 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
     void shouldUseCorrectGQLStatusCodeForUnsupportedQuery() {
         PropertyIndexQuery query = exists(token.propertyKey(SINCE));
 
-        var e = assertThrows(IndexNotApplicableKernelException.class, () -> indexedNodes(query));
+        IndexNotApplicableKernelException e =
+                assertThrows(IndexNotApplicableKernelException.class, () -> indexedNodes(query));
         assertThat(e.gqlStatus()).isEqualTo("50N15");
         assertThat(e.statusDescription())
                 .isEqualTo(String.format(
@@ -356,7 +360,7 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
 
     @Test
     void shouldUseCorrectGQLStatusCodeForUnsupportedCompositeQuery() {
-        var e = assertThrows(
+        IndexNotApplicableKernelException e = assertThrows(
                 IndexNotApplicableKernelException.class, () -> indexedNodes(fulltextSearch("a"), fulltextSearch("b")));
         assertThat(e.gqlStatus()).isEqualTo("50N15");
         assertThat(e.statusDescription())
@@ -408,29 +412,29 @@ abstract class TextIndexQueryTestBase extends KernelAPIReadTestBase<ReadTestSupp
     }
 
     protected SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, Label label, String prop) {
-        var labelId = tokenRead.nodeLabel(label.name());
-        var propId = tokenRead.propertyKey(prop);
+        int labelId = tokenRead.nodeLabel(label.name());
+        int propId = tokenRead.propertyKey(prop);
         return SchemaDescriptors.forLabel(labelId, propId);
     }
 
     private SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, RelationshipType relType, String prop) {
-        var labelId = tokenRead.relationshipType(relType.name());
-        var propId = tokenRead.propertyKey(prop);
+        int labelId = tokenRead.relationshipType(relType.name());
+        int propId = tokenRead.propertyKey(prop);
         return SchemaDescriptors.forRelType(labelId, propId);
     }
 
     private TokenRead getTokenRead(Transaction tx) {
-        var ktx = ((TransactionImpl) tx).kernelTransaction();
+        KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
         return ktx.tokenRead();
     }
 
     private TokenWrite getTokenWrite(Transaction tx) {
-        var ktx = ((TransactionImpl) tx).kernelTransaction();
+        KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
         return ktx.tokenWrite();
     }
 
     private SchemaWrite getSchemaWrite(Transaction tx) {
-        var ktx = ((TransactionImpl) tx).kernelTransaction();
+        KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
         SchemaWrite schemaWrite;
         try {
             schemaWrite = ktx.schemaWrite();

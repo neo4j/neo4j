@@ -223,7 +223,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         // given
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = tx.dataRead().indexReadSession(tx.schemaRead().indexGetForName(PROP_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -352,7 +352,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int firstName = token.propertyKey(FIRSTNAME_PROP_NAME);
         int surname = token.propertyKey(SURNAME_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -373,10 +373,10 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     @Test
     void shouldReturnCorrectNumberOfPropertiesForCompositeIndexForSingleAllEntriesQuery() throws KernelException {
         // given
-        var index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
+        IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
 
         // when
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             entityParams.entityIndexScan(tx, index, cursor, unconstrained());
             while (cursor.next()) {
                 // then
@@ -391,7 +391,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -421,7 +421,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -450,7 +450,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -482,7 +482,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -544,7 +544,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -585,7 +585,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -646,7 +646,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -671,7 +671,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -696,7 +696,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     void shouldPerformIndexScan() throws Exception {
         // given
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -720,7 +720,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
@@ -754,7 +754,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
@@ -788,7 +788,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
@@ -824,7 +824,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
@@ -868,7 +868,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             if (index.reference().getCapability().supportsOrdering()) {
                 // when
                 entityParams.entityIndexSeek(
@@ -904,7 +904,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(WHAT_EVER_INDEX_NAME));
         assertTrue(index.reference().getCapability().supportsReturningValues());
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -930,7 +930,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         assertTrue(supportsValues);
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -951,7 +951,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         assertTrue(supportsValues);
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -1125,7 +1125,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         boolean supportsValues = index.reference().getCapability().supportsReturningValues();
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
@@ -1147,7 +1147,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityDelete(tx, strOne);
             entityParams.entityIndexSeek(
@@ -1168,7 +1168,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, strOne, label);
             entityParams.entityIndexSeek(
@@ -1186,7 +1186,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, strOne, prop, "ett");
             entityParams.entityIndexSeek(
@@ -1204,7 +1204,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, strOne, prop, "ett");
             entityParams.entityIndexSeek(
@@ -1226,7 +1226,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, strOne, label);
             entityParams.entityAddToken(tx, strOneNoLabel, label);
@@ -1246,7 +1246,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityDelete(tx, strOne);
             entityParams.entityDelete(tx, strThree1);
@@ -1273,7 +1273,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, strOne, label);
             entityParams.entityRemoveToken(tx, strThree1, label);
@@ -1298,7 +1298,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, strOne, prop, "ett");
             entityParams.entitySetProperty(tx, strThree1, prop, "tre");
@@ -1323,7 +1323,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, strOne, prop, "ett");
             entityParams.entityIndexSeek(
@@ -1348,7 +1348,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, strOne, label);
             entityParams.entityAddToken(tx, strOneNoLabel, label);
@@ -1373,7 +1373,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityDelete(tx, strOne);
             entityParams.entityIndexSeek(
@@ -1397,7 +1397,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, strOne, label);
             entityParams.entityIndexSeek(
@@ -1419,7 +1419,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, strOne, prop, "ett");
             entityParams.entityIndexSeek(
@@ -1441,7 +1441,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, strOne, prop, "ett");
             entityParams.entityIndexSeek(
@@ -1466,7 +1466,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int prop = token.propertyKey(PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, strOne, label);
             entityParams.entityAddToken(tx, strOneNoLabel, label);
@@ -1491,7 +1491,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int surname = token.propertyKey(SURNAME_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityDelete(tx, jackDalton);
             entityParams.entityIndexSeek(
@@ -1517,7 +1517,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int surname = token.propertyKey(SURNAME_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, joeDalton, label);
             entityParams.entityIndexSeek(
@@ -1540,7 +1540,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int surname = token.propertyKey(SURNAME_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, jackDalton, firstName, "Jesse");
             entityParams.entitySetProperty(tx, jackDalton, surname, "James");
@@ -1565,7 +1565,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int surname = token.propertyKey(SURNAME_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entitySetProperty(tx, jackDalton, firstName, "Jesse");
             entityParams.entitySetProperty(tx, jackDalton, surname, "James");
@@ -1593,7 +1593,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         int surname = token.propertyKey(SURNAME_PROP_NAME);
         IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(COMPOSITE_INDEX_NAME));
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityRemoveToken(tx, joeDalton, label);
             entityParams.entityAddToken(tx, strOneNoLabel, label);
@@ -1618,7 +1618,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         // given
         int prop = token.propertyKey("prop");
         IndexReadSession index = tx.dataRead().indexReadSession(tx.schemaRead().indexGetForName(PROP_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             entityParams.entityIndexSeek(
                     tx, index, cursor, constrained(IndexOrder.ASCENDING, true), PropertyIndexQuery.exact(prop, 5));
@@ -1638,7 +1638,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         IndexReadSession index = tx.dataRead().indexReadSession(tx.schemaRead().indexGetForName(PROP_INDEX_NAME));
         int label = entityParams.entityTokenId(tx, DEFAULT_ENTITY_TOKEN);
         try (KernelTransaction tx = beginTransaction();
-                var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+                ENTITY_VALUE_INDEX_CURSOR cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             long newEntity = entityParams.entityCreateNew(tx, label);
             entityParams.entitySetProperty(tx, newEntity, prop, intValue(5));

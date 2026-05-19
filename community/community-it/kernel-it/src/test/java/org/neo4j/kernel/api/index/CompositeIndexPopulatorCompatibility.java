@@ -102,11 +102,11 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
     }
 
     abstract static class Unique extends CompositeIndexPopulatorCompatibility {
-        Value value1 = Values.of("value1");
-        Value value2 = Values.of("value2");
-        Value value3 = Values.of("value3");
-        int nodeId1 = 3;
-        int nodeId2 = 4;
+        static final Value VALUE_1 = Values.of("value1");
+        static final Value VALUE_2 = Values.of("value2");
+        static final Value VALUE_3 = Values.of("value3");
+        static final int NODE_ID_1 = 3;
+        static final int NODE_ID_2 = 4;
 
         Unique(PropertyIndexProviderCompatibilityTestSuite testSuite) {
             super(testSuite, IndexPrototype.uniqueForSchema(forLabel(1000, 0, 1)));
@@ -130,8 +130,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                         try {
                             p.add(
                                     Arrays.asList(
-                                            add(nodeId1, descriptor, value1, value2),
-                                            add(nodeId2, descriptor, value1, value2)),
+                                            add(NODE_ID_1, descriptor, VALUE_1, VALUE_2),
+                                            add(NODE_ID_2, descriptor, VALUE_1, VALUE_2)),
                                     CursorContext.NULL_CONTEXT);
                             p.scanCompleted(
                                     PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
@@ -140,9 +140,9 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                         }
                         // then
                         catch (IndexEntryConflictException conflict) {
-                            assertEquals(nodeId1, conflict.getExistingEntityId());
-                            assertEquals(ValueTuple.of(value1, value2), conflict.getPropertyValues());
-                            assertEquals(nodeId2, conflict.getAddedEntityId());
+                            assertEquals(NODE_ID_1, conflict.getExistingEntityId());
+                            assertEquals(ValueTuple.of(VALUE_1, VALUE_2), conflict.getPropertyValues());
+                            assertEquals(NODE_ID_2, conflict.getAddedEntityId());
                         }
                     },
                     false);
@@ -165,8 +165,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                     p -> {
                         p.add(
                                 Arrays.asList(
-                                        add(nodeId1, descriptor, value1, value2),
-                                        add(nodeId2, descriptor, value1, value3)),
+                                        add(NODE_ID_1, descriptor, VALUE_1, VALUE_2),
+                                        add(NODE_ID_2, descriptor, VALUE_1, VALUE_3)),
                                 CursorContext.NULL_CONTEXT);
                         p.scanCompleted(PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT);
                     });

@@ -82,10 +82,10 @@ public class PointIndexCreationTest {
 
     private void createPointIndex(String name, SchemaDescriptor schema) throws Exception {
         try (Transaction tx = db.beginTx()) {
-            var prototype = IndexPrototype.forSchema(schema)
+            IndexPrototype prototype = IndexPrototype.forSchema(schema)
                     .withIndexType(IndexType.POINT)
                     .withName(name);
-            var kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
+            KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
             kernelTransaction.schemaWrite().indexCreate(prototype);
             tx.commit();
         }

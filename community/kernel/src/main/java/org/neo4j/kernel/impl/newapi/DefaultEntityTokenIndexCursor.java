@@ -143,7 +143,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     public boolean next() {
         entity = LongReference.NULL;
         entityFromIndex = LongReference.NULL;
-        final var hasNext = useMergeSort ? nextWithOrdering() : nextWithoutOrder();
+        boolean hasNext = useMergeSort ? nextWithOrdering() : nextWithoutOrder();
         if (hasNext && tracer != null) {
             traceNext(tracer, entity);
         }
@@ -244,7 +244,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             }
         }
 
-        final var nextId = sortedMergeJoin.next();
+        long nextId = sortedMergeJoin.next();
         if (nextId == LongReference.NULL) {
             return false;
         } else {

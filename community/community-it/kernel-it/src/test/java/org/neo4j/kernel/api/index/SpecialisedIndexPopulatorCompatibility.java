@@ -92,7 +92,7 @@ abstract class SpecialisedIndexPopulatorCompatibility
     void shouldBeAbleToDropAClosedIndexPopulator() {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(config);
-        final IndexPopulator p = indexProvider.getPopulator(
+        IndexPopulator p = indexProvider.getPopulator(
                 descriptor,
                 indexSamplingConfig,
                 SchemaTestUtil.defaultHeapBufferFactory(),

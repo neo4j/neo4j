@@ -31,6 +31,8 @@ import org.mockito.Mockito;
 import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory.DatabaseIdResolver;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -40,6 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
@@ -60,14 +63,14 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(graphDbDir);
-        var defaultDatabaseId = DatabaseIdFactory.from(
+        NamedDatabaseId defaultDatabaseId = DatabaseIdFactory.from(
                 DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
-        var databaseIdResolver = mock(ConfigBasedLookupFactory.DatabaseIdResolver.class);
+        DatabaseIdResolver databaseIdResolver = mock(ConfigBasedLookupFactory.DatabaseIdResolver.class);
         Mockito.when(databaseIdResolver.resolve(DEFAULT_DATABASE_NAME))
                 .thenReturn(Optional.of(defaultDatabaseId.databaseId()));
-        var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdResolver);
-        var readOnlyDatabases = new DefaultReadOnlyDatabases(readOnlyLookup);
-        var readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
+        ConfigBasedLookupFactory readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdResolver);
+        DefaultReadOnlyDatabases readOnlyDatabases = new DefaultReadOnlyDatabases(readOnlyLookup);
+        DatabaseReadOnlyChecker readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
         return TokenIndexProviderFactory.create(
                 pageCache,
                 graphDbDir,

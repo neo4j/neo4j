@@ -67,7 +67,7 @@ abstract class IndexProviderCompatabilityTestBase {
     private final JobScheduler jobScheduler;
     IndexProvider indexProvider;
     IndexDescriptor descriptor;
-    TokenNameLookup tokenNameLookup;
+    final TokenNameLookup tokenNameLookup;
     final IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
     Config config;
     Path homePath;
@@ -80,7 +80,7 @@ abstract class IndexProviderCompatabilityTestBase {
         String testName = info.getTestMethod().orElseThrow().getName().toLowerCase(Locale.ROOT);
         testDirectory.prepareDirectory(testClass, testSuite.getClass().getSimpleName());
         homePath = testDirectory.homePath(testName);
-        final boolean hasNodeBasedRelIndex = random.nextBoolean();
+        boolean hasNodeBasedRelIndex = random.nextBoolean();
         storageEngineIndexingBehaviour = new TestStorageEngineIndexingBehaviour(hasNodeBasedRelIndex);
 
         Config.Builder configBuilder = Config.newBuilder();

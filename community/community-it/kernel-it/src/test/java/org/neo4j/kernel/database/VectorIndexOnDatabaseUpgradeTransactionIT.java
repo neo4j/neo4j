@@ -102,10 +102,10 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @ParameterizedTest
     @MethodSource("indexVersions")
     void shouldBeBlockedFromCreatingVectorIndexOnOlderVersion(EntityType entityType, VectorIndexVersion indexVersion) {
-        final KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
+        KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
         setup(previousVersion);
 
-        final KernelVersion minimumRequiredVersion =
+        KernelVersion minimumRequiredVersion =
                 switch (entityType) {
                     case NODE -> indexVersion.minimumRequiredKernelVersion();
                     case RELATIONSHIP ->
@@ -115,7 +115,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
                 };
 
         assertThatThrownBy(() -> {
-                    try (final Transaction tx = database.beginTx()) {
+                    try (Transaction tx = database.beginTx()) {
                         createIndex(tx, entityType, indexVersion, defaultSettings());
                         tx.commit();
                     }
@@ -137,16 +137,16 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @ParameterizedTest
     @MethodSource("indexVersions")
     void shouldBePossibleToCreateVectorIndexAfterUpgrade(EntityType entityType, VectorIndexVersion indexVersion) {
-        final KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
+        KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
         setup(previousVersion);
         UpgradeTestUtil.upgradeDatabase(dbms, database, previousVersion, KERNEL_VERSION);
 
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             createIndex(tx, entityType, indexVersion, defaultSettings());
             tx.commit();
         }
 
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             assertThat(getVectorIndexes(tx)).hasSize(1);
         }
     }
@@ -164,22 +164,22 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @MethodSource("nonInitialIndexVersions")
     void createVectorIndexShouldTriggerUpgradeButBePreviousIndexVersion(
             EntityType entityType, VectorIndexVersion indexVersion) {
-        final KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
-        final VectorIndexVersion expectedIndexVersion = VectorIndexVersion.latestSupportedVersion(previousVersion);
+        KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
+        VectorIndexVersion expectedIndexVersion = VectorIndexVersion.latestSupportedVersion(previousVersion);
 
         setup(previousVersion);
         // write expected tokens before upgrade, as to not create a write
-        final TokenIds tokenIds = TokenIds.from(database, entityType, 1, 1);
+        TokenIds tokenIds = TokenIds.from(database, entityType, 1, 1);
         upgradeDbms(dbms);
         assertKernelVersion(database, previousVersion);
 
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             createIndex(tx, entityType, tokenIds, VectorIndexVersion.UNKNOWN, defaultSettings());
             tx.commit();
         }
 
         assertKernelVersion(database, KERNEL_VERSION);
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             assertThat(getVectorIndexes(tx))
                     .hasSize(1)
                     .first()
@@ -201,12 +201,11 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @MethodSource("introducedSettings")
     void shouldBeBlockedFromCreatingVectorIndexWithNewSettingsOnOlderVersion(
             VectorIndexVersion indexVersion, EntityType entityType, IndexSetting setting, Object validValue) {
-        final KernelVersion introducedKernelVersion =
-                VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS.get(setting);
-        final KernelVersion previousVersion = previousFrom(introducedKernelVersion);
+        KernelVersion introducedKernelVersion = VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS.get(setting);
+        KernelVersion previousVersion = previousFrom(introducedKernelVersion);
         setup(previousVersion);
         assertThatThrownBy(() -> {
-                    try (final Transaction tx = database.beginTx()) {
+                    try (Transaction tx = database.beginTx()) {
                         createIndex(
                                 tx, entityType, indexVersion, defaultSettings().set(setting, validValue));
                         tx.commit();
@@ -226,37 +225,36 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @MethodSource("introducedSettings")
     void shouldBePossibleToCreateVectorIndexWithNewSettingsAfterUpgrade(
             VectorIndexVersion indexVersion, EntityType entityType, IndexSetting setting, Object validValue) {
-        final KernelVersion introducedKernelVersion =
-                VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS.get(setting);
-        final KernelVersion previousVersion = previousFrom(introducedKernelVersion);
+        KernelVersion introducedKernelVersion = VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS.get(setting);
+        KernelVersion previousVersion = previousFrom(introducedKernelVersion);
         setup(previousVersion);
         UpgradeTestUtil.upgradeDatabase(dbms, database, previousVersion, KERNEL_VERSION);
 
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             createIndex(tx, entityType, indexVersion, defaultSettings().set(setting, validValue));
             tx.commit();
         }
 
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             assertThat(tx.schema().getIndexes()).hasSize(1);
         }
     }
 
     private static Stream<Arguments> introducedSettings() {
-        final List<Pair<IndexSetting, Object>> introducedSettings = List.of(
+        List<Pair<IndexSetting, Object>> introducedSettings = List.of(
                 Tuples.pair(IndexSetting.vector_Quantization_Enabled(), true),
                 Tuples.pair(IndexSetting.vector_Hnsw_M(), 32),
                 Tuples.pair(IndexSetting.vector_Hnsw_M(), 256));
 
-        final Builder<Arguments> arguments = Stream.builder();
-        for (final Pair<IndexSetting, Object> introducedSetting : introducedSettings) {
-            final IndexSetting setting = introducedSetting.getOne();
-            final Object validValue = introducedSetting.getTwo();
+        Builder<Arguments> arguments = Stream.builder();
+        for (Pair<IndexSetting, Object> introducedSetting : introducedSettings) {
+            IndexSetting setting = introducedSetting.getOne();
+            Object validValue = introducedSetting.getTwo();
 
-            final KernelVersion introducedKernelVersion =
+            KernelVersion introducedKernelVersion =
                     VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS.get(setting);
-            final VectorIndexVersion version = VectorIndexVersion.latestSupportedVersion(introducedKernelVersion);
-            for (final EntityType entityType : EntityType.ENTITY_TYPES) {
+            VectorIndexVersion version = VectorIndexVersion.latestSupportedVersion(introducedKernelVersion);
+            for (EntityType entityType : EntityType.ENTITY_TYPES) {
                 arguments.accept(Arguments.of(version, entityType, setting, validValue));
             }
         }
@@ -267,15 +265,15 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @MethodSource("multiTokenIndexVersions")
     void shouldBeBlockedFromCreatingVectorIndexWithMultiTokenOnFirstWriteOfUpgradeWithDefaultProvider(
             VectorIndexVersion indexVersion, EntityType entityType) {
-        final KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
+        KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
         setup(previousVersion);
         // write expected tokens before upgrade, as to not create a write
-        final TokenIds tokenIds = TokenIds.from(database, entityType, 2, 2);
+        TokenIds tokenIds = TokenIds.from(database, entityType, 2, 2);
         upgradeDbms(dbms);
         assertKernelVersion(database, previousVersion);
 
         assertThatThrownBy(() -> {
-                    try (final Transaction tx = database.beginTx()) {
+                    try (Transaction tx = database.beginTx()) {
                         createIndex(tx, entityType, tokenIds, VectorIndexVersion.UNKNOWN, defaultSettings());
                         tx.commit();
                     }
@@ -291,10 +289,10 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @ParameterizedTest
     @MethodSource("multiTokenIndexVersions")
     void shouldBeBlockedFromCreatingVectorIndexWithMultiToken(VectorIndexVersion indexVersion, EntityType entityType) {
-        final KernelVersion previousVersion = previousFrom(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
+        KernelVersion previousVersion = previousFrom(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
         setup(previousVersion);
         assertThatThrownBy(() -> {
-                    try (final Transaction tx = database.beginTx()) {
+                    try (Transaction tx = database.beginTx()) {
                         createIndex(tx, entityType, 2, 2, indexVersion, defaultSettings());
                         tx.commit();
                     }
@@ -314,38 +312,38 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     @MethodSource("multiTokenIndexVersions")
     void shouldBePossibleToCreateVectorIndexWithMultiTokenAfterUpgrade(
             VectorIndexVersion indexVersion, EntityType entityType) {
-        final KernelVersion previousVersion = previousFrom(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
+        KernelVersion previousVersion = previousFrom(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
         setup(previousVersion);
         UpgradeTestUtil.upgradeDatabase(dbms, database, previousVersion, KERNEL_VERSION);
 
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             createIndex(tx, entityType, 2, 2, indexVersion, defaultSettings());
             tx.commit();
         }
 
-        try (final Transaction tx = database.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             assertThat(tx.schema().getIndexes()).hasSize(1);
         }
     }
 
     private static Stream<Arguments> multiTokenIndexVersions() {
-        final Builder<Arguments> arguments = Stream.builder();
-        final VectorIndexVersion minimumVersion =
+        Builder<Arguments> arguments = Stream.builder();
+        VectorIndexVersion minimumVersion =
                 VectorIndexVersion.latestSupportedVersion(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
-        for (final VectorIndexVersion version : VectorTestUtils.inclusiveVersionRangeFrom(minimumVersion)) {
-            for (final EntityType entityType : EntityType.ENTITY_TYPES) {
+        for (VectorIndexVersion version : VectorTestUtils.inclusiveVersionRangeFrom(minimumVersion)) {
+            for (EntityType entityType : EntityType.ENTITY_TYPES) {
                 arguments.accept(Arguments.of(version, entityType));
             }
         }
         return arguments.build();
     }
 
-    private IndexDescriptor createIndex(
+    private static IndexDescriptor createIndex(
             Transaction tx, EntityType entityType, VectorIndexVersion indexVersion, VectorIndexSettings settings) {
         return createIndex(tx, entityType, 1, 1, indexVersion, settings);
     }
 
-    private IndexDescriptor createIndex(
+    private static IndexDescriptor createIndex(
             Transaction tx,
             EntityType entityType,
             int numberOfEntityTokens,
@@ -353,7 +351,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
             VectorIndexVersion indexVersion,
             VectorIndexSettings settings) {
         try {
-            final KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
+            KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
             return createIndex(
                     ktx,
                     entityType,
@@ -365,28 +363,28 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
         }
     }
 
-    private IndexDescriptor createIndex(
+    private static IndexDescriptor createIndex(
             Transaction tx,
             EntityType entityType,
             TokenIds tokenIds,
             VectorIndexVersion indexVersion,
             VectorIndexSettings settings) {
         try {
-            final KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
+            KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
             return createIndex(ktx, entityType, tokenIds, indexVersion, settings);
         } catch (KernelException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private IndexDescriptor createIndex(
+    private static IndexDescriptor createIndex(
             KernelTransaction ktx,
             EntityType entityType,
             TokenIds tokenIds,
             VectorIndexVersion indexVersion,
             VectorIndexSettings settings)
             throws KernelException {
-        final SchemaDescriptor schemaDescriptor =
+        SchemaDescriptor schemaDescriptor =
                 switch (indexVersion) {
                     case V1_0, V2_0 ->
                         switch (entityType) {
@@ -396,7 +394,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
                     default -> SchemaDescriptors.forSemanticSearch(entityType, tokenIds.entities, tokenIds.keys);
                 };
 
-        final IndexPrototype prototype = IndexPrototype.forSchema(schemaDescriptor)
+        IndexPrototype prototype = IndexPrototype.forSchema(schemaDescriptor)
                 .withIndexType(IndexType.VECTOR)
                 .withIndexProvider(indexVersion.descriptor())
                 .withIndexConfig(settings.toIndexConfig());
@@ -408,8 +406,8 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
         static TokenIds from(
                 KernelTransaction ktx, EntityType entityType, int numberOfEntityTokens, int numberOfPropertyKeys)
                 throws KernelException {
-            final int[] propKeyIds = PROP_KEY_IDS.getIds(ktx, PROP_KEYS.get(numberOfPropertyKeys));
-            final int[] entityTokenIds =
+            int[] propKeyIds = PROP_KEY_IDS.getIds(ktx, PROP_KEYS.get(numberOfPropertyKeys));
+            int[] entityTokenIds =
                     switch (entityType) {
                         case NODE -> LABEL_IDS.getIds(ktx, LABELS.get(numberOfEntityTokens));
                         case RELATIONSHIP -> REL_TYPE_IDS.getIds(ktx, REL_TYPES.get(numberOfEntityTokens));
@@ -419,9 +417,9 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
 
         static TokenIds from(
                 GraphDatabaseService db, EntityType entityType, int numberOfEntityTokens, int numberOfPropertyKeys) {
-            final TokenIds tokenIds;
-            try (final Transaction tx = db.beginTx()) {
-                final KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
+            TokenIds tokenIds;
+            try (Transaction tx = db.beginTx()) {
+                KernelTransaction ktx = ((TransactionImpl) tx).kernelTransaction();
                 tokenIds = from(ktx, entityType, numberOfEntityTokens, numberOfPropertyKeys);
                 tx.commit();
             } catch (KernelException exception) {
@@ -431,11 +429,11 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
         }
     }
 
-    private VectorIndexSettings defaultSettings() {
+    private static VectorIndexSettings defaultSettings() {
         return VectorIndexSettings.from(IndexSettingUtil.defaultSettingsForTesting(IndexType.VECTOR.toPublicApi()));
     }
 
-    private KernelVersion previousFrom(KernelVersion kernelVersion) {
+    private static KernelVersion previousFrom(KernelVersion kernelVersion) {
         if (kernelVersion == KernelVersion.GLORIOUS_FUTURE) {
             kernelVersion = LatestVersions.LATEST_KERNEL_VERSION;
         }
@@ -449,7 +447,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     }
 
     private void setup(KernelVersion kernelVersion) {
-        final ZippedStoreCommunity store =
+        ZippedStoreCommunity store =
                 switch (kernelVersion) {
                     case V5_10 -> ZippedStoreCommunity.REC_AF11_V510_EMPTY;
                     case V5_15 -> ZippedStoreCommunity.REC_AF11_V515_EMPTY;

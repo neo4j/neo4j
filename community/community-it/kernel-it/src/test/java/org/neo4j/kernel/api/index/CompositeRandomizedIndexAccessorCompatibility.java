@@ -232,7 +232,7 @@ abstract class CompositeRandomizedIndexAccessorCompatibility extends IndexAccess
                     RandomValues.newConfigurationBuilder()
                             .maxVectorNumBytes(RandomValues.MAX_NUM_BYTES_IN_INDEX_KEY / 2)
                             .build());
-            var maxTries = 0;
+            int maxTries = 0;
             do {
                 value = ValueTuple.of(
                         // Use boolean for first slot in composite because we will use exact match on this part.x

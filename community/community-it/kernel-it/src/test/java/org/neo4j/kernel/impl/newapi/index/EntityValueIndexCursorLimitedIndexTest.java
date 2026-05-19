@@ -34,12 +34,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
@@ -145,12 +148,12 @@ class EntityValueIndexCursorLimitedIndexTest {
 
         @Override
         public void createTestGraph(GraphDatabaseService db) {
-            try (var tx = db.beginTx()) {
+            try (Transaction tx = db.beginTx()) {
                 entityParams.createEntityIndex(tx, ENTITY_TOKEN, PROPERTY_KEY, INDEX_NAME, suite.type);
                 tx.commit();
             }
 
-            try (var ktx = beginTransaction()) {
+            try (KernelTransaction ktx = beginTransaction()) {
                 validCommittedEntityIds = createEntitiesWithProp(ktx, suite.validValues());
                 invalidCommittedEntityIds = createEntitiesWithProp(ktx, suite.invalidValues());
                 ktx.commit();
@@ -158,15 +161,16 @@ class EntityValueIndexCursorLimitedIndexTest {
                 throw new AssertionError("failed to create graph", e);
             }
 
-            try (var tx = db.beginTx()) {
+            try (Transaction tx = db.beginTx()) {
                 tx.schema().awaitIndexesOnline(5, TimeUnit.MINUTES);
             }
         }
 
         @Test
         final void scanWithoutTxStateShouldOnlyReturnCommitedValidValuesForIndex() throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  an index with a type which does not store all value types, and already committed valid indexed
                 // entities
                 // when   index scanned without transaction state
@@ -178,10 +182,11 @@ class EntityValueIndexCursorLimitedIndexTest {
 
         @Test
         final void scanWithValidTxStateShouldOnlyReturnValidCommitedValuesAndStateForIndex() throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  transaction state of valid value types
-                final var expected = new HashSet<>(validCommittedEntityIds);
+                HashSet<Long> expected = new HashSet<>(validCommittedEntityIds);
                 expected.addAll(createEntitiesWithProp(tx, suite.validValues()));
 
                 // when   index scanned
@@ -193,8 +198,9 @@ class EntityValueIndexCursorLimitedIndexTest {
 
         @Test
         final void scanWithInvalidTxStateShouldOnlyReturnValidCommitedValuesForIndex() throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  transaction state of invalid value types
                 createEntitiesWithProp(tx, suite.invalidValues());
 
@@ -209,10 +215,11 @@ class EntityValueIndexCursorLimitedIndexTest {
         @Test
         final void scanWithValid2ValidChangeTxStateShouldOnlyReturnValidCommitedValuesForIndexWithChange()
                 throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  a change of commited entry: valid -> valid
-                final var commitedPool = new ArrayDeque<>(validCommittedEntityIds);
+                ArrayDeque<Long> commitedPool = new ArrayDeque<>(validCommittedEntityIds);
                 changePropValue(
                         tx,
                         commitedPool.removeLast(),
@@ -231,10 +238,11 @@ class EntityValueIndexCursorLimitedIndexTest {
         @Test
         final void scanWithValid2InvalidChangeTxStateShouldOnlyReturnValidCommitedValuesForIndexWithoutChange()
                 throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  a change of commited entry: valid -> invalid
-                final var commitedPool = new ArrayDeque<>(validCommittedEntityIds);
+                ArrayDeque<Long> commitedPool = new ArrayDeque<>(validCommittedEntityIds);
                 changePropValue(
                         tx,
                         commitedPool.removeLast(),
@@ -251,11 +259,12 @@ class EntityValueIndexCursorLimitedIndexTest {
         @Test
         final void scanWithInvalid2ValidChangeTxStateShouldOnlyReturnValidCommitedValuesForIndexWithChange()
                 throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  a change of commited entry: invalid -> valid
-                final var expected = new HashSet<>(validCommittedEntityIds);
-                final var commitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
+                HashSet<Long> expected = new HashSet<>(validCommittedEntityIds);
+                ArrayDeque<Long> commitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
                 expected.add(changePropValue(
                         tx,
                         commitedPool.removeLast(),
@@ -271,10 +280,11 @@ class EntityValueIndexCursorLimitedIndexTest {
         @Test
         final void scanWithInvalid2InvalidChangeTxStateShouldOnlyReturnValidCommitedValuesForIndexWithoutChange()
                 throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  a change of commited entry: invalid -> invalid
-                final var commitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
+                ArrayDeque<Long> commitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
                 changePropValue(
                         tx,
                         commitedPool.removeLast(),
@@ -293,10 +303,11 @@ class EntityValueIndexCursorLimitedIndexTest {
         @Test
         final void scanWithRemovedValidTxStateShouldOnlyReturnValidCommitedValuesForIndexWithoutRemoved()
                 throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  a removal of a valid entry
-                final var commitedPool = new ArrayDeque<>(validCommittedEntityIds);
+                ArrayDeque<Long> commitedPool = new ArrayDeque<>(validCommittedEntityIds);
                 removeEntity(tx, commitedPool.removeLast());
 
                 // when   index scanned
@@ -310,10 +321,11 @@ class EntityValueIndexCursorLimitedIndexTest {
         @Test
         final void scanWithRemovedInvalidTxStateShouldOnlyReturnValidCommitedValuesForIndexWithoutRemoved()
                 throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
                 // given  a removal of a invalid entry
-                final var commitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
+                ArrayDeque<Long> commitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
                 removeEntity(tx, commitedPool.removeLast());
 
                 // when   index scanned
@@ -328,11 +340,12 @@ class EntityValueIndexCursorLimitedIndexTest {
 
         @Test
         final void scanWithComplexTxStateShouldOnlyReturnValidCommitedAndStateForIndex() throws KernelException {
-            try (var tx = beginTransaction();
-                    var entities = entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
-                final var expected = new HashSet<>(validCommittedEntityIds);
-                final var validCommitedPool = new ArrayDeque<>(validCommittedEntityIds);
-                final var invalidCommitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
+            try (KernelTransaction tx = beginTransaction();
+                    ENTITY_VALUE_INDEX_CURSOR entities =
+                            entityParams.allocateEntityValueIndexCursor(tx, tx.cursors())) {
+                HashSet<Long> expected = new HashSet<>(validCommittedEntityIds);
+                ArrayDeque<Long> validCommitedPool = new ArrayDeque<>(validCommittedEntityIds);
+                ArrayDeque<Long> invalidCommitedPool = new ArrayDeque<>(invalidCommittedEntityIds);
 
                 // given  a complex mix of changing commited entries, and creating new entries
                 expected.addAll(createEntitiesWithProp(tx, suite.validValues()));
@@ -364,9 +377,9 @@ class EntityValueIndexCursorLimitedIndexTest {
         }
 
         private long createEntityWithProp(KernelTransaction tx, Value value) throws KernelException {
-            final var tokenId = entityParams.entityTokenId(tx, ENTITY_TOKEN);
-            final var propKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName(PROPERTY_KEY);
-            final var entityId = entityParams.entityCreateNew(tx, tokenId);
+            int tokenId = entityParams.entityTokenId(tx, ENTITY_TOKEN);
+            int propKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName(PROPERTY_KEY);
+            long entityId = entityParams.entityCreateNew(tx, tokenId);
             entityParams.entitySetProperty(tx, entityId, propKeyId, value);
             return entityId;
         }
@@ -377,7 +390,7 @@ class EntityValueIndexCursorLimitedIndexTest {
         }
 
         private long changePropValue(KernelTransaction tx, long entityId, Value value) throws KernelException {
-            final var propKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName(PROPERTY_KEY);
+            int propKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName(PROPERTY_KEY);
             entityParams.entitySetProperty(tx, entityId, propKeyId, value);
             return entityId;
         }
@@ -390,11 +403,11 @@ class EntityValueIndexCursorLimitedIndexTest {
         private void assertThatIndexScanContainsExactlyInAnyOrderElementsOf(
                 KernelTransaction tx, ENTITY_VALUE_INDEX_CURSOR entities, Iterable<Long> expected, String description)
                 throws KernelException {
-            final var index = tx.schemaRead().indexGetForName(INDEX_NAME);
-            final var session = tx.dataRead().indexReadSession(index);
+            IndexDescriptor index = tx.schemaRead().indexGetForName(INDEX_NAME);
+            IndexReadSession session = tx.dataRead().indexReadSession(index);
 
             entityParams.entityIndexScan(tx, session, entities, IndexQueryConstraints.unconstrained());
-            final var found = new HashSet<Long>();
+            HashSet<Long> found = new HashSet<>();
             while (entities.next()) {
                 found.add(entityParams.entityReference(entities));
             }

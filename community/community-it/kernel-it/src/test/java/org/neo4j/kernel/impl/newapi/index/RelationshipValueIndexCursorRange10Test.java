@@ -26,8 +26,14 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.SkipOnSpd;
 
@@ -53,26 +59,27 @@ public class RelationshipValueIndexCursorRange10Test
     @Test
     void shouldReadRelationshipOnReadFromStore() throws Exception {
         // given
-        var needsValues = indexParams.indexProvidesStringValues();
-        var constraints = unordered(needsValues);
-        var prop = token.propertyKey(PROP_NAME);
-        var index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
+        boolean needsValues = indexParams.indexProvidesStringValues();
+        IndexQueryConstraints constraints = unordered(needsValues);
+        int prop = token.propertyKey(PROP_NAME);
+        IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
 
         long first;
-        try (var tx = beginTransaction()) {
-            var tokenId = entityParams.entityTokenId(tx, DEFAULT_ENTITY_TOKEN);
+        try (KernelTransaction tx = beginTransaction()) {
+            int tokenId = entityParams.entityTokenId(tx, DEFAULT_ENTITY_TOKEN);
             first = entityParams.entityCreateNew(tx, tokenId);
             entityParams.entitySetProperty(tx, first, tx.tokenRead().propertyKey(PROP_NAME), "aaaaa");
             tx.commit();
         }
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (RelationshipValueIndexCursor cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             int relType;
             long relSourceNode;
             long relTargetNode;
-            try (var tx = beginTransaction();
-                    var relationshipScanCursor = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT)) {
+            try (KernelTransaction tx = beginTransaction();
+                    RelationshipScanCursor relationshipScanCursor =
+                            tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT)) {
                 // This should be the first one returned from the data set at hand
                 tx.dataRead().singleRelationship(first, relationshipScanCursor);
                 relationshipScanCursor.next();
@@ -89,7 +96,7 @@ public class RelationshipValueIndexCursorRange10Test
             assertThat(cursor.readFromStore()).isTrue();
 
             // then delete that relationship
-            try (var tx = beginTransaction()) {
+            try (KernelTransaction tx = beginTransaction()) {
                 entityParams.entityDelete(tx, first);
                 tx.commit();
             }
@@ -116,20 +123,20 @@ public class RelationshipValueIndexCursorRange10Test
     @Test
     void shouldNotLoadDeletedRelationshipOnReadFromStore() throws Exception {
         // given
-        var needsValues = indexParams.indexProvidesStringValues();
-        var constraints = unordered(needsValues);
-        var prop = token.propertyKey(PROP_NAME);
-        var index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
+        boolean needsValues = indexParams.indexProvidesStringValues();
+        IndexQueryConstraints constraints = unordered(needsValues);
+        int prop = token.propertyKey(PROP_NAME);
+        IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
 
         long first;
-        try (var tx = beginTransaction()) {
-            var tokenId = entityParams.entityTokenId(tx, DEFAULT_ENTITY_TOKEN);
+        try (KernelTransaction tx = beginTransaction()) {
+            int tokenId = entityParams.entityTokenId(tx, DEFAULT_ENTITY_TOKEN);
             first = entityParams.entityCreateNew(tx, tokenId);
             entityParams.entitySetProperty(tx, first, tx.tokenRead().propertyKey(PROP_NAME), "aaaaa");
             tx.commit();
         }
 
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
+        try (RelationshipValueIndexCursor cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors)) {
             // when
             // do the seek
             entityParams.entityIndexSeek(
@@ -138,7 +145,7 @@ public class RelationshipValueIndexCursorRange10Test
             assertThat(cursor.next()).isTrue();
 
             // then delete that relationship
-            try (var tx = beginTransaction()) {
+            try (KernelTransaction tx = beginTransaction()) {
                 entityParams.entityDelete(tx, first);
                 tx.commit();
             }
@@ -162,13 +169,14 @@ public class RelationshipValueIndexCursorRange10Test
     @Test
     void shouldFailOnReadRelationshipBeforeReadFromStore() throws Exception {
         // given
-        var needsValues = indexParams.indexProvidesStringValues();
-        var constraints = unordered(needsValues);
-        var prop = token.propertyKey(PROP_NAME);
-        var index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
-        try (var cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors);
-                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
-                var propertyCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+        boolean needsValues = indexParams.indexProvidesStringValues();
+        IndexQueryConstraints constraints = unordered(needsValues);
+        int prop = token.propertyKey(PROP_NAME);
+        IndexReadSession index = read.indexReadSession(schemaRead.indexGetForName(PROP_INDEX_NAME));
+        try (RelationshipValueIndexCursor cursor = entityParams.allocateEntityValueIndexCursor(tx, cursors);
+                NodeCursor nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                PropertyCursor propertyCursor =
+                        tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
             // when
             // do the seek
             entityParams.entityIndexSeek(

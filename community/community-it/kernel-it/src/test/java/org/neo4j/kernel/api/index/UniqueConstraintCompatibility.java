@@ -529,14 +529,14 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
      * play.
      */
     private Future<?> applyChangesToPopulatingUpdater(
-            long blockDataChangeTransactionOnLockOnId, long blockPopulatorOnLockOnId, final Action... actions)
+            long blockDataChangeTransactionOnLockOnId, long blockPopulatorOnLockOnId, Action... actions)
             throws InterruptedException, ExecutionException {
         // We want to issue an update to an index populator for a constraint.
         // However, creating a constraint takes a schema write lock, while
         // creating nodes and setting their properties takes a schema read
         // lock. We need to sneak past these locks.
-        final CountDownLatch createNodeReadyLatch = new CountDownLatch(1);
-        final CountDownLatch createNodeCommitLatch = new CountDownLatch(1);
+        CountDownLatch createNodeReadyLatch = new CountDownLatch(1);
+        CountDownLatch createNodeCommitLatch = new CountDownLatch(1);
         Future<?> updatingTransaction = executor.submit(() -> {
             try (Transaction tx = db.beginTx()) {
                 for (Action action : actions) {
@@ -567,7 +567,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         // This thread tries to create a constraint. It should block, waiting for it's
         // population job to finish, and it's population job should in turn be blocked
         // on the lockBlockingIndexPopulator above:
-        final CountDownLatch createConstraintTransactionStarted = new CountDownLatch(1);
+        CountDownLatch createConstraintTransactionStarted = new CountDownLatch(1);
         Future<?> createConstraintTransaction =
                 executor.submit(() -> createUniqueConstraint(createConstraintTransactionStarted));
         createConstraintTransactionStarted.await();
@@ -748,7 +748,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         }
     };
 
-    private Action createNode(final Object propertyValue) {
+    private Action createNode(Object propertyValue) {
         return new Action("Node node = tx.createNode( label ); " + "node.setProperty( property, "
                 + reprValue(propertyValue) + " );") {
             @Override
@@ -759,7 +759,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         };
     }
 
-    private Action setProperty(final Node node, final Object value) {
+    private Action setProperty(Node node, Object value) {
         return new Action(reprNode(node) + ".setProperty( property, " + reprValue(value) + " );") {
             @Override
             public void accept(Transaction transaction) {
@@ -768,7 +768,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         };
     }
 
-    private Action removeProperty(final Node node) {
+    private Action removeProperty(Node node) {
         return new Action(reprNode(node) + ".removeProperty( property );") {
             @Override
             public void accept(Transaction transaction) {
@@ -777,7 +777,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         };
     }
 
-    private Action addLabel(final Node node, final Label label) {
+    private Action addLabel(Node node, Label label) {
         return new Action(reprNode(node) + ".addLabel( " + label + " );") {
             @Override
             public void accept(Transaction transaction) {
@@ -786,7 +786,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         };
     }
 
-    private static Action fail(final String message) {
+    private static Action fail(String message) {
         return new Action("fail( \"" + message + "\" );") {
             @Override
             public void accept(Transaction transaction) {
@@ -795,7 +795,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         };
     }
 
-    private Action assertLookupNode(final Object propertyValue, Object value) {
+    private Action assertLookupNode(Object propertyValue, Object value) {
         return new Action("assertThat( lookUpNode( " + reprValue(propertyValue) + " ), " + value + " );") {
             @Override
             public void accept(Transaction transaction) {

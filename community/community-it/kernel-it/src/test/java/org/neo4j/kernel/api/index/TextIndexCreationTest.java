@@ -114,15 +114,15 @@ public class TextIndexCreationTest {
 
         // Then
         awaitIndexesOnline();
-        try (var transaction = db.beginTx()) {
-            var ktx = ((TransactionImpl) transaction).kernelTransaction();
+        try (Transaction transaction = db.beginTx()) {
+            KernelTransaction ktx = ((TransactionImpl) transaction).kernelTransaction();
             assertValidTextIndex(ktx.schemaRead().indexGetForName("node_text_index"), propertyIds);
             assertValidTextIndex(ktx.schemaRead().indexGetForName("rel_text_index"), propertyIds);
         }
     }
 
     private void awaitIndexesOnline() {
-        try (var tx = db.beginTx()) {
+        try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(5, MINUTES);
         }
     }
@@ -137,11 +137,11 @@ public class TextIndexCreationTest {
 
     private void createTextIndex(String name, SchemaDescriptor schema) throws Exception {
         try (Transaction tx = db.beginTx()) {
-            var prototype = IndexPrototype.forSchema(schema)
+            IndexPrototype prototype = IndexPrototype.forSchema(schema)
                     .withIndexType(IndexType.TEXT)
                     .withIndexProvider(getIndexProviderDescriptor())
                     .withName(name);
-            var kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
+            KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
             kernelTransaction.schemaWrite().indexCreate(prototype);
             tx.commit();
         }

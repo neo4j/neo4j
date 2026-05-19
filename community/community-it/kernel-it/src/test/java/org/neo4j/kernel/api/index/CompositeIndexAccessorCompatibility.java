@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
+import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -103,7 +104,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     @Test
     void testIndexScan() throws Exception {
         List<Long> ids = LongStream.rangeClosed(1L, 10L).boxed().toList();
-        final RandomValues rv = RandomValues.create(
+        RandomValues rv = RandomValues.create(
                 random.random(),
                 RandomValues.newConfigurationBuilder()
                         .maxVectorNumBytes(RandomValues.MAX_NUM_BYTES_IN_INDEX_KEY / 2)
@@ -295,11 +296,11 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         testIndexSeekExactWithBoundingBox(
                 intValue(100),
                 intValue(10),
-                pointValue(WGS_84, -10D, -10D),
-                pointValue(WGS_84, -1D, -1D),
-                pointValue(WGS_84, 0D, 0D),
-                pointValue(WGS_84, 1D, 1D),
-                pointValue(WGS_84, 10D, 10D));
+                pointValue(WGS_84, -10.0, -10.0),
+                pointValue(WGS_84, -1.0, -1.0),
+                pointValue(WGS_84, 0.0, 0.0),
+                pointValue(WGS_84, 1.0, 1.0),
+                pointValue(WGS_84, 10.0, 10.0));
     }
 
     private void testIndexSeekExactWithRange(
@@ -492,14 +493,14 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
 
     @Test
     void testIndexSeekExactWithExistsBySpatial() throws Exception {
-        testIndexSeekExactWithExists(pointValue(WGS_84, 100D, 90D), pointValue(WGS_84, 0D, 0D));
+        testIndexSeekExactWithExists(pointValue(WGS_84, 100.0, 90.0), pointValue(WGS_84, 0.0, 0.0));
     }
 
     @Test
     void testIndexSeekExactWithExistsBySpatialArray() throws Exception {
         testIndexSeekExactWithExists(
-                pointArray(new PointValue[] {pointValue(CARTESIAN, 100D, 100D), pointValue(CARTESIAN, 101D, 101D)}),
-                pointArray(new PointValue[] {pointValue(CARTESIAN, 0D, 0D), pointValue(CARTESIAN, 1D, 1D)}));
+                pointArray(new PointValue[] {pointValue(CARTESIAN, 100.0, 100.0), pointValue(CARTESIAN, 101.0, 101.0)}),
+                pointArray(new PointValue[] {pointValue(CARTESIAN, 0.0, 0.0), pointValue(CARTESIAN, 1.0, 1.0)}));
     }
 
     private void testIndexSeekExactWithExists(Object a, Object b) throws Exception {
@@ -603,11 +604,11 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     @Test
     void testIndexSeekRangeWithExistsBySpatial() throws Exception {
         testIndexSeekBoundingBoxWithExists(
-                pointValue(CARTESIAN, 0D, 0D),
-                pointValue(CARTESIAN, 1D, 1D),
-                pointValue(CARTESIAN, 2D, 2D),
-                pointValue(CARTESIAN, 3D, 3D),
-                pointValue(CARTESIAN, 4D, 4D));
+                pointValue(CARTESIAN, 0.0, 0.0),
+                pointValue(CARTESIAN, 1.0, 1.0),
+                pointValue(CARTESIAN, 2.0, 2.0),
+                pointValue(CARTESIAN, 3.0, 3.0),
+                pointValue(CARTESIAN, 4.0, 4.0));
     }
 
     @Test
@@ -1152,9 +1153,14 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
 
                     // then should not throw
                 } else {
-                    var exceptionAssert = assertThatThrownBy(() -> reader.query(
-                                    client, NULL_CONTEXT, CursorContext.NULL_CONTEXT, unconstrained(), theQuery))
-                            .isInstanceOf(IndexNotApplicableKernelException.class);
+                    AbstractThrowableAssert<? extends AbstractThrowableAssert<?, ?>, ?> exceptionAssert =
+                            assertThatThrownBy(() -> reader.query(
+                                            client,
+                                            NULL_CONTEXT,
+                                            CursorContext.NULL_CONTEXT,
+                                            unconstrained(),
+                                            theQuery))
+                                    .isInstanceOf(IndexNotApplicableKernelException.class);
                     if (!testSuite.supportsContainsAndEndsWithQueries() && hasContainsOrEndsWithQuery(theQuery)) {
                         exceptionAssert.hasMessageContaining("Tried to query index with illegal query.");
                     } else {
@@ -1166,7 +1172,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     }
 
     private boolean hasContainsOrEndsWithQuery(PropertyIndexQuery... query) {
-        for (final var predicate : query) {
+        for (PropertyIndexQuery predicate : query) {
             switch (predicate.type()) {
                 case STRING_CONTAINS, STRING_SUFFIX:
                     return true;

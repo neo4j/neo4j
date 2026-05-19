@@ -92,7 +92,7 @@ public abstract class PropertyIndexQuery implements IndexQuery {
      * @return a {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static ExactPredicate exact(int propertyKeyId, Object value) {
-        var exactValue = value instanceof Value ? (Value) value : Values.of(value);
+        Value exactValue = value instanceof Value ? (Value) value : Values.of(value);
         if (AnyValue.isNaN(exactValue)) {
             return new IncomparableExactPredicate(propertyKeyId, exactValue);
         }
@@ -615,7 +615,7 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         @Override
         public boolean acceptsValue(Value value) {
-            if (!(value instanceof final PointValue point)) {
+            if (!(value instanceof PointValue point)) {
                 return false;
             }
 

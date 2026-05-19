@@ -199,7 +199,7 @@ abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorC
     private List<EagerValueIndexEntryUpdate> generateUpdatesFromValues(List<Value> values, MutableLong nextId) {
         List<EagerValueIndexEntryUpdate> updates = new ArrayList<>();
         for (Value value : values) {
-            var update = add(nextId.getAndIncrement(), descriptor, value);
+            EagerValueIndexEntryUpdate update = add(nextId.getAndIncrement(), descriptor, value);
             updates.add(update);
         }
         return updates;
