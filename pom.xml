@@ -188,6 +188,7 @@
     <testcontainers.version>1.20.2</testcontainers.version>
     <build-resources.version>2025.11.1</build-resources.version>
     <s3mock.version>3.12.0</s3mock.version>
+    <parquet.version>1.17.1</parquet.version>
   </properties>
 
   <modules>
@@ -1246,6 +1247,29 @@
         <groupId>blue.strategic.parquet</groupId>
         <artifactId>parquet-floor</artifactId>
         <version>${parquet-floor.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-column</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-common</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-hadoop</artifactId>
+        <version>${parquet.version}</version>
         <exclusions>
           <exclusion>
             <groupId>io.airlift</groupId>
