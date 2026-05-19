@@ -89,7 +89,7 @@ class VectorSSFGenericTest extends VectorSSFTestBase {
         createTestNode(Map.of("id", 10, "name", "Alice", "age", 23, EMBEDDING_NAME, EMBEDDINGS.get(1)));
         // GQL status assertion allows consistent checks of different Java exception types in SPD and non-SPD context
         assertThatThrownBy(() -> queryNodeIndex(
-                        exactQuery("enabled", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, -45, 75))))
+                        exactQuery("age", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, -45, 75))))
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22G03)
                 .gqlCause()
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N01)
