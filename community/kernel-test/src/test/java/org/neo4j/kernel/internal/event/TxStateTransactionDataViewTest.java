@@ -317,7 +317,7 @@ class TxStateTransactionDataViewTest {
     void shouldAccessExampleMetaData() {
         when(transaction.getMetaData()).thenReturn(genericMap("username", "Igor"));
         TxStateTransactionDataSnapshot transactionDataSnapshot =
-                new TxStateTransactionDataSnapshot(state, ops, transaction, true);
+                new TxStateTransactionDataSnapshot(state, ops, transaction, true, null);
         assertEquals(1, transactionDataSnapshot.metaData().size());
         assertThat(transactionDataSnapshot.metaData())
                 .as("Expected metadata map to contain defined username")
@@ -345,6 +345,6 @@ class TxStateTransactionDataViewTest {
                         invocation.getArgument(1),
                         invocation.getArgument(2),
                         invocation.getArgument(3)));
-        return new TxStateTransactionDataSnapshot(state, ops, transaction, true);
+        return new TxStateTransactionDataSnapshot(state, ops, transaction, true, null);
     }
 }

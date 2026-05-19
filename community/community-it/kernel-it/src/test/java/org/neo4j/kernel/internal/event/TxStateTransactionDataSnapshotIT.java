@@ -20,14 +20,18 @@
 package org.neo4j.kernel.internal.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.event.TransactionData.DataSelection;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
@@ -82,7 +86,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true, null)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -128,7 +132,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true, null)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -174,7 +178,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true, null)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -219,7 +223,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, false)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, false, null)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -238,7 +242,7 @@ class TxStateTransactionDataSnapshotIT {
             var transactionState = kernelTransaction.txState();
             var cursorContext = kernelTransaction.cursorContext();
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true, null)) {
                 // empty
             }
             assertZeroTracer(cursorContext);
@@ -278,7 +282,7 @@ class TxStateTransactionDataSnapshotIT {
             cursorTracer.reportEvents();
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true, null)) {
                 // no work for snapshot
             }
             kernelTransaction.storeCursors().reset(cursorContext);
@@ -286,6 +290,158 @@ class TxStateTransactionDataSnapshotIT {
             assertThat(cursorTracer.pins()).isGreaterThan(0);
             assertThat(cursorTracer.hits()).isEqualTo(cursorTracer.pins());
             assertThat(cursorTracer.unpins()).isEqualTo(cursorTracer.pins());
+        }
+    }
+
+    @Test
+    void shouldSkipReplacedPropertyValuesIfToldTo() {
+        // given
+        String propertyKey = "p";
+        String originalValue = "original";
+        String replacedValue = "replaced";
+        String nodeId;
+        try (Transaction transaction = database.beginTx()) {
+            var node = transaction.createNode();
+            node.setProperty(propertyKey, originalValue);
+            nodeId = node.getElementId();
+            transaction.commit();
+        }
+
+        // when snapshotting without the replacedPropertyValues capability
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeByElementId(nodeId).setProperty(propertyKey, replacedValue);
+
+            var kernelTransaction = getKernelTransaction(transaction);
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    kernelTransaction.txState(),
+                    kernelTransaction.newStorageReader(),
+                    kernelTransaction,
+                    true,
+                    Set.of())) {
+                // then the previously committed value is not read from store
+                var entry = Iterables.single(snapshot.assignedNodeProperties());
+                assertThat(entry.key()).isEqualTo(propertyKey);
+                assertThat(entry.value()).isEqualTo(replacedValue);
+                assertThat(entry.previouslyCommittedValue()).isNull();
+            }
+        }
+
+        // when snapshotting with the replacedPropertyValues capability (positive control)
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeByElementId(nodeId).setProperty(propertyKey, replacedValue);
+
+            var kernelTransaction = getKernelTransaction(transaction);
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    kernelTransaction.txState(),
+                    kernelTransaction.newStorageReader(),
+                    kernelTransaction,
+                    true,
+                    Set.of(DataSelection.replacedPropertyValues))) {
+                // then the previously committed value is read from store
+                var entry = Iterables.single(snapshot.assignedNodeProperties());
+                assertThat(entry.key()).isEqualTo(propertyKey);
+                assertThat(entry.value()).isEqualTo(replacedValue);
+                assertThat(entry.previouslyCommittedValue()).isEqualTo(originalValue);
+            }
+        }
+    }
+
+    @Test
+    void shouldSkipRemovedPropertyValuesIfToldTo() {
+        // given
+        String propertyKey = "p";
+        String value = "value";
+        String nodeId;
+        try (Transaction transaction = database.beginTx()) {
+            var node = transaction.createNode();
+            node.setProperty(propertyKey, value);
+            nodeId = node.getElementId();
+            transaction.commit();
+        }
+
+        // when snapshotting without the removedPropertyValues capability
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeByElementId(nodeId).removeProperty(propertyKey);
+
+            var kernelTransaction = getKernelTransaction(transaction);
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    kernelTransaction.txState(),
+                    kernelTransaction.newStorageReader(),
+                    kernelTransaction,
+                    true,
+                    Set.of())) {
+                // then the previously committed value is not read from store
+                var entry = Iterables.single(snapshot.removedNodeProperties());
+                assertThat(entry.key()).isEqualTo(propertyKey);
+                assertThatThrownBy(entry::value).hasMessageContaining("This property has been removed");
+                assertThat(entry.previouslyCommittedValue()).isNull();
+            }
+        }
+
+        // when snapshotting with the removedPropertyValues capability (positive control)
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeByElementId(nodeId).removeProperty(propertyKey);
+
+            var kernelTransaction = getKernelTransaction(transaction);
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    kernelTransaction.txState(),
+                    kernelTransaction.newStorageReader(),
+                    kernelTransaction,
+                    true,
+                    Set.of(DataSelection.removedPropertyValues))) {
+                // then the previously committed value is read from store
+                var entry = Iterables.single(snapshot.removedNodeProperties());
+                assertThat(entry.key()).isEqualTo(propertyKey);
+                assertThatThrownBy(entry::value).hasMessageContaining("This property has been removed");
+                assertThat(entry.previouslyCommittedValue()).isEqualTo(value);
+            }
+        }
+    }
+
+    @Test
+    void shouldSkipLabelsOfDeletedNodesIfToldTo() {
+        // given
+        Label label = Label.label("label");
+        String nodeId;
+        try (Transaction transaction = database.beginTx()) {
+            var node = transaction.createNode(label);
+            nodeId = node.getElementId();
+            transaction.commit();
+        }
+
+        // when snapshotting without the deletedNodeLabels capability
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeByElementId(nodeId).delete();
+
+            var kernelTransaction = getKernelTransaction(transaction);
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    kernelTransaction.txState(),
+                    kernelTransaction.newStorageReader(),
+                    kernelTransaction,
+                    true,
+                    Set.of())) {
+                // then the previously committed labels are not read from store
+                var entry = Iterables.singleOrNull(snapshot.removedLabels());
+                assertThat(entry).isNull();
+            }
+        }
+
+        // when snapshotting with the deletedNodeLabels capability (positive control)
+        try (Transaction transaction = database.beginTx()) {
+            transaction.getNodeByElementId(nodeId).delete();
+
+            var kernelTransaction = getKernelTransaction(transaction);
+            try (var snapshot = new TxStateTransactionDataSnapshot(
+                    kernelTransaction.txState(),
+                    kernelTransaction.newStorageReader(),
+                    kernelTransaction,
+                    true,
+                    Set.of(DataSelection.deletedNodeLabels))) {
+                // then the previously committed value is read from store
+                var entry = Iterables.single(snapshot.removedLabels());
+                assertThat(entry.label().name()).isEqualTo(label.name());
+                assertThat(entry.node().getElementId()).isEqualTo(nodeId);
+            }
         }
     }
 
@@ -310,7 +466,7 @@ class TxStateTransactionDataSnapshotIT {
             resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, false)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, false, null)) {
                 return memoryTracker.estimatedHeapMemory();
             }
         }

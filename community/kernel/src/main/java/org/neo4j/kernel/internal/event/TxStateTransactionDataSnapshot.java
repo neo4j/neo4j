@@ -26,6 +26,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
@@ -75,19 +76,31 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final StorageRelationshipScanCursor relationship;
     private final InternalTransaction internalTransaction;
     private final MemoryTracker memoryTracker;
+    private final Set<DataSelection> dataSelection;
     private final boolean isLast;
 
+    /**
+     * Creates a new snapshot of the given transaction state.
+     * @param state transaction state to snapshot.
+     * @param storageReader storage reader for reading additional data from storage, if required.
+     * @param transaction the actual transaction.
+     * @param isLast whether it's the last part of the transaction.
+     * @param dataSelection specific set of data items to include for this snapshot,
+     * or {@code null} if all data should be included.
+     */
     TxStateTransactionDataSnapshot(
             ReadableTransactionState state,
             StorageReader storageReader,
             KernelTransaction transaction,
-            boolean isLast) {
+            boolean isLast,
+            Set<DataSelection> dataSelection) {
         this.state = state;
         this.store = storageReader;
         this.transaction = transaction;
         this.isLast = isLast;
         this.internalTransaction = transaction.internalTransaction();
         this.memoryTracker = transaction.memoryTracker();
+        this.dataSelection = dataSelection;
         this.relationship = storageReader.allocateRelationshipScanCursor(
                 transaction.cursorContext(), transaction.storeCursors(), memoryTracker);
         this.relationshipsReadFromStore = newLongObjectMap(memoryTracker);
@@ -210,9 +223,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         }
     }
 
+    private boolean shouldInclude(DataSelection selection) {
+        return dataSelection == null || dataSelection.contains(selection);
+    }
+
     private void snapshotModifiedRelationships(
             MemoryTracker memoryTracker, StoragePropertyCursor properties, TokenRead tokenRead)
             throws PropertyKeyIdNotFoundKernelException {
+        boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
+        boolean includeReplacedPropertyValues = shouldInclude(DataSelection.replacedPropertyValues);
         for (RelationshipState relState : state.modifiedRelationships()) {
             Relationship relationship = relationship(relState.getId());
             Iterator<StorageProperty> added = relState.addedProperties().iterator();
@@ -224,7 +243,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                         relationship,
                         property.propertyKeyId(),
                         property.value(),
-                        committedValue(relState, property.propertyKeyId(), this.relationship, properties)));
+                        committedValue(
+                                relState,
+                                property.propertyKeyId(),
+                                this.relationship,
+                                properties,
+                                includeReplacedPropertyValues)));
             }
             relState.removedProperties().each(id -> {
                 try {
@@ -234,7 +258,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                             relationship,
                             id,
                             null,
-                            committedValue(relState, id, this.relationship, properties));
+                            committedValue(relState, id, this.relationship, properties, includeRemovedPropertyValues));
                     removedRelationshipProperties.add(entryView);
                 } catch (PropertyKeyIdNotFoundKernelException e) {
                     throw new IllegalStateException(
@@ -247,6 +271,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private void snapshotModifiedNodes(
             MemoryTracker memoryTracker, StorageNodeCursor node, StoragePropertyCursor properties, TokenRead tokenRead)
             throws PropertyKeyIdNotFoundKernelException {
+        boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
+        boolean includeReplacedPropertyValues = shouldInclude(DataSelection.replacedPropertyValues);
+
         for (NodeState nodeState : state.modifiedNodes()) {
             Iterator<StorageProperty> added = nodeState.addedProperties().iterator();
             long nodeId = nodeState.getId();
@@ -258,7 +285,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                         nodeId,
                         property.propertyKeyId(),
                         property.value(),
-                        committedValue(nodeState, property.propertyKeyId(), node, properties));
+                        committedValue(
+                                nodeState, property.propertyKeyId(), node, properties, includeReplacedPropertyValues));
                 assignedNodeProperties.add(entryView);
             }
             nodeState.removedProperties().each(id -> {
@@ -269,7 +297,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                             nodeId,
                             id,
                             null,
-                            committedValue(nodeState, id, node, properties)));
+                            committedValue(nodeState, id, node, properties, includeRemovedPropertyValues)));
                 } catch (PropertyKeyIdNotFoundKernelException e) {
                     throw new IllegalStateException("Not existing node properties was modified for node " + nodeId, e);
                 }
@@ -283,6 +311,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private void snapshotRemovedRelationships(
             MemoryTracker memoryTracker, StoragePropertyCursor properties, TokenRead tokenRead) {
+        boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
+        if (!includeRemovedPropertyValues) {
+            return;
+        }
+
         state.addedAndRemovedRelationships().getRemoved().each(relId -> {
             Relationship relationship = relationship(relId);
             this.relationship.single(relId);
@@ -311,29 +344,40 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             StorageNodeCursor node,
             StoragePropertyCursor properties,
             TokenRead tokenRead) {
+        boolean includeDeletedNodeLabels = shouldInclude(DataSelection.deletedNodeLabels);
+        boolean includeRemovedPropertyValues = shouldInclude(DataSelection.removedPropertyValues);
+        if (!includeDeletedNodeLabels && !includeRemovedPropertyValues) {
+            return;
+        }
+
         state.addedAndRemovedNodes().getRemoved().each(nodeId -> {
             node.single(nodeId);
             if (node.next()) {
-                node.properties(properties, ALL_PROPERTIES);
-                while (properties.next()) {
-                    try {
-                        removedNodeProperties.add(createNodePropertyEntryView(
-                                memoryTracker,
-                                tokenRead,
-                                nodeId,
-                                properties.propertyKey(),
-                                null,
-                                properties.propertyValue()));
-                    } catch (PropertyKeyIdNotFoundKernelException e) {
-                        throw new IllegalStateException("Not existing properties was modified for node " + nodeId, e);
+                if (includeRemovedPropertyValues) {
+                    node.properties(properties, ALL_PROPERTIES);
+                    while (properties.next()) {
+                        try {
+                            removedNodeProperties.add(createNodePropertyEntryView(
+                                    memoryTracker,
+                                    tokenRead,
+                                    nodeId,
+                                    properties.propertyKey(),
+                                    null,
+                                    properties.propertyValue()));
+                        } catch (PropertyKeyIdNotFoundKernelException e) {
+                            throw new IllegalStateException(
+                                    "Not existing properties was modified for node " + nodeId, e);
+                        }
                     }
                 }
 
-                for (int labelId : node.labels()) {
-                    try {
-                        removedLabels.add(createLabelView(memoryTracker, tokenRead, nodeId, labelId));
-                    } catch (LabelNotFoundKernelException e) {
-                        throw new IllegalStateException("Not existing label was modified for node " + nodeId, e);
+                if (includeDeletedNodeLabels) {
+                    for (int labelId : node.labels()) {
+                        try {
+                            removedLabels.add(createLabelView(memoryTracker, tokenRead, nodeId, labelId));
+                        } catch (LabelNotFoundKernelException e) {
+                            throw new IllegalStateException("Not existing label was modified for node " + nodeId, e);
+                        }
                     }
                 }
             }
@@ -425,8 +469,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     }
 
     private Value committedValue(
-            NodeState nodeState, int property, StorageNodeCursor node, StoragePropertyCursor properties) {
-        if (state.nodeIsAddedInThisBatch(nodeState.getId())) {
+            NodeState nodeState,
+            int property,
+            StorageNodeCursor node,
+            StoragePropertyCursor properties,
+            boolean readPropertyValue) {
+        if (!readPropertyValue || state.nodeIsAddedInThisBatch(nodeState.getId())) {
             return NO_VALUE;
         }
 
@@ -447,8 +495,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             RelationshipState relState,
             int property,
             StorageRelationshipScanCursor relationship,
-            StoragePropertyCursor properties) {
-        if (state.relationshipIsAddedInThisBatch(relState.getId())) {
+            StoragePropertyCursor properties,
+            boolean readPropertyValue) {
+        if (!readPropertyValue || state.relationshipIsAddedInThisBatch(relState.getId())) {
             return NO_VALUE;
         }
 

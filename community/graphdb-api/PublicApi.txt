@@ -385,6 +385,12 @@ org.neo4j.graphdb.event.PropertyEntry<T>::key() java.lang.String public abstract
 org.neo4j.graphdb.event.PropertyEntry<T>::previouslyCommittedValue() java.lang.Object public abstract
 org.neo4j.graphdb.event.PropertyEntry<T>::value() java.lang.Object public abstract
 org.neo4j.graphdb.event.TransactionData public abstract interface
+org.neo4j.graphdb.event.TransactionData.DataSelection public static final enum extends java.lang.Enum<org.neo4j.graphdb.event.TransactionData.DataSelection>
+org.neo4j.graphdb.event.TransactionData.DataSelection::deletedNodeLabels org.neo4j.graphdb.event.TransactionData.DataSelection public static final
+org.neo4j.graphdb.event.TransactionData.DataSelection::removedPropertyValues org.neo4j.graphdb.event.TransactionData.DataSelection public static final
+org.neo4j.graphdb.event.TransactionData.DataSelection::replacedPropertyValues org.neo4j.graphdb.event.TransactionData.DataSelection public static final
+org.neo4j.graphdb.event.TransactionData.DataSelection::valueOf(java.lang.String) org.neo4j.graphdb.event.TransactionData.DataSelection public static
+org.neo4j.graphdb.event.TransactionData.DataSelection::values() org.neo4j.graphdb.event.TransactionData.DataSelection[] public static
 org.neo4j.graphdb.event.TransactionData::assignedLabels() java.lang.Iterable<org.neo4j.graphdb.event.LabelEntry> public abstract
 org.neo4j.graphdb.event.TransactionData::assignedNodeProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Node>> public abstract
 org.neo4j.graphdb.event.TransactionData::assignedRelationshipProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Relationship>> public abstract
@@ -407,6 +413,7 @@ org.neo4j.graphdb.event.TransactionEventListener<T extends java.lang.Object> pub
 org.neo4j.graphdb.event.TransactionEventListener<T>::afterCommit(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
 org.neo4j.graphdb.event.TransactionEventListener<T>::afterRollback(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
 org.neo4j.graphdb.event.TransactionEventListener<T>::beforeCommit(org.neo4j.graphdb.event.TransactionData, org.neo4j.graphdb.Transaction, org.neo4j.graphdb.GraphDatabaseService) #T public abstract throws java.lang.Exception
+org.neo4j.graphdb.event.TransactionEventListener<T>::transactionDataSelection() java.util.Set<org.neo4j.graphdb.event.TransactionData.DataSelection> public default
 org.neo4j.graphdb.schema.AnyTokens public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.AnyTokens>
 org.neo4j.graphdb.schema.AnyTokens::ANY_LABELS org.neo4j.graphdb.schema.AnyTokens public static final
 org.neo4j.graphdb.schema.AnyTokens::ANY_RELATIONSHIP_TYPES org.neo4j.graphdb.schema.AnyTokens public static final

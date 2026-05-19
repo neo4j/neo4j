@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.internal.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -28,9 +29,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.event.TransactionData.DataSelection;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -193,6 +197,47 @@ class DatabaseTransactionEventListenersTest {
         verify(firstSuccessfulListener).afterRollback(any(), any(), any());
         verify(secondFailingListener).afterRollback(any(), any(), any());
         verify(thirdSuccessfulListener).afterRollback(any(), any(), any());
+    }
+
+    @Test
+    void shouldCalculateCorrectDataSelection() {
+        // given
+        var emptySelection = listenerWithDataSelection(Set.of());
+        var replacedOnly = listenerWithDataSelection(Set.of(DataSelection.replacedPropertyValues));
+        var removedOnly = listenerWithDataSelection(Set.of(DataSelection.removedPropertyValues));
+        var replacedAndDeletedLabels = listenerWithDataSelection(
+                Set.of(DataSelection.replacedPropertyValues, DataSelection.deletedNodeLabels));
+        var needsEverything = listenerWithDataSelection(null);
+
+        // a single listener with explicit empty selection → empty set
+        assertThat(TransactionEventListeners.collectDataSelection(List.of(emptySelection)))
+                .isEmpty();
+
+        // a single listener with a specific selection → that set
+        assertThat(TransactionEventListeners.collectDataSelection(List.of(replacedOnly)))
+                .containsExactlyInAnyOrder(DataSelection.replacedPropertyValues);
+
+        // multiple listeners with specific selections → union of all their selections
+        assertThat(TransactionEventListeners.collectDataSelection(
+                        List.of(replacedOnly, removedOnly, replacedAndDeletedLabels)))
+                .containsExactlyInAnyOrder(
+                        DataSelection.replacedPropertyValues,
+                        DataSelection.removedPropertyValues,
+                        DataSelection.deletedNodeLabels);
+
+        // a single listener that selects all → null
+        assertThat(TransactionEventListeners.collectDataSelection(List.of(needsEverything)))
+                .isNull();
+
+        // if any listener selects all → null regardless of the others
+        assertThat(TransactionEventListeners.collectDataSelection(List.of(replacedOnly, needsEverything, removedOnly)))
+                .isNull();
+    }
+
+    private static TransactionEventListener<?> listenerWithDataSelection(Set<DataSelection> requirements) {
+        TransactionEventListener<?> listener = mock(TransactionEventListener.class);
+        when(listener.transactionDataSelection()).thenReturn(requirements);
+        return listener;
     }
 
     private StorageReader mockedStorageReader() {

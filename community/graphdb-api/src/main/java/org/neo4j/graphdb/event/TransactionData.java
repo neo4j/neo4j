@@ -209,4 +209,21 @@ public interface TransactionData {
     default boolean isLast() {
         return true;
     }
+
+    enum DataSelection {
+        /**
+         * The values of properties that are modified in this transaction.
+         */
+        replacedPropertyValues,
+
+        /**
+         * The values of properties that are removed in this transaction.
+         */
+        removedPropertyValues,
+
+        /**
+         * The labels that were removed from deleted nodes.
+         */
+        deletedNodeLabels,
+    }
 }

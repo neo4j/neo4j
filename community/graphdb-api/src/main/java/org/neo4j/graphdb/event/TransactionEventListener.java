@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.event;
 
+import java.util.Set;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -121,4 +122,14 @@ public interface TransactionEventListener<T> {
      * @param databaseService underlying database service
      */
     void afterRollback(TransactionData data, T state, GraphDatabaseService databaseService);
+
+    /**
+     * @return one or more {@link TransactionData.DataSelection} that this event listener requires the
+     * {@link TransactionData} will contain. {@code null} means that all available data will be selected.
+     * If there are multiple event listeners, then the used selection will be the union of all listeners.
+     * The fewer the selection set, the lower the cost of producing the {@link TransactionData} snapshot.
+     */
+    default Set<TransactionData.DataSelection> transactionDataSelection() {
+        return null;
+    }
 }
