@@ -56,5 +56,7 @@ public interface TransactionCounters {
 
     long totalTransactionsRetries();
 
+    long getNumberOfChunkedTransactions();
+
     void setTransactionSizeCallback(TransactionSizeMonitor transactionSizeMonitor);
 }

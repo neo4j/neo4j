@@ -36,4 +36,6 @@ public interface TransactionMonitor extends TransactionSizeMonitor {
     void transactionValidationFailure(DatabaseFile databaseFile);
 
     void transactionRetry();
+
+    void transactionMarkedMultiChunk();
 }

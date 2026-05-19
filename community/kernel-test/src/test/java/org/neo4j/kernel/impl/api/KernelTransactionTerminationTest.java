@@ -403,6 +403,9 @@ class KernelTransactionTerminationTest {
         public void transactionRetry() {}
 
         @Override
+        public void transactionMarkedMultiChunk() {}
+
+        @Override
         public void addHeapTransactionSize(long transactionSizeHeap) {}
 
         @Override

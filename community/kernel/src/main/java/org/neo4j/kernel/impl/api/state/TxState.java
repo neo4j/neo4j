@@ -976,8 +976,10 @@ public class TxState implements TransactionState {
         return getRelationshipStateEvenDeleted(relId).accept(visitor);
     }
 
-    public void markAsMultiChunk() {
+    public boolean markAsMultiChunk() {
+        boolean markedFirstTime = !isMultiChunk;
         isMultiChunk = true;
+        return markedFirstTime;
     }
 
     @Override

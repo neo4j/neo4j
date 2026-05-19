@@ -1876,7 +1876,13 @@ public class KernelTransactionImplementation
     private ChunkedTransactionSink createChunkWriter(boolean multiVersioned) {
         return multiVersioned
                 ? new ChunkSink(
-                        committer, transactionEventListeners, clocks, config, logProvider, exceptionHandlerService)
+                        committer,
+                        transactionEventListeners,
+                        clocks,
+                        config,
+                        logProvider,
+                        exceptionHandlerService,
+                        transactionMonitor)
                 : ChunkedTransactionSink.EMPTY;
     }
 
