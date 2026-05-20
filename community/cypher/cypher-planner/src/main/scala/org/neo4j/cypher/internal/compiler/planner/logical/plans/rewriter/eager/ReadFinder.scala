@@ -162,6 +162,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithFilter
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithPushdownOperators
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.Repeat
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
@@ -1089,6 +1090,7 @@ object ReadFinder {
         PlanReads()
 
       case _: PhysicalPlanningPlan |
+        _: RemoteNodeIndexSeek |
         _: CommandLogicalPlan |
         _: LogicalLeafPlanExtension |
         _: LogicalPlanExtension |

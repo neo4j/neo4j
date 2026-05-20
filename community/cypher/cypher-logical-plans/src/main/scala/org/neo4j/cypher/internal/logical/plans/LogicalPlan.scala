@@ -1325,6 +1325,40 @@ case class RemoteBatchPropertiesWithFilter(
   override val distinctness: Distinctness = source.distinctness
 }
 
+/**
+ * Similar to [[NodeIndexSeek]] but in the context of a sharded properties database.
+ * For every node with the given label and property values, produces rows with that node.
+ */
+case class RemoteNodeIndexSeek(
+  idName: LogicalVariable,
+  override val labels: Seq[LabelToken],
+  properties: Seq[IndexedProperty],
+  valueExpr: QueryExpression[Expression],
+  argumentIds: Set[LogicalVariable],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType,
+  supportPartitionedScan: Boolean
+)(implicit idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
+  override val localAvailableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): RemoteNodeIndexSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): RemoteNodeIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
+  override def copyWithoutGettingValues: RemoteNodeIndexSeek =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): RemoteNodeIndexSeek =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
 case class PropertyKeyNameOrder(propertyKeyName: PropertyKeyName, order: PropertyKeyNameOrder.Order)
 
 object PropertyKeyNameOrder {
