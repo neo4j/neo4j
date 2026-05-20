@@ -51,7 +51,7 @@ public record ChunkedBatchRepresentation(
         LogEntryChunkStart logEntryChunkStart = createChunkStart(start);
         LogEntryChunkEnd logEntryChunkEnd = createChunkEnd(end, logEntryChunkStart);
         ChunkMetadata chunkMetadata = new ChunkMetadata(
-                start instanceof LogEntryStart,
+                logEntryChunkStart.getChunkId() == BASE_CHUNK_ID,
                 end instanceof LogEntryCommit,
                 false,
                 logEntryChunkStart.getPreviousBatchAppendIndex(),
