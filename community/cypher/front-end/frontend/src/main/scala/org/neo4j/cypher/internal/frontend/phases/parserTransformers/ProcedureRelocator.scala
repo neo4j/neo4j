@@ -17,14 +17,15 @@
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers
 
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.NoOp
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
+import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
-import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -49,22 +50,18 @@ object ProcedureRelocator {
   )
 
   private val rewriter = bottomUp(Rewriter.lift {
-    case name: FunctionName => name.fullName match {
-        case fullName if supportedProcedures.contains(fullName) =>
-          name.copy(namespace =
-            Namespace(List("internal", "virtual_graph", "override") ++ name.namespace.parts)(name.position)
-          )(name.position)
-        case _ => name
-      }
-    case call @ UnresolvedCall(name, _, _, _, _, _) => name.fullName match {
-        case fullName if supportedProcedures.contains(fullName) => asGraphEngineOverride(call)
-        case _                                                  => call
-      }
-    // TODO Is un-resolving procedure calls always safe?
-    case call: ResolvedCall[_] => call.procedureName.fullName match {
-        case fullName if supportedProcedures.contains(fullName) => asGraphEngineOverride(call.asUnresolvedCall)
-        case _                                                  => call
-      }
+    case resolvedFunctionInvocation: ResolvedFunctionInvocation
+      if supportedProcedures.contains(resolvedFunctionInvocation.functionName.fullName) =>
+      asGraphEngineOverride(resolvedFunctionInvocation.asUnresolvedFunction)
+    case functionInvocation: FunctionInvocation
+      if supportedProcedures.contains(functionInvocation.functionName.fullName) =>
+      asGraphEngineOverride(functionInvocation)
+    case unresolvedCall: UnresolvedCall
+      if supportedProcedures.contains(unresolvedCall.procedureName.fullName) =>
+      asGraphEngineOverride(unresolvedCall)
+    case resolvedCall: ResolvedCall[_]
+      if supportedProcedures.contains(resolvedCall.procedureName.fullName) =>
+      asGraphEngineOverride(resolvedCall.asUnresolvedCall)
   })
 
   private def asGraphEngineOverride(call: UnresolvedCall): UnresolvedCall = {
@@ -74,6 +71,15 @@ object ProcedureRelocator {
         Namespace(List("internal", "virtual_graph", "override") ++ name.namespace.parts)(name.position)
       )(name.position)
     )(call.position)
+  }
+
+  private def asGraphEngineOverride(functionInvocation: FunctionInvocation): FunctionInvocation = {
+    val name = functionInvocation.functionName
+    functionInvocation.copy(functionName =
+      name.copy(namespace =
+        Namespace(List("internal", "virtual_graph", "override") ++ name.namespace.parts)(name.position)
+      )(name.position)
+    )(functionInvocation.position)
   }
 
   private case object InnerTransformer extends Transformer[BaseContext, BaseState, BaseState] {
