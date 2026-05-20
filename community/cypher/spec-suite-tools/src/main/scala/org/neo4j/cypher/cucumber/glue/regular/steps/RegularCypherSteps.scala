@@ -53,6 +53,7 @@ import org.neo4j.cypher.cucumber.user.function.PassThroughFunction
 import org.neo4j.cypher.cucumber.user.function.ScopedFunctionCypher25
 import org.neo4j.cypher.cucumber.user.function.ScopedFunctionCypher5
 import org.neo4j.cypher.cucumber.user.function.SeededRandFunction
+import org.neo4j.cypher.cucumber.user.function.TailFunction
 import org.neo4j.cypher.cucumber.user.function.TestFailNTimesFunction
 import org.neo4j.cypher.cucumber.value.CypherCucumberValueParser
 import org.neo4j.cypher.cucumber.value.CypherCucumberValueParser.parse
@@ -171,6 +172,9 @@ final class RegularCypherSteps @Inject() (
       case "test.cypher5Scope" =>
         registeredProcedures = registeredProcedures.appended(new QualifiedName("test", "cypher5Scope"))
         db.registerFunction(classOf[ScopedFunctionCypher5])
+      case "test.tail" =>
+        registeredProcedures = registeredProcedures.appended(new QualifiedName("test", "tail"))
+        db.registerFunction(classOf[TailFunction])
       case hashFunc if hashFunc.startsWith("test.hash.") =>
         registeredProcedures = registeredProcedures.appendedAll(Seq(
           new QualifiedName("test", "hash", "node"),
