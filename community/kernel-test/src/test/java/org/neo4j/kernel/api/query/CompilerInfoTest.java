@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.CypherVersion;
 class CompilerInfoTest {
     @Test
     void plannerInfoShouldBeInSmallCase() {
-        CompilerInfo compilerInfo =
-                new CompilerInfo("PLANNER", RuntimeName.PIPELINED, emptyList(), CypherVersion.Legacy.legacyVersion());
+        CompilerInfo compilerInfo = new CompilerInfo(
+                "PLANNER", "v2026_04", RuntimeName.PIPELINED, emptyList(), CypherVersion.Legacy.legacyVersion());
 
         assertThat(compilerInfo.planner()).isEqualTo("planner");
         assertThat(compilerInfo.runtime()).isEqualTo("pipelined");
@@ -38,8 +38,8 @@ class CompilerInfoTest {
 
     @Test
     void isParallelRuntimeShouldReturnTrueForParallel() {
-        CompilerInfo compilerInfo =
-                new CompilerInfo("PLANNER", RuntimeName.PARALLEL, emptyList(), CypherVersion.Legacy.legacyVersion());
+        CompilerInfo compilerInfo = new CompilerInfo(
+                "PLANNER", "v2026_04", RuntimeName.PARALLEL, emptyList(), CypherVersion.Legacy.legacyVersion());
 
         assertThat(compilerInfo.isParallelRuntime()).isTrue();
         assertThat(compilerInfo.runtime()).isEqualTo("parallel");

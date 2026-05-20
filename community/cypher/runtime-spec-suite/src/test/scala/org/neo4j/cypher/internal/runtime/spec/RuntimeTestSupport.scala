@@ -549,6 +549,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       val defaultLanguage = CypherVersion.Legacy.legacyVersion()
       txContext.executingQuery().setCompilerInfoForTesting(new CompilerInfo(
         "NO PLANNER",
+        "v2026_04",
         executableQuery.runtimeName,
         Collections.emptyList(),
         defaultLanguage

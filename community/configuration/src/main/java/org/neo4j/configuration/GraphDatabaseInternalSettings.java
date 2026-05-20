@@ -248,6 +248,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     StatefulShortestPlanningMode.CARDINALITY_HEURISTIC)
             .build();
 
+    @Internal
+    @Description("Display the planner version in query logs.")
+    public static final Setting<Boolean> display_planner_version =
+            newBuilder("internal.cypher.display_planner_version", BOOL, false).build();
+
     public enum PlanVarExpandInto {
         /**
          * Plan expandInto using regular cost estimation

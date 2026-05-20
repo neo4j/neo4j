@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.ImmutablePlanningAttributes
 import org.neo4j.cypher.internal.planning.CypherPlanner
@@ -216,6 +217,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       buildCompilerInfo(
         logicalPlan,
         planState.plannerName,
+        query.options.queryOptions.plannerVersionOption,
         cachedExecutionPlan.executionPlan.runtimeName,
         query.resolvedLanguage
       ),
@@ -304,6 +306,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   private def buildCompilerInfo(
     logicalPlan: LogicalPlan,
     plannerName: PlannerName,
+    plannerVersion: CypherPlannerVersionOption,
     runtimeName: RuntimeName,
     cypherVersion: CypherVersion
   ) = {
@@ -356,6 +359,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
 
     new CompilerInfo(
       plannerName.name,
+      plannerVersion.name,
       runtimeName,
       nodeLabelIndexUsage.asJava,
       relationshipTypeIndexUsage.asJava,

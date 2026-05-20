@@ -188,6 +188,10 @@ public class QuerySnapshot {
         return compilerInfo == null ? null : compilerInfo.planner();
     }
 
+    public String plannerVersion() {
+        return compilerInfo == null ? null : compilerInfo.plannerVersion();
+    }
+
     public String runtime() {
         return compilerInfo == null ? null : compilerInfo.runtime();
     }

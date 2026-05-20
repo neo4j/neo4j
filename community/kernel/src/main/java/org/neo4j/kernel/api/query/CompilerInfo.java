@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.CypherVersion;
 
 public class CompilerInfo {
     private final String planner;
+    private final String plannerVersion;
     private final RuntimeName runtimeName;
     private final List<SchemaIndexUsage> indexes;
     private final List<RelationshipTypeIndexUsage> relationshipTypeIndexes;
@@ -36,6 +37,7 @@ public class CompilerInfo {
 
     public CompilerInfo(
             String planner,
+            String plannerVersion,
             RuntimeName runtimeName,
             List<SchemaIndexUsage> indexes,
             List<RelationshipTypeIndexUsage> relationshipTypeIndexes,
@@ -44,6 +46,7 @@ public class CompilerInfo {
             List<RelationshipTypeIndexUsage> semanticRelationshipIndexes,
             CypherVersion cypherVersion) {
         this.planner = planner;
+        this.plannerVersion = plannerVersion;
         this.runtimeName = runtimeName;
         this.indexes = indexes;
         this.relationshipTypeIndexes = relationshipTypeIndexes;
@@ -54,9 +57,14 @@ public class CompilerInfo {
     }
 
     public CompilerInfo(
-            String planner, RuntimeName runtimeName, List<SchemaIndexUsage> indexes, CypherVersion cypherVersion) {
+            String planner,
+            String plannerVersion,
+            RuntimeName runtimeName,
+            List<SchemaIndexUsage> indexes,
+            CypherVersion cypherVersion) {
         this(
                 planner,
+                plannerVersion,
                 runtimeName,
                 indexes,
                 Collections.emptyList(),
@@ -68,6 +76,10 @@ public class CompilerInfo {
 
     public String planner() {
         return planner.toLowerCase(Locale.ROOT);
+    }
+
+    public String plannerVersion() {
+        return plannerVersion;
     }
 
     public String runtime() {
