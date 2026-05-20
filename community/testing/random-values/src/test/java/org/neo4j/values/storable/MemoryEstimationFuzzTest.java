@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 import java.util.Arrays;
@@ -66,9 +65,9 @@ class MemoryEstimationFuzzTest {
                 ArrayValue a = (ArrayValue) random.nextValueOfType(type);
                 ArrayValue b = (ArrayValue) random.nextValueOfType(type);
                 if (a.intSize() < b.intSize()) {
-                    assertTrue(a.estimatedHeapUsage() <= b.estimatedHeapUsage());
+                    assertThat(a.estimatedHeapUsage()).isLessThanOrEqualTo(b.estimatedHeapUsage());
                 } else {
-                    assertTrue(a.estimatedHeapUsage() >= b.estimatedHeapUsage());
+                    assertThat(a.estimatedHeapUsage()).isGreaterThanOrEqualTo(b.estimatedHeapUsage());
                 }
             }
         }
@@ -81,9 +80,9 @@ class MemoryEstimationFuzzTest {
                 ListValue a = fromArray((ArrayValue) random.nextValueOfType(type));
                 ListValue b = fromArray((ArrayValue) random.nextValueOfType(type));
                 if (a.intSize() < b.intSize()) {
-                    assertTrue(a.estimatedHeapUsage() <= b.estimatedHeapUsage());
+                    assertThat(a.estimatedHeapUsage()).isLessThanOrEqualTo(b.estimatedHeapUsage());
                 } else {
-                    assertTrue(a.estimatedHeapUsage() >= b.estimatedHeapUsage());
+                    assertThat(a.estimatedHeapUsage()).isGreaterThanOrEqualTo(b.estimatedHeapUsage());
                 }
             }
         }

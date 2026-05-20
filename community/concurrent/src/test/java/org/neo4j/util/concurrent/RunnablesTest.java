@@ -19,10 +19,8 @@
  */
 package org.neo4j.util.concurrent;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,16 +55,14 @@ class RunnablesTest {
         List<Runnable> runnables = Arrays.asList(task1, task2, task3, throwingTask);
         Collections.shuffle(runnables);
 
-        // when
         String failureMessage = "Something wrong, Killroy must be here somewhere.";
-        Throwable actual =
-                assertThrows(Error.class, () -> Runnables.runAll(failureMessage, runnables.toArray(new Runnable[0])));
+        assertThatExceptionOfType(Error.class)
+                .isThrownBy(() -> Runnables.runAll(failureMessage, runnables.toArray(new Runnable[0])))
+                .isSameAs(expectedError)
+                .withMessage(expectedError.getMessage())
+                .satisfies(e -> assertThat(e.getSuppressed()).isEmpty());
 
-        // then
         assertRun(task1, task2, task3);
-        assertSame(expectedError, actual);
-        assertEquals(0, actual.getSuppressed().length);
-        assertEquals(expectedError.getMessage(), actual.getMessage());
     }
 
     @Test
@@ -83,18 +79,18 @@ class RunnablesTest {
         List<Runnable> runnables = Arrays.asList(task1, task2, task3, throwingTask1, throwingTask2);
         Collections.shuffle(runnables);
 
-        // when
         String failureMessage = "Something wrong, Killroy must be here somewhere.";
-        RuntimeException actual = assertThrows(
-                RuntimeException.class, () -> Runnables.runAll(failureMessage, runnables.toArray(new Runnable[0])));
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(() -> Runnables.runAll(failureMessage, runnables.toArray(new Runnable[0])))
+                .withMessage(failureMessage)
+                .satisfies(e -> {
+                    assertThat(Exceptions.findCauseOrSuppressed(e, t -> t == expectedError))
+                            .isPresent();
+                    assertThat(Exceptions.findCauseOrSuppressed(e, t -> t == expectedException))
+                            .isPresent();
+                });
 
-        // then
         assertRun(task1, task2, task3);
-        assertTrue(Exceptions.findCauseOrSuppressed(actual, t -> t == expectedError)
-                .isPresent());
-        assertTrue(Exceptions.findCauseOrSuppressed(actual, t -> t == expectedException)
-                .isPresent());
-        assertEquals(failureMessage, actual.getMessage());
     }
 
     @Test
@@ -109,13 +105,11 @@ class RunnablesTest {
         List<Runnable> runnables = Arrays.asList(task1, throwingTask1, task2, task3);
         Collections.shuffle(runnables);
 
-        // when
-        RuntimeException actual = assertThrows(
-                RuntimeException.class, () -> Runnables.runAll("something", runnables.toArray(new Runnable[0])));
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(() -> Runnables.runAll("something", runnables.toArray(new Runnable[0])))
+                .isSameAs(expectedError);
 
-        // then
         assertRun(task1, task2, task3);
-        assertSame(expectedError, actual);
     }
 
     private static Runnable error(Error error) {
@@ -132,7 +126,7 @@ class RunnablesTest {
 
     private static void assertRun(Task... tasks) {
         for (Task task : tasks) {
-            assertTrue(task.run, "didn't run all expected tasks");
+            assertThat(task.run).as("didn't run all expected tasks").isTrue();
         }
     }
 

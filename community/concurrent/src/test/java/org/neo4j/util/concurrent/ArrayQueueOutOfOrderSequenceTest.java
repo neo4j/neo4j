@@ -24,9 +24,6 @@ import static java.lang.Thread.sleep;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.util.concurrent.OutOfOrderSequence.EMPTY_META;
 
 import java.util.concurrent.Callable;
@@ -97,24 +94,24 @@ class ArrayQueueOutOfOrderSequenceTest {
     void closingLastGapAfterArrayExtension() {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence(0, 5, EMPTY_META);
-        assertTrue(sequence.offer(1, EMPTY_META));
-        assertFalse(sequence.offer(3, EMPTY_META));
-        assertFalse(sequence.offer(4, EMPTY_META));
-        assertTrue(sequence.offer(2, EMPTY_META));
-        assertFalse(sequence.offer(6, EMPTY_META));
-        assertTrue(sequence.offer(5, EMPTY_META));
+        assertThat(sequence.offer(1, EMPTY_META)).isTrue();
+        assertThat(sequence.offer(3, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(4, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(2, EMPTY_META)).isTrue();
+        assertThat(sequence.offer(6, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(5, EMPTY_META)).isTrue();
         // leave out 7
-        assertFalse(sequence.offer(8, EMPTY_META));
-        assertFalse(sequence.offer(9, EMPTY_META));
-        assertFalse(sequence.offer(10, EMPTY_META));
-        assertFalse(sequence.offer(11, EMPTY_META));
+        assertThat(sequence.offer(8, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(9, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(10, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(11, EMPTY_META)).isFalse();
         // putting 12 should need extending the backing queue array
-        assertFalse(sequence.offer(12, EMPTY_META));
-        assertFalse(sequence.offer(13, EMPTY_META));
-        assertFalse(sequence.offer(14, EMPTY_META));
+        assertThat(sequence.offer(12, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(13, EMPTY_META)).isFalse();
+        assertThat(sequence.offer(14, EMPTY_META)).isFalse();
 
         // WHEN finally offering nr 7
-        assertTrue(sequence.offer(7, EMPTY_META));
+        assertThat(sequence.offer(7, EMPTY_META)).isTrue();
 
         // THEN the number should jump to 14
         assertGet(sequence, 14, EMPTY_META);
@@ -161,13 +158,13 @@ class ArrayQueueOutOfOrderSequenceTest {
     @Test
     void highestEverSeenTest() {
         final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence(0, 5, EMPTY_META);
-        assertEquals(0L, sequence.highestEverSeen());
+        assertThat(sequence.highestEverSeen()).isZero();
 
         sequence.offer(1L, EMPTY_META);
-        assertEquals(1L, sequence.highestEverSeen());
+        assertThat(sequence.highestEverSeen()).isOne();
 
         sequence.offer(42L, EMPTY_META);
-        assertEquals(42L, sequence.highestEverSeen());
+        assertThat(sequence.highestEverSeen()).isEqualTo(42L);
     }
 
     @Test
@@ -204,7 +201,7 @@ class ArrayQueueOutOfOrderSequenceTest {
         sequence.offer(6, EMPTY_META);
 
         var reverseSnapshot = sequence.reverseSnapshot();
-        assertEquals(3, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.highestGapFree()).isEqualTo(3);
         assertThat(reverseSnapshot.missingIds()).hasSize(2).contains(4, 5);
     }
 
@@ -219,7 +216,7 @@ class ArrayQueueOutOfOrderSequenceTest {
         sequence.offer(11, EMPTY_META);
 
         var reverseSnapshot = sequence.reverseSnapshot();
-        assertEquals(3, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.highestGapFree()).isEqualTo(3);
         assertThat(reverseSnapshot.missingIds()).hasSize(5).contains(4, 5, 7, 9, 10);
     }
 
@@ -231,7 +228,7 @@ class ArrayQueueOutOfOrderSequenceTest {
         sequence.offer(3, EMPTY_META);
 
         var reverseSnapshot = sequence.reverseSnapshot();
-        assertEquals(3, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.highestGapFree()).isEqualTo(3);
         assertThat(reverseSnapshot.missingIds()).isEmpty();
     }
 
@@ -242,7 +239,7 @@ class ArrayQueueOutOfOrderSequenceTest {
         sequence.offer(21, EMPTY_META);
         sequence.offer(31, EMPTY_META);
         var reverseSnapshot = sequence.reverseSnapshot();
-        assertEquals(11, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.highestGapFree()).isEqualTo(11);
         assertThat(reverseSnapshot.missingIds())
                 .hasSize(18)
                 .contains(12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30);

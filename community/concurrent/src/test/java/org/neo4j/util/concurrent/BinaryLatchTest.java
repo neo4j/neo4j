@@ -20,7 +20,7 @@
 package org.neo4j.util.concurrent;
 
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -60,7 +60,7 @@ class BinaryLatchTest {
 
             threads[0].join(10);
             try {
-                assertEquals(Thread.State.WAITING, threads[0].getState());
+                assertThat(threads[0].getState()).isEqualTo(Thread.State.WAITING);
             } finally {
                 latch.release();
                 for (Thread thread : threads) {

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 class RandomSupportTest {
     @Test
-    void testWithProbability() {
+    void withProbability() {
         final var randomSupport = spy(RandomSupport.class);
         randomSupport.reset();
 

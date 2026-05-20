@@ -20,7 +20,7 @@
 package org.neo4j.util.concurrent;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -40,12 +40,12 @@ class FuturesTest {
 
         Future<List<String>> combined = Futures.combine(task1, task2, task3);
 
-        assertThrows(TimeoutException.class, () -> combined.get(10, TimeUnit.MILLISECONDS));
+        assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> combined.get(10, TimeUnit.MILLISECONDS));
 
         task3.run();
         task2.run();
 
-        assertThrows(TimeoutException.class, () -> combined.get(10, TimeUnit.MILLISECONDS));
+        assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> combined.get(10, TimeUnit.MILLISECONDS));
 
         task1.run();
 

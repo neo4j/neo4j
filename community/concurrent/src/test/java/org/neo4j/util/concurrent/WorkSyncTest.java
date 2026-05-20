@@ -20,9 +20,8 @@
 package org.neo4j.util.concurrent;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -145,7 +144,8 @@ class WorkSyncTest {
     private Future<Void> makeWorkStuckAtSemaphore(int delta) {
         semaphore.drainPermits();
         Future<Void> concurrentWork = executor.submit(new CallableWork(new AddWork(delta)));
-        assertThrows(TimeoutException.class, () -> concurrentWork.get(10, TimeUnit.MILLISECONDS));
+        assertThatExceptionOfType(TimeoutException.class)
+                .isThrownBy(() -> concurrentWork.get(10, TimeUnit.MILLISECONDS));
         while (!semaphore.hasQueuedThreads()) {
             usleep(1);
         }
@@ -204,7 +204,7 @@ class WorkSyncTest {
         sync.apply(new AddWork(10));
 
         assertThat(sum.sum()).isEqualTo(10L);
-        assertTrue(Thread.interrupted());
+        assertThat(Thread.interrupted()).isTrue();
     }
 
     @Test
@@ -361,7 +361,7 @@ class WorkSyncTest {
         sync.applyAsync(new AddWork(10)).await();
 
         assertThat(sum.sum()).isEqualTo(10L);
-        assertTrue(Thread.interrupted());
+        assertThat(Thread.interrupted()).isTrue();
     }
 
     @Test

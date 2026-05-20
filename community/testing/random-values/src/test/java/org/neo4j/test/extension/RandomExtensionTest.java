@@ -20,7 +20,6 @@
 package org.neo4j.test.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,11 +62,11 @@ class RandomExtensionTest {
     }
 
     private static void assertInjected(RandomSupport random) {
-        assertNotNull(random);
+        assertThat(random).isNotNull();
     }
 
     private static void assertInitialised(RandomSupport random) {
-        assertNotNull(random.nextAlphaNumericString());
+        assertThat(random.nextAlphaNumericString()).isNotNull();
     }
 
     private static void assertSeed(RandomSupport random, long seed) {
@@ -123,7 +122,7 @@ class RandomExtensionTest {
 
         @BeforeEach
         void injectedPerClassBeforeEach() {
-            assertNotNull(lifetimeRandom);
+            assertThat(lifetimeRandom).isNotNull();
         }
 
         @BeforeEach
@@ -196,7 +195,7 @@ class RandomExtensionTest {
 
         @BeforeEach
         void injectedPerClassBeforeEach() {
-            assertNotNull(lifetimeRandom);
+            assertThat(lifetimeRandom).isNotNull();
         }
 
         @BeforeEach
@@ -212,13 +211,13 @@ class RandomExtensionTest {
         @Test
         void injectedPerClassTest() {
             assertInjected(lifetimeRandom);
-            assertThat(testCounter++).isEqualTo(1);
+            assertThat(testCounter++).isOne();
         }
 
         @Test
         void initialisedPerClassTest() {
             assertInitialised(lifetimeRandom);
-            assertThat(testCounter++).isEqualTo(0);
+            assertThat(testCounter++).isZero();
         }
 
         @Test

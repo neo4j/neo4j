@@ -22,9 +22,8 @@ package org.neo4j.values.storable;
 import static java.lang.Character.isAlphabetic;
 import static java.lang.Character.isDigit;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -88,14 +87,14 @@ abstract class RandomValuesTest {
         for (int i = 0; i < ITERATIONS; i++) {
             LongValue value = randomValues.nextLongValue(1337, 1337 + BOUND);
             assertThat(value).isNotNull();
-            assertThat(value.compareTo(longValue(1337))).isGreaterThanOrEqualTo(0);
+            assertThat(value.compareTo(longValue(1337))).isNotNegative();
             assertThat(value.compareTo(longValue(1337 + BOUND)))
                     .as(value.toString())
-                    .isLessThanOrEqualTo(0);
+                    .isNotPositive();
             values.add(value);
         }
 
-        assertThat(values.size()).isGreaterThan(1);
+        assertThat(values).hasSizeGreaterThan(1);
     }
 
     @Test
@@ -172,7 +171,9 @@ abstract class RandomValuesTest {
                     String asString = textValue.stringValue();
                     for (int j = 0; j < asString.length(); j++) {
                         int ch = asString.charAt(j);
-                        assertTrue(isAlphabetic(ch) || isDigit(ch), "Not a character nor letter: " + ch);
+                        assertThat(isAlphabetic(ch) || isDigit(ch))
+                                .as("Not a character nor letter: " + ch)
+                                .isTrue();
                         seenDigits.remove(ch);
                     }
                 }
@@ -186,8 +187,7 @@ abstract class RandomValuesTest {
             TextValue textValue = randomValues.nextAsciiTextValue(10, 20);
             String asString = textValue.stringValue();
             int length = asString.length();
-            assertThat(length).isGreaterThanOrEqualTo(10);
-            assertThat(length).isLessThanOrEqualTo(20);
+            assertThat(length).isGreaterThanOrEqualTo(10).isLessThanOrEqualTo(20);
         }
     }
 
@@ -197,8 +197,7 @@ abstract class RandomValuesTest {
             TextValue textValue = randomValues.nextTextValue(10, 20);
             String asString = textValue.stringValue();
             int length = asString.codePointCount(0, asString.length());
-            assertThat(length).isGreaterThanOrEqualTo(10);
-            assertThat(length).isLessThanOrEqualTo(20);
+            assertThat(length).isGreaterThanOrEqualTo(10).isLessThanOrEqualTo(20);
         }
     }
 
@@ -208,7 +207,7 @@ abstract class RandomValuesTest {
             var seen = new HashSet<>(ARRAY_TYPES);
             while (!seen.isEmpty()) {
                 ArrayValue arrayValue = randomValues.nextArray();
-                assertThat(arrayValue.intSize()).isGreaterThanOrEqualTo(1);
+                assertThat(arrayValue.intSize()).isPositive();
                 AnyValue value = arrayValue.value(0);
                 assertKnownType(value.getClass(), TYPES);
                 markSeen(value.getClass(), seen);
@@ -298,15 +297,15 @@ abstract class RandomValuesTest {
             values.add(value);
         }
 
-        assertThat(values.size()).isGreaterThan(1);
+        assertThat(values).size().isGreaterThan(1);
     }
 
     private static void checkBounded(Supplier<NumberValue> supplier) {
         for (int i = 0; i < ITERATIONS; i++) {
             NumberValue value = supplier.get();
             assertThat(value).isNotNull();
-            assertThat(value.compareTo(ZERO_INT)).isGreaterThanOrEqualTo(0);
-            assertThat(value.compareTo(UPPER)).isLessThan(0);
+            assertThat(value.compareTo(ZERO_INT)).isNotNegative();
+            assertThat(value.compareTo(UPPER)).isNegative();
         }
     }
 }

@@ -19,9 +19,8 @@
  */
 package org.neo4j.values.storable;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,7 @@ class ListValueFuzzTest {
                 ListValue appended = inner.append(nextCompatible(arrayValue));
 
                 // Then
-                assertEquals(appended, fromArray(appended.toStorableArray()));
+                assertThat(fromArray(appended.toStorableArray())).isEqualTo(appended);
             }
         }
     }
@@ -69,7 +68,7 @@ class ListValueFuzzTest {
                 ListValue appended = inner.append(nextIncompatible(arrayValue));
 
                 // Then
-                assertThrows(CypherTypeException.class, appended::toStorableArray);
+                assertThatExceptionOfType(CypherTypeException.class).isThrownBy(appended::toStorableArray);
             }
         }
     }
@@ -86,7 +85,7 @@ class ListValueFuzzTest {
                 ListValue prepended = inner.prepend(nextCompatible(arrayValue));
 
                 // Then
-                assertEquals(prepended, fromArray(prepended.toStorableArray()));
+                assertThat(fromArray(prepended.toStorableArray())).isEqualTo(prepended);
             }
         }
     }
@@ -103,7 +102,7 @@ class ListValueFuzzTest {
                 ListValue prepended = inner.prepend(nextIncompatible(arrayValue));
 
                 // Then
-                assertThrows(CypherTypeException.class, prepended::toStorableArray);
+                assertThatExceptionOfType(CypherTypeException.class).isThrownBy(prepended::toStorableArray);
             }
         }
     }
@@ -117,17 +116,17 @@ class ListValueFuzzTest {
                 AnyValue value = random.nextValue(valueType);
                 if (value.valueRepresentation().canCreateArrayOfValueGroup()) {
                     ListValue list = VirtualValues.list(value, value, value);
-                    assertEquals(list, fromArray(list.toStorableArray()));
+                    assertThat(fromArray(list.toStorableArray())).isEqualTo(list);
                     seenStorable = true;
                 } else {
                     ListValue list = VirtualValues.list(value, value, value);
-                    assertThrows(CypherTypeException.class, list::toStorableArray);
+                    assertThatExceptionOfType(CypherTypeException.class).isThrownBy(list::toStorableArray);
                     seenNonStorable = true;
                 }
             }
 
-            assertTrue(seenStorable);
-            assertTrue(seenNonStorable);
+            assertThat(seenStorable).isTrue();
+            assertThat(seenNonStorable).isTrue();
         }
     }
 
