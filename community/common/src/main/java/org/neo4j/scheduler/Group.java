@@ -29,63 +29,93 @@ import org.neo4j.util.FeatureToggles;
  */
 public enum Group {
     // GENERAL DATABASE GROUPS.
-    /** Thread that schedules delayed or recurring tasks. */
+    /**
+     * Thread that schedules delayed or recurring tasks.
+     */
     TASK_SCHEDULER("Scheduler", ExecutorServiceFactory.unschedulable()),
     /* Page cache background eviction. */
     PAGE_CACHE_EVICTION("PageCacheEviction"),
     /* Page cache background eviction. */
     PAGE_CACHE_PRE_FETCHER("PageCachePreFetcher", ExecutorServiceFactory.cachedWithDiscard(), 4),
     PAGE_PRE_FETCHER("PagePreFetcher"),
-    /** Watch out for, and report, external manipulation of store files. */
+    /**
+     * Watch out for, and report, external manipulation of store files.
+     */
     FILE_WATCHER("FileWatcher", ExecutorServiceFactory.unschedulable()),
-    /** Monitor and report system-wide pauses, in case they lead to service interruption. */
+    /**
+     * Monitor and report system-wide pauses, in case they lead to service interruption.
+     */
     VM_PAUSE_MONITOR("VmPauseMonitor", true),
     LOG_ROTATION("LogRotation", true),
-    /** Checkpoint and store flush. */
+    /**
+     * Checkpoint and store flush.
+     */
     CHECKPOINT("CheckPoint"),
-    /** Various little periodic tasks that need to be done on a regular basis to keep the store in good shape. */
+    /**
+     * Various little periodic tasks that need to be done on a regular basis to keep the store in good shape.
+     */
     STORAGE_MAINTENANCE("StorageMaintenance"),
-    /** Index recovery cleanup. */
+    /**
+     * Index recovery cleanup.
+     */
     INDEX_CLEANUP("IndexCleanup"),
-    /** Index recovery cleanup work. */
+    /**
+     * Index recovery cleanup work.
+     */
     INDEX_CLEANUP_WORK("IndexCleanupWork"),
-    /** Terminates kernel transactions that have timed out. */
+    /**
+     * Terminates kernel transactions that have timed out.
+     */
     TRANSACTION_TIMEOUT_MONITOR("TransactionTimeoutMonitor"),
-    /** Background index population. */
+    /**
+     * Background index population.
+     */
     INDEX_POPULATION("IndexPopulationMain"),
     /**
-     * Background index population work.
-     * Threads in this group are used both for reading from store and generating index update for index population
-     * as well as other tasks for completing an index after the store scan.
-     * As it stands this group should not have a limit on its own because of how tasks are scheduled during population
-     * and is instead effectively limited by number of ongoing index populations times number of workers per index population,
-     * i.e. settings internal.dbms.index_population.parallelism * internal.dbms.index_population.workers
+     * Background index population work. Threads in this group are used both for reading from store and generating index update for index population as well as
+     * other tasks for completing an index after the store scan. As it stands this group should not have a limit on its own because of how tasks are scheduled
+     * during population and is instead effectively limited by number of ongoing index populations times number of workers per index population, i.e. settings
+     * internal.dbms.index_population.parallelism * internal.dbms.index_population.workers
      */
     INDEX_POPULATION_WORK("IndexPopulationWork", ExecutorServiceFactory.cached()),
-    /** Background index sampling */
+    /**
+     * Background index sampling
+     */
     INDEX_SAMPLING("IndexSampling", true),
-    /** Background index update applier, for eventually consistent indexes. */
+    /**
+     * Background index update applier, for eventually consistent indexes.
+     */
     INDEX_UPDATING("IndexUpdating"),
     INDEX_REFRESHING("IndexRefreshing"),
-    /** Thread pool for anyone who want some help doing file IO in parallel. */
+    /**
+     * Thread pool for anyone who want some help doing file IO in parallel.
+     */
     FILE_IO_HELPER("FileIOHelper"),
     LOG_WRITER("LOG_WRITER"),
     METRICS_CSV_WRITE("MetricsCsvWrite"),
     METRICS_GRAPHITE_WRITE("MetricsGraphiteWrite"),
-    /** Threads that perform database manager operations necessary to bring databases to their desired states. */
+    /**
+     * Threads that perform database manager operations necessary to bring databases to their desired states.
+     */
     DATABASE_RECONCILER("DatabaseReconciler"),
 
     UDC("UserDataCollector", ExecutorServiceFactory.singleThread(), true),
 
     // CYPHER.
-    /** Thread pool for parallel Cypher query execution. */
+    /**
+     * Thread pool for parallel Cypher query execution.
+     */
     CYPHER_WORKER("CypherWorker", ExecutorServiceFactory.workStealing()),
     CYPHER_CACHE("CypherCache", ExecutorServiceFactory.workStealing()),
 
-    /** Thread pool for running call in transaction subqueries in parallel. */
+    /**
+     * Thread pool for running call in transaction subqueries in parallel.
+     */
     CYPHER_TRANSACTION_WORKER("CypherTransactionWorker", ExecutorServiceFactory.cached()),
 
-    /** Removes queries that have timed out */
+    /**
+     * Removes queries that have timed out
+     */
     CYPHER_QUERY_MONITOR("CypherQueryMonitor"),
 
     // CDC
@@ -95,9 +125,13 @@ public enum Group {
     DATA_COLLECTOR("DataCollector", true),
 
     // BOLT.
-    /** Network IO threads for the Bolt protocol. */
+    /**
+     * Network IO threads for the Bolt protocol.
+     */
     BOLT_NETWORK_IO("BoltNetworkIO", ExecutorServiceFactory.unschedulable()),
-    /** Transaction processing threads for Bolt. */
+    /**
+     * Transaction processing threads for Bolt.
+     */
     BOLT_WORKER("BoltWorker", ExecutorServiceFactory.unschedulable()),
     BOLT_ADMISSION_CONTROL("AdmissionControl"),
 
@@ -136,7 +170,12 @@ public enum Group {
     COMMIT_COORDINATOR("CommitCoordinator"),
     RAFT_INFREQUENT_TASKS("RaftInfrequentTasks"),
 
-    /** Rolls back idle transactions on the server. */
+    // AURA
+    SECONDARY_QUIESCE("SecondaryQuiesce", ExecutorServiceFactory.singleThread()),
+
+    /**
+     * Rolls back idle transactions on the server.
+     */
     SERVER_TRANSACTION_TIMEOUT("ServerTransactionTimeout"),
     PULL_UPDATES("PullUpdates"),
     APPLY_UPDATES("ApplyUpdates"),
@@ -214,8 +253,7 @@ public enum Group {
     }
 
     /**
-     * Name a new thread. This method may or may not be used, it is up to the scheduling strategy to decide
-     * to honor this.
+     * Name a new thread. This method may or may not be used, it is up to the scheduling strategy to decide to honor this.
      */
     public String threadName() {
         return threadNamePrefix() + "-" + threadCounter.incrementAndGet();
