@@ -428,7 +428,7 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           indexName(ixName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), label.name, "name", false, VECTOR_CONFIG_V2))
+        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), false, VECTOR_CONFIG_V2))
       }
 
       test(s"CREATE VECTOR INDEX $ixName IF NOT EXISTS FOR (v:L) ON (v.name)") {
@@ -437,7 +437,7 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           indexName(ixName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), label.name, "name", true, VECTOR_CONFIG_V2))
+        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), true, VECTOR_CONFIG_V2))
       }
 
       test(s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) V3") {
@@ -446,7 +446,7 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           indexName(ixName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), label.name, "name", false, VECTOR_CONFIG_V3))
+        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), false, VECTOR_CONFIG_V3))
       }
 
       test(s"CREATE VECTOR INDEX $ixName IF NOT EXISTS FOR (v:L) ON (v.name) V3") {
@@ -455,7 +455,7 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           indexName(ixName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), label.name, "name", true, VECTOR_CONFIG_V3))
+        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), true, VECTOR_CONFIG_V3))
       }
 
       test(s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) OPTIONS {}") {
@@ -464,7 +464,7 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           indexName(ixName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)(InputPosition.NONE)
-        )) == new NodeVector(commandName(ixName), label.name, "name", false, VECTOR_CONFIG_V2))
+        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), false, VECTOR_CONFIG_V2))
       }
 
       test(s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) OPTIONS {indexConfig : {`vector.dimensions`: 1536}}") {
@@ -477,8 +477,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           )))(InputPosition.NONE)
         )) == new NodeVector(
           commandName(ixName),
-          label.name,
+          asList(label.name),
           "name",
+          asList(),
           false,
           VECTOR_CONFIG_V2.withIfAbsent("vector.dimensions", Values.intValue(1536))
         ))
@@ -496,8 +497,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           )))(InputPosition.NONE)
         )) == new NodeVector(
           commandName(ixName),
-          label.name,
+          asList(label.name),
           "name",
+          asList(),
           false,
           VECTOR_CONFIG_V3.withIfAbsent("vector.dimensions", Values.intValue(1536))
         ))
@@ -516,8 +518,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           )))(InputPosition.NONE)
         )) == new NodeVector(
           commandName(ixName),
-          label.name,
+          asList(label.name),
           "name",
+          asList(),
           false,
           VECTOR_CONFIG_V2_ALT
         ))
@@ -548,8 +551,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
             ) ++ ixProvider.map(i => "indexProvider" -> literalString(i)))(InputPosition.NONE)
           )) == new NodeVector(
             commandName(ixName),
-            label.name,
+            asList(label.name),
             "v1name",
+            asList(),
             false,
             VECTOR_CONFIG_V1
           ))
@@ -581,8 +585,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
             ) ++ ixProvider.map(i => "indexProvider" -> literalString(i)))(InputPosition.NONE)
           )) == new NodeVector(
             commandName(ixName),
-            label.name,
+            asList(label.name),
             "v2name",
+            asList(),
             false,
             VECTOR_CONFIG_V1
           ))
@@ -598,9 +603,82 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           ast.OptionsMap(Map("indexProvider" -> literalString("vector-2.0")))(InputPosition.NONE)
         )) == new NodeVector(
           commandName(ixName),
-          label.name,
+          asList(label.name),
           "name",
+          asList(),
           false,
+          VECTOR_CONFIG_V2
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName FOR (v:L1|L2) ON (v.embedding)") {
+        assert(converterForDefaultCypherVersion.apply(vectorNodeIndexMulti(
+          List("L1", "L2"),
+          List(prop("embedding")),
+          List.empty,
+          indexName(ixName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )) == new NodeVector(
+          commandName(ixName),
+          asList("L1", "L2"),
+          "embedding",
+          asList(),
+          false,
+          VECTOR_CONFIG_V2
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.embedding) WITH [v.f1, v.f2]") {
+        assert(converterForDefaultCypherVersion.apply(vectorNodeIndexMulti(
+          List(label.name),
+          List(prop("embedding")),
+          List(prop("f1"), prop("f2")),
+          indexName(ixName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )) == new NodeVector(
+          commandName(ixName),
+          asList(label.name),
+          "embedding",
+          asList("f1", "f2"),
+          false,
+          VECTOR_CONFIG_V2
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName FOR (v:L1|L2) ON (v.embedding) WITH [v.f1, v.f2]") {
+        assert(converterForDefaultCypherVersion.apply(vectorNodeIndexMulti(
+          List("L1", "L2"),
+          List(prop("embedding")),
+          List(prop("f1"), prop("f2")),
+          indexName(ixName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )) == new NodeVector(
+          commandName(ixName),
+          asList("L1", "L2"),
+          "embedding",
+          asList("f1", "f2"),
+          false,
+          VECTOR_CONFIG_V2
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName IF NOT EXISTS FOR (v:L1|L2) ON (v.embedding) WITH [v.f1]") {
+        assert(converterForDefaultCypherVersion.apply(vectorNodeIndexMulti(
+          List("L1", "L2"),
+          List(prop("embedding")),
+          List(prop("f1")),
+          indexName(ixName),
+          ast.IfExistsDoNothing,
+          ast.NoOptions
+        )) == new NodeVector(
+          commandName(ixName),
+          asList("L1", "L2"),
+          "embedding",
+          asList("f1"),
+          true,
           VECTOR_CONFIG_V2
         ))
       }
@@ -1029,8 +1107,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           ast.NoOptions
         )) == new RelationshipVector(
           commandName(ixName),
-          relType.name,
+          asList(relType.name),
           "name",
+          asList(),
           false,
           VECTOR_CONFIG_V2
         ))
@@ -1044,8 +1123,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           ast.NoOptions
         )) == new RelationshipVector(
           commandName(ixName),
-          relType.name,
+          asList(relType.name),
           "name",
+          asList(),
           true,
           VECTOR_CONFIG_V2
         ))
@@ -1059,8 +1139,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           ast.OptionsMap(Map.empty)(InputPosition.NONE)
         )) == new RelationshipVector(
           commandName(ixName),
-          relType.name,
+          asList(relType.name),
           "name",
+          asList(),
           false,
           VECTOR_CONFIG_V2
         ))
@@ -1078,8 +1159,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
           )))(InputPosition.NONE)
         )) == new RelationshipVector(
           commandName(ixName),
-          relType.name,
+          asList(relType.name),
           "name",
+          asList(),
           false,
           VECTOR_CONFIG_V2.withIfAbsent("vector.dimensions", Values.intValue(1536))
         ))
@@ -1110,8 +1192,9 @@ class SchemaCommandConverterTest extends CypherFunSuite {
             ) ++ ixProvider.map(i => "indexProvider" -> literalString(i)))(InputPosition.NONE)
           )) == new RelationshipVector(
             commandName(ixName),
-            relType.name,
+            asList(relType.name),
             "v1name",
+            asList(),
             false,
             VECTOR_CONFIG_V1
           ))
@@ -1143,12 +1226,85 @@ class SchemaCommandConverterTest extends CypherFunSuite {
             ) ++ ixProvider.map(i => "indexProvider" -> literalString(i)))(InputPosition.NONE)
           )) == new RelationshipVector(
             commandName(ixName),
-            relType.name,
+            asList(relType.name),
             "v2name",
+            asList(),
             false,
             VECTOR_CONFIG_V1
           ))
         }
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName FOR ()-[v:R1|R2]-() ON (v.embedding)") {
+        assert(converterForDefaultCypherVersion.apply(vectorRelIndexMulti(
+          List("R1", "R2"),
+          List(prop("embedding")),
+          List.empty,
+          indexName(ixName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )) == new RelationshipVector(
+          commandName(ixName),
+          asList("R1", "R2"),
+          "embedding",
+          asList(),
+          false,
+          VECTOR_CONFIG_V2
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.embedding) WITH [v.f1, v.f2]") {
+        assert(converterForDefaultCypherVersion.apply(vectorRelIndexMulti(
+          List(relType.name),
+          List(prop("embedding")),
+          List(prop("f1"), prop("f2")),
+          indexName(ixName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )) == new RelationshipVector(
+          commandName(ixName),
+          asList(relType.name),
+          "embedding",
+          asList("f1", "f2"),
+          false,
+          VECTOR_CONFIG_V2
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName FOR ()-[v:R1|R2]-() ON (v.embedding) WITH [v.f1, v.f2]") {
+        assert(converterForDefaultCypherVersion.apply(vectorRelIndexMulti(
+          List("R1", "R2"),
+          List(prop("embedding")),
+          List(prop("f1"), prop("f2")),
+          indexName(ixName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )) == new RelationshipVector(
+          commandName(ixName),
+          asList("R1", "R2"),
+          "embedding",
+          asList("f1", "f2"),
+          false,
+          VECTOR_CONFIG_V2
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $ixName IF NOT EXISTS FOR ()-[v:R1|R2]-() ON (v.embedding) WITH [v.f1]") {
+        assert(converterForDefaultCypherVersion.apply(vectorRelIndexMulti(
+          List("R1", "R2"),
+          List(prop("embedding")),
+          List(prop("f1")),
+          indexName(ixName),
+          ast.IfExistsDoNothing,
+          ast.NoOptions
+        )) == new RelationshipVector(
+          commandName(ixName),
+          asList("R1", "R2"),
+          "embedding",
+          asList("f1"),
+          true,
+          VECTOR_CONFIG_V2
+        ))
       }
 
       test(s"CREATE FULLTEXT INDEX $ixName FOR ()-[v:R]-() ON EACH [v.name]") {
@@ -2734,6 +2890,24 @@ class SchemaCommandConverterTest extends CypherFunSuite {
       options
     )(InputPosition.NONE)
 
+  private def vectorNodeIndexMulti(
+    labels: List[String],
+    props: List[Property],
+    additionalProps: List[Property],
+    name: Option[Expression],
+    ifExistsDo: ast.IfExistsDo,
+    options: ast.Options
+  ): ast.CreateIndex =
+    ast.CreateIndex.createVectorNodeIndex(
+      v,
+      labels.map(labelName),
+      props,
+      additionalProps,
+      name,
+      ifExistsDo,
+      options
+    )(InputPosition.NONE)
+
   private def vectorRelIndex(
     props: List[Property],
     name: Option[Expression],
@@ -2745,6 +2919,24 @@ class SchemaCommandConverterTest extends CypherFunSuite {
       List(relType),
       props,
       List.empty,
+      name,
+      ifExistsDo,
+      options
+    )(InputPosition.NONE)
+
+  private def vectorRelIndexMulti(
+    types: List[String],
+    props: List[Property],
+    additionalProps: List[Property],
+    name: Option[Expression],
+    ifExistsDo: ast.IfExistsDo,
+    options: ast.Options
+  ): ast.CreateIndex =
+    ast.CreateIndex.createVectorRelationshipIndex(
+      v,
+      types.map(relTypeName),
+      props,
+      additionalProps,
       name,
       ifExistsDo,
       options

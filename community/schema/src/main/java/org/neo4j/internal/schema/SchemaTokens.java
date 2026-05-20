@@ -105,12 +105,14 @@ public record SchemaTokens(
                     properties.addAll(relationshipFulltext.properties());
                 }
                 case NodeVector nodeVector -> {
-                    labels.add(nodeVector.label());
+                    labels.addAll(nodeVector.labels());
                     properties.add(nodeVector.property());
+                    properties.addAll(nodeVector.additionalProperties());
                 }
                 case RelationshipVector relationshipVector -> {
-                    relationships.add(relationshipVector.type());
+                    relationships.addAll(relationshipVector.types());
                     properties.add(relationshipVector.property());
+                    properties.addAll(relationshipVector.additionalProperties());
                 }
                 case RelationshipLookup relationshipLookup -> {
                     // No tokens associated with a relationship lookup index.

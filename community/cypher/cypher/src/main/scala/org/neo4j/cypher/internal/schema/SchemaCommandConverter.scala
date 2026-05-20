@@ -151,8 +151,16 @@ class SchemaCommandConverter {
             indexConfig(config)
           )
       }
-    case index @ CreateVectorIndex(_, entityNames, properties, _, indexName, _, ifExistsDo, options) =>
-      // TODO: This ignores any additional properties or labels for the vector index
+    case index @ CreateVectorIndex(
+        _,
+        entityNames,
+        properties,
+        additionalProperties,
+        indexName,
+        _,
+        ifExistsDo,
+        options
+      ) =>
       val config =
         validateOptions(
           options,
@@ -161,20 +169,25 @@ class SchemaCommandConverter {
         )
       val desc = index.entityIndexDescription
       val name = indexName.map(n => checkName(n, desc + " name")).orNull
+      val vectorProperty = singleProperty(properties)
+      val additionalProps =
+        setLikeList(additionalProperties.map(_.propertyKey.name), desc, "additional property")
       entityNames match {
         case Left(labels) =>
           new NodeVector(
             name,
-            tokenName(labels.head),
-            singleProperty(properties),
+            setLikeList(labels.map(l => l.name), desc, "label"),
+            vectorProperty,
+            additionalProps,
             ifNotExists(ifExistsDo),
             indexConfig(config)
           )
         case Right(types) =>
           new RelationshipVector(
             name,
-            tokenName(types.head),
-            singleProperty(properties),
+            setLikeList(types.map(t => t.name), desc, "relationship"),
+            vectorProperty,
+            additionalProps,
             ifNotExists(ifExistsDo),
             indexConfig(config)
           )

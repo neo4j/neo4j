@@ -748,18 +748,24 @@ public abstract class SchemaCommandReaderTest {
                         new RelationshipFulltext(
                                 "testing", List.of("RelType"), List.of("propertyName"), false, IndexConfig.empty())),
                 // NODE VECTOR INDEX
-                arguments("""
+                arguments(
+                        """
                     CREATE VECTOR INDEX
                     FOR (n:LabelName)
                     ON (n.propertyName)
-                    """, new NodeVector(null, "LabelName", "propertyName", false, VECTOR_CONFIG_V2)),
-                arguments("""
+                    """,
+                        new NodeVector(null, List.of("LabelName"), "propertyName", List.of(), false, VECTOR_CONFIG_V2)),
+                arguments(
+                        """
                     CREATE VECTOR INDEX testing
                     FOR (n:LabelName)
                     ON (n.propertyName)
                     OPTIONS {}
-                    """, new NodeVector("testing", "LabelName", "propertyName", false, VECTOR_CONFIG_V2)),
-                arguments("""
+                    """,
+                        new NodeVector(
+                                "testing", List.of("LabelName"), "propertyName", List.of(), false, VECTOR_CONFIG_V2)),
+                arguments(
+                        """
                     CREATE VECTOR INDEX testing
                     FOR (n:LabelName)
                     ON (n.propertyName)
@@ -768,8 +774,16 @@ public abstract class SchemaCommandReaderTest {
                         `vector.dimensions`: 1536
                       }
                     }
-                    """, new NodeVector("testing", "LabelName", "propertyName", false, VECTOR_DIMENSIONS_V2)),
-                arguments("""
+                    """,
+                        new NodeVector(
+                                "testing",
+                                List.of("LabelName"),
+                                "propertyName",
+                                List.of(),
+                                false,
+                                VECTOR_DIMENSIONS_V2)),
+                arguments(
+                        """
                     CREATE VECTOR INDEX testing IF NOT EXISTS
                     FOR (n:LabelName)
                     ON (n.propertyName)
@@ -778,8 +792,16 @@ public abstract class SchemaCommandReaderTest {
                         `vector.dimensions`: 1536
                       }
                     }
-                    """, new NodeVector("testing", "LabelName", "propertyName", true, VECTOR_DIMENSIONS_V2)),
-                arguments("""
+                    """,
+                        new NodeVector(
+                                "testing",
+                                List.of("LabelName"),
+                                "propertyName",
+                                List.of(),
+                                true,
+                                VECTOR_DIMENSIONS_V2)),
+                arguments(
+                        """
                     CYPHER 5 CREATE VECTOR INDEX testing
                     FOR (n:LabelName)
                     ON (n.propertyName)
@@ -790,8 +812,16 @@ public abstract class SchemaCommandReaderTest {
                       },
                       indexProvider: 'vector-1.0'
                     }
-                    """, new NodeVector("testing", "LabelName", "propertyName", false, VECTOR_DIMENSIONS_V1)),
-                arguments("""
+                    """,
+                        new NodeVector(
+                                "testing",
+                                List.of("LabelName"),
+                                "propertyName",
+                                List.of(),
+                                false,
+                                VECTOR_DIMENSIONS_V1)),
+                arguments(
+                        """
                     CYPHER 25 CREATE VECTOR INDEX testing
                     FOR (n:LabelName)
                     ON (n.propertyName)
@@ -801,15 +831,26 @@ public abstract class SchemaCommandReaderTest {
                         `vector.similarity_function`: 'COSINE'
                       }
                     }
-                    """, new NodeVector("testing", "LabelName", "propertyName", false, VECTOR_DIMENSIONS_V2)),
+                    """,
+                        new NodeVector(
+                                "testing",
+                                List.of("LabelName"),
+                                "propertyName",
+                                List.of(),
+                                false,
+                                VECTOR_DIMENSIONS_V2)),
                 // REL VECTOR INDEX
-                arguments("""
+                arguments(
+                        """
                     CREATE VECTOR INDEX testing
                     FOR ()-[r:RelName]-()
                     ON (r.propertyName)
                     OPTIONS {}
-                    """, new RelationshipVector("testing", "RelName", "propertyName", false, VECTOR_CONFIG_V2)),
-                arguments("""
+                    """,
+                        new RelationshipVector(
+                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_CONFIG_V2)),
+                arguments(
+                        """
                     CREATE VECTOR INDEX
                     FOR ()-[r:RelName]-()
                     ON (r.propertyName)
@@ -818,7 +859,9 @@ public abstract class SchemaCommandReaderTest {
                         `vector.dimensions`: 1536
                       }
                     }
-                    """, new RelationshipVector(null, "RelName", "propertyName", false, VECTOR_DIMENSIONS_V2)),
+                    """,
+                        new RelationshipVector(
+                                null, List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
                 arguments(
                         """
                     CREATE VECTOR INDEX testing
@@ -829,7 +872,9 @@ public abstract class SchemaCommandReaderTest {
                         `vector.dimensions`: 1536
                       }
                     }
-                    """, new RelationshipVector("testing", "RelName", "propertyName", false, VECTOR_DIMENSIONS_V2)),
+                    """,
+                        new RelationshipVector(
+                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
                 arguments(
                         """
                     CREATE VECTOR INDEX testing IF NOT EXISTS
@@ -840,7 +885,9 @@ public abstract class SchemaCommandReaderTest {
                         `vector.dimensions`: 1536
                       }
                     }
-                    """, new RelationshipVector("testing", "RelName", "propertyName", true, VECTOR_DIMENSIONS_V2)),
+                    """,
+                        new RelationshipVector(
+                                "testing", List.of("RelName"), "propertyName", List.of(), true, VECTOR_DIMENSIONS_V2)),
                 arguments(
                         """
                     CYPHER 5 CREATE VECTOR INDEX testing
@@ -852,7 +899,9 @@ public abstract class SchemaCommandReaderTest {
                       },
                       indexProvider: 'vector-2.0'
                     }
-                    """, new RelationshipVector("testing", "RelName", "propertyName", false, VECTOR_DIMENSIONS_V2)),
+                    """,
+                        new RelationshipVector(
+                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
                 arguments(
                         """
                     CYPHER 25 CREATE VECTOR INDEX testing
@@ -863,7 +912,48 @@ public abstract class SchemaCommandReaderTest {
                         `vector.dimensions`: 1536
                       }
                     }
-                    """, new RelationshipVector("testing", "RelName", "propertyName", false, VECTOR_DIMENSIONS_V2)),
+                    """,
+                        new RelationshipVector(
+                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
+                // VECTOR INDEX with multiple labels and additional filter properties
+                arguments(
+                        """
+                    CYPHER 25 CREATE VECTOR INDEX testing
+                    FOR (n:LabelOne|LabelTwo)
+                    ON (n.embedding)
+                    WITH [n.filterOne, n.filterTwo]
+                    OPTIONS {
+                      indexConfig: {
+                        `vector.dimensions`: 1536
+                      }
+                    }
+                    """,
+                        new NodeVector(
+                                "testing",
+                                List.of("LabelOne", "LabelTwo"),
+                                "embedding",
+                                List.of("filterOne", "filterTwo"),
+                                false,
+                                VECTOR_DIMENSIONS_V2)),
+                arguments(
+                        """
+                    CYPHER 25 CREATE VECTOR INDEX testing
+                    FOR ()-[r:RelOne|RelTwo]-()
+                    ON (r.embedding)
+                    WITH [r.filterOne]
+                    OPTIONS {
+                      indexConfig: {
+                        `vector.dimensions`: 1536
+                      }
+                    }
+                    """,
+                        new RelationshipVector(
+                                "testing",
+                                List.of("RelOne", "RelTwo"),
+                                "embedding",
+                                List.of("filterOne"),
+                                false,
+                                VECTOR_DIMENSIONS_V2)),
                 // constraints
                 arguments("""
                     CREATE CONSTRAINT

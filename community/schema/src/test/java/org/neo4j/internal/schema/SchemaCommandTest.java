@@ -392,7 +392,8 @@ class SchemaCommandTest {
         String property = random.among(PROPERTIES);
         IndexConfig config = random.among(VECTOR_CONFIGS);
 
-        assertThat(new NodeVector(name, label, property, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
+        assertThat(new NodeVector(name, List.of(label), property, List.of(), IF_NOT_EXISTS, config)
+                        .toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
                     assertIndexProviderDescriptor(p.getIndexProvider(), DEFAULT_VECTOR_DESCRIPTOR);
@@ -400,6 +401,9 @@ class SchemaCommandTest {
                             .as("should have the correct index type")
                             .isEqualTo(IndexType.VECTOR);
                     assertSchema(p.schema(), EntityType.NODE, List.of(label), List.of(property));
+                    assertThat(p.schema().schemaPatternMatchingType())
+                            .as("vector indexes should use PARTIAL_ANY_TOKEN")
+                            .isEqualTo(SchemaPatternMatchingType.PARTIAL_ANY_TOKEN);
                 });
     }
 
@@ -410,7 +414,8 @@ class SchemaCommandTest {
         String property = random.among(PROPERTIES);
         IndexConfig config = random.among(VECTOR_CONFIGS);
 
-        assertThat(new RelationshipVector(name, type, property, IF_NOT_EXISTS, config).toPrototype(tokenHolders))
+        assertThat(new RelationshipVector(name, List.of(type), property, List.of(), IF_NOT_EXISTS, config)
+                        .toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
                     assertIndexProviderDescriptor(p.getIndexProvider(), DEFAULT_VECTOR_DESCRIPTOR);
@@ -418,6 +423,59 @@ class SchemaCommandTest {
                             .as("should have the correct index type")
                             .isEqualTo(IndexType.VECTOR);
                     assertSchema(p.schema(), EntityType.RELATIONSHIP, List.of(type), List.of(property));
+                    assertThat(p.schema().schemaPatternMatchingType())
+                            .as("vector indexes should use PARTIAL_ANY_TOKEN")
+                            .isEqualTo(SchemaPatternMatchingType.PARTIAL_ANY_TOKEN);
+                });
+    }
+
+    @ParameterizedTest
+    @MethodSource("names")
+    void createVectorNodeWithMultipleLabelsAndAdditionalProperties(String name) {
+        final var labels = listFrom(LABELS, random.nextInt(1, 3));
+        final var vectorProperty = random.among(PROPERTIES);
+        final var additionalProperties = listFrom(PROPERTIES, random.nextInt(1, 3));
+        final var config = random.among(VECTOR_CONFIGS);
+
+        assertThat(new NodeVector(name, labels, vectorProperty, additionalProperties, IF_NOT_EXISTS, config)
+                        .toPrototype(tokenHolders))
+                .satisfies(p -> {
+                    assertIndexName(p.getName(), name);
+                    assertIndexProviderDescriptor(p.getIndexProvider(), DEFAULT_VECTOR_DESCRIPTOR);
+                    assertThat(p.getIndexType())
+                            .as("should have the correct index type")
+                            .isEqualTo(IndexType.VECTOR);
+                    final var allProperties = Stream.concat(Stream.of(vectorProperty), additionalProperties.stream())
+                            .toList();
+                    assertSchema(p.schema(), EntityType.NODE, labels, allProperties);
+                    assertThat(p.schema().schemaPatternMatchingType())
+                            .as("multi-label vector indexes should use PARTIAL_ANY_TOKEN")
+                            .isEqualTo(SchemaPatternMatchingType.PARTIAL_ANY_TOKEN);
+                });
+    }
+
+    @ParameterizedTest
+    @MethodSource("names")
+    void createVectorRelationshipWithMultipleTypesAndAdditionalProperties(String name) {
+        final var types = listFrom(TYPES, random.nextInt(1, 3));
+        final var vectorProperty = random.among(PROPERTIES);
+        final var additionalProperties = listFrom(PROPERTIES, random.nextInt(1, 3));
+        final var config = random.among(VECTOR_CONFIGS);
+
+        assertThat(new RelationshipVector(name, types, vectorProperty, additionalProperties, IF_NOT_EXISTS, config)
+                        .toPrototype(tokenHolders))
+                .satisfies(p -> {
+                    assertIndexName(p.getName(), name);
+                    assertIndexProviderDescriptor(p.getIndexProvider(), DEFAULT_VECTOR_DESCRIPTOR);
+                    assertThat(p.getIndexType())
+                            .as("should have the correct index type")
+                            .isEqualTo(IndexType.VECTOR);
+                    final var allProperties = Stream.concat(Stream.of(vectorProperty), additionalProperties.stream())
+                            .toList();
+                    assertSchema(p.schema(), EntityType.RELATIONSHIP, types, allProperties);
+                    assertThat(p.schema().schemaPatternMatchingType())
+                            .as("multi-rel-type vector indexes should use PARTIAL_ANY_TOKEN")
+                            .isEqualTo(SchemaPatternMatchingType.PARTIAL_ANY_TOKEN);
                 });
     }
 
@@ -722,14 +780,16 @@ class SchemaCommandTest {
                         random.among(FULLTEXT_CONFIGS)),
                 new NodeVector(
                         "command" + id++,
-                        track(LABELS, labels, random),
+                        List.of(track(LABELS, labels, random)),
                         track(PROPERTIES, properties, random),
+                        List.of(),
                         IF_NOT_EXISTS,
                         random.among(VECTOR_CONFIGS)),
                 new RelationshipVector(
                         "command" + id++,
-                        track(TYPES, relationships, random),
+                        List.of(track(TYPES, relationships, random)),
                         track(PROPERTIES, properties, random),
+                        List.of(),
                         IF_NOT_EXISTS,
                         random.among(VECTOR_CONFIGS)));
         List<ConstraintCommand.Create> constraints = List.of(

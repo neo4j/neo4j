@@ -287,6 +287,20 @@ class SchemaCommandsBuilder {
         return name == null ? command.toString() : name;
     }
 
+    private static List<String> allProperties(NodeVector command) {
+        final var all = Lists.mutable.<String>empty();
+        all.add(command.property());
+        all.addAll(command.additionalProperties());
+        return all;
+    }
+
+    private static List<String> allProperties(RelationshipVector command) {
+        final var all = Lists.mutable.<String>empty();
+        all.add(command.property());
+        all.addAll(command.additionalProperties());
+        return all;
+    }
+
     private static String schemaKey(IndexCommand.Create indexCommand) {
         return switch (indexCommand) {
             case NodeLookup ignored -> NODE_LOOKUP_KEY;
@@ -300,8 +314,9 @@ class SchemaCommandsBuilder {
             case NodeFulltext command -> schemaKey(EntityType.NODE, command.labels(), command.properties());
             case RelationshipFulltext command ->
                 schemaKey(EntityType.RELATIONSHIP, command.types(), command.properties());
-            case NodeVector command -> schemaKey(EntityType.NODE, command.label(), command.property());
-            case RelationshipVector command -> schemaKey(EntityType.RELATIONSHIP, command.type(), command.property());
+            case NodeVector command -> schemaKey(EntityType.NODE, command.labels(), allProperties(command));
+            case RelationshipVector command ->
+                schemaKey(EntityType.RELATIONSHIP, command.types(), allProperties(command));
         };
     }
 

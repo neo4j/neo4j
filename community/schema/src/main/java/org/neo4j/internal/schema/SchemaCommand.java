@@ -30,6 +30,7 @@ import static org.neo4j.internal.schema.SchemaCommandUtils.forSchema;
 import static org.neo4j.internal.schema.SchemaCommandUtils.withName;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.neo4j.common.EntityType;
@@ -327,7 +328,13 @@ public sealed interface SchemaCommand extends Serializable {
             }
 
             // SchemaCommand.CreateVectorNodeIndex
-            record NodeVector(String name, String label, String property, boolean ifNotExists, IndexConfig config)
+            record NodeVector(
+                    String name,
+                    List<String> labels,
+                    String property,
+                    List<String> additionalProperties,
+                    boolean ifNotExists,
+                    IndexConfig config)
                     implements Create {
                 @Override
                 public EntityType entityType() {
@@ -341,13 +348,17 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    final List<String> allProperties = new ArrayList<>(1 + additionalProperties.size());
+                    allProperties.add(property);
+                    allProperties.addAll(additionalProperties);
                     return withName(
                             name,
                             forSchema(
                                             this,
-                                            SchemaDescriptors.forLabel(
-                                                    tokenHolders.labelForName(label),
-                                                    tokenHolders.propertyForName(property)),
+                                            SchemaDescriptors.forSemanticSearch(
+                                                    EntityType.NODE,
+                                                    tokenHolders.labelsForNames(labels),
+                                                    tokenHolders.propertiesForName(allProperties)),
                                             DEFAULT_VECTOR_DESCRIPTOR)
                                     .withIndexConfig(config),
                             tokenHolders);
@@ -356,7 +367,12 @@ public sealed interface SchemaCommand extends Serializable {
 
             // SchemaCommand.CreateVectorRelationshipIndex
             record RelationshipVector(
-                    String name, String type, String property, boolean ifNotExists, IndexConfig config)
+                    String name,
+                    List<String> types,
+                    String property,
+                    List<String> additionalProperties,
+                    boolean ifNotExists,
+                    IndexConfig config)
                     implements Create {
                 @Override
                 public EntityType entityType() {
@@ -370,13 +386,17 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public IndexPrototype toPrototype(TokenHolders tokenHolders) {
+                    final List<String> allProperties = new ArrayList<>(1 + additionalProperties.size());
+                    allProperties.add(property);
+                    allProperties.addAll(additionalProperties);
                     return withName(
                             name,
                             forSchema(
                                             this,
-                                            SchemaDescriptors.forRelType(
-                                                    tokenHolders.relationshipForName(type),
-                                                    tokenHolders.propertyForName(property)),
+                                            SchemaDescriptors.forSemanticSearch(
+                                                    EntityType.RELATIONSHIP,
+                                                    tokenHolders.relationshipsForNames(types),
+                                                    tokenHolders.propertiesForName(allProperties)),
                                             DEFAULT_VECTOR_DESCRIPTOR)
                                     .withIndexConfig(config),
                             tokenHolders);
