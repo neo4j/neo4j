@@ -19,9 +19,8 @@
  */
 package org.neo4j.logging.event;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Test;
 
@@ -31,31 +30,33 @@ class CountCappedEventsFilterTest {
     void shouldPublishEveryCount() {
         var countCappedMiscEventFilter = new CountCappedLimitedEventFilter(1);
 
-        assertTrue(countCappedMiscEventFilter.canPublish());
-        assertTrue(countCappedMiscEventFilter.canPublish());
-        assertTrue(countCappedMiscEventFilter.canPublish());
+        assertThat(countCappedMiscEventFilter.canPublish()).isTrue();
+        assertThat(countCappedMiscEventFilter.canPublish()).isTrue();
+        assertThat(countCappedMiscEventFilter.canPublish()).isTrue();
     }
 
     @Test
     void shouldPublishEveryThreeCount() {
         var countCappedMiscEventFilter = new CountCappedLimitedEventFilter(3);
 
-        assertTrue(countCappedMiscEventFilter.canPublish());
-        assertFalse(countCappedMiscEventFilter.canPublish());
-        assertFalse(countCappedMiscEventFilter.canPublish());
-        assertTrue(countCappedMiscEventFilter.canPublish());
-        assertFalse(countCappedMiscEventFilter.canPublish());
-        assertFalse(countCappedMiscEventFilter.canPublish());
-        assertTrue(countCappedMiscEventFilter.canPublish());
+        assertThat(countCappedMiscEventFilter.canPublish()).isTrue();
+        assertThat(countCappedMiscEventFilter.canPublish()).isFalse();
+        assertThat(countCappedMiscEventFilter.canPublish()).isFalse();
+        assertThat(countCappedMiscEventFilter.canPublish()).isTrue();
+        assertThat(countCappedMiscEventFilter.canPublish()).isFalse();
+        assertThat(countCappedMiscEventFilter.canPublish()).isFalse();
+        assertThat(countCappedMiscEventFilter.canPublish()).isTrue();
     }
 
     @Test
     void shouldNotAllowZero() {
-        assertThrows(IllegalArgumentException.class, () -> new CountCappedLimitedEventFilter(0));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new CountCappedLimitedEventFilter(0));
     }
 
     @Test
     void shouldNotAllowNegative() {
-        assertThrows(IllegalArgumentException.class, () -> new CountCappedLimitedEventFilter(0));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new CountCappedLimitedEventFilter(0));
     }
 }

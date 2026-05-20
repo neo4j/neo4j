@@ -68,9 +68,9 @@ class UndirectedShortestLoopCursorTest {
 
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next()).isEqualTo(pathReference(new long[] {start, start}, new long[] {r}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -91,12 +91,12 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(
                                 pathReference(new long[] {start, a, start}, new long[] {startToA, aToStart}),
                                 pathReference(new long[] {start, a, start}, new long[] {aToStart, startToA}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -115,10 +115,10 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedMultiLoopWalkCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(pathReference(new long[] {start, a, start}, new long[] {startToA, startToA}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -141,12 +141,12 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleWalkLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(
                                 pathReference(new long[] {start, a, start}, new long[] {startToA, startToA}),
                                 pathReference(new long[] {start, b, start}, new long[] {startToB, startToB}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -216,7 +216,7 @@ class UndirectedShortestLoopCursorTest {
 
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -242,12 +242,12 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(
                                 pathReference(new long[] {start, a, b, start}, new long[] {startToA, aTob, bToStart}),
                                 pathReference(new long[] {start, b, a, start}, new long[] {bToStart, aTob, startToA}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -275,7 +275,7 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(
                                 pathReference(
@@ -284,7 +284,7 @@ class UndirectedShortestLoopCursorTest {
                                 pathReference(
                                         new long[] {start, b, c, a, start},
                                         new long[] {bToStart, cToB, aToC, startToA}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -313,7 +313,7 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleLoopCursor(dangling_a)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             } // We should have no loops for the dangling node
         }
     }
@@ -338,7 +338,7 @@ class UndirectedShortestLoopCursorTest {
 
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -366,7 +366,7 @@ class UndirectedShortestLoopCursorTest {
 
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -426,7 +426,7 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(
                                 pathReference(
@@ -435,7 +435,7 @@ class UndirectedShortestLoopCursorTest {
                                 pathReference(
                                         new long[] {start, b, d, c, a, start},
                                         new long[] {bToStart, bToD, cToD, aToC, startToA}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -467,7 +467,7 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleLoopCursor(start)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(
                                 pathReference(
@@ -476,7 +476,7 @@ class UndirectedShortestLoopCursorTest {
                                 pathReference(
                                         new long[] {start, b, d, e, c, a, start},
                                         new long[] {bToStart, bToD, eToD, cToE, aToC, startToA}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -802,7 +802,7 @@ class UndirectedShortestLoopCursorTest {
             try (var cursor = fixture.undirectedSingleLoopCursor(start, relationshipFilter)) {
                 var iterator = cursor.shortestPathIterator();
 
-                assertThat(iterator.hasNext()).isTrue();
+                assertThat(iterator).hasNext();
                 assertThat(iterator.next())
                         .isIn(
                                 pathReference(
@@ -811,7 +811,7 @@ class UndirectedShortestLoopCursorTest {
                                 pathReference(
                                         new long[] {start, e, g, h, f, d, start},
                                         new long[] {startToE, gToE, gToH, fToH, fToD, dToStart}));
-                assertThat(iterator.hasNext()).isFalse();
+                assertThat(iterator).isExhausted();
             }
         }
     }
@@ -842,7 +842,7 @@ class UndirectedShortestLoopCursorTest {
                             pathReference(new long[] {start, a, start}, new long[] {r2, r3}),
                             pathReference(new long[] {start, a, start}, new long[] {r3, r1}),
                             pathReference(new long[] {start, a, start}, new long[] {r3, r2}));
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(iterator).isExhausted();
         }
     }
 
@@ -873,7 +873,7 @@ class UndirectedShortestLoopCursorTest {
                     .containsExactlyInAnyOrder(
                             pathReference(new long[] {start, b, start}, new long[] {bToStart1, bToStart2}),
                             pathReference(new long[] {start, b, start}, new long[] {bToStart2, bToStart1}));
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(iterator).isExhausted();
         }
     }
 
@@ -896,7 +896,7 @@ class UndirectedShortestLoopCursorTest {
                             pathReference(new long[] {start, start}, new long[] {r1}),
                             pathReference(new long[] {start, start}, new long[] {r2}),
                             pathReference(new long[] {start, start}, new long[] {r3}));
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(iterator).isExhausted();
         }
     }
 
@@ -919,7 +919,7 @@ class UndirectedShortestLoopCursorTest {
                             pathReference(new long[] {start, start}, new long[] {r1}),
                             pathReference(new long[] {start, start}, new long[] {r2}),
                             pathReference(new long[] {start, start}, new long[] {r3}));
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(iterator).isExhausted();
         }
     }
 
@@ -951,7 +951,7 @@ class UndirectedShortestLoopCursorTest {
                             pathReference(new long[] {start, b, a, start}, new long[] {bToStart, aTob1, startToA}),
                             pathReference(new long[] {start, a, b, start}, new long[] {startToA, aTob2, bToStart}),
                             pathReference(new long[] {start, b, a, start}, new long[] {bToStart, aTob2, startToA}));
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(iterator).isExhausted();
         }
     }
 
@@ -981,13 +981,13 @@ class UndirectedShortestLoopCursorTest {
             var cursor = fixture.undirectedMultiLoopCursor(start);
             var iterator = cursor.shortestPathIterator();
 
-            assertThat(toList(iterator).size()).isEqualTo(8);
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(toList(iterator)).hasSize(8);
+            assertThat(iterator).isExhausted();
         }
     }
 
     @Test
-    void shouldFindAllLargeMultiUndirectedLoop() throws KernelException {
+    void shouldFindAllLargeMultiUndirectedLoop() throws Exception {
         // given
         try (var fixture = new Fixture()) {
             Write write = fixture.tx.dataWrite();
@@ -1018,7 +1018,7 @@ class UndirectedShortestLoopCursorTest {
             var iterator = cursor.shortestPathIterator();
 
             assertThat(toList(iterator)).hasSize(6);
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(iterator).isExhausted();
         }
     }
 
@@ -1061,7 +1061,7 @@ class UndirectedShortestLoopCursorTest {
             var iterator = cursor.shortestPathIterator();
 
             assertThat(toList(iterator)).hasSize(8);
-            assertThat(iterator.hasNext()).isFalse();
+            assertThat(iterator).isExhausted();
         }
     }
 

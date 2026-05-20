@@ -23,12 +23,11 @@ import static java.lang.String.format;
 import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.logging.log4j.LogConfigTest.DATE_PATTERN;
 
 import java.io.IOException;
 import java.lang.invoke.VarHandle;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -64,7 +63,8 @@ class Log4jLogProviderTest {
             InternalLog log2 = logProvider.getLog(Log4jLog.class);
             log2.info("testMessage2");
 
-            assertThat(Files.readString(file))
+            assertThat(file)
+                    .content(StandardCharsets.UTF_8)
                     .matches(format(
                             DATE_PATTERN + " %-5s \\[stringAsCategory\\] testMessage%n" + DATE_PATTERN
                                     + " %-5s \\[o.n.l.l.Log4jLog\\] testMessage2%n",
@@ -89,7 +89,8 @@ class Log4jLogProviderTest {
     @Test
     void doNotCreateDefaultLogLayouts() {
         for (int i = 0; i < ITERATIONS; i++) {
-            assertNotNull(Neo4jDebugLogLayout.createLayout("testLayout" + i, new Neo4jConfiguration()));
+            assertThat(Neo4jDebugLogLayout.createLayout("testLayout" + i, new Neo4jConfiguration()))
+                    .isNotNull();
         }
 
         await().atMost(ofMinutes(WAIT_TIMEOUT_MINUTES))

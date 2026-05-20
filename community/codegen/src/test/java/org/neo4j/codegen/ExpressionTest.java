@@ -19,7 +19,7 @@
  */
 package org.neo4j.codegen;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -43,14 +43,14 @@ import org.junit.jupiter.api.Test;
 public class ExpressionTest {
     @Test
     void shouldNegateTrueToFalse() {
-        assertSame(FALSE, not(TRUE));
-        assertSame(TRUE, not(FALSE));
+        assertThat(not(TRUE)).isSameAs(FALSE);
+        assertThat(not(FALSE)).isSameAs(TRUE);
     }
 
     @Test
     void shouldRemoveDoubleNegation() {
         Expression expression = invoke(methodReference(getClass(), boolean.class, "TRUE"));
-        assertSame(expression, not(not(expression)));
+        assertThat(not(not(expression))).isSameAs(expression);
     }
 
     @Test
@@ -149,15 +149,15 @@ public class ExpressionTest {
         Expression expression = invoke(methodReference(getClass(), boolean.class, "TRUE"));
 
         // then
-        assertSame(expression, and(expression, TRUE));
-        assertSame(expression, and(TRUE, expression));
-        assertSame(FALSE, and(expression, FALSE));
-        assertSame(FALSE, and(FALSE, expression));
+        assertThat(and(expression, TRUE)).isSameAs(expression);
+        assertThat(and(TRUE, expression)).isSameAs(expression);
+        assertThat(and(expression, FALSE)).isSameAs(FALSE);
+        assertThat(and(FALSE, expression)).isSameAs(FALSE);
 
-        assertSame(expression, or(expression, FALSE));
-        assertSame(expression, or(FALSE, expression));
-        assertSame(TRUE, or(expression, TRUE));
-        assertSame(TRUE, or(TRUE, expression));
+        assertThat(or(expression, FALSE)).isSameAs(expression);
+        assertThat(or(FALSE, expression)).isSameAs(expression);
+        assertThat(or(expression, TRUE)).isSameAs(TRUE);
+        assertThat(or(TRUE, expression)).isSameAs(TRUE);
     }
 
     public static boolean TRUE() {

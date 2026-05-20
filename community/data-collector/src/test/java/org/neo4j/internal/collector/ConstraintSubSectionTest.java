@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.collector;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.util.Arrays;
 import java.util.List;
@@ -89,18 +88,18 @@ class ConstraintSubSectionTest {
                 .map(constraint -> constraint.descriptor.type())
                 .collect(Collectors.toSet());
         for (ConstraintType constraintType : ConstraintType.values()) {
-            assertTrue(
-                    constraintTypes.contains(constraintType),
-                    "Missing test coverage for constraint type: " + constraintType);
+            assertThat(constraintTypes)
+                    .as("Missing test coverage for constraint type: " + constraintType)
+                    .contains(constraintType);
         }
     }
 
     @Test
     void noExceptionsDuringSerialization() {
         for (Constraint constraint : Constraint.values()) {
-            assertDoesNotThrow(
-                    () -> serializeConstraint(constraint),
-                    "Unexpected exception thrown while serializing: " + constraint);
+            assertThatCode(() -> serializeConstraint(constraint))
+                    .withFailMessage("Unexpected exception thrown while serializing: " + constraint)
+                    .doesNotThrowAnyException();
         }
     }
 
@@ -110,7 +109,8 @@ class ConstraintSubSectionTest {
                 "label", "Label",
                 "type", "Uniqueness constraint",
                 "properties", List.of("prop"));
-        assertEquals(serializeConstraint(Constraint.NODE_PROPERTY_UNIQUENESS), expectedData);
+        assertThat(expectedData)
+                .containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.NODE_PROPERTY_UNIQUENESS));
     }
 
     @Test
@@ -119,7 +119,8 @@ class ConstraintSubSectionTest {
                 "relationshipType", "REL",
                 "type", "Uniqueness constraint",
                 "properties", List.of("prop"));
-        assertEquals(serializeConstraint(Constraint.RELATIONSHIP_PROPERTY_UNIQUENESS), expectedData);
+        assertThat(expectedData)
+                .containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.RELATIONSHIP_PROPERTY_UNIQUENESS));
     }
 
     @Test
@@ -128,7 +129,8 @@ class ConstraintSubSectionTest {
                 "label", "Label",
                 "type", "Existence constraint",
                 "properties", List.of("prop"));
-        assertEquals(serializeConstraint(Constraint.NODE_PROPERTY_EXISTENCE), expectedData);
+        assertThat(expectedData)
+                .containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.NODE_PROPERTY_EXISTENCE));
     }
 
     @Test
@@ -137,7 +139,8 @@ class ConstraintSubSectionTest {
                 "relationshipType", "REL",
                 "type", "Existence constraint",
                 "properties", List.of("prop"));
-        assertEquals(serializeConstraint(Constraint.RELATIONSHIP_PROPERTY_EXISTENCE), expectedData);
+        assertThat(expectedData)
+                .containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.RELATIONSHIP_PROPERTY_EXISTENCE));
     }
 
     @Test
@@ -147,7 +150,7 @@ class ConstraintSubSectionTest {
                 Map.entry("type", "Property type constraint"),
                 Map.entry("properties", List.of("prop")),
                 Map.entry("propertyTypes", List.of("INTEGER")));
-        assertEquals(serializeConstraint(Constraint.NODE_PROPERTY_TYPE), expectedData);
+        assertThat(expectedData).containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.NODE_PROPERTY_TYPE));
     }
 
     @Test
@@ -157,7 +160,8 @@ class ConstraintSubSectionTest {
                 Map.entry("type", "Property type constraint"),
                 Map.entry("properties", List.of("prop")),
                 Map.entry("propertyTypes", List.of("INTEGER")));
-        assertEquals(serializeConstraint(Constraint.RELATIONSHIP_PROPERTY_TYPE), expectedData);
+        assertThat(expectedData)
+                .containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.RELATIONSHIP_PROPERTY_TYPE));
     }
 
     @Test
@@ -166,7 +170,7 @@ class ConstraintSubSectionTest {
                 "label", "Label",
                 "type", "Node Key",
                 "properties", List.of("prop"));
-        assertEquals(serializeConstraint(Constraint.NODE_KEY), expectedData);
+        assertThat(expectedData).containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.NODE_KEY));
     }
 
     @Test
@@ -175,7 +179,7 @@ class ConstraintSubSectionTest {
                 "relationshipType", "REL",
                 "type", "Node Key", // TODO: do we really want to serialize a relationship key constraint as Node Key?
                 "properties", List.of("prop"));
-        assertEquals(serializeConstraint(Constraint.RELATIONSHIP_KEY), expectedData);
+        assertThat(expectedData).containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.RELATIONSHIP_KEY));
     }
 
     @Test
@@ -186,7 +190,8 @@ class ConstraintSubSectionTest {
                 "endpointType", "START",
                 "properties", List.of(),
                 "enforcedLabel", "Label");
-        assertEquals(serializeConstraint(Constraint.ENDPOINT_START), expectedDataStart);
+        assertThat(expectedDataStart)
+                .containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.ENDPOINT_START));
 
         Map<String, Object> expectedDataEnd = Map.of(
                 "relationshipType", "REL",
@@ -194,7 +199,7 @@ class ConstraintSubSectionTest {
                 "endpointType", "END",
                 "properties", List.of(),
                 "enforcedLabel", "Label");
-        assertEquals(serializeConstraint(Constraint.ENDPOINT_END), expectedDataEnd);
+        assertThat(expectedDataEnd).containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.ENDPOINT_END));
     }
 
     @Test
@@ -204,6 +209,7 @@ class ConstraintSubSectionTest {
                 "type", "Node label existence constraint",
                 "properties", List.of(),
                 "enforcedLabel", "Label2");
-        assertEquals(serializeConstraint(Constraint.NODE_LABEL_EXISTENCE), expectedData);
+        assertThat(expectedData)
+                .containsExactlyInAnyOrderEntriesOf(serializeConstraint(Constraint.NODE_LABEL_EXISTENCE));
     }
 }

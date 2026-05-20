@@ -864,7 +864,7 @@ class BFSPruningVarExpandCursorTest {
 
     @ParameterizedTest
     @EnumSource(TraversalPathMode.class)
-    void shouldStopAtSpecifiedDepth(TraversalPathMode traversalPathMode) throws KernelException {
+    void shouldStopAtSpecifiedDepth(TraversalPathMode traversalPathMode) throws Exception {
         // given
         var graph = fanOutGraph(2, 5);
         try (var f = new Fixture()) {

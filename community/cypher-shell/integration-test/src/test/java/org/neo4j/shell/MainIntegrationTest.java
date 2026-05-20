@@ -26,11 +26,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.allOf;
 import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.Conditions.contains;
 import static org.neo4j.shell.Conditions.emptyString;
@@ -673,7 +670,7 @@ class MainIntegrationTest extends TestHarness {
     void createHistoryFileIfNotExists() throws Exception {
         final var historyDirectory = Files.createTempDirectory("temp-cypher-shell-history");
         final var history = historyDirectory.resolve("dir").resolve("dir").resolve("the-history");
-        assertFalse(Files.exists(history));
+        assertThat(history).doesNotExist();
 
         var expected = """
                 > :history
@@ -688,7 +685,7 @@ class MainIntegrationTest extends TestHarness {
                 .assertSuccessAndConnected()
                 .assertThatOutput(contains(expected), endsWithInteractiveExit);
 
-        assertTrue(Files.exists(history));
+        assertThat(history).exists();
     }
 
     @Test
@@ -708,7 +705,7 @@ class MainIntegrationTest extends TestHarness {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(contains(expected1), endsWithInteractiveExit);
-        assertTrue(Files.exists(history));
+        assertThat(history).exists();
 
         var expected2 = """
                 > :history
@@ -727,7 +724,7 @@ class MainIntegrationTest extends TestHarness {
                 .assertSuccessAndConnected()
                 .assertThatOutput(contains(expected2), endsWithInteractiveExit);
 
-        assertTrue(Files.exists(history));
+        assertThat(history).exists();
     }
 
     @Test
@@ -756,7 +753,7 @@ class MainIntegrationTest extends TestHarness {
                 .assertSuccessAndConnected();
 
         var readHistory = Files.readAllLines(history);
-        assertEquals(3, readHistory.size());
+        assertThat(readHistory).hasSize(3);
         assertThat(readHistory.get(0)).is(endsWith("return 1;"));
         assertThat(readHistory.get(1)).is(endsWith("return 2;"));
         assertThat(readHistory.get(2)).is(endsWith(":exit"));
@@ -783,7 +780,7 @@ class MainIntegrationTest extends TestHarness {
                 .assertThatOutput(contains(expected1), contains(expected2));
 
         var readHistoryAfterClear = Files.readAllLines(history);
-        assertEquals(2, readHistoryAfterClear.size());
+        assertThat(readHistoryAfterClear).hasSize(2);
         assertThat(readHistoryAfterClear.get(0)).is(endsWith(":history"));
         assertThat(readHistoryAfterClear.get(1)).is(endsWith(":exit"));
     }
@@ -831,7 +828,7 @@ class MainIntegrationTest extends TestHarness {
     }
 
     @Test
-    public void failGracefullyOnUnknownCommands() throws ArgumentParserException, IOException {
+    void failGracefullyOnUnknownCommands() throws ArgumentParserException, IOException {
         buildTest()
                 .addArgs("-u", USER, "-p", PASSWORD)
                 .userInputLines(":non-existing-command")

@@ -88,8 +88,11 @@ class DbInfoIntegrationTest extends TestHarness {
             assertThat(dbInfo.propertyKeys).contains("name");
             assertThat(dbInfo.functions.get(CypherVersion.Cypher5)).contains("abs");
             assertThat(dbInfo.procedures.get(CypherVersion.Cypher5)).containsKey("dbms.info");
-            assertThat(dbInfo.procedures.get(CypherVersion.Cypher5).get("dbms.info").returnDescription().stream()
-                            .map(DbInfo.ReturnDescription::name))
+            assertThat(dbInfo.procedures
+                            .get(CypherVersion.Cypher5)
+                            .get("dbms.info")
+                            .returnDescription())
+                    .extracting(DbInfo.ReturnDescription::name)
                     .contains("name", "id", "creationDate");
             assertThat(dbInfo.aliasNames).contains("nacho");
             assertThat(dbInfo.roleNames).contains("PUBLIC");
@@ -127,11 +130,17 @@ class DbInfoIntegrationTest extends TestHarness {
 
             assertThat(dbInfo.procedures.get(CypherVersion.Cypher5)).containsKey("dbms.info");
             assertThat(dbInfo.procedures.get(CypherVersion.Cypher25)).containsKey("dbms.info");
-            assertThat(dbInfo.procedures.get(CypherVersion.Cypher5).get("dbms.info").returnDescription().stream()
-                            .map(DbInfo.ReturnDescription::name))
+            assertThat(dbInfo.procedures
+                            .get(CypherVersion.Cypher5)
+                            .get("dbms.info")
+                            .returnDescription())
+                    .extracting(DbInfo.ReturnDescription::name)
                     .contains("name", "id", "creationDate");
-            assertThat(dbInfo.procedures.get(CypherVersion.Cypher25).get("dbms.info").returnDescription().stream()
-                            .map(DbInfo.ReturnDescription::name))
+            assertThat(dbInfo.procedures
+                            .get(CypherVersion.Cypher25)
+                            .get("dbms.info")
+                            .returnDescription())
+                    .extracting(DbInfo.ReturnDescription::name)
                     .contains("name", "id", "creationDate");
             assertThat(dbInfo.procedures.get(CypherVersion.Cypher5).get("dbms.upgradeStatus"))
                     .isNotNull();

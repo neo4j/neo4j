@@ -19,8 +19,7 @@
  */
 package org.neo4j.logging.event;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -35,23 +34,23 @@ class TimeBasedEventsFilterTest {
         var maxPublishPeriod = Duration.ofSeconds(1);
         var timeBasedMiscEventFilter = new TimeBasedLimitedEventFilter(clock, maxPublishPeriod);
 
-        assertTrue(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isTrue();
         clock.forward(Duration.ofMillis(500));
-        assertFalse(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isFalse();
         clock.forward(Duration.ofMillis(501));
-        assertTrue(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isTrue();
         clock.forward(Duration.ofMillis(500));
-        assertFalse(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isFalse();
         clock.forward(Duration.ofMillis(500));
-        assertFalse(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isFalse();
         clock.forward(Duration.ofMillis(1));
-        assertTrue(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isTrue();
         clock.forward(Duration.ofSeconds(5));
-        assertTrue(timeBasedMiscEventFilter.canPublish());
-        assertFalse(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isTrue();
+        assertThat(timeBasedMiscEventFilter.canPublish()).isFalse();
         clock.forward(Duration.ofMillis(800));
-        assertFalse(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isFalse();
         clock.forward(Duration.ofMillis(500));
-        assertTrue(timeBasedMiscEventFilter.canPublish());
+        assertThat(timeBasedMiscEventFilter.canPublish()).isTrue();
     }
 }

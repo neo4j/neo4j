@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.collector;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
 import java.util.Map;
@@ -83,27 +83,27 @@ class CollectorStateMachineTest {
 
         @Override
         protected Result doCollect(Map<String, Object> config, long collectionId) {
-            assertSame(State.IDLE, state);
+            assertThat(state).isSameAs(State.IDLE);
             state = State.COLLECTING;
             return null;
         }
 
         @Override
         protected Result doStop() {
-            assertSame(state, State.COLLECTING);
+            assertThat(state).isSameAs(State.COLLECTING);
             state = State.IDLE;
             return null;
         }
 
         @Override
         protected Result doClear() {
-            assertSame(state, State.IDLE);
+            assertThat(state).isSameAs(State.IDLE);
             return null;
         }
 
         @Override
         protected String doGetData() {
-            assertSame(state, State.IDLE);
+            assertThat(state).isSameAs(State.IDLE);
             return "Data";
         }
     }

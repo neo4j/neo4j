@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
@@ -107,8 +107,8 @@ public class TestHarness {
 
         @Override
         public AssertableMain run(boolean closeMain) throws ArgumentParserException, IOException {
-            assertNull(runnerFactory);
-            assertNull(shell);
+            assertThat(runnerFactory).isNull();
+            assertThat(shell).isNull();
             var args = parseArgs();
             var outPrintStream = new PrintStream(out);
             var errPrintStream = new PrintStream(err);

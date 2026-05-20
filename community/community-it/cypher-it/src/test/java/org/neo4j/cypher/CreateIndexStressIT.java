@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -83,7 +83,7 @@ class CreateIndexStressIT {
 
     private void awaitAndAssertNoErrors() throws InterruptedException {
         executorService.awaitTermination(3L, TimeUnit.SECONDS);
-        assertFalse(hasFailed.get());
+        assertThat(hasFailed.get()).isFalse();
     }
 
     private void executeInThread(final String query, Map<String, Object> params) {

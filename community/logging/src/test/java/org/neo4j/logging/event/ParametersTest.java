@@ -31,7 +31,7 @@ class ParametersTest {
 
     @Test
     void shouldCreateEmptyParameters() {
-        assertThat(Parameters.EMPTY.toString()).isEqualTo("");
+        assertThat(Parameters.EMPTY.toString()).isEmpty();
     }
 
     @Test

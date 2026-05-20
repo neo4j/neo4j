@@ -21,7 +21,6 @@ package org.neo4j.cypher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 import java.util.List;
@@ -44,7 +43,7 @@ import org.neo4j.test.extension.Inject;
 
 @SuppressWarnings("WeakerAccess")
 @ImpermanentDbmsExtension
-public class GraphDatabaseServiceExecuteTest {
+class GraphDatabaseServiceExecuteTest {
     @Inject
     private GraphDatabaseAPI db;
 
@@ -72,7 +71,7 @@ public class GraphDatabaseServiceExecuteTest {
             after = Iterables.count(tx.getAllNodes());
             tx.commit();
         }
-        assertEquals(before + 1, after);
+        assertThat(after).isEqualTo(before + 1);
     }
 
     @Test
@@ -86,8 +85,8 @@ public class GraphDatabaseServiceExecuteTest {
             assertThat(obj).isInstanceOf(Point.class);
 
             Point point = (Point) obj;
-            assertThat(point.getCoordinate().getCoordinate()[0]).isEqualTo(144.317718, offset(0.001));
-            assertThat(point.getCoordinate().getCoordinate()[1]).isEqualTo(-37.031738, offset(0.001));
+            assertThat(point.getCoordinate().getCoordinate()[0]).isCloseTo(144.317718, offset(0.001));
+            assertThat(point.getCoordinate().getCoordinate()[1]).isCloseTo(-37.031738, offset(0.001));
 
             CRS crs = point.getCRS();
             assertThat(crs.getCode()).isEqualTo(4326);

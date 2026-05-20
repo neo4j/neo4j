@@ -20,8 +20,8 @@
 package org.neo4j.shell.commands;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
@@ -135,11 +135,11 @@ class CypherShellMultiDatabaseIntegrationTest {
 
         assertThatThrownBy(() -> useCommand.execute(List.of("this_database_name_does_not_exist_in_test_container")))
                 .isInstanceOf(ClientException.class)
-                .satisfies(e -> {
-                    // In non-interactive we want to switch even if the database does not exist (in case we don't have
-                    // fail-fast)
-                    assertOnNoValidDB();
-                });
+                .satisfies(e ->
+                        // In non-interactive we want to switch even if the database does not exist (in case we don't
+                        // have
+                        // fail-fast)
+                        assertOnNoValidDB());
     }
 
     @Test
@@ -156,10 +156,9 @@ class CypherShellMultiDatabaseIntegrationTest {
 
         assertThatThrownBy(() -> useCommand.execute(List.of("this_database_name_does_not_exist_in_test_container")))
                 .isInstanceOf(ClientException.class)
-                .satisfies(e -> {
-                    // In interactive we do not want to switch if the database does not exist
-                    assertOnSystemDB();
-                });
+                .satisfies(e ->
+                        // In interactive we do not want to switch if the database does not exist
+                        assertOnSystemDB());
     }
 
     // HELPERS
@@ -175,6 +174,7 @@ class CypherShellMultiDatabaseIntegrationTest {
     }
 
     private void assertOnNoValidDB() {
-        assertThrows(ClientException.class, () -> shell.execute(CypherStatement.complete("RETURN 1")));
+        assertThatExceptionOfType(ClientException.class)
+                .isThrownBy(() -> shell.execute(CypherStatement.complete("RETURN 1")));
     }
 }

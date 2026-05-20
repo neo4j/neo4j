@@ -20,16 +20,9 @@
 package org.neo4j.codegen;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -107,10 +100,12 @@ public abstract class CodeGenerationTest {
         Class<?> aClass = handle.loadClass();
 
         // then
-        assertNotNull(aClass, "null class loaded");
-        assertNotNull(aClass.getPackage(), "null package of: " + aClass.getName());
-        assertEquals(PACKAGE, aClass.getPackage().getName());
-        assertEquals("SimpleClass", aClass.getSimpleName());
+        assertThat(aClass).as("null class loaded").isNotNull();
+        assertThat(aClass.getPackage())
+                .as("null package of: " + aClass.getName())
+                .isNotNull();
+        assertThat(aClass.getPackage().getName()).isEqualTo(PACKAGE);
+        assertThat(aClass.getSimpleName()).isEqualTo("SimpleClass");
     }
 
     @Test
@@ -130,10 +125,10 @@ public abstract class CodeGenerationTest {
         Class<?> classTwo = two.loadClass();
 
         // then
-        assertNotNull(classOne.getPackage());
-        assertSame(classOne.getPackage(), classTwo.getPackage());
-        assertEquals("One", classOne.getSimpleName());
-        assertEquals("Two", classTwo.getSimpleName());
+        assertThat(classOne.getPackage()).isNotNull();
+        assertThat(classTwo.getPackage()).isSameAs(classOne.getPackage());
+        assertThat(classOne.getSimpleName()).isEqualTo("One");
+        assertThat(classTwo.getSimpleName()).isEqualTo("Two");
     }
 
     @Test
@@ -150,7 +145,7 @@ public abstract class CodeGenerationTest {
                 instanceMethod(instance, "defaultConstructorCalled").invoke();
 
         // then
-        assertTrue((Boolean) constructorCalled);
+        assertThat((Boolean) constructorCalled).isTrue();
     }
 
     @Test
@@ -167,7 +162,7 @@ public abstract class CodeGenerationTest {
 
         // then
         Field theField = clazz.getDeclaredField("theField");
-        assertSame(String.class, theField.getType());
+        assertThat(theField.getType()).isSameAs(String.class);
     }
 
     @Test
@@ -185,7 +180,7 @@ public abstract class CodeGenerationTest {
 
         // then
         Field theField = clazz.getDeclaredField("theField");
-        assertSame(List.class, theField.getType());
+        assertThat(theField.getType()).isSameAs(List.class);
     }
 
     @Test
@@ -220,8 +215,7 @@ public abstract class CodeGenerationTest {
         Object instance = constructor(handle.loadClass()).invoke();
 
         // then
-        assertArrayEquals(
-                new int[] {1, 2, 3}, (int[]) instanceMethod(instance, "value").invoke());
+        assertThat((int[]) instanceMethod(instance, "value").invoke()).containsExactly(new int[] {1, 2, 3});
     }
 
     @Test
@@ -243,7 +237,7 @@ public abstract class CodeGenerationTest {
         Object instance = constructor(handle.loadClass()).invoke();
 
         // then
-        assertEquals(Arrays.asList("a", "b"), instanceMethod(instance, "value").invoke());
+        assertThat(instanceMethod(instance, "value").invoke()).isEqualTo(Arrays.asList("a", "b"));
     }
 
     @Test
@@ -262,7 +256,7 @@ public abstract class CodeGenerationTest {
         Object foo = instanceMethod(handle.newInstance(), "get").invoke();
 
         // then
-        assertEquals(42, foo);
+        assertThat(foo).isEqualTo(42);
     }
 
     @Test
@@ -281,7 +275,7 @@ public abstract class CodeGenerationTest {
         Object foo = instanceMethod(handle.newInstance(), "get").invoke();
 
         // then
-        assertEquals("42", foo);
+        assertThat(foo).isEqualTo("42");
     }
 
     @Test
@@ -307,7 +301,7 @@ public abstract class CodeGenerationTest {
         Object foo = instanceMethod(handle.newInstance(), "get").invoke();
 
         // then
-        assertEquals(Arrays.asList("FOO", "BAR", "BAZ"), foo);
+        assertThat(foo).isEqualTo(Arrays.asList("FOO", "BAR", "BAZ"));
     }
 
     public interface Thrower<E extends Exception> {
@@ -367,8 +361,8 @@ public abstract class CodeGenerationTest {
         SomeBean bean = (SomeBean) method.invoke("hello", "world");
 
         // then
-        assertEquals("hello", bean.foo);
-        assertEquals("world", bean.bar);
+        assertThat(bean.foo).isEqualTo("hello");
+        assertThat(bean.bar).isEqualTo("world");
     }
 
     @Test
@@ -398,8 +392,8 @@ public abstract class CodeGenerationTest {
         SomeBean bean = (SomeBean) method.invoke("hello", "world");
 
         // then
-        assertEquals("hello", bean.foo);
-        assertEquals("world", bean.bar);
+        assertThat(bean.foo).isEqualTo("hello");
+        assertThat(bean.bar).isEqualTo("world");
     }
 
     @Test
@@ -1647,13 +1641,13 @@ public abstract class CodeGenerationTest {
         // then
         TernaryChecker checker1 = new TernaryChecker();
         assertThat(ternary.invoke(true, checker1)).isEqualTo("on true");
-        assertTrue(checker1.ranOnTrue);
-        assertFalse(checker1.ranOnFalse);
+        assertThat(checker1.ranOnTrue).isTrue();
+        assertThat(checker1.ranOnFalse).isFalse();
 
         TernaryChecker checker2 = new TernaryChecker();
         assertThat(ternary.invoke(false, checker2)).isEqualTo("on false");
-        assertFalse(checker2.ranOnTrue);
-        assertTrue(checker2.ranOnFalse);
+        assertThat(checker2.ranOnTrue).isFalse();
+        assertThat(checker2.ranOnFalse).isTrue();
     }
 
     @Test
@@ -1682,13 +1676,13 @@ public abstract class CodeGenerationTest {
         // then
         TernaryChecker checker1 = new TernaryChecker();
         assertThat(ternary.invoke(null, checker1)).isEqualTo("on true");
-        assertTrue(checker1.ranOnTrue);
-        assertFalse(checker1.ranOnFalse);
+        assertThat(checker1.ranOnTrue).isTrue();
+        assertThat(checker1.ranOnFalse).isFalse();
 
         TernaryChecker checker2 = new TernaryChecker();
         assertThat(ternary.invoke(new Object(), checker2)).isEqualTo("on false");
-        assertFalse(checker2.ranOnTrue);
-        assertTrue(checker2.ranOnFalse);
+        assertThat(checker2.ranOnTrue).isFalse();
+        assertThat(checker2.ranOnFalse).isTrue();
     }
 
     @Test
@@ -1717,105 +1711,126 @@ public abstract class CodeGenerationTest {
         // then
         TernaryChecker checker1 = new TernaryChecker();
         assertThat(ternary.invoke(new Object(), checker1)).isEqualTo("on true");
-        assertTrue(checker1.ranOnTrue);
-        assertFalse(checker1.ranOnFalse);
+        assertThat(checker1.ranOnTrue).isTrue();
+        assertThat(checker1.ranOnFalse).isFalse();
 
         TernaryChecker checker2 = new TernaryChecker();
         assertThat(ternary.invoke(null, checker2)).isEqualTo("on false");
-        assertFalse(checker2.ranOnTrue);
-        assertTrue(checker2.ranOnFalse);
+        assertThat(checker2.ranOnTrue).isFalse();
+        assertThat(checker2.ranOnFalse).isTrue();
     }
 
     @Test
     void shouldHandleEquality() throws Throwable {
         // boolean
-        assertTrue(compareForType(boolean.class, true, true, Expression::equal));
-        assertTrue(compareForType(boolean.class, false, false, Expression::equal));
-        assertFalse(compareForType(boolean.class, true, false, Expression::equal));
-        assertFalse(compareForType(boolean.class, false, true, Expression::equal));
+        assertThat(compareForType(boolean.class, true, true, Expression::equal)).isTrue();
+        assertThat(compareForType(boolean.class, false, false, Expression::equal))
+                .isTrue();
+        assertThat(compareForType(boolean.class, true, false, Expression::equal))
+                .isFalse();
+        assertThat(compareForType(boolean.class, false, true, Expression::equal))
+                .isFalse();
 
         // byte
-        assertTrue(compareForType(byte.class, (byte) 42, (byte) 42, Expression::equal));
-        assertFalse(compareForType(byte.class, (byte) 43, (byte) 42, Expression::equal));
-        assertFalse(compareForType(byte.class, (byte) 42, (byte) 43, Expression::equal));
+        assertThat(compareForType(byte.class, (byte) 42, (byte) 42, Expression::equal))
+                .isTrue();
+        assertThat(compareForType(byte.class, (byte) 43, (byte) 42, Expression::equal))
+                .isFalse();
+        assertThat(compareForType(byte.class, (byte) 42, (byte) 43, Expression::equal))
+                .isFalse();
 
         // short
-        assertTrue(compareForType(short.class, (short) 42, (short) 42, Expression::equal));
-        assertFalse(compareForType(short.class, (short) 43, (short) 42, Expression::equal));
-        assertFalse(compareForType(short.class, (short) 42, (short) 43, Expression::equal));
+        assertThat(compareForType(short.class, (short) 42, (short) 42, Expression::equal))
+                .isTrue();
+        assertThat(compareForType(short.class, (short) 43, (short) 42, Expression::equal))
+                .isFalse();
+        assertThat(compareForType(short.class, (short) 42, (short) 43, Expression::equal))
+                .isFalse();
 
         // char
-        assertTrue(compareForType(char.class, (char) 42, (char) 42, Expression::equal));
-        assertFalse(compareForType(char.class, (char) 43, (char) 42, Expression::equal));
-        assertFalse(compareForType(char.class, (char) 42, (char) 43, Expression::equal));
+        assertThat(compareForType(char.class, (char) 42, (char) 42, Expression::equal))
+                .isTrue();
+        assertThat(compareForType(char.class, (char) 43, (char) 42, Expression::equal))
+                .isFalse();
+        assertThat(compareForType(char.class, (char) 42, (char) 43, Expression::equal))
+                .isFalse();
 
         // int
-        assertTrue(compareForType(int.class, 42, 42, Expression::equal));
-        assertFalse(compareForType(int.class, 43, 42, Expression::equal));
-        assertFalse(compareForType(int.class, 42, 43, Expression::equal));
+        assertThat(compareForType(int.class, 42, 42, Expression::equal)).isTrue();
+        assertThat(compareForType(int.class, 43, 42, Expression::equal)).isFalse();
+        assertThat(compareForType(int.class, 42, 43, Expression::equal)).isFalse();
 
         // long
-        assertTrue(compareForType(long.class, 42L, 42L, Expression::equal));
-        assertFalse(compareForType(long.class, 43L, 42L, Expression::equal));
-        assertFalse(compareForType(long.class, 42L, 43L, Expression::equal));
+        assertThat(compareForType(long.class, 42L, 42L, Expression::equal)).isTrue();
+        assertThat(compareForType(long.class, 43L, 42L, Expression::equal)).isFalse();
+        assertThat(compareForType(long.class, 42L, 43L, Expression::equal)).isFalse();
 
         // float
-        assertTrue(compareForType(float.class, 42F, 42F, Expression::equal));
-        assertFalse(compareForType(float.class, 43F, 42F, Expression::equal));
-        assertFalse(compareForType(float.class, 42F, 43F, Expression::equal));
+        assertThat(compareForType(float.class, 42F, 42F, Expression::equal)).isTrue();
+        assertThat(compareForType(float.class, 43F, 42F, Expression::equal)).isFalse();
+        assertThat(compareForType(float.class, 42F, 43F, Expression::equal)).isFalse();
 
         // double
-        assertTrue(compareForType(double.class, 42D, 42D, Expression::equal));
-        assertFalse(compareForType(double.class, 43D, 42D, Expression::equal));
-        assertFalse(compareForType(double.class, 42D, 43D, Expression::equal));
+        assertThat(compareForType(double.class, 42D, 42D, Expression::equal)).isTrue();
+        assertThat(compareForType(double.class, 43D, 42D, Expression::equal)).isFalse();
+        assertThat(compareForType(double.class, 42D, 43D, Expression::equal)).isFalse();
 
         // reference
         Object obj1 = new Object();
         Object obj2 = new Object();
-        assertTrue(compareForType(Object.class, obj1, obj1, Expression::equal));
-        assertFalse(compareForType(Object.class, obj1, obj2, Expression::equal));
-        assertFalse(compareForType(Object.class, obj2, obj1, Expression::equal));
+        assertThat(compareForType(Object.class, obj1, obj1, Expression::equal)).isTrue();
+        assertThat(compareForType(Object.class, obj1, obj2, Expression::equal)).isFalse();
+        assertThat(compareForType(Object.class, obj2, obj1, Expression::equal)).isFalse();
     }
 
     @Test
     void shouldHandleGreaterThan() throws Throwable {
-        assertTrue(compareForType(float.class, 43F, 42F, Expression::gt));
-        assertTrue(compareForType(long.class, 43L, 42L, Expression::gt));
+        assertThat(compareForType(float.class, 43F, 42F, Expression::gt)).isTrue();
+        assertThat(compareForType(long.class, 43L, 42L, Expression::gt)).isTrue();
 
         // byte
-        assertTrue(compareForType(byte.class, (byte) 43, (byte) 42, Expression::gt));
-        assertFalse(compareForType(byte.class, (byte) 42, (byte) 42, Expression::gt));
-        assertFalse(compareForType(byte.class, (byte) 42, (byte) 43, Expression::gt));
+        assertThat(compareForType(byte.class, (byte) 43, (byte) 42, Expression::gt))
+                .isTrue();
+        assertThat(compareForType(byte.class, (byte) 42, (byte) 42, Expression::gt))
+                .isFalse();
+        assertThat(compareForType(byte.class, (byte) 42, (byte) 43, Expression::gt))
+                .isFalse();
 
         // short
-        assertTrue(compareForType(short.class, (short) 43, (short) 42, Expression::gt));
-        assertFalse(compareForType(short.class, (short) 42, (short) 42, Expression::gt));
-        assertFalse(compareForType(short.class, (short) 42, (short) 43, Expression::gt));
+        assertThat(compareForType(short.class, (short) 43, (short) 42, Expression::gt))
+                .isTrue();
+        assertThat(compareForType(short.class, (short) 42, (short) 42, Expression::gt))
+                .isFalse();
+        assertThat(compareForType(short.class, (short) 42, (short) 43, Expression::gt))
+                .isFalse();
 
         // char
-        assertTrue(compareForType(char.class, (char) 43, (char) 42, Expression::gt));
-        assertFalse(compareForType(char.class, (char) 42, (char) 42, Expression::gt));
-        assertFalse(compareForType(char.class, (char) 42, (char) 43, Expression::gt));
+        assertThat(compareForType(char.class, (char) 43, (char) 42, Expression::gt))
+                .isTrue();
+        assertThat(compareForType(char.class, (char) 42, (char) 42, Expression::gt))
+                .isFalse();
+        assertThat(compareForType(char.class, (char) 42, (char) 43, Expression::gt))
+                .isFalse();
 
         // int
-        assertTrue(compareForType(int.class, 43, 42, Expression::gt));
-        assertFalse(compareForType(int.class, 42, 42, Expression::gt));
-        assertFalse(compareForType(int.class, 42, 43, Expression::gt));
+        assertThat(compareForType(int.class, 43, 42, Expression::gt)).isTrue();
+        assertThat(compareForType(int.class, 42, 42, Expression::gt)).isFalse();
+        assertThat(compareForType(int.class, 42, 43, Expression::gt)).isFalse();
 
         // long
-        assertTrue(compareForType(long.class, 43L, 42L, Expression::gt));
-        assertFalse(compareForType(long.class, 42L, 42L, Expression::gt));
-        assertFalse(compareForType(long.class, 42L, 43L, Expression::gt));
+        assertThat(compareForType(long.class, 43L, 42L, Expression::gt)).isTrue();
+        assertThat(compareForType(long.class, 42L, 42L, Expression::gt)).isFalse();
+        assertThat(compareForType(long.class, 42L, 43L, Expression::gt)).isFalse();
 
         // float
-        assertTrue(compareForType(float.class, 43F, 42F, Expression::gt));
-        assertFalse(compareForType(float.class, 42F, 42F, Expression::gt));
-        assertFalse(compareForType(float.class, 42F, 43F, Expression::gt));
+        assertThat(compareForType(float.class, 43F, 42F, Expression::gt)).isTrue();
+        assertThat(compareForType(float.class, 42F, 42F, Expression::gt)).isFalse();
+        assertThat(compareForType(float.class, 42F, 43F, Expression::gt)).isFalse();
 
         // double
-        assertTrue(compareForType(double.class, 43D, 42D, Expression::gt));
-        assertFalse(compareForType(double.class, 42D, 42D, Expression::gt));
-        assertFalse(compareForType(double.class, 42D, 43D, Expression::gt));
+        assertThat(compareForType(double.class, 43D, 42D, Expression::gt)).isTrue();
+        assertThat(compareForType(double.class, 42D, 42D, Expression::gt)).isFalse();
+        assertThat(compareForType(double.class, 42D, 43D, Expression::gt)).isFalse();
     }
 
     @Test
@@ -1827,9 +1842,9 @@ public abstract class CodeGenerationTest {
 
     @Test
     void shouldHandleSubtraction() throws Throwable {
-        assertThat(subtractForType(int.class, 19, 18)).isEqualTo(1);
-        assertThat(subtractForType(long.class, 19L, 18L)).isEqualTo(1L);
-        assertThat(subtractForType(double.class, 19D, 18D)).isEqualTo(1D);
+        assertThat(subtractForType(int.class, 19, 18)).isOne();
+        assertThat(subtractForType(long.class, 19L, 18L)).isOne();
+        assertThat(subtractForType(double.class, 19D, 18D)).isOne();
     }
 
     @Test
@@ -1858,7 +1873,7 @@ public abstract class CodeGenerationTest {
         MethodHandle code = instanceMethod(handle.newInstance(), "outerMultiplyInnerAdd", clazz, clazz, clazz);
 
         // then
-        assertEquals(2 * (3 + 4), code.invoke(2, 3, 4));
+        assertThat(code.invoke(2, 3, 4)).isEqualTo(2 * (3 + 4));
     }
 
     @SuppressWarnings("unchecked")
@@ -2356,10 +2371,10 @@ public abstract class CodeGenerationTest {
                 constructor(handle.loadClass(), String.class, Object.class).invoke("Pontus", "Tobias");
 
         // then
-        assertEquals("SimpleClass", instance.getClass().getSimpleName());
+        assertThat(instance.getClass().getSimpleName()).isEqualTo("SimpleClass");
         assertThat(instance).isInstanceOf(NamedBase.class);
-        assertEquals("Pontus", ((NamedBase) instance).name);
-        assertEquals("Tobias", getField(instance, "foo"));
+        assertThat(((NamedBase) instance).name).isEqualTo("Pontus");
+        assertThat(getField(instance, "foo")).isEqualTo("Tobias");
     }
 
     @Test
@@ -2400,11 +2415,13 @@ public abstract class CodeGenerationTest {
 
     @Test
     void shouldHandleInfinityAndNan() throws Throwable {
-        assertTrue(
-                Double.isInfinite(generateDoubleMethod(Double.POSITIVE_INFINITY).get()));
-        assertTrue(
-                Double.isInfinite(generateDoubleMethod(Double.NEGATIVE_INFINITY).get()));
-        assertTrue(Double.isNaN(generateDoubleMethod(Double.NaN).get()));
+        assertThat(Double.isInfinite(
+                        generateDoubleMethod(Double.POSITIVE_INFINITY).get()))
+                .isTrue();
+        assertThat(Double.isInfinite(
+                        generateDoubleMethod(Double.NEGATIVE_INFINITY).get()))
+                .isTrue();
+        assertThat(Double.isNaN(generateDoubleMethod(Double.NaN).get())).isTrue();
     }
 
     @Test
@@ -2424,8 +2441,9 @@ public abstract class CodeGenerationTest {
         MethodHandle isString = instanceMethod(handle.newInstance(), "isString", Object.class);
 
         // then
-        assertTrue((Boolean) isString.invoke("this is surely a string"));
-        assertFalse((Boolean) isString.invoke("this is surely a string".length()));
+        assertThat((Boolean) isString.invoke("this is surely a string")).isTrue();
+        assertThat((Boolean) isString.invoke("this is surely a string".length()))
+                .isFalse();
     }
 
     @Test
@@ -2445,7 +2463,7 @@ public abstract class CodeGenerationTest {
         Object foo = instanceMethod(handle.newInstance(), "get").invoke();
 
         // then
-        assertEquals(84, foo);
+        assertThat(foo).isEqualTo(84);
     }
 
     @Test
@@ -2475,9 +2493,9 @@ public abstract class CodeGenerationTest {
             handle = simple.handle();
         }
 
-        assertArrayEquals(
-                new long[] {4L, 3L}, (long[]) instanceMethod(handle.newInstance(), "get", long.class, long.class)
-                        .invoke(3L, 4L));
+        assertThat((long[]) instanceMethod(handle.newInstance(), "get", long.class, long.class)
+                        .invoke(3L, 4L))
+                .containsExactly(new long[] {4L, 3L});
     }
 
     @Test
@@ -2494,9 +2512,9 @@ public abstract class CodeGenerationTest {
             handle = simple.handle();
         }
 
-        assertArrayEquals(new String[] {"b", "a"}, (String[])
-                instanceMethod(handle.newInstance(), "get", String.class, String.class)
-                        .invoke("a", "b"));
+        assertThat((String[]) instanceMethod(handle.newInstance(), "get", String.class, String.class)
+                        .invoke("a", "b"))
+                .containsExactly(new String[] {"b", "a"});
     }
 
     @Test
@@ -2509,8 +2527,9 @@ public abstract class CodeGenerationTest {
             handle = simple.handle();
         }
 
-        assertEquals(3, (int)
-                instanceMethod(handle.newInstance(), "length", long[].class).invoke(new long[] {3L, 4L, 3L}));
+        assertThat((int) instanceMethod(handle.newInstance(), "length", long[].class)
+                        .invoke(new long[] {3L, 4L, 3L}))
+                .isEqualTo(3);
     }
 
     @Test
@@ -2532,9 +2551,9 @@ public abstract class CodeGenerationTest {
             handle = simple.handle();
         }
 
-        assertArrayEquals(
-                new long[] {42L, 42L, 42L}, (long[]) instanceMethod(handle.newInstance(), "get", int.class, long.class)
-                        .invoke(3, 42L));
+        assertThat((long[]) instanceMethod(handle.newInstance(), "get", int.class, long.class)
+                        .invoke(3, 42L))
+                .containsExactly(new long[] {42L, 42L, 42L});
     }
 
     @Test
@@ -2579,9 +2598,9 @@ public abstract class CodeGenerationTest {
 
         MethodHandle tableSwitch = instanceMethod(handle.newInstance(), "tableSwitch", int.class);
         assertThat(tableSwitch.invoke(0)).isEqualTo(1);
-        assertThrows(IllegalStateException.class, () -> tableSwitch.invoke(1));
-        assertThrows(IllegalStateException.class, () -> tableSwitch.invoke(10000));
-        assertThrows(IllegalStateException.class, () -> tableSwitch.invoke(-1));
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> tableSwitch.invoke(1));
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> tableSwitch.invoke(10000));
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> tableSwitch.invoke(-1));
     }
 
     @Test
@@ -2603,9 +2622,9 @@ public abstract class CodeGenerationTest {
         MethodHandle tableSwitch = instanceMethod(handle.newInstance(), "tableSwitch", int.class);
         assertThat(tableSwitch.invoke(17)).isEqualTo(1);
         assertThat(tableSwitch.invoke(18)).isEqualTo(2);
-        assertThrows(IllegalStateException.class, () -> tableSwitch.invoke(0));
-        assertThrows(IllegalStateException.class, () -> tableSwitch.invoke(16));
-        assertThrows(IllegalStateException.class, () -> tableSwitch.invoke(19));
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> tableSwitch.invoke(0));
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> tableSwitch.invoke(16));
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> tableSwitch.invoke(19));
     }
 
     private <T, U> void assertArrayLoad(Class<T> returnType, Class<U> arrayType, U array, int index, T expected)
@@ -2619,10 +2638,9 @@ public abstract class CodeGenerationTest {
             handle = simple.handle();
         }
 
-        assertEquals(
-                expected,
-                instanceMethod(handle.newInstance(), "get", arrayType, int.class)
-                        .invoke(array, index));
+        assertThat(instanceMethod(handle.newInstance(), "get", arrayType, int.class)
+                        .invoke(array, index))
+                .isEqualTo(expected);
     }
 
     private Supplier<Double> generateDoubleMethod(double toBeReturned) throws Throwable {
@@ -2684,10 +2702,10 @@ public abstract class CodeGenerationTest {
                 constructor(handle.loadClass(), String.class, fromType).invoke("Pontus", fromValue);
 
         // then
-        assertEquals(simpleClassName, instance.getClass().getSimpleName());
+        assertThat(instance.getClass().getSimpleName()).isEqualTo(simpleClassName);
         assertThat(instance).isInstanceOf(NamedBase.class);
-        assertEquals("Pontus", ((NamedBase) instance).name);
-        assertEquals(toValue, getField(instance, "toValue"));
+        assertThat(((NamedBase) instance).name).isEqualTo("Pontus");
+        assertThat(getField(instance, "toValue")).isEqualTo(toValue);
     }
 
     private <T> Object unboxTest(Class<T> boxedType, Class<?> unboxedType, T value) throws Throwable {
@@ -2800,7 +2818,7 @@ public abstract class CodeGenerationTest {
         Object instance = constructor(handle.loadClass(), clazz).invoke(argument);
 
         // then
-        assertEquals(argument, instanceMethod(instance, "value").invoke());
+        assertThat(instanceMethod(instance, "value").invoke()).isEqualTo(argument);
     }
 
     private static MethodReference createMethod(Class<?> owner, Class<?> returnType, String name) {

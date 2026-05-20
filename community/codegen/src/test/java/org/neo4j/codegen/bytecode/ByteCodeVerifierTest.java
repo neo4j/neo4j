@@ -19,8 +19,7 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.codegen.CodeGenerationTest.PACKAGE;
 import static org.neo4j.codegen.CodeGenerator.generateCode;
 import static org.neo4j.codegen.Parameter.param;
@@ -47,7 +46,9 @@ class ByteCodeVerifierTest {
             code.returns(code.load("value"));
         }
 
-        CompilationFailureException exception = assertThrows(CompilationFailureException.class, handle::loadClass);
-        assertThat(exception.toString()).contains("box(I)");
+        assertThatExceptionOfType(CompilationFailureException.class)
+                .isThrownBy(handle::loadClass)
+                .asString()
+                .contains("box(I)");
     }
 }

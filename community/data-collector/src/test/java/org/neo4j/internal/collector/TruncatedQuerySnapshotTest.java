@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.collector;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
@@ -48,8 +47,8 @@ class TruncatedQuerySnapshotTest {
 
         // then
         AnyValue truncatedNode = x.queryParameters.get("n");
-        assertInstanceOf(NodeIdReference.class, truncatedNode);
-        assertEquals(NODE.id(), ((NodeIdReference) truncatedNode).id());
+        assertThat(truncatedNode).isInstanceOf(NodeIdReference.class);
+        assertThat(((NodeIdReference) truncatedNode).id()).isEqualTo(NODE.id());
     }
 
     @Test
@@ -60,8 +59,8 @@ class TruncatedQuerySnapshotTest {
 
         // then
         AnyValue truncatedRelationship = x.queryParameters.get("r");
-        assertInstanceOf(RelationshipReference.class, truncatedRelationship);
-        assertEquals(RELATIONSHIP.id(), ((RelationshipReference) truncatedRelationship).id());
+        assertThat(truncatedRelationship).isInstanceOf(RelationshipReference.class);
+        assertThat(((RelationshipReference) truncatedRelationship).id()).isEqualTo(RELATIONSHIP.id());
     }
 
     private static MapValue map(String key, AnyValue value) {

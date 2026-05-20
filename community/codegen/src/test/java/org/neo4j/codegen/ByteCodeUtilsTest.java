@@ -20,8 +20,7 @@
 package org.neo4j.codegen;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.codegen.ByteCodeUtils.assertMethodExists;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
@@ -134,7 +133,7 @@ class ByteCodeUtilsTest {
         String signature = signature(reference);
 
         // THEN
-        assertNull(signature);
+        assertThat(signature).isNull();
     }
 
     @Test
@@ -161,7 +160,7 @@ class ByteCodeUtilsTest {
         String signature = signature(declaration);
 
         // THEN
-        assertNull(signature);
+        assertThat(signature).isNull();
     }
 
     @Test
@@ -256,9 +255,8 @@ class ByteCodeUtilsTest {
 
     @Test
     void assertMethodExistsShouldFailOnBadMethodName() {
-        assertThrows(
-                AssertionError.class,
-                () -> assertMethodExists(methodReference(
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> assertMethodExists(methodReference(
                         typeReference(Tester.class),
                         typeReference(byte.class),
                         "bteMethod",
@@ -267,9 +265,8 @@ class ByteCodeUtilsTest {
 
     @Test
     void assertMethodExistsShouldFailOnBadReturnType() {
-        assertThrows(
-                AssertionError.class,
-                () -> assertMethodExists(methodReference(
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> assertMethodExists(methodReference(
                         typeReference(Tester.class),
                         typeReference(float.class),
                         "byteMethod",
@@ -278,9 +275,8 @@ class ByteCodeUtilsTest {
 
     @Test
     void assertMethodExistsShouldFailOnBadParameterType() {
-        assertThrows(
-                AssertionError.class,
-                () -> assertMethodExists(methodReference(
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> assertMethodExists(methodReference(
                         typeReference(Tester.class),
                         typeReference(byte.class),
                         "byteMethod",
@@ -289,17 +285,15 @@ class ByteCodeUtilsTest {
 
     @Test
     void assertMethodExistsShouldFailOnMissingParameter() {
-        assertThrows(
-                AssertionError.class,
-                () -> assertMethodExists(
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> assertMethodExists(
                         methodReference(typeReference(Tester.class), typeReference(byte.class), "byteMethod")));
     }
 
     @Test
     void assertMethodExistsShouldFailOnTooManyParameters() {
-        assertThrows(
-                AssertionError.class,
-                () -> assertMethodExists(methodReference(
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> assertMethodExists(methodReference(
                         typeReference(Tester.class),
                         typeReference(byte.class),
                         "byteMethod",

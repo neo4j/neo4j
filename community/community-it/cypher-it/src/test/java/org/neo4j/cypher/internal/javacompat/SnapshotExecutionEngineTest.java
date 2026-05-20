@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -124,23 +123,21 @@ class SnapshotExecutionEngineTest {
 
         when(versionContext.isDirty()).thenReturn(true, true, false);
 
-        QueryExecutionKernelException e = assertThrows(
-                QueryExecutionKernelException.class,
-                () -> executionEngine.executeWithRetries("query", transactionalContext, executor));
-        assertEquals("Unable to get clean data snapshot for query 'query' that performs updates.", e.getMessage());
+        assertThatExceptionOfType(QueryExecutionKernelException.class)
+                .isThrownBy(() -> executionEngine.executeWithRetries("query", transactionalContext, executor))
+                .withMessage("Unable to get clean data snapshot for query 'query' that performs updates.");
 
         verify(executor, times(1)).execute(any());
         verify(versionContext, times(1)).initRead();
     }
 
     @Test
-    void failQueryAfterMaxRetriesReached() throws QueryExecutionKernelException {
+    void failQueryAfterMaxRetriesReached() throws Exception {
         when(versionContext.isDirty()).thenReturn(true);
 
-        QueryExecutionKernelException e = assertThrows(
-                QueryExecutionKernelException.class,
-                () -> executionEngine.executeWithRetries("query", transactionalContext, executor));
-        assertEquals("Unable to get clean data snapshot for query 'query' after 5 attempts.", e.getMessage());
+        assertThatExceptionOfType(QueryExecutionKernelException.class)
+                .isThrownBy(() -> executionEngine.executeWithRetries("query", transactionalContext, executor))
+                .withMessage("Unable to get clean data snapshot for query 'query' after 5 attempts.");
 
         verify(executor, times(5)).execute(any());
         verify(versionContext, times(5)).initRead();

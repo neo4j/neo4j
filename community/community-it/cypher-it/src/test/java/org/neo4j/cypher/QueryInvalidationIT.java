@@ -42,7 +42,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 @ImpermanentDbmsExtension(configurationCallback = "configure")
-public class QueryInvalidationIT {
+class QueryInvalidationIT {
     private static final int USERS = 100;
     private static final int CONNECTIONS = 100;
 
@@ -170,7 +170,7 @@ public class QueryInvalidationIT {
                 .as(
                         "Test does not work with edge setting for %s: %f",
                         query_statistics_divergence_threshold, divergenceThreshold)
-                .isGreaterThan(0)
+                .isPositive()
                 .isLessThan(1);
 
         int usersToCreate = ((int) (Math.ceil(((double) USERS) / (1.0 - divergenceThreshold)))) - USERS + 1;

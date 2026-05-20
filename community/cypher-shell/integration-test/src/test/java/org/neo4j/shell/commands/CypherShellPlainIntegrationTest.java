@@ -103,10 +103,11 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
-        //      This assertion checks everything except for time and cypher
-        assertThat(actual).contains("Plan: \"EXPLAIN\"");
-        assertThat(actual).contains("Statement: \"READ_ONLY\"");
-        assertThat(actual).contains("Planner: \"COST\"");
-        assertThat(actual).contains("Runtime: \"SLOTTED\"");
+        assertThat(actual)
+                //      This assertion checks everything except for time and cypher
+                .contains("Plan: \"EXPLAIN\"")
+                .contains("Statement: \"READ_ONLY\"")
+                .contains("Planner: \"COST\"")
+                .contains("Runtime: \"SLOTTED\"");
     }
 }

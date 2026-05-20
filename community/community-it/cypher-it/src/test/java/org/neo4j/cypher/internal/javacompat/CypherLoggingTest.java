@@ -29,14 +29,14 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 @ImpermanentDbmsExtension
-public class CypherLoggingTest {
+class CypherLoggingTest {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Inject
     private GraphDatabaseService database;
 
     @Test
-    public void shouldNotLogQueries() {
+    void shouldNotLogQueries() {
         // when
         try (Transaction transaction = database.beginTx()) {
             transaction
