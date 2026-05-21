@@ -58,7 +58,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceTxJsonlTimeoutIT {
+class QueryResourceTxJsonlTimeoutIT {
 
     private static QueryAPITestClient testClient;
     private static DatabaseManagementService dbms;

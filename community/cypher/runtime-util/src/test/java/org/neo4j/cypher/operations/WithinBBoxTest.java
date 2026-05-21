@@ -40,7 +40,7 @@ class WithinBBoxTest {
     private static final int ITERATIONS = 1000;
 
     @Test
-    void testInclusivePoints() {
+    void inclusivePoints() {
         var lowerLeft = pointValue(CARTESIAN, 0.0, 0.0);
         var upperRight = pointValue(CARTESIAN, 1.0, 1.0);
 
@@ -52,7 +52,7 @@ class WithinBBoxTest {
     }
 
     @Test
-    void testBoundaryPoints() {
+    void boundaryPoints() {
         var lowerLeft = pointValue(CARTESIAN, 0.0, 0.0);
         var upperRight = pointValue(CARTESIAN, 1.0, 1.0);
 
@@ -69,7 +69,7 @@ class WithinBBoxTest {
     }
 
     @Test
-    void testPointsOutsideBBox() {
+    void pointsOutsideBBox() {
         var lowerLeft = pointValue(CARTESIAN, 2.0, 2.0);
         var upperRight = pointValue(CARTESIAN, 3.0, 3.0);
 
@@ -81,7 +81,7 @@ class WithinBBoxTest {
     }
 
     @Test
-    void testNullInNullOut() {
+    void nullInNullOut() {
         var lowerLeft = pointValue(CARTESIAN, 0.0, 0.0);
         var upperRight = pointValue(CARTESIAN, 1.0, 1.0);
 
@@ -93,7 +93,7 @@ class WithinBBoxTest {
     }
 
     @Test
-    void testInvalidTypes() {
+    void invalidTypes() {
         var lowerLeft = pointValue(CARTESIAN, 0.0, 0.0);
         var upperRight = pointValue(CARTESIAN, 1.0, 1.0);
 
@@ -108,7 +108,7 @@ class WithinBBoxTest {
     }
 
     @Test
-    void testDifferentCRS() {
+    void differentCRS() {
         var a = pointValue(CARTESIAN, 0.0, 0.0);
         var b = pointValue(WGS_84, 1.0, 1.0);
         var c = pointValue(CARTESIAN_3D, 1.0, 1.0, 1.0);

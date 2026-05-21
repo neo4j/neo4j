@@ -53,7 +53,7 @@ import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.server.queryapi.response.format.Fieldnames;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public abstract class AbstractQueryResourcedTypedJsonlIT {
+abstract class AbstractQueryResourcedTypedJsonlIT {
     private static DatabaseManagementService dbms;
     private static QueryAPITestClient testClient;
 

@@ -43,7 +43,7 @@ import org.neo4j.values.utils.ValueTypeNames;
 /// The `ValueTypeNames` is in core `org.neo4j.values.utils` and is used to generate Cypher-friendly
 /// type names for error messages (e.g. a Value is of an unexpected type) when accessing
 /// `CypherTypeValueMapper` would break encapsulation.
-public class CypherTypeValueMapperValueTypeNamesTest {
+class CypherTypeValueMapperValueTypeNamesTest {
 
     private static final ZonedDateTime ZD1 = ZonedDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
     private static final ZonedDateTime ZD2 = ZonedDateTime.of(1972, 12, 25, 0, 0, 0, 0, ZoneId.of("CET"));

@@ -20,7 +20,6 @@
 package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_VALUE;
@@ -51,7 +50,7 @@ import org.neo4j.queryapi.testclient.QueryRequest;
 import org.neo4j.server.queryapi.response.format.Fieldnames;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public abstract class AbstractQueryResourcedTypedJsonIT {
+abstract class AbstractQueryResourcedTypedJsonIT {
     private static DatabaseManagementService dbms;
     private static QueryAPITestClient testClient;
 
@@ -111,7 +110,7 @@ public abstract class AbstractQueryResourcedTypedJsonIT {
                 .wasSuccessful()
                 .hasFieldNames("aNull");
 
-        assertTrue(response.body()
+        assertThat(response.body()
                 .data()
                 .get(VALUES_KEY)
                 .get(0)

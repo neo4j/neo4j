@@ -55,7 +55,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceTxErrorIT {
+class QueryResourceTxErrorIT {
 
     private static QueryAPITestClient testClient;
     private static DatabaseManagementService dbms;

@@ -20,7 +20,6 @@
 package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
@@ -89,7 +88,7 @@ class QueryResourcePlainJsonIT {
 
         QueryResponseAssertions.assertThat(response).wasSuccessful().hasFieldNames("aNull");
 
-        assertTrue(response.body().data().get(VALUES_KEY).get(0).get(0).isNull());
+        assertThat(response.body().data().get(VALUES_KEY).get(0).get(0).isNull());
     }
 
     @Test

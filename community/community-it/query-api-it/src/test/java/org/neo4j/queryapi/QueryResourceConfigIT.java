@@ -20,7 +20,6 @@
 package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
@@ -176,8 +175,8 @@ class QueryResourceConfigIT {
 
         var dbName = dbms.database("neo4j").databaseName();
         assertThat(parsedJson.get(QUERY_PLAN_KEY).get("operatorType").asText()).isEqualTo("ProduceResults@" + dbName);
-        assertNotNull(parsedJson.get(QUERY_PLAN_KEY).get("arguments"));
-        assertThat(parsedJson.get(QUERY_PLAN_KEY).get("identifiers").size()).isEqualTo(1);
+        assertThat(parsedJson.get(QUERY_PLAN_KEY).get("arguments")).isNotNull();
+        assertThat(parsedJson.get(QUERY_PLAN_KEY).get("identifiers")).hasSize(1);
         assertThat(parsedJson.get(QUERY_PLAN_KEY).get("identifiers").get(0).asText())
                 .isEqualTo("`1`");
         assertThat(parsedJson.get(QUERY_PLAN_KEY).get("children").size()).isEqualTo(1);
@@ -185,8 +184,8 @@ class QueryResourceConfigIT {
         var childPlan = parsedJson.get(QUERY_PLAN_KEY).get("children").get(0);
 
         assertThat(childPlan.get("operatorType").asText()).isEqualTo("Projection@" + dbName);
-        assertNotNull(childPlan.get("arguments"));
-        assertThat(childPlan.get("identifiers").size()).isEqualTo(1);
+        assertThat(childPlan.get("arguments")).isNotNull();
+        assertThat(childPlan.get("identifiers")).hasSize(1);
         assertThat(parsedJson.get(QUERY_PLAN_KEY).get("identifiers").get(0).asText())
                 .isEqualTo("`1`");
 
@@ -216,12 +215,12 @@ class QueryResourceConfigIT {
                 .isEqualTo(0);
         var dbName = dbms.database("neo4j").databaseName(); // names changes in SPD
         assertThat(parsedJson.get(PROFILE_KEY).get("operatorType").asText()).isEqualTo("ProduceResults@" + dbName);
-        assertNotNull(parsedJson.get(PROFILE_KEY).get("arguments"));
-        assertThat(parsedJson.get(PROFILE_KEY).get("identifiers").size()).isEqualTo(1);
+        assertThat(parsedJson.get(PROFILE_KEY).get("arguments")).isNotNull();
+        assertThat(parsedJson.get(PROFILE_KEY).get("identifiers")).hasSize(1);
         assertThat(parsedJson.get(PROFILE_KEY).get("identifiers").get(0).asText())
                 .isEqualTo("`1`");
         assertThat(parsedJson.get(PROFILE_KEY).get("time").asInt()).isEqualTo(0);
-        assertNotNull(parsedJson.get(PROFILE_KEY));
+        assertThat(parsedJson.get(PROFILE_KEY)).isNotNull();
 
         var childProfile = parsedJson.get(PROFILE_KEY).get("children");
 
@@ -235,8 +234,8 @@ class QueryResourceConfigIT {
         assertThat(childProfile.get(0).get("pageCacheHitRatio").asDouble()).isEqualTo(0);
         assertThat(childProfile.get(0).get("time").asInt()).isEqualTo(0);
         assertThat(childProfile.get(0).get("operatorType").asText()).isEqualTo("Projection@" + dbName);
-        assertNotNull(childProfile.get(0).get("arguments"));
-        assertThat(childProfile.get(0).get("identifiers").size()).isEqualTo(1);
+        assertThat(childProfile.get(0).get("arguments")).isNotNull();
+        assertThat(childProfile.get(0).get("identifiers")).hasSize(1);
         assertThat(childProfile.get(0).get("identifiers").get(0).asText()).isEqualTo("`1`");
 
         assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asInt())

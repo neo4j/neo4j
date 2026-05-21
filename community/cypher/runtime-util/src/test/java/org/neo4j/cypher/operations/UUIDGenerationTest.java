@@ -19,80 +19,77 @@
  */
 package org.neo4j.cypher.operations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class UUIDGenerationTest {
+class UUIDGenerationTest {
 
     @Test
-    void testWorkingGenerationGivesVersion7() {
+    void workingGenerationGivesVersion7() {
         // Should not throw for valid currentTimeMillis() timestamp
         long timestamp = System.currentTimeMillis();
         UUID u = CypherFunctions.ofEpochMillis(timestamp);
-        assertEquals(7, u.version());
+        assertThat(u.version()).isEqualTo(7);
     }
 
     @Test
-    void testThrowsForInvalidTimestamp() {
+    void throwsForInvalidTimestamp() {
         var value = 1L << 48;
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            CypherFunctions.ofEpochMillis(value);
-        });
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> CypherFunctions.ofEpochMillis(value));
     }
 
     @Test
-    void testThrowsForNegativeTimestamp() {
+    void throwsForNegativeTimestamp() {
         var value = -0xFEDCBA987654L;
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            CypherFunctions.ofEpochMillis(value);
-        });
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> CypherFunctions.ofEpochMillis(value));
     }
 
     @Test
-    void testVariantIsIETF() {
+    void variantIsIETF() {
         UUID u = CypherFunctions.ofEpochMillis(System.currentTimeMillis());
-        assertEquals(2, u.variant());
+        assertThat(u.variant()).isEqualTo(2);
     }
 
     @Test
-    void testTimestampRoundTrips() {
+    void timestampRoundTrips() {
         long timestamp = System.currentTimeMillis();
         UUID u = CypherFunctions.ofEpochMillis(timestamp);
         long extracted = u.getMostSignificantBits() >>> 16;
-        assertEquals(timestamp, extracted);
+        assertThat(extracted).isEqualTo(timestamp);
     }
 
     @Test
-    void testUniquenessWithSameTimestamp() {
+    void uniquenessWithSameTimestamp() {
         long timestamp = System.currentTimeMillis();
         Set<UUID> uuids = new HashSet<>();
         for (int i = 0; i < 1000; i++) {
             uuids.add(CypherFunctions.ofEpochMillis(timestamp));
         }
-        assertEquals(1000, uuids.size());
+        assertThat(uuids).hasSize(1000);
     }
 
     @Test
-    void testTemporalOrdering() {
+    void temporalOrdering() {
         UUID earlier = CypherFunctions.ofEpochMillis(1000L);
         UUID later = CypherFunctions.ofEpochMillis(2000L);
-        assertTrue(earlier.compareTo(later) < 0);
+        assertThat(earlier.compareTo(later)).isLessThan(0);
     }
 
     @Test
-    void testBoundaryTimestamps() {
+    void boundaryTimestamps() {
         UUID atEpoch = CypherFunctions.ofEpochMillis(0L);
-        assertEquals(7, atEpoch.version());
-        assertEquals(2, atEpoch.variant());
+        assertThat(atEpoch.version()).isEqualTo(7);
+        assertThat(atEpoch.variant()).isEqualTo(2);
 
         UUID atMax = CypherFunctions.ofEpochMillis((1L << 48) - 1);
-        assertEquals(7, atMax.version());
-        assertEquals(2, atMax.variant());
+        assertThat(atMax.version()).isEqualTo(7);
+        assertThat(atMax.variant()).isEqualTo(2);
     }
 }

@@ -23,7 +23,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.neo4j.queryapi.testclient.QueryContentType;
 
-public class QueryResourceTypedV1x1ParametersIT extends AbstractQueryResourceTypedParametersIT {
+class QueryResourceTypedV1x1ParametersIT extends AbstractQueryResourceTypedParametersIT {
     @BeforeAll
     static void setup() {
         beforeAll(

@@ -216,7 +216,6 @@ class ShortestPathBFSFactoryTest {
         var nonBiDirectional = mock(ShortestPathBFS.class);
         var result =
                 create(NODE_ID, OTHER_NODE_ID, Direction.BOTH, false, false, TraversalMode.TRAIL, nonBiDirectional);
-        assertThat(result).isInstanceOf(BiDirectionalBFS.class);
-        assertThat(result).isNotSameAs(nonBiDirectional);
+        assertThat(result).isInstanceOf(BiDirectionalBFS.class).isNotSameAs(nonBiDirectional);
     }
 }

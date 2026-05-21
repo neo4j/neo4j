@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.operations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -64,9 +64,9 @@ class PathValueBuilderTest {
 
     @Test
     void shouldComplainOnEmptyPath() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new PathValueBuilder(mock(DbAccess.class), mock(RelationshipScanCursor.class)).build());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(
+                        () -> new PathValueBuilder(mock(DbAccess.class), mock(RelationshipScanCursor.class)).build());
     }
 
     @Test
@@ -79,7 +79,7 @@ class PathValueBuilderTest {
         builder.addNode(node);
 
         // Then
-        assertEquals(path(node), builder.build());
+        assertThat(builder.build()).isEqualTo(path(node));
     }
 
     @Test
@@ -98,7 +98,7 @@ class PathValueBuilderTest {
         builder.addUndirected(r2);
 
         // Then
-        assertEquals(path(n1, r1, n2, r2, n3), builder.build());
+        assertThat(builder.build()).isEqualTo(path(n1, r1, n2, r2, n3));
     }
 
     @Test
@@ -112,7 +112,7 @@ class PathValueBuilderTest {
         builder.addMultipleUndirected(EMPTY_LIST);
 
         // Then
-        assertEquals(path(n1), builder.build());
+        assertThat(builder.build()).isEqualTo(path(n1));
     }
 
     @Test
@@ -130,7 +130,7 @@ class PathValueBuilderTest {
         builder.addMultipleUndirected(list(r1, r2));
 
         // Then
-        assertEquals(path(n1, r1, n2, r2, n3), builder.build());
+        assertThat(builder.build()).isEqualTo(path(n1, r1, n2, r2, n3));
     }
 
     @Test
@@ -146,7 +146,7 @@ class PathValueBuilderTest {
         builder.addUndirected(NO_VALUE);
 
         // Then
-        assertEquals(NO_VALUE, builder.build());
+        assertThat(builder.build()).isEqualTo(NO_VALUE);
     }
 
     @Test
@@ -164,7 +164,7 @@ class PathValueBuilderTest {
         builder.addMultipleUndirected(list(relationship1, relationship2, NO_VALUE));
 
         // Then
-        assertEquals(NO_VALUE, builder.build());
+        assertThat(builder.build()).isEqualTo(NO_VALUE);
     }
 
     @Test
@@ -182,7 +182,7 @@ class PathValueBuilderTest {
         builder.addMultipleUndirected(list(r1, r2), n3);
 
         // Then
-        assertEquals(path(n1, r1, n2, r2, n3), builder.build());
+        assertThat(builder.build()).isEqualTo(path(n1, r1, n2, r2, n3));
     }
 
     private VirtualNodeValue node(long id) {

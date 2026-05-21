@@ -62,7 +62,7 @@ import org.neo4j.server.queryapi.request.AccessMode;
 import org.neo4j.server.queryapi.tx.TransactionManager;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceTxConfigIT {
+class QueryResourceTxConfigIT {
 
     private static QueryAPITestClient testClient;
     private static DatabaseManagementService dbms;

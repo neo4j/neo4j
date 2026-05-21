@@ -19,11 +19,8 @@
  */
 package org.neo4j.cypher.internal.collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Comparator;
@@ -56,9 +53,9 @@ class DefaultComparatorSortTableTest {
 
         for (int i = 0; i < EXPECTED_VALUES.length; i++) {
             var next = table.poll();
-            assertNotNull(next);
+            assertThat(next).isNotNull();
             long value = next.getValue();
-            assertEquals(EXPECTED_VALUES[i], value);
+            assertThat(value).isEqualTo(EXPECTED_VALUES[i]);
         }
         assertEmpty(table);
     }
@@ -70,9 +67,9 @@ class DefaultComparatorSortTableTest {
 
         for (int i = 0; i < TEST_VALUES.size(); i++) {
             var next = table.poll();
-            assertNotNull(next);
+            assertThat(next).isNotNull();
             long value = next.getValue();
-            assertEquals(EXPECTED_VALUES[i], value);
+            assertThat(value).isEqualTo(EXPECTED_VALUES[i]);
         }
         assertEmpty(table);
     }
@@ -86,20 +83,21 @@ class DefaultComparatorSortTableTest {
 
     @Test
     void shouldThrowOnInitializeToZeroCapacity() {
-        assertThrows(IllegalArgumentException.class, () -> new DefaultComparatorSortTable<>(comparator, 0));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new DefaultComparatorSortTable<>(comparator, 0));
     }
 
     @Test
     void shouldThrowOnInitializeToNegativeCapacity() {
-        assertThrows(IllegalArgumentException.class, () -> new DefaultComparatorSortTable<>(comparator, -1));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new DefaultComparatorSortTable<>(comparator, -1));
     }
 
     @Test
     void boundCheck() {
         DefaultComparatorSortTable<MeasurableLong> sortTable = new DefaultComparatorSortTable<>(comparator, 5);
-        assertThrows(
-                NoSuchElementException.class,
-                () -> sortTable.unorderedIterator().next());
+        assertThatExceptionOfType(NoSuchElementException.class)
+                .isThrownBy(() -> sortTable.unorderedIterator().next());
     }
 
     @Test
@@ -115,7 +113,7 @@ class DefaultComparatorSortTableTest {
             add(priorityQueue, l, n);
         }
 
-        assertEquals(n, priorityQueue.size());
+        assertThat(priorityQueue).hasSize(n);
 
         // Sort table
         long[] longsFromTable = new long[n];
@@ -129,11 +127,11 @@ class DefaultComparatorSortTableTest {
         for (int i = 0; i < n; i++) {
             longsFromPriorityQueue[i] = priorityQueue.poll();
         }
-        assertTrue(priorityQueue.isEmpty());
+        assertThat(priorityQueue).isEmpty();
 
         // Compare results
         for (int i = 0; i < n; i++) {
-            assertEquals(longsFromPriorityQueue[i], longsFromTable[i]);
+            assertThat(longsFromTable[i]).isEqualTo(longsFromPriorityQueue[i]);
         }
     }
 
@@ -143,18 +141,18 @@ class DefaultComparatorSortTableTest {
 
         TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l * 100)));
         table.reset();
-        assertEquals(0, table.getSize());
-        assertTrue(table.isEmpty());
-        assertNull(table.peek());
-        assertNull(table.poll());
+        assertThat(table.getSize()).isZero();
+        assertThat(table.isEmpty()).isTrue();
+        assertThat(table.peek()).isNull();
+        assertThat(table.poll()).isNull();
 
         TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l)));
 
         for (int i = 0; i < TEST_VALUES.size(); i++) {
             var next = table.poll();
-            assertNotNull(next);
+            assertThat(next).isNotNull();
             long value = next.getValue();
-            assertEquals(EXPECTED_VALUES[i], value);
+            assertThat(value).isEqualTo(EXPECTED_VALUES[i]);
         }
         assertEmpty(table);
     }
@@ -173,10 +171,10 @@ class DefaultComparatorSortTableTest {
     }
 
     private static void assertEmpty(DefaultComparatorSortTable<?> table) {
-        assertTrue(table.isEmpty());
-        assertEquals(0, table.getSize());
-        assertNull(table.peek());
-        assertNull(table.poll());
+        assertThat(table.isEmpty()).isTrue();
+        assertThat(table.getSize()).isZero();
+        assertThat(table.peek()).isNull();
+        assertThat(table.poll()).isNull();
     }
 
     private static class MeasurableLong implements Measurable {

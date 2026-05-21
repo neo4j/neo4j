@@ -56,7 +56,7 @@ import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public abstract class AbstractQueryResourceTypedJsonlParametersIT {
+abstract class AbstractQueryResourceTypedJsonlParametersIT {
 
     private static DatabaseManagementService dbms;
     private static QueryAPITestClient testClient;

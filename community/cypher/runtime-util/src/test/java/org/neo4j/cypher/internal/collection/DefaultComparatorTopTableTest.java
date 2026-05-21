@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Comparator;
@@ -59,11 +57,11 @@ class DefaultComparatorTopTableTest {
         Iterator<MeasurableLong> iterator = table.iterator();
 
         for (int i = 0; i < 7; i++) {
-            assertTrue(iterator.hasNext());
+            assertThat(iterator).hasNext();
             long value = iterator.next().getValue();
-            assertEquals(EXPECTED_VALUES[i], value);
+            assertThat(value).isEqualTo(EXPECTED_VALUES[i]);
         }
-        assertFalse(iterator.hasNext());
+        assertThat(iterator).isExhausted();
     }
 
     @Test
@@ -76,11 +74,11 @@ class DefaultComparatorTopTableTest {
         Iterator<MeasurableLong> iterator = table.iterator();
 
         for (int i = 0; i < TEST_VALUES.size(); i++) {
-            assertTrue(iterator.hasNext());
+            assertThat(iterator).hasNext();
             long value = iterator.next().getValue();
-            assertEquals(EXPECTED_VALUES[i], value);
+            assertThat(value).isEqualTo(EXPECTED_VALUES[i]);
         }
-        assertFalse(iterator.hasNext());
+        assertThat(iterator).isExhausted();
     }
 
     @Test
@@ -91,17 +89,19 @@ class DefaultComparatorTopTableTest {
 
         Iterator<MeasurableLong> iterator = table.iterator();
 
-        assertFalse(iterator.hasNext());
+        assertThat(iterator).isExhausted();
     }
 
     @Test
     void shouldThrowOnInitializeToZeroCapacity() {
-        assertThrows(IllegalArgumentException.class, () -> new DefaultComparatorTopTable<>(comparator, 0));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new DefaultComparatorTopTable<>(comparator, 0));
     }
 
     @Test
     void shouldThrowOnInitializeToNegativeCapacity() {
-        assertThrows(IllegalArgumentException.class, () -> new DefaultComparatorTopTable<>(comparator, -1));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new DefaultComparatorTopTable<>(comparator, -1));
     }
 
     @Test
@@ -111,14 +111,15 @@ class DefaultComparatorTopTableTest {
 
         // We forgot to call sort() here...
 
-        assertThrows(IllegalStateException.class, table::iterator);
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(table::iterator);
     }
 
     @Test
     void boundCheck() {
         DefaultComparatorTopTable<MeasurableLong> topTable = new DefaultComparatorTopTable<>(comparator, 5);
         topTable.sort();
-        assertThrows(NoSuchElementException.class, () -> topTable.iterator().next());
+        assertThatExceptionOfType(NoSuchElementException.class)
+                .isThrownBy(() -> topTable.iterator().next());
     }
 
     @Test
@@ -134,7 +135,7 @@ class DefaultComparatorTopTableTest {
             add(priorityQueue, l, limit);
         }
 
-        assertEquals(limit, priorityQueue.size());
+        assertThat(priorityQueue).hasSize(limit);
 
         // Sort table
         table.sort();
@@ -148,7 +149,7 @@ class DefaultComparatorTopTableTest {
 
         // Compare results
         for (int i = 0; i < limit; i++) {
-            assertEquals(longs[i], iterator.next());
+            assertThat(iterator.next()).isEqualTo(longs[i]);
         }
     }
 
@@ -160,7 +161,7 @@ class DefaultComparatorTopTableTest {
         TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l * 100)));
         table.sort();
         table.reset(totalCountAfterReset);
-        assertEquals(table.getSize(), 0);
+        assertThat(table.getSize()).isZero();
 
         TEST_VALUES.forEach(l -> table.add(new MeasurableLong(l)));
         table.sort();
@@ -168,11 +169,11 @@ class DefaultComparatorTopTableTest {
         Iterator<MeasurableLong> iterator = table.iterator();
 
         for (int i = 0; i < totalCountAfterReset; i++) {
-            assertTrue(iterator.hasNext());
+            assertThat(iterator).hasNext();
             long value = iterator.next().getValue();
-            assertEquals(EXPECTED_VALUES[i], value);
+            assertThat(value).isEqualTo(EXPECTED_VALUES[i]);
         }
-        assertFalse(iterator.hasNext());
+        assertThat(iterator).isExhausted();
     }
 
     private static void add(PriorityQueue<Long> priorityQueue, long e, int limit) {

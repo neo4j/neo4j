@@ -47,7 +47,7 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 @DbmsExtension(configurationCallback = "configuration")
-public class QueryResourceTxMetadataIT {
+class QueryResourceTxMetadataIT {
     @Inject
     GraphDatabaseAPI db;
 

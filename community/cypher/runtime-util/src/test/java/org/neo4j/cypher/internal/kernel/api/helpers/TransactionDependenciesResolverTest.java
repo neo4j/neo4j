@@ -21,9 +21,6 @@ package org.neo4j.cypher.internal.kernel.api.helpers;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
@@ -66,8 +63,8 @@ class TransactionDependenciesResolverTest {
         TransactionDependenciesResolver resolver =
                 new TransactionDependenciesResolver(map, EmptyMemoryTracker.INSTANCE);
 
-        assertFalse(resolver.isBlocked(handle1));
-        assertFalse(resolver.isBlocked(handle2));
+        assertThat(resolver.isBlocked(handle1)).isFalse();
+        assertThat(resolver.isBlocked(handle2)).isFalse();
     }
 
     @Test
@@ -82,8 +79,8 @@ class TransactionDependenciesResolverTest {
         TransactionDependenciesResolver resolver =
                 new TransactionDependenciesResolver(map, EmptyMemoryTracker.INSTANCE);
 
-        assertFalse(resolver.isBlocked(handle1));
-        assertTrue(resolver.isBlocked(handle2));
+        assertThat(resolver.isBlocked(handle1)).isFalse();
+        assertThat(resolver.isBlocked(handle2)).isTrue();
     }
 
     @Test
@@ -98,8 +95,8 @@ class TransactionDependenciesResolverTest {
         TransactionDependenciesResolver resolver =
                 new TransactionDependenciesResolver(map, EmptyMemoryTracker.INSTANCE);
 
-        assertFalse(resolver.isBlocked(handle1));
-        assertTrue(resolver.isBlocked(handle2));
+        assertThat(resolver.isBlocked(handle1)).isFalse();
+        assertThat(resolver.isBlocked(handle2)).isTrue();
     }
 
     @Test
@@ -130,7 +127,7 @@ class TransactionDependenciesResolverTest {
                 new TransactionDependenciesResolver(map, EmptyMemoryTracker.INSTANCE);
 
         assertThat(resolver.describeBlockingTransactions(handle1)).isEmpty();
-        assertEquals("[transaction-3]", resolver.describeBlockingTransactions(handle2));
+        assertThat(resolver.describeBlockingTransactions(handle2)).isEqualTo("[transaction-3]");
     }
 
     @Test
@@ -150,8 +147,8 @@ class TransactionDependenciesResolverTest {
                 new TransactionDependenciesResolver(map, EmptyMemoryTracker.INSTANCE);
 
         assertThat(resolver.describeBlockingTransactions(handle1)).isEmpty();
-        assertEquals("[transaction-4]", resolver.describeBlockingTransactions(handle2));
-        assertEquals("[transaction-4, transaction-5]", resolver.describeBlockingTransactions(handle3));
+        assertThat(resolver.describeBlockingTransactions(handle2)).isEqualTo("[transaction-4]");
+        assertThat(resolver.describeBlockingTransactions(handle3)).isEqualTo("[transaction-4, transaction-5]");
     }
 
     private static QuerySnapshot createQuerySnapshot(long queryId) {

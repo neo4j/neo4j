@@ -20,7 +20,7 @@
 package org.neo4j.cypher.operations;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,7 +65,7 @@ public class GraphFunctionsTest extends CypherFunSuite {
     private static final UUID hiddenRemoteId = UUID.randomUUID();
 
     @BeforeAll
-    public static void setup() {
+    static void setup() {
         // create composite reference
         Set<DatabaseReference> constituents = new HashSet<>();
         constituents.add(internalConstituent("local", localId));
@@ -95,79 +94,76 @@ public class GraphFunctionsTest extends CypherFunSuite {
     }
 
     @Test
-    public void graphNames() {
+    void graphNames() {
         AnyValue names = GraphFunctions.names(composite, securityContext);
         assertThat(((StringArray) names).asObjectCopy()).containsExactly("composite.local", "composite.remote");
     }
 
     @Test
-    public void graphNamesEmptyConstituents() {
+    void graphNamesEmptyConstituents() {
         AnyValue names = GraphFunctions.names(emptyComposite, securityContext);
-        assertEquals(0, ((StringArray) names).intSize());
+        assertThat(((StringArray) names).intSize()).isZero();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"composite.local", "composite.remote"})
-    public void graphByName(String name) {
+    void graphByName(String name) {
         DatabaseReference graph = GraphFunctions.graphByName(name, composite, securityContext);
-        assertEquals(name, graph.fullName().name());
+        assertThat(graph.fullName().name()).isEqualTo(name);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"composite.local", "composite.remote"})
-    public void graphByNameUpperCase(String name) {
+    void graphByNameUpperCase(String name) {
         DatabaseReference graph = GraphFunctions.graphByName(name.toUpperCase(), composite, securityContext);
-        assertEquals(name, graph.fullName().name());
+        assertThat(graph.fullName().name()).isEqualTo(name);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"local", "composite.hiddenLocal", "composite.hiddenRemote", "composite", ""})
-    public void graphByNameInvalid(String name) {
-        Assertions.assertThrows(
-                EntityNotFoundException.class, () -> GraphFunctions.graphByName(name, composite, securityContext));
+    void graphByNameInvalid(String name) {
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> GraphFunctions.graphByName(name, composite, securityContext));
     }
 
     @Test
-    public void graphByNameEmptyConstituents() {
-        Assertions.assertThrows(
-                EntityNotFoundException.class,
-                () -> GraphFunctions.graphByName("invalid", emptyComposite, securityContext));
+    void graphByNameEmptyConstituents() {
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> GraphFunctions.graphByName("invalid", emptyComposite, securityContext));
     }
 
     @Test
-    public void graphById() {
+    void graphById() {
         for (UUID id : Arrays.asList(localId, remoteId)) {
             var graph = GraphFunctions.graphById(id, composite, securityContext);
-            assertEquals(id, graph.id());
+            assertThat(graph.id()).isEqualTo(id);
         }
     }
 
     @Test
-    public void graphByIdInvalid() {
+    void graphByIdInvalid() {
         for (UUID id : Arrays.asList(hiddenLocalId, hiddenRemoteId, compositeId, emptyCompositeId, UUID.randomUUID())) {
-            Assertions.assertThrows(
-                    EntityNotFoundException.class, () -> GraphFunctions.graphById(id, composite, securityContext));
+            assertThatExceptionOfType(EntityNotFoundException.class)
+                    .isThrownBy(() -> GraphFunctions.graphById(id, composite, securityContext));
         }
     }
 
     @Test
-    public void graphByIdInvalidEmptyConstituents() {
-        Assertions.assertThrows(
-                EntityNotFoundException.class,
-                () -> GraphFunctions.graphById(UUID.randomUUID(), emptyComposite, securityContext));
+    void graphByIdInvalidEmptyConstituents() {
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> GraphFunctions.graphById(UUID.randomUUID(), emptyComposite, securityContext));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"local", "composite.hiddenLocal", "composite.hiddenRemote", "composite", ""})
-    public void graphPropertiesInvalidGraph(String name) {
-        Assertions.assertThrows(
-                EntityNotFoundException.class,
-                () -> GraphFunctions.graphProperties(
+    void graphPropertiesInvalidGraph(String name) {
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> GraphFunctions.graphProperties(
                         name, composite, securityContext, Mockito.mock(TopologyGraphDbmsModel.class)));
     }
 
     @Test
-    public void graphPropertiesNonEmpty() {
+    void graphPropertiesNonEmpty() {
         TopologyGraphDbmsModel topologyGraphDbmsModel = Mockito.mock(TopologyGraphDbmsModel.class);
         Map<String, Object> properties = new HashMap<>();
         properties.put("prop", "val");
@@ -177,12 +173,12 @@ public class GraphFunctionsTest extends CypherFunSuite {
 
         MapValue result =
                 GraphFunctions.graphProperties("composite.local", composite, securityContext, topologyGraphDbmsModel);
-        assertEquals(1, result.size());
-        assertEquals("val", ((StringValue) result.get("prop")).stringValue());
+        assertThat(result.size()).isOne();
+        assertThat(((StringValue) result.get("prop")).stringValue()).isEqualTo("val");
     }
 
     @Test
-    public void graphPropertiesEmpty() {
+    void graphPropertiesEmpty() {
         TopologyGraphDbmsModel topologyGraphDbmsModel = Mockito.mock(TopologyGraphDbmsModel.class);
 
         Mockito.when(topologyGraphDbmsModel.getAliasProperties(Mockito.anyString(), Mockito.anyString()))
@@ -190,7 +186,7 @@ public class GraphFunctionsTest extends CypherFunSuite {
 
         MapValue result =
                 GraphFunctions.graphProperties("composite.remote", composite, securityContext, topologyGraphDbmsModel);
-        assertEquals(0, result.size());
+        assertThat(result.size()).isZero();
     }
 
     private static DatabaseReference internalConstituent(String name, UUID id) {

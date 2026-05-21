@@ -21,7 +21,6 @@ package org.neo4j.queryapi;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_VALUE;
@@ -49,7 +48,7 @@ import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public abstract class AbstractQueryResourceTypedParametersIT {
+abstract class AbstractQueryResourceTypedParametersIT {
 
     private static DatabaseManagementService dbms;
     private static QueryAPITestClient testClient;
@@ -191,7 +190,7 @@ public abstract class AbstractQueryResourceTypedParametersIT {
         var parsedJson = response.body().data();
 
         assertThat(parsedJson.get(FIELDS_KEY).size()).isEqualTo(1);
-        assertTrue(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).isNull());
+        assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE).isNull());
         assertThat(parsedJson.get(VALUES_KEY).get(0).get(0).get(CYPHER_TYPE).asText())
                 .isEqualTo("Null");
     }
