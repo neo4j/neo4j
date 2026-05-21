@@ -52,6 +52,7 @@ import org.neo4j.internal.schema.IndexSettingRecord.RecordWithSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 import org.neo4j.internal.schema.IndexSettingsProcessor;
 import org.neo4j.internal.schema.IndexSettingsProcessor.ValidatingIndexSettingsProcessor;
+import org.neo4j.internal.schema.IndexSettingsRequirements.ClassRequirement;
 import org.neo4j.internal.schema.IndexSettingsRequirements.DefaultRequirement;
 import org.neo4j.internal.schema.InternalIndexSetting;
 import org.neo4j.internal.schema.KnownIndexSettingRecords;
@@ -212,6 +213,7 @@ public class VectorIndexConfigUtils {
             }
             if (!(records.get(QUANTIZATION_TYPE) instanceof Valid validType
                     && validType.value() instanceof VectorQuantizationType type)) {
+                records.upsert(new InvalidValue(missing, null, new ClassRequirement(double.class)));
                 return;
             }
 

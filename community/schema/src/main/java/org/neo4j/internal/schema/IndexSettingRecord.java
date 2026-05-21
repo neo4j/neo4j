@@ -169,6 +169,10 @@ public sealed interface IndexSettingRecord extends NamedSetting, Comparable<Inde
     }
 
     record IncorrectType(IndexSetting setting, Object value, Class<?> targetType) implements RecordWithValue, Invalid {
+        public IncorrectType(HasSetting hasSetting, Object value, Class<?> targetType) {
+            this(hasSetting.setting(), value, targetType);
+        }
+
         public IncorrectType(RecordWithValue hasValue, Class<?> targetType) {
             this(hasValue.setting(), hasValue.value(), targetType);
         }

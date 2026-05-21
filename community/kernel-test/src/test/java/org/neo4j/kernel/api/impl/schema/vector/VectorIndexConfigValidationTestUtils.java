@@ -135,7 +135,7 @@ class VectorIndexConfigValidationTestUtils {
 
     private static <T extends IndexSettingRecord> ObjectAssert<T> assertSingleRecordOfType(
             IndexSettingRecordsByState records, State state, Class<T> type) {
-        return assertThat(records.get(state)).hasSize(1).first(type(type));
+        return assertThat(records.get(state)).singleElement(type(type));
     }
 
     static String similarityFunctionsToString(Iterable<? extends VectorSimilarityFunction> similarityFunctions) {

@@ -21,7 +21,6 @@ package org.neo4j.internal.schema;
 
 import java.util.Set;
 import org.neo4j.graphdb.schema.IndexSetting;
-import org.neo4j.internal.schema.IndexSettingRecord.IncorrectType;
 import org.neo4j.internal.schema.IndexSettingRecord.InvalidValue;
 import org.neo4j.internal.schema.IndexSettingRecord.MissingSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.Pending;
@@ -51,11 +50,8 @@ public abstract class SingleIndexSettingMigrator<FROM, TO> extends SingleIndexSe
     /// If a non-valid [RecordWithSetting] is provided an [InvalidValue] will be returned.
     @Override
     public RecordWithSetting processForVerification(RecordWithSetting record) {
-        if (!(record instanceof Valid valid)) {
+        if (!(record instanceof Valid valid && fromType.isInstance(valid.value()))) {
             return new InvalidValue(toSetting, null, new ClassRequirement(toType));
-        }
-        if (!fromType.isInstance(valid.value())) {
-            return new IncorrectType(toSetting, null, fromType);
         }
 
         return new Pending(toSetting, migrate(valid.valueAs(fromType)), null);

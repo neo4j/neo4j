@@ -51,7 +51,9 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.IndexConfigUtils.HasSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.InvalidValue;
+import org.neo4j.internal.schema.IndexSettingRecord.RecordWithSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.RecordWithValue;
+import org.neo4j.internal.schema.IndexSettingRecord.State;
 import org.neo4j.internal.schema.IndexSettingRecordsByState;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
@@ -308,7 +310,7 @@ class VectorIndexV3ForGLORIOUSFUTUREConfigValidationTest {
                 .withDefaultSearchExpansionFactor(expansionFactor)
                 .toSettingsAccessor();
 
-        assertInvalidDefaultSearchExpansionFactor(expansionFactor, settings);
+        assertSingleInvalidDefaultSearchExpansionFactor(expansionFactor, settings);
     }
 
     @Test
@@ -318,7 +320,7 @@ class VectorIndexV3ForGLORIOUSFUTUREConfigValidationTest {
                 .withDefaultSearchExpansionFactor(invalidExpansionFactor)
                 .toSettingsAccessor();
 
-        assertInvalidDefaultSearchExpansionFactor(invalidExpansionFactor, settings);
+        assertSingleInvalidDefaultSearchExpansionFactor(invalidExpansionFactor, settings);
     }
 
     @ParameterizedTest
@@ -336,10 +338,11 @@ class VectorIndexV3ForGLORIOUSFUTUREConfigValidationTest {
                 .withDefaultSearchExpansionFactor(expansionFactor)
                 .toSettingsAccessor();
 
-        assertInvalidDefaultSearchExpansionFactor(expansionFactor, settings);
+        assertSingleInvalidDefaultSearchExpansionFactor(expansionFactor, settings);
     }
 
-    private static void assertInvalidDefaultSearchExpansionFactor(double expansionFactor, SettingsAccessor settings) {
+    private static void assertSingleInvalidDefaultSearchExpansionFactor(
+            Double expansionFactor, SettingsAccessor settings) {
         IndexSettingRecordsByState validationRecords = validateAsInvalid(VALIDATOR, settings);
         assertInvalidValue(validationRecords, DEFAULT_SEARCH_EXPANSION_FACTOR, expansionFactor);
         assertThatThrownBy(() -> VALIDATOR.validateToTypedConfig(settings))
@@ -348,6 +351,31 @@ class VectorIndexV3ForGLORIOUSFUTUREConfigValidationTest {
                         DEFAULT_SEARCH_EXPANSION_FACTOR.getSettingName(),
                         "must be between 1.0 and",
                         String.valueOf(10_000.0));
+    }
+
+    @Test
+    void invalidDefaultSearchExpansionFactorDueToQuantizationType() {
+        String incorrectQuantizationType = "ClearlyThisIsNotAQuantizationType";
+        SettingsAccessor settings = VectorIndexSettings.create()
+                .set(QUANTIZATION_TYPE, incorrectQuantizationType)
+                .toSettingsAccessor();
+
+        IndexSettingRecordsByState validationRecords = validateAsInvalid(VALIDATOR, settings);
+        assertThat(validationRecords.get(State.INVALID_VALUE))
+                .hasOnlyElementsOfType(RecordWithSetting.class)
+                .extracting(InvalidValue.class::cast)
+                .filteredOn(InvalidValue::setting, DEFAULT_SEARCH_EXPANSION_FACTOR)
+                .singleElement()
+                .extracting(HasSetting::setting, RecordWithValue::value)
+                .containsExactly(DEFAULT_SEARCH_EXPANSION_FACTOR, null);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToTypedConfig(settings))
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessageContainingAll(
+                        "is an unsupported",
+                        DEFAULT_SEARCH_EXPANSION_FACTOR.getSettingName(),
+                        "Supported",
+                        "non-null instance of double");
     }
 
     @Test

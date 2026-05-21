@@ -27,6 +27,7 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DEF
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION_ENABLED;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION_TYPE;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +42,6 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.internal.schema.IndexConfigUtils.HasSetting;
 import org.neo4j.internal.schema.IndexConfigUtils.IndexSettingsRequirement;
-import org.neo4j.internal.schema.IndexSettingRecord.IncorrectType;
 import org.neo4j.internal.schema.IndexSettingRecord.InvalidValue;
 import org.neo4j.internal.schema.IndexSettingRecord.MissingSetting;
 import org.neo4j.internal.schema.IndexSettingRecord.Pending;
@@ -50,6 +50,7 @@ import org.neo4j.internal.schema.IndexSettingRecord.RecordWithStorable;
 import org.neo4j.internal.schema.IndexSettingRecord.RecordWithValue;
 import org.neo4j.internal.schema.IndexSettingRecord.Valid;
 import org.neo4j.internal.schema.IndexSettingsProcessor;
+import org.neo4j.internal.schema.IndexSettingsRequirements.IterableRequirement;
 import org.neo4j.internal.schema.KnownIndexSettingRecords;
 import org.neo4j.internal.schema.SingleIndexSettingProcessor;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.MissingDefaultSearchExpansionFactorMaterializer;
@@ -111,6 +112,20 @@ class VectorIndexSettingsProcessorsTest {
             assertThat(records.get(DEFAULT_SEARCH_EXPANSION_FACTOR)).isSameAs(record);
         }
 
+        @Test
+        void invalidValue() {
+            records.upsert(new InvalidValue(
+                    QUANTIZATION_TYPE,
+                    "CLEARLYNOTAQUANTIZATIONTYPE",
+                    new IterableRequirement(Arrays.asList(VectorQuantizationType.values()))));
+
+            DEFAULT.updateForVerification(records);
+            assertThat(records.get(DEFAULT_SEARCH_EXPANSION_FACTOR))
+                    .asInstanceOf(type(InvalidValue.class))
+                    .extracting(HasSetting::setting, RecordWithValue::value, TestBase::underlyingRequirement)
+                    .containsExactly(DEFAULT_SEARCH_EXPANSION_FACTOR, null, double.class);
+        }
+
         @ParameterizedTest
         @EnumSource
         void useDefaultForVerification(VectorQuantizationType type) {
@@ -169,9 +184,9 @@ class VectorIndexSettingsProcessorsTest {
 
             RecordWithSetting processedRecord = MIGRATOR.processForVerification(record);
             assertThat(processedRecord)
-                    .asInstanceOf(type(IncorrectType.class))
-                    .extracting(HasSetting::setting, IncorrectType::targetType)
-                    .containsExactly(QUANTIZATION_TYPE, Boolean.class);
+                    .asInstanceOf(type(InvalidValue.class))
+                    .extracting(HasSetting::setting, RecordWithValue::value, TestBase::underlyingRequirement)
+                    .containsExactly(QUANTIZATION_TYPE, null, VectorQuantizationType.class);
 
             MIGRATOR.updateForVerification(records);
             assertThat(records.get(QUANTIZATION_ENABLED)).isSameAs(record);

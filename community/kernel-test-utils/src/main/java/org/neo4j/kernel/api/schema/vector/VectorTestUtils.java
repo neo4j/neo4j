@@ -671,6 +671,13 @@ public class VectorTestUtils {
     }
 
     public static Set<VectorIndexVersion> inclusiveVersionRange(VectorIndexVersion from, VectorIndexVersion to) {
+        int comp = from.compareTo(to);
+        if (comp == 0) {
+            return VectorIndexVersion.KNOWN_VERSIONS.contains(from) ? Set.of(from) : Set.of();
+        } else if (comp > 0) {
+            return Set.of();
+        }
+
         Set<VectorIndexVersion> inclusiveVersions = EnumSet.noneOf(VectorIndexVersion.class);
         for (VectorIndexVersion version : VectorIndexVersion.KNOWN_VERSIONS) {
             if (from.compareTo(version) <= 0 && version.compareTo(to) <= 0) {

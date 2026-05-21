@@ -344,9 +344,6 @@ public enum VectorIndexVersion {
         return UNKNOWN;
     }
 
-    private static final KernelVersion LATEST_DEFAULT_KERNEL_VERSION =
-            KernelVersion.getLatestVersion(Config.defaults());
-
     private final KernelVersion minimumRequiredKernelVersion;
     private final IndexProviderDescriptor descriptor;
     private final int maxDimensions;
