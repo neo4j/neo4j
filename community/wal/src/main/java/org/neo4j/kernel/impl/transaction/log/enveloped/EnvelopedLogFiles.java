@@ -133,7 +133,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     @Override
     public EnvelopeReadChannel openReadChannel(long entryIndex) throws IOException {
         long fileVersion = getFileVersion(entryIndex);
-        if (getFileVersion(entryIndex) != -1) {
+        if (fileVersion != -1) {
             return envelopedReadChannel(logsRepository.openReadChannel(fileVersion), false);
         }
         return null;
@@ -158,10 +158,19 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         return recoverLogTail(0);
     }
 
+    /**
+     * Can be used to reset the write channel to the end of the log, for example, after all the
+     * log files have been replaced by a store copy. This method should not be used if there's a
+     * chance that the log is corrupt.
+     */
+    public long resetWriteChannelToLatestIndex() throws IOException {
+        return recoverLogTail(logsRepository.latestVersion());
+    }
+
     private long recoverLogTail(long fromVersion) throws IOException {
         var tailChecker = new EnvelopedLogTailChecker(
                 logsRepository,
-                (long logFileVersion) -> envelopedReadChannel(logsRepository.openReadChannel(logFileVersion), false),
+                logFileVersion -> envelopedReadChannel(logsRepository.openReadChannel(logFileVersion), false),
                 memoryTracker,
                 logProvider);
         var tailInfo = tailChecker.checkEnvelopedLogTail(fromVersion);
