@@ -36,7 +36,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
+import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.largeMaxMemory
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.largeObjectThreshold
+import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.maxMemory
+import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.smallMaxMemory
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.ArrayUtil
@@ -45,14 +48,30 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.memory.HeapEstimatorCacheConfig
 import org.neo4j.memory.MemoryLimitExceededException
+import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Locale
 
 object MemoryManagementTestBase {
-  // The configured max memory per transaction in Bytes
-  val maxMemory: Long = ByteUnit.mebiBytes(8)
+
+  /** Default cap for `memory_transaction_max_size`. Bumped under `-Ptest-spd` to fit SPD's response-decode buffers,
+   *  which share the transaction memory pool. */
+  def maxMemory: Long =
+    if (runningUnderSpd) ByteUnit.mebiBytes(16) else smallMaxMemory
+
+  /** Original cap used by tests whose row counts are calibrated to 8 MiB,
+   * and for tests with no property read on SPD */
+  val smallMaxMemory: Long = ByteUnit.mebiBytes(8)
+
+  /** Larger cap for graph-build phases that don't fit in [[maxMemory]] under SPD. */
+  def largeMaxMemory: Long =
+    if (runningUnderSpd) ByteUnit.mebiBytes(256) else ByteUnit.mebiBytes(115)
+
+  private def runningUnderSpd: Boolean =
+    "spd".equals(TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER)
+
   val perWorkerGrabSize: Long = ByteUnit.kibiBytes(8)
   val largeObjectThreshold: Long = 2048
 }
@@ -800,6 +819,9 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   test("should kill partial top query before it runs out of memory") {
     assume(!isParallel)
 
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(smallMaxMemory), "Test")
+    restartTx()
+
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -838,7 +860,11 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill pruning-var-expand before it runs out of memory") {
     // given
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(115)), "Test")
+    getConfig.setDynamic(
+      GraphDatabaseSettings.memory_transaction_max_size,
+      Long.box(MemoryManagementTestBase.largeMaxMemory),
+      "Test"
+    )
     restartTx()
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
@@ -861,7 +887,11 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill distinct-pruning-var-expand before it runs out of memory") {
     // given
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(115)), "Test")
+    getConfig.setDynamic(
+      GraphDatabaseSettings.memory_transaction_max_size,
+      Long.box(MemoryManagementTestBase.largeMaxMemory),
+      "Test"
+    )
     restartTx()
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
@@ -1068,6 +1098,9 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should kill var-length query with long pattern before it runs out of memory") {
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(largeMaxMemory), "Test")
+    restartTx()
+
     // given
     givenGraph {
       var start = tx.createNode(Label.label("START"))
@@ -1084,6 +1117,10 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
         i += 1
       }
     }
+
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(maxMemory), "Test")
+    restartTx()
+
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
       .expand("(x)-[r*]->(y)")
@@ -1447,6 +1484,9 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should not kill transaction foreach subquery if both inner and outer together exceed the limit - sort") {
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(smallMaxMemory), "Test")
+    restartTx()
+
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted                                             => 42666
@@ -1514,6 +1554,9 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   test(
     "should not kill transaction foreach subquery if both inner and outer together exceed the limit - grouping aggregation"
   ) {
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(smallMaxMemory), "Test")
+    restartTx()
+
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted                                             => 16000
@@ -1581,6 +1624,9 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   test(
     "should not kill transaction foreach subquery with limit and distinct if both inner and outer together exceed the limit"
   ) {
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(smallMaxMemory), "Test")
+    restartTx()
+
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted => 49333
@@ -1653,6 +1699,9 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should not kill transaction apply subquery if both inner and outer together exceed the limit") {
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(smallMaxMemory), "Test")
+    restartTx()
+
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted                                             => 49333
@@ -1721,6 +1770,9 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   test(
     "should not kill transaction apply subquery if both inner and outer together exceed the limit - grouping aggregation"
   ) {
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(smallMaxMemory), "Test")
+    restartTx()
+
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted                                             => 16000
