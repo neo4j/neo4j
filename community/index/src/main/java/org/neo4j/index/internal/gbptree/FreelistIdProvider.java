@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.FreeListIdProvider.Monitor.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.io.pagecache.PageCursorUtil.goTo;
 
@@ -31,8 +30,30 @@ import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-class DefaultFreelistIdProvider implements FreeListIdProvider {
+class FreelistIdProvider implements IdProvider {
     private static final int CACHE_SIZE = 30;
+
+    interface Monitor {
+        /**
+         * Called when a page id was acquired for storing released ids into.
+         *
+         * @param freelistPageId page id of the acquired page.
+         */
+        default void acquiredFreelistPageId(long freelistPageId) { // Empty by default
+        }
+
+        /**
+         * Called when a free-list page was released due to all its ids being acquired.
+         * A released free-list page ends up in the free-list itself.
+         *
+         * @param freelistPageId page if of the released page.
+         */
+        default void releasedFreelistPageId(long freelistPageId) { // Empty by default
+        }
+    }
+
+    static final FreelistIdProvider.Monitor NO_MONITOR = new FreelistIdProvider.Monitor() { // Empty
+            };
 
     /**
      * {@link FreelistNode} governs physical layout of a free-list.
@@ -72,6 +93,7 @@ class DefaultFreelistIdProvider implements FreeListIdProvider {
     private final AtomicLong lastId = new AtomicLong();
 
     private final PagedFile pagedFile;
+
     /**
      * For monitoring internal free-list activity.
      */
@@ -109,27 +131,24 @@ class DefaultFreelistIdProvider implements FreeListIdProvider {
     private final ConcurrentLinkedDeque<Long> releaseCache = new ConcurrentLinkedDeque<>();
     private volatile boolean mayBeMoreToReadIntoCache;
 
-    DefaultFreelistIdProvider(PagedFile pagedFile) {
+    FreelistIdProvider(PagedFile pagedFile) {
         this(pagedFile, NO_MONITOR);
     }
 
-    DefaultFreelistIdProvider(PagedFile pagedFile, Monitor monitor) {
+    FreelistIdProvider(PagedFile pagedFile, Monitor monitor) {
         this.pagedFile = pagedFile;
         this.monitor = monitor;
         this.freelistNode = new FreelistNode(pagedFile.payloadSize());
     }
 
-    @Override
-    public void initialize(FreelistMetaData freelistMetaData) {
-        this.lastId.set(freelistMetaData.lastId());
-        FreelistPositions freelistPos = freelistMetaData.genFreelistPos();
-        this.writeMetaData = new ListHeadMetaData(freelistPos.writePageId(), freelistPos.writePos());
-        this.readMetaData = new ListHeadMetaData(freelistPos.readPageId(), freelistPos.readPos());
+    void initialize(long lastId, long writePageId, long readPageId, int writePos, int readPos) {
+        this.lastId.set(lastId);
+        this.writeMetaData = new ListHeadMetaData(writePageId, writePos);
+        this.readMetaData = new ListHeadMetaData(readPageId, readPos);
         this.mayBeMoreToReadIntoCache = true;
     }
 
-    @Override
-    public void initializeAfterCreation(CursorCreator cursorCreator, long lastId) throws IOException {
+    void initializeAfterCreation(CursorCreator cursorCreator, long lastId) throws IOException {
         // Allocate a new free-list page id and set both write/read free-list page id to it.
         this.lastId.set(lastId);
         writeMetaData = new ListHeadMetaData(lastId, 0);
@@ -221,27 +240,12 @@ class DefaultFreelistIdProvider implements FreeListIdProvider {
     }
 
     @Override
-    public void releaseId(
-            long stableGeneration,
-            long unstableGeneration,
-            long id,
-            CursorCreator cursorCreator,
-            CursorContext cursorContext)
+    public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator)
             throws IOException {
         queueReleasedId(id);
         if (releaseCache.size() >= CACHE_SIZE) {
             flushReleaseCache(stableGeneration, unstableGeneration, cursorCreator);
         }
-    }
-
-    @Override
-    public void releaseIdWithVersion(
-            long stableGeneration,
-            long unstableGeneration,
-            long id,
-            CursorCreator cursorCreator,
-            CursorContext cursorContext) {
-        throw new UnsupportedOperationException("This freelist id provider implementation doesn't support versions.");
     }
 
     private void queueReleasedId(long id) {
@@ -283,10 +287,7 @@ class DefaultFreelistIdProvider implements FreeListIdProvider {
         mayBeMoreToReadIntoCache = true;
     }
 
-    @Override
-    public void flush(
-            long stableGeneration, long unstableGeneration, CursorCreator cursorCreator, CursorContext cursorContext)
-            throws IOException {
+    void flush(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator) throws IOException {
         flushReleaseCache(stableGeneration, unstableGeneration, cursorCreator);
     }
 
@@ -320,7 +321,7 @@ class DefaultFreelistIdProvider implements FreeListIdProvider {
                     do {
                         unacquiredId = freelistNode.read(cursor, Long.MAX_VALUE, pos);
                     } while (cursor.shouldRetry());
-                    visitor.freelistEntry(unacquiredId.pointer(), unacquiredId.generation(), Long.MIN_VALUE, pos);
+                    visitor.freelistEntry(unacquiredId.pointer(), unacquiredId.generation(), pos);
                     pos++;
                 }
                 visitor.endFreelistPage(pageId);
@@ -342,8 +343,7 @@ class DefaultFreelistIdProvider implements FreeListIdProvider {
         return lastId.get();
     }
 
-    @Override
-    public FreelistMetaData metaData() {
+    FreelistMetaData metaData() {
         // Note: this can return write meta data for unwritten released ids. The caller is supposed to handle flushing
         // vs. calling this method
         // for various purposes, e.g. writing meta data state page etc.
@@ -359,13 +359,15 @@ class DefaultFreelistIdProvider implements FreeListIdProvider {
             readPos = acquireCacheEntry.pos;
         }
 
-        return FreelistMetaData.nonVersioned(lastId, new FreelistPositions(writePageId, readPageId, writePos, readPos));
+        return new FreelistMetaData(lastId, writePageId, readPageId, writePos, readPos);
     }
 
     // test-access method
     int entriesPerPage() {
         return freelistNode.maxEntries();
     }
+
+    record FreelistMetaData(long lastId, long writePageId, long readPageId, int writePos, int readPos) {}
 
     private record ListHeadMetaData(long pageId, int pos) {}
 }

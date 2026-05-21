@@ -52,8 +52,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
 
         var format = treeNodeSelector.selectByLayout(layout);
         OffloadStoreImpl<KEY, VALUE> offloadStore = support.buildOffload(layout);
-        this.leafNode =
-                format.createLeafBehaviour(support.payloadSize(), layout, offloadStore, dependencyResolver, false);
+        this.leafNode = format.createLeafBehaviour(support.payloadSize(), layout, offloadStore, dependencyResolver);
         this.internalNode =
                 format.createInternalBehaviour(support.payloadSize(), layout, offloadStore, dependencyResolver);
         this.singleRootAccess = new SingleDataTree();
@@ -105,7 +104,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                     internalNode,
                     stableGeneration(generation),
                     unstableGeneration(generation));
-            structure.visitTree(cursor, visitor, cursorContext, false);
+            structure.visitTree(cursor, visitor, cursorContext);
             support.idProvider().visitFreelist(visitor, bind(support, PF_SHARED_READ_LOCK, cursorContext));
         }
     }
@@ -160,7 +159,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     @Override
     void unsafe(GBPTreeUnsafe unsafe, boolean dataTree, CursorContext cursorContext) throws IOException {
         Preconditions.checkState(dataTree, "Can only operate on data tree");
-        support.unsafe(unsafe, layout, leafNode, internalNode, cursorContext, false);
+        support.unsafe(unsafe, layout, leafNode, internalNode, cursorContext);
     }
 
     @Override

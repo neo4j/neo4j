@@ -39,15 +39,10 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
             RootLayerSupport rootLayerSupport,
             Layout<KEY, VALUE> dataLayout,
             TreeNodeSelector treeNodeSelector,
-            DependencyResolver dependencyResolver,
-            boolean multiVersioned)
+            DependencyResolver dependencyResolver)
             throws IOException;
 
     abstract Layout<ROOT_KEY, RootMappingValue> rootLayout();
-
-    public static <ROOT_KEY> boolean isMultiRoot(RootLayerConfiguration<ROOT_KEY> rootLayerConfiguration) {
-        return rootLayerConfiguration instanceof MultiRootLayerConfiguration;
-    }
 
     static final class SingleRootLayerConfiguration extends RootLayerConfiguration<SingleRoot> {
 
@@ -56,8 +51,7 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
                 TreeNodeSelector treeNodeSelector,
-                DependencyResolver dependencyResolver,
-                boolean ignored) {
+                DependencyResolver dependencyResolver) {
             return new SingleRootLayer<>(rootLayerSupport, dataLayout, treeNodeSelector, dependencyResolver);
         }
 
@@ -81,16 +75,14 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
                 TreeNodeSelector treeNodeSelector,
-                DependencyResolver dependencyResolver,
-                boolean multiVersioned) {
+                DependencyResolver dependencyResolver) {
             return new MultiRootLayer<>(
                     rootLayerSupport,
                     rootKeyLayout,
                     dataLayout,
                     rootMappingCacheSize,
                     treeNodeSelector,
-                    dependencyResolver,
-                    multiVersioned);
+                    dependencyResolver);
         }
 
         @Override

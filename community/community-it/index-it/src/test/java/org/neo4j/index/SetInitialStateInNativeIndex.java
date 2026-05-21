@@ -98,7 +98,6 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction {
     private static void overwriteState(
             PageCache pageCache, Path indexFile, byte state, ImmutableSet<OpenOption> openOptions) throws IOException {
         NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter(state);
-        GBPTree.overwriteHeader(
-                pageCache, indexFile, stateWriter, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions, false);
+        GBPTree.overwriteHeader(pageCache, indexFile, stateWriter, DEFAULT_DATABASE_NAME, NULL_CONTEXT, openOptions);
     }
 }

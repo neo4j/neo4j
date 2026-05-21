@@ -44,7 +44,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     private final InternalTreeLogic<K, V> treeLogic;
     private final ReadWriteLock checkpointLock;
     private final ReadWriteLock writerLock;
-    private final FreeListIdProvider freeList;
+    private final FreelistIdProvider freeList;
     private final Monitor monitor;
     private final Consumer<Throwable> exceptionMessageAppender;
     private final LongSupplier generationSupplier;
@@ -80,7 +80,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             TreeRootExchange rootExchange,
             ReadWriteLock checkpointLock,
             ReadWriteLock writerLock,
-            FreeListIdProvider freeList,
+            FreelistIdProvider freeList,
             Monitor monitor,
             Consumer<Throwable> exceptionMessageAppender,
             LongSupplier generationSupplier,

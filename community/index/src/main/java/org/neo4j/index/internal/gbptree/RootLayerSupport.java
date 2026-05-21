@@ -50,7 +50,7 @@ class RootLayerSupport {
     private final LongSupplier generationSupplier;
     private final Consumer<Throwable> exceptionDecorator;
     private final TreeNodeLatchService latchService;
-    private final FreeListIdProvider freeList;
+    private final FreelistIdProvider freeList;
     private final MultiRootGBPTree.Monitor monitor;
     private final ThrowingAction<IOException> cleanCheck;
     private final ReadWriteLock checkpointLock;
@@ -67,7 +67,7 @@ class RootLayerSupport {
             LongSupplier generationSupplier,
             Consumer<Throwable> exceptionDecorator,
             TreeNodeLatchService latchService,
-            FreeListIdProvider freeList,
+            FreelistIdProvider freeList,
             MultiRootGBPTree.Monitor monitor,
             ThrowingAction<IOException> cleanCheck,
             ReadWriteLock checkpointLock,
@@ -363,15 +363,14 @@ class RootLayerSupport {
             Layout<K, V> layout,
             LeafNodeBehaviour<K, V> leafNode,
             InternalNodeBehaviour<K> internalNode,
-            CursorContext cursorContext,
-            boolean multiVersioned)
+            CursorContext cursorContext)
             throws IOException {
         TreeState state;
         try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
             // todo find better way of getting TreeState?
             Pair<TreeState, TreeState> states =
-                    TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B, multiVersioned);
-            state = TreeStatePair.selectNewestValidOrFirst(states, multiVersioned);
+                    TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
+            state = TreeStatePair.selectNewestValidOrFirst(states);
         }
         unsafe.access(pagedFile, layout, leafNode, internalNode, state);
     }

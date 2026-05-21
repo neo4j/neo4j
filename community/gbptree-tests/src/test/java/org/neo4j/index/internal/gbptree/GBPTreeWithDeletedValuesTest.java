@@ -328,8 +328,7 @@ public class GBPTreeWithDeletedValuesTest {
                         int pageSize,
                         Layout<KEY, VALUE> layout,
                         OffloadStore<KEY, VALUE> offloadStore,
-                        DependencyResolver dependencyResolver,
-                        boolean rootLayer) {
+                        DependencyResolver dependencyResolver) {
                     return new LeafNodeFixedSize<>(pageSize, layout) {
                         @Override
                         public void keyValueAt(

@@ -45,15 +45,13 @@ public interface TreeNodeSelector {
          * @param layout             {@link Layout} that will be used in this format.
          * @param offloadStore       {@link OffloadStore} that could be used for larger entries
          * @param dependencyResolver {@link DependencyResolver} to access various database components
-         * @param rootLayer          true if this leaf represents the root layer in a multi-root GBPTree
          * @return the instantiated {@link LeafNodeBehaviour}.
          */
         <KEY, VALUE> LeafNodeBehaviour<KEY, VALUE> createLeafBehaviour(
                 int pageSize,
                 Layout<KEY, VALUE> layout,
                 OffloadStore<KEY, VALUE> offloadStore,
-                DependencyResolver dependencyResolver,
-                boolean rootLayer);
+                DependencyResolver dependencyResolver);
         /**
          * Instantiates a {@link InternalNodeBehaviour} of a specific format and version that this factory represents.
          *

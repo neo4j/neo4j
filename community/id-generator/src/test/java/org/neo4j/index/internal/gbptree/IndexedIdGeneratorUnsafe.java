@@ -47,8 +47,7 @@ public class IndexedIdGeneratorUnsafe {
         try (var pagedFile = pageCache.map(file, pageCache.pageSize(), "db", openOptions)) {
             TreeState treeState;
             try (var cursor = pagedFile.io(0, PagedFile.PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
-                treeState = selectNewestValidState(
-                        readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B, false));
+                treeState = selectNewestValidState(readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B));
             }
             // Currently there's no need for the lead/internal node behaviours, so skip them
             unsafe.access(pagedFile, layout, null, null, treeState);
@@ -61,8 +60,7 @@ public class IndexedIdGeneratorUnsafe {
         unsafe(pageCache, file, layout, openOptions, (pagedFile, layout1, leafNode, internalNode, treeState) -> {
             try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 goTo(cursor, "", treeState.pageId());
-                int treeStateSize = TreeState.size(treeState.freelistMetaData().multiVersioned());
-                cursor.setOffset(treeStateSize);
+                cursor.setOffset(TreeState.SIZE);
                 int length = cursor.getInt(cursor.getOffset());
                 int newLength = length + diff;
                 cursor.putInt(newLength);

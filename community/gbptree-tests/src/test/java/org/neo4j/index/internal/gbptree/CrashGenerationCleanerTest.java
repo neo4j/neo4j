@@ -47,8 +47,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.index.internal.gbptree.FreeListIdProvider.FreelistMetaData;
-import org.neo4j.index.internal.gbptree.FreeListIdProvider.FreelistPositions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -97,10 +95,8 @@ class CrashGenerationCleanerTest {
             new InternalNodeDynamicSize<>(PAGE_SIZE, rootLayout, null);
     private static ExecutorService executorService;
     private static CleanupJob.Executor executor;
-    private final FreelistMetaData freelistMetaData =
-            FreelistMetaData.nonVersioned(0, new FreelistPositions(0, 0, 0, 0));
-    private final TreeState checkpointedTreeState = new TreeState(0, 9, 10, 0, 0, freelistMetaData, true, true);
-    private final TreeState unstableTreeState = new TreeState(0, 10, 12, 0, 0, freelistMetaData, true, true);
+    private final TreeState checkpointedTreeState = new TreeState(0, 9, 10, 0, 0, 0, 0, 0, 0, 0, true, true);
+    private final TreeState unstableTreeState = new TreeState(0, 10, 12, 0, 0, 0, 0, 0, 0, 0, true, true);
     private final List<GBPTreeCorruption.PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             GBPTreeCorruption.crashed(GBPTreePointerType.leftSibling()),
             GBPTreeCorruption.crashed(GBPTreePointerType.rightSibling()),

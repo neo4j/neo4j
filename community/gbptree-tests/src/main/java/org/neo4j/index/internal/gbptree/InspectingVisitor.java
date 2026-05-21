@@ -62,8 +62,8 @@ public class InspectingVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adap
     }
 
     @Override
-    public void treeState(Pair<TreeState, TreeState> statePair, boolean multiVersioned) {
-        this.treeState = TreeStatePair.selectNewestValidOrFirst(statePair, multiVersioned);
+    public void treeState(Pair<TreeState, TreeState> statePair) {
+        this.treeState = TreeStatePair.selectNewestValidOrFirst(statePair);
     }
 
     @Override
@@ -125,7 +125,7 @@ public class InspectingVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adap
     }
 
     @Override
-    public void freelistEntry(long pageId, long generation, long releaseVersion, int pos) {
+    public void freelistEntry(long pageId, long generation, int pos) {
         allFreelistEntries.add(new FreelistEntry(currentFreelistPage, pos, pageId, generation));
     }
 

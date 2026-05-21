@@ -53,24 +53,8 @@ public class SimpleIdProvider implements IdProvider {
     }
 
     @Override
-    public void releaseId(
-            long stableGeneration,
-            long unstableGeneration,
-            long id,
-            CursorCreator cursorCreator,
-            CursorContext cursorContext) {
+    public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator) {
         releasedIds.add(Pair.of(unstableGeneration, id));
-    }
-
-    @Override
-    public void releaseIdWithVersion(
-            long stableGeneration,
-            long unstableGeneration,
-            long id,
-            CursorCreator cursorCreator,
-            CursorContext cursorContext)
-            throws IOException {
-        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
@@ -78,7 +62,7 @@ public class SimpleIdProvider implements IdProvider {
         int pos = 0;
         visitor.beginFreelistPage(0);
         for (Pair<Long, Long> releasedId : releasedIds) {
-            visitor.freelistEntry(releasedId.getRight(), releasedId.getLeft(), Long.MIN_VALUE, pos++);
+            visitor.freelistEntry(releasedId.getRight(), releasedId.getLeft(), pos++);
         }
         visitor.endFreelistPage(0);
     }

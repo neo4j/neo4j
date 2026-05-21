@@ -187,8 +187,7 @@ public class OffloadStoreImpl<KEY, VALUE> implements OffloadStore<KEY, VALUE> {
                 stableGeneration,
                 unstableGeneration,
                 offloadId,
-                bind(pcFactory, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext),
-                cursorContext);
+                bind(pcFactory, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
     }
 
     @VisibleForTesting

@@ -705,7 +705,7 @@ class GBPTreeConsistencyChecker<KEY> {
         public void endFreelistPage(long pageId) {}
 
         @Override
-        public void freelistEntry(long pageId, long generation, long releaseVersion, int pos) {
+        public void freelistEntry(long pageId, long generation, int pos) {
             addToSeenList(path, seenIds, pageId, lastId, visitor);
         }
 

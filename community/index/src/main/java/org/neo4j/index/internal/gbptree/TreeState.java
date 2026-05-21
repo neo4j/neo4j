@@ -19,18 +19,16 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.GenerationSafePointer.FIRST_STABLE_GENERATION;
-import static org.neo4j.index.internal.gbptree.GenerationSafePointer.FIRST_UNSTABLE_GENERATION;
+import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.neo4j.index.internal.gbptree.FreeListIdProvider.FreelistMetaData;
-import org.neo4j.index.internal.gbptree.FreeListIdProvider.FreelistPositions;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
- * Tree state is defined as top level tree metadata which changes as the tree and its constructs changes, such as:
+ * Tree state is defined as top level tree meta data which changes as the tree and its constructs changes, such as:
  * <ul>
  * <li>stable/unstable generation numbers</li>
  * <li>root id, the page id containing the root of the tree</li>
@@ -38,18 +36,31 @@ import org.neo4j.io.pagecache.PageCursor;
  * <li>pointers into free-list (page id + offset)</li>
  * </ul>
  * This class also knows how to
- * {@link #write(PageCursor, long, long, long, long, FreelistMetaData, boolean) write} and
- * {@link #read(PageCursor, boolean) read} tree state to and from a {@link PageCursor}, although it doesn't care where
+ * {@link #write(PageCursor, long, long, long, long, long, long, long, int, int, boolean) write} and
+ * {@link #read(PageCursor) read} tree state to and from a {@link PageCursor}, although doesn't care where
  * in the store that is.
  */
 class TreeState {
+    /**
+     * Size of one set of tree-state fields.
+     */
+    private static final int TREE_STATE_FIELDS_SIZE = Integer.BYTES * 2 // stable/unstable gen
+            + Long.BYTES // rootId
+            + Long.BYTES // rootGeneration
+            + Long.BYTES // lastId
+            + Long.BYTES // freeListWritePageId
+            + Long.BYTES // freeListReadPageId
+            + Integer.BYTES // freeListWritePos
+            + Integer.BYTES // freeListReadPos
+            + Byte.BYTES; // clean
+
+    /**
+     * Size of a tree-state altogether, which consists of two sets of tree-state fields.
+     */
+    static final int SIZE = TREE_STATE_FIELDS_SIZE * 2;
+
     private static final byte CLEAN_BYTE = 0x01;
     private static final byte DIRTY_BYTE = 0x00;
-    private static final int MISSING_INT = -1;
-    private static final long MISSING_LONG = -1;
-    private static final int BASE_FIELD_SIZE = Integer.BYTES * 2 + Long.BYTES + Long.BYTES + Byte.BYTES;
-    private static final int DEFAULT_FIELD_SIZE = BASE_FIELD_SIZE + FreelistMetaData.NON_VERSIONED_SIZE;
-    private static final int MULTI_VERSION_FIELD_SIZE = BASE_FIELD_SIZE + FreelistMetaData.VERSIONED_SIZE;
 
     /**
      * Page id this tree state has been read from.
@@ -77,9 +88,30 @@ class TreeState {
     private final long rootGeneration;
 
     /**
-     * State of the free list
+     * Highest allocated page id in the store. This id may not be in use currently and cannot decrease
+     * since {@link PageCache} doesn't allow shrinking files.
      */
-    private final FreelistMetaData freelistMetaData;
+    private final long lastId;
+
+    /**
+     * Page id to write new released tree node ids into.
+     */
+    private final long freeListWritePageId;
+
+    /**
+     * Page id to read released tree node ids from, when acquiring ids.
+     */
+    private final long freeListReadPageId;
+
+    /**
+     * Offset in page {@link #freeListWritePageId} to write new released tree node ids at.
+     */
+    private final int freeListWritePos;
+
+    /**
+     * Offset in page {@link #freeListReadPageId} to read released tree node ids from, when acquiring ids.
+     */
+    private final int freeListReadPos;
 
     /**
      * Due to writing with potential concurrent page flushing tree state is written twice, the second
@@ -99,7 +131,11 @@ class TreeState {
             long unstableGeneration,
             long rootId,
             long rootGeneration,
-            FreelistMetaData freelistMetaData,
+            long lastId,
+            long freeListWritePageId,
+            long freeListReadPageId,
+            int freeListWritePos,
+            int freeListReadPos,
             boolean clean,
             boolean valid) {
         this.pageId = pageId;
@@ -107,7 +143,11 @@ class TreeState {
         this.unstableGeneration = unstableGeneration;
         this.rootId = rootId;
         this.rootGeneration = rootGeneration;
-        this.freelistMetaData = freelistMetaData;
+        this.lastId = lastId;
+        this.freeListWritePageId = freeListWritePageId;
+        this.freeListReadPageId = freeListReadPageId;
+        this.freeListWritePos = freeListWritePos;
+        this.freeListReadPos = freeListReadPos;
         this.clean = clean;
         this.valid = valid;
     }
@@ -132,45 +172,28 @@ class TreeState {
         return rootGeneration;
     }
 
-    FreelistMetaData freelistMetaData() {
-        return freelistMetaData;
+    long lastId() {
+        return lastId;
+    }
+
+    long freeListWritePageId() {
+        return freeListWritePageId;
+    }
+
+    long freeListReadPageId() {
+        return freeListReadPageId;
+    }
+
+    int freeListWritePos() {
+        return freeListWritePos;
+    }
+
+    int freeListReadPos() {
+        return freeListReadPos;
     }
 
     boolean isValid() {
         return valid;
-    }
-
-    /**
-     * Simulates the tree state before first checkpoint
-     */
-    static TreeState firstState(boolean multiVersioned) {
-        FreelistPositions firstPositions = new FreelistPositions(MISSING_LONG, MISSING_LONG, MISSING_INT, MISSING_INT);
-        FreelistMetaData freelistMetadata = multiVersioned
-                ? FreelistMetaData.versioned(MISSING_LONG, firstPositions, firstPositions)
-                : FreelistMetaData.nonVersioned(MISSING_LONG, firstPositions);
-        return new TreeState(
-                MISSING_LONG,
-                FIRST_STABLE_GENERATION,
-                FIRST_UNSTABLE_GENERATION,
-                MISSING_LONG,
-                MISSING_LONG,
-                freelistMetadata,
-                false,
-                true);
-    }
-
-    /**
-     * Size of one set of tree-state fields.
-     */
-    static int fieldsSize(boolean multiVersioned) {
-        return multiVersioned ? MULTI_VERSION_FIELD_SIZE : DEFAULT_FIELD_SIZE;
-    }
-
-    /**
-     * Size of a tree-state altogether, which consists of two sets of tree-state fields.
-     */
-    static int size(boolean multiVersioned) {
-        return fieldsSize(multiVersioned) * 2;
     }
 
     /**
@@ -182,6 +205,11 @@ class TreeState {
      * @param unstableGeneration unstable generation.
      * @param rootId root id.
      * @param rootGeneration root generation.
+     * @param lastId last id.
+     * @param freeListWritePageId free-list page id to write released ids into.
+     * @param freeListReadPageId free-list page id to read released ids from.
+     * @param freeListWritePos offset into free-list write page id to write released ids into.
+     * @param freeListReadPos offset into free-list read page id to read released ids from.
      * @param clean is tree clean or dirty
      */
     static void write(
@@ -190,7 +218,11 @@ class TreeState {
             long unstableGeneration,
             long rootId,
             long rootGeneration,
-            FreelistMetaData freelistMetaData,
+            long lastId,
+            long freeListWritePageId,
+            long freeListReadPageId,
+            int freeListWritePos,
+            int freeListReadPos,
             boolean clean) {
         GenerationSafePointer.assertGenerationOnWrite(stableGeneration);
         GenerationSafePointer.assertGenerationOnWrite(unstableGeneration);
@@ -201,7 +233,11 @@ class TreeState {
                 unstableGeneration,
                 rootId,
                 rootGeneration,
-                freelistMetaData,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
                 clean); // Write state
         writeStateOnce(
                 cursor,
@@ -209,7 +245,11 @@ class TreeState {
                 unstableGeneration,
                 rootId,
                 rootGeneration,
-                freelistMetaData,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
                 clean); // Write checksum
     }
 
@@ -220,22 +260,22 @@ class TreeState {
      * @param cursor {@link PageCursor} to read tree state from, at its current offset.
      * @return {@link TreeState} instance containing read tree state.
      */
-    static TreeState read(PageCursor cursor, boolean multiVersioned) throws IOException {
-        byte[] buffer = new byte[size(multiVersioned)];
+    static TreeState read(PageCursor cursor) throws IOException {
+        byte[] buffer = new byte[SIZE];
         cursor.getBytes(buffer);
-        return read(cursor.getCurrentPageId(), ByteBuffer.wrap(buffer).order(cursor.getByteOrder()), multiVersioned);
+        return read(cursor.getCurrentPageId(), ByteBuffer.wrap(buffer).order(cursor.getByteOrder()));
     }
 
     /**
-     * @see #read(PageCursor, boolean)
+     * @see #read(PageCursor)
      *
      * @param pageId current page
      * @param buffer temporary buffer to use
      * @return {@link TreeState} instance containing read tree state.
      */
-    static TreeState read(long pageId, ByteBuffer buffer, boolean multiVersioned) {
-        TreeState state = readStateOnce(pageId, buffer, multiVersioned);
-        TreeState checksumState = readStateOnce(pageId, buffer, multiVersioned);
+    static TreeState read(long pageId, ByteBuffer buffer) {
+        TreeState state = readStateOnce(pageId, buffer);
+        TreeState checksumState = readStateOnce(pageId, buffer);
 
         boolean valid = state.equals(checksumState);
 
@@ -251,21 +291,41 @@ class TreeState {
     }
 
     boolean isEmpty() {
-        return stableGeneration == 0L && unstableGeneration == 0L && rootId == 0L && freelistMetaData.isEmpty();
+        return stableGeneration == 0L
+                && unstableGeneration == 0L
+                && rootId == 0L
+                && lastId == 0L
+                && freeListWritePageId == 0L
+                && freeListReadPageId == 0L
+                && freeListWritePos == 0
+                && freeListReadPos == 0;
     }
 
-    private static TreeState readStateOnce(long pageId, ByteBuffer buffer, boolean multiVersioned) {
-        int expectedFieldSize = fieldsSize(multiVersioned);
-        assert buffer.remaining() >= expectedFieldSize
-                : "Not enough data. Remaining " + buffer.remaining() + ", expected " + expectedFieldSize;
+    private static TreeState readStateOnce(long pageId, ByteBuffer buffer) {
+        checkState(buffer.remaining() >= TREE_STATE_FIELDS_SIZE, "No enough data");
         long stableGeneration = buffer.getInt() & GenerationSafePointer.GENERATION_MASK;
         long unstableGeneration = buffer.getInt() & GenerationSafePointer.GENERATION_MASK;
         long rootId = buffer.getLong();
         long rootGeneration = buffer.getLong();
-        FreelistMetaData freelistMetaData = FreelistMetaData.read(buffer, multiVersioned);
+        long lastId = buffer.getLong();
+        long freeListWritePageId = buffer.getLong();
+        long freeListReadPageId = buffer.getLong();
+        int freeListWritePos = buffer.getInt();
+        int freeListReadPos = buffer.getInt();
         boolean clean = buffer.get() == CLEAN_BYTE;
         return new TreeState(
-                pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, freelistMetaData, clean, true);
+                pageId,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean,
+                true);
     }
 
     private static void writeStateOnce(
@@ -274,13 +334,21 @@ class TreeState {
             long unstableGeneration,
             long rootId,
             long rootGeneration,
-            FreelistMetaData freelistMetaData,
+            long lastId,
+            long freeListWritePageId,
+            long freeListReadPageId,
+            int freeListWritePos,
+            int freeListReadPos,
             boolean clean) {
         cursor.putInt((int) stableGeneration);
         cursor.putInt((int) unstableGeneration);
         cursor.putLong(rootId);
         cursor.putLong(rootGeneration);
-        freelistMetaData.write(cursor);
+        cursor.putLong(lastId);
+        cursor.putLong(freeListWritePageId);
+        cursor.putLong(freeListReadPageId);
+        cursor.putInt(freeListWritePos);
+        cursor.putInt(freeListReadPos);
         cursor.putByte(clean ? CLEAN_BYTE : DIRTY_BYTE);
     }
 
@@ -288,8 +356,20 @@ class TreeState {
     public String toString() {
         return String.format(
                 "pageId=%d, stableGeneration=%d, unstableGeneration=%d, rootId=%d, rootGeneration=%d, "
-                        + "freelistMetadata=%s, clean=%b, valid=%b",
-                pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, freelistMetaData, clean, valid);
+                        + "lastId=%d, freeListWritePageId=%d, freeListReadPageId=%d, freeListWritePos=%d, freeListReadPos=%d, "
+                        + "clean=%b, valid=%b",
+                pageId,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean,
+                valid);
     }
 
     @Override
@@ -306,7 +386,11 @@ class TreeState {
                 && unstableGeneration == treeState.unstableGeneration
                 && rootId == treeState.rootId
                 && rootGeneration == treeState.rootGeneration
-                && freelistMetaData.equals(treeState.freelistMetaData)
+                && lastId == treeState.lastId
+                && freeListWritePageId == treeState.freeListWritePageId
+                && freeListReadPageId == treeState.freeListReadPageId
+                && freeListWritePos == treeState.freeListWritePos
+                && freeListReadPos == treeState.freeListReadPos
                 && clean == treeState.clean
                 && valid == treeState.valid;
     }
@@ -314,7 +398,18 @@ class TreeState {
     @Override
     public int hashCode() {
         return Objects.hash(
-                pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, freelistMetaData, clean, valid);
+                pageId,
+                stableGeneration,
+                unstableGeneration,
+                rootId,
+                rootGeneration,
+                lastId,
+                freeListWritePageId,
+                freeListReadPageId,
+                freeListWritePos,
+                freeListReadPos,
+                clean,
+                valid);
     }
 
     public boolean isClean() {

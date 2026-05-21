@@ -734,8 +734,7 @@ class GBPTreeTest {
                     pc -> pc.putBytes(newHeader),
                     DEFAULT_DATABASE_NAME,
                     NULL_CONTEXT,
-                    getOpenOptions(),
-                    false);
+                    getOpenOptions());
 
             Pair<TreeState, TreeState> treeStatesAfterOverwrite = readTreeStates(pageCache);
 
@@ -1703,7 +1702,7 @@ class GBPTreeTest {
                             indexFile, specificPageCache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
                     PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 Pair<TreeState, TreeState> treeStates =
-                        TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B, false);
+                        TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
                 TreeState newestState = TreeStatePair.selectNewestValidState(treeStates);
                 long rootId = newestState.rootId();
                 long stableGeneration = newestState.stableGeneration();
@@ -2369,14 +2368,13 @@ class GBPTreeTest {
                 indexFile,
                 new GBPTreeVisitor.Adaptor<SingleRoot, MutableLong, MutableLong>() {
                     @Override
-                    public void treeState(Pair<TreeState, TreeState> statePair, boolean multiVersioned) {
+                    public void treeState(Pair<TreeState, TreeState> statePair) {
                         state.setValue(statePair);
                     }
                 },
                 "db",
                 NULL_CONTEXT,
-                Sets.immutable.empty(),
-                false);
+                Sets.immutable.empty());
         return state.getValue();
     }
 
@@ -2474,7 +2472,7 @@ class GBPTreeTest {
                         pageCache.map(indexFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, getOpenOptions());
                 PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             treeStatesBeforeOverwrite =
-                    TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B, false);
+                    TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
         }
         return treeStatesBeforeOverwrite;
     }

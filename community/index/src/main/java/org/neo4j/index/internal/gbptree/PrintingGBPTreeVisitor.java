@@ -53,7 +53,7 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
     }
 
     @Override
-    public void treeState(Pair<TreeState, TreeState> statePair, boolean multiVersioned) {
+    public void treeState(Pair<TreeState, TreeState> statePair) {
         if (printState) {
             out.println("StateA: " + statePair.getLeft());
             out.println("StateB: " + statePair.getRight());
@@ -103,8 +103,8 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
     }
 
     @Override
-    public void rootMapping(long id, long generation, boolean deleted) {
-        out.print("=" + id + "(gen:" + generation + ")" + (deleted ? "[D]" : "") + " ");
+    public void rootMapping(long id, long generation) {
+        out.print("=" + id + "(gen:" + generation + ") ");
     }
 
     @Override
@@ -165,7 +165,7 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
     }
 
     @Override
-    public void freelistEntry(long pageId, long generation, long releaseVersion, int pos) {
+    public void freelistEntry(long pageId, long generation, int pos) {
         if (printFreelist) {
             out.print("[" + generation + "," + pageId + "] ");
         }

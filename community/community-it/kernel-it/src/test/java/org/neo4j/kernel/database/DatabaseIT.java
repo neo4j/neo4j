@@ -382,8 +382,7 @@ class DatabaseIT {
                     visitor,
                     dbName,
                     CursorContext.NULL_CONTEXT,
-                    openOptions.toImmutable(),
-                    false);
+                    openOptions.toImmutable());
             return 3; // GPBTree files flush 3 times during checkpoint
         } catch (Exception e) {
             return 1; // Other store files flushes just once

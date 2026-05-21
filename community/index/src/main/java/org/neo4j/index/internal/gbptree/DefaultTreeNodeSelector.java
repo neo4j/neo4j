@@ -39,8 +39,7 @@ public class DefaultTreeNodeSelector {
                 int payloadSize,
                 Layout<KEY, VALUE> layout,
                 OffloadStore<KEY, VALUE> offloadStore,
-                DependencyResolver dependencyResolver,
-                boolean rootLayer) {
+                DependencyResolver dependencyResolver) {
             return new LeafNodeFixedSize<>(payloadSize, layout);
         }
 
@@ -76,8 +75,7 @@ public class DefaultTreeNodeSelector {
                 int payloadSize,
                 Layout<KEY, VALUE> layout,
                 OffloadStore<KEY, VALUE> offloadStore,
-                DependencyResolver dependencyResolver,
-                boolean rootLayer) {
+                DependencyResolver dependencyResolver) {
             return new LeafNodeDynamicSize<>(payloadSize, layout, offloadStore);
         }
 

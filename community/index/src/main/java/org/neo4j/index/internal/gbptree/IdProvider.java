@@ -36,22 +36,7 @@ public interface IdProvider {
         }
 
         @Override
-        public void releaseId(
-                long stableGeneration,
-                long unstableGeneration,
-                long id,
-                CursorCreator cursorCreator,
-                CursorContext cursorContext) {
-            throw new IllegalStateException("No-op provider");
-        }
-
-        @Override
-        public void releaseIdWithVersion(
-                long stableGeneration,
-                long unstableGeneration,
-                long id,
-                CursorCreator cursorCreator,
-                CursorContext cursorContext)
+        public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator)
                 throws IOException {
             throw new IllegalStateException("No-op provider");
         }
@@ -72,7 +57,7 @@ public interface IdProvider {
      * are all guaranteed to be zero at the point of returning from this method.
      *
      * @param stableGeneration current stable generation.
-     * @param cursorCreator    function to create write page cursor, if this method is called within context of another write cursor, this should create linked cursor
+     * @param cursorCreator function to create write page cursor, if this method is called within context of another write cursor, this should create linked cursor
      * @return page id guaranteed to current not be used and whose bytes are all zeros.
      * @throws IOException on {@link PageCursor} error.
      */
@@ -89,20 +74,7 @@ public interface IdProvider {
      * @param cursorCreator function to create write page cursor, if this method is called within context of another write cursor, this should create linked cursor
      * @throws IOException on {@link PageCursor} error.
      */
-    void releaseId(
-            long stableGeneration,
-            long unstableGeneration,
-            long id,
-            CursorCreator cursorCreator,
-            CursorContext cursorContext)
-            throws IOException;
-
-    void releaseIdWithVersion(
-            long stableGeneration,
-            long unstableGeneration,
-            long id,
-            CursorCreator cursorCreator,
-            CursorContext cursorContext)
+    void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator)
             throws IOException;
 
     /**
@@ -119,7 +91,7 @@ public interface IdProvider {
 
         void endFreelistPage(long pageId);
 
-        void freelistEntry(long pageId, long generation, long releaseVersion, int pos);
+        void freelistEntry(long pageId, long generation, int pos);
 
         void freelistEntryFromReleaseCache(long pageId);
 
@@ -131,7 +103,7 @@ public interface IdProvider {
             public void endFreelistPage(long pageId) {}
 
             @Override
-            public void freelistEntry(long pageId, long generation, long releaseVersion, int pos) {}
+            public void freelistEntry(long pageId, long generation, int pos) {}
 
             @Override
             public void freelistEntryFromReleaseCache(long pageId) {}

@@ -1877,7 +1877,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next(root.id());
         new GBPTreeStructure<>(null, null, null, layout, leaf, internal, stableGeneration, unstableGeneration)
-                .visitTree(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), NULL_CONTEXT, false);
+                .visitTree(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), NULL_CONTEXT);
         cursor.next(currentPageId);
     }
 

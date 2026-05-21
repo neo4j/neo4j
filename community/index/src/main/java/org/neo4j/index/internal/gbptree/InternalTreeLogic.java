@@ -1372,7 +1372,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
 
             structureWriteLog.shrinkTree(unstableGeneration, oldRoot);
             structureWriteLog.addToFreelist(unstableGeneration, oldRoot);
-            idProvider.releaseId(stableGeneration, unstableGeneration, oldRoot, bind(cursor), cursorContext);
+            idProvider.releaseId(stableGeneration, unstableGeneration, oldRoot, bind(cursor));
             TreeNodeUtil.goTo(cursor, "child", onlyChildOfRoot);
 
             rootKeyCount = keyCount(cursor);
@@ -1478,7 +1478,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
                 // Repoint sibling and add to freelist and return false
                 connectLeftAndRightSibling(cursor, stableGeneration, unstableGeneration);
                 structureWriteLog.addToFreelist(unstableGeneration, currentPageId);
-                idProvider.releaseId(stableGeneration, unstableGeneration, currentPageId, bind(cursor), cursorContext);
+                idProvider.releaseId(stableGeneration, unstableGeneration, currentPageId, bind(cursor));
                 return false;
             }
 
@@ -1826,11 +1826,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         connectLeftAndRightSibling(leftSiblingCursor, stableGeneration, unstableGeneration);
         structureWriteLog.addToFreelist(unstableGeneration, leftSiblingCursor.getCurrentPageId());
         idProvider.releaseId(
-                stableGeneration,
-                unstableGeneration,
-                leftSiblingCursor.getCurrentPageId(),
-                linkedCursorCreator,
-                cursorContext);
+                stableGeneration, unstableGeneration, leftSiblingCursor.getCurrentPageId(), linkedCursorCreator);
     }
 
     private void rebalanceLeaf(
@@ -1965,7 +1961,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         structureUpdate.update(structurePropagation, successorId);
 
         structureWriteLog.addToFreelist(unstableGeneration, oldId);
-        idProvider.releaseId(stableGeneration, unstableGeneration, oldId, bind(cursor), cursorContext);
+        idProvider.releaseId(stableGeneration, unstableGeneration, oldId, bind(cursor));
     }
 
     private static <KEY> void checkChildPointer(

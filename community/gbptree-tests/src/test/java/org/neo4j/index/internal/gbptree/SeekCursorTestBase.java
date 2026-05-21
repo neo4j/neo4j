@@ -2474,7 +2474,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next(rootId);
         new GBPTreeStructure<>(null, null, null, layout, leaf, internal, stableGeneration, unstableGeneration)
-                .visitTree(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), NULL_CONTEXT, false);
+                .visitTree(cursor, new PrintingGBPTreeVisitor<>(PrintConfig.defaults()), NULL_CONTEXT);
         cursor.next(currentPageId);
     }
 

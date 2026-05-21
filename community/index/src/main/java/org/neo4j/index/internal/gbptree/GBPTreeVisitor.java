@@ -26,7 +26,7 @@ import org.neo4j.util.VisibleForTesting;
 public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvider.IdProviderVisitor {
     void meta(Meta meta);
 
-    void treeState(Pair<TreeState, TreeState> statePair, boolean multiVersioned);
+    void treeState(Pair<TreeState, TreeState> statePair);
 
     void beginTree(boolean dataTree);
 
@@ -36,7 +36,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
 
     void rootKey(ROOT_KEY key, boolean isLeaf, long offloadId);
 
-    void rootMapping(long id, long generation, boolean deleted);
+    void rootMapping(long id, long generation);
 
     void key(DATA_KEY key, boolean isLeaf, long offloadId);
 
@@ -49,8 +49,6 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
     void position(int i);
 
     void endNode(long pageId);
-
-    void endDataNode(long pageId);
 
     void endLevel(int level);
 
@@ -75,7 +73,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
         public void meta(Meta meta) {}
 
         @Override
-        public void treeState(Pair<TreeState, TreeState> statePair, boolean multiVersioned) {}
+        public void treeState(Pair<TreeState, TreeState> statePair) {}
 
         @Override
         public void beginTree(boolean dataTree) {}
@@ -90,7 +88,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
         public void rootKey(ROOT_KEY key, boolean isLeaf, long offloadId) {}
 
         @Override
-        public void rootMapping(long id, long generation, boolean deleted) {}
+        public void rootMapping(long id, long generation) {}
 
         @Override
         public void key(DATA_KEY key, boolean isLeaf, long offloadId) {}
@@ -109,9 +107,6 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
 
         @Override
         public void endNode(long pageId) {}
-
-        @Override
-        public void endDataNode(long pageId) {}
 
         @Override
         public void endLevel(int level) {}
@@ -135,7 +130,7 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
         public void endFreelistPage(long pageId) {}
 
         @Override
-        public void freelistEntry(long pageId, long generation, long releaseVersion, int pos) {}
+        public void freelistEntry(long pageId, long generation, int pos) {}
 
         @Override
         public void freelistEntryFromReleaseCache(long pageId) {}

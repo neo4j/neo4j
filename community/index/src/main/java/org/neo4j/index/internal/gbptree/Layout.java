@@ -108,13 +108,6 @@ public interface Layout<KEY, VALUE> extends KeyLayout<KEY> {
     }
 
     /**
-     * This method is used to support versioning of {@link RootMappingLayout}.
-     * When entry is deleted in the versioned root layer, it needs to preserve the existing root pointer but also needs to mark value
-     * as undefined to enable its removal during defragmentation.
-     */
-    default void markValueDeleted(VALUE value) {}
-
-    /**
      * Adapter for {@link Layout}, which contains convenient standard implementations of some methods.
      *
      * @param <KEY> type of key

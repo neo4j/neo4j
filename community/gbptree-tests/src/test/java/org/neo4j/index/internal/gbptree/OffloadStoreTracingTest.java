@@ -54,14 +54,14 @@ class OffloadStoreTracingTest {
     private OffloadStoreImpl<RawBytes, RawBytes> offloadStore;
     private CursorContext cursorContext;
     private PagedFile pagedFile;
-    private DefaultFreelistIdProvider idProvider;
+    private FreelistIdProvider idProvider;
 
     @BeforeEach
     void setUp() throws IOException {
         cursorContext = contextFactory.create("testCursorTracer");
         pagedFile = pageCache.map(testDirectory.createFile("file"), pageCache.pageSize(), "neo4j");
         OffloadPageCursorFactory pcFactory = pagedFile::io;
-        idProvider = new DefaultFreelistIdProvider(pagedFile);
+        idProvider = new FreelistIdProvider(pagedFile);
         idProvider.initializeAfterCreation(bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext), 10);
         offloadStore = new OffloadStoreImpl<>(layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize());
     }
@@ -100,7 +100,7 @@ class OffloadStoreTracingTest {
         assertZeroCursor();
 
         offloadStore.free(1, 1, 1, cursorContext);
-        idProvider.flush(1, 1, bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext), cursorContext);
+        idProvider.flush(1, 1, bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
 
         assertThat(cursorTracer.faults()).isEqualTo(0);
         assertThat(cursorTracer.pins()).isEqualTo(1);
