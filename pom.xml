@@ -150,7 +150,7 @@
      - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
      - needs updating.
      -->
-    <netty.version>4.2.12.Final</netty.version>
+    <netty.version>4.2.14.Final</netty.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
     <oshi-common.version>7.1.0</oshi-common.version>
     <parallel.tests>false</parallel.tests>
