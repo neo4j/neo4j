@@ -293,6 +293,7 @@ class TxStateTransactionDataSnapshotIT {
         }
     }
 
+    @SkipOnSpd(reason = "When running SPD there's some TransactionEventListener that selects this data")
     @Test
     void shouldSkipReplacedPropertyValuesIfToldTo() {
         // given
@@ -346,6 +347,7 @@ class TxStateTransactionDataSnapshotIT {
         }
     }
 
+    @SkipOnSpd(reason = "When running SPD there's some TransactionEventListener that selects this data")
     @Test
     void shouldSkipRemovedPropertyValuesIfToldTo() {
         // given
