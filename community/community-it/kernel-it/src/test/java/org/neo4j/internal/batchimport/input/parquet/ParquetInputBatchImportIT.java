@@ -199,6 +199,131 @@ class ParquetInputBatchImportIT {
     }
 
     @Test
+    void shouldImportParquetWithIntegerIdColumnsAndStringIdType() throws Exception {
+        // Regression test for KRNL-1594: when nodes are registered with String input ids
+        // and relationships carry INT64 ids (no per-column id-type) under a STRING global idType,
+        // the IdMapper's strict node check would compare Long.equals(String) and report a missing
+        // node. The fix in ParquetDataInputChunk converts numeric ids to their String
+        // representation when the effective id type is STRING.
+        Config dbConfig = Config.newBuilder()
+                .set(db_timezone, LogTimeZone.SYSTEM)
+                .set(dense_node_threshold, 5)
+                .build();
+        try (JobScheduler scheduler = new ThreadPoolJobScheduler();
+                var outputStream = new ByteArrayOutputStream();
+                var badCollector = BadCollector.create(outputStream, 0, 20)) {
+            BatchImporter importer = new ParallelBatchImporter(
+                    databaseLayout,
+                    fileSystem,
+                    PageCacheTracer.NULL,
+                    strictSmallBatchSizeConfig(),
+                    NullLogService.getInstance(),
+                    ExecutionMonitor.INVISIBLE,
+                    DefaultAdditionalIds.EMPTY,
+                    new EmptyLogTailMetadata(dbConfig),
+                    dbConfig,
+                    Monitor.NO_MONITOR,
+                    scheduler,
+                    badCollector,
+                    TransactionLogInitializer.getLogFilesInitializer(),
+                    new IndexImporterFactoryImpl(),
+                    INSTANCE,
+                    NULL_CONTEXT_FACTORY,
+                    DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
+            Groups groups = new Groups();
+            groups.getOrCreate(null);
+
+            Path nodesFile = nodesWithStringIdAsFile();
+            Path relationshipsFile = relationshipsWithIntegerIdsAsFile();
+
+            importer.doImport(parquet(nodesFile, relationshipsFile, IdType.STRING, groups));
+
+            try (DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build()) {
+                GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+                try (Transaction tx = db.beginTx()) {
+                    Map<String, Node> nodesById = new HashMap<>();
+                    try (ResourceIterable<Node> allNodes = tx.getAllNodes()) {
+                        for (Node node : allNodes) {
+                            nodesById.put((String) node.getProperty("inputId"), node);
+                        }
+                    }
+                    assertEquals(3, nodesById.size());
+
+                    Map<String, String> actualRelationships = new HashMap<>();
+                    try (ResourceIterable<Relationship> allRelationships = tx.getAllRelationships()) {
+                        for (Relationship relationship : allRelationships) {
+                            String startInputId =
+                                    (String) relationship.getStartNode().getProperty("inputId");
+                            String endInputId =
+                                    (String) relationship.getEndNode().getProperty("inputId");
+                            actualRelationships.put(
+                                    startInputId + "->" + endInputId,
+                                    relationship.getType().name());
+                        }
+                    }
+
+                    assertEquals(
+                            Map.of(
+                                    "9345850217180->6597069807267", "COMMENT_HAS_CREATOR",
+                                    "6597069807267->1", "KNOWS"),
+                            actualRelationships);
+                    tx.commit();
+                }
+            }
+        }
+    }
+
+    private Path nodesWithStringIdAsFile() throws IOException {
+        Path file = testDirectory.file("nodes-string-id.parquet");
+        PrimitiveType idType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named("inputId:ID");
+        PrimitiveType labelType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named(":LABEL");
+        var writer = new BasicParquetWriterBuilder<>(new TestOutputFile(file))
+                .withRowGroupSize(ROW_GROUP_SIZE)
+                .withType(new MessageType("Nodes", idType, labelType))
+                .withDehydrator((record, valueWriter) -> {
+                    var row = (Object[]) record;
+                    valueWriter.write("inputId:ID", row[0]);
+                    valueWriter.write(":LABEL", row[1]);
+                })
+                .build();
+        writer.write(new Object[] {"9345850217180", "Comment"});
+        writer.write(new Object[] {"6597069807267", "Person"});
+        writer.write(new Object[] {"1", "Person"});
+        writer.close();
+        return file;
+    }
+
+    private Path relationshipsWithIntegerIdsAsFile() throws IOException {
+        Path file = testDirectory.file("relationships-int-id.parquet");
+        PrimitiveType startId =
+                Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":START_ID");
+        PrimitiveType endId =
+                Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":END_ID");
+        Type type = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named(":TYPE");
+        var writer = new BasicParquetWriterBuilder<>(new TestOutputFile(file))
+                .withRowGroupSize(ROW_GROUP_SIZE)
+                .withType(new MessageType("Relationships", startId, endId, type))
+                .withDehydrator((record, valueWriter) -> {
+                    var row = (Object[]) record;
+                    valueWriter.write(":START_ID", row[0]);
+                    valueWriter.write(":END_ID", row[1]);
+                    valueWriter.write(":TYPE", row[2]);
+                })
+                .build();
+        writer.write(new Object[] {9345850217180L, 6597069807267L, "COMMENT_HAS_CREATOR"});
+        writer.write(new Object[] {6597069807267L, 1L, "KNOWS"});
+        writer.close();
+        return file;
+    }
+
+    @Test
     void shouldYieldCorrectGroupWarning() throws Exception {
         // GIVEN
         Config dbConfig = Config.newBuilder()
@@ -318,6 +443,15 @@ class ParquetInputBatchImportIT {
     private static org.neo4j.batchimport.api.Configuration smallBatchSizeConfig() {
         return org.neo4j.batchimport.api.Configuration.withBatchSize(
                 org.neo4j.batchimport.api.Configuration.DEFAULT, 100);
+    }
+
+    private static org.neo4j.batchimport.api.Configuration strictSmallBatchSizeConfig() {
+        return new org.neo4j.batchimport.api.Configuration.Overridden(smallBatchSizeConfig()) {
+            @Override
+            public boolean strictNodeCheck() {
+                return true;
+            }
+        };
     }
 
     private Path relationshipDataAsFile(List<InputEntity> relationshipData) throws IOException {

@@ -658,6 +658,45 @@ class ParquetInputTest {
         }
     }
 
+    @Test
+    void shouldConvertIntegerIdsToStringWhenGlobalIdTypeIsString() throws Exception {
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name")),
+                List.<Object[]>of(new Object[] {6597069807267L, "Mattias Persson"}));
+        Input input = createParquetInput(
+                Map.of(Set.of("Person"), List.of(new FileGroup(nodeFile))), Map.of(), STRING, groups, MONITOR);
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, "6597069807267", properties("name", "Mattias Persson"), labels("Person"));
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldConvertIntegerRelationshipIdsToStringWhenGlobalIdTypeIsString() throws Exception {
+        Path relationshipFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":START_ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":END_ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named(":TYPE")),
+                List.<Object[]>of(
+                        new Object[] {9345850217180L, 6597069807267L, "COMMENT_HAS_CREATOR"},
+                        new Object[] {1L, 2L, "KNOWS"}));
+        Input input = createParquetInput(
+                Map.of(), Map.of("", List.of(new FileGroup(relationshipFile))), STRING, groups, MONITOR);
+        try (InputIterator relationships = input.relationships(EMPTY).iterator()) {
+            assertNextRelationship(
+                    relationships, "9345850217180", "6597069807267", "COMMENT_HAS_CREATOR", properties());
+            assertNextRelationship(relationships, "1", "2", "KNOWS", properties());
+            assertThat(readNext(relationships)).isFalse();
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("listTypes")
     void shouldReadListTypes(String fileName, List<?> expectedList) throws Exception {

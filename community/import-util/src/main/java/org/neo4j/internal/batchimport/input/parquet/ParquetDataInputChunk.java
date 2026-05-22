@@ -148,7 +148,7 @@ class ParquetDataInputChunk implements ParquetInputChunk {
             }
             // node
             if (parquetColumn.isIdColumn()) {
-                idValues.add(resolveIdByType(readDatum, parquetColumn.columnIdType()));
+                idValues.add(resolveIdByType(readDatum, parquetColumn.columnIdType(), idType));
                 if (idType != IdType.ACTUAL && parquetColumn.hasPropertyName()) {
                     entityToHydrate.property(parquetColumn.propertyName(), convertType(readDatum, parquetColumn), true);
                 }
@@ -180,13 +180,13 @@ class ParquetDataInputChunk implements ParquetInputChunk {
             }
             // relationship
             if (parquetColumn.isStartId()) {
-                startIdValues.add(
-                        resolveIdByType(readDatum, parquetColumn.relationshipColumnIdType(groups, startIdTypeIndex++)));
+                startIdValues.add(resolveIdByType(
+                        readDatum, parquetColumn.relationshipColumnIdType(groups, startIdTypeIndex++), idType));
                 isRelationshipEntity = true;
             }
             if (parquetColumn.isEndId()) {
-                endIdValues.add(
-                        resolveIdByType(readDatum, parquetColumn.relationshipColumnIdType(groups, endIdTypeIndex++)));
+                endIdValues.add(resolveIdByType(
+                        readDatum, parquetColumn.relationshipColumnIdType(groups, endIdTypeIndex++), idType));
                 isRelationshipEntity = true;
             }
             if (parquetColumn.isType()) {
@@ -464,16 +464,22 @@ class ParquetDataInputChunk implements ParquetInputChunk {
         return object instanceof String stringValue && stringValue.isEmpty();
     }
 
-    private static Object resolveIdByType(Object id, IdType columnIdType) {
+    private static Object resolveIdByType(Object id, IdType columnIdType, IdType globalIdType) {
+        boolean targetIsString =
+                columnIdType == IdType.STRING || (columnIdType == null && globalIdType == IdType.STRING);
         if (id instanceof String stringId) {
             return stringId;
         } else if (id instanceof Long longId) {
-            return longId;
+            if (targetIsString) {
+                return String.valueOf(longId);
+            } else {
+                return longId;
+            }
         } else if (id instanceof Integer intId) {
-            if (columnIdType == IdType.INTEGER) {
-                return intId;
-            } else if (columnIdType == IdType.STRING) {
+            if (targetIsString) {
                 return String.valueOf(intId);
+            } else if (columnIdType == IdType.INTEGER) {
+                return intId;
             } else {
                 return intId.longValue();
             }
