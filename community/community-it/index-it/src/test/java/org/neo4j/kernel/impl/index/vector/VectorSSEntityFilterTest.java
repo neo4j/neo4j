@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
@@ -204,7 +205,7 @@ class VectorSSEntityFilterTest extends VectorSSFTestBase {
         }
 
         static EntityFilterPredicate entityFilter(long... entityIds) {
-            return PropertyIndexQuery.entityFilter(entityIds);
+            return PropertyIndexQuery.entityFilter(LongSets.mutable.of(entityIds));
         }
 
         private float[] randomVector(int dim) {

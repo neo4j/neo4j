@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.Neo4jException
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.schema.IndexType
@@ -2700,7 +2701,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    the[CypherTypeException] thrownBy consume(execute(logicalQuery, runtime)) shouldBe gqlStatus(
+    the[Neo4jException] thrownBy consume(execute(logicalQuery, runtime)) shouldBe gqlStatus(
       GqlStatusInfoCodes.STATUS_22G03,
       "error: data exception - invalid value type"
     ).withCause(

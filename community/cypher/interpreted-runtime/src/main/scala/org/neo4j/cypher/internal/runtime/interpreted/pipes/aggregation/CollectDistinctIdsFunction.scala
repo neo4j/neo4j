@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -27,22 +26,21 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.UnorderedLongSetListValue
 
 class CollectDistinctIdsFunction(value: Expression, memoryTracker: MemoryTracker) extends AggregationFunction {
-  private[this] val collection = HeapTrackingCollections.newLongSet(memoryTracker)
+  // we use a fairly large initial capacity since we expect this to grow pretty big
+  // and benchmarks shows that we spend a lot of time resizing otherwise
+  private[this] val builder = UnorderedLongSetListValue.heapTrackingBuilder(memoryTracker, 1024)
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
     value(data, state) match {
       case IsNoValue() => onNoValue(state)
-      case v           => collection.add(CypherFunctions.asLong(v))
+      case v           => builder.add(CypherFunctions.asLong(v))
     }
-
   }
 
   override def result(state: QueryState): AnyValue = {
-    val result = Values.longArray(collection.toArray)
-    collection.close()
-    result
+    builder.buildAndClose()
   }
 }

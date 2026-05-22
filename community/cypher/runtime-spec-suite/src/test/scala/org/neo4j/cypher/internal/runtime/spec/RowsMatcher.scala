@@ -599,10 +599,12 @@ object SortListValueMapper extends ValueMapper[AnyValue] {
   override def mapNoValue(): AnyValue = Values.NO_VALUE
 
   override def mapSequence(seq: SequenceValue): AnyValue = {
-    val array = new Array[AnyValue](seq.intSize())
-    for (i <- 0 until seq.intSize()) {
-      array(i) = seq.value(i).map(this)
+    val builder = mutable.ArrayBuilder.make[AnyValue]
+    val it = seq.iterator()
+    while (it.hasNext) {
+      builder += it.next().map(this)
     }
+    val array = builder.result()
     java.util.Arrays.sort(array, AnyValues.COMPARATOR)
     VirtualValues.list(array: _*)
   }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index.lucene.v10;
 
-import static org.apache.lucene.util.automaton.Automata.makeBinaryStringUnion;
 import static org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory.ENTITY_ID_KEY;
 import static org.neo4j.kernel.api.impl.index.lucene.LuceneDocumentsFactory.EXISTS_KEY;
 
@@ -29,12 +28,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.apache.lucene.document.KeywordField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -45,6 +41,7 @@ import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
@@ -62,6 +59,7 @@ import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.SingleInte
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.TemporalOffsetWithId;
 import org.neo4j.kernel.api.impl.index.lucene.v10.Lucene10ValueFields.TemporalWithZone;
 import org.neo4j.kernel.api.impl.schema.vector.VectorDocumentStructure;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatingPointValue;
@@ -126,12 +124,8 @@ final class Lucene10FilterQueryBuilder {
         return queryBuilder.build();
     }
 
-    private static Query entityFilterPredicate(long[] validEntities) {
-        SortedSet<BytesRef> idStrings = new TreeSet<>();
-        for (long validEntity : validEntities) {
-            idStrings.add(new BytesRef(Long.toString(validEntity)));
-        }
-        return new AutomatonQuery(new Term(ENTITY_ID_KEY), makeBinaryStringUnion(idStrings), true);
+    private static Query entityFilterPredicate(LongSet validEntities) {
+        return EntityIdSetQuery.create(ENTITY_ID_KEY, validEntities);
     }
 
     private Query singleValueQuery(int propertyIndex, Value value) {
@@ -325,7 +319,7 @@ final class Lucene10FilterQueryBuilder {
         };
     }
 
-    private static InvalidArgumentException typeUnexpected(Value value, Value withExpectedType) {
+    private static InvalidArgumentException typeUnexpected(AnyValue value, Value withExpectedType) {
         return InvalidArgumentException.invalidType(
                 value.prettyPrint(),
                 ValueTypeNames.nameOfType(value),
@@ -819,6 +813,10 @@ final class Lucene10FilterQueryBuilder {
         switch (entityFilter) {
             case EntityFilterPredicate.MatchAll ignored -> {
                 /*Do nothing*/
+            }
+            case EntityFilterPredicate.MatchEntitySet set
+            when set.entities().isEmpty() -> {
+                return MatchNoDocsQuery.INSTANCE;
             }
             case EntityFilterPredicate.MatchEntitySet set ->
                 queryBuilder.add(Lucene10FilterQueryBuilder.entityFilterPredicate(set.entities()), Occur.FILTER);

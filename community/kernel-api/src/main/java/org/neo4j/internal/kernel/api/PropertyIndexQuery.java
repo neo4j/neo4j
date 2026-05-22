@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.OptionalLong;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.AnyValue;
@@ -234,7 +235,7 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         return new NearestNeighborsPredicate(k, searchExpansionFactor, query);
     }
 
-    public static EntityFilterPredicate entityFilter(long[] entities) {
+    public static EntityFilterPredicate entityFilter(LongSet entities) {
         return new EntityFilterPredicate.MatchEntitySet(entities);
     }
 
@@ -994,13 +995,13 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         public static final class MatchEntitySet extends EntityFilterPredicate {
 
-            private final long[] entities;
+            private final LongSet entities;
 
-            private MatchEntitySet(long[] entities) {
+            private MatchEntitySet(LongSet entities) {
                 this.entities = entities;
             }
 
-            public long[] entities() {
+            public LongSet entities() {
                 return entities;
             }
 
@@ -1013,12 +1014,12 @@ public abstract class PropertyIndexQuery implements IndexQuery {
                     return false;
                 }
                 MatchEntitySet that = (MatchEntitySet) o;
-                return Arrays.equals(entities, that.entities);
+                return entities.equals(that.entities);
             }
 
             @Override
             public int hashCode() {
-                return Arrays.hashCode(entities);
+                return entities.hashCode();
             }
         }
 

@@ -25,16 +25,18 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.eclipse.collections.api.factory.primitive.LongSets;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
-import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.NumberArray;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.UnorderedLongSetListValue;
 
 public final class PropertyIndexQueries {
     private PropertyIndexQueries() {
@@ -42,17 +44,27 @@ public final class PropertyIndexQueries {
     }
 
     public static EntityFilterPredicate matchEntitySet(AnyValue value) {
-        return switch (arrayValue(value)) {
-            case LongArray la -> PropertyIndexQuery.entityFilter(la.asObject());
+        return switch (value) {
+            case UnorderedLongSetListValue set -> PropertyIndexQuery.entityFilter(set.primitiveLongSet());
+            case LongArray a -> PropertyIndexQuery.entityFilter(LongSets.mutable.of(a.asObject()));
             case NumberArray na -> {
-                long[] a = new long[na.intSize()];
-                for (int i = 0; i < a.length; i++) {
-                    a[i] = na.value(i).longValue();
+                MutableLongSet set = LongSets.mutable.withInitialCapacity(na.intSize());
+                for (int i = 0; i < na.intSize(); i++) {
+                    set.add(na.value(i).longValue());
                 }
-                yield PropertyIndexQuery.entityFilter(a);
+                yield PropertyIndexQuery.entityFilter(set);
+            }
+            case ListValue list -> {
+                // we don't given the set an initial size since in theory
+                // calling list.intSize can be O(N).
+                MutableLongSet set = LongSets.mutable.empty();
+                for (AnyValue anyValue : list) {
+                    set.add(CypherFunctions.asLong(anyValue));
+                }
+                yield PropertyIndexQuery.entityFilter(set);
             }
             default ->
-                throw CypherTypeException.expectedStringOrListOfStringsNotNull(
+                throw CypherTypeException.expectedCollection(
                         String.valueOf(value), value.prettyPrint(), CypherTypeValueMapper.valueType(value));
         };
     }
@@ -86,16 +98,6 @@ public final class PropertyIndexQueries {
                         String.valueOf(seekValues),
                         seekValues.prettyPrint(),
                         CypherTypeValueMapper.valueType(seekValues));
-        };
-    }
-
-    private static ArrayValue arrayValue(AnyValue value) {
-        return switch (value) {
-            case ArrayValue a -> a;
-            case ListValue l -> l.toStorableArray();
-            default ->
-                throw CypherTypeException.expectedCollection(
-                        String.valueOf(value), value.prettyPrint(), CypherTypeValueMapper.valueType(value));
         };
     }
 }
