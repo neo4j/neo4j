@@ -668,7 +668,11 @@ class ParquetInputTest {
                                 .named("name")),
                 List.<Object[]>of(new Object[] {6597069807267L, "Mattias Persson"}));
         Input input = createParquetInput(
-                Map.of(Set.of("Person"), List.of(new FileGroup(nodeFile))), Map.of(), STRING, groups, MONITOR);
+                Map.of(Set.of("Person"), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                STRING,
+                groups,
+                MONITOR);
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             assertNextNode(nodes, "6597069807267", properties("name", "Mattias Persson"), labels("Person"));
             assertThat(readNext(nodes)).isFalse();
@@ -688,7 +692,11 @@ class ParquetInputTest {
                         new Object[] {9345850217180L, 6597069807267L, "COMMENT_HAS_CREATOR"},
                         new Object[] {1L, 2L, "KNOWS"}));
         Input input = createParquetInput(
-                Map.of(), Map.of("", List.of(new FileGroup(relationshipFile))), STRING, groups, MONITOR);
+                Map.of(),
+                Map.of("", List.of(new FileGroup(new FileGroup.NumberedFile(-1, relationshipFile)))),
+                STRING,
+                groups,
+                MONITOR);
         try (InputIterator relationships = input.relationships(EMPTY).iterator()) {
             assertNextRelationship(
                     relationships, "9345850217180", "6597069807267", "COMMENT_HAS_CREATOR", properties());
