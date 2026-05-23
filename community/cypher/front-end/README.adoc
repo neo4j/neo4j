@@ -32,7 +32,7 @@ It is also the shared front end for Neo4j and Morpheus.
 
 == Why do the modules have the version number in the name?
 
-A common feature for database systems is to allow backwards compatability for older releases of the software. This makes it possible to move over systems query by query to an updated version of the database.
+A common feature for database systems is to allow backwards compatibility for older releases of the software. This makes it possible to move over systems query by query to an updated version of the database.
 The names allow for two or more versions of compiler pipelines loaded at the same time. It makes it possible for us to release updated, binary incompatible versions of the front ends.
 
 == License
