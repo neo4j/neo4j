@@ -285,6 +285,76 @@ class GQL_42N07_VariableIsShadowingOuterScopeTest extends VariableCheckingWithLo
       ignoreBeforeCypher25(E42N07("x")),
       Seq("x")
     ),
+    TestQuery(
+      """MATCH (person:Person)
+        |CALL (person) {
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  RETURN dog.name AS petName
+        |}
+        |RETURN count(*) AS outerCnt,
+        |       COUNT {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name AS petName
+        |       } AS numPets""".stripMargin,
+      E42N07("petName"),
+      Seq("outerCnt", "numPets")
+    ),
+    TestQuery(
+      """MATCH (person:Person)
+        |CALL (person) {
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  RETURN dog.name AS petName
+        |}
+        |RETURN count(*) AS outerCnt,
+        |       COLLECT {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name AS petName
+        |       } AS numPets""".stripMargin,
+      E42N07("petName"),
+      Seq("outerCnt", "numPets")
+    ),
+    TestQuery(
+      """MATCH (person:Person)
+        |CALL (person) {
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  RETURN dog.name AS petName
+        |}
+        |RETURN count(*) AS outerCnt,
+        |       EXISTS {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name AS petName
+        |       } AS hasPet""".stripMargin,
+      E42N07("petName"),
+      Seq("outerCnt", "hasPet")
+    ),
+    TestQuery(
+      """MATCH (person:Person)
+        |CALL (person) {
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  RETURN dog.name AS petName
+        |}
+        |RETURN person.name AS name,
+        |       COUNT {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name AS petName
+        |       } AS numPets""".stripMargin,
+      E42N07("petName"),
+      Seq("name", "numPets")
+    ),
+    TestQuery(
+      """MATCH (person:Person)
+        |CALL (person) {
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  RETURN dog.name AS petName
+        |}
+        |RETURN count(*) AS outerCnt,
+        |       COUNT {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name AS subPet
+        |       } AS numPets""".stripMargin,
+      Passes,
+      Seq("outerCnt", "numPets")
+    ),
 
     // Positive tests
     TestQuery(
