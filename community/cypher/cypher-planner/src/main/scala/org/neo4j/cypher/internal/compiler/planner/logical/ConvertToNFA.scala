@@ -46,8 +46,6 @@ import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeExpansionPredicate
-import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -73,8 +71,7 @@ object ConvertToNFA {
     fromLeft: Boolean,
     availableSymbols: Set[LogicalVariable],
     predicatesOnTargetNode: Seq[Expression],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    useMultiRelationshipExpansions: Boolean
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): (NFA, Selections, Map[LogicalVariable, LogicalVariable]) = {
     val firstNode = if (fromLeft) spp.left else spp.right
 
@@ -98,8 +95,7 @@ object ConvertToNFA {
         fromLeft,
         availableSymbols,
         anonymousVariableNameGenerator,
-        syntheticVarLengthSingletons,
-        useMultiRelationshipExpansions
+        syntheticVarLengthSingletons
       )
 
     val lastNode = builder.getLastState
@@ -142,8 +138,7 @@ object ConvertToNFA {
     fromLeft: Boolean,
     availableSymbols: Set[LogicalVariable],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    syntheticVarLengthSingleton: Map[LogicalVariable, LogicalVariable],
-    useMultiRelationshipExpansions: Boolean
+    syntheticVarLengthSingleton: Map[LogicalVariable, LogicalVariable]
   ): Selections = {
     // we cannot inline uniqueness predicates but we do not have to solve them as the algorithm for finding shortest paths will do that.
     val selectionsWithoutUniquenessPredicates = selections.filter(_.expr match {
@@ -399,7 +394,7 @@ object ConvertToNFA {
             }
             Selections.from(predicatesOnTargetNode ++ varLengthPredicates)
 
-          case qpp @ QuantifiedPathPattern(
+          case QuantifiedPathPattern(
               leftBinding,
               rightBinding,
               patternRelationships,
@@ -437,8 +432,7 @@ object ConvertToNFA {
              */
 
             // === 1. Add entry juxtaposition ===
-            val (sourceBinding, targetBinding) =
-              if (fromLeft) (leftBinding, rightBinding) else (rightBinding, leftBinding)
+            val sourceBinding = if (fromLeft) leftBinding else rightBinding
             val sourceOuterState = builder.getLastState
             val sourceInner = sourceBinding.inner
             val predicatesOnSourceInner =
@@ -451,19 +445,7 @@ object ConvertToNFA {
               NFA.NodeJuxtapositionTransition(lastSourceInnerState.id)
             )
 
-            // Lazily evaluate variables to avoid unnecessary computation when MultiRelExpansions are not used
-            lazy val targetInner = targetBinding.inner
-            lazy val targetOuter = targetBinding.outer
-            lazy val predicatesOnTargetOuter = getTopLevelPredicates(Set(targetOuter))
-            lazy val predicatesOnTargetInner =
-              getPredicates(qppSelections, availableSymbols + targetInner)
-            lazy val variablePredicateOnTargetInner =
-              toVariablePredicates(targetInner, predicatesOnTargetInner.to(ListSet))
-            // var because it will get overwritten if the lower bound is > 1
-            var targetInnerState = builder.getLastState
-
             // === 2.a) Add inner transitions ===
-
             val relsInOrder = if (fromLeft) patternRelationships else patternRelationships.reverse
 
             def addQppInnerTransitions(): Selections =
@@ -474,137 +456,16 @@ object ConvertToNFA {
                 fromLeft,
                 availableSymbols,
                 anonymousVariableNameGenerator,
-                syntheticVarLengthSingleton,
-                useMultiRelationshipExpansions
+                syntheticVarLengthSingleton
               )
 
-            case class Expansions(
-              nodeExpansionPredicates: Seq[NodeExpansionPredicate],
-              relationshipExpansionPredicates: Seq[RelationshipExpansionPredicate],
-              solvedExprs: Seq[Expression]
-            )
-
-            // Get MultiRelExpansions
-            def getMultiRelExpansions = {
-              relsInOrder.foldLeft(Expansions(Seq.empty, Seq.empty, Seq.empty)) { (acc, patRel) =>
-                patRel match {
-                  case PatternRelationship(relationship, (left, right), dir, types, SimplePatternLength) =>
-                    val target = if (fromLeft) right else left
-                    val nodePredicates =
-                      getTopLevelPredicates(Set(target)) ++ qpp.selections.predicatesGiven(Set(target))
-                    val nodeVariablePredicates = toVariablePredicates(target, nodePredicates)
-                    val newNodeExpansion =
-                      if (target != targetInner) Some(NodeExpansionPredicate(target, nodeVariablePredicates)) else None
-
-                    val directionToPlan = if (fromLeft) dir else dir.reversed
-                    val relPredicates =
-                      getTopLevelPredicates(Set(relationship)) ++ qpp.selections.predicatesGiven(Set(relationship))
-                    val source = acc.nodeExpansionPredicates.lastOption.map(_.nodeVariable).getOrElse(sourceInner)
-                    val alreadyDonePreds =
-                      inlinedSelections.flatPredicates ++ relPredicates ++ nodePredicates.toSeq ++ predicatesOnTargetOuter ++ predicatesOnSourceInner ++ acc.solvedExprs
-
-                    val extraRelPredicates = getExtraRelationshipPredicates(
-                      dir,
-                      source,
-                      relationship,
-                      target,
-                      alreadyDonePreds.to(ListSet),
-                      qpp.selections.predicatesGiven(Set(target, source, relationship)).diff(alreadyDonePreds)
-                    )
-
-                    val relVariablePredicates =
-                      toVariablePredicates(relationship, relPredicates ++ extraRelPredicates.map(_._2))
-
-                    val newRelExpansion = NFA.RelationshipExpansionPredicate(
-                      relationshipVariable = relationship,
-                      relPred = relVariablePredicates,
-                      types = types,
-                      dir = directionToPlan
-                    )
-
-                    acc.copy(
-                      nodeExpansionPredicates = acc.nodeExpansionPredicates ++ newNodeExpansion,
-                      relationshipExpansionPredicates = acc.relationshipExpansionPredicates :+ newRelExpansion,
-                      solvedExprs = acc.solvedExprs ++ nodePredicates ++ relPredicates ++ extraRelPredicates.map(_._1)
-                    )
-                  case _ => acc
-                }
-              }
-            }
-
-            // Extract compound predicates and return them along with the original expressions
-            def compoundPredicates(expansions: Expansions): (Seq[Expression], Option[Expression]) = {
-              val availableCompoundVariables = availableSymbols ++ patternRelationships.iterator.flatMap(pr =>
-                pr.nodes.toSeq ++ pr.relationships ++ qpp.groupVariables
+            val nonInlinedQppSelections = addQppInnerTransitions()
+            if (nonInlinedQppSelections.nonEmpty) {
+              throw InternalException.internalError(
+                this.getClass.getSimpleName,
+                s"$nonInlinedQppSelections could not be inlined into NFA"
               )
-              val alreadySolvedExpressions =
-                predicatesOnTargetOuter ++ inlinedSelections.flatPredicates ++ predicatesOnTargetInner ++ predicatesOnSourceInner
-              val compoundPredicates = selectionsWithoutUniquenessPredicates.predicatesGiven(
-                availableCompoundVariables
-              ) ++ qpp.selections.predicatesGiven(availableCompoundVariables).diff(expansions.solvedExprs)
-                .filterNot(alreadySolvedExpressions.contains)
-              val extractedCompoundPredicatesMap = compoundPredicates
-                .map {
-                  case far: ForAllRepetitions => (far.originalInnerPredicate, far)
-                  case expr: Expression       => (expr, expr)
-                }.filterNot { case (expr, _) => expansions.solvedExprs.contains(expr) }
-                .filterNot { case (expr, _) => expr.dependencies.intersect(qpp.groupVariables).nonEmpty }
-              val extractedCompoundPredicates = extractedCompoundPredicatesMap.map(_._1)
-              val extractedCompoundPredicatesOriginal = extractedCompoundPredicatesMap.map(_._2)
-              val compoundPredicate = if (extractedCompoundPredicatesMap.nonEmpty) {
-                Some(Ands.create(ListSet.from(extractedCompoundPredicates)))
-              } else {
-                None
-              }
-              (extractedCompoundPredicatesOriginal, compoundPredicate)
             }
-
-            def addAndCheckInnerTransitions(): Unit = {
-              val nonInlinedQppSelections = addQppInnerTransitions()
-              if (nonInlinedQppSelections.nonEmpty) {
-                throw InternalException.internalError(
-                  this.getClass.getSimpleName,
-                  s"$nonInlinedQppSelections could not be inlined into NFA"
-                )
-              }
-            }
-
-            def addMultiRelExpansionsAndGetCompoundPreds(): (Seq[Expression], Option[Expression]) = {
-              if (useMultiRelationshipExpansions) {
-                val expansions = getMultiRelExpansions
-                val (extractedCompoundPredicatesOriginal, compoundPredicate) = compoundPredicates(expansions)
-                val nonInlinedQppSelections =
-                  qppSelections -- predicatesOnSourceInner -- expansions.solvedExprs -- predicatesOnTargetInner -- extractedCompoundPredicatesOriginal
-                if (nonInlinedQppSelections.nonEmpty) {
-                  throw InternalException.internalError(
-                    this.getClass.getSimpleName,
-                    s"$nonInlinedQppSelections could not be inlined into NFA"
-                  )
-                }
-                if (compoundPredicate.nonEmpty) {
-                  targetInnerState = builder.addAndGetState(targetInner, variablePredicateOnTargetInner)
-                  builder.addTransition(
-                    lastSourceInnerState,
-                    NFA.MultiRelationshipExpansionTransition(
-                      expansions.relationshipExpansionPredicates,
-                      expansions.nodeExpansionPredicates,
-                      compoundPredicate,
-                      targetInnerState.id
-                    )
-                  )
-                  (extractedCompoundPredicatesOriginal, compoundPredicate)
-                } else {
-                  addAndCheckInnerTransitions()
-                  (Seq.empty, None)
-                }
-              } else {
-                addAndCheckInnerTransitions()
-                (Seq.empty, None)
-              }
-            }
-
-            // Add MultiRelExpansions and get CompoundPredicates if any were added otherwise add inner QPP transitions
-            val (extractedCompoundPredicatesOriginal, compoundPredicate) = addMultiRelExpansionsAndGetCompoundPreds()
 
             // === 2.b) Unrolling for lower bound ===
             // If the lower bound is larger than 1, repeat the inner steps of the QPP (min - 1) times.
@@ -615,20 +476,7 @@ object ConvertToNFA {
                 newTargetInnerState,
                 NFA.NodeJuxtapositionTransition(lastSourceInnerState.id)
               )
-              if (compoundPredicate.nonEmpty) {
-                val additionalExpansions = getMultiRelExpansions
-                targetInnerState = builder.addAndGetState(targetInner, variablePredicateOnTargetInner)
-                builder.addTransition(
-                  lastSourceInnerState,
-                  NFA.MultiRelationshipExpansionTransition(
-                    additionalExpansions.relationshipExpansionPredicates,
-                    additionalExpansions.nodeExpansionPredicates,
-                    compoundPredicate,
-                    targetInnerState.id
-                  )
-                )
-              } else
-                addQppInnerTransitions()
+              addQppInnerTransitions()
             }
 
             // 3. By unrolling, we have reached the first target inner state from which we can exit the QPP.
@@ -642,26 +490,13 @@ object ConvertToNFA {
                 Seq.empty
               case UpperBound.Limited(max) =>
                 for (_ <- Math.max(repetition.min, 1) until max) yield {
-                  targetInnerState = builder.getLastState
+                  val targetInnerState = builder.getLastState
                   val sourceInnerState = builder.addAndGetState(sourceInner, variablePredicateOnSourceInner)
                   builder.addTransition(
                     targetInnerState,
                     NFA.NodeJuxtapositionTransition(sourceInnerState.id)
                   )
-                  if (compoundPredicate.nonEmpty) {
-                    val additionalExpansions = getMultiRelExpansions
-                    targetInnerState = builder.addAndGetState(targetInner, variablePredicateOnTargetInner)
-                    builder.addTransition(
-                      sourceInnerState,
-                      NFA.MultiRelationshipExpansionTransition(
-                        additionalExpansions.relationshipExpansionPredicates,
-                        additionalExpansions.nodeExpansionPredicates,
-                        compoundPredicate,
-                        targetInnerState.id
-                      )
-                    )
-                  } else
-                    addQppInnerTransitions()
+                  addQppInnerTransitions()
 
                   builder.getLastState
                 }
@@ -670,6 +505,9 @@ object ConvertToNFA {
 
             // === 4. Add exit juxtapositions ===
             // Connect all exitableTargetInnerStates with the targetOuterState
+            val targetBinding = if (fromLeft) rightBinding else leftBinding
+            val targetOuter = targetBinding.outer
+            val predicatesOnTargetOuter = getTopLevelPredicates(Set(targetOuter))
             val variablePredicateOnTargetOuter =
               toVariablePredicates(targetOuter, predicatesOnTargetOuter.to(ListSet))
             val targetOuterState = builder.addAndGetState(targetOuter, variablePredicateOnTargetOuter)
@@ -689,13 +527,7 @@ object ConvertToNFA {
               )
             }
 
-            val predicatesAddedFromMRE = if (compoundPredicate.nonEmpty)
-              extractedCompoundPredicatesOriginal ++ predicatesOnTargetInner
-            else Seq.empty
-
-            Selections.from(
-              predicatesOnSourceInner ++ predicatesOnTargetOuter ++ predicatesAddedFromMRE
-            )
+            Selections.from(predicatesOnSourceInner ++ predicatesOnTargetOuter)
         }
         (builder, inlinedSelections ++ newlyInlinedSelections)
     }

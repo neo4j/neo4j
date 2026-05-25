@@ -125,9 +125,6 @@ class CypherConfiguration private (val config: Config) {
   val gpmShortestToLegacyShortestEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.gpm_shortest_to_legacy_shortest_enabled).booleanValue()
 
-  val multiRelationshipExpansionEnabled: Boolean =
-    config.get(GraphDatabaseInternalSettings.multi_relationship_expansion_enabled).booleanValue()
-
   val labelInference: CypherInferSchemaPartsOption = CypherInferSchemaPartsOption.fromConfig(config)
 
   val uuidTypeEnabled: Boolean = config.get(GraphDatabaseInternalSettings.cypher_uuid_type_enabled).booleanValue()

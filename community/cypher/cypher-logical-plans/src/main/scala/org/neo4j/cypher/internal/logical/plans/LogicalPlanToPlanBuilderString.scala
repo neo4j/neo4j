@@ -93,8 +93,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString.Pa
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString.Param.seqParam
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString.Param.setParam
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString.Param.spread
-import org.neo4j.cypher.internal.logical.plans.NFA.MultiRelationshipExpansionTransition
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransition
@@ -1917,17 +1915,14 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def transitionString(nfa: NFA, from: State, transition: Transition): String = {
-    val (patternString, maybeCompoundPredicate) = transition match {
+    val patternString = transition match {
       case NodeJuxtapositionTransition(endId) =>
         val to = nfa.states(endId)
         val whereString =
           to.variablePredicate.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
-        (
-          s""" "(${escapeIdentifier(from.variable.name)}) (${escapeIdentifier(to.variable.name)}$whereString)" """.trim,
-          None
-        )
+        s""" "(${escapeIdentifier(from.variable.name)}) (${escapeIdentifier(to.variable.name)}$whereString)" """.trim
       case RelationshipExpansionTransition(RelationshipExpansionPredicate(relName, relPred, types, dir), endId) =>
         val to = nfa.states(endId)
         val relWhereString =
@@ -1940,45 +1935,12 @@ object LogicalPlanToPlanBuilderString {
           ).getOrElse("")
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
-        (
-          s""" "(${escapeIdentifier(from.variable.name)})$dirStrA[${escapeIdentifier(
-              relName.name
-            )}$typeStr$relWhereString]$dirStrB(${escapeIdentifier(to.variable.name)}$nodeWhereString)" """.trim,
-          None
-        )
-
-      case MultiRelationshipExpansionTransition(relPredicates, nodePredicates, compoundPredicate, endId) =>
-        val pattern =
-          (NodeExpansionPredicate(from.variable, from.variablePredicate) +: nodePredicates).zip(relPredicates).map {
-            case (
-                NodeExpansionPredicate(nodeVariable, nodePred),
-                RelationshipExpansionPredicate(relName, relPred, types, dir)
-              ) =>
-              val nodeWhereString =
-                nodePred.map(vp =>
-                  s" WHERE ${expressionStringifier(vp.predicate)}"
-                ).getOrElse("")
-              val relWhereString =
-                relPred.map(vp =>
-                  s" WHERE ${expressionStringifier(vp.predicate)}"
-                ).getOrElse("")
-              val (dirStrA, dirStrB) = arrows(dir)
-              val typeStr = relTypeStr(types)
-              s"(${escapeIdentifier(nodeVariable.name)}$nodeWhereString)$dirStrA[${escapeIdentifier(relName.name)}$typeStr$relWhereString]$dirStrB"
-          }.mkString("")
-        val to = nfa.states(endId)
-        val nodeWhereString =
-          to.variablePredicate.map(vp =>
-            s" WHERE ${expressionStringifier(vp.predicate)}"
-          ).getOrElse("")
-        (
-          s"""  "$pattern(${escapeIdentifier(to.variable.name)}$nodeWhereString)" """.trim,
-          compoundPredicate.map(c => wrapInQuotations(expressionStringifier(c)))
-        )
+        s""" "(${escapeIdentifier(from.variable.name)})$dirStrA[${escapeIdentifier(
+            relName.name
+          )}$typeStr$relWhereString]$dirStrB(${escapeIdentifier(to.variable.name)}$nodeWhereString)" """.trim
     }
 
-    val compoundString = maybeCompoundPredicate.map(cp => s", compoundPredicate = $cp").getOrElse("")
-    s"$indent$indent.addTransition(${from.id}, ${transition.endId}, $patternString$compoundString)"
+    s"$indent$indent.addTransition(${from.id}, ${transition.endId}, $patternString)"
   }
 
   private def acyclicParameterString(

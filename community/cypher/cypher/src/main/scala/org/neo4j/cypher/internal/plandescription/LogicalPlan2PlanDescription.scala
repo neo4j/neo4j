@@ -2400,18 +2400,7 @@ case class LogicalPlan2PlanDescription(
         }
         val inlinedPredicatesStr = {
           val prefix = pretty"    inlined predicates: "
-          val inlinedPredicates = nfa.predicates.diff(nfa.compoundPredicates).flatMap {
-            case Ands(exprs) => exprs
-            case x           => Set(x)
-          }.toSeq
-          inlinedPredicates match {
-            case Seq() => pretty""
-            case preds => predicateLines(preds.map(asPrettyString(_)).sorted, prefix)
-          }
-        }
-        val compoundPredicates = {
-          val prefix = pretty"    compound predicates: "
-          val inlinedPredicates = nfa.compoundPredicates.flatMap {
+          val inlinedPredicates = nfa.predicates.flatMap {
             case Ands(exprs) => exprs
             case x           => Set(x)
           }.toSeq
@@ -2429,8 +2418,7 @@ case class LogicalPlan2PlanDescription(
           }
         }
 
-        val detailsStr =
-          pretty"$patternStr$expandDirStr$inlinedPredicatesStr$compoundPredicates$nonInlinedPredicatesStr"
+        val detailsStr = pretty"$patternStr$expandDirStr$inlinedPredicatesStr$nonInlinedPredicatesStr"
         PlanDescriptionImpl(
           id = id,
           name = s"StatefulShortestPath($modeDescr, $pathMode)",

@@ -265,9 +265,6 @@ object CommandNFA {
         case NFA.RelationshipExpansionTransition(rp: NFA.RelationshipExpansionPredicate, endId) =>
           val end = logicalNFA.states(endId)
           res.append(compileStubbedRelationshipExpansion(rp, stateLookup(end.id)))
-
-        case _: NFA.MultiRelationshipExpansionTransition =>
-          throw new IllegalStateException("Multi-relationship expansion is not supported in the runtime. ")
       }
 
       val commandState = stateLookup(logicalState.id)

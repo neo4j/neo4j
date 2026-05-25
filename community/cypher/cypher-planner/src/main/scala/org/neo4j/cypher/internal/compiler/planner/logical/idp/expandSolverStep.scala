@@ -733,8 +733,7 @@ object expandSolverStep {
         fromLeft,
         availableSymbols,
         unsolvedPredicatesOnEndNode,
-        context.staticComponents.anonymousVariableNameGenerator,
-        context.settings.multiRelationshipExpansion
+        context.staticComponents.anonymousVariableNameGenerator
       )
     }
     val nonInlinedSelectionsWithoutUniqPreds = nonInlinedSelections.filter(_.expr match {

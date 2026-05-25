@@ -170,63 +170,6 @@ class LogicalPlanToPlanBuilderStringTest
   )
 
   testPlan(
-    "statefulShortestPath with multi-relationship expansion",
-    new TestPlanBuilder()
-      .produceResults("a", "b")
-      .statefulShortestPath(
-        "s",
-        "t",
-        "(s) (n1)-[r2]->(n2 WHERE n2.p=1)-[r2]->(n3) (t)",
-        None,
-        Set.empty,
-        Set.empty,
-        Set("n1_inner" -> "n1", "n2_inner" -> "n2", "n3_inner" -> "n3", "t_inner" -> "t"),
-        Set("r1_inner" -> "r1", "r2_inner" -> "r2"),
-        Selector.Shortest(CountInteger(Int.MaxValue)),
-        new TestNFABuilder(0, "s")
-          .addTransition(0, 1, "(s) (n1_inner)")
-          .addTransition(1, 2, "(n1_inner)-[r1_inner]->(n2_inner WHERE n2_inner.p = 1)-[r2_inner]->(n3_inner)")
-          .addTransition(2, 3, "(n3_inner) (t_inner)")
-          .setFinalState(3)
-          .build(),
-        ExpandAll
-      )
-      .allNodeScan("s")
-      .build()
-  )
-
-  testPlan(
-    "statefulShortestPath with multi-relationship expansion with compound predicate",
-    new TestPlanBuilder()
-      .produceResults("a", "b")
-      .statefulShortestPath(
-        "s",
-        "t",
-        "(s) (n1)-[r2]->(n2 WHERE n2.p=1)-[r2]->(n3) (t)",
-        None,
-        Set.empty,
-        Set.empty,
-        Set("n1_inner" -> "n1", "n2_inner" -> "n2", "n3_inner" -> "n3", "t_inner" -> "t"),
-        Set("r1_inner" -> "r1", "r2_inner" -> "r2"),
-        Selector.Shortest(CountInteger(Int.MaxValue)),
-        new TestNFABuilder(0, "s")
-          .addTransition(0, 1, "(s) (n1_inner)")
-          .addTransition(
-            1,
-            2,
-            "(n1_inner)-[r1_inner]->(n2_inner WHERE n2_inner.p = 1)-[r2_inner]->(n3_inner)",
-            compoundPredicate = "n1_inner.foo = n3_inner.foo AND n1_inner.bar = n3_inner.bar"
-          )
-          .addTransition(2, 3, "(n3_inner) (t_inner)")
-          .setFinalState(3)
-          .build(),
-        ExpandAll
-      )
-      .allNodeScan("s")
-      .build()
-  )
-
-  testPlan(
     "statefulShortestPathExpr",
     new TestPlanBuilder()
       .produceResults("a", "b", "c")

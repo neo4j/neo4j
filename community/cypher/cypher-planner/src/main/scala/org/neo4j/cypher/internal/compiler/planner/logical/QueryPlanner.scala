@@ -145,7 +145,6 @@ case object QueryPlanner
       remoteBatchPropertiesStrategy = RemoteBatchingStrategy.fromConfig(context),
       shardOperatorPushdownStrategy =
         ShardOperatorPushdownStrategy.fromConfig(from.query, context),
-      multiRelationshipExpansion = context.config.multiRelationshipExpansionEnabled(),
       dynamicLabelScansEnabled = context.config.dynamicLabelScansEnabled(),
       dynamicLabelIndexUseEnabled = context.config.dynamicLabelIndexUseEnabled(),
       existsWithImplicitLimitEnabled = context.config.existsWithImplicitLimitEnabled(),

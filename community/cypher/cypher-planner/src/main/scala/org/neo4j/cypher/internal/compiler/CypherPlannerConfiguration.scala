@@ -197,13 +197,6 @@ class CypherPlannerConfiguration(
     () => config.gpmShortestToLegacyShortestEnabled
   }
 
-  val multiRelationshipExpansionEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.multi_relationship_expansion_enabled.dynamic()
-    )
-    () => config.multiRelationshipExpansionEnabled
-  }
-
   val lpEagerFallbackEnabled: () => Boolean = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled.dynamic()

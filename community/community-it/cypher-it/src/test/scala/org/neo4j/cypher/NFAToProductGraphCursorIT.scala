@@ -363,12 +363,6 @@ object NFAToProductGraphCursorIT {
         types.map(RelTypeName(_)(InputPosition.NONE)),
         dir
       )
-
-    def nodeExpansionPredicate(predicate: Option[VariablePredicate] = None): NFA.NodeExpansionPredicate =
-      NFA.NodeExpansionPredicate(
-        nextName("n"),
-        predicate
-      )
   }
 
   private case class NFAStateWrapper(state: NFA.State, parent: NFABuilderWrapper) {

@@ -441,7 +441,6 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
       predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize(),
       useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping(),
-      multiRelationshipExpansion = config.multiRelationshipExpansionEnabled(),
       dynamicLabelScansEnabled = config.dynamicLabelScansEnabled()
     )
 

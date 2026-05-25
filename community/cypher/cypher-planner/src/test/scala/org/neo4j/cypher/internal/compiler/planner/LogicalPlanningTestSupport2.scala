@@ -686,8 +686,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
       val settings = Settings(
         executionModel = config.executionModel,
         debugOptions = CypherDebugOptions.default,
-        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
-        multiRelationshipExpansion = cypherCompilerConfig.multiRelationshipExpansionEnabled()
+        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize()
       )
 
       LogicalPlanningContext(staticComponents, settings)

@@ -134,8 +134,6 @@ object LogicalPlanningContext {
    *                          Relevant for caching.
    * @param remoteBatchPropertiesStrategy a strategy object that encapsulates whether to plan RemoteBatchProperties operators.
    *                                      Relevant for caching.
-   * @param multiRelationshipExpansion a setting whether to expand multiple relationships in one transition in shortest path NFAs.
-   *                                   Relevant for caching.
    * @param dynamicLabelScansEnabled a setting whether dynamic label scans should be planned.
    *                                 Relevant for caching.
    * @param dynamicLabelIndexUseEnabled a setting whether indexes should be used to plan queries with dynamic labels.
@@ -168,8 +166,6 @@ object LogicalPlanningContext {
     planVarExpandInto: CypherPlanVarExpandInto = CypherPlanVarExpandInto.default,
     remoteBatchPropertiesStrategy: RemoteBatchingStrategy = RemoteBatchingStrategy.defaultValue(),
     shardOperatorPushdownStrategy: ShardOperatorPushdownStrategy = ShardOperatorPushdownStrategy.defaultValue(),
-    multiRelationshipExpansion: Boolean =
-      GraphDatabaseInternalSettings.multi_relationship_expansion_enabled.defaultValue(),
     dynamicLabelScansEnabled: Boolean = GraphDatabaseInternalSettings.cypher_enable_dynamic_label_scan.defaultValue(),
     dynamicLabelIndexUseEnabled: Boolean =
       GraphDatabaseInternalSettings.cypher_enable_dynamic_label_index_use.defaultValue(),
@@ -198,7 +194,6 @@ object LogicalPlanningContext {
           planVarExpandInto: CypherPlanVarExpandInto,
           remoteBatchPropertiesStrategy: RemoteBatchingStrategy,
           shardOperatorPushdownStrategy: ShardOperatorPushdownStrategy,
-          multiRelationshipExpansion: Boolean,
           dynamicLabelScansEnabled: Boolean,
           dynamicLabelIndexUseEnabled: Boolean,
           existsWithImplicitLimitEnabled: Boolean,
@@ -244,9 +239,6 @@ object LogicalPlanningContext {
 
         if (GraphDatabaseInternalSettings.push_operators_into_remote_batch_properties.dynamic())
           builder.addOne(shardOperatorPushdownStrategy)
-
-        if (GraphDatabaseInternalSettings.multi_relationship_expansion_enabled.dynamic())
-          builder.addOne(multiRelationshipExpansion)
 
         if (GraphDatabaseInternalSettings.cypher_enable_dynamic_label_scan.dynamic())
           builder.addOne(dynamicLabelScansEnabled)
