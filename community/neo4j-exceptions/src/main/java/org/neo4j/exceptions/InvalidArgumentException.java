@@ -1225,10 +1225,13 @@ public class InvalidArgumentException extends Neo4jException {
 
     public static InvalidArgumentException pbacNotSupportedWithSPD() {
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N71)
-                .withParam(GqlParams.StringParam.feat, "Property Based Access Control")
+                .withParam(
+                        GqlParams.StringParam.feat,
+                        "Property Based Access Control for MATCH and TRAVERSE privilege actions")
                 .build();
         return new InvalidArgumentException(
-                gql, "Property Based Access Control is not supported on a Sharded Database.");
+                gql,
+                "Property Based Access Control for MATCH and TRAVERSE privilege actions is not supported on a Sharded Database.");
     }
 
     public static InvalidArgumentException invalidGraphName(String graphName) {
