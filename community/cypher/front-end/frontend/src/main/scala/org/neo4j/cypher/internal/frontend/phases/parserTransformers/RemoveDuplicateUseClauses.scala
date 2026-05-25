@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.StatementRewriter
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 case object NoDuplicateUseClauses extends Condition
@@ -119,9 +118,6 @@ case object RemoveDuplicateUseClauses extends StatementRewriter with StepSequenc
     }
   }
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = RemoveDuplicateUseClauses
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    RemoveDuplicateUseClauses
 }

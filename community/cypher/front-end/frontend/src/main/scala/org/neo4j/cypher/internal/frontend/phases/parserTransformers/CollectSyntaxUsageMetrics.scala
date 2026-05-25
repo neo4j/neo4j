@@ -49,12 +49,11 @@ import org.neo4j.cypher.internal.frontend.phases.SyntaxUsageMetricKey
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.IsolateSubqueriesInMutatingPatterns.SubqueriesInMutatingPatternsIsolated
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Collects usage statistics about several syntactical CYPHER features
@@ -171,11 +170,7 @@ case object CollectSyntaxUsageMetrics
 
   override def invalidatedConditions: Set[Condition] = Set.empty
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean = false
-  ): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 
   override def phase = METADATA_COLLECTION
 }

@@ -16,28 +16,41 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.factories
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.IfChangedSetSemantics
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
+import org.neo4j.cypher.internal.rewriting.rewriters.Forced
+import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+
+case class ParsingConfig(
+  extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
+  /* TODO: This is not part of configuration - Move to BaseState */
+  parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
+  obfuscateLiterals: Boolean = false,
+  resolveSimpleDynamicExpressions: Boolean = false,
+  enabledVirtualGraph: Boolean = false
+) {
+
+  def literalExtractionStrategy: LiteralExtractionStrategy = extractLiterals match {
+    case ExtractLiteral.ALWAYS          => Forced
+    case ExtractLiteral.NEVER           => Never
+    case ExtractLiteral.IF_NO_PARAMETER => IfNoParameter
+    case _                              => throw new IllegalStateException(s"$extractLiterals is not a known strategy")
+  }
+}
 
 trait ParsePipelineTransformerFactory {
 
-  def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState]
+  def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState]
 
-  def getCheckedTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = {
-    val transformer = getTransformer(literalExtractionStrategy, parameterTypeMapping, obfuscateLiterals)
+  def getCheckedTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+    val transformer = getTransformer(config)
     if (transformer.invalidatedConditions.intersect(SemanticAnalysis.postConditions).nonEmpty)
       IfChangedSetSemantics.using(transformer)
     else transformer

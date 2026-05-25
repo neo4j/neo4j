@@ -27,12 +27,11 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.ValidSymbolicNamesInLabelExpressions
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.parser.AstParserFactory
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.exceptions.SyntaxException
 
 /**
@@ -95,9 +94,5 @@ case object Parse extends Phase[BaseContext, BaseState, BaseState]
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean = false
-  ): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 }

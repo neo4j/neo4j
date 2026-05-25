@@ -25,20 +25,19 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.Deprecation
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.SemanticDeprecations
 import org.neo4j.cypher.internal.rewriting.SyntacticDeprecations
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case object DeprecatedSyntaxReplaced extends Condition
 case object DeprecatedSemanticsReplaced extends Condition
@@ -102,11 +101,7 @@ case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations)
     case _: SemanticDeprecations  => Set(DeprecatedSemanticsReplaced)
   }
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean = false
-  ): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 
   override def phase = DEPRECATION_WARNINGS
 }

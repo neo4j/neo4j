@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.NoReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
@@ -71,9 +71,6 @@ case object AstRewriting extends StepSequencer.Step with ParsePipelineTransforme
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + UpToDateScopes
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = AstRewriting(parameterTypeMapping)
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    AstRewriting(config.parameterTypeMapping)
 }

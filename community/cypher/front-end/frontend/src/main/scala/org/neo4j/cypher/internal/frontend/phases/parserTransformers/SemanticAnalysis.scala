@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting.SemanticAnalysisPossible
@@ -41,13 +42,11 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.Scop
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableChecker
 import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 /**
@@ -171,11 +170,8 @@ case object SemanticAnalysis extends StepSequencer.Step with ParsePipelineTransf
   /**
    * Transformer for the parse pipeline
    */
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = ifSemanticsNotUpToDate(warn = None)
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    ifSemanticsNotUpToDate(warn = None)
 
   /**
    * Transformer for the plan pipeline

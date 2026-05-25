@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.AttributeBasedAccessControl
@@ -37,6 +36,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ShowSetting
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UUIDType
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UserTags
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AmbiguousAggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.CollectSyntaxUsageMetrics
@@ -59,13 +59,8 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.UnresolveSha
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.WrapAndExpandProcedureCall
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.rewriters.Forced
-import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
-import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.values.virtual.MapValue
 
@@ -104,23 +99,6 @@ trait FrontEndCompilationPhases {
   def enabledSemanticFeatures(features: Set[String]): Seq[SemanticFeature] =
     features.map(SemanticFeature.fromString).toSeq
 
-  case class ParsingConfig(
-    extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
-    /* TODO: This is not part of configuration - Move to BaseState */
-    parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
-    obfuscateLiterals: Boolean = false,
-    resolveSimpleDynamicExpressions: Boolean = false,
-    enabledVirtualGraph: Boolean = false
-  ) {
-
-    def literalExtractionStrategy: LiteralExtractionStrategy = extractLiterals match {
-      case ExtractLiteral.ALWAYS          => Forced
-      case ExtractLiteral.NEVER           => Never
-      case ExtractLiteral.IF_NO_PARAMETER => IfNoParameter
-      case _ => throw new IllegalStateException(s"$extractLiterals is not a known strategy")
-    }
-  }
-
   val AccumulatedSteps(orderedSteps, _postConditions) =
     StepSequencer[StepSequencer.Step with ParsePipelineTransformerFactory]().orderSteps(
       Set(
@@ -143,11 +121,9 @@ trait FrontEndCompilationPhases {
     )
 
   def postParsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
-    Chainer.chainTransformers(orderedSteps.map(_.getCheckedTransformer(
-      literalExtractionStrategy = config.literalExtractionStrategy,
-      parameterTypeMapping = config.parameterTypeMapping,
-      obfuscateLiterals = config.obfuscateLiterals
-    ))).asInstanceOf[Transformer[BaseContext, BaseState, BaseState]]
+    Chainer.chainTransformers(
+      orderedSteps.map(_.getCheckedTransformer(config))
+    ).asInstanceOf[Transformer[BaseContext, BaseState, BaseState]]
 
   private def parsingBase(
     config: ParsingConfig,

@@ -36,13 +36,12 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case object UpToDateScopes extends StepSequencer.Condition
 
@@ -102,11 +101,7 @@ case object ScopeSurveyor extends Phase[BaseContext, BaseState, BaseState]
       override def name: String = "ScopeSurveyor without check statement"
     }
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = ScopeSurveyor
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = ScopeSurveyor
 
   override def getTransformer(planPipelineConfig: PlanPipelineTransformerConfig)
     : Transformer[BaseContext, BaseState, BaseState] = ScopeSurveyor

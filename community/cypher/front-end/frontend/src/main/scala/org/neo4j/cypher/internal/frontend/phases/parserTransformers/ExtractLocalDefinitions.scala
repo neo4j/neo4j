@@ -29,12 +29,11 @@ import org.neo4j.cypher.internal.frontend.phases.LocalDefinitionsDirectory
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * ExtractLocalDefinitions extracts DEFINE statements from the queries in the LocalDefinitionsDirectory of the BaseState.
@@ -72,11 +71,8 @@ case object ExtractLocalDefinitions extends Phase[BaseContext, BaseState, BaseSt
 
   override def invalidatedConditions: Set[Condition] = Set()
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = ExtractLocalDefinitions
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    ExtractLocalDefinitions
 
   override def phase: CompilationPhaseTracer.CompilationPhase = CompilationPhase.LOCAL_DEFINITION_EXTRACTION
 }

@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.setti
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.options.CypherExecutionMode
@@ -122,7 +123,7 @@ case class FabricFrontEnd(
         cypherConfig.toggledFeatures(defaultSemanticFeatures, settingToFeatureMapping: _*)
     ) ++ Seq(MultipleGraphs, UseAsMultipleGraphsSelector)
 
-    private val parsingConfig = CompilationPhases.ParsingConfig(
+    private val parsingConfig = ParsingConfig(
       extractLiterals = cypherConfig.extractLiterals,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params, cypherConfig.useParameterSizeHint),
       obfuscateLiterals = cypherConfig.obfuscateLiterals,

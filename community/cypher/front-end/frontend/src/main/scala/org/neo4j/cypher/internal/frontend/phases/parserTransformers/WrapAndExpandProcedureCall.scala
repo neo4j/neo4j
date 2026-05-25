@@ -38,16 +38,15 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.StatementRewriter
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoExpandableClauses
 import org.neo4j.cypher.internal.rewriting.conditions.ProcedureCallWrappedAndExpanded
 import org.neo4j.cypher.internal.rewriting.conditions.ProjectionClausesHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
@@ -104,9 +103,5 @@ case object WrapAndExpandProcedureCall extends StatementRewriter with ParsePipel
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = rewriter
 
-  override def getTransformer(
-    literalExtractionStrategy: LiteralExtractionStrategy,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    obfuscateLiterals: Boolean
-  ): Transformer[BaseContext, BaseState, BaseState] = this
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 }
