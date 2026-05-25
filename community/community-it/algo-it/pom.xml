@@ -45,6 +45,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graph-algo</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel-test-utils</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

@@ -23,32 +23,40 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
+    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.community</moduleName>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-common</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.junit.platform</groupId>
-          <artifactId>junit-platform-engine</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.junit.platform</groupId>
-      <artifactId>junit-platform-testkit</artifactId>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.collections</groupId>
+      <artifactId>eclipse-collections-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>annotations</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -77,17 +85,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-fabric</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-fleet-management</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -112,28 +110,18 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-schema</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-security</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-slf4j-provider</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-udc</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-java-driver</artifactId>
-      <version>${neo4j-java-driver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.junit.platform</groupId>
@@ -166,8 +154,41 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-slf4j-provider</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-udc</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.junit.platform</groupId>
+          <artifactId>junit-platform-engine</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-testkit</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -200,4 +221,37 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>analyze</id>
+            <goals>
+              <goal>analyze-only</goal>
+            </goals>
+            <configuration>
+              <failOnWarning>true</failOnWarning>
+              <ignoredNonTestScopedDependencies>
+                <ignoredNonTestScopedDependency>org.neo4j:neo4j-schema</ignoredNonTestScopedDependency>
+              </ignoredNonTestScopedDependencies>
+              <ignoredUnusedDeclaredDependencies>
+                <!-- ServiceLoader CLI command providers — registered via META-INF/services, not imported directly -->
+                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-consistency-check</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-import-tool</ignoredUnusedDeclaredDependency>
+                <!-- Loaded via Class.forName() in NeoBootstrapper to allow user removal -->
+                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-slf4j-provider</ignoredUnusedDeclaredDependency>
+                <!-- ServiceLoader ExtensionFactory — registered via @ServiceProvider, not imported directly -->
+                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-udc</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
