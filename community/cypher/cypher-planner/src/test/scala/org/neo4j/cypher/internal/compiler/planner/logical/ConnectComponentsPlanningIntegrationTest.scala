@@ -592,6 +592,79 @@ class ConnectComponentsPlanningIntegrationTest extends CypherPlannerTestSuite wi
     plan.stripProduceResults should (beSolvedByApply or beSolvedByJoin)
   }
 
+  test(
+    "apply component connector should apply selective single-node predicate before EXISTS subqueries"
+  ) {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000000)
+      .setLabelCardinality("N", 500000)
+      .setLabelCardinality("M", 10)
+      .setLabelCardinality("O", 100000)
+      .setLabelCardinality("C", 1000)
+      .setLabelCardinality("T1", 1000)
+      .setLabelCardinality("T2", 1000)
+      .setRelationshipCardinality("()-[:R]->()", 500000)
+      .setRelationshipCardinality("(:O)-[:R]->(:N)", 500000)
+      .setRelationshipCardinality("(:O)-[:R]->()", 500000)
+      .setRelationshipCardinality("()-[:R]->(:N)", 500000)
+      .setRelationshipCardinality("()-[:R2]->()", 500000)
+      .setRelationshipCardinality("(:N)-[:R2]->(:C)", 250000)
+      .setRelationshipCardinality("(:O)-[:R2]->(:C)", 250000)
+      .setRelationshipCardinality("(:N)-[:R2]->()", 250000)
+      .setRelationshipCardinality("(:O)-[:R2]->()", 250000)
+      .setRelationshipCardinality("()-[:R2]->(:C)", 500000)
+      .setRelationshipCardinality("()-[:R3]->()", 50000)
+      .setRelationshipCardinality("(:C)-[:R3]->(:T1)", 25000)
+      .setRelationshipCardinality("(:C)-[:R3]->(:T2)", 25000)
+      .setRelationshipCardinality("(:C)-[:R3]->()", 50000)
+      .setRelationshipCardinality("()-[:R3]->(:T1)", 25000)
+      .setRelationshipCardinality("()-[:R3]->(:T2)", 25000)
+      .setRelationshipCardinality("()-[:R4]->()", 5000)
+      .setRelationshipCardinality("(:T1)-[:R4]->(:M)", 2500)
+      .setRelationshipCardinality("(:T2)-[:R4]->(:M)", 2500)
+      .setRelationshipCardinality("(:T1)-[:R4]->()", 2500)
+      .setRelationshipCardinality("(:T2)-[:R4]->()", 2500)
+      .setRelationshipCardinality("()-[:R4]->(:M)", 5000)
+      .build()
+
+    val query =
+      """MATCH (n:N) WHERE n.prop IN [1, 2, 3]
+        |MATCH (m:M)
+        |MATCH (n)<-[:R]-(o:O)
+        |WHERE EXISTS { (m)<-[:R4]-(:T1)<-[:R3]-(:C)<-[:R2]-(n) }
+        |  AND EXISTS { (m)<-[:R4]-(:T2)<-[:R3]-(:C)<-[:R2]-(o) }
+        |RETURN n
+        |""".stripMargin
+
+    val plan = cfg.plan(query)
+
+    plan should equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .semiApply()
+        .|.expandInto("(m)<-[:R4]-(anon_2)")
+        .|.filter("anon_2:T2")
+        .|.expandAll("(anon_3)-[:R3]->(anon_2)")
+        .|.filter("anon_3:C")
+        .|.expandAll("(o)-[:R2]->(anon_3)")
+        .|.argument("m", "o")
+        .semiApply()
+        .|.expandInto("(m)<-[:R4]-(anon_0)")
+        .|.filter("anon_0:T1")
+        .|.expandAll("(anon_1)-[:R3]->(anon_0)")
+        .|.filter("anon_1:C")
+        .|.expandAll("(n)-[:R2]->(anon_1)")
+        .|.argument("m", "n")
+        .cartesianProduct()
+        .|.filter("o:O")
+        .|.expandAll("(n)<-[:R]-(o)")
+        .|.filter("n.prop IN [1, 2, 3]")
+        .|.nodeByLabelScan("n", "N", IndexOrderNone)
+        .nodeByLabelScan("m", "M", IndexOrderNone)
+        .build()
+    )
+  }
+
   test("should plan value hash join where rhs depends on lhs and there are no indexes") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)

@@ -76,13 +76,17 @@ case class ApplyComponentConnector(singleComponentPlanner: SingleComponentPlanne
 
             allPredicates = predicatesDependendingOnBothSides(predicatesWithDependencies, leftCovered, rightCovered)
 
+            // Group predicates that have the same dependencies on the RHS, and try to solve them together.
+            // This can make it possible to use composite indexes.
+            predicates <- allPredicates.groupBy(_.dependencies.intersect(rightCovered)).values
+
             plan <- connectWithApply(
               leftPlan,
               rightPlan,
               leftQg,
               rightQg,
               interestingOrderConfig,
-              allPredicates,
+              predicates,
               context,
               kit,
               singleComponentPlanner
