@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.CypherTypeNorm
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.DesugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.FixedLengthShortestToAllRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.FoldConstants
-import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.GQLAliasFunctionNameRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.GraphTypeCanonicalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.MoveWithPastMatch
@@ -77,7 +76,6 @@ object ASTRewriter {
         DesugarMapProjection,
         FixedLengthShortestToAllRewriter,
         FoldConstants,
-        GQLAliasFunctionNameRewriter,
         GraphTypeCanonicalizer,
         LabelExpressionPredicateNormalizer,
         MoveWithPastMatch,

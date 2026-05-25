@@ -16,14 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters.astRewriters
 
-import org.neo4j.cypher.internal.CypherVersion
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.GQLAliasFunctionNameRewritten
-import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Namespace
@@ -31,7 +28,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Rewrites GQL Alias functions to their Cypher equivalent
@@ -40,7 +36,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
  * upper(STRING) :: STRING -> toUpper(STRING) :: STRING
  * lower(STRING) :: STRING -> toLower(STRING) :: STRING
  */
-case object GQLAliasFunctionNameRewriter extends StepSequencer.Step with ASTRewriterFactory {
+case object GQLAliasFunctionNameRewriter extends StepSequencer.Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(!FunctionInvocationsResolved)
 
@@ -80,18 +76,12 @@ case object GQLAliasFunctionNameRewriter extends StepSequencer.Step with ASTRewr
     }
   }
 
-  override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    cancellationChecker: CancellationChecker,
-    version: CypherVersion
-  ): Rewriter = instance
-
   val instance: Rewriter = bottomUp(Rewriter.lift {
     case f @ FunctionInvocation(FunctionName(namespace, name), _, _, _, _, _, _)
       if namespace.parts.isEmpty && GQLFunctionAliases.exists(gqlAlias => name.equalsIgnoreCase(gqlAlias._1)) =>
       val targetName = GQLFunctionAliases(name.toLowerCase)
       f.copy(functionName = functionNameForTarget(targetName, f.position))(f.position)
   })
+
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 }

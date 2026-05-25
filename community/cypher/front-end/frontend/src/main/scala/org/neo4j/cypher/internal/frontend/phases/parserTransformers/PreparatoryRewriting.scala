@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransfor
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.RewriterStep
+import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.GQLAliasFunctionNameRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.ExpandShowWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.MergeInPredicates
@@ -52,6 +53,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
     StepSequencer[StepSequencer.Step with PreparatoryRewritingRewriterFactory]().orderSteps(
       Set(
         ExpandShowWhere,
+        GQLAliasFunctionNameRewriter,
         MergeInPredicates,
         NormalizeWithAndReturnClauses,
         NullIfFunctionRewriter,
