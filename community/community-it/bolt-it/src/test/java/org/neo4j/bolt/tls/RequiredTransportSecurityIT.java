@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.tls;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.REQUIRED;
 
 import java.io.IOException;
 import java.util.Map;
 import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.Assertions;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
 import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
@@ -66,7 +66,7 @@ public class RequiredTransportSecurityIT {
             connection.connect();
             connection.send(wire.getProtocolVersion());
         } catch (RuntimeException e) {
-            Assertions.assertInstanceOf(BoltTestClientClosedException.class, e);
+            assertThat(e).isInstanceOf(BoltTestClientClosedException.class);
         }
 
         BoltConnectionAssertions.assertThat(connection)

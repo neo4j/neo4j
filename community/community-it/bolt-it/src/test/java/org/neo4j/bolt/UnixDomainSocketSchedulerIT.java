@@ -19,13 +19,13 @@
  */
 package org.neo4j.bolt;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -137,7 +137,7 @@ public class UnixDomainSocketSchedulerIT {
         do {
             Thread.sleep(100);
 
-            Assertions.assertThat(executor.getActiveCount()).isEqualTo(0);
+            assertThat(executor.getActiveCount()).isZero();
         } while (i++ < 10);
     }
 

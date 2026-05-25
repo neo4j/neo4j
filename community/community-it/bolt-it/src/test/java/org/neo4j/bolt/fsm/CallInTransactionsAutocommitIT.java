@@ -19,13 +19,13 @@
  */
 package org.neo4j.bolt.fsm;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.bolt.fsm.AutocommitIT.IRIS_DATA;
 import static org.neo4j.bolt.fsm.AutocommitIT.createLocalIrisData;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.values.storable.Values.longValue;
 
+import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Authenticated;
@@ -83,6 +83,6 @@ class CallInTransactionsAutocommitIT {
         var tokensCommits = 7;
         var commits = (IRIS_DATA.split("\n").length - 1 /* header */) / batch;
         var txId = idProvider.latest();
-        assertEquals(tokensCommits + commits + txIdBeforeQuery, txId);
+        Assertions.assertThat(txId).isEqualTo(tokensCommits + commits + txIdBeforeQuery);
     }
 }

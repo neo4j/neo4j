@@ -20,6 +20,7 @@
 package org.neo4j.bolt.authentication;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.util.ErrorUtil.useNewMessage;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
@@ -28,7 +29,6 @@ import static org.neo4j.test.conditions.Conditions.TRUE;
 
 import java.util.List;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
@@ -95,7 +95,7 @@ public class LegacyAuthenticationIT {
 
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsKeys("server", "connection_id")
                 .containsEntry("credentials_expired", true));
     }
@@ -233,7 +233,7 @@ public class LegacyAuthenticationIT {
     void shouldFailWhenReusingTheSamePassword(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsEntry("credentials_expired", true)
                 .containsKeys("server", "connection_id"));
 
@@ -271,7 +271,7 @@ public class LegacyAuthenticationIT {
     void shouldFailWhenSubmittingEmptyPassword(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsEntry("credentials_expired", true)
                 .containsKeys("server", "connection_id"));
 
@@ -301,7 +301,7 @@ public class LegacyAuthenticationIT {
         // authenticate with the default (expired) credentials
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsEntry("credentials_expired", true)
                 .containsKeys("server", "connection_id"));
 

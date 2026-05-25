@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.authentication;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
@@ -40,7 +41,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
-public class ConnectionHintIT {
+class ConnectionHintIT {
 
     @SettingsFunction
     protected void customizeSettings(Map<Setting<?>, Object> settings) {
@@ -53,7 +54,7 @@ public class ConnectionHintIT {
     void shouldIncludeTelemetryHintOnCompatibleVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .extractingByKey("hints")
                 .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
                 .containsEntry("telemetry.enabled", true));
@@ -64,7 +65,7 @@ public class ConnectionHintIT {
     void shouldExcludeTelemetryHintOnLegacyVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .extractingByKey("hints")
                 .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
                 .doesNotContainKey("telemetry.enabled"));
@@ -75,7 +76,7 @@ public class ConnectionHintIT {
     void shouldIncludeSSRHintOnCompatibleVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .extractingByKey("hints")
                 .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
                 .containsEntry("ssr.enabled", true));
@@ -86,7 +87,7 @@ public class ConnectionHintIT {
     void shouldExcludeSSRHintOnLegacyVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .extractingByKey("hints")
                 .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
                 .doesNotContainKey("ssr.enabled"));

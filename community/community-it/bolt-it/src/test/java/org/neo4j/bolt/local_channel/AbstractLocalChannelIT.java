@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.local_channel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.testing.client.UnwiredTestConnection;
 import org.neo4j.boltmessages.request.authentication.HelloMessage;
@@ -44,11 +45,11 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class AbstractLocalChannelIT {
+abstract class AbstractLocalChannelIT {
 
     @SafeVarargs
     protected static void assertSuccess(ResponseMessage message, Consumer<SuccessMessage>... assertions) {
-        Assertions.assertInstanceOf(SuccessMessage.class, message);
+        assertThat(message).isInstanceOf(SuccessMessage.class);
         SuccessMessage successMessage = (SuccessMessage) message;
         for (Consumer<SuccessMessage> assertion : assertions) {
             assertion.accept(successMessage);
@@ -58,62 +59,61 @@ public class AbstractLocalChannelIT {
     @SafeVarargs
     protected static Consumer<SuccessMessage> assertSuccessHasFields(String... fields) {
         return AbstractLocalChannelIT.assertSuccessField("fields", anyValue -> {
-            Assertions.assertInstanceOf(ListValue.class, anyValue);
+            assertThat(anyValue).isInstanceOf(ListValue.class);
             var fieldsList = (ListValue) anyValue;
-            Assertions.assertEquals(fields.length, fieldsList.intSize());
+            assertThat(fieldsList.intSize()).isEqualTo(fields.length);
             for (var i = 0; i < fields.length; i++) {
-                Assertions.assertInstanceOf(StringValue.class, fieldsList.value(i));
+                assertThat(fieldsList.value(i)).isInstanceOf(StringValue.class);
                 var field = ((StringValue) fieldsList.value(i)).stringValue();
-                Assertions.assertEquals(fields[i], field);
+                assertThat(field).isEqualTo(fields[i]);
             }
         });
     }
 
     protected static Consumer<SuccessMessage> assertSuccessHasTFirst() {
         return AbstractLocalChannelIT.assertSuccessField(
-                "t_first", anyValue -> Assertions.assertInstanceOf(LongValue.class, anyValue));
+                "t_first", anyValue -> assertThat(anyValue).isInstanceOf(LongValue.class));
     }
 
     protected static Consumer<SuccessMessage> assertSuccessHasTLast() {
         return AbstractLocalChannelIT.assertSuccessField(
-                "t_last", anyValue -> Assertions.assertInstanceOf(LongValue.class, anyValue));
+                "t_last", anyValue -> assertThat(anyValue).isInstanceOf(LongValue.class));
     }
 
     protected static Consumer<SuccessMessage> assertSuccessDb(String database) {
         return AbstractLocalChannelIT.assertSuccessField("db", anyValue -> {
-            Assertions.assertInstanceOf(StringValue.class, anyValue);
-            Assertions.assertEquals(database, ((StringValue) anyValue).stringValue());
+            assertThat(anyValue).isInstanceOf(StringValue.class);
+            assertThat(((StringValue) anyValue).stringValue()).isEqualTo(database);
         });
     }
 
     protected static Consumer<SuccessMessage> assertSuccessType(String type) {
         return AbstractLocalChannelIT.assertSuccessField("type", anyValue -> {
-            Assertions.assertInstanceOf(StringValue.class, anyValue);
-            Assertions.assertEquals(type, ((StringValue) anyValue).stringValue());
+            assertThat(anyValue).isInstanceOf(StringValue.class);
+            assertThat(((StringValue) anyValue).stringValue()).isEqualTo(type);
         });
     }
 
     protected static Consumer<SuccessMessage> assertSuccessHasBookmark() {
         return AbstractLocalChannelIT.assertSuccessField("bookmark", anyValue -> {
-            Assertions.assertInstanceOf(StringValue.class, anyValue);
-            Assertions.assertFalse(((StringValue) anyValue).stringValue().isEmpty());
+            assertThat(anyValue).isInstanceOf(StringValue.class);
+            assertThat(((StringValue) anyValue).stringValue()).isNotEmpty();
         });
     }
 
     @SafeVarargs
     protected static Consumer<SuccessMessage> assertSuccessHasStatuses(Map<String, AnyValue>... statuses) {
         return AbstractLocalChannelIT.assertSuccessField("statuses", anyValue -> {
-            Assertions.assertInstanceOf(ListValue.class, anyValue);
+            assertThat(anyValue).isInstanceOf(ListValue.class);
             var statusesList = (ListValue) anyValue;
-            Assertions.assertEquals(statuses.length, statusesList.intSize());
+            assertThat(statusesList.intSize()).isEqualTo(statuses.length);
             for (var i = 0; i < statuses.length; i++) {
-                Assertions.assertInstanceOf(MapValue.class, statusesList.value(i));
+                assertThat(statusesList.value(i)).isInstanceOf(MapValue.class);
                 var actual = ((MapValue) statusesList.value(i));
                 for (var key : actual.keySet()) {
-                    Assertions.assertEquals(
-                            statuses[0].get(key),
-                            actual.get(key),
-                            String.format("statuses[%d][%s] is not equal to actual[%d][%s]", i, key, i, key));
+                    assertThat(actual.get(key))
+                            .as(String.format("statuses[%d][%s] is not equal to actual[%d][%s]", i, key, i, key))
+                            .isEqualTo(statuses[0].get(key));
                 }
             }
         });
@@ -121,7 +121,7 @@ public class AbstractLocalChannelIT {
 
     protected static Consumer<SuccessMessage> assertSuccessEmpty() {
         return successMessage -> {
-            Assertions.assertTrue(successMessage.metadata().isEmpty());
+            assertThat(successMessage.metadata().isEmpty()).isTrue();
         };
     }
 
@@ -139,9 +139,9 @@ public class AbstractLocalChannelIT {
     @SafeVarargs
     private static Consumer<SuccessMessage> assertSuccessField(String field, Consumer<AnyValue>... assertions) {
         return successMessage -> {
-            Assertions.assertTrue(
-                    successMessage.metadata().containsKey(field),
-                    () -> String.format("Metadata should contain field %s but it doesn't", field));
+            assertThat(successMessage.metadata().containsKey(field))
+                    .as(() -> String.format("Metadata should contain field %s but it doesn't", field))
+                    .isTrue();
             for (Consumer<AnyValue> assertion : assertions) {
                 assertion.accept(successMessage.metadata().get(field));
             }
@@ -149,8 +149,8 @@ public class AbstractLocalChannelIT {
     }
 
     protected static void assertRecord(ResponseMessage firstRecord, AnyValue... expectedValues) {
-        Function<AnyValue, BiConsumer<Integer, AnyValue>> assertion = expectedValue ->
-                (i, actual) -> Assertions.assertEquals(expectedValue, actual, String.format("Value at index %d", i));
+        Function<AnyValue, BiConsumer<Integer, AnyValue>> assertion = expectedValue -> (i, actual) ->
+                assertThat(actual).as(String.format("Value at index %d", i)).isEqualTo(expectedValue);
 
         var assertions = Stream.of(expectedValues).map(assertion).toArray(BiConsumer[]::new);
 
@@ -160,9 +160,9 @@ public class AbstractLocalChannelIT {
     @SafeVarargs
     protected static void assertRecord(
             ResponseMessage firstRecord, BiConsumer<Integer, AnyValue>... expectedValueAssertion) {
-        Assertions.assertInstanceOf(RecordMessage.class, firstRecord);
+        assertThat(firstRecord).isInstanceOf(RecordMessage.class);
         RecordMessage recordMessage = (RecordMessage) firstRecord;
-        Assertions.assertEquals(expectedValueAssertion.length, recordMessage.values.intSize());
+        assertThat(recordMessage.values.intSize()).isEqualTo(expectedValueAssertion.length);
         for (int i = 0; i < expectedValueAssertion.length; i++) {
             expectedValueAssertion[i].accept(i, recordMessage.values.value(i));
         }
@@ -185,7 +185,7 @@ public class AbstractLocalChannelIT {
     }
 
     protected static void assertFailure(ResponseMessage response) {
-        Assertions.assertInstanceOf(FailureMessage.class, response);
+        assertThat(response).isInstanceOf(FailureMessage.class);
     }
 
     @SettingsFunction

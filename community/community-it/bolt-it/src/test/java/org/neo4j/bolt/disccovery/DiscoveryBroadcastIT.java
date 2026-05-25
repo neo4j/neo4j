@@ -19,10 +19,11 @@
  */
 package org.neo4j.bolt.disccovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
@@ -70,30 +71,27 @@ public class DiscoveryBroadcastIT {
                                 .hasMagicNumber(0xDEADB017)
                                 .hasVarInt(0x01)
                                 .hasOpcode(0x01)
-                                .hasString((dbmsId) -> Assertions.assertThat(dbmsId)
-                                        .isNotEmpty()
-                                        .matches(DBMS_ID_PATTERN))
-                                .hasString((nodeId) -> Assertions.assertThat(nodeId)
-                                        .isNotEmpty()
-                                        .matches(NODE_ID_PATTERN))
+                                .hasString((dbmsId) ->
+                                        assertThat(dbmsId).isNotEmpty().matches(DBMS_ID_PATTERN))
+                                .hasString((nodeId) ->
+                                        assertThat(nodeId).isNotEmpty().matches(NODE_ID_PATTERN))
                                 .hasString((productVersion) -> {
-                                    Assertions.assertThat(productVersion)
+                                    assertThat(productVersion)
                                             .satisfiesAnyOf(
-                                                    (version) -> Assertions.assertThat(version)
+                                                    (version) -> assertThat(version)
                                                             // make sure we get a CalVer in the format YYYY.MM.PP while
                                                             // disregarding any potential suffixes such as build numbers
                                                             // or release stage
                                                             .matches("^\\d{4,}\\.\\d{2}\\.\\d+.*"),
-                                                    (version) -> Assertions.assertThat(version)
+                                                    (version) -> assertThat(version)
                                                             .isNotEmpty()
                                                             // if running from within an IDE the version information is
                                                             // typically unset
                                                             .isEqualTo("dev"));
                                 })
-                                .hasString((edition) -> Assertions.assertThat(edition)
-                                        .isNotEmpty()
-                                        .isEqualTo("community"))
-                                .hasString((advertisementAddress) -> Assertions.assertThat(advertisementAddress)
+                                .hasString((edition) ->
+                                        assertThat(edition).isNotEmpty().isEqualTo("community"))
+                                .hasString((advertisementAddress) -> assertThat(advertisementAddress)
                                         .isNotEmpty()
                                         .isEqualTo("neo.example.org:7687")));
     }

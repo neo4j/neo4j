@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.local_channel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -28,7 +30,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.Arguments;
@@ -255,7 +256,7 @@ public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
     private static BiConsumer<Integer, AnyValue> assertNode(
             String[] expectedLabels, Map<String, AnyValue> expectedProperties) {
         return (i, anyValue) -> {
-            Assertions.assertInstanceOf(NodeValue.class, anyValue);
+            assertThat(anyValue).isInstanceOf(NodeValue.class);
             var nodeValue = (NodeValue) anyValue;
 
             var labels = Stream.iterate(0, j -> j + 1)
@@ -266,59 +267,65 @@ public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
 
             var properties = mapValueToMap(nodeValue.properties());
 
-            Assertions.assertFalse(
-                    nodeValue.elementId().isEmpty(), () -> "Node element id is empty for field %d".formatted(i));
-            Assertions.assertArrayEquals(expectedLabels, labels, () -> "Labels for field %d".formatted(i));
-            Assertions.assertEquals(expectedProperties, properties, () -> "Properties for field %d".formatted(i));
+            assertThat(nodeValue.elementId())
+                    .as(() -> "Node element id is empty for field %d".formatted(i))
+                    .isNotEmpty();
+            assertThat(labels).as(() -> "Labels for field %d".formatted(i)).containsExactly(expectedLabels);
+            assertThat(properties)
+                    .as(() -> "Properties for field %d".formatted(i))
+                    .isEqualTo(expectedProperties);
         };
     }
 
     private static BiConsumer<Integer, AnyValue> assertRelationship(
             String expectedTypeName, Map<String, AnyValue> expectedProperties) {
         return (i, anyValue) -> {
-            Assertions.assertInstanceOf(RelationshipValue.class, anyValue);
+            assertThat(anyValue).isInstanceOf(RelationshipValue.class);
             var relationshipValue = (RelationshipValue) anyValue;
 
             var properties = mapValueToMap(relationshipValue.properties());
 
-            Assertions.assertFalse(
-                    relationshipValue.elementId().isEmpty(),
-                    () -> "Relationship element id is empty for field %d".formatted(i));
-            Assertions.assertFalse(
-                    relationshipValue.startNodeElementId().isEmpty(),
-                    () -> "Relationship start node element id is empty for field %d".formatted(i));
-            Assertions.assertFalse(
-                    relationshipValue.endNodeElementId().isEmpty(),
-                    () -> "Relationship end node element id is empty for field %d".formatted(i));
+            assertThat(relationshipValue.elementId())
+                    .as(() -> "Relationship element id is empty for field %d".formatted(i))
+                    .isNotEmpty();
+            assertThat(relationshipValue.startNodeElementId())
+                    .as(() -> "Relationship start node element id is empty for field %d".formatted(i))
+                    .isNotEmpty();
+            assertThat(relationshipValue.endNodeElementId())
+                    .as(() -> "Relationship end node element id is empty for field %d".formatted(i))
+                    .isNotEmpty();
 
-            Assertions.assertEquals(
-                    expectedTypeName, relationshipValue.type().asStringValue().stringValue(), () -> "Type for field %d"
-                            .formatted(i));
-            Assertions.assertEquals(expectedProperties, properties, () -> "Properties for field %d".formatted(i));
+            assertThat(relationshipValue.type().asStringValue().stringValue())
+                    .as(() -> "Type for field %d".formatted(i))
+                    .isEqualTo(expectedTypeName);
+            assertThat(properties)
+                    .as(() -> "Properties for field %d".formatted(i))
+                    .isEqualTo(expectedProperties);
         };
     }
 
     private static BiConsumer<Integer, AnyValue> assertPathValue() {
         return (i, anyValue) -> {
-            Assertions.assertInstanceOf(PathValue.class, anyValue);
+            assertThat(anyValue).isInstanceOf(PathValue.class);
             var pathValue = (PathValue) anyValue;
 
-            Assertions.assertFalse(
-                    pathValue.startNode().elementId().isEmpty(),
-                    () -> "Path start node element id is empty for field %d".formatted(i));
-            Assertions.assertFalse(
-                    pathValue.endNode().elementId().isEmpty(),
-                    () -> "Path end node element id is empty for field %d".formatted(i));
+            assertThat(pathValue.startNode().elementId())
+                    .as(() -> "Path start node element id is empty for field %d".formatted(i))
+                    .isNotEmpty();
+            assertThat(pathValue.endNode().elementId())
+                    .as(() -> "Path end node element id is empty for field %d".formatted(i))
+                    .isNotEmpty();
 
             for (var node : pathValue.nodes()) {
-                Assertions.assertFalse(
-                        node.elementId().isEmpty(), () -> "Path node element id is empty for field %d".formatted(i));
+                assertThat(node.elementId())
+                        .as(() -> "Path node element id is empty for field %d".formatted(i))
+                        .isNotEmpty();
             }
 
             for (var relationship : pathValue.relationships()) {
-                Assertions.assertFalse(
-                        relationship.elementId().isEmpty(),
-                        () -> "Path relationship element id is empty for field %d".formatted(i));
+                assertThat(relationship.elementId())
+                        .as(() -> "Path relationship element id is empty for field %d".formatted(i))
+                        .isNotEmpty();
             }
         };
     }

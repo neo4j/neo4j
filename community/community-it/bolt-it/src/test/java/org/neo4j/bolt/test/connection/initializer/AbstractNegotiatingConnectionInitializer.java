@@ -20,9 +20,10 @@
 
 package org.neo4j.bolt.test.connection.initializer;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.testing.messages.BoltWire;
@@ -31,11 +32,11 @@ public abstract class AbstractNegotiatingConnectionInitializer implements Connec
 
     protected void assertNegotiatedFeatures(BoltWire wire, Map<String, Object> meta) {
         if (wire.getEnabledFeatures().isEmpty()) {
-            Assertions.assertThat(meta).doesNotContainKey("patch_bolt");
+            assertThat(meta).doesNotContainKey("patch_bolt");
             return;
         }
 
-        Assertions.assertThat(meta).hasEntrySatisfying("patch_bolt", features -> Assertions.assertThat(features)
+        assertThat(meta).hasEntrySatisfying("patch_bolt", features -> assertThat(features)
                 .asInstanceOf(InstanceOfAssertFactories.list(String.class))
                 .containsAll(
                         wire.getEnabledFeatures().stream().map(Feature::getId).collect(Collectors.toSet())));

@@ -20,6 +20,7 @@
 package org.neo4j.bolt.authentication;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.test.util.ErrorUtil.useNewMessage;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
@@ -31,7 +32,6 @@ import static org.neo4j.test.conditions.Conditions.TRUE;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
@@ -78,7 +78,7 @@ import org.neo4j.values.virtual.VirtualValues;
 @BoltTestExtension
 @ExcludeWire(until = @Version(major = 5, minor = 0))
 @IncludeTransport({TransportType.TCP, TransportType.UNIX, TransportType.LOCAL})
-public class AuthenticationIT {
+class AuthenticationIT {
 
     protected final AssertableLogProvider securityLogProvider = new AssertableLogProvider();
     protected final AssertableLogProvider userLogProvider = new AssertableLogProvider();
@@ -113,7 +113,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -123,7 +123,7 @@ public class AuthenticationIT {
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
     }
 
     @BoltTest
@@ -132,7 +132,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -170,7 +170,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -214,7 +214,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -259,7 +259,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         // authenticate normally using the preset credentials and update the password to a new value
         connection.send(wire.logon(Map.of(
@@ -316,7 +316,7 @@ public class AuthenticationIT {
             connection.send(wire.hello());
             // ensure that the server returns the expected set of metadata
             BoltConnectionAssertions.assertThat(connection)
-                    .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                    .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
             // authenticate normally using the preset credentials and update the password to a new value
             connection.send(wire.logon(Map.of(
@@ -378,7 +378,7 @@ public class AuthenticationIT {
             connection.send(wire.hello());
             // ensure that the server returns the expected set of metadata
             BoltConnectionAssertions.assertThat(connection)
-                    .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                    .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
             // authenticate normally using the preset credentials and update the password to a new value
             connection.send(wire.logon(Map.of(
@@ -437,7 +437,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -458,7 +458,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -484,7 +484,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -510,7 +510,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -530,7 +530,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -556,7 +556,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -581,7 +581,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "principal", "neo4j",
@@ -600,7 +600,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "principal", "neo4j",
@@ -625,7 +625,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "principal", "neo4j",
@@ -650,7 +650,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "unknown",
@@ -672,7 +672,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "unknown",
@@ -699,7 +699,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "unknown",
@@ -730,7 +730,7 @@ public class AuthenticationIT {
                 connection.send(wire.hello());
                 // ensure that the server returns the expected set of metadata
                 BoltConnectionAssertions.assertThat(connection)
-                        .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                        .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
                 connection.send(wire.logon(Map.of(
                         "scheme", "basic",
@@ -757,7 +757,7 @@ public class AuthenticationIT {
                 connection.send(wire.hello());
                 // ensure that the server returns the expected set of metadata
                 BoltConnectionAssertions.assertThat(connection)
-                        .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                        .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
                 connection.send(wire.logon(Map.of(
                         "scheme", "basic",
@@ -789,7 +789,7 @@ public class AuthenticationIT {
                 connection.send(wire.hello());
                 // ensure that the server returns the expected set of metadata
                 BoltConnectionAssertions.assertThat(connection)
-                        .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                        .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
                 connection.send(wire.logon(Map.of(
                         "scheme", "basic",
@@ -816,7 +816,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -824,7 +824,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.reset())
@@ -862,7 +862,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -870,7 +870,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.reset())
@@ -917,7 +917,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -925,7 +925,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.reset())
@@ -974,7 +974,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -982,7 +982,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.run(
@@ -1010,7 +1010,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -1018,7 +1018,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.run(
@@ -1051,7 +1051,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -1059,7 +1059,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.run(
@@ -1094,7 +1094,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         // authenticate with the default (expired) credentials
         connection.send(wire.logon(Map.of(
@@ -1103,7 +1103,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         // attempt to execute a query
         connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());
@@ -1132,7 +1132,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         // authenticate with the default (expired) credentials
         connection.send(wire.logon(Map.of(
@@ -1141,7 +1141,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         // attempt to execute a query
         connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());
@@ -1194,7 +1194,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         // authenticate with the default (expired) credentials
         connection.send(wire.logon(Map.of(
@@ -1203,7 +1203,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
+                .receivesSuccess(meta -> assertThat(meta).containsEntry("credentials_expired", true));
 
         // attempt to execute a query
         connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());
@@ -1253,7 +1253,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         // authenticate normally using the preset credentials and update the password to a new value
         connection.send(wire.logon(Map.of(
@@ -1351,7 +1351,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -1361,7 +1361,7 @@ public class AuthenticationIT {
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).doesNotContainKeys("advertised_address"));
+                .receivesSuccess(meta -> assertThat(meta).doesNotContainKeys("advertised_address"));
     }
 
     @BoltTest
@@ -1372,7 +1372,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -1380,7 +1380,7 @@ public class AuthenticationIT {
                 "credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).doesNotContainKeys("advertised_address"));
+                .receivesSuccess(meta -> assertThat(meta).doesNotContainKeys("advertised_address"));
     }
 
     @BoltTest
@@ -1392,7 +1392,7 @@ public class AuthenticationIT {
         connection.send(wire.hello());
         // ensure that the server returns the expected set of metadata
         BoltConnectionAssertions.assertThat(connection)
-                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+                .receivesSuccess(meta -> assertThat(meta).containsKeys("server", "connection_id"));
 
         connection.send(wire.logon(Map.of(
                 "scheme", "basic",
@@ -1401,7 +1401,7 @@ public class AuthenticationIT {
 
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsEntry("advertised_address", "my-server.neo4j.io:7688"));
     }
 }

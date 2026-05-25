@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.memory.MemoryGroup.OTHER;
 
 import io.netty.buffer.ByteBufAllocatorMetric;
@@ -42,42 +42,42 @@ class NettyMemoryPoolIT {
     void reportConsumedHeapMemory() {
         var bufAllocator = createTestAllocator(false);
         var allocatorMetric = bufAllocator.metric();
-        assertEquals(0, allocatorMetric.usedDirectMemory());
-        assertEquals(0, allocatorMetric.usedDirectMemory());
+        assertThat(allocatorMetric.usedDirectMemory()).isZero();
+        assertThat(allocatorMetric.usedDirectMemory()).isZero();
 
         var memoryTracker = new SomeNettyMemoryPool(new MemoryPools(), allocatorMetric);
         var buffer = bufAllocator.buffer(requestedSize);
         try {
-            assertEquals(requestedSize, buffer.capacity());
-            assertEquals(requestedSize, memoryTracker.usedHeap());
-            assertEquals(requestedSize, memoryTracker.totalUsed());
+            assertThat(buffer.capacity()).isEqualTo(requestedSize);
+            assertThat(memoryTracker.usedHeap()).isEqualTo(requestedSize);
+            assertThat(memoryTracker.totalUsed()).isEqualTo(requestedSize);
         } finally {
             buffer.release();
         }
 
-        assertEquals(0, memoryTracker.usedHeap());
-        assertEquals(0, memoryTracker.totalUsed());
+        assertThat(memoryTracker.usedHeap()).isZero();
+        assertThat(memoryTracker.totalUsed()).isZero();
     }
 
     @Test
     void reportConsumedDirectMemory() {
         var bufAllocator = createTestAllocator(true);
         var allocatorMetric = bufAllocator.metric();
-        assertEquals(0, allocatorMetric.usedDirectMemory());
-        assertEquals(0, allocatorMetric.usedDirectMemory());
+        assertThat(allocatorMetric.usedDirectMemory()).isZero();
+        assertThat(allocatorMetric.usedDirectMemory()).isZero();
 
         var memoryTracker = new SomeNettyMemoryPool(new MemoryPools(), allocatorMetric);
         var buffer = bufAllocator.buffer(requestedSize);
         try {
-            assertEquals(requestedSize, buffer.capacity());
-            assertEquals(requestedSize, memoryTracker.usedNative());
-            assertEquals(requestedSize, memoryTracker.totalUsed());
+            assertThat(buffer.capacity()).isEqualTo(requestedSize);
+            assertThat(memoryTracker.usedNative()).isEqualTo(requestedSize);
+            assertThat(memoryTracker.totalUsed()).isEqualTo(requestedSize);
         } finally {
             buffer.release();
         }
 
-        assertEquals(0, memoryTracker.usedNative());
-        assertEquals(0, memoryTracker.totalUsed());
+        assertThat(memoryTracker.usedNative()).isZero();
+        assertThat(memoryTracker.totalUsed()).isZero();
     }
 
     private static PooledByteBufAllocator createTestAllocator(boolean preferDirect) {

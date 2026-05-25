@@ -22,7 +22,6 @@ package org.neo4j.bolt;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.neo4j.bolt.test.util.ErrorUtil.useNewMessage;
@@ -79,7 +78,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @BoltTestExtension
 @ExtendWith(OtherThreadExtension.class)
 @ExcludeTransport(TransportType.UNIX) // UNIX behavior may differ on some operating systems
-public class ShutdownSequenceIT {
+class ShutdownSequenceIT {
     private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofMinutes(10);
 
     private final AssertableLogProvider internalLogProvider = new SpiedAssertableLogProvider(BoltServer.class);
@@ -127,7 +126,7 @@ public class ShutdownSequenceIT {
         connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
-        assertTrue(txStarted.await(1, MINUTES));
+        assertThat(txStarted.await(1, MINUTES)).isTrue();
 
         // Register a callback when the bolt worker thread pool is shut down.
         var boltLog = internalLogProvider.getLog(BoltServer.class);
@@ -172,7 +171,7 @@ public class ShutdownSequenceIT {
         connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
-        assertTrue(txStarted.await(1, MINUTES));
+        assertThat(txStarted.await(1, MINUTES)).isTrue();
 
         // Register a callback when the bolt worker thread pool is shut down.
         var boltLog = internalLogProvider.getLog(BoltServer.class);
@@ -217,7 +216,7 @@ public class ShutdownSequenceIT {
         connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
-        assertTrue(txStarted.await(1, MINUTES));
+        assertThat(txStarted.await(1, MINUTES)).isTrue();
 
         // Register a callback when the bolt worker thread pool is shut down.
         var boltLog = internalLogProvider.getLog(BoltServer.class);
@@ -277,7 +276,7 @@ public class ShutdownSequenceIT {
         connection.send(wire.run("CALL test.stream.strings()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
-        assertTrue(txStarted.await(1, MINUTES));
+        assertThat(txStarted.await(1, MINUTES)).isTrue();
 
         // Register a callback when the bolt worker thread pool is shut down.
         var boltLog = internalLogProvider.getLog(BoltServer.class);
@@ -330,7 +329,7 @@ public class ShutdownSequenceIT {
         public Stream<Output> streamStrings() {
             pair.first().countDown();
             try {
-                assertTrue(pair.other().await(1, MINUTES));
+                assertThat(pair.other().await(1, MINUTES)).isTrue();
             } catch (InterruptedException e) {
                 fail("Interrupted while waiting for bolt worker threads shut down.");
             }
@@ -343,7 +342,7 @@ public class ShutdownSequenceIT {
         public Stream<Output> streamNodes() {
             pair.first().countDown();
             try {
-                assertTrue(pair.other().await(1, MINUTES));
+                assertThat(pair.other().await(1, MINUTES)).isTrue();
             } catch (InterruptedException e) {
                 fail("Interrupted while waiting for bolt worker threads shut down.");
             }

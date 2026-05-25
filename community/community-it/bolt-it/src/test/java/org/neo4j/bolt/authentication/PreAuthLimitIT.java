@@ -59,7 +59,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @Neo4jWithSocketExtension
 @BoltTestExtension
 @ExtendWith(OtherThreadExtension.class)
-public class PreAuthLimitIT {
+class PreAuthLimitIT {
 
     private static final String EXCEEDED_LIMIT_MESSAGE = "Value of size 1023 exceeded limit of 1000";
 

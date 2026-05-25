@@ -48,16 +48,16 @@ public class TransactionManagerCleanupIT {
             throws IOException {
         var txManager = resolveDependency(server, TransactionManager.class);
 
-        Assertions.assertThat(txManager.getTransactionCount()).isEqualTo(0);
+        Assertions.assertThat(txManager.getTransactionCount()).isZero();
 
         connection.send(wire.begin());
         assertThat(connection).receivesSuccess();
 
-        Assertions.assertThat(txManager.getTransactionCount()).isEqualTo(1);
+        Assertions.assertThat(txManager.getTransactionCount()).isOne();
 
         connection.send(wire.rollback());
         assertThat(connection).receivesSuccess();
 
-        Assertions.assertThat(txManager.getTransactionCount()).isEqualTo(0);
+        Assertions.assertThat(txManager.getTransactionCount()).isZero();
     }
 }

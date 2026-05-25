@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.test.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 import java.util.concurrent.ThreadPoolExecutor;
-import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.collection.ResourceRawIterator;
@@ -124,8 +124,7 @@ public final class ServerUtil {
     public static void awaitPrimaryThreadPoolSaturation(BoltServer server, int n) {
         var executor = (ThreadPoolExecutor) server.getPrimaryExecutorService();
 
-        Assert.awaitUntilAsserted(
-                () -> Assertions.assertThat(executor.getActiveCount()).isEqualTo(n));
+        Assert.awaitUntilAsserted(() -> assertThat(executor.getActiveCount()).isEqualTo(n));
     }
 
     /**
@@ -136,7 +135,6 @@ public final class ServerUtil {
     public static void awaitDomainSocketThreadPoolSaturation(BoltServer server, int n) {
         var executor = (ThreadPoolExecutor) server.getDomainSocketExecutorService();
 
-        Assert.awaitUntilAsserted(
-                () -> Assertions.assertThat(executor.getActiveCount()).isEqualTo(n));
+        Assert.awaitUntilAsserted(() -> assertThat(executor.getActiveCount()).isEqualTo(n));
     }
 }

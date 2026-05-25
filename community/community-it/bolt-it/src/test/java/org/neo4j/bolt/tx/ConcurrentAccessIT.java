@@ -123,7 +123,6 @@ public class ConcurrentAccessIT {
                             .containsKeys("t_first")
                             .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
                                     .asInstanceOf(list(String.class))
-                                    .hasSize(1)
                                     .containsExactly("n")))
                     .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("t_last", "db"));
         });

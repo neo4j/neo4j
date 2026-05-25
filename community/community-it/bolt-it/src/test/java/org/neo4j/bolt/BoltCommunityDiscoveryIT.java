@@ -36,7 +36,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public class BoltCommunityDiscoveryIT {
+class BoltCommunityDiscoveryIT {
 
     @Inject
     private Neo4jWithSocket server;
@@ -47,7 +47,7 @@ public class BoltCommunityDiscoveryIT {
     }
 
     @Test
-    public void testEmptyResponseOnCommunity() throws IOException, InterruptedException {
+    void emptyResponseOnCommunity() throws IOException, InterruptedException {
         var httpClient = HttpClient.newHttpClient();
         var request = HttpRequest.newBuilder(
                         URI.create("http://" + server.lookupDefaultConnector().toString()))
@@ -55,6 +55,6 @@ public class BoltCommunityDiscoveryIT {
                 .build();
         var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).isEqualTo("");
+        assertThat(response.body()).isEmpty();
     }
 }

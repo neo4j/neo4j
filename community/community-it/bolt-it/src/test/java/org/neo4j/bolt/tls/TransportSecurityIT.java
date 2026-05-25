@@ -51,7 +51,7 @@ import org.neo4j.test.utils.TestDirectory;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
-public class TransportSecurityIT {
+class TransportSecurityIT {
 
     @Inject
     private TestDirectory testDirectory;
@@ -85,7 +85,7 @@ public class TransportSecurityIT {
         certificateFactory.createSelfSignedCertificate(this.fileSystem, this.certFile, this.keyFile, "my.domain");
 
         var certificates = PkiUtils.loadCertificates(fileSystem, certFile);
-        assertThat(certificates.length).isEqualTo(1);
+        assertThat(certificates.length).isOne();
 
         this.certificate = certificates[0];
     }

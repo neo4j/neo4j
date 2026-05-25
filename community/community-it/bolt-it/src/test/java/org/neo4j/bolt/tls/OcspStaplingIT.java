@@ -123,7 +123,7 @@ class OcspStaplingIT {
                 bouncyCastleProvider);
 
         var certificates = PkiUtils.loadCertificates(fileSystem, rootCertFile);
-        assertThat(certificates.length).isEqualTo(1);
+        assertThat(certificates.length).isOne();
 
         this.certificate = certificates[0];
     }

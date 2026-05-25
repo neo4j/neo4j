@@ -21,7 +21,7 @@ package org.neo4j.bolt;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.sizeCondition;
 
@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
@@ -92,11 +91,11 @@ public class ProxyProtocolConnectionTrackingIT {
         awaitNumberOfAcceptedConnectionsToBe(1);
         var connectionRecords = listBoltConnections();
 
-        Assertions.assertThat(connectionRecords).hasSize(1);
+        assertThat(connectionRecords).hasSize(1);
         var record = connectionRecords.get(0);
 
         String clientAddress = (String) record.get("clientAddress");
-        Assertions.assertThat(clientAddress)
+        assertThat(clientAddress)
                 .as("Client address should reflect proxy-provided address, not actual socket address")
                 .startsWith(PROXY_CLIENT_IP + ":");
     }
@@ -113,11 +112,11 @@ public class ProxyProtocolConnectionTrackingIT {
         awaitNumberOfAcceptedConnectionsToBe(1);
         var connectionRecords = listBoltConnections();
 
-        Assertions.assertThat(connectionRecords).hasSize(1);
+        assertThat(connectionRecords).hasSize(1);
         var record = connectionRecords.get(0);
 
         String clientAddress = (String) record.get("clientAddress");
-        Assertions.assertThat(clientAddress)
+        assertThat(clientAddress)
                 .as("Client address should reflect proxy-provided address, not actual socket address")
                 .startsWith(PROXY_CLIENT_IP + ":");
     }
@@ -143,11 +142,11 @@ public class ProxyProtocolConnectionTrackingIT {
         awaitNumberOfAcceptedConnectionsToBe(1);
         var connectionRecords = listBoltConnections();
 
-        Assertions.assertThat(connectionRecords).hasSize(1);
+        assertThat(connectionRecords).hasSize(1);
         var record = connectionRecords.get(0);
 
         String serverAddress = (String) record.get("serverAddress");
-        Assertions.assertThat(serverAddress)
+        assertThat(serverAddress)
                 .as("Server address should reflect proxy-provided address")
                 .isNotBlank();
     }
@@ -228,7 +227,7 @@ public class ProxyProtocolConnectionTrackingIT {
         var db = neo4jWithSocket.graphDatabaseService();
         try (Transaction transaction = db.beginTx()) {
             Result result = transaction.execute("CALL dbms.listConnections()");
-            assertEquals(LIST_CONNECTIONS_PROCEDURE_COLUMNS, result.columns());
+            assertThat(result.columns()).containsExactlyElementsOf(LIST_CONNECTIONS_PROCEDURE_COLUMNS);
             List<Map<String, Object>> records = result.stream().toList();
 
             for (Map<String, Object> record : records) {

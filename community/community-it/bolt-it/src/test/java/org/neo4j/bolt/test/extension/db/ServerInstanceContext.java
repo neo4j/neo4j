@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.test.extension.db;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.fail;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
@@ -30,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.util.AnnotationUtils;
 import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
@@ -96,7 +98,7 @@ public class ServerInstanceContext {
 
                     return (TestDatabaseManagementServiceBuilder) handle.invoke();
                 } catch (Throwable ex) {
-                    Assertions.fail("Failed to invoke @FactoryFunction " + function.getName(), ex);
+                    fail("Failed to invoke @FactoryFunction " + function.getName(), ex);
                     return null; // make the compiler happy
                 }
             };
@@ -115,7 +117,7 @@ public class ServerInstanceContext {
                 // we'll also ensure that the constructed instance is within expected bounds in
                 // order to prevent any obscure method handle errors from failing the test
                 if (!expectedFactoryType.isInstance(factory)) {
-                    Assertions.fail("Failed to invoke @FactoryFunction " + function.getName()
+                    fail("Failed to invoke @FactoryFunction " + function.getName()
                             + ": Expected factory of type " + expectedFactoryType.getName() + " but got "
                             + factory.getClass().getName());
                 }
@@ -127,7 +129,7 @@ public class ServerInstanceContext {
                         handle.invoke(factory);
                     }
                 } catch (Throwable ex) {
-                    Assertions.fail("Failed to invoke @FactoryFunction " + function.getName(), ex);
+                    fail("Failed to invoke @FactoryFunction " + function.getName(), ex);
                 }
 
                 return factory;
@@ -148,7 +150,7 @@ public class ServerInstanceContext {
             try {
                 factoryConstructor = fallbackType.getDeclaredConstructor();
             } catch (NoSuchMethodException ex) {
-                Assertions.fail(
+                fail(
                         "Illegal database factory type " + fallbackType.getName()
                                 + ": Missing default no-args constructor - Try creating a @FactoryFunction method instead",
                         ex);
@@ -158,13 +160,13 @@ public class ServerInstanceContext {
             try {
                 return factoryConstructor.newInstance();
             } catch (IllegalAccessException ex) {
-                Assertions.fail(
+                fail(
                         "Illegal database factory type " + fallbackType.getName()
                                 + ": Inaccessible default no-args constructor - Try creationg a @FactoryFunction method instead",
                         ex);
                 return null; // make the compiler happy
             } catch (InstantiationException | InvocationTargetException ex) {
-                Assertions.fail("Failed to instantiate database factory type " + fallbackType.getName(), ex);
+                fail("Failed to instantiate database factory type " + fallbackType.getName(), ex);
                 return null; // make the compiler happy
             }
         });
@@ -200,15 +202,15 @@ public class ServerInstanceContext {
         var handle = unreflectMethodHandle(function);
 
         return (context, settings) -> {
-            try {
-                if (!Modifier.isStatic(function.getModifiers())) {
-                    handle.bindTo(context.getRequiredTestInstance()).invoke(settings);
-                } else {
-                    handle.invoke(settings);
-                }
-            } catch (Throwable ex) {
-                Assertions.fail("Failed to invoke settings function", ex);
-            }
+            assertThatCode(() -> {
+                        if (!Modifier.isStatic(function.getModifiers())) {
+                            handle.bindTo(context.getRequiredTestInstance()).invoke(settings);
+                        } else {
+                            handle.invoke(settings);
+                        }
+                    })
+                    .withFailMessage("Failed to invoke settings function")
+                    .doesNotThrowAnyException();
         };
     }
 

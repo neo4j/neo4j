@@ -19,9 +19,10 @@
  */
 package org.neo4j.bolt;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.netty.buffer.Unpooled;
 import java.util.EnumSet;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
@@ -59,17 +60,16 @@ public class ModernNegotiationIT {
                 new ProtocolVersion(2, 2));
 
         BoltConnectionAssertions.assertThat(connection).receivesProtocolProposal(proposal -> {
-            Assertions.assertThat(proposal).isNotNull();
+            assertThat(proposal).isNotNull();
 
-            Assertions.assertThat(proposal.negotiationVersion()).isEqualTo(ProtocolVersion.NEGOTIATION_V2);
+            assertThat(proposal.negotiationVersion()).isEqualTo(ProtocolVersion.NEGOTIATION_V2);
 
-            Assertions.assertThat(BoltProtocol.installed())
-                    .allSatisfy(protocol -> Assertions.assertThat(proposal.versions())
-                            .anyMatch(version -> version.matches(protocol.version())));
+            assertThat(BoltProtocol.installed()).allSatisfy(protocol -> assertThat(proposal.versions())
+                    .anyMatch(version -> version.matches(protocol.version())));
 
             // TODO: capabilities is currently empty as we are not explicitly testing against the fabric
             //       connector which is the only connector to feature a capability
-            Assertions.assertThat(proposal.capabilities()).containsAll(EnumSet.noneOf(ProtocolCapability.class));
+            assertThat(proposal.capabilities()).containsAll(EnumSet.noneOf(ProtocolCapability.class));
         });
 
         connection.send(wire.getProtocolVersion(), EnumSet.noneOf(ProtocolCapability.class));
@@ -78,7 +78,7 @@ public class ModernNegotiationIT {
         // decisions over compatibility on its own here - we'll need to check whether the protocol stage
         // has moved on instead
         connection.send(wire.hello());
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsEntry("protocol_version", wire.getProtocolVersion().toString()));
     }
 
@@ -95,7 +95,7 @@ public class ModernNegotiationIT {
         connection.send(wire.getProtocolVersion(), EnumSet.noneOf(ProtocolCapability.class));
 
         connection.send(wire.hello());
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsEntry("protocol_version", wire.getProtocolVersion().toString()));
     }
 
@@ -109,7 +109,7 @@ public class ModernNegotiationIT {
         connection.send(wire.getProtocolVersion(), EnumSet.noneOf(ProtocolCapability.class));
 
         connection.send(wire.hello());
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
                 .containsEntry("protocol_version", wire.getProtocolVersion().toString()));
     }
 

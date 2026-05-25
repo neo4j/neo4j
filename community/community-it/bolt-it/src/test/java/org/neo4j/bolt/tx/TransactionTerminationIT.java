@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.tx;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.bolt.test.util.ErrorUtil.useNewMessage;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 
@@ -129,7 +128,7 @@ public class TransactionTerminationIT {
 
             var termination = terminationResult.stream().toList().get(0); // should only ever be one.
 
-            assertEquals(termination.get("message"), "Transaction terminated.");
+            Assertions.assertThat(termination.get("message")).isEqualTo("Transaction terminated.");
         }
 
         connection.send(wire.run("UNWIND range(1, 200) AS i RETURN i")); // send a run to a canceled transaction
@@ -167,7 +166,7 @@ public class TransactionTerminationIT {
 
             var termination = terminationResult.stream().toList().get(0); // should only ever be one.
 
-            assertEquals(termination.get("message"), "Transaction terminated.");
+            Assertions.assertThat(termination.get("message")).isEqualTo("Transaction terminated.");
         }
 
         connection.send(wire.run("UNWIND range(1, 200) AS i RETURN i")); // send a run to a canceled transaction
@@ -209,7 +208,7 @@ public class TransactionTerminationIT {
 
             var termination = terminationResult.stream().toList().get(0); // should only ever be one.
 
-            assertEquals(termination.get("message"), "Transaction terminated.");
+            Assertions.assertThat(termination.get("message")).isEqualTo("Transaction terminated.");
         }
 
         connection.send(wire.run("UNWIND range(1, 200) AS i RETURN i")); // send a run to a canceled transaction
@@ -255,7 +254,7 @@ public class TransactionTerminationIT {
 
             var termination = terminationResult.stream().toList().get(0); // should only ever be one.
 
-            assertEquals(termination.get("message"), "Transaction terminated.");
+            Assertions.assertThat(termination.get("message")).isEqualTo("Transaction terminated.");
         }
 
         Awaitility.await()
@@ -310,7 +309,7 @@ public class TransactionTerminationIT {
 
             var termination = terminationResult.stream().toList().get(0); // should only ever be one.
 
-            assertEquals(termination.get("message"), "Transaction terminated.");
+            Assertions.assertThat(termination.get("message")).isEqualTo("Transaction terminated.");
         }
 
         Awaitility.await()
@@ -370,7 +369,7 @@ public class TransactionTerminationIT {
 
             var termination = terminationResult.stream().toList().get(0); // should only ever be one.
 
-            assertEquals(termination.get("message"), "Transaction terminated.");
+            Assertions.assertThat(termination.get("message")).isEqualTo("Transaction terminated.");
         }
 
         Awaitility.await()

@@ -75,7 +75,6 @@ public class BasicOperationIT {
                         .containsKey("t_first")
                         .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
                                 .asInstanceOf(list(String.class))
-                                .hasSize(2)
                                 .containsExactly("a", "a_squared")))
                 .receivesRecord(longValue(1), longValue(1))
                 .receivesRecord(longValue(2), longValue(4))
@@ -97,7 +96,6 @@ public class BasicOperationIT {
                         .containsKey("t_first")
                         .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
                                 .asInstanceOf(list(String.class))
-                                .hasSize(2)
                                 .containsExactly("a", "a_squared")))
                 .receivesSuccess(meta ->
                         Assertions.assertThat(meta).containsKey("t_last").containsEntry("type", "r"));
@@ -202,7 +200,6 @@ public class BasicOperationIT {
                         .containsKey("t_first")
                         .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
                                 .asInstanceOf(list(String.class))
-                                .hasSize(1)
                                 .containsExactly("age")))
                 .receivesRecord(longValue(2))
                 .receivesSuccess(meta -> Assertions.assertThat(meta).containsKey("t_last"));
@@ -216,7 +213,6 @@ public class BasicOperationIT {
                         .containsKey("t_first")
                         .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
                                 .asInstanceOf(list(String.class))
-                                .hasSize(1)
                                 .containsExactly("label")))
                 .receivesRecord(stringValue("Test"))
                 .receivesSuccess();
@@ -233,7 +229,6 @@ public class BasicOperationIT {
                         .containsKey("t_first")
                         .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
                                 .asInstanceOf(list(String.class))
-                                .hasSize(1)
                                 .containsExactly("n")))
                 .packstreamSatisfies(pack -> pack.receivesMessage()
                         // Record(0x71) {
@@ -279,7 +274,6 @@ public class BasicOperationIT {
                         .containsKey("t_first")
                         .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
                                 .asInstanceOf(list(String.class))
-                                .hasSize(1)
                                 .containsExactly("r")))
                 .packstreamSatisfies(pack -> pack.receivesMessage()
                         // Record(0x71) {

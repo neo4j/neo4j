@@ -60,7 +60,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @Neo4jWithSocketExtension
 @BoltTestExtension
 @ExtendWith(OtherThreadExtension.class)
-public class WriteThrottleTimeoutIT {
+class WriteThrottleTimeoutIT {
 
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
 

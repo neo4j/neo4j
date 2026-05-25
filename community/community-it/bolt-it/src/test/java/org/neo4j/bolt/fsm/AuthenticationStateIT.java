@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.fsm;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.bolt.testing.util.ErrorUtil.useNewMessage;
 
@@ -64,12 +64,12 @@ public class AuthenticationStateIT {
         StateMachineHandleAssertions.assertThat(fsm).isInState(States.AUTHENTICATION);
 
         // Then
-        var e = assertThrows(IllegalTransitionException.class, () -> fsm.process(messages.begin(), recorder));
-        Assertions.assertThat(e.getMessage())
-                .contains(useNewMessage("08N06: General network protocol error.")
-                        .whenLegacyFallbackTo("cannot be handled by a session in the AUTHENTICATION state."));
-        Assertions.assertThat(e.legacyMessage())
-                .contains("cannot be handled by a session in the AUTHENTICATION state.");
+        assertThatExceptionOfType(IllegalTransitionException.class)
+                .isThrownBy(() -> fsm.process(messages.begin(), recorder))
+                .withMessageContaining(useNewMessage("08N06: General network protocol error.")
+                        .whenLegacyFallbackTo("cannot be handled by a session in the AUTHENTICATION state."))
+                .satisfies(e -> Assertions.assertThat(e.legacyMessage())
+                        .contains("cannot be handled by a session in the AUTHENTICATION state."));
     }
 
     @StateMachineTest(since = @Version(major = 5, minor = 7))

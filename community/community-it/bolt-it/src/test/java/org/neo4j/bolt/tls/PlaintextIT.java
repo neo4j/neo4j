@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.tls;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
 import org.neo4j.bolt.test.annotation.connection.transport.preset.SecureTransportOnly;
@@ -52,7 +53,7 @@ public class PlaintextIT {
     @SecureTransportOnly
     void shouldTerminateConnectionDuringHandshake(BoltWire wire, @Connected ConnectionProvider connectionProvider)
             throws Exception {
-        Assertions.assertThatExceptionOfType(BoltTestClientIOException.class)
+        assertThatExceptionOfType(BoltTestClientIOException.class)
                 .isThrownBy(() -> connectionProvider.create().send(wire.getProtocolVersion()))
                 .withStackTraceContaining("Connection closed");
     }

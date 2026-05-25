@@ -62,7 +62,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @Neo4jWithSocketExtension
 @ExtendWith(SuppressOutputExtension.class)
 @ResourceLock(Resources.SYSTEM_OUT)
-public class ResetFuzzIT {
+class ResetFuzzIT {
     private static final int TEST_EXECUTION_TIME = 2000;
 
     private static final String SHORT_QUERY_1 = "CREATE (n:Node {name: 'foo', occupation: 'bar'})";
@@ -84,7 +84,7 @@ public class ResetFuzzIT {
     private final BoltWire wire = new BoltDefaultWire();
 
     @BeforeEach
-    public void setup(TestInfo testInfo) throws IOException {
+    void setup(TestInfo testInfo) throws IOException {
         server.setGraphDatabaseFactory(getTestGraphDatabaseFactory());
         server.setConfigure(getSettingsFunction());
         server.init(testInfo);
@@ -92,14 +92,14 @@ public class ResetFuzzIT {
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         userLogProvider.print(System.out);
         internalLogProvider.print(System.out);
     }
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    public void shouldTerminateAutoCommitQuery() throws Exception {
+    void shouldTerminateAutoCommitQuery() throws Exception {
         var sequences = new RequestSequenceCollection()
                 .with(wire.run(SHORT_QUERY_1), wire.pull())
                 .with(wire.run(SHORT_QUERY_2), wire.discard())
@@ -110,7 +110,7 @@ public class ResetFuzzIT {
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    public void shouldTerminateLongRunningAutoCommitQuery() throws Exception {
+    void shouldTerminateLongRunningAutoCommitQuery() throws Exception {
         // It takes a while for kernel to notice the tx get killed.
         var sequences = new RequestSequenceCollection().with(wire.run(LONG_QUERY), wire.discard());
 
@@ -119,7 +119,7 @@ public class ResetFuzzIT {
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    public void shouldTerminateQueryInExplicitTransaction() throws Exception {
+    void shouldTerminateQueryInExplicitTransaction() throws Exception {
         var sequences = new RequestSequenceCollection()
                 .with(wire.begin(), wire.run(SHORT_QUERY_1), wire.pull(), wire.rollback())
                 .with(wire.begin(), wire.run(SHORT_QUERY_2), wire.pull(), wire.commit())
@@ -132,7 +132,7 @@ public class ResetFuzzIT {
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    public void shouldTerminateLongRunningQueryInExplicitTransaction() throws Exception {
+    void shouldTerminateLongRunningQueryInExplicitTransaction() throws Exception {
         var sequences =
                 new RequestSequenceCollection().with(wire.begin(), wire.run(LONG_QUERY), wire.pull(), wire.rollback());
 

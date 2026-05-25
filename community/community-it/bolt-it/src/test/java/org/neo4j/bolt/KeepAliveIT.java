@@ -48,7 +48,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
-public class KeepAliveIT {
+class KeepAliveIT {
 
     @Inject
     private Neo4jWithSocket server;
