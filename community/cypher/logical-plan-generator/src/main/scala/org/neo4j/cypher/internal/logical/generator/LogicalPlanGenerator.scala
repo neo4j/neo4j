@@ -116,8 +116,8 @@ object LogicalPlanGenerator {
   object State {
 
     def apply(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int]): State = {
-      val resolvedLabelTypes = Map(labelsWithIds.view.mapValues(LabelId).toSeq: _*)
-      val resolvedRelTypes = Map(relTypesWithIds.view.mapValues(RelTypeId).toSeq: _*)
+      val resolvedLabelTypes = Map(labelsWithIds.view.mapValues(LabelId.apply).toSeq: _*)
+      val resolvedRelTypes = Map(relTypesWithIds.view.mapValues(RelTypeId.apply).toSeq: _*)
       State(
         new SemanticTable(
           resolvedLabelNames = resolvedLabelTypes,
@@ -416,7 +416,7 @@ class LogicalPlanGenerator(
 
   def skip(state: State): Gen[WithState[Skip]] = for {
     WithState(source, state) <- innerLogicalPlan(state)
-    count <- Gen.chooseNum(0, Long.MaxValue, 1)
+    count <- Gen.chooseNum(0L, Long.MaxValue, 1L)
   } yield {
     val plan = Skip(source, literalInt(count))(state.idGen)
     annotate(plan, state)
@@ -424,7 +424,7 @@ class LogicalPlanGenerator(
 
   def limit(state: State): Gen[WithState[LogicalPlan]] = for {
     WithState(source, state) <- innerLogicalPlan(state)
-    count <- Gen.chooseNum(0, Long.MaxValue, 1)
+    count <- Gen.chooseNum(0L, Long.MaxValue, 1L)
   } yield {
     if (shouldPlanExhaustiveLimit(source, Some(count))) {
       annotate(ExhaustiveLimit(source, literalInt(count))(state.idGen), state)
@@ -501,7 +501,7 @@ class LogicalPlanGenerator(
     WithState(source, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
     columns <- Gen.atLeastOne(source.availableSymbols)
     orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending.apply _, Descending.apply _))
-    count <- Gen.chooseNum(0, Long.MaxValue, 1)
+    count <- Gen.chooseNum(0L, Long.MaxValue, 1L)
   } yield {
     val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
     val plan = Top(source, orderedColumns.toSeq, literalInt(count))(state.idGen)
@@ -663,8 +663,8 @@ class LogicalPlanGenerator(
    * - Shares idGen with state
    */
   private def copyStateWithoutVariableInfo(state: State) = {
-    val resolvedLabelTypes = Map(labelsWithIds.mapValues(LabelId).toSeq: _*)
-    val resolvedRelTypes = Map(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
+    val resolvedLabelTypes = Map(labelsWithIds.mapValues(LabelId.apply).toSeq: _*)
+    val resolvedRelTypes = Map(relTypesWithIds.mapValues(RelTypeId.apply).toSeq: _*)
     val arguments = state.arguments
     val variables = arguments.map(_.asInstanceOf[Expression])
 
