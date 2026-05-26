@@ -21,6 +21,7 @@ package org.neo4j.batchimport.api;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.ToolingMemoryCalculations.NO_MONITOR;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 import java.nio.file.Path;
@@ -242,6 +243,10 @@ public interface Configuration {
         return null;
     }
 
+    default int intermediaryBufferSize() {
+        return (int) mebiBytes(10);
+    }
+
     Configuration DEFAULT = new Configuration() {};
 
     /**
@@ -391,6 +396,11 @@ public interface Configuration {
         @Override
         public Path captureProfileResultPath() {
             return defaults.captureProfileResultPath();
+        }
+
+        @Override
+        public int intermediaryBufferSize() {
+            return defaults.intermediaryBufferSize();
         }
     }
 
