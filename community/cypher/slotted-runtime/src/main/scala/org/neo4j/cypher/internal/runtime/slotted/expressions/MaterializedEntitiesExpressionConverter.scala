@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.TextValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.NodeValue
@@ -82,6 +83,11 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
         ))
       case e: physicalplanning.ast.PropertyProjection =>
         Some(MaterializedPropertyProjectionExpression(self.toCommandExpression(id, e.map), e.entries))
+      case expressions.ContainerIndex(container, index) =>
+        Some(MaterializedContainerIndexExpression(
+          self.toCommandExpression(id, container),
+          self.toCommandExpression(id, index)
+        ))
       case e: expressions.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case _                                 => None
     }
@@ -437,4 +443,32 @@ case class MaterializedPropertyProjectionExpression(mapExpression: Expression, e
   override def arguments: Seq[Expression] = Seq(mapExpression)
 
   override def children: Seq[AstNode[_]] = Seq(mapExpression)
+}
+
+final case class MaterializedContainerIndexExpression(expression: Expression, index: Expression) extends Expression {
+
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    (expression(row, state), index(row, state)) match {
+      case (nodeValue: NodeValue, propertyKey: TextValue) =>
+        nodeValue.properties().get(propertyKey.stringValue())
+      case (relationshipValue: RelationshipValue, propertyKey: TextValue) =>
+        relationshipValue.properties().get(propertyKey.stringValue())
+      case (containerValue, indexValue) =>
+        CypherFunctions.containerIndex(
+          containerValue,
+          indexValue,
+          state.query,
+          state.cursors.nodeCursor,
+          state.cursors.relationshipScanCursor,
+          state.cursors.propertyCursor
+        )
+    }
+  }
+  override def arguments: Seq[Expression] = Seq(expression, index)
+
+  override def children: Seq[AstNode[_]] = Seq(expression, index)
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(MaterializedContainerIndexExpression(expression.rewrite(f), index.rewrite(f)))
+
 }
