@@ -39,6 +39,7 @@ import org.neo4j.values.virtual.MapValue
 
 import java.util
 
+import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsScala
 
@@ -52,6 +53,8 @@ import scala.jdk.CollectionConverters.SetHasAsScala
  */
 abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext](source: Option[ExecutionPlan])
     extends ExecutionPlan {
+
+  protected def sourcePlan: Option[ExecutionPlan] = source
 
   def runSpecific(
     ctx: T,
@@ -73,26 +76,93 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     ignore: InputDataStream,
     subscriber: QuerySubscriber
   ): RuntimeResult = {
-    val ctx = createContext(originalCtx)
-    // Only the outermost query should be tied into the reactive results stream. The source queries use a simplified counting subscriber
-    val sourceResult =
-      source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, querySubscriber(ctx, subscriber)))
-    sourceResult match {
-      case Some(i: IgnoredRuntimeResult) =>
-        onSkip(ctx, subscriber, i.runtimeNotifications)
-      case Some(r: UpdatingSystemCommandRuntimeResult) =>
-        runSpecific(
-          r.ctx.asInstanceOf[T],
+    // The chain is walked iteratively (descent + fold) so that very deep chains
+    // (e.g. GRANT MATCH expanded over many properties × labels) do not blow the JVM stack.
+    // Only the outermost query is tied into the reactive results stream; inner layers get
+    // a simplified counting subscriber via querySubscriber.
+
+    type Layer = (ChainedExecutionPlan[T], T, QuerySubscriber)
+
+    // Walks the chain of ChainedExecutionPlan layers via source pointers.
+    // Returns the innermost (deepest) layer separately so it can seed the fold,
+    // the remaining layers in outward order, and the optional non-chained terminal source.
+    @tailrec
+    def descend(
+      plan: ChainedExecutionPlan[T],
+      origCtx: QueryContext,
+      sub: QuerySubscriber,
+      outward: List[Layer]
+    ): (Layer, List[Layer], Option[ExecutionPlan]) = {
+      val ctx = plan.createContext(origCtx)
+      plan.sourcePlan match {
+        case Some(next: ChainedExecutionPlan[_]) =>
+          // All chained plans in a single chain share the same T in practice
+          // (AdministrationChainedExecutionPlan uses SystemUpdateCountingQueryContext;
+          // SchemaExecutionPlan uses UpdateCountingQueryContext; chains never mix).
+          // The original recursive implementation made the same assumption implicitly
+          // via the r.ctx.asInstanceOf[T] cast in applyLayer below.
+          descend(
+            next.asInstanceOf[ChainedExecutionPlan[T]],
+            ctx,
+            plan.querySubscriber(ctx, sub),
+            (plan, ctx, sub) :: outward
+          )
+        case other =>
+          ((plan, ctx, sub), outward, other)
+      }
+    }
+
+    val (innermost, outwardLayers, nonChainedSource) = descend(this, originalCtx, subscriber, Nil)
+    val (innermostPlan, innermostCtx, innermostSubscriber) = innermost
+
+    // Run the innermost non-chained source (if any) once, using the deepest layer's ctx/subscriber.
+    val initialResult: Option[RuntimeResult] = nonChainedSource.map { src =>
+      src.run(
+        innermostCtx,
+        executionMode,
+        params,
+        prePopulateResults,
+        ignore,
+        innermostPlan.querySubscriber(innermostCtx, innermostSubscriber)
+      )
+    }
+
+    def applyLayer(plan: ChainedExecutionPlan[T], ctx: T, sub: QuerySubscriber, prev: RuntimeResult): RuntimeResult =
+      prev match {
+        case ir: IgnoredRuntimeResult =>
+          plan.onSkip(ctx, sub, ir.runtimeNotifications)
+        case r: UpdatingSystemCommandRuntimeResult =>
+          plan.runSpecific(
+            r.ctx.asInstanceOf[T],
+            executionMode,
+            params,
+            prePopulateResults,
+            sub,
+            r.notifications().asScala.toSet
+          )
+        case r =>
+          plan.runSpecific(ctx, executionMode, params, prePopulateResults, sub, r.notifications.asScala.toSet)
+      }
+
+    // Process the innermost layer first; this is the only place a None previous result is possible
+    // (when there is no non-chained source at the leaf), so we collapse it to the empty-notifications
+    // call here and then fold the remaining layers with a guaranteed RuntimeResult accumulator.
+    val innermostResult: RuntimeResult = initialResult match {
+      case Some(r) => applyLayer(innermostPlan, innermostCtx, innermostSubscriber, r)
+      case None =>
+        innermostPlan.runSpecific(
+          innermostCtx,
           executionMode,
           params,
           prePopulateResults,
-          subscriber,
-          r.notifications().asScala.toSet
+          innermostSubscriber,
+          Set.empty
         )
-      case Some(r: RuntimeResult) =>
-        runSpecific(ctx, executionMode, params, prePopulateResults, subscriber, r.notifications.asScala.toSet)
-      case _ =>
-        runSpecific(ctx, executionMode, params, prePopulateResults, subscriber, Set.empty)
+    }
+
+    // Unwind from the next-innermost layer out to the outermost.
+    outwardLayers.foldLeft(innermostResult) {
+      case (prev, (plan, ctx, sub)) => applyLayer(plan, ctx, sub, prev)
     }
   }
 
