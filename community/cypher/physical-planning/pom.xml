@@ -5,11 +5,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>2026.05.0-SNAPSHOT</version>
+    <version>2026.06.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>neo4j-cypher-physical-planning</artifactId>
-  <version>2026.05.0-SNAPSHOT</version>
+  <version>2026.06.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Neo4j - Cypher Physical Planning</name>
   <description>A runtime for Neo4j's query language</description>

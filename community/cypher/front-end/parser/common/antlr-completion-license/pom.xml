@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parser-common-parent</artifactId>
-    <version>2026.05.0-SNAPSHOT</version>
+    <version>2026.06.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>cypher-antlr-completion-license</artifactId>
