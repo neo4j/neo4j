@@ -174,13 +174,18 @@ abstract class AbstractLocalChannelIT {
                 "status_description", Values.stringValue(statusDescription));
     }
 
-    protected static void login(UnwiredTestConnection unwired) {
+    protected static void authenticate(UnwiredTestConnection unwired) {
         unwired.sendRequest(new HelloMessage("test/embedded", List.of(), new RoutingContext(false, Map.of()), null))
                 .sendRequest(new LogonMessage(Map.of("scheme", "none")));
 
         AbstractLocalChannelIT.assertSuccess(
                 unwired.receiveResponse(),
                 AbstractLocalChannelIT.assertSuccessFields("server", "connection_id", "hints"));
+        AbstractLocalChannelIT.assertSuccess(unwired.receiveResponse(), AbstractLocalChannelIT.assertSuccessEmpty());
+    }
+
+    protected static void login(UnwiredTestConnection unwired) {
+        unwired.sendRequest(new LogonMessage(Map.of("scheme", "none")));
         AbstractLocalChannelIT.assertSuccess(unwired.receiveResponse(), AbstractLocalChannelIT.assertSuccessEmpty());
     }
 

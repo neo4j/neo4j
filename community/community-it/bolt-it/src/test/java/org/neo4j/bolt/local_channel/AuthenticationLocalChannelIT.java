@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.local_channel;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Map;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
@@ -31,60 +27,37 @@ import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.client.UnwiredTestConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.boltmessages.AccessMode;
-import org.neo4j.boltmessages.request.authentication.HelloMessage;
+import org.neo4j.boltmessages.request.authentication.LogoffMessage;
 import org.neo4j.boltmessages.request.connection.ResetMessage;
-import org.neo4j.boltmessages.request.connection.RoutingContext;
-import org.neo4j.boltmessages.request.transaction.BeginMessage;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
 @IncludeTransport({TransportType.LOCAL})
-public class ResetLocalChannelIT extends AbstractLocalChannelIT {
+public class AuthenticationLocalChannelIT extends AbstractLocalChannelIT {
 
     @TransportTest
-    void shouldFailAResetWhenInUnauthenticatedState(@Connected BoltTestConnection connection) {
-        connection.unwired(unwired -> {
-            unwired.sendRequest(ResetMessage.getInstance());
-
-            assertFailure(unwired.receiveResponse());
-        });
-    }
-
-    @TransportTest
-    void shouldFailAResetWhenInAuthenticationState(@Connected BoltTestConnection connection) {
-        connection.unwired(unwired -> {
-            // This will take us to authentication state.
-            unwired.sendRequest(
-                    new HelloMessage("test/embedded", List.of(), new RoutingContext(false, Map.of()), null));
-            assertSuccess(unwired.receiveResponse());
-
-            unwired.sendRequest(ResetMessage.getInstance());
-
-            assertFailure(unwired.receiveResponse());
-        });
-    }
-
-    @TransportTest
-    void shouldResetToReadyStateWhenAuthenticated(@Connected BoltTestConnection connection) {
+    void shouldReAuthenticateConnections(@Connected BoltTestConnection connection) {
         connection.unwired(unwired -> {
             authenticate(unwired);
 
-            begin(unwired);
+            // Check logged in
+            checkAuthenticated(unwired);
 
-            unwired.sendRequest(ResetMessage.getInstance());
+            // Logoff
+            unwired.sendRequest(LogoffMessage.getInstance());
             assertSuccess(unwired.receiveResponse());
 
-            // This should pass as after reset past Authentication state we should end back in
-            begin(unwired);
+            login(unwired);
+
+            // Check logged in
+            checkAuthenticated(unwired);
         });
     }
 
-    private static void begin(UnwiredTestConnection unwired) {
-        unwired.sendRequest(
-                new BeginMessage(List.of(), Duration.of(10, ChronoUnit.SECONDS), AccessMode.WRITE, Map.of(), "neo4j"));
+    private static void checkAuthenticated(UnwiredTestConnection unwired) {
+        unwired.sendRequest(ResetMessage.getInstance());
         assertSuccess(unwired.receiveResponse());
     }
 }

@@ -39,7 +39,7 @@ public class GoodbyeLocalChannelIT extends AbstractLocalChannelIT {
     @TransportTest
     void shouldCloseTheConnection(@Connected BoltTestConnection connection) {
         connection.unwired(unwired -> {
-            login(unwired);
+            authenticate(unwired);
 
             unwired.sendRequest(GoodbyeMessage.getInstance());
 

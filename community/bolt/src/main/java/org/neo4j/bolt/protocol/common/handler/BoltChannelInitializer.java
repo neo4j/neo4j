@@ -128,9 +128,10 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
             var protocol = this.connector.protocolRegistry().getLatest().orElseThrow();
             connection.selectProtocol(protocol, Set.of());
 
-            ch.pipeline().addLast(GoodbyeMessageHandler.HANDLER_NAME, new GoodbyeMessageHandler(logging));
-
-            ch.pipeline().addLast("requestHandler", new RequestHandler(logging));
+            ch.pipeline()
+                    .addLast(GoodbyeMessageHandler.HANDLER_NAME, new GoodbyeMessageHandler(logging))
+                    .addLast("requestHandler", new RequestHandler(logging))
+                    .addLast(HouseKeeperHandler.HANDLER_NAME, new HouseKeeperHandler(logging));
             return protocol;
         }
 

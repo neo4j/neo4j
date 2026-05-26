@@ -78,7 +78,7 @@ public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
     @TransportTest
     void shouldRunSimpleQuery(@Connected BoltTestConnection connection) throws Exception {
         connection.unwired(unwired -> {
-            login(unwired);
+            authenticate(unwired);
 
             var parametersBuilder = new MapValueBuilder();
             parametersBuilder.add("param", param);
@@ -111,7 +111,7 @@ public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
     @TransportTest
     void shouldRunSingleQueryInTx(@Connected BoltTestConnection connection) throws Exception {
         connection.unwired(unwired -> {
-            login(unwired);
+            authenticate(unwired);
 
             var parametersBuilder = new MapValueBuilder();
             parametersBuilder.add("param", param);
@@ -146,7 +146,7 @@ public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
             var expectedLabels = new String[] {"TheNodeLabel"};
             var expectedProperties = Map.of("param", param);
 
-            login(unwired);
+            authenticate(unwired);
 
             var parametersBuilder = new MapValueBuilder();
             parametersBuilder.add("param", param);
@@ -182,7 +182,7 @@ public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
         var expectedProperties = Map.of("param", param);
 
         connection.unwired(unwired -> {
-            login(unwired);
+            authenticate(unwired);
 
             var parametersBuilder = new MapValueBuilder();
             parametersBuilder.add("param", param);
@@ -217,7 +217,7 @@ public class Neo4jValuesLocalChannelIT extends AbstractLocalChannelIT {
         assumeIsNotMapOrHeterogeneousList();
 
         connection.unwired(unwired -> {
-            login(unwired);
+            authenticate(unwired);
 
             var parametersBuilder = new MapValueBuilder();
             parametersBuilder.add("param", param);
