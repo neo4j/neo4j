@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdatesListener;
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
@@ -55,7 +56,8 @@ public class IndexUpdatesWorkSync {
     }
 
     public class Batch implements IndexUpdatesListener {
-        private final List<IndexEntryUpdate> updates = new ArrayList<>();
+        private final List<IndexEntryUpdate> tokenIndexUpdates = new ArrayList<>();
+        private final List<IndexEntryUpdate> valueIndexUpdates = new ArrayList<>();
         private final CursorContext cursorContext;
         private AsyncApply apply;
 
@@ -72,7 +74,11 @@ public class IndexUpdatesWorkSync {
          */
         @Override
         public void indexUpdate(IndexEntryUpdate indexUpdate) {
-            updates.add(indexUpdate);
+            if (indexUpdate instanceof TokenIndexEntryUpdate) {
+                tokenIndexUpdates.add(indexUpdate);
+            } else {
+                valueIndexUpdates.add(indexUpdate);
+            }
         }
 
         @Override
@@ -93,19 +99,30 @@ public class IndexUpdatesWorkSync {
 
         private void apply() throws IOException, ExecutionException {
             apply = AsyncApply.EMPTY;
-            if (!updates.isEmpty()) {
+            if (!tokenIndexUpdates.isEmpty() || !valueIndexUpdates.isEmpty()) {
                 if (parallelApply) {
                     // Just skip the work-sync if this is parallel apply and instead update straight in
                     try {
-                        sortUpdatesByIndex();
-                        listener.applyUpdates(listNullingIterator(updates), cursorContext, true);
+                        sortAndApply(tokenIndexUpdates);
+                        sortAndApply(valueIndexUpdates);
                     } catch (KernelException e) {
                         throw new IOException(e);
                     }
                 } else {
-                    workSync.apply(new IndexUpdatesWork(listNullingIterator(updates), cursorContext));
+                    workSync.apply(new IndexUpdatesWork(
+                            listNullingIterator(tokenIndexUpdates),
+                            listNullingIterator(valueIndexUpdates),
+                            cursorContext));
                 }
             }
+        }
+
+        private void sortAndApply(List<IndexEntryUpdate> updates) throws IOException, KernelException {
+            if (updates.isEmpty()) {
+                return;
+            }
+            sortUpdatesByIndex(updates);
+            listener.applyUpdates(listNullingIterator(updates), cursorContext, true);
         }
 
         @Override
@@ -122,12 +139,15 @@ public class IndexUpdatesWorkSync {
                 }
                 return;
             }
-            apply = updates.isEmpty()
+            apply = tokenIndexUpdates.isEmpty() && valueIndexUpdates.isEmpty()
                     ? AsyncApply.EMPTY
-                    : workSync.applyAsync(new IndexUpdatesWork(listNullingIterator(updates), cursorContext));
+                    : workSync.applyAsync(new IndexUpdatesWork(
+                            listNullingIterator(tokenIndexUpdates),
+                            listNullingIterator(valueIndexUpdates),
+                            cursorContext));
         }
 
-        private void sortUpdatesByIndex() {
+        private void sortUpdatesByIndex(List<IndexEntryUpdate> updates) {
             updates.sort((o1, o2) -> {
                 // It doesn't matter which individual order the updates are in, as long as they are sorted by index key.
                 // In fact they can't be sorted on their values because they aren't materialized yet.
@@ -142,12 +162,18 @@ public class IndexUpdatesWorkSync {
      * Combines index updates from multiple transactions into one bigger job.
      */
     private static class IndexUpdatesWork implements Work<IndexUpdateListener, IndexUpdatesWork> {
-        record OneWork(Iterator<IndexEntryUpdate> updates, CursorContext cursorContext) {}
+        record OneWork(
+                Iterator<IndexEntryUpdate> tokenIndexUpdates,
+                Iterator<IndexEntryUpdate> valueIndexUpdates,
+                CursorContext cursorContext) {}
 
         private final List<OneWork> works = new ArrayList<>(1);
 
-        IndexUpdatesWork(Iterator<IndexEntryUpdate> updates, CursorContext cursorContext) {
-            works.add(new OneWork(updates, cursorContext));
+        IndexUpdatesWork(
+                Iterator<IndexEntryUpdate> tokenIndexUpdates,
+                Iterator<IndexEntryUpdate> valueIndexUpdates,
+                CursorContext cursorContext) {
+            works.add(new OneWork(tokenIndexUpdates, valueIndexUpdates, cursorContext));
         }
 
         @Override
@@ -160,7 +186,14 @@ public class IndexUpdatesWorkSync {
         public void apply(IndexUpdateListener material) {
             try {
                 for (OneWork work : works) {
-                    material.applyUpdates(work.updates, work.cursorContext, false);
+                    if (work.tokenIndexUpdates.hasNext()) {
+                        material.applyUpdates(work.tokenIndexUpdates, work.cursorContext, false);
+                    }
+                }
+                for (OneWork work : works) {
+                    if (work.valueIndexUpdates.hasNext()) {
+                        material.applyUpdates(work.valueIndexUpdates, work.cursorContext, false);
+                    }
                 }
             } catch (IOException | KernelException e) {
                 throw new UnderlyingStorageException(e);
