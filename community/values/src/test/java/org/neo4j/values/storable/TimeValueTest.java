@@ -207,6 +207,14 @@ class TimeValueTest {
         assertEquals(0, value1.unsafeCompareTo(value2));
     }
 
+    @Test
+    void shouldRoundTripTimeWithSubMinuteOffset() {
+        TimeValue original = time(0, 0, 0, 0, ZoneOffset.ofHoursMinutesSeconds(0, 1, 30));
+
+        TimeValue reparsed = parse(original.prettyPrint(), inUTC);
+        assertEqual(original, reparsed);
+    }
+
     private static OffsetTime write(TimeValue value) {
         AtomicReference<OffsetTime> result = new AtomicReference<>();
         value.writeTo(new ThrowingValueWriter.AssertOnly() {

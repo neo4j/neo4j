@@ -372,7 +372,8 @@ public final class TimeValue extends TemporalValue<OffsetTime, TimeValue> {
         return INSTANCE_SIZE;
     }
 
-    private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
+    private static final String OFFSET_PATTERN =
+            "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2})(?::?(?<zoneSecond>[0-9]{2}))?)?)";
     private static final String ZONE_NAME_PATTERN = "(?<zoneName>[a-zA-Z0-9~._ /+-]+)";
     static final String TIME_PATTERN =
             LocalTimeValue.TIME_PATTERN + "(?:" + OFFSET_PATTERN + ")?" + "(?:\\[" + ZONE_NAME_PATTERN + "])?";
@@ -398,7 +399,9 @@ public final class TimeValue extends TemporalValue<OffsetTime, TimeValue> {
         int factor = zone.charAt(0) == '+' ? 1 : -1;
         int hours = parseInt(matcher.group("zoneHour"));
         int minutes = optInt(matcher.group("zoneMinute"));
-        return assertValidZone(() -> ZoneOffset.ofHoursMinutes(factor * hours, factor * minutes));
+        int seconds = optInt(matcher.group("zoneSecond"));
+        return assertValidZone(
+                () -> ZoneOffset.ofHoursMinutesSeconds(factor * hours, factor * minutes, factor * seconds));
     }
 
     private static TimeValue parse(Matcher matcher, Supplier<ZoneId> defaultZone) {

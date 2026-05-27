@@ -557,4 +557,29 @@ class DateTimeValueTest {
                         .add("timezone", stringValue("America/New_York"))
                         .build());
     }
+
+    @Test
+    void shouldRoundTripPre1893BerlinDateTime() {
+        DateTimeValue original = parse("1890-10-01T00:00:00[Europe/Berlin]", () -> UTC);
+
+        assertEquals(
+                ZoneOffset.ofHoursMinutesSeconds(0, 53, 28), original.temporal().getOffset());
+
+        DateTimeValue reparsed = parse(original.prettyPrint(), () -> UTC);
+        assertEqual(original, reparsed);
+    }
+
+    @Test
+    void shouldRoundTripDateTimeConstructedWithSubMinuteOffset() {
+        DateTimeValue original = fromValues(builder(clock))
+                .add("year", 2022)
+                .add("timezone", "+00:01:30")
+                .build();
+
+        assertEquals(
+                ZoneOffset.ofHoursMinutesSeconds(0, 1, 30), original.temporal().getOffset());
+
+        DateTimeValue reparsed = parse(original.prettyPrint(), () -> UTC);
+        assertEqual(original, reparsed);
+    }
 }
