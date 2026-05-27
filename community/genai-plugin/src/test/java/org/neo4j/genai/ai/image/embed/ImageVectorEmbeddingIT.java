@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -80,25 +79,12 @@ public class ImageVectorEmbeddingIT {
             return List.of("{ %s: $token, model: 'multimodalembedding@001', region: $region, project: $project}"
                     .formatted(tokenOrKey));
         }
-
-        @Override
-        List<String> confWithVendorOptions() {
-            var isApiKeyEnv = System.getenv(Tokens.Vertex.IS_API_KEY);
-            var isApiKey = isApiKeyEnv != null && isApiKeyEnv.equalsIgnoreCase("true");
-            var tokenOrKey = isApiKey ? "apiKey" : "token";
-            return List.of(
-                    "{ %s: $token, model: 'multimodalembedding@001', region: $region, project: $project, vendorOptions: { autoTruncate: true, task_type: 'QUESTION_ANSWERING' }}"
-                            .formatted(tokenOrKey));
-        }
     }
 
     @Nested
     @EnabledIfEnvironmentVariable(named = Tokens.Bedrock.ACCESS_KEY_ENV, matches = ".*")
     @EnabledIfEnvironmentVariable(named = Tokens.Bedrock.SECRET_ACCESS_KEY_ENV, matches = ".*")
     class BedrockTitan extends VectorEmbeddingITBase {
-        static final String KEY = "BEDROCK_KEY";
-        static final String SECRET = "BEDROCK_SECRET_KEY";
-
         @Override
         String provider() {
             return "bedrock-titan";
@@ -118,16 +104,7 @@ public class ImageVectorEmbeddingIT {
         @Override
         List<String> confRequired() {
             return List.of(
-                    "{ model: 'amazon.titan-embed-text-v1', region: 'us-east-1', accessKeyId: $key, secretAccessKey: $secret }",
-                    "{ model: 'amazon.titan-embed-text-v2:0', region: 'eu-west-2', accessKeyId: $key, secretAccessKey: $secret }",
-                    "{ model: 'arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1', region: 'us-east-1', accessKeyId: $key, secretAccessKey: $secret }");
-        }
-
-        @Override
-        List<String> confWithVendorOptions() {
-            return List.of(
-                    "{ model: 'amazon.titan-embed-text-v2:0', region: 'eu-west-2', accessKeyId: $key, secretAccessKey: $secret, vendorOptions: { dimensions: 1024, normalize: true, embeddingTypes: ['float'] } }",
-                    "{ model: 'arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v2:0', region: 'us-west-2', accessKeyId: $key, secretAccessKey: $secret, vendorOptions: { dimensions: 1024, normalize: true, embeddingTypes: ['float'] } }");
+                    "{ model: 'amazon.titan-embed-image-v1', region: 'us-east-1', accessKeyId: $key, secretAccessKey: $secret }");
         }
     }
 }
@@ -144,8 +121,6 @@ abstract class VectorEmbeddingITBase implements GenAITestExtension {
     abstract Map<String, Object> params();
 
     abstract List<String> confRequired();
-
-    abstract List<String> confWithVendorOptions();
 
     String provider() {
         return getClass().getSimpleName().toLowerCase(Locale.ROOT);
@@ -177,15 +152,5 @@ abstract class VectorEmbeddingITBase implements GenAITestExtension {
                 .extracting("result")
                 .asInstanceOf(InstanceOfAssertFactories.type(VectorValue.class))
                 .isNotNull();
-    }
-
-    private Consumer<Map<String, Object>> batchedNullRow(long index) {
-        return row -> assertThat(row).containsEntry("index", index).containsEntry("vector", null);
-    }
-
-    private Consumer<Map<String, Object>> batchedNonBlankRow(long index) {
-        return row -> assertThat(row).containsEntry("index", index).hasEntrySatisfying("vector", c -> assertThat(c)
-                .asInstanceOf(InstanceOfAssertFactories.type(VectorValue.class))
-                .isNotNull());
     }
 }
