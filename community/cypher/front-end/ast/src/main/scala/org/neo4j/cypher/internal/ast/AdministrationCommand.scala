@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocationLike
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
@@ -1005,8 +1006,8 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
     condition.map(_.expression).toSeq
       .flatMap(e => Seq(e) ++ e.subExpressions)
       .flatMap {
-        case f: FunctionInvocation => Some(f)
-        case _                     => None
+        case f: FunctionInvocationLike => Some(f)
+        case _                         => None
       }
       .foldSemanticCheck(f => {
         checkAllowlist(f) chain
@@ -1015,7 +1016,7 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
       })
   }
 
-  protected def checkAllowlist(functionInvocation: FunctionInvocation): SemanticCheck = {
+  protected def checkAllowlist(functionInvocation: FunctionInvocationLike): SemanticCheck = {
     val allowListedFunctions = Seq(
       // ABAC oidc user attributes function
       "abac.oidc.user_attribute",
@@ -1100,16 +1101,17 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
       "time.truncate"
     ).map(_.toLowerCase)
 
-    if (allowListedFunctions.contains(functionInvocation.name.toLowerCase))
+    val name = functionInvocation.functionName.fullName
+    if (allowListedFunctions.contains(name.toLowerCase))
       SemanticCheck.success
     else
       SemanticCheck.error(SemanticError.authRuleConditionHaveInvalidFunctionInCondition(
-        functionInvocation.name,
+        name,
         functionInvocation.position
       ))
   }
 
-  protected def checkTemporalFunctionsArguments(functionInvocation: FunctionInvocation): SemanticCheck = {
+  protected def checkTemporalFunctionsArguments(functionInvocation: FunctionInvocationLike): SemanticCheck = {
     val temporalFunctionsThatRequireArgs = Seq(
       "date",
       "datetime",
@@ -1118,9 +1120,9 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
       "time"
     )
 
-    val name = functionInvocation.name
+    val name = functionInvocation.functionName.fullName
     if (temporalFunctionsThatRequireArgs.contains(name.toLowerCase)) {
-      functionInvocation.args match {
+      functionInvocation.callArguments match {
         case Seq() =>
           SemanticCheck.error(SemanticError.authRuleConditionHaveInvalidFunctionInCondition(
             name,
@@ -1146,32 +1148,34 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
     }
   }
 
-  protected def checkAbacOidcUserAttributeFunction(functionInvocation: FunctionInvocation): SemanticCheck = {
-    if (functionInvocation.name == "abac.oidc.user_attribute") {
-      lazy val argHeadOption = functionInvocation.args.headOption
+  protected def checkAbacOidcUserAttributeFunction(functionInvocation: FunctionInvocationLike): SemanticCheck = {
+    val name = functionInvocation.functionName.fullName
+    val args = functionInvocation.callArguments
+    if (name == "abac.oidc.user_attribute") {
+      lazy val argHeadOption = args.headOption
         .flatMap {
           case _: Parameter             => None // cannot evaluate parameter so this will pass semantic check
           case literal: Literal         => Some(literal)
           case listLiteral: ListLiteral => Some(listLiteral)
           case _                        => None // might want to evaluate the inner expression to fail more cases
         }
-      if (functionInvocation.args.size != 1) {
+      if (args.size != 1) {
         // This will probably never be more than 1 since the parser gives one ListLiteral argument
         SemanticError.functionCallWrongNumberOfArguments(
           1,
-          functionInvocation.args.size,
-          functionInvocation.name,
+          args.size,
+          name,
           "abac.oidc.user_attribute(attributeKey :: STRING) :: ANY",
-          functionInvocation.args.map(_.asCanonicalStringVal).mkString(", "),
+          args.map(_.asCanonicalStringVal).mkString(", "),
           functionInvocation.position
         )
       } else if (argHeadOption.exists(_.isInstanceOf[ListLiteral])) {
         SemanticError.functionCallWrongNumberOfArguments(
           1,
-          functionInvocation.args.head.asInstanceOf[ListLiteral].expressions.size,
-          functionInvocation.name,
+          args.head.asInstanceOf[ListLiteral].expressions.size,
+          name,
           "abac.oidc.user_attribute(attributeKey :: STRING) :: ANY",
-          functionInvocation.args.map(_.asCanonicalStringVal).mkString(", "),
+          args.map(_.asCanonicalStringVal).mkString(", "),
           functionInvocation.position
         )
       } else if (argHeadOption.nonEmpty && !argHeadOption.exists(_.isInstanceOf[StringLiteral])) {
@@ -1525,10 +1529,9 @@ sealed abstract class PrivilegeCommand(
     def checkScalarExpression(value: Expression): SemanticCheck = {
       value match {
         case _: Literal | _: ExplicitParameter => SemanticCheck.success
-        case f: FunctionInvocation
-          if Seq("date", "datetime", "localdatetime", "localtime", "time", "duration", "point").contains(
-            f.functionName.name
-          ) =>
+        case f: FunctionInvocationLike
+          if Seq("date", "datetime", "localdatetime", "localtime", "time", "duration", "point")
+            .contains(f.functionName.name) =>
           SemanticCheck.success
         case _ =>
           AdministrationCommandSemanticAnalysis.invalidPropertyBasedAccessControlRuleInvolvingNontrivialPredicatesError(
