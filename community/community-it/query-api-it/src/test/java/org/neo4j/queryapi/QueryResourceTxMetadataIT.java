@@ -25,50 +25,25 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.queryapi.testclient.QueryRequest;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
-import org.neo4j.test.extension.Inject;
 
-@DbmsExtension(configurationCallback = "configuration")
+@QueryAPITestExtension
 class QueryResourceTxMetadataIT {
-    @Inject
-    GraphDatabaseAPI db;
 
-    private static QueryAPITestClient testClient;
-    private static String queryEndpoint;
+    private final QueryAPITestClient testClient;
+    private final String queryEndpoint;
 
-    @ExtensionCallback
-    public void configuration(TestDatabaseManagementServiceBuilder builder) throws IOException {
-        builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(
-                        BoltConnectorInternalSettings.local_channel_address,
-                        QueryResourceTxMetadataIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true);
-    }
-
-    @BeforeEach
-    void setup() {
-        var portRegister = db.getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        testClient = new QueryAPITestClient(queryEndpoint);
+    QueryResourceTxMetadataIT(QueryAPITestClient testClient) {
+        this.testClient = testClient;
+        this.queryEndpoint = testClient.getEndpoint();
     }
 
     @ParameterizedTest

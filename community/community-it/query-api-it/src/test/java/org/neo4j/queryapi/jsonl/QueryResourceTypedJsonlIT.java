@@ -19,21 +19,23 @@
  */
 package org.neo4j.queryapi.jsonl;
 
-import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
 
+@QueryAPITestExtension(
+        contentType = QueryContentType.TYPED_V1_0,
+        acceptedContentTypes = {
+            QueryContentType.TYPED_L_V1_0,
+            QueryContentType.TYPED_V1_0,
+            QueryContentType.TYPED,
+            QueryContentType.UNTYPED
+        })
 class QueryResourceTypedJsonlIT extends AbstractQueryResourcedTypedJsonlIT {
 
-    @BeforeAll
-    static void setup() {
-        beforeAll(
-                QueryContentType.TYPED_V1_0,
-                List.of(
-                        QueryContentType.TYPED_L_V1_0,
-                        QueryContentType.TYPED_V1_0,
-                        QueryContentType.TYPED,
-                        QueryContentType.UNTYPED));
+    QueryResourceTypedJsonlIT(DatabaseManagementService dbms, QueryAPITestClient testClient) {
+        super(dbms, testClient);
     }
 
     @Override

@@ -19,63 +19,49 @@
  */
 package org.neo4j.queryapi.jsonl;
 
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.QueryResponseJsonlAssertions;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+/**
+ * TODO: Enabled extension to configured to start and stop
+ * database per method, not only per class. This test class
+ * makes changes on the database which can not be easily reverted.
+ * So, the re-creation of the database between tests were the
+ * strategy for these tests.
+ * However, since it is not possible in the current framework.
+ * The tests were ordered in a way that the changes on the database
+ * only affects tests which depends on it.
+ */
+@QueryAPITestExtension(authEnabled = true)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class QueryResourceAuthenticationJsonlIT {
 
-    private static DatabaseManagementService dbms;
-    private static HttpClient client;
+    private final HttpClient client;
 
-    private static String queryEndpoint;
+    private final String queryEndpoint;
 
-    private final ObjectMapper MAPPER = new ObjectMapper();
-
-    @BeforeEach
-    void beforeEach() {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(GraphDatabaseSettings.auth_enabled, true)
-                .setConfig(BoltConnector.enabled, true)
-                .impermanent()
-                .build();
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        client = HttpClient.newBuilder().build();
-    }
-
-    @AfterEach
-    void cleanUp() {
-        dbms.shutdown();
+    QueryResourceAuthenticationJsonlIT(QueryAPITestClient testClient) {
+        this.client = HttpClient.newBuilder().build();
+        this.queryEndpoint = testClient.getEndpoint();
     }
 
     @Test
+    @Order(1)
     void shouldRequireCredentialChange() throws IOException, InterruptedException {
         var httpRequest = QueryApiTestUtil.baseRequestBuilderJsonl(queryEndpoint, "system")
                 .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "neo4j"))
@@ -92,6 +78,7 @@ class QueryResourceAuthenticationJsonlIT {
     }
 
     @Test
+    @Order(2)
     void shouldAllowAccessWhenPasswordChanged() throws IOException, InterruptedException {
         updateInitialPassword();
 
@@ -186,7 +173,7 @@ class QueryResourceAuthenticationJsonlIT {
                 .hasNoRemainingEvents();
     }
 
-    private static void updateInitialPassword() throws IOException, InterruptedException {
+    private void updateInitialPassword() throws IOException, InterruptedException {
         var updatePasswordReq = QueryApiTestUtil.baseRequestBuilderJsonl(queryEndpoint, "system")
                 .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "neo4j"))
                 .POST(HttpRequest.BodyPublishers.ofString(
@@ -201,12 +188,5 @@ class QueryResourceAuthenticationJsonlIT {
                 .receivesHeader()
                 .receivesSummary()
                 .hasNoRemainingEvents();
-    }
-
-    @AfterAll
-    static void teardown() {
-        if (dbms != null) {
-            dbms.shutdown();
-        }
     }
 }

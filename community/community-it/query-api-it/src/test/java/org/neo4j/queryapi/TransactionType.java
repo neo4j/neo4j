@@ -19,27 +19,26 @@
  */
 package org.neo4j.queryapi;
 
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.queryapi.annotation.QueryAPITestExtension;
-import org.neo4j.queryapi.testclient.QueryAPITestClient;
-import org.neo4j.queryapi.testclient.QueryContentType;
+import java.util.function.Function;
 
-@QueryAPITestExtension(
-        contentType = QueryContentType.TYPED_V1_1,
-        acceptedContentTypes = {
-            QueryContentType.TYPED_V1_1,
-            QueryContentType.TYPED_V1_0,
-            QueryContentType.TYPED,
-            QueryContentType.UNTYPED
-        })
-class QueryResourceTypedV1x1JsonIT extends AbstractQueryResourcedTypedJsonIT {
+public enum TransactionType {
+    IMPLICIT("Implicit Transaction", Function.identity()),
+    EXPLICIT("Explicit Transaction", (queryEndpoint) -> queryEndpoint + "/tx");
 
-    QueryResourceTypedV1x1JsonIT(DatabaseManagementService dbms, QueryAPITestClient client) {
-        super(dbms, client);
+    private final String name;
+    private final Function<String, String> transformer;
+
+    TransactionType(String name, Function<String, String> transform) {
+        this.name = name;
+        this.transformer = transform;
+    }
+
+    public String endpoint(String queryEndpoint) {
+        return transformer.apply(queryEndpoint);
     }
 
     @Override
-    protected QueryContentType contentType() {
-        return QueryContentType.TYPED_V1_1;
+    public String toString() {
+        return name;
     }
 }

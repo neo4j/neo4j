@@ -20,75 +20,40 @@
 package org.neo4j.queryapi.tx;
 
 import static java.lang.String.format;
-import static org.neo4j.queryapi.QueryApiTestUtil.resolveDependency;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-import static org.neo4j.queryapi.QueryApiTestUtil.sleepProcedure;
 import static org.neo4j.queryapi.QueryResponseAssertions.assertThat;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.queryapi.QueryApiTestUtil;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.queryapi.testclient.QueryRequest;
-import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.tx.TransactionManager;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceTxIT {
+@QueryAPITestExtension(sleepProcedureEnabled = true)
+class QueryResourceTxIT {
 
-    private static QueryAPITestClient testClient;
-    private static DatabaseManagementService dbms;
-    private static TransactionManager txManager;
-    private static String queryEndpoint;
+    private final QueryAPITestClient testClient;
 
-    @BeforeAll
-    static void beforeAll() throws ProcedureException {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(BoltConnectorInternalSettings.local_channel_address, QueryResourceTxIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true)
-                .setConfig(BoltConnectorInternalSettings.enable_local_connector, true)
-                .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
-                .impermanent()
-                .build();
+    private final TransactionManager txManager;
+    private final String queryEndpoint;
 
-        resolveDependency(dbms, GlobalProcedures.class).register(sleepProcedure());
-        txManager = resolveDependency(dbms, TransactionManager.class);
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        testClient = new QueryAPITestClient(queryEndpoint);
-    }
-
-    @AfterAll
-    static void afterAll() {
-        dbms.shutdown();
+    QueryResourceTxIT(QueryAPITestClient testClient, TransactionManager txManager) {
+        this.testClient = testClient;
+        this.txManager = txManager;
+        this.queryEndpoint = testClient.getEndpoint();
     }
 
     @BeforeEach

@@ -20,56 +20,26 @@
 package org.neo4j.queryapi.jsonl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 
 import java.io.IOException;
-import java.util.List;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.notifications.NotificationCodeWithDescription;
-import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.QueryResponseJsonlAssertions;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.queryapi.testclient.QueryRequest;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension(
+        contentType = QueryContentType.UNTYPED,
+        acceptedContentTypes = {QueryContentType.UNTYPED_L})
 class QueryResourceNotificationsJsonlIT {
 
-    private static DatabaseManagementService dbms;
-    private static QueryAPITestClient testClient;
+    private final QueryAPITestClient testClient;
 
-    @BeforeAll
-    static void beforeAll() {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(
-                        BoltConnectorInternalSettings.local_channel_address,
-                        QueryResourceNotificationsJsonlIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true)
-                .impermanent()
-                .build();
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        var queryEndpoint =
-                "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        testClient =
-                new QueryAPITestClient(queryEndpoint, QueryContentType.UNTYPED, List.of(QueryContentType.UNTYPED_L));
-    }
-
-    @AfterAll
-    static void teardown() {
-        dbms.shutdown();
+    QueryResourceNotificationsJsonlIT(QueryAPITestClient testClient) {
+        this.testClient = testClient;
     }
 
     @Test

@@ -17,29 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.queryapi;
+package org.neo4j.queryapi.annotation.support;
 
+import java.util.List;
+import org.junit.jupiter.api.extension.ClassTemplateInvocationContext;
+import org.junit.jupiter.api.extension.Extension;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.queryapi.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.annotation.BoltTransportType;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
-import org.neo4j.queryapi.testclient.QueryContentType;
+import org.neo4j.server.queryapi.tx.TransactionManager;
 
-@QueryAPITestExtension(
-        contentType = QueryContentType.TYPED_V1_1,
-        acceptedContentTypes = {
-            QueryContentType.TYPED_V1_1,
-            QueryContentType.TYPED_V1_0,
-            QueryContentType.TYPED,
-            QueryContentType.UNTYPED
-        })
-class QueryResourceTypedV1x1JsonIT extends AbstractQueryResourcedTypedJsonIT {
+public record QueryAPIClassTemplateInvocationContext(
+        BoltTransportType transportType,
+        DatabaseManagementService dbms,
+        QueryAPITestClient testClient,
+        TransactionManager txManager)
+        implements ClassTemplateInvocationContext {
 
-    QueryResourceTypedV1x1JsonIT(DatabaseManagementService dbms, QueryAPITestClient client) {
-        super(dbms, client);
+    @Override
+    public String getDisplayName(int invocationIndex) {
+        return transportType.name();
     }
 
     @Override
-    protected QueryContentType contentType() {
-        return QueryContentType.TYPED_V1_1;
+    public List<Extension> getAdditionalExtensions() {
+        return List.of(new QueryAPIParameterResolver(dbms, testClient, txManager));
     }
 }

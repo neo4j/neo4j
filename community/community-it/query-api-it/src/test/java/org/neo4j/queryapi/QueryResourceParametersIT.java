@@ -20,7 +20,6 @@
 package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
@@ -31,52 +30,25 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryRequest;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension
 class QueryResourceParametersIT {
 
-    private static DatabaseManagementService dbms;
-    private static HttpClient client;
-    private static QueryAPITestClient testClient;
+    private final HttpClient client;
+    private final QueryAPITestClient testClient;
+    private final String queryEndpoint;
 
-    private static String queryEndpoint;
-
-    @BeforeAll
-    static void beforeAll() {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(
-                        BoltConnectorInternalSettings.local_channel_address,
-                        QueryResourceParametersIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true)
-                .impermanent()
-                .build();
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        client = HttpClient.newBuilder().build();
-        testClient = new QueryAPITestClient(queryEndpoint);
-    }
-
-    @AfterAll
-    static void teardown() {
-        dbms.shutdown();
+    QueryResourceParametersIT(QueryAPITestClient testClient) {
+        this.testClient = testClient;
+        this.client = HttpClient.newHttpClient();
+        this.queryEndpoint = testClient.getEndpoint();
     }
 
     public static Stream<Object> paramTypes() {

@@ -20,7 +20,6 @@
 package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERROR_CODE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERROR_MESSAGE;
@@ -34,49 +33,25 @@ import java.net.http.HttpResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import org.assertj.core.util.Lists;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.server.queryapi.QueryMimeTypes;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.SkipOnSpd;
 
+@QueryAPITestExtension
 class QueryResourceErrorIT {
 
-    private static DatabaseManagementService dbms;
-    private static HttpClient client;
+    private final HttpClient client;
     private final ObjectMapper MAPPER = new ObjectMapper();
-    private static String queryEndpoint;
+    private final String queryEndpoint;
 
-    @BeforeAll
-    static void beforeAll() {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(
-                        BoltConnectorInternalSettings.local_channel_address, QueryResourceErrorIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true)
-                .impermanent()
-                .build();
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        client = HttpClient.newBuilder().build();
-    }
-
-    @AfterAll
-    static void teardown() {
-        dbms.shutdown();
+    QueryResourceErrorIT(QueryAPITestClient testClient) {
+        this.queryEndpoint = testClient.getEndpoint();
+        this.client = HttpClient.newHttpClient();
     }
 
     @Test

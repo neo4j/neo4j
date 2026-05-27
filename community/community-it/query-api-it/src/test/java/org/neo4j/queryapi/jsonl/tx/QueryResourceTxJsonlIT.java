@@ -20,85 +20,43 @@
 package org.neo4j.queryapi.jsonl.tx;
 
 import static java.lang.String.format;
-import static org.neo4j.queryapi.QueryApiTestUtil.resolveDependency;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-import static org.neo4j.queryapi.QueryApiTestUtil.sleepProcedure;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.QueryResponseJsonlAssertions;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.assertions.Capture;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.queryapi.testclient.QueryRequest;
-import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.tx.TransactionManager;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+@QueryAPITestExtension(
+        contentType = QueryContentType.UNTYPED,
+        acceptedContentTypes = {QueryContentType.UNTYPED_L},
+        sleepProcedureEnabled = true)
 class QueryResourceTxJsonlIT {
 
-    private static QueryAPITestClient testClient;
-    private static DatabaseManagementService dbms;
-    private static TransactionManager txManager;
-    private static String queryEndpoint;
+    private final QueryAPITestClient testClient;
+    private final TransactionManager txManager;
+    private final String queryEndpoint;
 
-    @BeforeAll
-    static void beforeAll() throws ProcedureException {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(
-                        BoltConnectorInternalSettings.local_channel_address,
-                        QueryResourceTxJsonlIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true)
-                .setConfig(BoltConnectorInternalSettings.enable_local_connector, true)
-                .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
-                .impermanent()
-                .build();
-
-        resolveDependency(dbms, GlobalProcedures.class).register(sleepProcedure());
-        txManager = resolveDependency(dbms, TransactionManager.class);
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        testClient =
-                new QueryAPITestClient(queryEndpoint, QueryContentType.UNTYPED, List.of(QueryContentType.UNTYPED_L));
-    }
-
-    @AfterAll
-    static void afterAll() {
-        dbms.shutdown();
-    }
-
-    @BeforeEach
-    void beforeEach() {
-        txManager.removeAllTransactions();
+    QueryResourceTxJsonlIT(QueryAPITestClient testClient, TransactionManager txManager) {
+        this.testClient = testClient;
+        this.txManager = txManager;
+        this.queryEndpoint = testClient.getEndpoint();
     }
 
     @AfterEach
@@ -538,7 +496,7 @@ class QueryResourceTxJsonlIT {
         commitCaptured(txIdCapture);
     }
 
-    private static Capture<String> beginTxWithoutStatement() throws IOException, InterruptedException {
+    private Capture<String> beginTxWithoutStatement() throws IOException, InterruptedException {
         var startTx = testClient.beginTxJsonl();
         var txIdCapture = new Capture<String>();
 
@@ -551,7 +509,7 @@ class QueryResourceTxJsonlIT {
         return txIdCapture;
     }
 
-    private static void commitCaptured(Capture<String> txIdCapture) throws IOException, InterruptedException {
+    private void commitCaptured(Capture<String> txIdCapture) throws IOException, InterruptedException {
         var commitResponse = testClient.commitTxJsonl(txIdCapture.getCaptured().getFirst());
 
         QueryResponseJsonlAssertions.assertThat(commitResponse)
@@ -562,7 +520,7 @@ class QueryResourceTxJsonlIT {
                 .hasNoRemainingEvents();
     }
 
-    private static void commitCapturedDeletedTransaction(Capture<String> txIdCapture)
+    private void commitCapturedDeletedTransaction(Capture<String> txIdCapture)
             throws IOException, InterruptedException {
         var shouldNotBeAvailable =
                 testClient.commitTxJsonl(txIdCapture.getCaptured().getFirst());

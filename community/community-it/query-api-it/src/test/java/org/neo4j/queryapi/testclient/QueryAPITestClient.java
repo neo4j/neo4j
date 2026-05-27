@@ -81,6 +81,10 @@ public class QueryAPITestClient {
         this.acceptedContentTypes = acceptedContentTypes;
     }
 
+    public String getEndpoint() {
+        return endpoint;
+    }
+
     public HttpResponse<QueryResponse> autoCommit(QueryRequest request) throws IOException, InterruptedException {
         return autoCommit(request, "neo4j");
     }

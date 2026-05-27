@@ -17,23 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.queryapi;
+package org.neo4j.queryapi.annotation;
 
-import org.neo4j.queryapi.annotation.QueryAPITestExtension;
-import org.neo4j.queryapi.testclient.QueryAPITestClient;
-import org.neo4j.queryapi.testclient.QueryContentType;
-
-@QueryAPITestExtension(
-        contentType = QueryContentType.TYPED_V1_0,
-        acceptedContentTypes = {QueryContentType.TYPED_V1_0, QueryContentType.TYPED, QueryContentType.UNTYPED})
-class QueryResourceTypedParametersIT extends AbstractQueryResourceTypedParametersIT {
-
-    QueryResourceTypedParametersIT(QueryAPITestClient testClient) {
-        super(testClient);
-    }
-
-    @Override
-    protected QueryContentType contentType() {
-        return QueryContentType.TYPED_V1_0;
-    }
+public enum BoltTransportType {
+    LOCAL_CHANNEL_PACKSTREAM,
+    LOCAL_CHANNEL_POJO
 }

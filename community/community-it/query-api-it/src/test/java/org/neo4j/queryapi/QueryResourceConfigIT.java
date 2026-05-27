@@ -20,7 +20,6 @@
 package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
@@ -33,57 +32,35 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 
+@QueryAPITestExtension
 class QueryResourceConfigIT {
 
-    private static DatabaseManagementService dbms;
-    private static HttpClient client;
-
-    private static String queryEndpoint;
+    private final DatabaseManagementService dbms;
+    private final HttpClient client;
+    private final String queryEndpoint;
 
     private final ObjectMapper MAPPER = new ObjectMapper();
 
-    @BeforeAll
-    static void beforeAll() {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(
-                        BoltConnectorInternalSettings.local_channel_address,
-                        QueryResourceConfigIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true)
-                .impermanent()
-                .build();
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
+    QueryResourceConfigIT(DatabaseManagementService dbms, QueryAPITestClient queryAPITestClient) {
+        this.dbms = dbms;
+        queryEndpoint = queryAPITestClient.getEndpoint();
         client = HttpClient.newBuilder().build();
     }
 
-    @AfterAll
-    static void teardown() {
-        dbms.shutdown();
-    }
-
     @ParameterizedTest
-    @MethodSource("configurableEndpoints")
-    void shouldUseWriteAccessModeByDefault(String queryEndpoint) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+    @MethodSource("transactionTypes")
+    void shouldUseWriteAccessModeByDefault(TransactionType transactionType) throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(transactionType.endpoint(queryEndpoint), "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"CREATE (n) RETURN n\"}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -133,9 +110,9 @@ class QueryResourceConfigIT {
     }
 
     @ParameterizedTest
-    @MethodSource("configurableEndpoints")
-    void shouldErrorIfWrongAccessModeUsed(String queryEndpoint) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+    @MethodSource("transactionTypes")
+    void shouldErrorIfWrongAccessModeUsed(TransactionType transactionType) throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(transactionType.endpoint(queryEndpoint), "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"READ\"}"))
                 .build();
@@ -148,9 +125,9 @@ class QueryResourceConfigIT {
     }
 
     @ParameterizedTest
-    @MethodSource("configurableEndpoints")
-    void shouldErrorIfInvalidAccessModeGiven(String queryEndpoint) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+    @MethodSource("transactionTypes")
+    void shouldErrorIfInvalidAccessModeGiven(TransactionType transactionType) throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(transactionType.endpoint(queryEndpoint), "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"bananas\"}"))
                 .build();
@@ -163,9 +140,9 @@ class QueryResourceConfigIT {
     }
 
     @ParameterizedTest
-    @MethodSource("configurableEndpoints")
-    void shouldReturnQueryPlan(String queryEndpoint) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+    @MethodSource("transactionTypes")
+    void shouldReturnQueryPlan(TransactionType transactionType) throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(transactionType.endpoint(queryEndpoint), "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"EXPLAIN RETURN 1\"}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -195,9 +172,9 @@ class QueryResourceConfigIT {
     }
 
     @ParameterizedTest
-    @MethodSource("configurableEndpoints")
-    void shouldReturnProfile(String queryEndpoint) throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+    @MethodSource("transactionTypes")
+    void shouldReturnProfile(TransactionType transactionType) throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(transactionType.endpoint(queryEndpoint), "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"PROFILE RETURN 1\"}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -243,7 +220,7 @@ class QueryResourceConfigIT {
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).get(0).asText()).isEqualTo("1");
     }
 
-    public static Stream<Arguments> configurableEndpoints() {
-        return Stream.of(Arguments.of(queryEndpoint), Arguments.of(queryEndpoint + "/tx"));
+    public static Stream<Arguments> transactionTypes() {
+        return Arrays.stream(TransactionType.values()).map(Arguments::of);
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
@@ -31,51 +30,41 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
+import org.neo4j.queryapi.testclient.QueryAPITestClient;
 
+/**
+ * TODO: Enabled extension to configured to start and stop
+ * database per method, not only per class. This test class
+ * makes changes on the database which can not be easily reverted.
+ * So, the re-creation of the database between tests were the
+ * strategy for these tests.
+ * However, since it is not possible in the current framework.
+ * The tests were ordered in a way that the changes on the database
+ * only affects tests which depends on it.
+ */
+@QueryAPITestExtension(authEnabled = true)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class QueryResourceAuthenticationIT {
 
-    private static DatabaseManagementService dbms;
     private static HttpClient client;
-
     private static String queryEndpoint;
 
     private final ObjectMapper MAPPER = new ObjectMapper();
 
-    @BeforeEach
-    void beforeEach() {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(GraphDatabaseSettings.auth_enabled, true)
-                .setConfig(BoltConnector.enabled, true)
-                .impermanent()
-                .build();
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
+    QueryResourceAuthenticationIT(QueryAPITestClient queryAPITestClient) {
+        queryEndpoint = queryAPITestClient.getEndpoint();
         client = HttpClient.newBuilder().build();
     }
 
-    @AfterEach
-    void cleanUp() {
-        dbms.shutdown();
-    }
-
     @Test
+    @Order(1)
     void shouldRequireCredentialChange() throws IOException, InterruptedException {
         var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "system")
                 .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "neo4j"))
@@ -93,6 +82,57 @@ class QueryResourceAuthenticationIT {
     }
 
     @Test
+    @Order(2)
+    void shouldReturnUnauthorizedWithWrongCredentials() throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "I'm sneaky!"))
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
+                .build();
+
+        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(401);
+
+        assertThat(response.body())
+                .isEqualTo(
+                        "{\"errors\":[{\"code\":\"Neo.ClientError.Security.Unauthorized\",\"message\":\"Invalid credential.\"}]}");
+    }
+
+    @Test
+    @Order(3)
+    void shouldReturnUnauthorizedWithMissingAuthHeader() throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
+                .build();
+
+        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(401);
+
+        assertThat(response.body())
+                .isEqualTo(
+                        "{\"errors\":[{\"code\":\"Neo.ClientError.Security.Unauthorized\",\"message\":\"No authentication header supplied.\"}]}");
+    }
+
+    @Test
+    @Order(4)
+    void shouldReturnUnauthorizedWithInvalidAuthHeader() throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .header("Authorization", "Just let me in. Thanks!")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
+                .build();
+
+        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(400);
+
+        assertThat(response.body())
+                .isEqualTo(
+                        "{\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"Invalid authentication header.\"}]}");
+    }
+
+    @Test
+    @Order(5)
     void shouldAllowAccessWhenPasswordChanged() throws IOException, InterruptedException {
         updateInitialPassword();
 
@@ -113,57 +153,9 @@ class QueryResourceAuthenticationIT {
     }
 
     @Test
-    void shouldReturnUnauthorizedWithWrongCredentials() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "I'm sneaky!"))
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
-                .build();
-
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
-        assertThat(response.statusCode()).isEqualTo(401);
-
-        assertThat(response.body())
-                .isEqualTo(
-                        "{\"errors\":[{\"code\":\"Neo.ClientError.Security.Unauthorized\",\"message\":\"Invalid credential.\"}]}");
-    }
-
-    @Test
-    void shouldReturnUnauthorizedWithMissingAuthHeader() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
-                .build();
-
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
-        assertThat(response.statusCode()).isEqualTo(401);
-
-        assertThat(response.body())
-                .isEqualTo(
-                        "{\"errors\":[{\"code\":\"Neo.ClientError.Security.Unauthorized\",\"message\":\"No authentication header supplied.\"}]}");
-    }
-
-    @Test
-    void shouldReturnUnauthorizedWithInvalidAuthHeader() throws IOException, InterruptedException {
-        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .header("Authorization", "Just let me in. Thanks!")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
-                .build();
-
-        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
-        assertThat(response.statusCode()).isEqualTo(400);
-
-        assertThat(response.body())
-                .isEqualTo(
-                        "{\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"Invalid authentication header.\"}]}");
-    }
-
-    @Test
+    @Order(6)
     @Timeout(30)
     void shouldErrorWhenTooManyIncorrectPasswordAttempts() throws IOException, InterruptedException {
-        updateInitialPassword();
-
         HttpResponse<?> response;
 
         do {
@@ -188,12 +180,5 @@ class QueryResourceAuthenticationIT {
         var updatePasswordResp = client.send(updatePasswordReq, HttpResponse.BodyHandlers.ofString());
 
         assertThat(updatePasswordResp.statusCode()).isEqualTo(202);
-    }
-
-    @AfterAll
-    static void teardown() {
-        if (dbms != null) {
-            dbms.shutdown();
-        }
     }
 }

@@ -19,69 +19,53 @@
  */
 package org.neo4j.queryapi.jsonl.tx;
 
-import static org.neo4j.queryapi.QueryApiTestUtil.resolveDependency;
-import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
-
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.ConnectorType;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.QueryResponseJsonlAssertions;
+import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.assertions.Capture;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryApiTestClientException;
 import org.neo4j.queryapi.testclient.QueryContentType;
 import org.neo4j.queryapi.testclient.QueryRequest;
-import org.neo4j.queryapi.tx.QueryResourceTxIT;
 import org.neo4j.server.queryapi.tx.TransactionManager;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+/**
+ * TODO: Enabled extension to configured to start and stop
+ * database per method, not only per class. This test class
+ * makes changes on the database which can not be easily reverted.
+ * So, the re-creation of the database between tests were the
+ * strategy for these tests.
+ * However, since it is not possible in the current framework.
+ * The tests were ordered in a way that the changes on the database
+ * only affects tests which depends on it.
+ */
+@QueryAPITestExtension(
+        authEnabled = true,
+        contentType = QueryContentType.UNTYPED,
+        acceptedContentTypes = {QueryContentType.UNTYPED_L})
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class QueryResourceTxJsonlAuthenticationIT {
 
-    private static QueryAPITestClient testClient;
-    private static DatabaseManagementService dbms;
-    private static TransactionManager txManager;
-    private static String endpoint;
+    private final QueryAPITestClient testClient;
+    private final TransactionManager txManager;
+    private final String endpoint;
 
-    @BeforeEach
-    void beforeAll() {
-        setupLogging();
-        var builder = new TestDatabaseManagementServiceBuilder();
-        dbms = builder.setConfig(HttpConnector.enabled, true)
-                .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
-                .setConfig(BoltConnectorInternalSettings.local_channel_address, QueryResourceTxIT.class.getSimpleName())
-                .setConfig(BoltConnector.enabled, true)
-                .setConfig(BoltConnectorInternalSettings.enable_local_connector, true)
-                .setConfig(GraphDatabaseSettings.auth_enabled, true)
-                .impermanent()
-                .build();
-
-        txManager = resolveDependency(dbms, TransactionManager.class);
-        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
-        endpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
-        testClient = new QueryAPITestClient(
-                endpoint, "neo4j", "neo4j", QueryContentType.UNTYPED, List.of(QueryContentType.UNTYPED_L));
-    }
-
-    @AfterEach
-    void cleanUp() {
-        dbms.shutdown();
+    QueryResourceTxJsonlAuthenticationIT(QueryAPITestClient testClient, TransactionManager txManager) {
+        this.testClient = testClient;
+        this.txManager = txManager;
+        this.endpoint = testClient.getEndpoint();
     }
 
     @AfterEach
@@ -90,6 +74,7 @@ class QueryResourceTxJsonlAuthenticationIT {
     }
 
     @Test
+    @Order(1)
     void shouldRequireCredentialChange() throws IOException, InterruptedException {
         var beginReq = testClient.beginTxJsonl(
                 QueryRequest.newBuilder().statement("SHOW USERS").build());
@@ -98,32 +83,6 @@ class QueryResourceTxJsonlAuthenticationIT {
                 .hasStatus(400)
                 .receivesError(Status.Security.CredentialsExpired)
                 .hasNoRemainingEvents();
-    }
-
-    @Test
-    void shouldAllowAccessWhenPasswordChanged() throws IOException, InterruptedException, QueryApiTestClientException {
-        testClient.autoCommitJsonl(
-                QueryRequest.newBuilder()
-                        .statement("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'")
-                        .build(),
-                "system");
-
-        var updateAuthClient = new QueryAPITestClient(
-                endpoint, "neo4j", "secretPassword", QueryContentType.UNTYPED, List.of(QueryContentType.UNTYPED_L));
-
-        var res = updateAuthClient.beginTxJsonl(
-                QueryRequest.newBuilder().statement("RETURN 1").build());
-
-        var txIdCapture = new Capture<String>();
-
-        QueryResponseJsonlAssertions.assertThat(res)
-                .wasSuccessful()
-                .receivesHeader("1")
-                .receivesRecord(1)
-                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
-                .hasNoRemainingEvents();
-
-        updateAuthClient.commitTxJsonl(txIdCapture.getCaptured().getFirst());
     }
 
     @Test
@@ -158,14 +117,36 @@ class QueryResourceTxJsonlAuthenticationIT {
     }
 
     @Test
-    @Disabled("Need to check error handling for Auth")
-    @Timeout(30)
-    void shouldErrorWhenTooManyIncorrectPasswordAttempts() throws IOException, InterruptedException {
+    @Order(2)
+    void shouldAllowAccessWhenPasswordChanged() throws IOException, InterruptedException, QueryApiTestClientException {
         testClient.autoCommitJsonl(
                 QueryRequest.newBuilder()
                         .statement("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'")
                         .build(),
                 "system");
+
+        var updateAuthClient = new QueryAPITestClient(
+                endpoint, "neo4j", "secretPassword", QueryContentType.UNTYPED, List.of(QueryContentType.UNTYPED_L));
+
+        var res = updateAuthClient.beginTxJsonl(
+                QueryRequest.newBuilder().statement("RETURN 1").build());
+
+        var txIdCapture = new Capture<String>();
+
+        QueryResponseJsonlAssertions.assertThat(res)
+                .wasSuccessful()
+                .receivesHeader("1")
+                .receivesRecord(1)
+                .receivesSummary(that -> that.hasTransaction(txIdCapture.capture()))
+                .hasNoRemainingEvents();
+
+        updateAuthClient.commitTxJsonl(txIdCapture.getCaptured().getFirst());
+    }
+
+    @Test
+    @Disabled("Need to check error handling for Auth")
+    @Timeout(30)
+    void shouldErrorWhenTooManyIncorrectPasswordAttempts() throws IOException, InterruptedException {
 
         HttpResponse<Stream<String>> response;
 
@@ -180,6 +161,7 @@ class QueryResourceTxJsonlAuthenticationIT {
     }
 
     @Test
+    @Order(3)
     void shouldNotAllowUserToChangeMidTx() throws IOException, InterruptedException, QueryApiTestClientException {
         setupUsers();
 
@@ -216,8 +198,8 @@ class QueryResourceTxJsonlAuthenticationIT {
     }
 
     @Test
+    @Order(4)
     void shouldNotAllowUserToChangeOnCommit() throws IOException, InterruptedException, QueryApiTestClientException {
-        setupUsers();
 
         var txIdCapture = new Capture<String>();
         var bobClient = new QueryAPITestClient(
@@ -252,12 +234,6 @@ class QueryResourceTxJsonlAuthenticationIT {
     }
 
     private void setupUsers() throws IOException, InterruptedException {
-        testClient.autoCommitJsonl(
-                QueryRequest.newBuilder()
-                        .statement("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'")
-                        .build(),
-                "system");
-
         var updatedAuthClient = new QueryAPITestClient(endpoint, "neo4j", "secretPassword");
         updatedAuthClient.autoCommitJsonl(
                 QueryRequest.newBuilder()
