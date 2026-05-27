@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.procs
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.procs.AdministrationChainedExecutionPlan.formatQuery

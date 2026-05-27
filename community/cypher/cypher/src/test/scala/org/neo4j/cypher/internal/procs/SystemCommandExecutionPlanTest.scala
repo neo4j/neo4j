@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.kernel.impl.locking.LockClientStoppedException
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
@@ -27,7 +27,7 @@ import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-class SystemCommandExecutionPlanTest extends CypherFunSuite {
+class SystemCommandExecutionPlanTest extends CommunityCypherTestSuite {
 
   private val mockSystemUpdateCountingQueryContext = mock[SystemUpdateCountingQueryContext]
 

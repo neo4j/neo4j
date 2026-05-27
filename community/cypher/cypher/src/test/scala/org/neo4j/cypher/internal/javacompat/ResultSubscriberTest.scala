@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.javacompat
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.kernel.impl.query.QueryExecution
 
-class ResultSubscriberTest extends CypherFunSuite {
+class ResultSubscriberTest extends CommunityCypherTestSuite {
 
   test("onError should suppress errors") {
     val subscriber = new ResultSubscriber(null, null)

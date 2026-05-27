@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.optionsmap.CreatePointIndexOptionsConverter
 import org.neo4j.cypher.internal.optionsmap.CreateRangeIndexOptionsConverter
 import org.neo4j.cypher.internal.optionsmap.CreateTextIndexOptionsConverter
 import org.neo4j.cypher.internal.optionsmap.CreateVectorIndexOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.IndexOptionsConverter
 import org.neo4j.cypher.internal.optionsmap.Nothing
 import org.neo4j.cypher.internal.optionsmap.ParsedOptions
 import org.neo4j.cypher.internal.optionsmap.ParsedWithNotifications
@@ -59,6 +60,7 @@ import org.neo4j.cypher.internal.procs.IgnoredResult
 import org.neo4j.cypher.internal.procs.SchemaExecutionResult
 import org.neo4j.cypher.internal.procs.SuccessResult
 import org.neo4j.cypher.internal.runtime.IndexInformation
+import org.neo4j.cypher.internal.runtime.IndexProviderContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
@@ -256,26 +258,27 @@ object IndexCommandPlanner {
     options: Options,
     cypherVersion: CypherVersion
   ): (QueryContext, MapValue) => SchemaExecutionResult = {
-    val (innerIndexType, optionsConverter) = indexType match {
-      case POINT => (schema.IndexType.POINT, CreatePointIndexOptionsConverter)
-      case RANGE => (
-          schema.IndexType.RANGE,
-          (ctx: QueryContext) =>
-            CreateRangeIndexOptionsConverter("range index", indexContext(ctx))
-        )
-      case TEXT => (schema.IndexType.TEXT, CreateTextIndexOptionsConverter)
-      case VECTOR => (
-          schema.IndexType.VECTOR,
-          (ctx: QueryContext) =>
-            CreateVectorIndexOptionsConverter(indexContext(ctx), vectorIndexVersion(ctx))
-        )
-      case it =>
-        throw InternalException.internalError(
-          this.getClass.getSimpleName,
-          s"Unexpected index type, expected point, range or text. Got: $it.",
-          s"Did not expect index type $it here: only point, range or text indexes."
-        )
-    }
+    val (innerIndexType, optionsConverter): (schema.IndexType, QueryContext => IndexOptionsConverter[?]) =
+      indexType match {
+        case POINT => (schema.IndexType.POINT, CreatePointIndexOptionsConverter.apply)
+        case RANGE => (
+            schema.IndexType.RANGE,
+            (ctx: QueryContext) =>
+              CreateRangeIndexOptionsConverter("range index", indexContext(ctx))
+          )
+        case TEXT => (schema.IndexType.TEXT, CreateTextIndexOptionsConverter.apply)
+        case VECTOR => (
+            schema.IndexType.VECTOR,
+            (ctx: QueryContext) =>
+              CreateVectorIndexOptionsConverter(indexContext(ctx), vectorIndexVersion(ctx))
+          )
+        case it =>
+          throw InternalException.internalError(
+            this.getClass.getSimpleName,
+            s"Unexpected index type, expected point, range or text. Got: $it.",
+            s"Did not expect index type $it here: only point, range or text indexes."
+          )
+      }
     (ctx, params) => {
       val indexName = getName(name, params)
       // Assert correct options to get errors even if matching index already exists

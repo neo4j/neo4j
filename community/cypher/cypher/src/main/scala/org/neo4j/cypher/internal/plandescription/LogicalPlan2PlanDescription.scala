@@ -327,7 +327,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.ValueMergeJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
@@ -3834,10 +3834,10 @@ case class LogicalPlan2PlanDescription(
     valueExpr match {
       case ExistenceQueryExpression =>
         indexSeekNames.PLAN_DESCRIPTION_INDEX_SCAN_NAME
-      case _: RangeQueryExpression[expressions.Expression] =>
+      case _: RangeQueryExpression[?] =>
         if (unique) indexSeekNames.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME
         else indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME
-      case e: CompositeQueryExpression[expressions.Expression] =>
+      case e: CompositeQueryExpression[?] =>
         findName(e.exact)
       case _ =>
         findName()
@@ -3863,7 +3863,7 @@ case class LogicalPlan2PlanDescription(
 
     case MatchAllQueryExpression => pretty""
 
-    case e: RangeQueryExpression[expressions.Expression] =>
+    case e: RangeQueryExpression[?] =>
       checkOnlyWhenAssertionsAreEnabled(propertyKeys.size == 1)
       e.expression match {
         case PrefixSeekRangeWrapper(range) =>
@@ -3896,11 +3896,11 @@ case class LogicalPlan2PlanDescription(
           throw new IllegalStateException("The expression did not conform to the expected type RangeQueryExpression")
       }
 
-    case e: SingleQueryExpression[expressions.Expression] =>
+    case e: SingleQueryExpression[?] =>
       val propertyKeyName = asPrettyString(propertyKeys.head.name)
       pretty"$propertyKeyName = ${asPrettyString(e.expression)}"
 
-    case e: ManyQueryExpression[expressions.Expression] =>
+    case e: ManyQueryExpression[?] =>
       val (eqOp, innerExp) = e.expression match {
         case ll @ ListLiteral(es) =>
           if (es.size == 1) (pretty"=", es.head) else (pretty"IN", ll)
@@ -3910,7 +3910,7 @@ case class LogicalPlan2PlanDescription(
       val propertyKeyName = asPrettyString(propertyKeys.head.name)
       pretty"$propertyKeyName $eqOp ${asPrettyString(innerExp)}"
 
-    case e: CompositeQueryExpression[expressions.Expression] =>
+    case e: CompositeQueryExpression[?] =>
       val predicates = e.inner.zipWithIndex.map {
         case (exp, i) => indexPredicateString(idName, Seq(propertyKeys(i)), exp)
       }

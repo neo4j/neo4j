@@ -263,11 +263,15 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
     val count = matchResults.count(_.matches)
     MatchResult(
       matches = if (atLeast) count >= expectedCount else count == expectedCount,
-      rawFailureMessage = s"Expected to find $toPlanDescription\n ${if (atLeast) "at least "
-        else ""}$expectedCount times but found it $count times. Got $plan",
+      rawFailureMessage = s"Expected to find $toPlanDescription\n ${
+          if (atLeast) "at least "
+          else ""
+        }$expectedCount times but found it $count times. Got $plan",
       rawNegatedFailureMessage =
-        s"Did not expect to find $toPlanDescription\n ${if (atLeast) s"more than ${expectedCount - 1}"
-          else s"exactly $expectedCount"} times but found it $count times. Got $plan"
+        s"Did not expect to find $toPlanDescription\n ${
+            if (atLeast) s"more than ${expectedCount - 1}"
+            else s"exactly $expectedCount"
+          } times but found it $count times. Got $plan"
     )
   }
 

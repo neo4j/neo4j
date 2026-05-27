@@ -24,6 +24,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener
 import org.mockito.Mockito
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verifyNoMoreInteractions
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.QueryCacheTest.MyValue
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.options.CypherReplanOption
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.query.QueryCacheUsage
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -53,7 +53,7 @@ import org.scalatestplus.mockito.MockitoSugar
 
 import scala.collection.mutable
 
-class QueryCacheTest extends CypherFunSuite {
+class QueryCacheTest extends CommunityCypherTestSuite {
 
   def newCache(
     tracer: Tracer = newTracer(),

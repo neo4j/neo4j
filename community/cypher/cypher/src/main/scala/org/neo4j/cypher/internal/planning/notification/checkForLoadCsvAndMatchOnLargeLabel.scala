@@ -62,5 +62,5 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
   }
 
   private def cardinality(labelName: String): Cardinality =
-    planContext.statistics.nodesWithLabelCardinality(planContext.getOptLabelId(labelName).map(LabelId))
+    planContext.statistics.nodesWithLabelCardinality(planContext.getOptLabelId(labelName).map(LabelId.apply))
 }

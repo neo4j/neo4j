@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -55,13 +56,12 @@ import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalatest.BeforeAndAfterAll
 
 import java.util.Locale
 
-class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with AstConstructionTestSupport {
+class RenderAsTreeTableTest extends CommunityCypherTestSuite with BeforeAndAfterAll with AstConstructionTestSupport {
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   private val defaultLocale = Locale.getDefault

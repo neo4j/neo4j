@@ -516,17 +516,18 @@ abstract class ExecutionEngine(
       if (config.uuidTypeEnabled) {
         org.neo4j.cypher.internal.expressions.functions.Function.functionInfoWithFeatureFlags(
           Set(SemanticFeature.UUIDType.productPrefix)
-        ).map(FunctionWithInformation)
+        ).map(FunctionWithInformation.apply)
       } else {
-        org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
+        org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation.apply)
       }
     }
 
     val predicateInformations: Seq[FunctionInformation] =
-      org.neo4j.cypher.internal.expressions.IterablePredicateExpression.functionInfo.map(FunctionWithInformation)
+      org.neo4j.cypher.internal.expressions.IterablePredicateExpression.functionInfo.map(FunctionWithInformation.apply)
 
     val propertyExistsInformations: Seq[FunctionInformation] =
-      org.neo4j.cypher.internal.expressions.PropertyExistsShowInfo.functionInfoForShow.map(FunctionWithInformation)
+      org.neo4j.cypher.internal.expressions.PropertyExistsShowInfo
+        .functionInfoForShow.map(FunctionWithInformation.apply)
 
     (informations ++ predicateInformations ++ propertyExistsInformations).asJava
   }

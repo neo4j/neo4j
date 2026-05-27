@@ -20,13 +20,13 @@
 
 package org.neo4j.cypher.internal;
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
 import org.neo4j.exceptions.ParameterWrongTypeException
@@ -34,7 +34,7 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues;
 
-class AdministrationCommandRuntimeTest extends CypherFunSuite {
+class AdministrationCommandRuntimeTest extends CommunityCypherTestSuite {
 
   test("databaseNameFields should convert namespaced name to parameters") {
     val databaseNameFields = AdministrationCommandRuntime.getDatabaseNameFields(

@@ -265,7 +265,7 @@ class TransactionBoundPlanContext(
     val schema = indexDescriptor.schema()
     val tokenIds = schema.getEntityTokenIds
     schema.entityType() match {
-      case EntityType.NODE => Right(tokenIds.map(LabelId))
+      case EntityType.NODE => Right(tokenIds.map(LabelId.apply))
       case indexType       => Left(VectorIndexError.WrongEntityType(EntityType.NODE, indexType))
     }
   }
@@ -276,7 +276,7 @@ class TransactionBoundPlanContext(
     val schema = indexDescriptor.schema()
     val tokenIds = schema.getEntityTokenIds
     schema.entityType() match {
-      case EntityType.RELATIONSHIP => Right(tokenIds.map(RelTypeId))
+      case EntityType.RELATIONSHIP => Right(tokenIds.map(RelTypeId.apply))
       case indexType               => Left(VectorIndexError.WrongEntityType(EntityType.RELATIONSHIP, indexType))
     }
   }
@@ -285,7 +285,7 @@ class TransactionBoundPlanContext(
     : (PropertyKeyId, Seq[PropertyKeyId]) = {
     val schema = indexDescriptor.schema()
     val propertyIds = schema.getPropertyIds
-    val propertyKeyIds = propertyIds.map(PropertyKeyId)
+    val propertyKeyIds = propertyIds.map(PropertyKeyId.apply)
     (propertyKeyIds.head, propertyKeyIds.tail)
   }
 
@@ -402,7 +402,7 @@ class TransactionBoundPlanContext(
         }
       }
 
-      val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
+      val properties = reference.schema.getPropertyIds.map(PropertyKeyId.apply)
       val isUnique = reference.isUnique
       val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
       val orderCapability =

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.semantics
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.ExistsExpression
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.kernel.database.DatabaseReference
@@ -51,7 +51,7 @@ import org.neo4j.monitoring.Monitors
 
 class DummyException extends RuntimeException
 
-class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTestSupport {
+class ExistsScopedDependenciesTest extends CommunityCypherTestSuite with AstConstructionTestSupport {
 
   private val parsing =
     CompilationPhases.parsing(ParsingConfig(), ScopedProcedureSignatureResolver.NoResolver) andThen Namespacer

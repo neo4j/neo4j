@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.common.EntityType
 import org.neo4j.common.TokenNameLookup
-import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.CommunityCypherTestSuite
+import org.neo4j.cypher.internal.macros.TranslateExceptionMacros3.translateException
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.KernelException
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
@@ -31,11 +31,11 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.kernel.api.exceptions.Status
 
 /**
- * This test class lives here instead of in the same module as [[org.neo4j.cypher.internal.macros.TranslateExceptionMacros]],
+ * This test class lives here instead of in the same module as [[org.neo4j.cypher.internal.macros.TranslateExceptionMacros3]],
  * since we cannot easily import the necessary classes in the macro expansion module,
  * without having problems with compilation order of macros and calling code.
  */
-class TranslateExceptionMacrosTest extends CypherFunSuite {
+class TranslateExceptionMacrosTest extends CommunityCypherTestSuite {
 
   class MyKernelException(gql: ErrorGqlStatusObject, message: String)
       extends KernelException(gql, null: Status, message) {

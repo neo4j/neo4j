@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.notification.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.notification.DeprecatedPropertyReferenceInMerge
@@ -26,9 +27,8 @@ import org.neo4j.cypher.internal.notification.DeprecatedRelTypeSeparatorNotifica
 import org.neo4j.cypher.internal.notification.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.notification.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CypherDeprecationNotificationsProviderTest extends CypherFunSuite {
+class CypherDeprecationNotificationsProviderTest extends CommunityCypherTestSuite {
 
   test("should filter out non-deprecation notifications") {
     val provider = CypherDeprecationNotificationsProvider.fromIterables(

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription.rewrite
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
@@ -30,9 +31,8 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTestBase.planDescription
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class FusedPlanDescriptionArgumentRewriterTest extends CypherFunSuite {
+class FusedPlanDescriptionArgumentRewriterTest extends CommunityCypherTestSuite {
 
   test("single fused pipeline should aggregate time and page cache hits/misses") {
     val argsLeaf1 = Seq(PageCacheHits(1), PageCacheMisses(10), Time(1000000), pipelineInfo(1, fused = true))

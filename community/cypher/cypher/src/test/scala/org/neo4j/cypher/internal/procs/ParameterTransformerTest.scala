@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.notification.InternalNotification
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-class ParameterTransformerTest extends CypherFunSuite {
+class ParameterTransformerTest extends CommunityCypherTestSuite {
 
   test("should add generate") {
     ParameterTransformer()

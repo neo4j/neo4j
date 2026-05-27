@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.preparser
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.TestExecutorCaffeineCacheFactory
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption.slotted
 import org.neo4j.cypher.internal.options.CypherVersionOption.cypher5
 import org.neo4j.cypher.internal.options._
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.InvalidCypherOption
 import org.neo4j.exceptions.SyntaxException
@@ -43,7 +43,7 @@ import org.neo4j.graphdb.config.Setting
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class PreParserTest extends CypherFunSuite {
+class PreParserTest extends CommunityCypherTestSuite {
 
   private def preParserWith(settings: (Setting[_], AnyRef)*) = new CachingPreParser(
     CypherConfiguration.fromConfig(Config.defaults(settings.toMap.asJava)),

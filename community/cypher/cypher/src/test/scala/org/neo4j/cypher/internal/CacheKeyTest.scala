@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherCacheOption
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
@@ -48,9 +49,8 @@ import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOptio
 import org.neo4j.cypher.internal.options.CypherTransactionBatchStrategyOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersionOption
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CacheKeyTest extends CypherFunSuite {
+class CacheKeyTest extends CommunityCypherTestSuite {
 
   test("For default options,the cache key should be empty") {
     val options = CypherQueryOptions.defaultOptions

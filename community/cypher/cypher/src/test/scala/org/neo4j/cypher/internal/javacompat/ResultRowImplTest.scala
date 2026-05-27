@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.javacompat
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.CommunityCypherTestSuite
 
-class ResultRowImplTest extends CypherFunSuite {
+class ResultRowImplTest extends CommunityCypherTestSuite {
 
   test("int can be handled as a Number") {
     val row = new ResultRowImpl

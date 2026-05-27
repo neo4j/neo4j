@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.common
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CommunityInterpretedRuntime
 import org.neo4j.cypher.internal.CommunitySchemaCommandRuntime
 import org.neo4j.cypher.internal.CypherVersion
@@ -63,7 +64,6 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.NullLog
@@ -79,7 +79,7 @@ import java.time.Clock
 
 import scala.collection.mutable
 
-class CypherPlannerTest extends CypherFunSuite {
+class CypherPlannerTest extends CommunityCypherTestSuite {
 
   /**
    * This test is here to remind us that the customPlanContextCreator can be changed for

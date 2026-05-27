@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class asPrettyStringTest extends CypherFunSuite with AstConstructionTestSupport {
+class asPrettyStringTest extends CommunityCypherTestSuite with AstConstructionTestSupport {
 
   test("should interpolate just literal string") {
     pretty"Foo" should equal(asPrettyString("Foo"))

@@ -23,12 +23,12 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.when
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.SchemaRead
@@ -39,7 +39,7 @@ import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.logging.InternalLog
 
-class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
+class TransactionBoundGraphStatisticsTest extends CommunityCypherTestSuite {
 
   private val labelId = 42
   private val propertyId = 1337
@@ -139,7 +139,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
   test("uniqueValueSelectivity should handle selectivity greater than 1") {
     // given
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0001)
-    when(schemaRead.indexSize(descriptor)).thenReturn(100)
+    when(schemaRead.indexSize(descriptor)).thenReturn(100L)
 
     // when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)

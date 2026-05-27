@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.result
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.gqlstatus.GqlHelper
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
 import org.neo4j.notifications.NotificationImplementation
 
-class ClosingExecutionResultTest extends CypherFunSuite {
+class ClosingExecutionResultTest extends CommunityCypherTestSuite {
 
   private val query: ExecutingQuery = mock[ExecutingQuery]
 

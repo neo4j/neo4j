@@ -318,7 +318,6 @@ object TransformingPlanner {
         case CypherPlannerOption.default                        => CostBasedPlannerName.default
         case CypherPlannerOption.cost | CypherPlannerOption.idp => IDPPlannerName
         case CypherPlannerOption.dp                             => DPPlannerName
-        case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
       }
 
     // Let's only create a monitor when we have a valid plannerName

@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.plandescription.Arguments.AvailableProcessors
 import org.neo4j.cypher.internal.plandescription.Arguments.AvailableWorkers
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RenderSummaryTest extends CypherFunSuite {
+class RenderSummaryTest extends CommunityCypherTestSuite {
 
   private val id = Id.INVALID_ID
 

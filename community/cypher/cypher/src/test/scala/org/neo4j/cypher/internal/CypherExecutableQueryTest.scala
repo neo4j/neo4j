@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CypherCurrentCompiler.CypherExecutableQuery
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -33,13 +34,12 @@ import org.neo4j.cypher.internal.notification.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.planner.spi.ImmutablePlanningAttributes
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
-class CypherExecutableQueryTest extends CypherFunSuite {
+class CypherExecutableQueryTest extends CommunityCypherTestSuite {
 
   test("should report both planning and execution plan deprecation notifications") {
 

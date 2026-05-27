@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher
 
-trait SystemPropertyTestSupport {
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.scalatest.Args
+import org.scalatest.BeforeAndAfter
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Status
 
-  def withSystemProperties[T](properties: (String, String)*)(f: => T): T = {
-    val backup = Map.newBuilder[String, String]
-    try {
-      properties.foreach(backup += setSystemProperty(_))
-      f
-    } finally {
-      backup.result().foreach(setSystemProperty)
-    }
-  }
-
-  def getSystemProperty(propertyKey: String): (String, String) = (propertyKey, System.getProperty(propertyKey))
-
-  def setSystemProperty(property: (String, String)): (String, String) = property match {
-    case (k, v) => (k, System.setProperty(k, v))
-  }
+trait CommunityCypherTestSuite extends CypherFunSuiteWithMacroShadowing
+    with BeforeAndAfterAll
+    with BeforeAndAfter // these, along with overrides below, can be removed after Scala 3 migration is complete
+    {
+  override protected def runTest(testName: String, args: Args): Status = super.runTest(testName, args)
+  override def run(testName: Option[String], args: Args): Status = super.run(testName, args)
 }

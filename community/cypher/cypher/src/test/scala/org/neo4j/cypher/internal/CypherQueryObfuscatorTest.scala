@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.util.LiteralOffset
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class CypherQueryObfuscatorTest extends CypherFunSuite {
+class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
 
   test("empty obfuscator should not change query text") {
     val originalText = "not passwords here"

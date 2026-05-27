@@ -27,7 +27,7 @@ import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
+import org.neo4j.cypher.internal.macros.TranslateExceptionMacros3.translateException
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ClosingRelationshipIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo

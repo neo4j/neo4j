@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -49,7 +50,6 @@ import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.language.implicitConversions
@@ -71,7 +71,7 @@ object LogicalPlan2PlanDescriptionTestBase {
   ): PlanDescriptionImpl = PlanDescriptionImpl(id, name, children, arguments, variables.map(asPrettyString.raw))
 }
 
-class LogicalPlan2PlanDescriptionTestBase extends CypherFunSuite with TableDrivenPropertyChecks
+class LogicalPlan2PlanDescriptionTestBase extends CommunityCypherTestSuite with TableDrivenPropertyChecks
     with AstConstructionTestSupport {
 
   protected val RUNTIME_VERSION: RuntimeVersion = RuntimeVersion.currentVersion

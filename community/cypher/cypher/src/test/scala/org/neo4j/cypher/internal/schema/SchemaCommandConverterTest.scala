@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.schema
 
 import org.eclipse.collections.api.factory.Lists
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalBoolean
@@ -45,7 +46,6 @@ import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.internal.schema.IndexConfig
@@ -83,7 +83,7 @@ import java.util
 
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
-class SchemaCommandConverterTest extends CypherFunSuite {
+class SchemaCommandConverterTest extends CommunityCypherTestSuite {
 
   private val cypher5InvalidOptionMessage =
     "Invalid option provided, valid options are `indexProvider` and `indexConfig`"

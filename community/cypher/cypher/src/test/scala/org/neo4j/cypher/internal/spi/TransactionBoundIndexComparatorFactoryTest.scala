@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.internal.kernel.api.helpers.StubRead
 import org.neo4j.internal.kernel.api.helpers.StubSchemaRead
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.IndexDescriptor
 
-class TransactionBoundIndexComparatorFactoryTest extends CypherFunSuite {
+class TransactionBoundIndexComparatorFactoryTest extends CommunityCypherTestSuite {
 
   private def givenIndexDescriptor(indexId: Long, name: String): schema.IndexDescriptor = {
     schema.IndexPrototype

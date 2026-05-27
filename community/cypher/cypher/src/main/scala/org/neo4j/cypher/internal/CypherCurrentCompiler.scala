@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.SchemaLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SchemaRelationshipIndexUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaSemanticNodeIndexUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaSemanticRelationshipIndexUsage
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.options.CypherExecutionMode
@@ -170,7 +170,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         )
     }
 
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       logicalPlanResult.logicalPlanState.planningAttributes.hasEqualSizeAttributes,
       "All planning attributes should contain the same plans"
     )

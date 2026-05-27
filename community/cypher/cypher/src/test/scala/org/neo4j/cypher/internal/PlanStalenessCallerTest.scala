@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
-import org.mockito.Mockito.when
 import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.GraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.NodesWithLabelCardinality
+import org.neo4j.cypher.internal.planner.spi.TestGraphStatistics
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.time.Clocks
 import org.neo4j.time.FakeClock
@@ -36,7 +37,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 
 import scala.language.implicitConversions
 
-class PlanStalenessCallerTest extends CypherFunSuite {
+class PlanStalenessCallerTest extends CommunityCypherTestSuite {
 
   private val divergenceCalculators =
     Seq(CypherReplanAlgorithm.NONE, CypherReplanAlgorithm.INVERSE, CypherReplanAlgorithm.EXPONENTIAL)
@@ -272,9 +273,11 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   private def nodesWithLabelCardinality(labelId: Int, cardinality: Double): GraphStatistics = {
-    val stats = mock[GraphStatistics]
-    when(stats.nodesWithLabelCardinality(label(labelId))).thenReturn(cardinality)
-    stats
+    new TestGraphStatistics {
+      override def nodesWithLabelCardinality(maybeLabelId: Option[LabelId]): Cardinality =
+        if (maybeLabelId.exists(_.id == labelId)) Cardinality(cardinality)
+        else fail("Unexpected label id")
+    }
   }
 
   implicit def liftToOption[T](item: T): Option[T] = Option(item)

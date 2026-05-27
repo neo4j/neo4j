@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class simpleExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTestSupport {
+class simpleExpressionEvaluatorTest extends CommunityCypherTestSuite with AstConstructionTestSupport {
 
   private val randInvocation: FunctionInvocation =
     FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)

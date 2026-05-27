@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.preparser
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.TestExecutorCaffeineCacheFactory
@@ -44,11 +45,10 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.kernel.database.DatabaseReference
 
-class InputQueryTest extends CypherFunSuite {
+class InputQueryTest extends CommunityCypherTestSuite {
 
   private val preParser =
     new CachingPreParser(

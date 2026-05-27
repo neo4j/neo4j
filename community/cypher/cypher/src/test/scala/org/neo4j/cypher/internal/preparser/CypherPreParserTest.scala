@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.preparser
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.PreParser
@@ -28,17 +29,15 @@ import org.neo4j.cypher.internal.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.prop.TableFor2
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.language.implicitConversions
 
-class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
+class CypherPreParserTest extends CommunityCypherTestSuite with TableDrivenPropertyChecks {
 
-  val queries: TableFor2[String, (List[PreParserOption], InputPosition)] = Table(
+  private val queries = Table[String, (List[PreParserOption], InputPosition)](
     ("query", "expected"),
     (
       "RETURN 1 / 0.5 as number",

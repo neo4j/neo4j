@@ -329,10 +329,10 @@ object AdministrationCommandRuntime {
          |RETURN u.$USER_NAME_PROPERTY""".stripMargin,
       VirtualValues.map(
         credentialsOption.map(credentials => Array(credentials.key, credentials.bytesKey)).getOrElse(
-          Array.empty
+          Array.empty[String]
         ) ++ nonPasswordParameterNames,
         credentialsOption.map(credentials => Array[AnyValue](credentials.value, credentials.bytesValue)).getOrElse(
-          Array.empty
+          Array.empty[AnyValue]
         )
           ++ Array[AnyValue](
             userNameFields.nameValue,

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.result
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.scalatest.BeforeAndAfter
 
-class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
+class TaskCloserTest extends CommunityCypherTestSuite with BeforeAndAfter {
   var taskCloser: TaskCloser = _
   var ran = false
   var outcome: CloseReason = Failure

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CompactedPlanDescriptionTest extends CypherFunSuite {
+class CompactedPlanDescriptionTest extends CommunityCypherTestSuite {
 
   test("empty in empty out") {
     // Given two plans with empty argument

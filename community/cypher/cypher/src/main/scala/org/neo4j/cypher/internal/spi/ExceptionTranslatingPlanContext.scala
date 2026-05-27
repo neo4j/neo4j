@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
-import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
+import org.neo4j.cypher.internal.macros.TranslateExceptionMacros3.translateException
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor

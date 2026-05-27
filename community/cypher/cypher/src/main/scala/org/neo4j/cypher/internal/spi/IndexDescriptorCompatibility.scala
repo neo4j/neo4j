@@ -42,7 +42,6 @@ trait IndexDescriptorCompatibility {
     behaviour match {
       case schema.IndexBehaviour.SKIP_AND_LIMIT        => SkipAndLimit
       case schema.IndexBehaviour.EVENTUALLY_CONSISTENT => EventuallyConsistent
-      case _ => throw new IllegalStateException("Missing kernel to cypher mapping for index behaviour: " + behaviour)
     }
   }
 

@@ -23,7 +23,7 @@ import org.neo4j.common.TokenNameLookup
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 
 /**
- * Intended to be used together with [[org.neo4j.cypher.internal.macros.TranslateExceptionMacros]]
+ * Intended to be used together with [[org.neo4j.cypher.internal.macros.TranslateExceptionMacros3]]
  */
 trait ExceptionTranslationSupport {
   inner: ReadTokenContext =>

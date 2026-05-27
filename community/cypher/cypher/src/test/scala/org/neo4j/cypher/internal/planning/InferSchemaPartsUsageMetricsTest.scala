@@ -23,6 +23,7 @@ import org.neo4j.common
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.InferSchemaPartsStrategy
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CommunityInterpretedRuntime
 import org.neo4j.cypher.internal.CommunitySchemaCommandRuntime
 import org.neo4j.cypher.internal.CypherVersion
@@ -56,7 +57,6 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.NullLog
@@ -68,7 +68,7 @@ import java.time.Clock
 
 import scala.collection.mutable
 
-class InferSchemaPartsUsageMetricsTest extends CypherFunSuite with CypherVersionTestSupport {
+class InferSchemaPartsUsageMetricsTest extends CommunityCypherTestSuite with CypherVersionTestSupport {
 
   testVersions("DbOption OFF, CypherOption OFF: should increment use of inferSchemaParts' OFF option") { version =>
     val internalUsageStats = runParseAndPlan(

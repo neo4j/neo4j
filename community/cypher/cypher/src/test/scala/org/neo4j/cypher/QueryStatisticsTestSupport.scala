@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.scalatest.Assertions
 
 trait QueryStatisticsTestSupport {
@@ -83,6 +84,7 @@ trait QueryStatisticsTestSupport {
         fileLinesRead
       )
 
+    given org.scalactic.source.Position = CypherFunSuiteWithMacroShadowing.defaultPosition
     assertResult(expected)(result.queryStatistics())
   }
 }

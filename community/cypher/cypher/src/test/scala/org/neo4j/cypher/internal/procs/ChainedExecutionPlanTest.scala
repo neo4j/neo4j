@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.procs
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.runtime.ExecutionMode
@@ -27,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NormalMode
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.jdk.CollectionConverters.SetHasAsJava
 
-class ChainedExecutionPlanTest extends CypherFunSuite {
+class ChainedExecutionPlanTest extends CommunityCypherTestSuite {
 
   private val ctxMock: SystemUpdateCountingQueryContext = mock[SystemUpdateCountingQueryContext]
   when(ctxMock.getStatistics).thenReturn(QueryStatistics())

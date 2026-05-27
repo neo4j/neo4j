@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
+class PlanDescriptionArgumentSerializerTests extends CommunityCypherTestSuite {
 
   test("serialization should leave numeric arguments as numbers") {
     serialize(DbHits(12)) shouldBe a[java.lang.Number]

@@ -72,8 +72,6 @@ object procsHelpers {
     case Mode.WRITE   => ProcedureReadWriteAccess
     case Mode.SCHEMA  => ProcedureSchemaWriteAccess
     case Mode.DBMS    => ProcedureDbmsAccess
-
-    case _ => throw CypherExecutionException.unrecognisedExecutionMode(signature, mode.name())
   }
 
   def asCypherValue(neo4jValue: DefaultParameterValue): AnyValue = ValueUtils.of(neo4jValue.value())

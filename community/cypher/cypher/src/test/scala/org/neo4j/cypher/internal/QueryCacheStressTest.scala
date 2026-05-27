@@ -23,20 +23,20 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.verify
+import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.QueryCacheTest.TC
 import org.neo4j.cypher.internal.QueryCacheTest.Tracer
 import org.neo4j.cypher.internal.QueryCacheTest.compilerWithExpressionCodeGenOption
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.options.CypherReplanOption
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class QueryCacheStressTest extends CypherFunSuite {
+class QueryCacheStressTest extends CommunityCypherTestSuite {
 
   def newCache(tracer: Tracer): QueryCache[QueryCache.CacheKey[String], QueryCacheTest.MyValue] = {
     QueryCacheTest.newCache(tracer)

@@ -140,7 +140,7 @@ object SchemaCommandRuntime {
       // Should have thrown in semantic checking already and not get here
       throw InvalidArgumentException.internalError(
         this.getClass.getSimpleName,
-        s"Invalid input ${ExpressionStringifier().apply(other)} for name. Expected to be STRING NOT NULL."
+        s"Invalid input ${ExpressionStringifier.apply().apply(other)} for name. Expected to be STRING NOT NULL."
       )
   }
 
