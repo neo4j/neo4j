@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipVectorIndexSe
 import org.neo4j.cypher.internal.logical.plans.NodeVectorIndexSearch
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.VectorIndexSearchException
 

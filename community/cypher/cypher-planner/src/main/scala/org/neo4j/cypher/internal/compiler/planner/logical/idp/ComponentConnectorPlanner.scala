@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet.IterableOnceToListSet
 import org.neo4j.time.Stopwatch
@@ -237,7 +237,7 @@ object GoalBitAllocation {
     val optionalMatchDependencies: IndexedSeq[BitSet] = optionalMatches.toVector.map { om =>
       om.argumentIds.iterator.map { arg =>
         val index = initialTodo.iterator.indexWhere(x => x.idsWithoutOptionalMatchesOrUpdates.contains(arg))
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
           index >= 0,
           "Did not find which QG introduces dependency of optional match."
         )

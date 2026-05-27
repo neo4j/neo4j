@@ -203,6 +203,8 @@ import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.internal.kernel.api.security.SecurityExceptionLogger
 
+import scala.language.implicitConversions
+
 /**
  * This planner takes on queries that run at the DBMS level for multi-database administration.
  *
@@ -222,9 +224,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   // Automatically convert AST form into Planner form
-  implicit private val expressionToEitherStringParam: PartialFunction[Expression, Either[String, Parameter]] = {
-    case StringLiteral(str) => Left(str)
-    case p: Parameter       => Right(p)
+  implicit private def expressionToEitherStringParam(expression: Expression): Either[String, Parameter] = {
+    expression match {
+      case StringLiteral(str) => Left(str)
+      case p: Parameter       => Right(p)
+    }
   }
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {

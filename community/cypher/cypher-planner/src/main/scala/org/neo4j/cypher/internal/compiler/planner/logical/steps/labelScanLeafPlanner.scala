@@ -43,7 +43,7 @@ case object labelScanLeafPlanner extends LeafPlanner {
 
     val plansFromExplicitLabels: Set[LogicalPlan] =
       for {
-        labelPredicate @ HasLabels(v: Variable, Seq(labelName)) <- qg.selections.flatPredicatesSet
+        case labelPredicate @ HasLabels(v: Variable, Seq(labelName)) <- qg.selections.flatPredicatesSet
         plan <- planLabelScan(v, labelName, labelPredicate, qg, interestingOrderConfig, context)
       } yield {
         plan
@@ -51,7 +51,7 @@ case object labelScanLeafPlanner extends LeafPlanner {
 
     val plansFromImpliedLabels: Set[LogicalPlan] =
       for {
-        (v: Variable, labels) <-
+        case (v: Variable, labels) <-
           context.staticComponents.graphSchemaOptimizations.impliedEndpointLabelsMap(qg.patternRelationships).toSet
         label <- labels
         plan <- planLabelScan(v, label, impliedLabelPredicate(v, label), qg, interestingOrderConfig, context)

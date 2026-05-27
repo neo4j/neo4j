@@ -52,7 +52,9 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.graphdb.schema.IndexType
+import org.scalatest.Assertion
 
 class CartesianProductsOrValueJoinsTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport2 {
   private val planA = allNodesScan("a")
@@ -395,7 +397,7 @@ class CartesianProductsOrValueJoinsTest extends CypherPlannerTestSuite with Logi
   private def testThis(
     graph: QueryGraph,
     input: PlanningAttributes => Set[PlannedComponent],
-    assertion: LogicalPlan => Unit
+    assertion: LogicalPlan => Assertion
   ): Unit = {
     new givenConfig {
       qg = graph
@@ -430,6 +432,6 @@ class CartesianProductsOrValueJoinsTest extends CypherPlannerTestSuite with Logi
     input: PlanningAttributes => Set[PlannedComponent],
     expectedPlans: Seq[LogicalPlan]
   ): Unit = {
-    testThis(graph, input, (result: LogicalPlan) => { expectedPlans should contain(result); () })
+    testThis(graph, input, (result: LogicalPlan) => { expectedPlans should contain(result) })
   }
 }

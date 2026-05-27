@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNa
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 
 class IdSeekLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport {
 

@@ -148,9 +148,6 @@ object EstimateSelectivityUsingHistogram {
         bucket.selectivity - estimateBucketSelectivity(bucket, operator.negated)
       case _: GreaterThanOrEqual =>
         bucket.selectivity - estimateBucketSelectivity(bucket, operator.negated)
-      case _ => throw new UnsupportedOperationException(
-          "Operator type is not supported during histogram selectivity estimation"
-        )
     }
   }
 }

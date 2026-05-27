@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithPushdown
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -259,7 +259,7 @@ object UnnestApply {
     protected def assertArgumentHasCardinality1(arg: Argument): Unit = {
       // Argument plans are always supposed to have a Cardinality of 1.
       // If this should not hold, we would need to multiply Cardinality for this rewrite rule.
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         cardinalities(arg.id) == Cardinality.SINGLE,
         s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}"
       )

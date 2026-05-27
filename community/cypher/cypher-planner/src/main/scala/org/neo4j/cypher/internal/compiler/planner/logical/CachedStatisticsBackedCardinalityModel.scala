@@ -116,9 +116,6 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
                     query = nestedUnionQuery.lhs
                     unions.push((nestedUnionQuery, cachedSinglePlannerQueryCardinality(nestedUnionQuery.rhs)))
                 }
-
-              case other =>
-                throw new IllegalArgumentException(s"Unexpected PlannerQuery: ${other.getClass.getName}")
             }
           }
           // Phase 2: repeatedly pop union layers from the stack
@@ -131,9 +128,6 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
           }
           // We can return the final value
           cardinality
-
-        case other =>
-          throw new IllegalArgumentException(s"Unexpected PlannerQuery: ${other.getClass.getName}")
       }
     )
   }

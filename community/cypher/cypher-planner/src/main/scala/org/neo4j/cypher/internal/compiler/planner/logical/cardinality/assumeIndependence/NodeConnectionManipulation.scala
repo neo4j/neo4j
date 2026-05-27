@@ -57,7 +57,7 @@ trait NodeConnectionManipulation {
       case qpp: QuantifiedPathPattern =>
         // We can't instantiate a quantifier with an upper bound of 0, so we start with at least 1
         val minimumUpperBound = math.max(qpp.repetition.min, 1)
-        val maximumUpperBound = qpp.repetition.max match {
+        val maximumUpperBound: Long = qpp.repetition.max match {
           case UpperBound.Unlimited  => RepetitionCardinalityModel.MAX_VAR_LENGTH
           case UpperBound.Limited(n) => math.min(n, RepetitionCardinalityModel.MAX_VAR_LENGTH)
         }

@@ -119,7 +119,7 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
     val rewrittenTry =
       Try(tryRewriteProcedureCalls(makeResolver(procSignatureLookup = _ => throw new Exception("not found")), original))
 
-    rewrittenTry should matchPattern { case Success(`original`) => }
+    rewrittenTry should matchPatternLike { case Success(`original`) => }
   }
 
   test("TryRewriteProcedureCalls should return original for unresolved functions") {

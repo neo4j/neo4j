@@ -82,7 +82,13 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider])
         } yield plan
       }.toSet
 
-    DynamicPropertyNotifier.issueNotifications(result, NodeIndexLookupUnfulfillableNotification, qg, NODE_TYPE, context)
+    DynamicPropertyNotifier.issueNotifications(
+      result,
+      NodeIndexLookupUnfulfillableNotification.apply,
+      qg,
+      NODE_TYPE,
+      context
+    )
 
     result
   }

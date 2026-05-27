@@ -567,8 +567,6 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
       (QueryProjection.forVariables(current.allCoveredIds) ++ items).asInstanceOf[Seq[AliasedReturnItem]]
     case ReturnItems(_, items, _) =>
       items.asInstanceOf[Seq[AliasedReturnItem]]
-    case _ =>
-      Seq.empty
   }
 
   private def addMatchToLogicalPlanInput(
@@ -1039,12 +1037,6 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
           .withInterestingOrder(requiredOrder)
           .withPropagatedTailInterestingOrder()
           .withTail(builder.emptySinglePlannerQuery)
-
-      case _ =>
-        throw InternalException.internalError(
-          this.getClass.getSimpleName,
-          "AST needs to be rewritten before it can be used for planning. Got: " + clause
-        )
     }
   }
 

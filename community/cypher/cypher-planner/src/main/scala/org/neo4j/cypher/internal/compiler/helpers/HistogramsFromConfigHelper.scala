@@ -104,11 +104,11 @@ object HistogramsFromConfigHelper {
   ): Option[HistogramKey] = {
     val maybeLabelOrTypeId =
       histogram.nodeOrRelationship match {
-        case NODE_TYPE         => tokenContext.getOptLabelId(histogram.labelOrTypeName).map(LabelId)
-        case RELATIONSHIP_TYPE => tokenContext.getOptRelTypeId(histogram.labelOrTypeName).map(RelTypeId)
+        case NODE_TYPE         => tokenContext.getOptLabelId(histogram.labelOrTypeName).map(LabelId.apply)
+        case RELATIONSHIP_TYPE => tokenContext.getOptRelTypeId(histogram.labelOrTypeName).map(RelTypeId.apply)
       }
 
-    val maybePropertyKeyId = tokenContext.getOptPropertyKeyId(histogram.property).map(PropertyKeyId)
+    val maybePropertyKeyId = tokenContext.getOptPropertyKeyId(histogram.property).map(PropertyKeyId.apply)
 
     for {
       labelOrTypeId <- maybeLabelOrTypeId

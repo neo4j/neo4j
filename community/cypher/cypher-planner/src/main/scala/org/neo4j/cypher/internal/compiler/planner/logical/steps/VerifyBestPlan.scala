@@ -202,7 +202,7 @@ object VerifyBestPlan {
     unfulfillableIndexHints: UnfulfillableIndexHints
   ): Unit = {
     unfulfillableIndexHints.wrongPropertyTypeHints.headOption.foreach {
-      wrongHint: WrongPropertyTypeHint =>
+      (wrongHint: WrongPropertyTypeHint) =>
         val entityType = context.semanticTable.typeFor(wrongHint.hint.variable)
         val entity = if (entityType.is(CTNode)) "NODE" else "RELATIONSHIP"
 

@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTStringNotNull
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
 
 class EntityIndexLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport2
@@ -259,7 +260,7 @@ class EntityIndexLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlan
         )
         implicitPredicates.size should be(2)
         implicitPredicates.foreach(predicate =>
-          predicate.predicate should matchPattern {
+          predicate.predicate should matchPatternLike {
             case IsNotNull(_) => ()
           }
         )

@@ -1362,7 +1362,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n
         |""".stripMargin
     )
-    atLeast(1, plan.leaves) should matchPattern {
+    atLeast(1, plan.leaves) should matchPatternLike {
       case _: NodeIndexSeek =>
     }
   }
@@ -1380,7 +1380,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n
         |""".stripMargin
     )
-    atLeast(1, plan.leaves) should matchPattern {
+    atLeast(1, plan.leaves) should matchPatternLike {
       case _: NodeIndexSeek =>
     }
   }

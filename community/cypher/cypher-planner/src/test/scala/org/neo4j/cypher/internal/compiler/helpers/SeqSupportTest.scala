@@ -68,7 +68,7 @@ class SeqSupportTest extends CypherPlannerTestSuite with Matchers with CypherSca
   }
 
   test("initAndLastOption is equivalent to the combination of init and last") {
-    forAll { is: List[Int] =>
+    forAll { (is: List[Int]) =>
       val expected = is.lastOption.map(last => (is.init, last))
       is.initAndLastOption shouldEqual expected
     }

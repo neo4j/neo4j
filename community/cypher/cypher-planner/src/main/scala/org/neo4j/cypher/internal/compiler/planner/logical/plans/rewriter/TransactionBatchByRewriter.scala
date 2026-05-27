@@ -56,7 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenBU
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
@@ -277,14 +277,6 @@ case object TransactionBatchByRewriter extends Rewriter with TopDownMergeableRew
       case _: DeleteNode | _: DetachDeleteNode | _: DeleteRelationship | _: DeleteExpression | _: DetachDeleteExpression | _: DeletePath | _: DetachDeletePath =>
         // Deny, since we would have to evaluate the expressions to figure this out, but it may not be possible until runtime.
         TraverseChildrenBU { acc =>
-          Acc.deny(acc)
-        }
-      case p: UpdatingPlan =>
-        TraverseChildrenBU { acc =>
-          checkOnlyWhenAssertionsAreEnabled(
-            false,
-            s"Please update the TransactionBatchByRewriter to consider the updating plan ${p.getClass.getSimpleName}"
-          )
           Acc.deny(acc)
         }
     }

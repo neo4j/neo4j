@@ -71,6 +71,7 @@ import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WI
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.NotImplementedPlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.TestGraphStatistics
 import org.neo4j.cypher.internal.util.ApproximateSize
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -89,6 +90,7 @@ import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTPointNotNull
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTStringNotNull
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
 abstract class ExpressionSelectivityCalculatorTest extends CypherPlannerTestSuite with AstConstructionTestSupport {
@@ -1425,9 +1427,13 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherPlannerTestSuit
     val hasLabelsPred = hasLabels(v"n", labelName("Page"))
     val labelInfo: LabelInfo = Selections(Set(nPredicate(hasLabelsPred))).labelInfo
 
-    val stats = mock[GraphStatistics]
-    when(stats.nodesAllCardinality()).thenReturn(2000.0)
-    when(stats.nodesWithLabelCardinality(Some(indexPersonRange.label))).thenReturn(1000.0)
+    val stats = new TestGraphStatistics {
+      override def nodesAllCardinality(): Cardinality = 2000.0
+      override def nodesWithLabelCardinality(label: Option[LabelId]): Cardinality = {
+        if (label.contains(indexPersonRange.label)) 1000.0
+        else 0.0
+      }
+    }
     val calculator = setUpCalculator(
       labelInfo = labelInfo,
       stats = stats,

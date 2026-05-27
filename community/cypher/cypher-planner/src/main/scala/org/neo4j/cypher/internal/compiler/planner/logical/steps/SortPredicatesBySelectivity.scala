@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.PredicateCost
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Selectivity
@@ -93,7 +93,7 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
     val LabelAndRelTypeInfo(labelInfo, relTypeInfo) = from.planningAttributes.labelAndRelTypeInfos.get(s.id) match {
       case Some(value) => value
       case None =>
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
           false,
           s"labelAndRelTypeInfos should always be defined on selections. Selection plan id: ${s.id.x}"
         )

@@ -70,7 +70,7 @@ case object ResolveTokens extends Phase[PlannerContext, BaseState, BaseState] wi
   private def resolvePropertyKeyName(name: String, semanticTable: SemanticTable)(
     implicit tokenContext: ReadTokenContext
   ): SemanticTable = {
-    tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId) match {
+    tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId.apply) match {
       case Some(id) =>
         semanticTable.addResolvedPropertyKeyName(name, id)
       case None => semanticTable
@@ -80,7 +80,7 @@ case object ResolveTokens extends Phase[PlannerContext, BaseState, BaseState] wi
   private def resolveLabelName(name: String, semanticTable: SemanticTable)(
     implicit tokenContext: ReadTokenContext
   ): SemanticTable = {
-    tokenContext.getOptLabelId(name).map(LabelId) match {
+    tokenContext.getOptLabelId(name).map(LabelId.apply) match {
       case Some(id) =>
         semanticTable.addResolvedLabelName(name, id)
       case None => semanticTable
@@ -97,7 +97,7 @@ case object ResolveTokens extends Phase[PlannerContext, BaseState, BaseState] wi
   private def resolveRelTypeName(name: String, semanticTable: SemanticTable)(
     implicit tokenContext: ReadTokenContext
   ): SemanticTable = {
-    tokenContext.getOptRelTypeId(name).map(RelTypeId) match {
+    tokenContext.getOptRelTypeId(name).map(RelTypeId.apply) match {
       case Some(id) =>
         semanticTable.addResolvedRelTypeName(name, id)
       case None => semanticTable

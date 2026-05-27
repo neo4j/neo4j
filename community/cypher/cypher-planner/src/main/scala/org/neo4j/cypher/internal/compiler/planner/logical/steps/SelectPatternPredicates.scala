@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
 case object SelectPatternPredicates extends SelectionCandidateGenerator {
@@ -79,7 +79,7 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
                 interestingOrderConfig,
                 context
               )
-            AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+            AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
               exprs.forall(solvedPredicates.contains),
               "planPredicates is supposed to solve all predicates in an OR clause."
             )

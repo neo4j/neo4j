@@ -55,10 +55,6 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
               (contains.rhs, ContainsSearchMode)
             case endsWith: EndsWith =>
               (endsWith.rhs, EndsWithSearchMode)
-            case x => throw InternalException.internalError(
-                this.getClass.getSimpleName,
-                s"Expected Contains or EndsWith but was ${x.getClass}"
-              )
           }
           val singlePredicateSet =
             indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false, context, queryGraph)

@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 
 class ShardPredicatePushdownPartitionTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport
     with LogicalPlanningTestSupport2 with AstConstructionTestSupport {

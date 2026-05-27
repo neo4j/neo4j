@@ -136,8 +136,8 @@ object IDPTable {
 case class Goal(bitSet: BitSet) {
   def apply(i: Int): Boolean = bitSet(i)
   def size: Int = bitSet.size
-  def subGoals: Iterator[Goal] = bitSet.subsets().map(Goal)
-  def subGoals(size: Int): Iterator[Goal] = bitSet.subsets(size).map(Goal)
+  def subGoals: Iterator[Goal] = bitSet.subsets().map(Goal.apply)
+  def subGoals(size: Int): Iterator[Goal] = bitSet.subsets(size).map(Goal.apply)
   def exists(p: Int => Boolean): Boolean = bitSet.exists(p)
   def diff(that: Goal): Goal = Goal(bitSet &~ that.bitSet)
 

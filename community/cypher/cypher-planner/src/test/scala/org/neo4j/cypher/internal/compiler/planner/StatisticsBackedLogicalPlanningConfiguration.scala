@@ -304,7 +304,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
       additionalProperties: Seq[String]
     ): Indexes =
       copy(vectorIndexes =
-        vectorIndexes :+ NodeVectorIndexDefinition(name, labels.map(Node), propertyKey, additionalProperties)
+        vectorIndexes :+ NodeVectorIndexDefinition(name, labels.map(Node.apply), propertyKey, additionalProperties)
       )
 
     def addRelationshipVectorIndex(
@@ -316,7 +316,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
       copy(vectorIndexes =
         vectorIndexes :+ RelationshipVectorIndexDefinition(
           name,
-          types.map(Relationship),
+          types.map(Relationship.apply),
           propertyKey,
           additionalProperties
         )
@@ -1449,12 +1449,12 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
           histogram.nodeOrRelationship == NODE_TYPE &&
             resolver.getOptPropertyKeyId(
               histogram.property
-            ).map(PropertyKeyId).contains(propertyKey) && labels.contains(
+            ).map(PropertyKeyId.apply).contains(propertyKey) && labels.contains(
               LabelId(resolver.getLabelId(histogram.labelOrTypeName))
             )
         ) ++ histogramsFromConfig.filter(histogram =>
           histogram.nodeOrRelationship == NODE_TYPE &&
-            resolver.getOptPropertyKeyId(histogram.property).map(PropertyKeyId).contains(propertyKey) &&
+            resolver.getOptPropertyKeyId(histogram.property).map(PropertyKeyId.apply).contains(propertyKey) &&
             labels.contains(LabelId(resolver.getLabelId(histogram.labelOrTypeName)))
         )
       }
@@ -1464,12 +1464,12 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
         histograms.filter(histogram =>
           histogram.nodeOrRelationship == RELATIONSHIP_TYPE &&
-            resolver.getOptPropertyKeyId(histogram.property).map(PropertyKeyId).contains(propertyKey) &&
-            resolver.getOptRelTypeId(histogram.labelOrTypeName).map(RelTypeId).contains(typeId)
+            resolver.getOptPropertyKeyId(histogram.property).map(PropertyKeyId.apply).contains(propertyKey) &&
+            resolver.getOptRelTypeId(histogram.labelOrTypeName).map(RelTypeId.apply).contains(typeId)
         ) ++ histogramsFromConfig.filter(histogram =>
           histogram.nodeOrRelationship == RELATIONSHIP_TYPE &&
-            resolver.getOptPropertyKeyId(histogram.property).map(PropertyKeyId).contains(propertyKey) &&
-            resolver.getOptRelTypeId(histogram.labelOrTypeName).map(RelTypeId).contains(typeId)
+            resolver.getOptPropertyKeyId(histogram.property).map(PropertyKeyId.apply).contains(propertyKey) &&
+            resolver.getOptRelTypeId(histogram.labelOrTypeName).map(RelTypeId.apply).contains(typeId)
         )
       }
     }

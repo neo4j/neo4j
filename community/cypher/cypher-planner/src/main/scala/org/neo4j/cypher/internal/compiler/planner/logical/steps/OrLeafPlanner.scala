@@ -176,7 +176,7 @@ object OrLeafPlanner {
 
               Some(DisjunctionForOneVariable(
                 singleUsedVar,
-                exprs.map(WhereClausePredicate),
+                exprs.map(WhereClausePredicate.apply),
                 interestingOrderCandidates
               ))
             case _ => None

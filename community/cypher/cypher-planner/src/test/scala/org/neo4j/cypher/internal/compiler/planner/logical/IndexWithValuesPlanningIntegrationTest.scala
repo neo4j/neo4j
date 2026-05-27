@@ -1015,7 +1015,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherPlannerTestSuite with
       .plan("MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop2")
       .stripProduceResults
 
-    plan.leftmostLeaf should matchPattern {
+    plan.leftmostLeaf should matchPatternLike {
       case d: DirectedRelationshipIndexSeek
         if d.properties.map(p => p.propertyKeyToken.name -> p.getValueFromIndex) ==
           Seq("prop1" -> DoNotGetValue, "prop2" -> GetValue) => ()

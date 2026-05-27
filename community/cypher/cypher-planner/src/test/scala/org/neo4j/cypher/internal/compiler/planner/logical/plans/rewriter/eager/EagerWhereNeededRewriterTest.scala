@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.StorableType
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.graphdb.schema.IndexType
 
 class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPlanTestOps

@@ -138,7 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.ValueMergeJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -923,7 +923,7 @@ object CardinalityCostModel {
 
     case lp: LogicalBinaryPlan =>
       // Forces us to hopefully think about this when adding new binary plans
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         false,
         s"childrenWorkReduction: No case for ${lp.getClass.getSimpleName} added."
       )

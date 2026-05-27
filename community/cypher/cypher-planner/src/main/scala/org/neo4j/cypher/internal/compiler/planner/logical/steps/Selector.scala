@@ -106,7 +106,7 @@ case class Selector(
 
 }
 
-trait SelectionCandidateGenerator extends {
+trait SelectionCandidateGenerator {
 
   /**
    * Generate candidates which solve a predicate.

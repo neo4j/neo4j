@@ -76,7 +76,7 @@ case class RelationshipIndexLeafPlanner(
 
     DynamicPropertyNotifier.issueNotifications(
       result,
-      RelationshipIndexLookupUnfulfillableNotification,
+      RelationshipIndexLookupUnfulfillableNotification.apply,
       qg,
       RELATIONSHIP_TYPE,
       context

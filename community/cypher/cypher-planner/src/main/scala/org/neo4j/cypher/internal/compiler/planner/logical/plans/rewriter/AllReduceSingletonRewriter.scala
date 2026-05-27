@@ -79,8 +79,9 @@ case class AllReduceSingletonRewriter(
           if previous == next => previous
       }
     val renamings =
-      accumulatorsToNamespace.map { variable: LogicalVariable =>
-        variable -> varFor(Namespacer.genName(anonymousVariableNameGenerator, variableName = variable.name))
+      accumulatorsToNamespace.map {
+        (variable: LogicalVariable) =>
+          variable -> varFor(Namespacer.genName(anonymousVariableNameGenerator, variableName = variable.name))
       }.toMap
     val newAccumulatorMappings =
       accumulatorMappings.map {

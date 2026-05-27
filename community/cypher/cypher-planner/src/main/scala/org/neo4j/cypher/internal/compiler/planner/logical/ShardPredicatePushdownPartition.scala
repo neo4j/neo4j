@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.CachedProperties
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -216,7 +216,7 @@ object ShardPredicatePushdownPartition {
             )
           case None =>
             // We should never hit this scenario since any variable with empty sets of predicates should never be added to the map.
-            AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+            AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
               false,
               s"Unexpected empty set of predicates found for pushdown candidate variable $variable"
             )

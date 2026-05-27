@@ -213,7 +213,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.ValueMergeJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -1279,7 +1279,7 @@ object ReadFinder {
         val callInTx = nestedReads.callInTxPlans.nonEmpty
         val variableReferenceMap = nestedReads.variableReferenceMap
 
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
           nestedReads.productIterator.toSeq == Seq(
             nestedReads.readNodeProperties,
             nestedReads.readLabels,

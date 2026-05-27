@@ -48,7 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueMergeJoin
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
@@ -481,11 +481,11 @@ object CandidateListFinder {
       processPlan
     )(cancellationChecker)
 
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openSequences.isEmpty)
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openConflicts.isEmpty)
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.currentLayer == 0)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openSequences.isEmpty)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openConflicts.isEmpty)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.currentLayer == 0)
     val candidateLists = sequencesAcc.candidateLists
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(candidateLists.forall(_.candidates.nonEmpty))
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(candidateLists.forall(_.candidates.nonEmpty))
 
     candidateLists
   }

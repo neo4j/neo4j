@@ -75,6 +75,7 @@ import org.neo4j.storageengine.api.AllRelationshipsScan
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
+import org.scalactic.anyvals.PosInt
 
 class OrLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport2
     with CypherScalaCheckDrivenPropertyChecks {
@@ -83,7 +84,7 @@ class OrLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningTestS
   private lazy val expressionStringifier: ExpressionStringifier = ExpressionStringifier()
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    PropertyCheckConfiguration(minSuccessful = 100)
+    PropertyCheckConfiguration(minSuccessful = PosInt.from(100).get)
 
   test("should not plan node filter disjunction on top of relationship leaf plans") {
     // Allow only NodeByLabelScan and AllRelationshipsScan leaf plans.

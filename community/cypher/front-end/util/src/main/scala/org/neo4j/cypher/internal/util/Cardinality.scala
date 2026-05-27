@@ -49,6 +49,7 @@ object Cardinality {
   val INFINITY: Cardinality = Cardinality(Double.PositiveInfinity)
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
+  implicit def int2Cardinality(amount: Int): Cardinality = Cardinality(amount)
 
   private def noInf(value: Double) = if (value == Double.PositiveInfinity) Double.MaxValue else value
 
@@ -137,6 +138,7 @@ object Multiplier {
   val ONE = Multiplier(1.0d)
 
   implicit def lift(amount: Double): Multiplier = Multiplier(amount)
+  implicit def int2Multiplier(amount: Int): Multiplier = Multiplier(amount)
 
   def min(l: Multiplier, r: Multiplier): Multiplier =
     Multiplier(Math.min(l.coefficient, r.coefficient))

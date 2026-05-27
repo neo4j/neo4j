@@ -174,7 +174,7 @@ case object getDegreeRewriter extends Rewriter {
 object QuerySolvableByGetDegree {
 
   object SetExtractor {
-    def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
+    def unapplySeq[T](s: Set[T]): Some[Seq[T]] = Some(s.toSeq)
   }
 
   def unapply(arg: Any)

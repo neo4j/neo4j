@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.graphdb.schema.IndexType
 
 import scala.language.reflectiveCalls
@@ -232,16 +233,15 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherPlannerTestSuite
   }
 
   test("plans index seeks when variable exists as an argument") {
+    val x: Expression = v"x"
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      val x: Expression = v"x"
       qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(x))).addArgumentIds(Seq(v"x"))
 
       addTypeToSemanticTable(x, CTNode.invariant)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val x = cfg.x
       val resultPlans =
         indexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx)
 

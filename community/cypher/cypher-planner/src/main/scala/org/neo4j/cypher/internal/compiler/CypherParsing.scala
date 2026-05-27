@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.parser.v25.Cypher25ParserUtil
 import org.neo4j.cypher.internal.parser.v5.Cypher5ParserUtil
@@ -161,28 +161,28 @@ object CypherParsingConfig {
 
   def fromCypherConfiguration(cypherConfiguration: CypherConfiguration): CypherParsingConfig = {
     val extractLiterals: ExtractLiteral = {
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         !GraphDatabaseInternalSettings.extract_literals.dynamic()
       )
       cypherConfiguration.extractLiterals
     }
 
     val useParameterSizeHint: Boolean = {
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         !GraphDatabaseInternalSettings.cypher_size_hint_parameters.dynamic()
       )
       cypherConfiguration.useParameterSizeHint
     }
 
     val resolveSimpleDynamicExpressions: Boolean = {
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         !GraphDatabaseInternalSettings.resolve_simple_dynamic_expressions.dynamic()
       )
       cypherConfiguration.resolveSimpleDynamicExpressions
     }
 
     val enabledSemanticFeatures: Seq[SemanticFeature] = {
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         !GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features.dynamic()
       )
       CompilationPhases.enabledSemanticFeatures(

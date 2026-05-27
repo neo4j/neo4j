@@ -374,7 +374,7 @@ object ReadsAndWritesFinder {
      * @return all plans that could read the given label.
      */
     def plansReadingLabel(label: Option[LabelName]): Iterator[PlanWithAccessor] =
-      label.map(readLabels.plansReadingSymbol).getOrElse(readLabels.plansReadingAnySymbol)
+      label.map(readLabels.plansReadingSymbol).getOrElse(readLabels.plansReadingAnySymbol())
 
     def withNodePropertyRead(accessedProperty: AccessedProperty, plan: LogicalPlan): Reads =
       copy(readNodeProperties =

@@ -1806,7 +1806,6 @@ MIT License
   save-as
   setimmediate
   SLF4J API Module
-  sourcecode_2.13
   sourcecode_3
   sshpk
   string-width

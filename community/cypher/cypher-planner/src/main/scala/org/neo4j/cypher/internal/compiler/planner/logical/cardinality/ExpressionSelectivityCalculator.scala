@@ -601,7 +601,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         case _: LessThanOrEqual    => true
         case _: GreaterThan        => true
         case _: GreaterThanOrEqual => true
-        case _                     => false
       }
       literalTypeSupported && operatorSupported
     })

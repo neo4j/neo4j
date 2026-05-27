@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
 
@@ -600,17 +601,16 @@ class NodeIndexSeekLeafPlanningTest extends CypherPlannerTestSuite with LogicalP
   }
 
   test("plans index seeks when variable exists as an argument") {
+    val x: Expression = v"x"
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
-      val x: Expression = v"x"
       qg = queryGraph(in(nProp, listOf(x)), hasLabel("Awesome")).addArgumentIds(Seq(v"x"))
 
       addTypeToSemanticTable(x, CTNode.invariant)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val x = cfg.x
       val resultPlans =
         indexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx)
 

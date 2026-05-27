@@ -277,7 +277,7 @@ sealed trait ConflictFinder {
       case nodeOverlap: CreateOverlaps.NodeOverlap =>
         nodeOverlap.nodeLabelsOverlap match {
           case NodeLabelsOverlap.Static(labelNames) =>
-            labelNames.view.map(LabelReadSetConflict)
+            labelNames.view.map(LabelReadSetConflict.apply)
           case NodeLabelsOverlap.Dynamic =>
             View.empty
         }

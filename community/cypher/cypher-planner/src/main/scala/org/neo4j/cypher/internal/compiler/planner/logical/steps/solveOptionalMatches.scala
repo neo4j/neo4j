@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.CachedProperties
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -137,7 +137,7 @@ case object ApplyOptionalSolverFactory extends OptionalSolverFactory {
             case llp: LogicalLeafPlan => llp.addArgumentIds(lhsSymbols)
             case ap: AggregatingPlan  => ap.addGroupingExpressions(lhsSymbols.map(s => s -> s).toMap)
             case p: LogicalPlan =>
-              AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+              AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
                 lhsSymbols.subsetOf(p.availableSymbols),
                 s"""RHS of optional must maintain LHS available symbols.
                    |

@@ -63,6 +63,7 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.scalatest.exceptions.TestFailedException
 
 import scala.language.reflectiveCalls
@@ -290,9 +291,10 @@ class IDPQueryGraphSolverTest extends CypherPlannerTestSuite with LogicalPlannin
   test("should plan for a join between two pattern relationships and apply a selection") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
+    val predicate: Expression = self.equals(prop("r1", "foo"), prop("r2", "foo"))
+
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B) WHERE r1.foo = r2.foo
     new givenConfig {
-      val predicate: Expression = self.equals(prop("r1", "foo"), prop("r2", "foo"))
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = JoinOnlyIDPSolverConfig)
       qg = QueryGraph(
         patternNodes = Set(v"a", v"b", v"c"),
@@ -317,7 +319,7 @@ class IDPQueryGraphSolverTest extends CypherPlannerTestSuite with LogicalPlannin
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
       plan should equal(
         Selection(
-          Seq(cfg.predicate),
+          Seq(predicate),
           NodeHashJoin(
             Set(v"c"),
             Expand(
@@ -704,7 +706,6 @@ class IDPQueryGraphSolverTest extends CypherPlannerTestSuite with LogicalPlannin
         incrCount(expandsAndJoinsCount(Some(source), counts), "expands")
       case Some(p: LogicalPlan) =>
         addCounts(expandsAndJoinsCount(p.lhs, counts), expandsAndJoinsCount(p.rhs, counts))
-      case _ => counts
     }
     expandsAndJoinsCount(Some(plan), Map("expands" -> 0, "joins" -> 0))
   }

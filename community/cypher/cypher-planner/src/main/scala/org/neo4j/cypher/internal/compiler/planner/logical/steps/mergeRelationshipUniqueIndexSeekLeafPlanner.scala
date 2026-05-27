@@ -47,7 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 
 import scala.annotation.tailrec
@@ -72,7 +72,7 @@ object mergeRelationshipUniqueIndexSeekLeafPlanner extends LeafPlanner {
       val solvedQG = solvedQueryGraph(p)
       val patternRelationships = solvedQG.patternRelationships
 
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         patternRelationships.size == 1,
         "Relationship unique index plan solved more than one pattern relationship."
       )

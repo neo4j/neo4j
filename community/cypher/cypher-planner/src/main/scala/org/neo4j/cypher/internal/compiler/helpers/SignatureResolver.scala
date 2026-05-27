@@ -251,8 +251,6 @@ object SignatureResolver {
     case Mode.WRITE   => ProcedureReadWriteAccess
     case Mode.SCHEMA  => ProcedureSchemaWriteAccess
     case Mode.DBMS    => ProcedureDbmsAccess
-
-    case _ => throw CypherExecutionException.unrecognisedExecutionMode(signature, mode.name())
   }
 
   implicit private class OptionalOps[T](optional: Optional[T]) {

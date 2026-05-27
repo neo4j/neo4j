@@ -19,6 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
+import org.neo4j.cypher.internal.util.test_helpers.TestName
+import org.scalatest.Args
+import org.scalatest.Status
 
-trait CypherPlannerTestSuite extends CypherFunSuite
+trait CypherPlannerTestSuite extends CypherFunSuiteWithMacroShadowing with TestName {
+  // can be removed after Scala 3 migration is complete
+  override protected def runTest(testName: String, args: Args): Status = super.runTest(testName, args)
+}

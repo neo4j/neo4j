@@ -329,8 +329,8 @@ import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFact
 import org.neo4j.cypher.internal.logical.plans.ordering.ParallelExecutionProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
-import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
@@ -1598,7 +1598,6 @@ case class LogicalPlanProducer(
           expansionMode = expansionMode,
           accumulatorMappings = rewrittenAllReduceAccumulators
         )
-      case _ => throw new IllegalStateException(s"Unknown path mode: $pathMode")
     }
     annotate(
       repeatPlan,
@@ -4963,7 +4962,7 @@ case class LogicalPlanProducer(
       )
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       providedOrder.isEmpty || Set(plan.lhs, plan.lhs).flatten.forall(p => providedOrders.get(p.id) ne providedOrder),
       s"A plan must not use the same provided order instance as one of its children. Make sure to use the ProvidedOrderFactory."
     )
@@ -5195,7 +5194,7 @@ case class LogicalPlanProducer(
         // Currently, in that case we assume it is a one-child plan,
         // since at the time of writing there is no two child plan that leverages and destroys ordering
         lp.lhs.foreach(loop)
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
           lp.rhs.isEmpty,
           "We assume that there is no two-child plan leveraging but destroying ordering."
         )

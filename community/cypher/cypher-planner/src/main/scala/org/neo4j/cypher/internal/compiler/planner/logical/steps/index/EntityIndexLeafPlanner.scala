@@ -237,7 +237,7 @@ object EntityIndexLeafPlanner {
     }
 
     def convertToRangeScannable: IndexCompatiblePredicate = queryExpression match {
-      case _: CompositeQueryExpression[Expression] =>
+      case _: CompositeQueryExpression[?] =>
         throw new IllegalStateException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
 
       case _ => copy(

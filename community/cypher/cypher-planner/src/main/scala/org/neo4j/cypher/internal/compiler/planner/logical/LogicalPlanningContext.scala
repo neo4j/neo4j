@@ -49,7 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ParallelExecutionProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
@@ -261,7 +261,7 @@ object LogicalPlanningContext {
     // Note: We currently have no infrastructure to include fields from these settings in the cache key from this place.
     //  If we ever have cache-key-relevant things here, we must either include them through some other place (e.g. QueryOptions),
     // or build the necessary infrastructure.
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       cacheKey().isEmpty
     )
   }

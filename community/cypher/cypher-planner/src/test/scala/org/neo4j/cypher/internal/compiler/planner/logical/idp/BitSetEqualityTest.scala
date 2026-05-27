@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropert
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
+import org.scalactic.anyvals.PosInt
 
 import scala.collection.immutable.BitSet
 
 class BitSetEqualityTest extends CypherPlannerTestSuite with CypherScalaCheckDrivenPropertyChecks {
 
-  implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(minSuccessful = 500)
+  implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(minSuccessful = PosInt.from(500).get)
 
   test("The way {128} is constructed should not affect equality") {
     // apply, via newBuilder, creates a mutable array of words under the hood, initially: [0].

@@ -361,7 +361,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
             .returnColumns
             .map(column =>
               cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(column.variable))).fold(column) {
-                cached: Set[ASTCachedProperty] =>
+                (cached: Set[ASTCachedProperty]) =>
                   column.copy(cachedProperties = cached.collect {
                     case cp: CachedProperty => cp.copy(failOnMissingEntity = false)(cp.position)
                   })

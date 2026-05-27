@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
@@ -30,14 +31,14 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPl
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.macros.ControlFlowMacros3.doWhile
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.PatternGen
 import org.scalacheck.Gen
 
 import scala.util.Random
 
-class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen with LogicalPlanningTestSupport2 {
+class JoinHintPlanningIntegrationTest extends CypherPlannerTestSuite with PatternGen with LogicalPlanningTestSupport2 {
 
   test("NodeHashJoin is planned in IDP planner") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
@@ -103,9 +104,9 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     val lastNodeName = findFirstNodeName(elements.reverse).get
 
     var joinNodeName: String = null
-    do {
+    doWhile {
       joinNodeName = findFirstNodeName(Random.shuffle(elements)).get
-    } while (firstNodeName.equals(joinNodeName) || lastNodeName.equals(joinNodeName))
+    }(firstNodeName.equals(joinNodeName) || lastNodeName.equals(joinNodeName))
 
     Some(joinNodeName)
   }

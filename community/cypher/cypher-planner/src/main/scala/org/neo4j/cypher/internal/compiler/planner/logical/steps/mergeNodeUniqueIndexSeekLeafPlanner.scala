@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 
 /*
  * Plan the following type of plan
@@ -61,7 +61,7 @@ object mergeNodeUniqueIndexSeekLeafPlanner
       val solvedQG = solvedQueryGraph(p)
       val patternNodes = solvedQG.patternNodes
 
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
         patternNodes.size == 1,
         "Node unique index plan solved more than one pattern node."
       )

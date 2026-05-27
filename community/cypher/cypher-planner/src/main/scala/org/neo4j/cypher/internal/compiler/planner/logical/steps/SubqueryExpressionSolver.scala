@@ -48,7 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.RewrittenSubQueryPredicates
 import org.neo4j.cypher.internal.logical.plans.RewrittenSubQueryPredicates.RewrittenSubQueryPredicatesMap
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -541,7 +541,7 @@ object SubqueryExpressionSolver {
           if (existsExpressions.nonEmpty) {
             val (planWithPredicates, solvedPredicates) =
               planPredicates(plan, existsExpressions, expressions, None, interestingOrderConfig, context)
-            AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+            AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
               exprs.forall(solvedPredicates.contains),
               "planPredicates is supposed to solve all predicates in an OR clause."
             )

@@ -25,7 +25,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.RemoteBatchProperti
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.helpers.HistogramsFromConfigHelper
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.planner.spi.histogram.Histogram
@@ -80,7 +80,7 @@ class CypherPlannerConfiguration(
 ) {
 
   val statsDivergenceCalculator: () => StatsDivergenceCalculator = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(Seq(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(Seq(
       GraphDatabaseSettings.query_statistics_divergence_threshold,
       GraphDatabaseInternalSettings.query_statistics_divergence_target,
       GraphDatabaseSettings.cypher_min_replan_interval,
@@ -91,53 +91,53 @@ class CypherPlannerConfiguration(
   }
 
   val useErrorsOverWarnings: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.cypher_hints_error.dynamic())
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.cypher_hints_error.dynamic())
     () => config.useErrorsOverWarnings
   }
 
   val histograms: Set[Histogram] = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.histogram_data.dynamic()
     )
     HistogramsFromConfigHelper.getHistogramsFromConfig(config.histogramData)
   }
 
   val idpMaxTableSize: () => Int = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold.dynamic()
     )
     () => config.idpMaxTableSize
   }
 
   val idpIterationDuration: () => Long = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold.dynamic()
     )
     () => config.idpIterationDuration
   }
 
   val errorIfShortestPathFallbackUsedAtRuntime: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.forbid_exhaustive_shortestpath.dynamic())
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.forbid_exhaustive_shortestpath.dynamic())
     () => config.errorIfShortestPathFallbackUsedAtRuntime
   }
 
   val errorIfShortestPathHasCommonNodesAtRuntime: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.forbid_shortestpath_common_nodes.dynamic())
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.forbid_shortestpath_common_nodes.dynamic())
     () => config.errorIfShortestPathHasCommonNodesAtRuntime
   }
 
   val legacyCsvQuoteEscaping: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.csv_legacy_quote_escaping.dynamic())
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.csv_legacy_quote_escaping.dynamic())
     () => config.legacyCsvQuoteEscaping
   }
 
   val csvBufferSize: () => Int = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.csv_buffer_size.dynamic())
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.csv_buffer_size.dynamic())
     () => config.csvBufferSize
   }
 
   val nonIndexedLabelWarningThreshold: () => Long = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold.dynamic()
     )
     () => cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
@@ -154,21 +154,21 @@ class CypherPlannerConfiguration(
   }
 
   val planningIntersectionScansEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic()
     )
     () => config.planningIntersectionScansEnabled
   }
 
   val planningSubtractionScansEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_subtraction_scans_enabled.dynamic()
     )
     () => config.planningSubtractionScansEnabled
   }
 
   val predicatesAsUnionMaxSize: () => Int = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.predicates_as_union_max_size.dynamic()
     )
     () => config.predicatesAsUnionMaxSize
@@ -177,63 +177,63 @@ class CypherPlannerConfiguration(
   val queryRouterForCompositeQueriesEnabled: Boolean = config.allowCompositeQueries
 
   val statefulShortestPlanningMode: () => CypherStatefulShortestPlanningModeOption = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.stateful_shortest_planning_mode.dynamic()
     )
     () => config.statefulShortestPlanningMode
   }
 
   val planVarExpandInto: () => CypherPlanVarExpandInto = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.plan_var_expand_into.dynamic()
     )
     () => config.planVarExpandInto
   }
 
   val gpmShortestToLegacyShortestEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.gpm_shortest_to_legacy_shortest_enabled.dynamic()
     )
     () => config.gpmShortestToLegacyShortestEnabled
   }
 
   val lpEagerFallbackEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled.dynamic()
     )
     () => config.lpEagerFallbackEnabled
   }
 
   val statefulShortestPlanningRewriteQuantifiersAbove: () => Int = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.dynamic()
     )
     () => config.statefulShortestPlanningRewriteQuantifiersAbove
   }
 
   val cachePropertiesForEntities: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_cache_properties_for_entities_enabled.dynamic()
     )
     () => config.cachePropertiesForEntities
   }
 
   val remoteBatchPropertiesImplementation: () => RemoteBatchPropertiesImplementation = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_remote_batch_properties_implementation.dynamic()
     )
     () => config.remoteBatchPropertiesImplementation
   }
 
   val pushOperatorsToRemoteBatchPropertiesEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.push_operators_into_remote_batch_properties.dynamic()
     )
     () => config.pushOperatorsToRemoteBatchPropertiesEnabled
   }
 
   val planningGraphSchemaOptimizationsEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.graph_type_enabled.dynamic() &&
         !GraphDatabaseInternalSettings.planning_graph_schema_optimizations_enabled.dynamic()
     )
@@ -241,63 +241,63 @@ class CypherPlannerConfiguration(
   }
 
   val optionalMatchRemoverEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.optional_match_remover_enabled.dynamic()
     )
     () => config.optionalMatchRemoverEnabled
   }
 
   val dynamicLabelScansEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_enable_dynamic_label_scan.dynamic()
     )
     () => config.dynamicLabelScansEnabled
   }
 
   val dynamicLabelIndexUseEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_enable_dynamic_label_index_use.dynamic()
     )
     () => config.dynamicLabelIndexUseEnabled
   }
 
   val limitBeforeCountRewriterEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_limit_before_count_rewriter_enabled.dynamic()
     )
     () => config.limitBeforeCountRewriterEnabled
   }
 
   val existsWithImplicitLimitEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_exists_with_implicit_limit_enabled.dynamic()
     )
     () => config.existsWithImplicitLimitEnabled
   }
 
   val selectorCandidatesMaximum: () => Int = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_selector_candidates_maximum.dynamic()
     )
     () => config.selectorCandidatesMaximum
   }
 
   val allowDuplicatingSubqueryExpressionsInCnfNormalizer: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.allow_duplicating_subquery_expressions_in_cnf_normalizer.dynamic()
     )
     () => config.allowDuplicatingSubqueryExpressionsInCnfNormalizer
   }
 
   val planningMergeJoinEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_merge_join_enabled.dynamic()
     )
     () => config.planningMergeJoinEnabled
   }
 
   val mergeOptimizationEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.merge_optimization_enabled.dynamic()
     )
     () => config.mergeOptimizationEnabled

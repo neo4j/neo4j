@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.planner.spi.histogram.Histogram
 import org.neo4j.cypher.internal.planner.spi.histogram.StandardBucket
 import org.neo4j.exceptions.InvalidArgumentException
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
 
-class HistogramFromConfigHelperTest extends AnyFunSuite with Matchers {
+class HistogramFromConfigHelperTest extends CypherPlannerTestSuite {
 
   test("Special characters in the label-field from the config should throw an error") {
     val exception =
