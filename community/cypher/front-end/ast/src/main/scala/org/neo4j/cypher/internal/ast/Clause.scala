@@ -1723,6 +1723,26 @@ abstract class CallClause extends Clause {
   def yieldAll: Boolean
   def optionalState: OptionalState
   def optional: Boolean = optionalState == Optional
+
+  def argumentCheck: SemanticCheck
+  def resultCheck: SemanticCheck
+  def invalidAggregationCheck: SemanticCheck
+
+  def checkArgumentForAggregation(expr: Expression): SemanticCheck =
+    expr.findAggregate match {
+      case Some(agg) =>
+        val prettifier = ExpressionStringifier()
+        SemanticCheck.error(
+          SemanticError.aggregateExpressionsNotAllowedInProcedureCallArgument(
+            prettifier(agg),
+            agg.position
+          )
+        )
+      case _ => success
+    }
+
+  override def clauseSpecificSemanticCheck: SemanticCheck =
+    argumentCheck chain resultCheck chain invalidAggregationCheck
 }
 
 case class UnresolvedCall(
@@ -1745,28 +1765,14 @@ case class UnresolvedCall(
       declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty)
     )
 
-  override def clauseSpecificSemanticCheck: SemanticCheck = {
-    val argumentCheck = declaredArguments.map(
-      // could this be checked with SemanticContext.Simple to make the invalidExpressionsCheck obsolete?
-      SemanticExpressionCheck.check(SemanticContext.Results, _)
-    ).getOrElse(success)
-    val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
-    val invalidExpressionsCheck = declaredArguments.getOrElse(Seq.empty).foldSemanticCheck(arg =>
-      arg.findAggregate match {
-        case Some(agg) =>
-          val prettifier = ExpressionStringifier()
-          SemanticCheck.error(
-            SemanticError.aggregateExpressionsNotAllowedInProcedureCallArgument(
-              prettifier(agg),
-              agg.position
-            )
-          )
-        case _ => success
-      }
-    )
+  override val argumentCheck: SemanticCheck = declaredArguments.map(
+    // could this be checked with SemanticContext.Simple to make the invalidExpressionsCheck obsolete?
+    SemanticExpressionCheck.check(SemanticContext.Results, _)
+  ).getOrElse(success)
+  override val resultCheck: SemanticCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
 
-    argumentCheck chain resultsCheck chain invalidExpressionsCheck
-  }
+  override val invalidAggregationCheck: SemanticCheck =
+    declaredArguments.getOrElse(Seq.empty).foldSemanticCheck(arg => checkArgumentForAggregation(arg))
 
   // At this stage we can't know this, so we assume the CALL is non updating,
   // it should be rechecked when the call is resolved

@@ -504,7 +504,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkStandaloneCall(clauses: Seq[Clause]): SemanticCheck = {
     clauses match {
-      case Seq(_: UnresolvedCall, where @ With(_, _, _, _, _, _, _, AddedInRewriteProcCall)) =>
+      case Seq(_: CallClause, where @ With(_, _, _, _, _, _, _, AddedInRewriteProcCall)) =>
         val gql = GqlHelper.getGql42001_42N71_42NAB(
           where.position.offset,
           where.position.line,
@@ -515,14 +515,14 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           "Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)",
           where.position
         )
-      case Seq(_: GraphSelection, _: UnresolvedCall) =>
+      case Seq(_: GraphSelection, _: CallClause) =>
         // USE clause and standalone procedure call
         success
-      case all if all.size > 1 && all.exists(c => c.isInstanceOf[UnresolvedCall]) =>
+      case all if all.size > 1 && all.exists(c => c.isInstanceOf[CallClause]) =>
         // Non-standalone procedure call should not allow YIELD *
         clauses.find {
-          case uc: UnresolvedCall => uc.yieldAll
-          case _                  => false
+          case uc: CallClause => uc.yieldAll
+          case _              => false
         }.map(c =>
           error(SemanticError.invalidYieldStar(c.position))
         )

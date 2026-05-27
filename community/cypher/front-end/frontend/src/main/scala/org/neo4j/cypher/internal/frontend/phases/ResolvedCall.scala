@@ -95,10 +95,7 @@ trait ResolvedCall[IMPL <: ResolvedCall[IMPL]] extends CallClause {
 
   def description: String
 
-  override def clauseSpecificSemanticCheck: SemanticCheck =
-    argumentCheck chain resultCheck
-
-  private def argumentCheck: SemanticCheck = {
+  override def argumentCheck: SemanticCheck = {
     val totalNumArgs = inputFieldSignatures.length
     val numArgsWithDefaults = inputFieldSignatures.count(_.hasDefault)
     val minNumArgs = totalNumArgs - numArgsWithDefaults
@@ -163,7 +160,7 @@ trait ResolvedCall[IMPL <: ResolvedCall[IMPL]] extends CallClause {
     }
   }
 
-  def resultCheck: SemanticCheck = {
+  override def resultCheck: SemanticCheck = {
     // CALL of VOID procedure => No need to name arguments, even in query
     // CALL of empty procedure => No need to name arguments, even in query
     if ((outputFieldSignatures.isEmpty || outputFieldSignatures.get.isEmpty) && (callResults.nonEmpty || yieldAll)) {
@@ -180,6 +177,9 @@ trait ResolvedCall[IMPL <: ResolvedCall[IMPL]] extends CallClause {
       )
     }
   }
+
+  override def invalidAggregationCheck: SemanticCheck =
+    callArguments.foldSemanticCheck(arg => checkArgumentForAggregation(arg))
 
   val callOutputTypes: Map[String, CypherType] =
     outputFieldSignatures.map { _.map { field => field.name -> field.getType }.toMap }.getOrElse(Map.empty)
