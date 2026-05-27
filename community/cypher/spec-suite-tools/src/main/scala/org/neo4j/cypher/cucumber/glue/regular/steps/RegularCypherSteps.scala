@@ -78,6 +78,7 @@ import java.util
 import java.util.function.Supplier
 
 import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.language.existentials
 import scala.util.Failure
 import scala.util.Success
@@ -338,7 +339,7 @@ final class RegularCypherSteps @Inject() (
 
   protected def describePlan(actual: QueryExecution): String = Try {
     Using.resource(db.database.beginTx()) { tx =>
-      tx.execute("EXPLAIN\n" + actual.query).getExecutionPlanDescription.toString
+      tx.execute("EXPLAIN\n" + actual.query, parameters.asJava).getExecutionPlanDescription.toString
     }
   } match {
     case Success(planDesc) => planDesc
