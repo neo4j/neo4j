@@ -19,7 +19,10 @@
  */
 package org.neo4j.gqlstatus;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 public class GqlHelper {
 
@@ -613,23 +616,28 @@ public class GqlHelper {
             if (gqlStatusObject == gqlStatusObjectCause) {
                 return gqlStatusObject;
             }
-            return getErrorObjectWithRewrittenCause(gqlStatusObject, gqlStatusObjectCause);
+            Set<ErrorGqlStatusObject> observedStatuses = Collections.newSetFromMap(new IdentityHashMap<>());
+            observedStatuses.add(gqlStatusObject);
+            return getErrorObjectWithRewrittenCause(gqlStatusObject, gqlStatusObjectCause, observedStatuses);
         } else {
             return gqlStatusObject;
         }
     }
 
     private static ErrorGqlStatusObject getErrorObjectWithRewrittenCause(
-            ErrorGqlStatusObject gqlStatusObject, ErrorGqlStatusObject exceptionCause) {
+            ErrorGqlStatusObject gqlStatusObject,
+            ErrorGqlStatusObject exceptionCause,
+            Set<ErrorGqlStatusObject> observedStatuses) {
         // This should always be true, but needed for casting
         if (gqlStatusObject.gqlStatusObject() instanceof ErrorGqlStatusObjectImplementation gsoImplementation) {
+            observedStatuses.add(gsoImplementation);
             ErrorGqlStatusObject newCause;
             if (gqlStatusObject.cause().isPresent()) {
                 var currentCause = gqlStatusObject.cause().get();
                 if (currentCause.equals(exceptionCause)) {
                     return gqlStatusObject;
                 }
-                newCause = getErrorObjectWithRewrittenCause(currentCause, exceptionCause);
+                newCause = getErrorObjectWithRewrittenCause(currentCause, exceptionCause, observedStatuses);
             } else {
                 // Bottom of the current cause chain => add the Java cause as a GQL cause here
                 if (exceptionCause.gqlStatusObject() != null) {
@@ -650,7 +658,9 @@ public class GqlHelper {
                             .build();
                 }
             }
-            gsoImplementation.setCause(newCause);
+            if (observedStatuses.add(newCause)) {
+                gsoImplementation.setCause(newCause);
+            }
             return gsoImplementation;
         }
         return gqlStatusObject;

@@ -53,7 +53,7 @@ public class TransientTransactionFailureException extends TransientFailureExcept
         this.status = status;
     }
 
-    protected TransientTransactionFailureException(
+    public TransientTransactionFailureException(
             ErrorGqlStatusObject gqlStatusObject, Status status, String message, Throwable cause) {
         super(gqlStatusObject, message, cause);
 

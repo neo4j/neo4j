@@ -20,6 +20,7 @@
 package org.neo4j.bolt.protocol.common.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -33,6 +34,7 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
@@ -80,6 +82,22 @@ class ErrorTest {
 
     @Nested
     class TestAsBoltMessage {
+
+        @Test
+        void doNotFailWithStackOverflowWhenCausesFormCircle() {
+            // those two exceptions form the simplest loop
+            var shutdownException =
+                    DatabaseShutdownException.databaseUnavailable(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
+            var transientException = new TransientTransactionFailureException(
+                    shutdownException.gqlStatusObject(),
+                    Status.Transaction.DeadlockDetected,
+                    "test",
+                    shutdownException);
+
+            Error boltError = Error.from(transientException);
+            assertThat(assertDoesNotThrow(boltError::asBoltMessage).metadata().description())
+                    .contains("The database `neo4j` is currently unavailable.");
+        }
 
         @Test
         void shouldAssignUnknownStatusToUnpredictedException() {
