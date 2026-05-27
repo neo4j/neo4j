@@ -20,24 +20,10 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.util.Arrays.stream;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForBoundingBoxSeek;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeek;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForScan;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSeek;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSuffixOrContains;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForBoundingBoxSeek;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSeek;
-import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
@@ -61,7 +47,6 @@ import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemove
 import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueTuple;
 
 public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexProgressor, CURSOR>
         implements ValueIndexCursor, EntityIndexSeekClient, SortedMergeJoin.Sink, EntityIndexCursor {
@@ -122,20 +107,15 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
         shortcutSecurity = canAccessAllDescribedEntities(descriptor);
 
         if (!indexIncludesTransactionState && txStateHolder.hasTxStateWithChanges() && query.length > 0) {
-            // Extract out the equality queries
-            List<Value> exactQueryValues = new ArrayList<>(query.length);
             int i = 0;
             while (i < query.length && query[i].type() == IndexQueryType.EXACT) {
-                exactQueryValues.add(((PropertyIndexQuery.ExactPredicate) query[i]).value());
                 i++;
             }
-            Value[] exactValues = exactQueryValues.toArray(new Value[0]);
 
             if (i == query.length) {
-                // Only exact queries
-                // No need to order, all values are the same
+                // Only exact queries — no need to order, all values are the same.
                 this.indexOrder = IndexOrder.NONE;
-                seekQuery(descriptor, exactValues);
+                consultTxState(descriptor);
             } else {
                 PropertyIndexQuery nextQuery = query[i];
                 switch (nextQuery.type()) {
@@ -143,33 +123,28 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
                         // This also covers the rewritten suffix/contains for composite index
                         // If composite index all following will be exists as well so no need to consider those
                         setNeedsValuesIfRequiresOrder();
-                        if (exactQueryValues.isEmpty()) {
-                            // First query is allEntries or exists, use scan
-                            scanQuery(descriptor);
-                        } else {
-                            rangeQuery(descriptor, exactValues, null);
-                        }
+                        consultTxState(descriptor);
                     }
 
                     case RANGE -> {
                         // This case covers first query to be range or exact followed by range
                         // If composite index all following will be exists as well so no need to consider those
                         setNeedsValuesIfRequiresOrder();
-                        rangeQuery(descriptor, exactValues, (PropertyIndexQuery.RangePredicate<?>) nextQuery);
+                        consultTxState(descriptor);
                     }
 
                     case BOUNDING_BOX -> {
                         // This case covers first query to be bounding box or exact followed by bounding box
                         // If composite index all following will be exists as well so no need to consider those
                         setNeedsValuesIfRequiresOrder();
-                        boundingBoxQuery(descriptor, exactValues, (PropertyIndexQuery.BoundingBoxPredicate) nextQuery);
+                        consultTxState(descriptor);
                     }
 
                     case STRING_PREFIX -> {
                         // This case covers first query to be prefix or exact followed by prefix
                         // If composite index all following will be exists as well so no need to consider those
                         setNeedsValuesIfRequiresOrder();
-                        prefixQuery(descriptor, exactValues, (PropertyIndexQuery.StringPrefixPredicate) nextQuery);
+                        consultTxState(descriptor);
                     }
 
                     case STRING_SUFFIX, STRING_CONTAINS -> {
@@ -177,7 +152,7 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
                         // for composite index, the suffix/contains should already
                         // have been rewritten as exists + filter, so no need to consider it here
                         assert query.length == 1;
-                        suffixOrContainsQuery(descriptor, nextQuery);
+                        consultTxState(descriptor);
                     }
 
                     case NEAREST_NEIGHBORS -> {
@@ -189,6 +164,21 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
                         throw new UnsupportedOperationException("Query not supported: " + Arrays.toString(query));
                 }
             }
+        }
+    }
+
+    private void consultTxState(IndexDescriptor descriptor) {
+        TransactionState txState = txStateHolder.txState();
+        if (needsValues) {
+            AddedWithValuesAndRemoved changes =
+                    TxStateIndexChanges.computeForQueryWithValues(txState, descriptor, indexOrder, query);
+            addedWithValues = changes.added().iterator();
+            removed = removed(txState, changes.removed());
+        } else {
+            AddedAndRemoved changes =
+                    TxStateIndexChanges.computeForQueryWithoutValues(txState, descriptor, indexOrder, query);
+            added = changes.added().longIterator();
+            removed = removed(txState, changes.removed());
         }
     }
 
@@ -385,100 +375,6 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
                             stream(query).map(PropertyIndexQuery::propertyKeyId).toArray(Integer[]::new));
             return implementationName() + "[entity=" + entity + ", open state with: keys=" + keys + ", values="
                     + Arrays.toString(values) + "]";
-        }
-    }
-
-    private void prefixQuery(
-            IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.StringPrefixPredicate predicate) {
-        TransactionState txState = txStateHolder.txState();
-
-        if (needsValues) {
-            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix(
-                    txState, descriptor, equalityPrefix, predicate.prefix(), indexOrder);
-            addedWithValues = changes.added().iterator();
-            removed = removed(txState, changes.removed());
-        } else {
-            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix(
-                    txState, descriptor, equalityPrefix, predicate.prefix(), indexOrder);
-            added = changes.added().longIterator();
-            removed = removed(txState, changes.removed());
-        }
-    }
-
-    private void rangeQuery(
-            IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.RangePredicate<?> predicate) {
-        TransactionState txState = txStateHolder.txState();
-
-        if (needsValues) {
-            AddedWithValuesAndRemoved changes =
-                    indexUpdatesWithValuesForRangeSeek(txState, descriptor, equalityPrefix, predicate, indexOrder);
-            addedWithValues = changes.added().iterator();
-            removed = removed(txState, changes.removed());
-        } else {
-            AddedAndRemoved changes =
-                    indexUpdatesForRangeSeek(txState, descriptor, equalityPrefix, predicate, indexOrder);
-            added = changes.added().longIterator();
-            removed = removed(txState, changes.removed());
-        }
-    }
-
-    private void boundingBoxQuery(
-            IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.BoundingBoxPredicate predicate) {
-        TransactionState txState = txStateHolder.txState();
-
-        if (needsValues) {
-            AddedWithValuesAndRemoved changes =
-                    indexUpdatesWithValuesForBoundingBoxSeek(txState, descriptor, equalityPrefix, predicate);
-            addedWithValues = changes.added().iterator();
-            removed = removed(txState, changes.removed());
-        } else {
-            AddedAndRemoved changes = indexUpdatesForBoundingBoxSeek(txState, descriptor, equalityPrefix, predicate);
-            added = changes.added().longIterator();
-            removed = removed(txState, changes.removed());
-        }
-    }
-
-    private void scanQuery(IndexDescriptor descriptor) {
-        TransactionState txState = txStateHolder.txState();
-
-        if (needsValues) {
-            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan(txState, descriptor, indexOrder);
-            addedWithValues = changes.added().iterator();
-            removed = removed(txState, changes.removed());
-        } else {
-            AddedAndRemoved changes = indexUpdatesForScan(txState, descriptor, indexOrder);
-            added = changes.added().longIterator();
-            removed = removed(txState, changes.removed());
-        }
-    }
-
-    private void suffixOrContainsQuery(IndexDescriptor descriptor, PropertyIndexQuery query) {
-        TransactionState txState = txStateHolder.txState();
-
-        if (needsValues) {
-            AddedWithValuesAndRemoved changes =
-                    indexUpdatesWithValuesForSuffixOrContains(txState, descriptor, query, indexOrder);
-            addedWithValues = changes.added().iterator();
-            removed = removed(txState, changes.removed());
-        } else {
-            AddedAndRemoved changes = indexUpdatesForSuffixOrContains(txState, descriptor, query, indexOrder);
-            added = changes.added().longIterator();
-            removed = removed(txState, changes.removed());
-        }
-    }
-
-    private void seekQuery(IndexDescriptor descriptor, Value[] values) {
-        TransactionState txState = txStateHolder.txState();
-
-        if (needsValues) {
-            AddedWithValuesAndRemoved changes =
-                    indexUpdatesWithValuesForSeek(txState, descriptor, ValueTuple.of(values));
-            addedWithValues = changes.added().iterator();
-            removed = removed(txState, changes.removed());
-        } else {
-            AddedAndRemoved changes = indexUpdatesForSeek(txState, descriptor, ValueTuple.of(values));
-            added = changes.added().longIterator();
-            removed = removed(txState, changes.removed());
         }
     }
 

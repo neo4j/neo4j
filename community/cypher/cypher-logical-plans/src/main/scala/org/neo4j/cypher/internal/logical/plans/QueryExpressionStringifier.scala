@@ -24,11 +24,56 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 
+/**
+ * Separator emitted between inner predicates of a [[CompositeQueryExpression]].
+ *
+ *  - [[CompositeSeparator.Comma]] (default): ", " — used by [[LogicalPlanToPlanBuilderString]] and other plan-builder consumers.
+ *  - [[CompositeSeparator.And]]: " AND " — used by callers that embed the rendered string in a Cypher WHERE clause.
+ */
+sealed trait CompositeSeparator
+
+object CompositeSeparator {
+  case object Comma extends CompositeSeparator
+  case object And extends CompositeSeparator
+}
+
+/**
+ * How [[ExistenceQueryExpression]] / [[NonExistenceQueryExpression]] / [[AllQueryExpression]]
+ * are rendered.
+ *
+ *  - [[ExistencePredicateForm.PropertyReference]] (default): emits the bare property reference
+ *    ("n.prop" / "NOT n.prop"). NOT valid in a Cypher WHERE-clause predicate; intended for plan-builder (e.g. [[LogicalPlanToPlanBuilderString]]).
+ *  - [[ExistencePredicateForm.IsNotNull]]: emits standard Cypher null-check predicates
+ *    ("n.prop IS NOT NULL" / "n.prop IS NULL"). Use this when the rendered string must be valid in a WHERE clause.
+ */
+sealed trait ExistencePredicateForm
+
+object ExistencePredicateForm {
+  case object PropertyReference extends ExistencePredicateForm
+  case object IsNotNull extends ExistencePredicateForm
+}
+
 class QueryExpressionStringifier(
   exprStringifier: ExpressionStringifier,
   valueStringifier: Option[Expression => String] = None,
-  compositeSeparator: String = ", "
+  compositeSeparator: CompositeSeparator = CompositeSeparator.Comma,
+  existencePredicateForm: ExistencePredicateForm = ExistencePredicateForm.PropertyReference
 ) {
+
+  private val compositeSeparatorString: String = compositeSeparator match {
+    case CompositeSeparator.Comma => ", "
+    case CompositeSeparator.And   => " AND "
+  }
+
+  private def existencePredicate(ref: String): String = existencePredicateForm match {
+    case ExistencePredicateForm.PropertyReference => ref
+    case ExistencePredicateForm.IsNotNull         => s"$ref IS NOT NULL"
+  }
+
+  private def nonExistencePredicate(ref: String): String = existencePredicateForm match {
+    case ExistencePredicateForm.PropertyReference => s"NOT $ref"
+    case ExistencePredicateForm.IsNotNull         => s"$ref IS NULL"
+  }
 
   def apply(valueExpr: QueryExpression[Expression], propNames: Seq[String]): String =
     apply(valueExpr, None, propNames)
@@ -59,7 +104,7 @@ class QueryExpressionStringifier(
           case expr =>
             s"${propRef(propNames.head)} IN ${stringify(expr)}"
         }
-      case ExistenceQueryExpression => propRef(propNames.head)
+      case ExistenceQueryExpression => existencePredicate(propRef(propNames.head))
       case qe: RangeQueryExpression[?] =>
         qe.expression match {
           case PrefixSeekRangeWrapper(PrefixRange(expression)) =>
@@ -81,9 +126,13 @@ class QueryExpressionStringifier(
       case qe: CompositeQueryExpression[?] =>
         qe.inner.zip(propNames).map { case (innerQe, propName) =>
           apply(innerQe, entity, Seq(propName))
-        }.mkString(compositeSeparator)
-      case AllQueryExpression          => propRef(propNames.head)
-      case NonExistenceQueryExpression => s"NOT ${propRef(propNames.head)}"
+        }.mkString(compositeSeparatorString)
+      case AllQueryExpression =>
+        existencePredicateForm match {
+          case ExistencePredicateForm.PropertyReference => propRef(propNames.head)
+          case ExistencePredicateForm.IsNotNull         => "true"
+        }
+      case NonExistenceQueryExpression => nonExistencePredicate(propRef(propNames.head))
       case other                       => throw new IllegalStateException(s"Unknown query expression: $other")
     }
   }

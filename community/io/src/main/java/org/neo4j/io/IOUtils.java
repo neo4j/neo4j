@@ -80,6 +80,33 @@ public final class IOUtils {
     }
 
     /**
+     * Close all of the given closeables, attaching any close-time failures to {@code primary} as suppressed exceptions,
+     * then throw {@code primary}. Use this when you already hold an exception that should be the parent and just need
+     * to close resources during exception propagation.
+     *
+     * <p>Sibling to {@link #closeAllUnchecked(Iterable)}: that variant creates a fresh exception.
+     *
+     * @param primary the exception to throw; close-time failures are attached as suppressed exceptions.
+     * @param closeables to call close on.
+     * @param <T> the type of closeable.
+     * @param <E> the type of the primary exception.
+     * @throws E always (the same {@code primary} passed in, possibly with added suppressed exceptions).
+     */
+    public static <T extends AutoCloseable, E extends Throwable> void closeAllSuppressingInto(
+            E primary, Iterable<T> closeables) throws E {
+        for (T closeable : closeables) {
+            try {
+                if (closeable != null) {
+                    closeable.close();
+                }
+            } catch (Throwable t) {
+                primary.addSuppressed(t);
+            }
+        }
+        throw primary;
+    }
+
+    /**
      * Closes given {@link Collection collection} of {@link AutoCloseable closeables} ignoring all exceptions.
      *
      * @param closeables the closeables to close

@@ -177,6 +177,13 @@ public final class ValueUtils {
         return Values.pointValue(CoordinateReferenceSystem.get(geometry.getCRS()), coordinatesCopy);
     }
 
+    public static Value toStorable(AnyValue anyValue) {
+        if (anyValue instanceof ListValue listValue) {
+            return listValue.toStorableArray();
+        }
+        return (Value) anyValue;
+    }
+
     public static ListValue asListValue(List<?> collection) {
         return asListValue(collection, false);
     }

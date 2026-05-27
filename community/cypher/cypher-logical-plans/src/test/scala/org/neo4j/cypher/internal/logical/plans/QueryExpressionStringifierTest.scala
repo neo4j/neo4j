@@ -350,12 +350,66 @@ class QueryExpressionStringifierTest extends CypherFunSuite3 with AstConstructio
 
   // Composite separator configuration test
   test("should stringify CompositeQueryExpression with AND separator") {
-    val andStringifier = new QueryExpressionStringifier(ExpressionStringifier(), compositeSeparator = " AND ")
+    val andStringifier =
+      new QueryExpressionStringifier(ExpressionStringifier(), compositeSeparator = CompositeSeparator.And)
     val expr = CompositeQueryExpression(Seq(
       SingleQueryExpression(literalInt(1)),
       SingleQueryExpression(literalString("abc"))
     ))
     andStringifier(expr, Seq("prop1", "prop2")) should equal("prop1 = 1 AND prop2 = \"abc\"")
+  }
+
+  // ExistencePredicateForm.IsNotNull tests — emits standard Cypher null-check predicates
+  // suitable for use as a standalone WHERE clause.
+  private val isNotNullStringifier =
+    new QueryExpressionStringifier(
+      ExpressionStringifier(),
+      existencePredicateForm = ExistencePredicateForm.IsNotNull
+    )
+
+  test("should stringify ExistenceQueryExpression with IsNotNull form") {
+    isNotNullStringifier(ExistenceQueryExpression, Seq("prop")) should equal("prop IS NOT NULL")
+  }
+
+  test("should stringify ExistenceQueryExpression with IsNotNull form and entity") {
+    isNotNullStringifier(ExistenceQueryExpression, varFor("n"), Seq("prop")) should equal("n.prop IS NOT NULL")
+  }
+
+  test("should stringify AllQueryExpression with IsNotNull form") {
+    isNotNullStringifier(AllQueryExpression, Seq("prop")) should equal("true")
+  }
+
+  test("should stringify NonExistenceQueryExpression with IsNotNull form") {
+    isNotNullStringifier(NonExistenceQueryExpression, Seq("prop")) should equal("prop IS NULL")
+  }
+
+  test("should stringify NonExistenceQueryExpression with IsNotNull form and entity") {
+    isNotNullStringifier(NonExistenceQueryExpression, varFor("n"), Seq("prop")) should equal("n.prop IS NULL")
+  }
+
+  test("should stringify CompositeQueryExpression with IsNotNull form and AND separator") {
+    val whereClauseStringifier = new QueryExpressionStringifier(
+      ExpressionStringifier(),
+      compositeSeparator = CompositeSeparator.And,
+      existencePredicateForm = ExistencePredicateForm.IsNotNull
+    )
+    val composite = CompositeQueryExpression(Seq(
+      SingleQueryExpression(literalInt(1)),
+      ExistenceQueryExpression,
+      NonExistenceQueryExpression
+    ))
+    whereClauseStringifier(composite, Seq("prop1", "prop2", "prop3")) should equal(
+      "prop1 = 1 AND prop2 IS NOT NULL AND prop3 IS NULL"
+    )
+  }
+
+  test("should backtick property names with special characters under IsNotNull form") {
+    isNotNullStringifier(ExistenceQueryExpression, Seq("prop with spaces")) should equal(
+      "`prop with spaces` IS NOT NULL"
+    )
+    isNotNullStringifier(NonExistenceQueryExpression, varFor("n"), Seq("prop with spaces")) should equal(
+      "n.`prop with spaces` IS NULL"
+    )
   }
 
   // Property name backticking tests

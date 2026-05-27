@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -55,6 +56,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -84,7 +86,7 @@ class TxStateIndexChangesTest {
     private final IndexDescriptor index = TestIndexDescriptorFactory.forLabel(1, 1);
 
     @Test
-    void shouldComputeIndexUpdatesForScanOnAnEmptyTxState() {
+    void shouldComputeUpdatesForScanWithEmptyTxState() {
         final ReadableTransactionState state = Mockito.mock(ReadableTransactionState.class);
         doReturn(null).when(state).getAddedIndexUpdates(any(IndexDescriptor.class));
         // WHEN
@@ -97,7 +99,7 @@ class TxStateIndexChangesTest {
     }
 
     @Test
-    void shouldComputeIndexUpdatesForScanWhenThereAreNewEntities() {
+    void shouldComputeUpdatesForScanWithNewEntities() {
         // GIVEN
         final ReadableTransactionState state =
                 new TxStateBuilder().withAdded(42L, "foo").withAdded(43L, "bar").build();
@@ -113,13 +115,9 @@ class TxStateIndexChangesTest {
     }
 
     @Test
-    void shouldComputeIndexUpdatesForScan() {
+    void shouldComputeUpdatesForScan() {
         assertScanWithOrder(IndexOrder.NONE);
         assertScanWithOrder(IndexOrder.ASCENDING);
-    }
-
-    @Test
-    void shouldComputeIndexUpdatesForScanWithDescendingOrder() {
         assertScanWithOrder(IndexOrder.DESCENDING);
     }
 
@@ -156,7 +154,7 @@ class TxStateIndexChangesTest {
     }
 
     @Test
-    void shouldComputeIndexUpdatesForSeekWhenThereAreNewEntities() {
+    void shouldComputeUpdatesForSeekWithNewEntities() {
         // GIVEN
         final ReadableTransactionState state =
                 new TxStateBuilder().withAdded(42L, "foo").withAdded(43L, "bar").build();
@@ -561,7 +559,7 @@ class TxStateIndexChangesTest {
     class SuffixOrContains {
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereAreNoMatchingEntities() {
+        void shouldComputeUpdatesForContainsWithNoMatches() {
             // GIVEN
             final ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "foo")
@@ -581,7 +579,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekBySuffixWhenThereArePartiallyMatchingNewEntities() {
+        void shouldComputeUpdatesForSuffixWithPartialMatches() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(40L, "Aaron")
@@ -610,12 +608,12 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldComputeIndexUpdatesForSuffixWithAscendingOrder() {
+        void shouldComputeUpdatesForSuffixWithAscendingOrder() {
             assertRangeSeekBySuffixForOrder(IndexOrder.ASCENDING);
         }
 
         @Test
-        void shouldComputeIndexUpdatesForSuffixWithDescendingOrder() {
+        void shouldComputeUpdatesForSuffixWithDescendingOrder() {
             assertRangeSeekBySuffixForOrder(IndexOrder.DESCENDING);
         }
 
@@ -654,7 +652,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereArePartiallyMatchingNewEntities() {
+        void shouldComputeUpdatesForContainsWithPartialMatches() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(40L, "Aaron")
@@ -683,12 +681,12 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldComputeIndexUpdatesForContainsWithAscendingOrder() {
+        void shouldComputeUpdatesForContainsWithAscendingOrder() {
             assertRangeSeekByContainsForOrder(IndexOrder.ASCENDING);
         }
 
         @Test
-        void shouldComputeIndexUpdatesForContainsWithDescendingOrder() {
+        void shouldComputeUpdatesForContainsWithDescendingOrder() {
             assertRangeSeekByContainsForOrder(IndexOrder.DESCENDING);
         }
 
@@ -731,7 +729,7 @@ class TxStateIndexChangesTest {
     class Prefix {
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNoMatchingEntities() {
+        void shouldComputeUpdatesForPrefixWithNoMatches() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "value42")
@@ -750,13 +748,9 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefix() {
+        void shouldComputeUpdatesForPrefix() {
             assertRangeSeekByPrefixForOrder(IndexOrder.NONE);
             assertRangeSeekByPrefixForOrder(IndexOrder.ASCENDING);
-        }
-
-        @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefixWithDescendingOrder() {
             assertRangeSeekByPrefixForOrder(IndexOrder.DESCENDING);
         }
 
@@ -793,7 +787,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNonStringEntities() {
+        void shouldComputeUpdatesForPrefixWithNonStringValues() {
             // GIVEN
             final ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "barry")
@@ -816,7 +810,7 @@ class TxStateIndexChangesTest {
         private final IndexDescriptor compositeIndex3properties = TestIndexDescriptorFactory.forLabel(1, 1, 2, 3);
 
         @Test
-        void shouldSeekOnAnEmptyTxState() {
+        void shouldComputeUpdatesForSeekWithEmptyTxState() {
             // GIVEN
             final ReadableTransactionState state = Mockito.mock(ReadableTransactionState.class);
             doReturn(null).when(state).getAddedIndexUpdates(any(IndexDescriptor.class));
@@ -829,7 +823,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldScanWhenThereAreNewEntities() {
+        void shouldComputeUpdatesForScanWithNewEntities() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "42value1", "42value2")
@@ -850,7 +844,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldSeekWhenThereAreNewStringEntities() {
+        void shouldComputeUpdatesForSeekWithNewStringEntities() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "42value1", "42value2")
@@ -870,7 +864,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldSeekWhenThereAreNewNumberEntities() {
+        void shouldComputeUpdatesForSeekWithNewNumberEntities() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, 42001.0, 42002.0)
@@ -890,7 +884,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldHandleMixedAddsAndRemovesEntryForScan() {
+        void shouldComputeUpdatesForScanWithMixedAddsAndRemoves() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "42value1", "42value2")
@@ -912,7 +906,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldHandleMixedAddsAndRemovesEntryForSeek() {
+        void shouldComputeUpdatesForSeekWithMixedAddsAndRemoves() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "42value1", "42value2")
@@ -953,7 +947,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldSeekWhenThereAreManyEntriesWithTheSameValues() {
+        void shouldComputeUpdatesForSeekWithDuplicateValues() {
             // GIVEN (note that 44 has the same properties as 43)
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(42L, "42value1", "42value2", "42value3")
@@ -981,7 +975,7 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldSeekInComplexMix() {
+        void shouldComputeUpdatesForSeekWithComplexValueMix() {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
                     .withAdded(10L, "hi", 3)
@@ -1045,14 +1039,14 @@ class TxStateIndexChangesTest {
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeek() {
+        void shouldComputeUpdatesForRangeSeek() {
             assertRangeSeekForOrder(IndexOrder.NONE);
             assertRangeSeekForOrder(IndexOrder.ASCENDING);
             assertRangeSeekForOrder(IndexOrder.DESCENDING);
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefix() {
+        void shouldComputeUpdatesForPrefix() {
             assertRangeSeekByPrefixForOrder(IndexOrder.NONE);
             assertRangeSeekByPrefixForOrder(IndexOrder.ASCENDING);
             assertRangeSeekByPrefixForOrder(IndexOrder.DESCENDING);
@@ -1137,6 +1131,669 @@ class TxStateIndexChangesTest {
 
             // THEN
             assertContains(indexOrder, changes, changesWithValues, expected);
+        }
+    }
+
+    @Nested
+    class ComputeForQuery {
+        private final IndexDescriptor compositeIndex = TestIndexDescriptorFactory.forLabel(1, 1, 2);
+        private final IndexDescriptor compositeIndex3properties = TestIndexDescriptorFactory.forLabel(1, 1, 2, 3);
+
+        @Test
+        void shouldReturnEmptyWhenNoIndexUpdatesInTxState() {
+            // GIVEN
+            final ReadableTransactionState state = Mockito.mock(ReadableTransactionState.class);
+            doReturn(false).when(state).hasIndexUpdates(any(IndexDescriptor.class));
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(index.schema().getPropertyId(), "foo"));
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(index.schema().getPropertyId(), "foo"));
+
+            // THEN
+            assertTrue(withValues.isEmpty());
+            assertTrue(withoutValues.isEmpty());
+        }
+
+        @Test
+        void shouldThrowOnEmptyQueryArray() {
+            // GIVEN
+            final ReadableTransactionState state =
+                    new TxStateBuilder().withAdded(42L, "foo").build();
+
+            // THEN
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE));
+        }
+
+        @Test
+        void shouldDispatchExactSeekSingleProperty() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo")
+                    .withAdded(43L, "bar")
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(index.schema().getPropertyId(), "bar"));
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(index.schema().getPropertyId(), "bar"));
+
+            // THEN
+            assertContains(withValues.added(), entityWithPropertyValues(43L, "bar"));
+            assertContains(withoutValues.added(), 43L);
+        }
+
+        @Test
+        void shouldDispatchExactSeekComposite() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo", "alpha")
+                    .withAdded(43L, "bar", "beta")
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state,
+                    compositeIndex,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(1, "bar"),
+                    PropertyIndexQuery.exact(2, "beta"));
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state,
+                    compositeIndex,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(1, "bar"),
+                    PropertyIndexQuery.exact(2, "beta"));
+
+            // THEN
+            assertContains(withValues.added(), entityWithPropertyValues(43L, "bar", "beta"));
+            assertContains(withoutValues.added(), 43L);
+        }
+
+        @Test
+        void shouldDispatchScan() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo")
+                    .withAdded(43L, "bar")
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state, index, IndexOrder.NONE, PropertyIndexQuery.allEntries());
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state, index, IndexOrder.NONE, PropertyIndexQuery.allEntries());
+
+            // THEN
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(), entityWithPropertyValues(42L, "foo"), entityWithPropertyValues(43L, "bar"));
+        }
+
+        @Test
+        void shouldDispatchScanWithExists() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo")
+                    .withAdded(43L, "bar")
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exists(index.schema().getPropertyId()));
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exists(index.schema().getPropertyId()));
+
+            // THEN
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(), entityWithPropertyValues(42L, "foo"), entityWithPropertyValues(43L, "bar"));
+        }
+
+        @Test
+        void shouldDispatchExactWithExists() {
+            // GIVEN — composite index with equality prefix + exists
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo", "alpha")
+                    .withAdded(43L, "foo", "beta")
+                    .withAdded(44L, "bar", "gamma")
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state,
+                    compositeIndex,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(1, "foo"),
+                    PropertyIndexQuery.exists(2));
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state,
+                    compositeIndex,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(1, "foo"),
+                    PropertyIndexQuery.exists(2));
+
+            // THEN — should find both entries with "foo" prefix
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(),
+                    entityWithPropertyValues(42L, "foo", "alpha"),
+                    entityWithPropertyValues(43L, "foo", "beta"));
+        }
+
+        @Test
+        void shouldDispatchRange() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, 510)
+                    .withAdded(43L, 520)
+                    .withAdded(44L, 550)
+                    .withAdded(45L, 500)
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.RangePredicate<?> rangePredicate =
+                    PropertyIndexQuery.range(index.schema().getPropertyId(), intValue(505), true, intValue(530), true);
+            AddedWithValuesAndRemoved withValues =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, rangePredicate);
+            AddedAndRemoved withoutValues =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, rangePredicate);
+
+            // THEN
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(withValues.added(), entityWithPropertyValues(42L, 510), entityWithPropertyValues(43L, 520));
+        }
+
+        @Test
+        void shouldDispatchRangeWithOrder() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, 510)
+                    .withAdded(43L, 520)
+                    .withAdded(44L, 500)
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.RangePredicate<?> rangePredicate =
+                    PropertyIndexQuery.range(index.schema().getPropertyId(), intValue(500), false, intValue(530), true);
+            AddedWithValuesAndRemoved withValuesAsc =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.ASCENDING, rangePredicate);
+            AddedWithValuesAndRemoved withValuesDesc =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.DESCENDING, rangePredicate);
+            AddedAndRemoved withoutValuesAsc = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state, index, IndexOrder.ASCENDING, rangePredicate);
+            AddedAndRemoved withoutValuesDesc = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state, index, IndexOrder.DESCENDING, rangePredicate);
+
+            // THEN
+            assertContainsInOrder(withoutValuesAsc.added(), 42L, 43L);
+            assertContainsInOrder(withoutValuesDesc.added(), 43L, 42L);
+            assertContainsInOrder(
+                    withValuesAsc.added(), entityWithPropertyValues(42L, 510), entityWithPropertyValues(43L, 520));
+            assertContainsInOrder(
+                    withValuesDesc.added(), entityWithPropertyValues(43L, 520), entityWithPropertyValues(42L, 510));
+        }
+
+        @Test
+        void shouldDispatchPrefix() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "Andreas")
+                    .withAdded(43L, "Andrea")
+                    .withAdded(44L, "Bob")
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.StringPrefixPredicate prefixQuery =
+                    PropertyIndexQuery.stringPrefix(index.schema().getPropertyId(), stringValue("And"));
+            AddedWithValuesAndRemoved withValues =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, prefixQuery);
+            AddedAndRemoved withoutValues =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, prefixQuery);
+
+            // THEN
+            assertContains(withoutValues.added(), 43L, 42L);
+            assertContains(
+                    withValues.added(),
+                    entityWithPropertyValues(42L, "Andreas"),
+                    entityWithPropertyValues(43L, "Andrea"));
+        }
+
+        @Test
+        void shouldDispatchPrefixWithOrder() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "Andreas")
+                    .withAdded(43L, "Andrea")
+                    .withAdded(44L, "Bob")
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.StringPrefixPredicate prefixQuery =
+                    PropertyIndexQuery.stringPrefix(index.schema().getPropertyId(), stringValue("And"));
+            AddedWithValuesAndRemoved withValuesDesc =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.DESCENDING, prefixQuery);
+            AddedAndRemoved withoutValuesDesc =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.DESCENDING, prefixQuery);
+
+            // THEN — descending order: Andreas before Andrea
+            assertContainsInOrder(withoutValuesDesc.added(), 42L, 43L);
+            assertContainsInOrder(
+                    withValuesDesc.added(),
+                    entityWithPropertyValues(42L, "Andreas"),
+                    entityWithPropertyValues(43L, "Andrea"));
+        }
+
+        @Test
+        void shouldDispatchSuffix() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "Barbarella")
+                    .withAdded(43L, "Cinderella")
+                    .withAdded(44L, "Bob")
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.StringSuffixPredicate suffixQuery =
+                    PropertyIndexQuery.stringSuffix(index.schema().getPropertyId(), stringValue("ella"));
+            AddedWithValuesAndRemoved withValues =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, suffixQuery);
+            AddedAndRemoved withoutValues =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, suffixQuery);
+
+            // THEN
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(),
+                    entityWithPropertyValues(42L, "Barbarella"),
+                    entityWithPropertyValues(43L, "Cinderella"));
+        }
+
+        @Test
+        void shouldDispatchContains() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "value42")
+                    .withAdded(43L, "value43")
+                    .withAdded(44L, "other")
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.StringContainsPredicate containsQuery =
+                    PropertyIndexQuery.stringContains(index.schema().getPropertyId(), stringValue("value"));
+            AddedWithValuesAndRemoved withValues =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, containsQuery);
+            AddedAndRemoved withoutValues =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, containsQuery);
+
+            // THEN
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(),
+                    entityWithPropertyValues(42L, "value42"),
+                    entityWithPropertyValues(43L, "value43"));
+        }
+
+        @Test
+        void shouldDispatchBoundingBox() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, pointValue(CARTESIAN, 0, 0))
+                    .withAdded(43L, pointValue(CARTESIAN, 250, 250))
+                    .withAdded(44L, pointValue(CARTESIAN, 1000, 1000))
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.BoundingBoxPredicate bboxQuery = PropertyIndexQuery.boundingBox(
+                    index.schema().getPropertyId(), pointValue(CARTESIAN, -500, -500), pointValue(CARTESIAN, 500, 500));
+            AddedWithValuesAndRemoved withValues =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, bboxQuery);
+            AddedAndRemoved withoutValues =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, bboxQuery);
+
+            // THEN
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(),
+                    entityWithPropertyValues(42L, pointValue(CARTESIAN, 0, 0)),
+                    entityWithPropertyValues(43L, pointValue(CARTESIAN, 250, 250)));
+        }
+
+        @Test
+        void shouldReturnEmptyForNearestNeighbors() {
+            // GIVEN — tx state has entities, but NEAREST_NEIGHBORS should return empty
+            final ReadableTransactionState state =
+                    new TxStateBuilder().withAdded(42L, "foo").build();
+
+            // WHEN
+            PropertyIndexQuery.NearestNeighborsPredicate nnQuery =
+                    PropertyIndexQuery.nearestNeighbors(10, new float[] {1.0f, 2.0f});
+            AddedWithValuesAndRemoved withValues =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, nnQuery);
+            AddedAndRemoved withoutValues =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, nnQuery);
+
+            // THEN — both added and removed must be empty
+            assertTrue(withValues.isEmpty());
+            assertTrue(withoutValues.isEmpty());
+            // The removed set must be the empty sentinel, not a set merged with deleted entities
+            assertThat(withValues.removed().isEmpty()).isTrue();
+            assertThat(withoutValues.removed().isEmpty()).isTrue();
+        }
+
+        @Test
+        void shouldReturnConsistentRemovedAcrossMethods() {
+            // GIVEN — a state with both added and removed entities
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo")
+                    .withAdded(43L, "bar")
+                    .withRemoved(43L, "bar")
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.RangePredicate<?> rangePredicate = PropertyIndexQuery.range(
+                    index.schema().getPropertyId(), stringValue("a"), true, stringValue("z"), true);
+            AddedWithValuesAndRemoved withValues =
+                    TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, rangePredicate);
+            AddedAndRemoved withoutValues =
+                    TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, rangePredicate);
+
+            // THEN — both must return the same removed set
+            assertThat(withValues.removed()).isEqualTo(withoutValues.removed());
+        }
+
+        @Test
+        void shouldReturnConsistentAddedAcrossMethods() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo")
+                    .withAdded(43L, "bar")
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exists(index.schema().getPropertyId()));
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state,
+                    index,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exists(index.schema().getPropertyId()));
+
+            // THEN — the entity IDs from WithValues must match those from WithoutValues
+            long[] withValuesIds = StreamSupport.stream(withValues.added().spliterator(), false)
+                    .mapToLong(EntityWithPropertyValues::getEntityId)
+                    .toArray();
+            assertThat(withoutValues.added().toArray()).containsExactlyInAnyOrder(withValuesIds);
+        }
+
+        @Test
+        void shouldDispatchScanWithOrder() {
+            // GIVEN
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "Andreas")
+                    .withAdded(43L, "Andrea")
+                    .withAdded(44L, "Bob")
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValuesAsc = TxStateIndexChanges.computeForQueryWithValues(
+                    state, index, IndexOrder.ASCENDING, PropertyIndexQuery.allEntries());
+            AddedWithValuesAndRemoved withValuesDesc = TxStateIndexChanges.computeForQueryWithValues(
+                    state, index, IndexOrder.DESCENDING, PropertyIndexQuery.allEntries());
+            AddedAndRemoved withoutValuesAsc = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state, index, IndexOrder.ASCENDING, PropertyIndexQuery.allEntries());
+            AddedAndRemoved withoutValuesDesc = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state, index, IndexOrder.DESCENDING, PropertyIndexQuery.allEntries());
+
+            // THEN — ascending: Andrea, Andreas, Bob
+            assertContainsInOrder(withoutValuesAsc.added(), 43L, 42L, 44L);
+            assertContainsInOrder(
+                    withValuesAsc.added(),
+                    entityWithPropertyValues(43L, "Andrea"),
+                    entityWithPropertyValues(42L, "Andreas"),
+                    entityWithPropertyValues(44L, "Bob"));
+            // descending: reverse
+            assertContainsInOrder(withoutValuesDesc.added(), 44L, 42L, 43L);
+            assertContainsInOrder(
+                    withValuesDesc.added(),
+                    entityWithPropertyValues(44L, "Bob"),
+                    entityWithPropertyValues(42L, "Andreas"),
+                    entityWithPropertyValues(43L, "Andrea"));
+        }
+
+        @Test
+        void shouldDispatchExactWithRange() {
+            // GIVEN — composite index with EXACT prefix + range predicate
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo", 100)
+                    .withAdded(43L, "foo", 200)
+                    .withAdded(44L, "foo", 300)
+                    .withAdded(45L, "bar", 200)
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.RangePredicate<?> rangePredicate =
+                    PropertyIndexQuery.range(2, intValue(150), true, intValue(250), true);
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state, compositeIndex, IndexOrder.NONE, PropertyIndexQuery.exact(1, "foo"), rangePredicate);
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state, compositeIndex, IndexOrder.NONE, PropertyIndexQuery.exact(1, "foo"), rangePredicate);
+
+            // THEN — only entries with "foo" prefix AND second prop in [150, 250]
+            assertContains(withoutValues.added(), 43L);
+            assertContains(withValues.added(), entityWithPropertyValues(43L, "foo", 200));
+        }
+
+        @Test
+        void shouldDispatchExactWithStringPrefix() {
+            // GIVEN — composite index with EXACT prefix + string-prefix predicate
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo", "Andreas")
+                    .withAdded(43L, "foo", "Andrea")
+                    .withAdded(44L, "foo", "Bob")
+                    .withAdded(45L, "bar", "Andreas")
+                    .build();
+
+            // WHEN
+            PropertyIndexQuery.StringPrefixPredicate prefixQuery =
+                    PropertyIndexQuery.stringPrefix(2, stringValue("And"));
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state, compositeIndex, IndexOrder.NONE, PropertyIndexQuery.exact(1, "foo"), prefixQuery);
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state, compositeIndex, IndexOrder.NONE, PropertyIndexQuery.exact(1, "foo"), prefixQuery);
+
+            // THEN — entries with "foo" prefix AND second prop starting with "And"
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(),
+                    entityWithPropertyValues(42L, "foo", "Andreas"),
+                    entityWithPropertyValues(43L, "foo", "Andrea"));
+        }
+
+        @Test
+        void shouldDispatchExactWithExistsAcrossThreeProperties() {
+            // GIVEN — 3-property composite index, EXACT+EXACT+EXISTS
+            final ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded(42L, "foo", "alpha", 100)
+                    .withAdded(43L, "foo", "alpha", 200)
+                    .withAdded(44L, "foo", "beta", 100)
+                    .withAdded(45L, "bar", "alpha", 100)
+                    .build();
+
+            // WHEN
+            AddedWithValuesAndRemoved withValues = TxStateIndexChanges.computeForQueryWithValues(
+                    state,
+                    compositeIndex3properties,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(1, "foo"),
+                    PropertyIndexQuery.exact(2, "alpha"),
+                    PropertyIndexQuery.exists(3));
+            AddedAndRemoved withoutValues = TxStateIndexChanges.computeForQueryWithoutValues(
+                    state,
+                    compositeIndex3properties,
+                    IndexOrder.NONE,
+                    PropertyIndexQuery.exact(1, "foo"),
+                    PropertyIndexQuery.exact(2, "alpha"),
+                    PropertyIndexQuery.exists(3));
+
+            // THEN — entries matching [foo, alpha, *]
+            assertContains(withoutValues.added(), 42L, 43L);
+            assertContains(
+                    withValues.added(),
+                    entityWithPropertyValues(42L, "foo", "alpha", 100),
+                    entityWithPropertyValues(43L, "foo", "alpha", 200));
+        }
+
+        @TestFactory
+        Collection<DynamicTest> dispatchArmCrossMethodConsistencyTests() {
+            final var tests = new ArrayList<DynamicTest>();
+
+            // forSeek
+            tests.addAll(crossMethodConsistencyChecks(
+                    "forSeek",
+                    new TxStateBuilder()
+                            .withAdded(42L, "foo")
+                            .withAdded(43L, "bar")
+                            .withRemoved(43L, "bar")
+                            .build(),
+                    new PropertyIndexQuery[] {
+                        PropertyIndexQuery.exact(index.schema().getPropertyId(), "foo")
+                    }));
+
+            // forScan (allEntries)
+            tests.addAll(crossMethodConsistencyChecks(
+                    "forScan",
+                    new TxStateBuilder()
+                            .withAdded(42L, "foo")
+                            .withAdded(43L, "bar")
+                            .withRemoved(43L, "bar")
+                            .build(),
+                    new PropertyIndexQuery[] {PropertyIndexQuery.allEntries()}));
+
+            // forRangeSeek
+            tests.addAll(crossMethodConsistencyChecks(
+                    "forRangeSeek",
+                    new TxStateBuilder()
+                            .withAdded(42L, 100)
+                            .withAdded(43L, 200)
+                            .withRemoved(43L, 200)
+                            .build(),
+                    new PropertyIndexQuery[] {
+                        PropertyIndexQuery.range(index.schema().getPropertyId(), intValue(0), true, intValue(500), true)
+                    }));
+
+            // forBoundingBoxSeek
+            tests.addAll(crossMethodConsistencyChecks(
+                    "forBoundingBoxSeek",
+                    new TxStateBuilder()
+                            .withAdded(42L, pointValue(CARTESIAN, 0, 0))
+                            .withAdded(43L, pointValue(CARTESIAN, 250, 250))
+                            .withRemoved(43L, pointValue(CARTESIAN, 250, 250))
+                            .build(),
+                    new PropertyIndexQuery[] {
+                        PropertyIndexQuery.boundingBox(
+                                index.schema().getPropertyId(),
+                                pointValue(CARTESIAN, -500, -500),
+                                pointValue(CARTESIAN, 500, 500))
+                    }));
+
+            // forPrefixSeek
+            tests.addAll(crossMethodConsistencyChecks(
+                    "forPrefixSeek",
+                    new TxStateBuilder()
+                            .withAdded(42L, "Andreas")
+                            .withAdded(43L, "Andrea")
+                            .withRemoved(43L, "Andrea")
+                            .build(),
+                    new PropertyIndexQuery[] {
+                        PropertyIndexQuery.stringPrefix(index.schema().getPropertyId(), stringValue("And"))
+                    }));
+
+            // forSuffixOrContains via STRING_SUFFIX
+            tests.addAll(crossMethodConsistencyChecks(
+                    "forSuffixOrContains/SUFFIX",
+                    new TxStateBuilder()
+                            .withAdded(42L, "Barbarella")
+                            .withAdded(43L, "Cinderella")
+                            .withRemoved(43L, "Cinderella")
+                            .build(),
+                    new PropertyIndexQuery[] {
+                        PropertyIndexQuery.stringSuffix(index.schema().getPropertyId(), stringValue("ella"))
+                    }));
+
+            // forSuffixOrContains via STRING_CONTAINS
+            tests.addAll(crossMethodConsistencyChecks(
+                    "forSuffixOrContains/CONTAINS",
+                    new TxStateBuilder()
+                            .withAdded(42L, "value42")
+                            .withAdded(43L, "value43")
+                            .withRemoved(43L, "value43")
+                            .build(),
+                    new PropertyIndexQuery[] {
+                        PropertyIndexQuery.stringContains(index.schema().getPropertyId(), stringValue("value"))
+                    }));
+
+            // NEAREST_NEIGHBORS short-circuit (both methods return empty)
+            tests.addAll(crossMethodConsistencyChecks(
+                    "NEAREST_NEIGHBORS",
+                    new TxStateBuilder()
+                            .withAdded(42L, "foo")
+                            .withRemoved(42L, "foo")
+                            .build(),
+                    new PropertyIndexQuery[] {PropertyIndexQuery.nearestNeighbors(10, new float[] {1.0f, 2.0f})}));
+
+            return tests;
+        }
+
+        private Collection<DynamicTest> crossMethodConsistencyChecks(
+                String armName, ReadableTransactionState state, PropertyIndexQuery[] queries) {
+            final var checks = new ArrayList<DynamicTest>();
+            checks.add(DynamicTest.dynamicTest("cross-method consistency: arm=" + armName + ", axis=added", () -> {
+                AddedWithValuesAndRemoved withValues =
+                        TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, queries);
+                AddedAndRemoved withoutValues =
+                        TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, queries);
+                long[] withValuesIds = StreamSupport.stream(withValues.added().spliterator(), false)
+                        .mapToLong(EntityWithPropertyValues::getEntityId)
+                        .toArray();
+                assertThat(withoutValues.added().toArray()).containsExactlyInAnyOrder(withValuesIds);
+            }));
+            checks.add(DynamicTest.dynamicTest("cross-method consistency: arm=" + armName + ", axis=removed", () -> {
+                AddedWithValuesAndRemoved withValues =
+                        TxStateIndexChanges.computeForQueryWithValues(state, index, IndexOrder.NONE, queries);
+                AddedAndRemoved withoutValues =
+                        TxStateIndexChanges.computeForQueryWithoutValues(state, index, IndexOrder.NONE, queries);
+                assertThat(withValues.removed()).isEqualTo(withoutValues.removed());
+            }));
+            return checks;
         }
     }
 
