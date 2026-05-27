@@ -66,6 +66,8 @@ case class AlterUserExecutionPlanner(
       failWithError("External auth provider", disallowedAuths: _*)
     } else if (!alterUser.removeAuth.isEmpty) { // Not allowed to remove auth in community
       failWithError("'REMOVE AUTH'", "`REMOVE AUTH`")
+    } else if (alterUser.tags.nonEmpty) { // User tags are not supported in community
+      failWithError("'SET/ADD/REMOVE TAGS'", "'SET TAGS'", "'ADD TAGS'", "'REMOVE TAGS'", "'REMOVE ALL TAGS'")
     } else {
       makeAlterUserExecutionPlan(
         userName = alterUser.userName,

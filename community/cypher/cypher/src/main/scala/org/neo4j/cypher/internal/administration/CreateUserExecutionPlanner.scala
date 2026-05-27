@@ -60,6 +60,8 @@ case class CreateUserExecutionPlanner(
     } else if (createUser.externalAuths.nonEmpty) { // There is no external auth in community
       val disallowedAuths = createUser.externalAuths.map(e => s"`SET AUTH '${e.provider}'`")
       failWithError("External auth provider", disallowedAuths: _*)
+    } else if (createUser.tags.nonEmpty) { // User tags are not supported in community
+      failWithError("'SET TAGS'", "'SET TAGS'")
     } else {
       makeCreateUserExecutionPlan(
         createUser.userName,

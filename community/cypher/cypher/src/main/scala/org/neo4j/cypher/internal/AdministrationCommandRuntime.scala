@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterGenerationFunction
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.QueryHandlerResult
+import org.neo4j.cypher.internal.procs.SystemGraphWriteExecutionPlan
 import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -245,7 +246,8 @@ object AdministrationCommandRuntime {
     defaultDatabase: Option[HomeDatabaseAction],
     nativeAuth: Option[NativeAuth],
     externalAuths: Seq[ExternalAuth],
-    validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue
+    validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue,
+    tagWriter: Option[(Transaction, String, MapValue) => Unit] = None
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
@@ -310,7 +312,7 @@ object AdministrationCommandRuntime {
       .optionallyConvert(homeDatabaseFields.map(_.nameConverter))
       .optionallyConvert(credentialsOption.map(_.mapValueConverter))
       .validate(isHomeDatabasePresent(homeDatabaseFields))
-    UpdatingSystemCommandExecutionPlan(
+    val createUserPlan: ExecutionPlan = UpdatingSystemCommandExecutionPlan(
       "CreateUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
@@ -369,6 +371,14 @@ object AdministrationCommandRuntime {
       ),
       parameterTransformer = parameterTransformer
     )
+    tagWriter.fold(createUserPlan)(fn =>
+      SystemGraphWriteExecutionPlan(
+        "CreateUserSetTags",
+        securityAuthorizationHandler,
+        Some(createUserPlan),
+        (tx, _, params) => fn(tx, runtimeStringValue(userName, params), params)
+      )
+    )
   }
 
   def makeAlterUserExecutionPlan(
@@ -378,7 +388,8 @@ object AdministrationCommandRuntime {
     nativeAuth: Option[NativeAuth],
     externalAuths: Seq[ExternalAuth],
     removeAuths: RemoveAuth,
-    validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue
+    validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue,
+    tagWriter: Option[(Transaction, String, MapValue) => Unit] = None
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
@@ -552,7 +563,7 @@ object AdministrationCommandRuntime {
       .optionallyConvert(homeDatabaseFields.map(_.nameConverter))
       .optionallyConvert(maybePw.map(_.mapValueConverter))
       .validate(isHomeDatabasePresent(homeDatabaseFields))
-    UpdatingSystemCommandExecutionPlan(
+    val alterUserPlan: ExecutionPlan = UpdatingSystemCommandExecutionPlan(
       "AlterUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
@@ -618,6 +629,14 @@ object AdministrationCommandRuntime {
       ),
       parameterTransformer =
         parameterTransformer
+    )
+    tagWriter.fold(alterUserPlan)(fn =>
+      SystemGraphWriteExecutionPlan(
+        "AlterUserSetTags",
+        securityAuthorizationHandler,
+        Some(alterUserPlan),
+        (tx, _, params) => fn(tx, runtimeStringValue(userName, params), params)
+      )
     )
   }
 
@@ -856,7 +875,7 @@ object AdministrationCommandRuntime {
     }
   }
 
-  private[internal] def runtimeStringListValue(field: Expression, params: MapValue): List[String] = field match {
+  def runtimeStringListValue(field: Expression, params: MapValue): List[String] = field match {
     case StringLiteral(s) if s.nonEmpty => List(s)
     case l: ListLiteral
       if l.expressions.forall(e =>

@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterDatabase
 import org.neo4j.cypher.internal.logical.plans.AlterUser
+import org.neo4j.cypher.internal.logical.plans.AlterUsers
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
@@ -336,6 +337,10 @@ case class CommunityAdministrationCommandRuntime(
             NameValidator.assertValidUsername(toName)
           }
         )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
+
+    // ALTER USERS — tag-only command; entirely unsupported in community
+    case _: AlterUsers => _ =>
+        throw CantCompileQueryException.commandUnsupportedInCommunityEdition("ALTER USERS")
 
     // ALTER USER foo [SET [PLAINTEXT | ENCRYPTED] PASSWORD pw] [CHANGE [NOT] REQUIRED]
     case alterUser: AlterUser => context =>

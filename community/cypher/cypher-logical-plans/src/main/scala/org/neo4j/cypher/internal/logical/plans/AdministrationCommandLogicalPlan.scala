@@ -40,10 +40,12 @@ import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.RemoteAliasCredentials
 import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.SetTags
 import org.neo4j.cypher.internal.ast.ShardDefinition
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Topology
+import org.neo4j.cypher.internal.ast.UserTagsAction
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
@@ -107,7 +109,8 @@ case class CreateUser(
   suspended: Option[Boolean],
   defaultDatabase: Option[HomeDatabaseAction],
   externalAuths: Seq[ExternalAuth],
-  nativeAuth: Option[NativeAuth]
+  nativeAuth: Option[NativeAuth],
+  tags: Option[SetTags]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class RenameUser(
@@ -126,7 +129,15 @@ case class AlterUser(
   defaultDatabase: Option[HomeDatabaseAction],
   nativeAuth: Option[NativeAuth],
   externalAuths: Seq[ExternalAuth],
-  removeAuth: RemoveAuth
+  removeAuth: RemoveAuth,
+  tags: Seq[UserTagsAction]
+)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+
+case class AlterUsers(
+  source: SecurityAdministrationLogicalPlan,
+  userNames: Seq[Either[String, Parameter]],
+  ifExists: Boolean,
+  tags: Seq[UserTagsAction]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class SetOwnPassword(

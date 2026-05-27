@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AlterUserAction
+import org.neo4j.cypher.internal.ast.AlterUsers
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CascadeAliases
@@ -440,7 +442,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             userOptions.suspended,
             userOptions.homeDatabase,
             externalAuths,
-            nativeAuth
+            nativeAuth,
+            c.tags
           ),
           prettifier.asString(c)
         ))
@@ -485,7 +488,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           (userOptions.homeDatabase.nonEmpty, SetUserHomeDatabaseAction)
         ).collect { case (true, action) => action }
 
-        if (dbmsActions.isEmpty) throw InternalException.internalError(
+        if (dbmsActions.isEmpty && c.tags.isEmpty) throw InternalException.internalError(
           this.getClass.getSimpleName,
           "Alter user has nothing to do.",
           "Alter user has nothing to do"
@@ -514,8 +517,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             userOptions.homeDatabase,
             nativeAuth,
             externalAuths,
-            removeAuth
+            removeAuth,
+            c.tags
           ),
+          prettifier.asString(c)
+        ))
+
+      // ALTER USERS
+      case c @ AlterUsers(userNames, ifExists, tags) =>
+        val source = plans.AssertAllowedDbmsActions(AlterUserAction)
+        Some(plans.LogSystemCommand(
+          plans.AlterUsers(source, userNames.map(expressionToEitherStringParam), ifExists, tags),
           prettifier.asString(c)
         ))
 

@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.logical.plans.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.AlterServer
 import org.neo4j.cypher.internal.logical.plans.AlterShardedDatabase
 import org.neo4j.cypher.internal.logical.plans.AlterUser
+import org.neo4j.cypher.internal.logical.plans.AlterUsers
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
@@ -405,7 +406,8 @@ class AdminLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
               Password(varFor("password"), isEncrypted = false)(pos),
               PasswordChange(requireChange = false)(pos)
             ))(pos)),
-          externalAuths = Seq.empty
+          externalAuths = Seq.empty,
+          tags = None
         ),
         1.0
       ),
@@ -425,7 +427,21 @@ class AdminLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           defaultDatabase = None,
           nativeAuth = Some(NativeAuth(List(PasswordChange(requireChange = true)(pos)))(pos)),
           Seq.empty,
-          RemoveAuth(all = false, List(stringLiteral("provider")))
+          RemoveAuth(all = false, List(stringLiteral("provider"))),
+          Seq.empty
+        ),
+        1.0
+      ),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(
+        AlterUsers(
+          privLhsLP,
+          Seq(util.Left("alice"), util.Left("bob")),
+          ifExists = false,
+          Seq.empty
         ),
         1.0
       ),
