@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.constraints.SchemaValueType.LIST_LOCAL_DATETIME
 import org.neo4j.internal.schema.constraints.SchemaValueType.LIST_LOCAL_TIME
 import org.neo4j.internal.schema.constraints.SchemaValueType.LIST_POINT
 import org.neo4j.internal.schema.constraints.SchemaValueType.LIST_STRING
+import org.neo4j.internal.schema.constraints.SchemaValueType.LIST_UUID
 import org.neo4j.internal.schema.constraints.SchemaValueType.LIST_ZONED_DATETIME
 import org.neo4j.internal.schema.constraints.SchemaValueType.LIST_ZONED_TIME
 import org.neo4j.internal.schema.constraints.SchemaValueType.LOCAL_DATETIME
@@ -108,6 +109,7 @@ object PropertyTypeMapper {
       org.neo4j.internal.schema.constraints.VectorType.float64Vector(dim.toInt)
     case ListType(_: BooleanType, _)       => LIST_BOOLEAN
     case ListType(_: StringType, _)        => LIST_STRING
+    case ListType(_: UUIDType, _)          => LIST_UUID
     case ListType(_: IntegerType, _)       => LIST_INTEGER
     case ListType(_: FloatType, _)         => LIST_FLOAT
     case ListType(_: DateType, _)          => LIST_DATE
@@ -154,6 +156,8 @@ object PropertyTypeMapper {
         ListType(BooleanType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
       case LIST_STRING =>
         ListType(StringType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
+      case LIST_UUID =>
+        ListType(UUIDType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
       case LIST_INTEGER =>
         ListType(IntegerType(isNullable = false)(InputPosition.NONE), isNullable = true)(InputPosition.NONE)
       case LIST_FLOAT =>
