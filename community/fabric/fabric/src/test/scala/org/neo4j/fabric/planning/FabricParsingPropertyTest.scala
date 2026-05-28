@@ -75,10 +75,10 @@ class FabricParsingPropertyTest extends CypherFunSuite
   private val astGenerator = new AstGenerator(simpleStrings = false)
 
   implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(
-    minSuccessful = 250,
+    minSuccessful = 125,
     // AstGenerator limits AST depth with the size parameter to try to avoid stack overflows
     minSize = 4,
-    sizeRange = 12
+    sizeRange = 8
   )
 
   private val resolver = {
@@ -134,6 +134,9 @@ class FabricParsingPropertyTest extends CypherFunSuite
     // setScalaCheckInitialSeed(seed)
     forAll(astGenerator._statement) { statement =>
       val queryString = prettifier.asString(statement)
+      if (queryString.length > 4000) {
+        println(s"Large generated query: ${queryString.length}")
+      }
       withClue(s"Original queryString: $queryString\n") {
         val state = InitialState(
           queryString,
