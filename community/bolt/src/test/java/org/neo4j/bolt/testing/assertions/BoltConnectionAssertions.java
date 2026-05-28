@@ -23,21 +23,19 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.neo4j.packstream.testing.PackstreamConnectionAssertions.packstreamConnection;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.InstanceOfAssertFactory;
+import org.awaitility.core.ConditionTimeoutException;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.gqlstatus.Condition;
-import org.neo4j.gqlstatus.GqlStatus;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
@@ -267,7 +265,13 @@ public final class BoltConnectionAssertions
                 })));
     }
 
+    /**
+     * TODO: Replace with builder pattern based assertions instead.
+     *
+     * @deprecated To be replaced with a similar construct to {@link FailureMetadataAssertions}.
+     */
     // TODO: enable out-commented parts of this method re-introducing status parameters
+    @Deprecated
     public static Consumer<Map<String, Object>> assertDiagnosticRecord(
             SeverityLevel severityLevel,
             NotificationCategory classification,
@@ -289,6 +293,7 @@ public final class BoltConnectionAssertions
                 .containsEntry("_classification", classification.name());
     }
 
+    @Deprecated(forRemoval = true)
     public static Map<String, Long> diagnosticRecordPosition(long column, long line, long offset) {
         return Map.of("column", column, "line", line, "offset", offset);
     }
@@ -312,11 +317,11 @@ public final class BoltConnectionAssertions
         return this;
     }
 
-    public BoltConnectionAssertions receivesFailure(Consumer<Map<String, Object>> assertions) {
+    private BoltConnectionAssertions receivesFailure(Consumer<Map<String, Object>> assertions) {
         this.asInstanceOf(packstreamConnection())
                 .receivesMessage()
                 .containsStruct(0x7F, 1)
-                .containsMap(assertions)
+                .containsMap(assertions::accept)
                 .asBuffer()
                 .hasNoRemainingReadableBytes();
 
@@ -325,7 +330,7 @@ public final class BoltConnectionAssertions
 
     public BoltConnectionAssertions receivesFailure() {
         return this.receivesFailure(meta -> {
-            // NOOP
+            // NOP
         });
     }
 
@@ -337,315 +342,89 @@ public final class BoltConnectionAssertions
         return this;
     }
 
-    public BoltConnectionAssertions receivesFailureV40(Status... statuses) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta).satisfies(metaMap -> {
-            var code = metaMap.get("code");
-            var serializedList = Arrays.stream(statuses)
-                    .map(status -> status.code().serialize())
-                    .collect(Collectors.toList());
-            Assertions.assertThat(code).isIn(serializedList);
-        }));
+    public BoltConnectionAssertions receivesFailure(FailureMetadataAssertions assertions) {
+        var wire = this.actual.wire();
+
+        this.asInstanceOf(packstreamConnection())
+                .receivesMessage()
+                .containsStruct(0x7F, 1)
+                .containsMap(meta -> assertions.evaluate(wire, meta))
+                .asBuffer()
+                .hasNoRemainingReadableBytes();
+
+        return this;
     }
 
-    public BoltConnectionAssertions receivesFailure(Pair<Status, GqlStatus>... statuses) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta).satisfies(metaMap -> {
-            var code = Pair.of(metaMap.get("neo4j_code"), metaMap.get("gql_status"));
-            var serializedList = Arrays.stream(statuses)
-                    .map(status -> Pair.of(
-                            status.first().code().serialize(), status.other().gqlStatusString()))
-                    .collect(Collectors.toList());
-            Assertions.assertThat(code).isIn(serializedList);
-        }));
-    }
+    public BoltConnectionAssertions receivesFailureEventually(
+            RetryConfiguration retry, FailureMetadataAssertions assertions) {
+        var last = new AtomicReference<AssertionError>();
 
-    public BoltConnectionAssertions receivesFailureV40(Status status, String message) {
+        try {
+            retry.evaluate(() -> {
+                try {
+                    this.receivesFailure(assertions);
+                } catch (AssertionError e) {
+                    if (last.get() == null || !e.getMessage().contains("Expected message with tag")) {
+                        last.set(e);
+                    }
 
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsEntry("code", status.code().serialize())
-                .containsEntry("message", message));
-    }
-
-    public BoltConnectionAssertions receivesFailure(
-            Status status, String message, GqlStatus gqlstatus, String statusDescription) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .containsEntry("message", message)
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .containsEntry("description", statusDescription));
-    }
-
-    public BoltConnectionAssertions receivesFailure(
-            Status status,
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> diagnosticRecordAssertions) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description", "diagnostic_record")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .containsEntry("message", message)
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .containsEntry("description", statusDescription)
-                .hasEntrySatisfying("diagnostic_record", diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .satisfies(diagnosticRecordAssertions)));
-    }
-
-    public BoltConnectionAssertions receivesFailureWithCause(
-            Status status,
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> diagnosticRecordAssertions,
-            Consumer<Map<String, Object>> causeAssertions) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description", "diagnostic_record", "cause")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .containsEntry("message", message)
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .containsEntry("description", statusDescription)
-                .hasEntrySatisfying("diagnostic_record", diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .satisfies(diagnosticRecordAssertions))
-                .hasEntrySatisfying("cause", cause -> Assertions.assertThat(cause)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .satisfies(causeAssertions)));
-    }
-
-    public BoltConnectionAssertions receivesFailureFuzzyWithCause(
-            Status status,
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> diagnosticRecordAssertions,
-            Consumer<Map<String, Object>> causeAssertions) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description", "diagnostic_record", "cause")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(message))
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .containsEntry("description", statusDescription)
-                .hasEntrySatisfying("diagnostic_record", diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .satisfies(diagnosticRecordAssertions))
-                .hasEntrySatisfying("cause", cause -> Assertions.assertThat(cause)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .satisfies(causeAssertions)));
-    }
-
-    public BoltConnectionAssertions receivesFailureWithCause(
-            Status status,
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> causeAssertions) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description", "cause")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .containsEntry("message", message)
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .containsEntry("description", statusDescription)
-                .hasEntrySatisfying("cause", cause -> Assertions.assertThat(cause)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .satisfies(causeAssertions)));
-    }
-
-    public BoltConnectionAssertions receivesFailureFuzzyV40(Status status, String message) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsEntry("code", status.code().serialize())
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(message)));
-    }
-
-    /**
-     * Does fuzzy comparison on the message and status description
-     *
-     * @param status
-     * @param message
-     * @param gqlstatus
-     * @param statusDescription
-     * @return
-     */
-    public BoltConnectionAssertions receivesFailureFuzzy(
-            Status status, String message, GqlStatus gqlstatus, String statusDescription) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(message))
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(statusDescription)));
-    }
-
-    public BoltConnectionAssertions receivesFailureFuzzy(
-            Status status,
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            GqlStatus causeGqlstatus,
-            String causeStatusDescription) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description", "cause", "diagnostic_record")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(message))
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(statusDescription))
-                .hasEntrySatisfying("cause", causeObj -> Assertions.assertThat(causeObj)
-                        .asInstanceOf(InstanceOfAssertFactories.MAP)
-                        .containsEntry("gql_status", causeGqlstatus.gqlStatusString())
-                        .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                                .asInstanceOf(InstanceOfAssertFactories.STRING)
-                                .contains(causeStatusDescription))));
-    }
-
-    /**
-     * Does fuzzy comparison on the message and status description
-     *
-     * @param status
-     * @param message
-     * @param gqlstatus
-     * @param statusDescription
-     * @return
-     */
-    public BoltConnectionAssertions receivesFailureFuzzy(
-            Status status,
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> diagnosticRecordAssertions) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description", "diagnostic_record")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(message))
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(statusDescription))
-                .hasEntrySatisfying("diagnostic_record", diagnosticRecord -> {
-                    Assertions.assertThat(diagnosticRecord)
-                            .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                            .satisfies(diagnosticRecordAssertions);
-                }));
-    }
-
-    public BoltConnectionAssertions receivesFailureFuzzy(
-            Status status,
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> diagnosticRecordAssertions,
-            Consumer<Map<String, Object>> causeAssertions) {
-        return this.receivesFailure(meta -> Assertions.assertThat(meta)
-                .containsOnlyKeys("neo4j_code", "message", "gql_status", "description", "diagnostic_record", "cause")
-                .containsEntry("neo4j_code", status.code().serialize())
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(message))
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(statusDescription))
-                .hasEntrySatisfying("diagnostic_record", diagnosticRecord -> {
-                    Assertions.assertThat(diagnosticRecord)
-                            .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                            .satisfies(diagnosticRecordAssertions);
-                })
-                .hasEntrySatisfying("cause", cause -> Assertions.assertThat(cause)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .satisfies(causeAssertions)));
-    }
-
-    public static Consumer<Map<String, Object>> assertErrorClassificationOnDiagnosticRecord(String classification) {
-        return diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
-                .containsOnlyKeys("_classification")
-                .containsEntry("_classification", classification);
-    }
-
-    public static Consumer<Map<String, Object>> assertErrorClassificationAndPositionOnDiagnosticRecord(
-            String classification, Map<String, Long> position) {
-        return diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
-                .containsOnlyKeys("_classification", "_position")
-                .containsEntry("_classification", classification)
-                .containsEntry("_position", position);
-    }
-
-    public static Consumer<Map<String, Object>> assertErrorCause(
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> diagnosticRecordAssertions) {
-        return cause -> Assertions.assertThat(cause)
-                .containsOnlyKeys("message", "gql_status", "description", "diagnostic_record")
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(message))
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .contains(statusDescription))
-                .hasEntrySatisfying("diagnostic_record", diagnosticRecord -> {
-                    Assertions.assertThat(diagnosticRecord)
-                            .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                            .satisfies(diagnosticRecordAssertions);
-                });
-    }
-
-    public static Consumer<Map<String, Object>> assertErrorCause(
-            String message, GqlStatus gqlstatus, String statusDescription) {
-        return cause -> Assertions.assertThat(cause)
-                .containsOnlyKeys("message", "gql_status", "description")
-                .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .isEqualTo(message))
-                .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                        .asInstanceOf(InstanceOfAssertFactories.STRING)
-                        .isEqualTo(statusDescription));
-    }
-
-    public static Consumer<Map<String, Object>> assertErrorCauseWithInnerCause(
-            String message,
-            GqlStatus gqlstatus,
-            String statusDescription,
-            Consumer<Map<String, Object>> diagnosticRecordAssertions,
-            Consumer<Map<String, Object>> causeAssertions) {
-        return cause -> {
-            if (diagnosticRecordAssertions != null) {
-                Assertions.assertThat(cause)
-                        .containsOnlyKeys("message", "gql_status", "description", "diagnostic_record", "cause")
-                        .hasEntrySatisfying(
-                                "diagnostic_record", diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
-                                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                                        .satisfies(diagnosticRecordAssertions));
-            } else {
-                Assertions.assertThat(cause).containsOnlyKeys("message", "gql_status", "description", "cause");
+                    throw e;
+                }
+            });
+        } catch (ConditionTimeoutException e) {
+            var original = last.get();
+            if (original != null) {
+                original.addSuppressed(e);
+                throw original;
             }
 
-            Assertions.assertThat(cause)
-                    .hasEntrySatisfying("message", msg -> Assertions.assertThat(msg)
-                            .asInstanceOf(InstanceOfAssertFactories.STRING)
-                            .isEqualTo(message))
-                    .containsEntry("gql_status", gqlstatus.gqlStatusString())
-                    .hasEntrySatisfying("description", msg -> Assertions.assertThat(msg)
-                            .asInstanceOf(InstanceOfAssertFactories.STRING)
-                            .isEqualTo(statusDescription))
-                    .hasEntrySatisfying("cause", innerCause -> Assertions.assertThat(innerCause)
-                            .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                            .satisfies(causeAssertions));
-        };
+            throw e;
+        }
+
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public BoltConnectionAssertions receivesFailure(FailureMetadataAssertions... alternatives) {
+        var wire = this.actual.wire();
+
+        var assertions = new Consumer[alternatives.length];
+        for (var i = 0; i < alternatives.length; ++i) {
+            assertions[i] = alternatives[i].wrapWithConsumer(wire);
+        }
+
+        return this.receivesFailure(meta -> {
+            Assertions.assertThat(meta).satisfiesAnyOf(assertions);
+        });
+    }
+
+    private BoltConnectionAssertions receivesFailureEventually(
+            RetryConfiguration retry, FailureMetadataAssertions... alternatives) {
+        var last = new AtomicReference<AssertionError>();
+
+        try {
+            retry.evaluate(() -> {
+                try {
+                    this.receivesFailure(alternatives);
+                } catch (AssertionError e) {
+                    if (last.get() == null || !e.getMessage().contains("Expected message with tag")) {
+                        last.set(e);
+                    }
+
+                    throw e;
+                }
+            });
+        } catch (ConditionTimeoutException e) {
+            var original = last.get();
+            if (original != null) {
+                original.addSuppressed(e);
+                throw original;
+            }
+
+            throw e;
+        }
+
+        return this;
     }
 
     public BoltConnectionAssertions receivesResponse() {

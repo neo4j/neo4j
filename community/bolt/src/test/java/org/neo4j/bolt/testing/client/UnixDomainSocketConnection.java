@@ -24,6 +24,7 @@ import io.netty.channel.unix.DomainSocketAddress;
 import java.net.SocketAddress;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.testing.client.BoltTestConnection.Factory;
+import org.neo4j.bolt.testing.messages.BoltWire;
 
 public final class UnixDomainSocketConnection extends AbstractNettyConnection {
 
@@ -31,8 +32,8 @@ public final class UnixDomainSocketConnection extends AbstractNettyConnection {
 
     private final DomainSocketAddress address;
 
-    public UnixDomainSocketConnection(ConnectorTransport transport, DomainSocketAddress address) {
-        super(transport);
+    public UnixDomainSocketConnection(ConnectorTransport transport, BoltWire wire, DomainSocketAddress address) {
+        super(transport, wire);
 
         if (transport.serverDomainSocketChannelType() == null) {
             throw new IllegalStateException(
@@ -59,14 +60,14 @@ public final class UnixDomainSocketConnection extends AbstractNettyConnection {
     private static class Factory implements BoltTestConnection.Factory {
 
         @Override
-        public BoltTestConnection create(ConnectorTransport transport, SocketAddress address) {
+        public BoltTestConnection create(ConnectorTransport transport, BoltWire wire, SocketAddress address) {
             if (!this.isSupported(transport)) {
                 throw new IllegalArgumentException("Cannot initialize unix domain socket connection using transport "
                         + transport.getName() + ": Unsupported");
             }
 
             if (address instanceof DomainSocketAddress domainSocketAddress) {
-                return new UnixDomainSocketConnection(transport, domainSocketAddress);
+                return new UnixDomainSocketConnection(transport, wire, domainSocketAddress);
             }
 
             throw new IllegalArgumentException("Cannot initialize unix domain socket connection with address of type "

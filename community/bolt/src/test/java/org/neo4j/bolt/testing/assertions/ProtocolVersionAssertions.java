@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.InstanceOfAssertFactory;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 
 public final class ProtocolVersionAssertions extends AbstractAssert<ProtocolVersionAssertions, ProtocolVersion> {
 

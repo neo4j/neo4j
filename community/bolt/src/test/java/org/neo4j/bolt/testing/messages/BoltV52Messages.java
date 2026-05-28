@@ -20,7 +20,7 @@
 package org.neo4j.bolt.testing.messages;
 
 import java.util.Collections;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
 import org.neo4j.boltmessages.notifications.DisabledNotificationsConfig;
 import org.neo4j.boltmessages.request.RequestMessage;

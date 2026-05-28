@@ -22,7 +22,7 @@ package org.neo4j.bolt.protocol.v41;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.encoder.FailureMessageEncoder;

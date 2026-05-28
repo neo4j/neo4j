@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.protocol.common.connection.hint;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 @FunctionalInterface

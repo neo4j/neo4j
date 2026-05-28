@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.protocol.common.connection.hint;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v54.BoltProtocolV54;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;

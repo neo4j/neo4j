@@ -21,7 +21,7 @@ package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
 import java.util.function.UnaryOperator;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v57.BoltProtocolV57;
 import org.neo4j.bolt.testing.messages.factory.TelemetryMessageBuilder;
 
@@ -48,5 +48,10 @@ public class BoltV57Wire extends BoltV56Wire {
     @Override
     public ByteBuf telemetry(UnaryOperator<TelemetryMessageBuilder> fn) {
         return fn.apply(new TelemetryMessageBuilder(this.getProtocolVersion())).build();
+    }
+
+    @Override
+    public boolean hasGQLStatus() {
+        return true;
     }
 }

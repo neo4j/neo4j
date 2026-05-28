@@ -41,10 +41,12 @@ import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -105,8 +107,9 @@ public class LegacyAuthenticationIT {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "wrong")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(
-                        Status.Security.Unauthorized, "The client is unauthorized due to authentication failure.")
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Security.Unauthorized)
+                        .hasLegacyMessage("The client is unauthorized due to authentication failure."))
                 .isEventuallyTerminated();
 
         Assert.assertEventually(
@@ -159,8 +162,9 @@ public class LegacyAuthenticationIT {
             connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
             BoltConnectionAssertions.assertThat(connection)
-                    .receivesFailureV40(
-                            Status.Security.Unauthorized, "The client is unauthorized due to authentication failure.")
+                    .receivesFailure(FailureMetadataAssertions.create()
+                            .hasLegacyStatus(Status.Security.Unauthorized)
+                            .hasLegacyMessage("The client is unauthorized due to authentication failure."))
                     .isEventuallyTerminated();
         }
     }
@@ -170,9 +174,11 @@ public class LegacyAuthenticationIT {
         connection.send(wire.hello(
                 x -> x.withBasicScheme().withBadPrincipal(List.of("neo4j")).withCredentials("neo4j")));
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzyV40(
-                        Status.Security.Unauthorized,
-                        "Unsupported authentication token, the value associated with the key `principal` must be a String but was: ArrayList")
+                .receivesFailure(
+                        FailureMetadataAssertions.create()
+                                .hasLegacyStatus(Status.Security.Unauthorized)
+                                .hasLegacyMessageFuzzy(
+                                        "Unsupported authentication token, the value associated with the key `principal` must be a String but was: ArrayList"))
                 .isEventuallyTerminated();
     }
 
@@ -183,8 +189,9 @@ public class LegacyAuthenticationIT {
                 .withBadKeyPair("this-should-have-been-credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzyV40(
-                        Status.Security.Unauthorized, "Unsupported authentication token, missing key `credentials`")
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Security.Unauthorized)
+                        .hasLegacyMessageFuzzy("Unsupported authentication token, missing key `credentials`"))
                 .isEventuallyTerminated();
     }
 
@@ -194,8 +201,9 @@ public class LegacyAuthenticationIT {
         connection.send(wire.hello(x -> x.withPrincipal("neo4j").withCredentials("neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzyV40(
-                        Status.Security.Unauthorized, "Unsupported authentication token, missing key `scheme`")
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Security.Unauthorized)
+                        .hasLegacyMessageFuzzy("Unsupported authentication token, missing key `scheme`"))
                 .isEventuallyTerminated();
     }
 
@@ -207,9 +215,9 @@ public class LegacyAuthenticationIT {
                 wire.hello(x -> x.withScheme("unknown").withPrincipal("neo4j").withCredentials("neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(
-                        Status.Security.Unauthorized,
-                        "Unsupported authentication token, scheme 'unknown' is not supported.")
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Security.Unauthorized)
+                        .hasLegacyMessageFuzzy("Unsupported authentication token, scheme 'unknown' is not supported."))
                 .isEventuallyTerminated();
     }
 
@@ -221,9 +229,11 @@ public class LegacyAuthenticationIT {
                 connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "WHAT_WAS_THE_PASSWORD_AGAIN")));
 
                 BoltConnectionAssertions.assertThat(connection)
-                        .receivesFailureV40(
-                                Status.Security.AuthenticationRateLimit,
-                                "The client has provided incorrect authentication details too many times in a row.")
+                        .receivesFailure(
+                                FailureMetadataAssertions.create()
+                                        .hasLegacyStatus(Status.Security.AuthenticationRateLimit)
+                                        .hasLegacyMessage(
+                                                "The client has provided incorrect authentication details too many times in a row."))
                         .isEventuallyTerminated();
             }
         });
@@ -253,8 +263,10 @@ public class LegacyAuthenticationIT {
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzyV40(
-                        Status.Statement.ArgumentError, "Old password and new password cannot be the same.")
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Statement.ArgumentError)
+                        .hasLegacyMessageFuzzy("Old password and new password cannot be the same.")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06))
                 .receivesIgnored();
 
         connection
@@ -282,7 +294,9 @@ public class LegacyAuthenticationIT {
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(Status.Statement.ArgumentError, "A password cannot be empty.")
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Statement.ArgumentError)
+                        .hasLegacyMessage("A password cannot be empty."))
                 .receivesIgnored();
 
         connection
@@ -311,17 +325,26 @@ public class LegacyAuthenticationIT {
         // which should fail with one of two possible errors
         try {
             BoltConnectionAssertions.assertThat(connection)
-                    .receivesFailureFuzzyV40(
-                            Status.Security.CredentialsExpired,
-                            "The credentials you provided were valid, but must be changed before you can use this instance.");
-        } catch (AssertionError ignore) {
+                    .receivesFailure(
+                            FailureMetadataAssertions.create()
+                                    .hasLegacyStatus(Status.Security.CredentialsExpired)
+                                    .hasLegacyMessageFuzzy(
+                                            "The credentials you provided were valid, but must be changed before you can use this instance."));
+        } catch (AssertionError e) {
             // Compiled runtime triggers the AuthorizationViolation exception on the PULL_N message, which means the RUN
             // message will
             // give a Success response. This should not matter much since RUN + PULL_N are always sent together.
-            BoltConnectionAssertions.assertThat(connection)
-                    .receivesFailureFuzzyV40(
-                            Status.Security.CredentialsExpired,
-                            "The credentials you provided were valid, but must be changed before you can use this instance.");
+            try {
+                BoltConnectionAssertions.assertThat(connection)
+                        .receivesFailure(
+                                FailureMetadataAssertions.create()
+                                        .hasLegacyStatus(Status.Security.CredentialsExpired)
+                                        .hasLegacyMessageFuzzy(
+                                                "The credentials you provided were valid, but must be changed before you can use this instance."));
+            } catch (AssertionError e2) {
+                // throw original failure since this one will likely be an IGNORED message
+                throw e;
+            }
         }
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
 import java.util.function.UnaryOperator;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v56.BoltProtocolV56;
 import org.neo4j.bolt.testing.messages.factory.TelemetryMessageBuilder;
 

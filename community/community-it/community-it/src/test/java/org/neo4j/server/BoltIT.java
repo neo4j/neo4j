@@ -43,6 +43,7 @@ import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.UnixDomainSocketConnection;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
@@ -132,9 +133,10 @@ class BoltIT extends ExclusiveWebContainerTestBase {
             BoltTestConnection connection = null;
             try {
                 if (addr instanceof InetSocketAddress socketAddress) {
-                    connection = new SocketConnection(new NioConnectorTransport(), socketAddress);
+                    connection = new SocketConnection(new NioConnectorTransport(), BoltWire.latest(), socketAddress);
                 } else if (addr instanceof DomainSocketAddress domainSocketAddress) {
-                    connection = new UnixDomainSocketConnection(new NioConnectorTransport(), domainSocketAddress);
+                    connection = new UnixDomainSocketConnection(
+                            new NioConnectorTransport(), BoltWire.latest(), domainSocketAddress);
                 } else {
                     throw new AssertionError("Encountered connector with unsupported socket address type: "
                             + addr.getClass() + " (" + addr + ")");
@@ -170,7 +172,8 @@ class BoltIT extends ExclusiveWebContainerTestBase {
     }
 
     private static void assertEventuallyServerResponds(String host, int port) throws Exception {
-        try (var connection = new SocketConnection(new NioConnectorTransport(), new InetSocketAddress(host, port))) {
+        try (var connection = new SocketConnection(
+                new NioConnectorTransport(), BoltWire.latest(), new InetSocketAddress(host, port))) {
             connection.connect().sendDefaultProtocolVersion();
 
             assertThat(connection).negotiatesDefaultVersion();

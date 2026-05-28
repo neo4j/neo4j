@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.protocol.io.writer.StructWriterV40;
@@ -45,6 +45,11 @@ public class BoltV40Wire extends AbstractBoltWire {
 
     @Override
     public boolean supportsLogonMessage() {
+        return false;
+    }
+
+    @Override
+    public boolean hasGQLStatus() {
         return false;
     }
 

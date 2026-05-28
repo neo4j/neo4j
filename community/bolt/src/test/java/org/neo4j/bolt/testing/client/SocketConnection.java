@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorOption;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
+import org.neo4j.bolt.testing.messages.BoltWire;
 
 public sealed class SocketConnection extends AbstractNettyConnection
         permits SecureSocketConnection, WebSocketConnection {
@@ -36,8 +37,8 @@ public sealed class SocketConnection extends AbstractNettyConnection
         return factory;
     }
 
-    public SocketConnection(ConnectorTransport transport, InetSocketAddress address) {
-        super(transport);
+    public SocketConnection(ConnectorTransport transport, BoltWire wire, InetSocketAddress address) {
+        super(transport, wire);
         this.address = address;
     }
 
@@ -63,9 +64,9 @@ public sealed class SocketConnection extends AbstractNettyConnection
     private static class Factory implements BoltTestConnection.Factory {
 
         @Override
-        public SocketConnection create(ConnectorTransport transport, SocketAddress address) {
+        public SocketConnection create(ConnectorTransport transport, BoltWire wire, SocketAddress address) {
             if (address instanceof InetSocketAddress inetSocketAddress) {
-                return new SocketConnection(transport, inetSocketAddress);
+                return new SocketConnection(transport, wire, inetSocketAddress);
             }
 
             throw new IllegalArgumentException("Cannot initialize socket connection with address of type "

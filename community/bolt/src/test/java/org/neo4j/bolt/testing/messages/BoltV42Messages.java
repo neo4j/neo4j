@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
 
 /**

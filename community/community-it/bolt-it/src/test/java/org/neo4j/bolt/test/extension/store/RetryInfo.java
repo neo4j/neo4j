@@ -21,7 +21,7 @@ package org.neo4j.bolt.test.extension.store;
 
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.neo4j.bolt.test.extension.BoltTestSupportExtension.TestTemplateIterator;
 
 /**
  * Encapsulates the number of performed retries as well as the maximum permitted number of retries
@@ -32,8 +32,6 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
  */
 public record RetryInfo(int count, int max) {
 
-    private static final Namespace NAMESPACE = Namespace.create(RetryInfo.class);
-
     /**
      * Retrieves the retry information published for a given test case context or publishes a new
      * empty retry information object to the context.
@@ -43,10 +41,13 @@ public record RetryInfo(int count, int max) {
      * @return a retry information object.
      */
     public static RetryInfo getOrCreate(ExtensionContext context, Supplier<RetryInfo> supplier) {
-        var method = context.getRequiredTestMethod();
-        var store = context.getStore(NAMESPACE);
+        var it = TestTemplateIterator.getIterator(context);
+        var retry = it.currentRetry();
+        if (retry != null) {
+            return retry;
+        }
 
-        return (RetryInfo) store.getOrComputeIfAbsent(method, key -> supplier.get());
+        return supplier.get();
     }
 
     /**
@@ -55,10 +56,8 @@ public record RetryInfo(int count, int max) {
      * @param context a target test context.
      */
     public void publish(ExtensionContext context) {
-        var method = context.getRequiredTestMethod();
-        var store = context.getStore(NAMESPACE);
-
-        store.put(method, this);
+        var it = TestTemplateIterator.getIterator(context);
+        it.markForRetry(this);
     }
 
     /**

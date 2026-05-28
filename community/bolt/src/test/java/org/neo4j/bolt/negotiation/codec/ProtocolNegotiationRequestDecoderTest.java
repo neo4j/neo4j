@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.ByteBufAssertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationRequest;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
 import org.neo4j.bolt.testing.channel.StrictBufferContext;
 

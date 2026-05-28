@@ -32,15 +32,19 @@ import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
+import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
+import org.neo4j.bolt.testing.assertions.GqlMessageParameters;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.api.exceptions.Status.Request;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
@@ -67,12 +71,14 @@ public class UnixDomainSocketIT {
         connection.send(wire.hello(msg -> msg.withoutAuth().withRoutingContext(new RoutingContext(true, Map.of()))));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzy(
-                        Request.Invalid,
-                        "Routing is not supported on this connector",
-                        GqlStatusInfoCodes.STATUS_51N78.getGqlStatus(),
-                        "Routing is not permitted via this connector. Switch the connection URI scheme to bolt:// or connect to a connector with routing support.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Routing is not supported on this connector")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_51N78)
+                        .hasDescriptionFuzzy(
+                                "Routing is not permitted via this connector. Switch the connection URI scheme to bolt:// or connect to a connector with routing support.")
+                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                .hasClassification(ErrorClassification.CLIENT_ERROR)));
     }
 
     @ProtocolTest // v4.0 did not support routing contexts
@@ -81,7 +87,11 @@ public class UnixDomainSocketIT {
         connection.send(wire.hello(msg -> msg.withoutAuth().withRoutingContext(new RoutingContext(true, Map.of()))));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzyV40(Request.Invalid, "Routing is not supported on this connector");
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Routing is not supported on this connector")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_51N78)
+                        .hasDescription("Routing is not supported on this connector"));
     }
 
     /**
@@ -95,8 +105,12 @@ public class UnixDomainSocketIT {
         connection.send(wire.run("RETURN 1", msg -> msg.withDatabase("neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzyV40(
-                        Request.Invalid, "Only system database access is permitted via UNIX domain sockets");
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage(
+                                "Cannot access database \"neo4j\": Only system database access is permitted via UNIX domain sockets")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_51N79)
+                        .hasDescription("Only system database access is permitted"));
     }
 
     @ProtocolTest
@@ -106,12 +120,17 @@ public class UnixDomainSocketIT {
         connection.send(wire.run("RETURN 1", msg -> msg.withDatabase("neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzy(
-                        Request.Invalid,
-                        "Cannot access database \"neo4j\": Only system database access is permitted via UNIX domain sockets",
-                        GqlStatusInfoCodes.STATUS_51N79.getGqlStatus(),
-                        "Access to database `$db` is not permitted via this connector.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage(
+                                "Cannot access database \"neo4j\": Only system database access is permitted via UNIX domain sockets")
+                        .hasStatus(
+                                GqlStatusInfoCodes.STATUS_51N79,
+                                GqlMessageParameters.create().withString("neo4j"))
+                        .hasDescription(
+                                "error: system configuration or operation exception - database unavailable. Access to database `$db` is not permitted via this connector.")
+                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                .hasClassification(ErrorClassification.CLIENT_ERROR)));
     }
 
     /**
@@ -125,7 +144,11 @@ public class UnixDomainSocketIT {
         connection.send(wire.begin(msg -> msg.withDatabase("neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureFuzzyV40(
-                        Request.Invalid, "Only system database access is permitted via UNIX domain sockets");
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage(
+                                "Cannot access database \"neo4j\": Only system database access is permitted via UNIX domain sockets")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_51N79)
+                        .hasDescription("Only system database access is permitted"));
     }
 }

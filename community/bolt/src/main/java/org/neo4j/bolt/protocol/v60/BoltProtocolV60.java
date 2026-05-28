@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.protocol.v60;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 
 public final class BoltProtocolV60 extends AbstractBoltProtocol {

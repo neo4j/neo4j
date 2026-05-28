@@ -29,6 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 
 class ProtocolVersionTest {
 

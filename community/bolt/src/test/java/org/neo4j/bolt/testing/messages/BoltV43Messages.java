@@ -22,7 +22,7 @@ package org.neo4j.bolt.testing.messages;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.boltmessages.AccessMode;
 import org.neo4j.boltmessages.request.RequestMessage;

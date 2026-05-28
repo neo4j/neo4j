@@ -21,11 +21,11 @@ package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
 import java.util.function.UnaryOperator;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v58.BoltProtocolV58;
 import org.neo4j.bolt.testing.messages.factory.TelemetryMessageBuilder;
 
-public class BoltV58Wire extends BoltV56Wire {
+public class BoltV58Wire extends BoltV57Wire {
 
     protected BoltV58Wire(ProtocolVersion version) {
         super(version);

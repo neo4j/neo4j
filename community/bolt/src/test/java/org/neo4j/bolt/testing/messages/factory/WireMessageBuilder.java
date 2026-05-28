@@ -21,7 +21,7 @@
 package org.neo4j.bolt.testing.messages.factory;
 
 import io.netty.buffer.ByteBuf;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 
 public interface WireMessageBuilder<T extends WireMessageBuilder<T>> extends MessageComponentBuilder<T> {
     ProtocolVersion getProtocolVersion();

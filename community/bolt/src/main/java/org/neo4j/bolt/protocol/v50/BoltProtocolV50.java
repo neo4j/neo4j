@@ -20,7 +20,7 @@
 package org.neo4j.bolt.protocol.v50;
 
 import org.neo4j.bolt.fsm.StateMachineConfiguration.Factory;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.States;

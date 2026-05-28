@@ -23,13 +23,14 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
@@ -62,11 +63,30 @@ public interface BoltWire {
                 new BoltV60Wire());
     }
 
+    static BoltWire latest() {
+        return versions()
+                .max(Comparator.comparing(BoltWire::getProtocolVersion))
+                .orElseThrow();
+    }
+
     /**
      * Will be true if it uses the newer authentication method when auth is sent in a logon message not the hello message
      * @return whether the new auth is being used
      */
     default boolean supportsLogonMessage() {
+        return true;
+    }
+
+    /**
+     * Indicates whether GQL status objects can be transmitted by this wire implementation.
+     *
+     * @return true if GQL status is available, false otherwise.
+     */
+    default boolean hasGQLStatus() {
+        return true;
+    }
+
+    default boolean hasLegacyFailureMessages() {
         return true;
     }
 

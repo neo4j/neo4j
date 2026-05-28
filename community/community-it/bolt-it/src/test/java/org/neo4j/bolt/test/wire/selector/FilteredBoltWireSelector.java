@@ -22,7 +22,7 @@ package org.neo4j.bolt.test.wire.selector;
 import java.util.Collections;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.testing.annotation.Version;

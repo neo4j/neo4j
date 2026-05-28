@@ -53,7 +53,7 @@ import java.util.function.Predicate;
 import org.neo4j.bolt.discovery.DiscoveryConnector;
 import org.neo4j.bolt.discovery.config.DiscoveryConfiguration;
 import org.neo4j.bolt.discovery.info.InstanceDiscoveryInformationProvider;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionMetricsMonitor;

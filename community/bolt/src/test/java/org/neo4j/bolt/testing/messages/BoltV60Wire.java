@@ -19,9 +19,11 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v60.BoltProtocolV60;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
 
+// FIXME: Should not inherit from 5.x
 public class BoltV60Wire extends BoltV58Wire {
 
     protected BoltV60Wire(ProtocolVersion version) {
@@ -40,5 +42,12 @@ public class BoltV60Wire extends BoltV58Wire {
     @Override
     public String getUserAgent() {
         return "BoltWire/6.0";
+    }
+
+    @Override
+    public boolean hasLegacyFailureMessages() {
+        // GQL messages as default are currently feature flagged - the exact version this is
+        // released on is still subject to change
+        return !ErrorMessageHolder.USE_NEW_ERROR_MESSAGES;
     }
 }

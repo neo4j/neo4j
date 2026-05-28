@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.negotiation;
+package org.neo4j.bolt.negotiation.version;
 
 import java.util.List;
 import java.util.Objects;

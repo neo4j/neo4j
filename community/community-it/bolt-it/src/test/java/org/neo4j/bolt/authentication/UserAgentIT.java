@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.authentication;
 
-import static org.neo4j.bolt.testing.util.ErrorUtil.useNewMessage;
-
 import java.util.Map;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -29,10 +27,15 @@ import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
+import org.neo4j.bolt.testing.assertions.FailureCauseAssertions;
+import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
+import org.neo4j.bolt.testing.assertions.GqlMessageParameters;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.AbstractBoltWire;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -47,21 +50,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 public class UserAgentIT {
 
     @ProtocolTest
-    @IncludeWire(until = @Version(major = 5, minor = 6))
-    void shouldFailWhenUserAgentIsOmittedV40(@VersionSelected BoltTestConnection connection) {
-        connection.send(PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, AbstractBoltWire.MESSAGE_TAG_HELLO))
-                .writeMap(Map.of("scheme", "none"))
-                .raw());
-
-        BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(
-                        Status.Request.Invalid,
-                        "Illegal value for field \"user_agent\": Expected value to be non-null");
-    }
-
-    @ProtocolTest
-    @IncludeWire(since = @Version(major = 5, minor = 7), until = @Version(major = 5, minor = 8))
+    @IncludeWire(until = @Version(major = 5, minor = 8))
     void shouldFailWhenUserAgentIsOmittedV5x7(@VersionSelected BoltTestConnection connection) {
         connection.send(PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(1, AbstractBoltWire.MESSAGE_TAG_HELLO))
@@ -69,23 +58,28 @@ public class UserAgentIT {
                 .raw());
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        "Illegal value for field \"user_agent\": Expected value to be non-null",
-                        GqlStatusInfoCodes.STATUS_08N06.getGqlStatus(),
-                        "error: connection exception - protocol error. General network protocol error.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCauseWithInnerCause(
-                                "22N05: Invalid input 'null' for field 'user_agent'.",
-                                GqlStatusInfoCodes.STATUS_22N05.getGqlStatus(),
-                                "error: data exception - input failed validation. Invalid input 'null' for field 'user_agent'.",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                                BoltConnectionAssertions.assertErrorCause(
-                                        "22004",
-                                        GqlStatusInfoCodes.STATUS_22004.getGqlStatus(),
-                                        "error: data exception - null value not allowed",
-                                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord(
-                                                "CLIENT_ERROR"))));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Illegal value for field \"user_agent\": Expected value to be non-null")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(
+                                        GqlStatusInfoCodes.STATUS_22N05,
+                                        GqlMessageParameters.create()
+                                                .withString("null")
+                                                .withString("field 'user_agent'"))
+                                .hasDescription(
+                                        "error: data exception - input failed validation. Invalid input 'null' for field 'user_agent'.")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(GqlStatusInfoCodes.STATUS_22004)
+                                        .hasDescription("error: data exception - null value not allowed")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
 
     @ProtocolTest
@@ -97,59 +91,59 @@ public class UserAgentIT {
                 .raw());
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        useNewMessage("08N06: General network protocol error.")
-                                .whenLegacyFallbackTo(
-                                        "Illegal value for field \"user_agent\": Expected value to be non-null"),
-                        GqlStatusInfoCodes.STATUS_08N06.getGqlStatus(),
-                        "error: connection exception - protocol error. General network protocol error.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCauseWithInnerCause(
-                                "22N05: Invalid input 'null' for field 'user_agent'.",
-                                GqlStatusInfoCodes.STATUS_22N05.getGqlStatus(),
-                                "error: data exception - input failed validation. Invalid input 'null' for field 'user_agent'.",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                                BoltConnectionAssertions.assertErrorCause(
-                                        "22004",
-                                        GqlStatusInfoCodes.STATUS_22004.getGqlStatus(),
-                                        "error: data exception - null value not allowed",
-                                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord(
-                                                "CLIENT_ERROR"))));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Illegal value for field \"user_agent\": Expected value to be non-null")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(
+                                        GqlStatusInfoCodes.STATUS_22N05,
+                                        GqlMessageParameters.create()
+                                                .withString("null")
+                                                .withString("field 'user_agent'"))
+                                .hasDescription(
+                                        "error: data exception - input failed validation. Invalid input 'null' for field 'user_agent'.")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(GqlStatusInfoCodes.STATUS_22004)
+                                        .hasDescription("error: data exception - null value not allowed")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
 
     @ProtocolTest
-    @IncludeWire(until = @Version(major = 5, minor = 6))
-    void shouldFailWhenInvalidUserAgentIsGivenV40(BoltWire wire, @VersionSelected BoltTestConnection connection) {
-        connection.send(wire.hello(x -> x.withScheme("none").withUserAgent(42L)));
-
-        BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(Status.Request.Invalid, "Illegal value for field \"user_agent\": Expected string");
-    }
-
-    @ProtocolTest
-    @IncludeWire(since = @Version(major = 5, minor = 7), until = @Version(major = 5, minor = 8))
+    @IncludeWire(until = @Version(major = 5, minor = 8))
     void shouldFailWhenInvalidUserAgentIsGivenV5x7(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello(x -> x.withScheme("none").withUserAgent(42L)));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        "Illegal value for field \"user_agent\": Expected string",
-                        GqlStatusInfoCodes.STATUS_08N06.getGqlStatus(),
-                        "error: connection exception - protocol error. General network protocol error.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCauseWithInnerCause(
-                                "22G03",
-                                GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
-                                "error: data exception - invalid value type",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                                BoltConnectionAssertions.assertErrorCause(
-                                        "22N01: Expected the value 42 to be of type STRING, but was of type Long.",
-                                        GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
-                                        "error: data exception - invalid type. Expected the value 42 to be of type STRING, but was of type Long.",
-                                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord(
-                                                "CLIENT_ERROR"))));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Illegal value for field \"user_agent\": Expected string")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasDescription("error: data exception - invalid value type")
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N01,
+                                                GqlMessageParameters.create()
+                                                        .withInt(42)
+                                                        .withList("STRING")
+                                                        .withString("Long"))
+                                        .hasDescription(
+                                                "error: data exception - invalid type. Expected the value 42 to be of type STRING, but was of type Long.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
 
     @ProtocolTest
@@ -158,23 +152,28 @@ public class UserAgentIT {
         connection.send(wire.hello(x -> x.withScheme("none").withUserAgent(42L)));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        useNewMessage("08N06: General network protocol error.")
-                                .whenLegacyFallbackTo("Illegal value for field \"user_agent\": Expected string"),
-                        GqlStatusInfoCodes.STATUS_08N06.getGqlStatus(),
-                        "error: connection exception - protocol error. General network protocol error.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCauseWithInnerCause(
-                                "22G03",
-                                GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
-                                "error: data exception - invalid value type",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                                BoltConnectionAssertions.assertErrorCause(
-                                        "22N01: Expected the value 42 to be of type STRING, but was of type Long.",
-                                        GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
-                                        "error: data exception - invalid type. Expected the value 42 to be of type STRING, but was of type Long.",
-                                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord(
-                                                "CLIENT_ERROR"))));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Illegal value for field \"user_agent\": Expected string")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasDescription("error: data exception - invalid value type")
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N01,
+                                                GqlMessageParameters.create()
+                                                        .withInt(42)
+                                                        .withList("STRING")
+                                                        .withString("Long"))
+                                        .hasDescription(
+                                                "error: data exception - invalid type. Expected the value 42 to be of type STRING, but was of type Long.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
 }

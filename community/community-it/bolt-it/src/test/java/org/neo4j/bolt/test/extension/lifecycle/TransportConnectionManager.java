@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
+import org.neo4j.bolt.testing.messages.BoltWire;
 
 public class TransportConnectionManager implements AfterEachCallback {
 
@@ -54,8 +55,8 @@ public class TransportConnectionManager implements AfterEachCallback {
     }
 
     public BoltTestConnection acquire(
-            ConnectorTransport transport, SocketAddress address, TransportType transportType) {
-        var connection = transportType.getFactory().create(transport, address);
+            ConnectorTransport transport, BoltWire wire, SocketAddress address, TransportType transportType) {
+        var connection = transportType.getFactory().create(transport, wire, address);
         this.lock.lock();
         try {
             this.activeConnections.add(connection);

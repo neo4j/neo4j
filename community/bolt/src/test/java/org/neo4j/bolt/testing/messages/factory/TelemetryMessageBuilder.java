@@ -23,7 +23,7 @@ package org.neo4j.bolt.testing.messages.factory;
 import io.netty.buffer.ByteBuf;
 import java.util.Collections;
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 

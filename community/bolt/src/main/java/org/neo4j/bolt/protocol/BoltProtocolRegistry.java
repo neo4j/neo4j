@@ -21,7 +21,7 @@ package org.neo4j.bolt.protocol;
 
 import java.util.List;
 import java.util.Optional;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 
 /**

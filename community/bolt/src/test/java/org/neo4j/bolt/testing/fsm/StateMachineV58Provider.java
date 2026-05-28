@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.testing.fsm;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.v58.BoltProtocolV58;
 import org.neo4j.bolt.testing.messages.BoltMessages;

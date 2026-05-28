@@ -21,7 +21,6 @@ package org.neo4j.bolt.test.wire.selector;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.neo4j.bolt.testing.messages.BoltDefaultWire;
 import org.neo4j.bolt.testing.messages.BoltWire;
 
 /**
@@ -31,6 +30,6 @@ public class DefaultBoltWireSelector implements BoltWireSelector {
 
     @Override
     public Stream<BoltWire> select(ExtensionContext context) {
-        return Stream.of(new BoltDefaultWire());
+        return Stream.of(BoltWire.latest());
     }
 }

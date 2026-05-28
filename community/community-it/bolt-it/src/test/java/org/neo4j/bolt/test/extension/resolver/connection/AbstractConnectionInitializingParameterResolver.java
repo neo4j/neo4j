@@ -66,7 +66,7 @@ public abstract class AbstractConnectionInitializingParameterResolver implements
 
         var address = resolver.resolve(extensionContext, context, server, transportType);
 
-        var connection = this.connectionManager.acquire(this.transport, address, transportType);
+        var connection = this.connectionManager.acquire(this.transport, this.wire, address, transportType);
 
         try {
             for (var initializer : initializers) {

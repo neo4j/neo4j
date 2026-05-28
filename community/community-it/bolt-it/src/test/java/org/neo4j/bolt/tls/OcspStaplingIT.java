@@ -65,6 +65,7 @@ import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.testing.client.CertConfiguredSecureSocketConnection;
 import org.neo4j.bolt.testing.client.TransportType;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
@@ -160,7 +161,7 @@ class OcspStaplingIT {
         var inetSocketAddress = (InetSocketAddress) address;
 
         try (var connection = new CertConfiguredSecureSocketConnection(
-                new NioConnectorTransport(), inetSocketAddress, this.certificate)) {
+                new NioConnectorTransport(), BoltWire.latest(), inetSocketAddress, this.certificate)) {
             connection.connect().sendDefaultProtocolVersion();
 
             var certificatesSeen = connection.getServerCertificatesSeen();

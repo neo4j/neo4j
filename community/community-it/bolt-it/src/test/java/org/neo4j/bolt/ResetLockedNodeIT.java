@@ -27,10 +27,15 @@ import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
+import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
+import org.neo4j.bolt.testing.assertions.GqlMessageParameters;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.kernel.api.exceptions.Status.Transaction;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.values.virtual.MapValueBuilder;
 
@@ -79,7 +84,19 @@ public class ResetLockedNodeIT {
 
         // Then that connection receives an error
         assertThat(connectionB)
-                .receivesFailureV40(Status.Transaction.LockClientStopped)
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Transaction.LockClientStopped)
+                        .hasLegacyMessageFuzzy(
+                                "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The transaction has been terminated, so no more locks can be acquired. This can occur because the transaction ran longer than the configured transaction timeout, or because a human operator manually terminated the transaction, or because the database is shutting down.")
+                        .hasStatus(
+                                GqlStatusInfoCodes.STATUS_25N14,
+                                GqlMessageParameters.create()
+                                        .withString(
+                                                "The transaction has been terminated, so no more locks can be acquired. This can occur because the transaction ran longer than the configured transaction timeout, or because a human operator manually terminated the transaction, or because the database is shutting down. ForsetiClient[transactionId=6, clientId=2]"))
+                        .hasDescriptionFuzzy(
+                                "error: invalid transaction state - transaction termination client error. The transaction has been terminated. Retry your operation in a new transaction,")
+                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                .hasClassification(ErrorClassification.CLIENT_ERROR)))
                 .receivesIgnored()
                 .receivesSuccess();
 

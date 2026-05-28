@@ -41,6 +41,11 @@ public final class BoltV44Wire extends AbstractBoltWire {
     }
 
     @Override
+    public boolean hasGQLStatus() {
+        return false;
+    }
+
+    @Override
     protected void configurePipeline() {
         this.pipeline.addLast(DefaultStructWriter.getInstance());
         this.pipeline.addFirst(StructWriterV40.getInstance());

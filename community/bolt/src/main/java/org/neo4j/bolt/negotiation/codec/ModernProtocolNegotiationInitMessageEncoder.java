@@ -23,10 +23,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.ReferenceCountUtil;
-import org.neo4j.bolt.negotiation.ProtocolVersionReducer;
 import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationInitMessage;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
 import org.neo4j.bolt.negotiation.util.NegotiationEncodingUtil;
+import org.neo4j.bolt.negotiation.version.ProtocolVersionReducer;
 import org.neo4j.memory.HeapEstimator;
 
 public final class ModernProtocolNegotiationInitMessageEncoder

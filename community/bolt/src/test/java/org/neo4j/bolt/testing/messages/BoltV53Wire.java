@@ -20,7 +20,7 @@
 package org.neo4j.bolt.testing.messages;
 
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 
 public class BoltV53Wire extends BoltV52Wire {

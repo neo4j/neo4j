@@ -31,4 +31,9 @@ public final class BoltV43Wire extends BoltV40Wire {
     public String getUserAgent() {
         return "BoltWire/V43";
     }
+
+    @Override
+    public boolean hasGQLStatus() {
+        return false;
+    }
 }

@@ -17,20 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.negotiation.version.expression;
 
-import org.neo4j.bolt.testing.client.BoltTestConnection;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 
-/**
- * Provides aliases for the currently selected default wire protocol.
- * <p>
- * The references within this type should be updated along with {@link BoltTestConnection#DEFAULT_PROTOCOL_VERSION} in order to transmit the correct message
- * variations.
- */
-public final class BoltDefaultWire extends BoltV50Wire {
+public final class NotExpression implements ProtocolVersionExpression {
+    private final ProtocolVersionExpression expression;
+
+    public NotExpression(ProtocolVersionExpression expression) {
+        this.expression = expression;
+    }
 
     @Override
-    public String getUserAgent() {
-        return "BoltDefaultWire/0.0";
+    public boolean matches(ProtocolVersion version) {
+        return !this.expression.matches(version);
     }
 }

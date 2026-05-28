@@ -22,7 +22,7 @@ package org.neo4j.bolt.testing.messages;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.testing.error.UnsupportedProtocolFeatureException;

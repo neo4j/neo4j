@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt;
 
-import static org.neo4j.bolt.test.util.ErrorUtil.useNewMessage;
-
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Connected;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
@@ -29,10 +27,15 @@ import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
+import org.neo4j.bolt.testing.assertions.FailureCauseAssertions;
+import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
+import org.neo4j.bolt.testing.assertions.GqlMessageParameters;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.boltmessages.request.transaction.RunMessage;
+import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -63,61 +66,6 @@ public class MalformedMessageIT {
     }
 
     @ProtocolTest
-    @IncludeWire(until = @Version(major = 5, minor = 6))
-    void shouldHandleMessagesWithIncorrectFieldsV40(@VersionSelected BoltTestConnection connection) {
-        // Given I send a message with the wrong types in its fields
-        var msg = PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, RunMessage.SIGNATURE))
-                .writeString("RETURN 1")
-                .writeMapHeader(0)
-                .writeInt(42);
-
-        // When
-        connection.send(msg);
-
-        // Then
-        BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(
-                        Status.Request.Invalid,
-                        "Illegal value for field \"metadata\": Unexpected type: Expected MAP but got INT");
-    }
-
-    @ProtocolTest
-    @IncludeWire(since = @Version(major = 5, minor = 7), until = @Version(major = 5, minor = 8))
-    void shouldHandleMessagesWithIncorrectFieldsV5x7(@VersionSelected BoltTestConnection connection) {
-        // Given I send a message with the wrong types in its fields
-        var msg = PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, RunMessage.SIGNATURE))
-                .writeString("RETURN 1")
-                .writeMapHeader(0)
-                .writeInt(42);
-
-        // When
-        connection.send(msg);
-
-        // Then
-        BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        "Illegal value for field \"metadata\": Unexpected type: Expected MAP but got INT",
-                        GqlStatusInfoCodes.STATUS_08N06.getGqlStatus(),
-                        "error: connection exception - protocol error. General network protocol error.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCauseWithInnerCause(
-                                "22G03",
-                                GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
-                                "error: data exception - invalid value type",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                                BoltConnectionAssertions.assertErrorCause(
-                                        "22N01: Expected the value 0 to be of type MAP, but was of type INT.",
-                                        GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
-                                        "error: data exception - invalid type. Expected the value 0 to be of type MAP, but was of type INT.",
-                                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord(
-                                                "CLIENT_ERROR"))));
-    }
-
-    @ProtocolTest
-    @IncludeWire(since = @Version(major = 6, minor = 0))
     void shouldHandleMessagesWithIncorrectFields(@VersionSelected BoltTestConnection connection) {
         // Given I send a message with the wrong types in its fields
         var msg = PackstreamBuf.allocUnpooled()
@@ -131,25 +79,30 @@ public class MalformedMessageIT {
 
         // Then
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        useNewMessage("08N06: General network protocol error.")
-                                .whenLegacyFallbackTo(
-                                        "Illegal value for field \"metadata\": Unexpected type: Expected MAP but got INT"),
-                        GqlStatusInfoCodes.STATUS_08N06.getGqlStatus(),
-                        "error: connection exception - protocol error. General network protocol error.",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCauseWithInnerCause(
-                                "22G03",
-                                GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
-                                "error: data exception - invalid value type",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                                BoltConnectionAssertions.assertErrorCause(
-                                        "22N01: Expected the value 0 to be of type MAP, but was of type INT.",
-                                        GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
-                                        "error: data exception - invalid type. Expected the value 0 to be of type MAP, but was of type INT.",
-                                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord(
-                                                "CLIENT_ERROR"))));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage(
+                                "Illegal value for field \"metadata\": Unexpected type: Expected MAP but got INT")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasDescription("error: data exception - invalid value type")
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N01,
+                                                GqlMessageParameters.create()
+                                                        .withInt(0)
+                                                        .withString("MAP")
+                                                        .withString("INT"))
+                                        .hasDescription(
+                                                "error: data exception - invalid type. Expected the value 0 to be of type MAP, but was of type INT.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
 
     @ProtocolTest
@@ -167,11 +120,33 @@ public class MalformedMessageIT {
 
         // Then
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureV40(Status.Request.Invalid, "Unexpected type: RESERVED");
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Unexpected type: RESERVED")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_08N06)
+                        .hasDescription("error: connection exception - protocol error. General network protocol error.")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))
+                                .hasDescription("error: data exception - invalid value type")
+                                .hasCause(FailureCauseAssertions.create()
+                                        .hasStatus(
+                                                GqlStatusInfoCodes.STATUS_22N01,
+                                                GqlMessageParameters.create()
+                                                        .withString("0")
+                                                        .withList("MAP")
+                                                        .withString("INT"))
+                                        .hasDescription(
+                                                "error: data exception - invalid type. Expected the value 0 to be of type MAP, but was of type INT.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.CLIENT_ERROR)))));
     }
 
     @ProtocolTest
-    @IncludeWire(since = @Version(major = 5, minor = 7), until = @Version(major = 5, minor = 8))
+    @IncludeWire(since = @Version(major = 5, minor = 7))
     void shouldHandleUnknownMarkerBytesV5x7(@VersionSelected BoltTestConnection connection) {
         // Given I send a message with an invalid type
         var msg = PackstreamBuf.allocUnpooled()
@@ -185,53 +160,26 @@ public class MalformedMessageIT {
 
         // Then
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        "Unexpected type: RESERVED",
-                        GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
-                        "error: data exception - invalid value type",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCause(
-                                "22N01: Expected the value RESERVED to"
-                                        + " be of type BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING or STRUCT, but was "
-                                        + "of type RESERVED.",
-                                GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
-                                "error: data exception - invalid type. Expected the value RESERVED to "
-                                        + "be of type BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING or STRUCT, but was "
-                                        + "of type RESERVED.",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR")));
-    }
-
-    @ProtocolTest
-    @IncludeWire(since = @Version(major = 6, minor = 0))
-    void shouldHandleUnknownMarkerBytes(@VersionSelected BoltTestConnection connection) {
-        // Given I send a message with an invalid type
-        var msg = PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, RunMessage.SIGNATURE))
-                .writeMarkerByte(0xC7)
-                .writeMapHeader(0)
-                .writeMapHeader(0);
-
-        // When
-        connection.send(msg);
-
-        // Then
-        BoltConnectionAssertions.assertThat(connection)
-                .receivesFailureWithCause(
-                        Status.Request.Invalid,
-                        useNewMessage("08N06: General network protocol error.")
-                                .whenLegacyFallbackTo("Unexpected type: RESERVED"),
-                        GqlStatusInfoCodes.STATUS_22G03.getGqlStatus(),
-                        "error: data exception - invalid value type",
-                        BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR"),
-                        BoltConnectionAssertions.assertErrorCause(
-                                "22N01: Expected the value RESERVED to be of type BYTES, BOOLEAN, FLOAT, INT, "
-                                        + "LIST, MAP, STRING or STRUCT, but was of type RESERVED.",
-                                GqlStatusInfoCodes.STATUS_22N01.getGqlStatus(),
-                                "error: data exception - invalid type. Expected the value RESERVED to "
-                                        + "be of type BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING or STRUCT, but was of "
-                                        + "type RESERVED.",
-                                BoltConnectionAssertions.assertErrorClassificationOnDiagnosticRecord("CLIENT_ERROR")));
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.Request.Invalid)
+                        .hasLegacyMessage("Unexpected type: RESERVED")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_22G03)
+                        .hasDescription("error: data exception - invalid value type")
+                        .hasDiagnosticRecord(
+                                DiagnosticRecordAssertions.create().hasClassification(ErrorClassification.CLIENT_ERROR))
+                        .hasCause(FailureCauseAssertions.create()
+                                .hasStatus(
+                                        GqlStatusInfoCodes.STATUS_22N01,
+                                        GqlMessageParameters.create()
+                                                .withString("RESERVED")
+                                                .withList(
+                                                        "BYTES", "BOOLEAN", "FLOAT", "INT", "LIST", "MAP", "STRING",
+                                                        "STRUCT")
+                                                .withString("RESERVED"))
+                                .hasDescriptionFuzzy(
+                                        "error: data exception - invalid type. Expected the value RESERVED to be of type")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.CLIENT_ERROR))));
     }
 
     @TransportTest

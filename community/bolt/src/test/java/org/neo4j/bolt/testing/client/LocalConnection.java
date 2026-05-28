@@ -24,6 +24,7 @@ import io.netty.channel.local.LocalAddress;
 import java.net.SocketAddress;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.LocalConnectorTransport;
+import org.neo4j.bolt.testing.messages.BoltWire;
 
 public final class LocalConnection extends AbstractNettyConnection {
 
@@ -31,8 +32,8 @@ public final class LocalConnection extends AbstractNettyConnection {
 
     private final LocalAddress address;
 
-    public LocalConnection(LocalAddress address) {
-        super(new LocalConnectorTransport());
+    public LocalConnection(LocalAddress address, BoltWire wire) {
+        super(new LocalConnectorTransport(), wire);
         this.address = address;
     }
 
@@ -53,9 +54,9 @@ public final class LocalConnection extends AbstractNettyConnection {
     private static class Factory implements BoltTestConnection.Factory {
 
         @Override
-        public BoltTestConnection create(ConnectorTransport transport, SocketAddress address) {
+        public BoltTestConnection create(ConnectorTransport transport, BoltWire wire, SocketAddress address) {
             if (address instanceof LocalAddress localAddress) {
-                return new LocalConnection(localAddress);
+                return new LocalConnection(localAddress, wire);
             }
 
             throw new IllegalArgumentException("Cannot initialize local connection with address of type "

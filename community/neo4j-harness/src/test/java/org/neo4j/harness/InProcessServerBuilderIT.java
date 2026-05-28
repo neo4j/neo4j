@@ -50,6 +50,7 @@ import javax.net.ssl.X509TrustManager;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.testing.client.SocketConnection;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -240,7 +241,9 @@ class InProcessServerBuilderIT {
             // when
             assertDoesNotThrow(() -> {
                 try (var connection = new SocketConnection(
-                        new NioConnectorTransport(), new InetSocketAddress(uri.getHost(), uri.getPort()))) {
+                        new NioConnectorTransport(),
+                        BoltWire.latest(),
+                        new InetSocketAddress(uri.getHost(), uri.getPort()))) {
                     connection.connect();
                 }
             });

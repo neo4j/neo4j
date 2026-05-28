@@ -24,7 +24,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
-import static org.neo4j.bolt.test.util.ErrorUtil.useNewMessage;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -44,10 +43,13 @@ import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.test.BoltTest;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
-import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
 import org.neo4j.bolt.test.util.ServerUtil;
-import org.neo4j.bolt.testing.annotation.Version;
+import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
+import org.neo4j.bolt.testing.assertions.FailureCauseAssertions;
+import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
+import org.neo4j.bolt.testing.assertions.GqlMessageParameters;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
@@ -56,6 +58,8 @@ import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
@@ -119,98 +123,7 @@ class ShutdownSequenceIT {
         this.internalLogProvider.clear();
     }
 
-    @TransportTest
-    @IncludeWire(until = @Version(major = 5, minor = 6))
-    void shouldReturnFailureForTransactionAwareConnectionsLegacyV4x0(
-            BoltWire wire, @Authenticated BoltTestConnection connection) throws IOException, InterruptedException {
-        connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
-
-        // Wait for a transaction to start on the server side
-        assertThat(txStarted.await(1, MINUTES)).isTrue();
-
-        // Register a callback when the bolt worker thread pool is shut down.
-        var boltLog = internalLogProvider.getLog(BoltServer.class);
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    boltWorkerThreadPoolShuttingDown.countDown();
-                    return null;
-                })
-                .when(boltLog)
-                .info("Shutting down Bolt server");
-
-        // Shutdown the server
-        server.getManagementService().shutdown();
-
-        // Expect the connection to have the following interactions
-        assertThat(connection)
-                .receivesSuccess()
-                .receivesFailure(
-                        meta -> assertThat(meta)
-                                // todo this should not be a transient error such as Status.Transaction.Terminated
-                                .containsEntry(
-                                        "code",
-                                        Status.General.DatabaseUnavailable.code()
-                                                .serialize())
-                                .containsEntry(
-                                        "message",
-                                        "The transaction has been terminated. Retry your operation in a new transaction, "
-                                                + "and you should see a successful result. The database is not currently available to serve your request, "
-                                                + "refer to the database logs for more details. Retrying your request at a later time may succeed. "))
-                .isEventuallyTerminated();
-
-        assertThat(internalLogProvider)
-                .forClass(BoltServer.class)
-                .forLevel(INFO)
-                .containsMessages("Bolt server has been shut down");
-    }
-
-    @TransportTest
-    @IncludeWire(since = @Version(major = 5, minor = 7), until = @Version(major = 5, minor = 8))
-    void shouldReturnFailureForTransactionAwareConnectionsLegacyV5x7(
-            BoltWire wire, @Authenticated BoltTestConnection connection) throws IOException, InterruptedException {
-        connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
-
-        // Wait for a transaction to start on the server side
-        assertThat(txStarted.await(1, MINUTES)).isTrue();
-
-        // Register a callback when the bolt worker thread pool is shut down.
-        var boltLog = internalLogProvider.getLog(BoltServer.class);
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    boltWorkerThreadPoolShuttingDown.countDown();
-                    return null;
-                })
-                .when(boltLog)
-                .info("Shutting down Bolt server");
-
-        // Shutdown the server
-        server.getManagementService().shutdown();
-
-        // Expect the connection to have the following interactions
-        assertThat(connection)
-                .receivesSuccess()
-                .receivesFailure(
-                        meta -> assertThat(meta)
-                                // todo this should not be a transient error such as Status.Transaction.Terminated
-                                .containsEntry(
-                                        "neo4j_code",
-                                        Status.General.DatabaseUnavailable.code()
-                                                .serialize())
-                                .containsEntry(
-                                        "message",
-                                        "The transaction has been terminated. Retry your operation in a new transaction, "
-                                                + "and you should see a successful result. The database is not currently available to serve your request, "
-                                                + "refer to the database logs for more details. Retrying your request at a later time may succeed. "))
-                .isEventuallyTerminated();
-
-        assertThat(internalLogProvider)
-                .forClass(BoltServer.class)
-                .forLevel(INFO)
-                .containsMessages("Bolt server has been shut down");
-    }
-
-    @TransportTest
-    @IncludeWire(since = @Version(major = 6, minor = 0))
+    @BoltTest
     void shouldReturnFailureForTransactionAwareConnections(BoltWire wire, @Authenticated BoltTestConnection connection)
             throws IOException, InterruptedException {
         connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
@@ -234,20 +147,26 @@ class ShutdownSequenceIT {
         // Expect the connection to have the following interactions
         assertThat(connection)
                 .receivesSuccess()
-                .receivesFailure(
-                        meta -> assertThat(meta)
-                                // todo this should not be a transient error such as Status.Transaction.Terminated
-                                .containsEntry(
-                                        "neo4j_code",
-                                        Status.General.DatabaseUnavailable.code()
-                                                .serialize())
-                                .containsEntry(
-                                        "message",
-                                        useNewMessage("52N37: Execution of the procedure test.stream.nodes() failed.")
-                                                .whenLegacyFallbackTo(
-                                                        "The transaction has been terminated. Retry your operation in a new transaction, "
-                                                                + "and you should see a successful result. The database is not currently available to serve your request, "
-                                                                + "refer to the database logs for more details. Retrying your request at a later time may succeed. ")))
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.General.DatabaseUnavailable)
+                        .hasLegacyMessage(
+                                "The transaction has been terminated. Retry your operation in a new transaction, "
+                                        + "and you should see a successful result. The database is not currently available to serve your request, "
+                                        + "refer to the database logs for more details. Retrying your request at a later time may succeed. ")
+                        .hasDescription(
+                                "error: procedure exception - procedure execution error. Execution of the procedure test.stream.nodes() failed.")
+                        .hasStatus(GqlStatusInfoCodes.STATUS_52N37)
+                        .hasCause(FailureCauseAssertions.create()
+                                // FIXME: Status does not adhere to the standard GQL message format
+                                .hasStatus(
+                                        GqlStatusInfoCodes.STATUS_25N16.getGqlStatus(),
+                                        "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The database is not currently available to serve your request, refer to the database logs for more details. Retrying your request at a later time may succeed.")
+                                .hasLegacyMessageFuzzy(
+                                        "The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The database is not currently available to serve your request, refer to the database logs for more details. Retrying your request at a later time may succeed.")
+                                .hasDescription(
+                                        "error: invalid transaction state - transaction termination transient error. The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. Reason: The database is not currently available to serve your request, refer to the database logs for more details. Retrying your request at a later time may succeed.")
+                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                        .hasClassification(ErrorClassification.TRANSIENT_ERROR))))
                 .isEventuallyTerminated();
 
         assertThat(internalLogProvider)
@@ -295,18 +214,21 @@ class ShutdownSequenceIT {
         assertThat(connection)
                 .receivesSuccess()
                 .receivesRecord(record -> assertThat(record).hasSize(1).contains(stringValue("0")))
-                .receivesFailure(
-                        meta -> assertThat(meta)
-                                // todo this should not be a transient error such as Status.Transaction.Terminated
-                                .containsEntry(
-                                        "code",
-                                        Status.General.DatabaseUnavailable.code()
-                                                .serialize())
-                                .containsEntry(
-                                        "message",
-                                        "The transaction has been terminated. Retry your operation in a new transaction, "
-                                                + "and you should see a successful result. The database is not currently available to serve your request, "
-                                                + "refer to the database logs for more details. Retrying your request at a later time may succeed. "))
+                .receivesFailure(FailureMetadataAssertions.create()
+                        .hasLegacyStatus(Status.General.DatabaseUnavailable)
+                        .hasLegacyMessage(
+                                "The transaction has been terminated. Retry your operation in a new transaction, "
+                                        + "and you should see a successful result. The database is not currently available to serve your request, "
+                                        + "refer to the database logs for more details. Retrying your request at a later time may succeed. ")
+                        .hasStatus(
+                                GqlStatusInfoCodes.STATUS_25N16,
+                                GqlMessageParameters.create()
+                                        .withString(
+                                                "The database is not currently available to serve your request, refer to the database logs for more details. Retrying your request at a later time may succeed."))
+                        .hasDescriptionFuzzy(
+                                "error: invalid transaction state - transaction termination transient error. The transaction has been terminated. Retry your operation in a new transaction,")
+                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                .hasClassification(ErrorClassification.TRANSIENT_ERROR)))
                 .isEventuallyTerminated();
 
         assertThat(internalLogProvider)

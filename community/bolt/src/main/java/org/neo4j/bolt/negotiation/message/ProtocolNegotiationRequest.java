@@ -21,7 +21,7 @@ package org.neo4j.bolt.negotiation.message;
 
 import java.util.List;
 import java.util.Objects;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 
 public record ProtocolNegotiationRequest(int magicNumber, List<ProtocolVersion> proposedVersions) {
 

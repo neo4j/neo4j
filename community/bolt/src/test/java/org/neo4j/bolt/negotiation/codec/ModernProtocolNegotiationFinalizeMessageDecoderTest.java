@@ -22,9 +22,9 @@ package org.neo4j.bolt.negotiation.codec;
 import io.netty.handler.codec.DecoderException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationFinalizeMessage;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.testing.annotation.StrictBufferExtension;
 import org.neo4j.bolt.testing.channel.StrictBufferContext;
 

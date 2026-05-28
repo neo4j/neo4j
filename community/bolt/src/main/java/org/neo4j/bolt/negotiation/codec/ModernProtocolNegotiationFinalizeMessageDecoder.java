@@ -25,10 +25,10 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.ReferenceCountUtil;
 import java.util.List;
 import java.util.Set;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ModernProtocolNegotiationFinalizeMessage;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
 import org.neo4j.bolt.negotiation.util.NegotiationEncodingUtil;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.memory.HeapEstimator;
 
 public final class ModernProtocolNegotiationFinalizeMessageDecoder extends ByteToMessageDecoder {

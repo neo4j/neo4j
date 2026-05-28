@@ -40,14 +40,18 @@ import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.testing.client.error.BoltTestClientClosedException;
+import org.neo4j.bolt.testing.messages.BoltWire;
 
 public final class CertConfiguredSecureSocketConnection extends SecureSocketConnection {
 
     private final X509Certificate rootCert;
 
     public CertConfiguredSecureSocketConnection(
-            ConnectorTransport transport, InetSocketAddress address, X509Certificate trustedRootCertificate) {
-        super(transport, address);
+            ConnectorTransport transport,
+            BoltWire wire,
+            InetSocketAddress address,
+            X509Certificate trustedRootCertificate) {
+        super(transport, wire, address);
         this.rootCert = trustedRootCertificate;
     }
 

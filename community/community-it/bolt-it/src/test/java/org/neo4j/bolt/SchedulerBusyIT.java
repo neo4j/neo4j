@@ -37,6 +37,9 @@ import org.neo4j.bolt.test.annotation.test.TransportTest;
 import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
+import org.neo4j.bolt.testing.assertions.DiagnosticRecordAssertions;
+import org.neo4j.bolt.testing.assertions.FailureCauseAssertions;
+import org.neo4j.bolt.testing.assertions.FailureMetadataAssertions;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
@@ -44,6 +47,8 @@ import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -135,9 +140,21 @@ class SchedulerBusyIT {
                         connection3.send(wire.hello());
 
                         BoltConnectionAssertions.assertThat(connection3)
-                                .receivesFailureFuzzyV40(
-                                        Status.Request.NoThreadsAvailable,
-                                        "There are no available threads to serve this request at the moment");
+                                .receivesFailure(FailureMetadataAssertions.create()
+                                        .hasLegacyStatus(Status.Request.NoThreadsAvailable)
+                                        .hasLegacyMessageFuzzy(
+                                                "There are no available threads to serve this request at the moment")
+                                        .hasStatus(GqlStatusInfoCodes.STATUS_51N59)
+                                        .hasDescription(
+                                                "error: system configuration or operation exception - internal resource exhaustion. The DBMS is unable to handle the request, please retry later or contact the system operator. More information is present in the logs.")
+                                        .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .hasClassification(ErrorClassification.TRANSIENT_ERROR))
+                                        .hasCause(FailureCauseAssertions.create()
+                                                .hasStatus(GqlStatusInfoCodes.STATUS_51N38)
+                                                .hasDescription(
+                                                        "error: system configuration or operation exception - failed to acquire execution thread. There are insufficient threads available for executing the current task.")
+                                                .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                        .hasClassification(ErrorClassification.TRANSIENT_ERROR))));
 
                         BoltConnectionAssertions.assertThat(connection3).isEventuallyTerminated();
                     }
@@ -160,9 +177,21 @@ class SchedulerBusyIT {
                             connection3.send(wire.hello());
 
                             BoltConnectionAssertions.assertThat(connection3)
-                                    .receivesFailureFuzzyV40(
-                                            Status.Request.NoThreadsAvailable,
-                                            "There are no available threads to serve this request at the moment");
+                                    .receivesFailure(FailureMetadataAssertions.create()
+                                            .hasLegacyStatus(Status.Request.NoThreadsAvailable)
+                                            .hasLegacyMessageFuzzy(
+                                                    "There are no available threads to serve this request at the moment")
+                                            .hasStatus(GqlStatusInfoCodes.STATUS_51N59)
+                                            .hasDescription(
+                                                    "error: system configuration or operation exception - internal resource exhaustion. The DBMS is unable to handle the request, please retry later or contact the system operator. More information is present in the logs.")
+                                            .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                    .hasClassification(ErrorClassification.TRANSIENT_ERROR))
+                                            .hasCause(FailureCauseAssertions.create()
+                                                    .hasStatus(GqlStatusInfoCodes.STATUS_51N38)
+                                                    .hasDescription(
+                                                            "error: system configuration or operation exception - failed to acquire execution thread. There are insufficient threads available for executing the current task.")
+                                                    .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                            .hasClassification(ErrorClassification.TRANSIENT_ERROR))));
                         }
                     });
         }

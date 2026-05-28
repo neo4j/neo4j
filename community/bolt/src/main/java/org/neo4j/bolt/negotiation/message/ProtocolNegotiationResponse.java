@@ -20,7 +20,7 @@
 package org.neo4j.bolt.negotiation.message;
 
 import java.util.Objects;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 
 public record ProtocolNegotiationResponse(ProtocolVersion negotiatedVersion) {
 

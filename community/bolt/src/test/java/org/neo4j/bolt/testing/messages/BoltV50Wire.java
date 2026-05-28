@@ -21,7 +21,7 @@ package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 
@@ -43,6 +43,11 @@ public class BoltV50Wire extends AbstractBoltWire {
     @Override
     public String getUserAgent() {
         return "BoltWire/5.0";
+    }
+
+    @Override
+    public boolean hasGQLStatus() {
+        return false;
     }
 
     @Override

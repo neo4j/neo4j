@@ -22,7 +22,7 @@ package org.neo4j.bolt.protocol.common.connection.hint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 public final class ConnectionHintRegistry {

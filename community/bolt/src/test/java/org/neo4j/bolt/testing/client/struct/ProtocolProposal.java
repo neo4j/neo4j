@@ -21,8 +21,8 @@ package org.neo4j.bolt.testing.client.struct;
 
 import java.util.List;
 import java.util.Set;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 
 public record ProtocolProposal(
         ProtocolVersion negotiationVersion, List<ProtocolVersion> versions, Set<ProtocolCapability> capabilities) {}

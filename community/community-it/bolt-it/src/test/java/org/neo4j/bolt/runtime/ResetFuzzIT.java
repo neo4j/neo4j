@@ -41,7 +41,6 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.testing.client.BoltTestConnection;
 import org.neo4j.bolt.testing.client.SocketConnection;
-import org.neo4j.bolt.testing.messages.BoltDefaultWire;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.testing.sequence.RequestSequenceCollection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
@@ -81,7 +80,7 @@ class ResetFuzzIT {
 
     private InetSocketAddress address;
 
-    private final BoltWire wire = new BoltDefaultWire();
+    private final BoltWire wire = BoltWire.latest();
 
     @BeforeEach
     void setup(TestInfo testInfo) throws IOException {
@@ -155,7 +154,7 @@ class ResetFuzzIT {
     }
 
     private BoltTestConnection connectAndAuthenticate() throws Exception {
-        var connection = new SocketConnection(new NioConnectorTransport(), address)
+        var connection = new SocketConnection(new NioConnectorTransport(), BoltWire.latest(), address)
                 .connect()
                 .sendDefaultProtocolVersion()
                 .send(wire.hello());

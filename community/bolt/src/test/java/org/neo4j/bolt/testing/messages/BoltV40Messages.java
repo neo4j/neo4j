@@ -22,7 +22,7 @@ package org.neo4j.bolt.testing.messages;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.testing.error.UnsupportedProtocolFeatureException;
 import org.neo4j.boltmessages.AccessMode;

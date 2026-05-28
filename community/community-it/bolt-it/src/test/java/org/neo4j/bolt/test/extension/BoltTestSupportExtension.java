@@ -24,6 +24,7 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.O
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -100,11 +101,28 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
     }
 
     @Override
+    public void testSuccessful(ExtensionContext context) {
+        var it = TestTemplateIterator.getIterator(context);
+        if (it == null) {
+            return;
+        }
+        it.clearRetry();
+    }
+
+    @Override
+    public void testFailed(ExtensionContext context, Throwable cause) {
+        var it = TestTemplateIterator.getIterator(context);
+        if (it == null) {
+            return;
+        }
+
+        it.clearRetry();
+    }
+
+    @Override
     public void testAborted(ExtensionContext context, Throwable cause) {
         if (cause instanceof TestRetryException ex) {
-
-            var store = context.getStore(NAMESPACE);
-            var it = store.get(ITERATOR_KEY, TestTemplateIterator.class);
+            var it = TestTemplateIterator.getIterator(context);
             if (it == null) {
                 return;
             }
@@ -112,6 +130,15 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
             var info = ex.getRetryInfo();
             it.markForRetry(info);
         }
+    }
+
+    @Override
+    public void testDisabled(ExtensionContext context, Optional<String> reason) {
+        var it = TestTemplateIterator.getIterator(context);
+        if (it == null) {
+            return;
+        }
+        it.clearRetry();
     }
 
     protected BoltTestConfig configure(
@@ -141,7 +168,7 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
         return selector.select(context);
     }
 
-    private static final class TestTemplateIterator implements Iterator<TestTemplateInvocationContext> {
+    public static final class TestTemplateIterator implements Iterator<TestTemplateInvocationContext> {
 
         private final Iterator<BoltTestConfig> delegate;
         private BoltTestConfig previous;
@@ -151,8 +178,21 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
             this.delegate = delegate;
         }
 
+        public static TestTemplateIterator getIterator(ExtensionContext context) {
+            var store = context.getStore(NAMESPACE);
+            return store.get(ITERATOR_KEY, TestTemplateIterator.class);
+        }
+
+        public RetryInfo currentRetry() {
+            return this.retry;
+        }
+
         public void markForRetry(RetryInfo info) {
             this.retry = info;
+        }
+
+        public void clearRetry() {
+            this.retry = null;
         }
 
         @Override
@@ -167,8 +207,6 @@ public final class BoltTestSupportExtension implements TestTemplateInvocationCon
         @Override
         public TestTemplateInvocationContext next() {
             var retry = this.retry;
-            this.retry = null;
-
             if (retry != null && this.previous != null) {
                 return new RenamingTestTemplateInvocationContext(this.previous, retry);
             }

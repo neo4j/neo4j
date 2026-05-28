@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.neo4j.bolt.fsm.StateMachineConfiguration;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;

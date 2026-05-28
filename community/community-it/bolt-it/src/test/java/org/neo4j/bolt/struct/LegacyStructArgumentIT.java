@@ -40,7 +40,7 @@ public class LegacyStructArgumentIT extends AbstractStructArgumentIT {
     @ProtocolTest
     void shouldFailWhenLegacyZonedDateTimeZoneIdIsNotKnown(@Authenticated BoltTestConnection connection)
             throws IOException {
-        testFailureWithUnpackableValueV40(
+        testFailureWithUnpackableValue(
                 connection,
                 buf -> buf.writeStructHeader(new StructHeader(3, StructType.DATE_TIME_ZONE_ID_LEGACY.getTag()))
                         .writeInt(0)

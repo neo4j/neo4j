@@ -22,6 +22,8 @@ package org.neo4j.bolt.negotiation;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersionReducer;
 import org.neo4j.bolt.testing.assertions.ProtocolVersionAssertions;
 
 class ProtocolVersionReducerTest {

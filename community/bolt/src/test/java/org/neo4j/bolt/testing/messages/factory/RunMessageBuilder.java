@@ -23,7 +23,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.packstream.io.PackstreamBuf;

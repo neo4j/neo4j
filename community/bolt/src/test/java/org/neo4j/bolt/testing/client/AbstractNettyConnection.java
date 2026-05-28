@@ -48,9 +48,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolCapability;
 import org.neo4j.bolt.negotiation.util.BitMask;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.testing.client.error.BoltTestClientClosedException;
 import org.neo4j.bolt.testing.client.error.BoltTestClientConnectionTimeoutException;
@@ -64,6 +64,7 @@ import org.neo4j.bolt.testing.client.handler.NotifyingChannelInboundHandler;
 import org.neo4j.bolt.testing.client.handler.NotifyingChannelResponseMessageInboundHandler;
 import org.neo4j.bolt.testing.client.handler.TestChannelInitializer;
 import org.neo4j.bolt.testing.client.struct.ProtocolProposal;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.boltmessages.request.RequestMessage;
 import org.neo4j.boltmessages.response.ResponseMessage;
 import org.neo4j.internal.helpers.Exceptions;
@@ -79,6 +80,7 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
     public static final int READ_LOCK_TIMEOUT = 1_000;
 
     protected final ConnectorTransport transport;
+    protected final BoltWire wire;
     private final EventLoopGroup eventLoopGroup;
     protected final Object readLock = new Object();
     protected final CompositeByteBuf readBuffer = Unpooled.compositeBuffer();
@@ -93,8 +95,9 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
 
     private long noopCount;
 
-    public AbstractNettyConnection(ConnectorTransport transport) {
+    public AbstractNettyConnection(ConnectorTransport transport, BoltWire wire) {
         this.transport = transport;
+        this.wire = wire;
         this.eventLoopGroup = new MultiThreadIoEventLoopGroup(1, transport.createIoHandlerFactory());
         this.responseMessageList = Collections.synchronizedList(new ArrayList<>());
     }
@@ -155,6 +158,11 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
         if (this.channel == null || !this.channel.isActive()) {
             throw new BoltTestClientClosedException("Connection closed");
         }
+    }
+
+    @Override
+    public BoltWire wire() {
+        return this.wire;
     }
 
     @Override

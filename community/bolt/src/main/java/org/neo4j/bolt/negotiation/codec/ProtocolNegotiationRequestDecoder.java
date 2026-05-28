@@ -25,8 +25,8 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationRequest;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.memory.HeapEstimator;
 
 /**

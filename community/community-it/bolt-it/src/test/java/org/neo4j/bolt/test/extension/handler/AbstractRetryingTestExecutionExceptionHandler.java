@@ -56,7 +56,7 @@ public abstract class AbstractRetryingTestExecutionExceptionHandler implements T
      * @return a retry info object.
      */
     protected RetryInfo createRetryInfo(ExtensionContext context, Throwable throwable) {
-        return new RetryInfo(0, 5);
+        return new RetryInfo(1, 5);
     }
 
     /**
