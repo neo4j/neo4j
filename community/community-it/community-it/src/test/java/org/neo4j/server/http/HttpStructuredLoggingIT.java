@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.AbstractNeoWebServer;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
@@ -99,7 +99,6 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
             var baseUri = dependencyResolver
                     .resolveDependency(AbstractNeoWebServer.class)
                     .getBaseUri();
-            var config = dependencyResolver.resolveDependency(Config.class);
 
             var request = HttpRequest.newBuilder()
                     .uri(baseUri)
@@ -119,19 +118,25 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
         }
         assertThat(response.statusCode()).isEqualTo(200);
 
-        List<String> strings = Files.readAllLines(httpLogPath);
-        var httpLogLines = strings.stream()
-                .map(s -> {
-                    try {
-                        return OBJECT_MAPPER.readValue(s, MAP_TYPE);
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.toList());
+        Assert.awaitUntilAsserted(
+                "structured logs be present",
+                () -> {
+                    List<String> strings = Files.readAllLines(httpLogPath);
+                    var httpLogLines = strings.stream()
+                            .map(s -> {
+                                try {
+                                    return OBJECT_MAPPER.readValue(s, MAP_TYPE);
+                                } catch (JsonProcessingException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .collect(Collectors.toList());
 
-        assertThat(httpLogLines).anyMatch(logEntry -> logEntry.getOrDefault("message", "")
-                .contains(HttpStructuredLoggingIT.class.getSimpleName()));
+                    assertThat(httpLogLines).anyMatch(logEntry -> logEntry.getOrDefault("message", "")
+                            .contains(HttpStructuredLoggingIT.class.getSimpleName()));
+                },
+                Duration.ofSeconds(10),
+                Duration.ofMillis(500));
     }
 
     private static DependencyResolver getDependencyResolver(DatabaseManagementService managementService) {

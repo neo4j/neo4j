@@ -21,7 +21,6 @@ package org.neo4j.test.assertion;
 
 import static java.time.Duration.ZERO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -29,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.test.conditions.Conditions.condition;
 
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -49,10 +49,15 @@ public final class Assert {
     }
 
     public static <E extends Exception> void awaitUntilAsserted(String alias, ThrowingAction<E> condition) {
+        awaitUntilAsserted(alias, condition, Duration.ofMinutes(1), Duration.ofMillis(50));
+    }
+
+    public static <E extends Exception> void awaitUntilAsserted(
+            String alias, ThrowingAction<E> condition, Duration timeout, Duration pollInterval) {
         await(alias)
-                .atMost(1, MINUTES)
+                .atMost(timeout)
                 .pollDelay(ZERO)
-                .pollInterval(50, MILLISECONDS)
+                .pollInterval(pollInterval)
                 .pollInSameThread()
                 .untilAsserted(condition::apply);
     }
