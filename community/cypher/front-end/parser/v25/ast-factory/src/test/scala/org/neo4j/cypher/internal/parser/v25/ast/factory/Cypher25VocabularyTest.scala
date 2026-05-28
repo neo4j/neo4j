@@ -249,6 +249,7 @@ class Cypher25VocabularyTest extends CypherFunSuite {
     Cypher25Parser.MAP -> "'MAP'",
     Cypher25Parser.MATCH -> "'MATCH'",
     Cypher25Parser.MERGE -> "'MERGE'",
+    Cypher25Parser.METADATA -> "'METADATA'",
     Cypher25Parser.MINUS -> "'-'",
     Cypher25Parser.PERCENT -> "'%'",
     Cypher25Parser.INVALID_NEQ -> "'!='",

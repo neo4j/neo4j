@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AllUserMetadataActions
 import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterAuthRuleAction
 import org.neo4j.cypher.internal.ast.AlterCompositeDatabaseAction
@@ -56,6 +57,7 @@ import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetDatabaseDefaultLanguageAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserMetadataAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAliasAction
 import org.neo4j.cypher.internal.ast.ShowAuthRuleAction
@@ -63,9 +65,12 @@ import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserMetadataAction
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.UserMetadataManagementAction
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier.maybeImmutable
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher25
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 
 class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -85,13 +90,16 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
       ("RENAME USER", RenameUserAction),
       ("DROP USER", DropUserAction),
       ("SHOW USER", ShowUserAction),
+      ("SHOW USER METADATA", ShowUserMetadataAction),
       ("SET PASSWORD", SetPasswordsAction),
       ("SET PASSWORDS", SetPasswordsAction),
       ("SET AUTH", SetAuthAction),
       ("SET USER STATUS", SetUserStatusAction),
       ("SET USER HOME DATABASE", SetUserHomeDatabaseAction),
+      ("SET USER METADATA", SetUserMetadataAction),
       ("ALTER USER", AlterUserAction),
       ("USER MANAGEMENT", AllUserActions),
+      ("USER METADATA MANAGEMENT", AllUserMetadataActions),
       ("SHOW AUTH RULE", ShowAuthRuleAction),
       ("CREATE AUTH RULE", CreateAuthRuleAction),
       ("DROP AUTH RULE", DropAuthRuleAction),
@@ -130,8 +138,9 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
   private def supportedInCypher5(action: AdministrationAction): Boolean =
     action match {
-      case _: AuthRuleManagementAction => false
-      case _                           => true
+      case _: AuthRuleManagementAction     => false
+      case _: UserMetadataManagementAction => false
+      case _                               => true
     }
 
   def privilegeTests(command: String, preposition: String, privilegeFunc: adminPrivilegeFunc): Unit = {
@@ -234,10 +243,13 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
               failsParsing[Statements].in {
                 case Cypher5 if !supportedInCypher5 =>
                   _.withSyntaxErrorContaining(command)
-                case _ => _.withSyntaxErrorContaining((command, immutable, privilege) match {
+                case parserVersion => _.withSyntaxErrorContaining((parserVersion, command, immutable, privilege) match {
                     // this case looks like granting/revoking a role named MANAGEMENT to/from a user
-                    case ("GRANT", false, "ROLE MANAGEMENT") | ("REVOKE", false, "ROLE MANAGEMENT") =>
+                    case (_, "GRANT", false, "ROLE MANAGEMENT") | (_, "REVOKE", false, "ROLE MANAGEMENT") =>
                       s"Invalid input 'DBMS': expected ',', 'ON DBMS' or '$preposition'"
+                    // Cypher 25 adds the SHOW USER METADATA privilege, which could be a valid alternative
+                    case (Cypher25, _, _, "SHOW USER") =>
+                      s"Invalid input 'DBMS': expected 'ON DBMS' or 'METADATA' (line 1, column ${offset + 1} (offset: $offset))"
                     case _ =>
                       s"Invalid input 'DBMS': expected 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
                   })

@@ -1716,13 +1716,13 @@ loadPrivilege
 showPrivilege
    : SHOW (
       (indexToken | constraintToken | transactionToken userQualifier?) ON databaseScope
-      | (ALIAS | AUTH RULE | PRIVILEGE | ROLE | SERVER | SERVERS | settingToken settingQualifier | USER) ON DBMS
+      | (ALIAS | AUTH RULE | PRIVILEGE | ROLE | SERVER | SERVERS | settingToken settingQualifier | USER METADATA?) ON DBMS
    )
    ;
 
 setPrivilege
    : SET (
-      (passwordToken | USER (STATUS | HOME DATABASE) | DATABASE (ACCESS | DEFAULT LANGUAGE) | AUTH) ON DBMS
+      (passwordToken | USER (STATUS | HOME DATABASE | METADATA) | DATABASE (ACCESS | DEFAULT LANGUAGE) | AUTH) ON DBMS
       | DATABASE (ACCESS | DEFAULT LANGUAGE) ON databaseScope
       | LABEL labelsResource ON graphScope
       | PROPERTY propertiesResource ON graphScope graphQualifier
@@ -1761,7 +1761,7 @@ dbmsPrivilege
    : (
       ALTER (ALIAS | AUTH RULE | COMPOSITE? DATABASE | USER)
       | ASSIGN (PRIVILEGE | ROLE)
-      | (ALIAS | COMPOSITE? DATABASE | PRIVILEGE | ROLE | SERVER | USER | AUTH RULE) MANAGEMENT
+      | (ALIAS | COMPOSITE? DATABASE | PRIVILEGE | ROLE | SERVER | USER METADATA? | AUTH RULE) MANAGEMENT
       | dbmsPrivilegeExecute
       | RENAME (AUTH RULE | ROLE | USER)
       | IMPERSONATE userQualifier?
@@ -2357,6 +2357,7 @@ unescapedSymbolicNameString_
    | MANHATTAN
    | MAP
    | MERGE
+   | METADATA
    | NAME
    | NAMES
    | NAN

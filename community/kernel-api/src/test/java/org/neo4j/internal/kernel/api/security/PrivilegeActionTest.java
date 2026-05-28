@@ -86,6 +86,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_LABEL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PASSWORDS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PROPERTY;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_HOME_DATABASE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_METADATA;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_STATUS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ALIAS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_AUTH_RULE;
@@ -97,6 +98,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_SERVER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER_METADATA;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.START_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.STOP_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TERMINATE_CONNECTION;
@@ -105,6 +107,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TOKEN;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TRANSACTION_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TRAVERSE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.USER_MANAGEMENT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.USER_METADATA_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.WRITE;
 
 import java.util.Arrays;
@@ -129,6 +132,7 @@ class PrivilegeActionTest {
         expected.put(USER_MANAGEMENT, Set.of(SHOW_USER, CREATE_USER, RENAME_USER, DROP_USER, ALTER_USER));
         expected.put(ALTER_USER, Set.of(SET_USER_STATUS, SET_PASSWORDS, SET_AUTH, SET_USER_HOME_DATABASE));
         expected.put(SET_AUTH, Set.of(SET_PASSWORDS));
+        expected.put(USER_METADATA_MANAGEMENT, Set.of(SHOW_USER_METADATA, SET_USER_METADATA));
         expected.put(
                 DATABASE_MANAGEMENT,
                 Set.of(CREATE_DATABASE, DROP_DATABASE, ALTER_DATABASE, COMPOSITE_DATABASE_MANAGEMENT));
@@ -153,6 +157,7 @@ class PrivilegeActionTest {
                 Set.of(
                         ROLE_MANAGEMENT,
                         USER_MANAGEMENT,
+                        USER_METADATA_MANAGEMENT,
                         AUTH_RULE_MANAGEMENT,
                         DATABASE_MANAGEMENT,
                         ALIAS_MANAGEMENT,

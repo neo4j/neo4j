@@ -800,6 +800,10 @@ MERGE
    : M E R G E
    ;
 
+METADATA
+   : M E T A D A T A
+   ;
+
 MINUS
    : '-'
    ;

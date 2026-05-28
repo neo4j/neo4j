@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AllUserMetadataActions
 import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterAuthRuleAction
 import org.neo4j.cypher.internal.ast.AlterCompositeDatabaseAction
@@ -142,6 +143,7 @@ import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserMetadataAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.SettingQualifier
 import org.neo4j.cypher.internal.ast.ShowAliasAction
@@ -154,6 +156,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserMetadataAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
@@ -441,9 +444,11 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
               }
             case Cypher25Parser.ROLE   => withQualifier(AllRoleActions)
             case Cypher25Parser.SERVER => withQualifier(ServerManagementAction)
-            case Cypher25Parser.USER   => withQualifier(AllUserActions)
-            case Cypher25Parser.AUTH   => withQualifier(AllAuthRuleActions)
-            case _                     => throw new IllegalStateException()
+            case Cypher25Parser.USER =>
+              if (ctx.METADATA() != null) withQualifier(AllUserMetadataActions)
+              else withQualifier(AllUserActions)
+            case Cypher25Parser.AUTH => withQualifier(AllAuthRuleActions)
+            case _                   => throw new IllegalStateException()
           }
         case _ => throw new IllegalStateException()
       }
@@ -549,8 +554,10 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
             case Cypher25Parser.PRIVILEGE                       => withQualifier(ShowPrivilegeAction)
             case Cypher25Parser.ROLE                            => withQualifier(ShowRoleAction)
             case Cypher25Parser.SERVER | Cypher25Parser.SERVERS => withQualifier(ShowServerAction)
-            case Cypher25Parser.USER                            => withQualifier(ShowUserAction)
-            case _                                              => throw new IllegalStateException()
+            case Cypher25Parser.USER =>
+              if (ctx.METADATA() != null) withQualifier(ShowUserMetadataAction)
+              else withQualifier(ShowUserAction)
+            case _ => throw new IllegalStateException()
           }
         case r: RuleNode if r.getRuleContext.getRuleIndex == Cypher25Parser.RULE_settingToken =>
           (ShowSettingAction, ctx.settingQualifier().ast[List[SettingQualifier]]())
@@ -565,12 +572,26 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
   ): Unit = {
     val p = pos(ctx)
     ctx.ast = if (ctx.DBMS() != null) {
-      val action = if (ctx.passwordToken() != null) SetPasswordsAction
-      else if (ctx.STATUS() != null) SetUserStatusAction
-      else if (ctx.HOME() != null) SetUserHomeDatabaseAction
-      else if (ctx.AUTH() != null) SetAuthAction
-      else if (ctx.DEFAULT() != null && ctx.LANGUAGE() != null) SetDatabaseDefaultLanguageAction(false)
-      else SetDatabaseAccessAction(false)
+      val action = ctx.getChild(1) match {
+        case t: TerminalNode => t.getSymbol.getType match {
+            case Cypher25Parser.USER => nodeChild(ctx, 2).getSymbol.getType match {
+                case Cypher25Parser.STATUS   => SetUserStatusAction
+                case Cypher25Parser.HOME     => SetUserHomeDatabaseAction
+                case Cypher25Parser.METADATA => SetUserMetadataAction
+                case _                       => throw new IllegalStateException()
+              }
+            case Cypher25Parser.DATABASE => nodeChild(ctx, 2).getSymbol.getType match {
+                case Cypher25Parser.ACCESS  => SetDatabaseAccessAction(false)
+                case Cypher25Parser.DEFAULT => SetDatabaseDefaultLanguageAction(false)
+                case _                      => throw new IllegalStateException()
+              }
+            case Cypher25Parser.AUTH => SetAuthAction
+            case _                   => throw new IllegalStateException()
+          }
+        case r: RuleNode if r.getRuleContext.getRuleIndex == Cypher25Parser.RULE_passwordToken =>
+          SetPasswordsAction
+        case _ => throw new IllegalStateException()
+      }
       action match {
         case a: DbmsAction            => allQualifier(DbmsPrivilege(a)(p), None)
         case a: DatabaseAndDbmsAction => allDbQualifier(DatabasePrivilege(a, AllDatabasesScope()(p))(p), None)

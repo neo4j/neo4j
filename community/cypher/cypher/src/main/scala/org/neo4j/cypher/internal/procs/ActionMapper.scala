@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AllUserMetadataActions
 import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterAuthRuleAction
 import org.neo4j.cypher.internal.ast.AlterCompositeDatabaseAction
@@ -91,6 +92,7 @@ import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserMetadataAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAliasAction
 import org.neo4j.cypher.internal.ast.ShowAuthRuleAction
@@ -102,6 +104,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserMetadataAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
@@ -162,6 +165,10 @@ object ActionMapper {
     case SetUserHomeDatabaseAction => security.PrivilegeAction.SET_USER_HOME_DATABASE
     case AlterUserAction           => security.PrivilegeAction.ALTER_USER
     case DropUserAction            => security.PrivilegeAction.DROP_USER
+
+    case AllUserMetadataActions => security.PrivilegeAction.USER_METADATA_MANAGEMENT
+    case ShowUserMetadataAction => security.PrivilegeAction.SHOW_USER_METADATA
+    case SetUserMetadataAction  => security.PrivilegeAction.SET_USER_METADATA
 
     case AllRoleActions   => security.PrivilegeAction.ROLE_MANAGEMENT
     case ShowRoleAction   => security.PrivilegeAction.SHOW_ROLE

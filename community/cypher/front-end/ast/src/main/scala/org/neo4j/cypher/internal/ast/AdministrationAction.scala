@@ -167,6 +167,14 @@ case object SetAuthAction extends UserManagementAction("SET AUTH")
 
 case object SetUserHomeDatabaseAction extends UserManagementAction("SET USER HOME DATABASE")
 
+abstract class UserMetadataManagementAction(override val name: String) extends DbmsAction(name)
+
+case object AllUserMetadataActions extends UserMetadataManagementAction("USER METADATA MANAGEMENT")
+
+case object ShowUserMetadataAction extends UserMetadataManagementAction("SHOW USER METADATA")
+
+case object SetUserMetadataAction extends UserMetadataManagementAction("SET USER METADATA")
+
 abstract class RoleManagementAction(override val name: String) extends DbmsAction(name)
 
 case object AllRoleActions extends RoleManagementAction("ROLE MANAGEMENT")

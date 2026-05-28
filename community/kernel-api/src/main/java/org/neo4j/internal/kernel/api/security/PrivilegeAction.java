@@ -95,6 +95,9 @@ public enum PrivilegeAction {
     SET_USER_HOME_DATABASE,
     DROP_USER,
 
+    SHOW_USER_METADATA,
+    SET_USER_METADATA,
+
     IMPERSONATE,
 
     SHOW_ROLE,
@@ -263,6 +266,16 @@ public enum PrivilegeAction {
         }
     },
 
+    USER_METADATA_MANAGEMENT {
+        @Override
+        public boolean satisfies(PrivilegeAction action) {
+            return switch (action) {
+                case SHOW_USER_METADATA, SET_USER_METADATA -> true;
+                default -> this == action;
+            };
+        }
+    },
+
     ROLE_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
@@ -355,6 +368,7 @@ public enum PrivilegeAction {
         public boolean satisfies(PrivilegeAction action) {
             return ROLE_MANAGEMENT.satisfies(action)
                     || USER_MANAGEMENT.satisfies(action)
+                    || USER_METADATA_MANAGEMENT.satisfies(action)
                     || AUTH_RULE_MANAGEMENT.satisfies(action)
                     || DATABASE_MANAGEMENT.satisfies(action)
                     || ALIAS_MANAGEMENT.satisfies(action)
