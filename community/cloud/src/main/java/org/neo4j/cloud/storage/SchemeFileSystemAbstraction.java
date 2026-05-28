@@ -183,15 +183,14 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     }
 
     @Override
-    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize, boolean autoFlush)
-            throws IOException {
+    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize) throws IOException {
         if (fileName instanceof StoragePath path) {
             final var options = append ? APPEND_OPTIONS : WRITE_OPTIONS;
             //noinspection resource
             return provider(path).newOutputStream(fileName, options.toArray(OpenOption[]::new));
         }
 
-        return fs.openAsOutputStream(fileName, append, bufferSize, autoFlush);
+        return fs.openAsOutputStream(fileName, append, bufferSize);
     }
 
     @Override

@@ -189,9 +189,8 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
-    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize, boolean autoFlush)
-            throws IOException {
-        return delegate.openAsOutputStream(fileName, append, bufferSize, autoFlush);
+    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize) throws IOException {
+        return delegate.openAsOutputStream(fileName, append, bufferSize);
     }
 
     @Override

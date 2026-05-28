@@ -94,10 +94,10 @@ public interface FileSystemAbstraction extends Closeable {
     StoreChannel open(Path fileName, Set<OpenOption> options) throws IOException;
 
     /**
-     * @see #openAsOutputStream(Path, boolean, int, boolean)
+     * @see #openAsOutputStream(Path, boolean, int)
      */
     default OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
-        return openAsOutputStream(fileName, append, DEFAULT_OUTPUT_STREAM_BUFFER_SIZE, true);
+        return openAsOutputStream(fileName, append, DEFAULT_OUTPUT_STREAM_BUFFER_SIZE);
     }
 
     /**
@@ -113,12 +113,10 @@ public interface FileSystemAbstraction extends Closeable {
      * @param append if {@code false} truncates the file to zero length, otherwise if {@code true} sets the position at the end of the
      * existing file so that written data gets appended at the end of the file.
      * @param bufferSize size of the buffer to use for this stream.
-     * @param autoFlush whether to flush buffer after each write call.
      * @return an {@link OutputStream} capable of writing binary data to the file denoted by {@code fileName}.
      * @throws IOException on I/O error opening/creating the file.
      */
-    OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize, boolean autoFlush)
-            throws IOException;
+    OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize) throws IOException;
 
     /**
      * Opens a file denoted by the {@code fileName} and returns an {@link InputStream} to read from it.

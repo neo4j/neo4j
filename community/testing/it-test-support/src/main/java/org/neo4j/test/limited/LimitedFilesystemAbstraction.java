@@ -47,8 +47,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize, boolean autoFlush)
-            throws IOException {
+    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize) throws IOException {
         return new ChannelOutputStream(write(fileName), append, INSTANCE, bufferSize);
     }
 

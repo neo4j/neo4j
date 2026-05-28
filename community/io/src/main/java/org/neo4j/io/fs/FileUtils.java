@@ -446,7 +446,7 @@ public final class FileUtils {
             Path path, Function<FileChannel, StoreFileChannel> storeChannelProvider, Set<OpenOption> options)
             throws IOException {
         return toBufferedStream(
-                path, storeChannelProvider, options, FileSystemAbstraction.DEFAULT_OUTPUT_STREAM_BUFFER_SIZE, true);
+                path, storeChannelProvider, options, FileSystemAbstraction.DEFAULT_OUTPUT_STREAM_BUFFER_SIZE);
     }
 
     /**
@@ -455,7 +455,6 @@ public final class FileUtils {
      * @param storeChannelProvider factory for creating the store channel
      * @param options the options to use when creating the channel
      * @param bufferSize size of the buffer for the {@link OutputStream}.
-     * @param autoFlush whether to flush buffer after each write call.
      * @return the output stream
      * @throws IOException if unable to open the channel
      */
@@ -463,13 +462,12 @@ public final class FileUtils {
             Path path,
             Function<FileChannel, StoreFileChannel> storeChannelProvider,
             Set<OpenOption> options,
-            int bufferSize,
-            boolean autoFlush)
+            int bufferSize)
             throws IOException {
         FileChannel channel = FileChannel.open(path, options);
         StoreFileChannel fileChannel = storeChannelProvider.apply(channel);
         fileChannel.tryMakeUninterruptible();
-        return new NativeByteBufferOutputStream(fileChannel, bufferSize, autoFlush);
+        return new NativeByteBufferOutputStream(fileChannel, bufferSize);
     }
 
     private static Path resolve(Path source, Path other) {

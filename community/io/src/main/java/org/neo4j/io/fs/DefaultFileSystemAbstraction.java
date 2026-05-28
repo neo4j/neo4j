@@ -75,10 +75,9 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
-    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize, boolean autoFlush)
-            throws IOException {
+    public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize) throws IOException {
         return toBufferedStream(
-                fileName, this::getStoreFileChannel, append ? APPEND_OPTIONS : TRUNCATE_OPTIONS, bufferSize, autoFlush);
+                fileName, this::getStoreFileChannel, append ? APPEND_OPTIONS : TRUNCATE_OPTIONS, bufferSize);
     }
 
     @Override
@@ -259,13 +258,11 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
         private final StoreChannel fileChannel;
         private final ByteBuffer buffer;
         private final NativeScopedBuffer scopedBuffer;
-        private final boolean autoFlush;
 
-        public NativeByteBufferOutputStream(StoreChannel fileChannel, int bufferSize, boolean autoFlush) {
+        public NativeByteBufferOutputStream(StoreChannel fileChannel, int bufferSize) {
             this.fileChannel = fileChannel;
             this.scopedBuffer =
                     new NativeScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
-            this.autoFlush = autoFlush;
             this.buffer = scopedBuffer.getBuffer();
         }
 
@@ -275,9 +272,6 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
                 flushBuffer();
             }
             buffer.put((byte) b);
-            if (autoFlush) {
-                flushBuffer();
-            }
         }
 
         @Override
@@ -290,16 +284,18 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
                 length = Math.min(len - offset, buffer.remaining());
                 buffer.put(b, offset, length);
             }
-            if (autoFlush) {
+        }
+
+        @Override
+        public void flush() throws IOException {
+            if (buffer.position() > 0) {
                 flushBuffer();
             }
         }
 
         @Override
         public void close() throws IOException {
-            if (buffer.position() > 0) {
-                flushBuffer();
-            }
+            flush();
             fileChannel.close();
             scopedBuffer.close();
             super.close();
@@ -340,7 +336,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
         }
 
         @Override
-        public int read() throws IOException {
+        public int read() {
             throw new UnsupportedOperationException("All stream operations should be buffer based.");
         }
 
