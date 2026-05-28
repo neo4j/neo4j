@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UnknownSize
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ParameterRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
+class ParameterRewriterTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("Should give default values to explicit parameter after rewrite") {
     val temp = ExplicitParameter("prop", CTString, ExactSize(5))(InputPosition.NONE)

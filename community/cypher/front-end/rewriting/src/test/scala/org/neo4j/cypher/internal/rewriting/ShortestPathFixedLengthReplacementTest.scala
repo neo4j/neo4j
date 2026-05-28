@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.RewriteShortestPathWithFixedLengthRel
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ShortestPathFixedLengthReplacementTest extends CypherFunSuite with RewriteTest {
+class ShortestPathFixedLengthReplacementTest extends CypherFunSuite3 with RewriteTest {
 
   test("MATCH shortestPath((src)-[r]->(dst)) RETURN *") {
     assertRewrite(

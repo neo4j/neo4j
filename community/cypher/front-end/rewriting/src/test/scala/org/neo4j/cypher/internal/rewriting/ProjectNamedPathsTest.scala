@@ -60,10 +60,10 @@ import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.Normal
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport with TestName {
+class ProjectNamedPathsTest extends CypherFunSuite3 with AstRewritingTestSupport with TestName {
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(ProjectNamedPaths)
 

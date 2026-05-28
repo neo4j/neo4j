@@ -22,9 +22,9 @@ import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class repeatWithSizeLimitTest extends CypherFunSuite with PredicateTestSupport {
+class repeatWithSizeLimitTest extends CypherFunSuite3 with PredicateTestSupport {
 
   override def rewriter: Rewriter = getRewriterAndMonitor._1
 

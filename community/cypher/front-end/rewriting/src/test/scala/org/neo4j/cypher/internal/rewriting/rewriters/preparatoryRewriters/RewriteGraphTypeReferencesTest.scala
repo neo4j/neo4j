@@ -43,12 +43,12 @@ import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.DateType
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.cypher.internal.util.symbols.StringType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 
 import scala.collection.immutable.ArraySeq
 
-class RewriteGraphTypeReferencesTest extends CypherFunSuite with AstGraphTypeConstructionTestSupport {
+class RewriteGraphTypeReferencesTest extends CypherFunSuite3 with AstGraphTypeConstructionTestSupport {
 
   val mockExceptionFactory: CypherExceptionFactory = mock[CypherExceptionFactory]
   val rewriter: Rewriter = RewriteGraphTypeReferences.getRewriter(mockExceptionFactory)

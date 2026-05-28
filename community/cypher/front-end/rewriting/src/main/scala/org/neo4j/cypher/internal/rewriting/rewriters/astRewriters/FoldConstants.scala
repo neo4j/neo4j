@@ -140,19 +140,28 @@ case object FoldConstants extends StepSequencer.Step with DefaultPostCondition w
           Subtract(SignedDecimalIntegerLiteral("0")(e.position.zeroLength), e.rhs)(e.position)
 
         case e @ Equals(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value == rhs.value, e)
-        case e @ Equals(lhs: DoubleLiteral, rhs: DoubleLiteral)   => asAst(lhs.value == rhs.value, e)
-        case e @ Equals(lhs: IntegerLiteral, rhs: DoubleLiteral)  => asAst(lhs.value.doubleValue() == rhs.value, e)
-        case e @ Equals(lhs: DoubleLiteral, rhs: IntegerLiteral)  => asAst(lhs.value == rhs.value.doubleValue(), e)
+        case e @ Equals(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
+          asAst(primitiveDoubleEquals(lhs.value, rhs.value), e)
+        case e @ Equals(lhs: IntegerLiteral, rhs: DoubleLiteral) =>
+          asAst(lhs.value.doubleValue() == rhs.value.doubleValue(), e)
+        case e @ Equals(lhs: DoubleLiteral, rhs: IntegerLiteral) =>
+          asAst(lhs.value.doubleValue() == rhs.value.doubleValue(), e)
 
         case e @ LessThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value < rhs.value, e)
-        case e @ LessThan(lhs: DoubleLiteral, rhs: DoubleLiteral)   => asAst(lhs.value < rhs.value, e)
-        case e @ LessThan(lhs: IntegerLiteral, rhs: DoubleLiteral)  => asAst(lhs.value.doubleValue() < rhs.value, e)
-        case e @ LessThan(lhs: DoubleLiteral, rhs: IntegerLiteral)  => asAst(lhs.value < rhs.value.doubleValue(), e)
+        case e @ LessThan(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
+          asAst(primitiveDoubleLessThan(lhs.value, rhs.value), e)
+        case e @ LessThan(lhs: IntegerLiteral, rhs: DoubleLiteral) =>
+          asAst(lhs.value.doubleValue() < rhs.value.doubleValue(), e)
+        case e @ LessThan(lhs: DoubleLiteral, rhs: IntegerLiteral) =>
+          asAst(lhs.value.doubleValue() < rhs.value.doubleValue(), e)
 
         case e @ GreaterThan(lhs: IntegerLiteral, rhs: IntegerLiteral) => asAst(lhs.value > rhs.value, e)
-        case e @ GreaterThan(lhs: DoubleLiteral, rhs: DoubleLiteral)   => asAst(lhs.value > rhs.value, e)
-        case e @ GreaterThan(lhs: IntegerLiteral, rhs: DoubleLiteral)  => asAst(lhs.value.doubleValue() > rhs.value, e)
-        case e @ GreaterThan(lhs: DoubleLiteral, rhs: IntegerLiteral)  => asAst(lhs.value > rhs.value.doubleValue(), e)
+        case e @ GreaterThan(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
+          asAst(primitiveDoubleGreaterThan(lhs.value, rhs.value), e)
+        case e @ GreaterThan(lhs: IntegerLiteral, rhs: DoubleLiteral) =>
+          asAst(lhs.value.doubleValue() > rhs.value.doubleValue(), e)
+        case e @ GreaterThan(lhs: DoubleLiteral, rhs: IntegerLiteral) =>
+          asAst(lhs.value.doubleValue() > rhs.value.doubleValue(), e)
 
         case e => e
       }
@@ -164,4 +173,14 @@ case object FoldConstants extends StepSequencer.Step with DefaultPostCondition w
 
   private def asAst(b: Boolean, e: Expression) =
     if (b) True()(e.position.zeroLength) else False()(e.position.zeroLength)
+
+  // Use primitive comparison: Scala `==` on java.lang.Double boxes uses equals(), where NaN == NaN is true.
+  private def primitiveDoubleEquals(lhs: java.lang.Double, rhs: java.lang.Double): Boolean =
+    lhs.doubleValue() == rhs.doubleValue()
+
+  private def primitiveDoubleLessThan(lhs: java.lang.Double, rhs: java.lang.Double): Boolean =
+    lhs.doubleValue() < rhs.doubleValue()
+
+  private def primitiveDoubleGreaterThan(lhs: java.lang.Double, rhs: java.lang.Double): Boolean =
+    lhs.doubleValue() > rhs.doubleValue()
 }

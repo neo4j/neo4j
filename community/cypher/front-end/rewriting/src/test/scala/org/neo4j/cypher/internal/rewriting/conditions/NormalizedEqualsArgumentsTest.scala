@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionTestSupport {
+class NormalizedEqualsArgumentsTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   private val condition: Any => Seq[String] = NormalizedEqualsArguments(_)(CancellationChecker.NeverCancelled)
 
@@ -39,7 +39,7 @@ class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionT
   }
 }
 
-trait NormalizedEqualsArgumentsIdTestBase extends CypherFunSuite with AstConstructionTestSupport {
+trait NormalizedEqualsArgumentsIdTestBase extends CypherFunSuite3 with AstConstructionTestSupport {
   protected def makeId(e: Expression): FunctionInvocation
 
   private val condition: Any => Seq[String] = NormalizedEqualsArguments(_)(CancellationChecker.NeverCancelled)

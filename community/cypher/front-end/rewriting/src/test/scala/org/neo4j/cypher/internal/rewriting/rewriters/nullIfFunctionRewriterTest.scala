@@ -19,10 +19,10 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.NullIfFunctionRewriter
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class nullIfFunctionRewriterTest extends CypherFunSuite with RewriteTest with TestName {
+class nullIfFunctionRewriterTest extends CypherFunSuite3 with RewriteTest with TestName {
 
   override val rewriterUnderTest: Rewriter = NullIfFunctionRewriter.instance
 

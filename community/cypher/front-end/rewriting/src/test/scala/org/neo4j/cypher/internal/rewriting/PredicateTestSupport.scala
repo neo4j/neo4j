@@ -29,11 +29,14 @@ import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
+import org.scalatest.Assertions
+import org.scalatest.Succeeded
+import org.scalatest.funsuite.AnyFunSuiteLike
 
 trait PredicateTestSupport {
-  self: CypherFunSuite =>
+  // Compiled into the Scala 3 test-jar but mixed into Scala 2.13 front-end tests: avoid ScalaTest macros.
+  self: AnyFunSuiteLike with Assertions =>
 
   private val pos = DummyPosition(0)
 
@@ -50,8 +53,10 @@ trait PredicateTestSupport {
 
     def <=>(other: Expression): Assertion = {
       val output = rewriter(x)
-
-      output should equal(other)
+      if (output != other) {
+        throw new AssertionError(s"Expected $other but was $output")
+      }
+      Succeeded
     }
   }
 

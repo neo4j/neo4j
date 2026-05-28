@@ -19,13 +19,13 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.CypherTypeNormalizationRewriter
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
 /**
  * Note: This test is intended to check the rewriter works. To see more detailed normalization tests
  * see CypherTypeNameTest.scala :)
  */
-class cypherTypeNormalizationRewriterTest extends CypherFunSuite with RewriteTest {
+class cypherTypeNormalizationRewriterTest extends CypherFunSuite3 with RewriteTest {
 
   override val rewriterUnderTest: Rewriter = CypherTypeNormalizationRewriter.instance
 

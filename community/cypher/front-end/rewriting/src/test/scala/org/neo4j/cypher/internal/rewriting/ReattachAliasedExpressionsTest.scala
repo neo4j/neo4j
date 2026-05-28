@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.rewriting.rewriters.reattachAliasedExpressions
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ReattachAliasedExpressionsTest extends CypherFunSuite with RewriteTest {
+class ReattachAliasedExpressionsTest extends CypherFunSuite3 with RewriteTest {
 
   override def rewriterUnderTest: Rewriter = reattachAliasedExpressions
 

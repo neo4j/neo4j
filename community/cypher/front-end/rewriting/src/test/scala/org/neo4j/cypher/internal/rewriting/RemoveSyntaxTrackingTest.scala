@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class RemoveSyntaxTrackingTest extends CypherFunSuite with AstRewritingTestSupport {
+class RemoveSyntaxTrackingTest extends CypherFunSuite3 with AstRewritingTestSupport {
 
   private val prettifier = Prettifier(
     ExpressionStringifier((e: Expression) => e.asCanonicalStringVal)

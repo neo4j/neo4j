@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
 case object TestCondition extends ContainsNoMatchingStatementNodes {
 
@@ -35,7 +35,7 @@ case object TestCondition extends ContainsNoMatchingStatementNodes {
   override val name: String = "NoMatchingNodesTest"
 }
 
-class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTestSupport {
+class ContainsNoMatchingNodesTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   val condition: Any => Seq[String] = TestCondition(_)(CancellationChecker.NeverCancelled)
 

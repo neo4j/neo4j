@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.UnwrapParenthesizedPath
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class unwrapParenthesizedPathTest extends CypherFunSuite with RewriteTest {
+class unwrapParenthesizedPathTest extends CypherFunSuite3 with RewriteTest {
 
   override def rewriterUnderTest: Rewriter = UnwrapParenthesizedPath.instance
 

@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.Normal
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.gqlstatus.GqlHelper
 
-class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest {
+class NormalizeWithAndReturnClausesTest extends CypherFunSuite3 with RewriteTest {
 
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 

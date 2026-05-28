@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.rewriting.rewriters.inliningContextCreator
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSupport {
+class InliningContextCreatorTest extends CypherFunSuite3 with AstRewritingTestSupport {
 
   private val identA = varFor("a")
   private val identB = varFor("b")

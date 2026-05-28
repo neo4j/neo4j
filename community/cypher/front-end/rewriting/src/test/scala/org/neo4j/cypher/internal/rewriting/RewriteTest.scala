@@ -29,10 +29,13 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Assertions
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
 
 trait RewriteTest extends AstRewritingTestSupport {
-  self: CypherFunSuite =>
+  // CypherFunSuite (2.13) and CypherFunSuite3 both satisfy this while front-end is still on 2.13.
+  self: AnyFunSuiteLike with Assertions with Matchers =>
 
   def sendStatementToRewriterConstructor: Boolean = false
 
@@ -44,10 +47,16 @@ trait RewriteTest extends AstRewritingTestSupport {
     ExpressionStringifier((e: Expression) => e.asCanonicalStringVal)
   )
 
+  // Avoid ScalaTest macro assert: this trait is compiled into the Scala 3 test-jar but also
+  // mixed into Scala 2.13 front-end tests, which load ScalaTest 2.13 at runtime.
+  private def assertSameRewrite(actual: Any, expected: Any, clue: => String): Unit =
+    if (!(actual === expected)) throw new AssertionError(clue)
+
   protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val (expected, result) = getRewrite(originalQuery, expectedQuery)
-    assert(
-      result === expected,
+    assertSameRewrite(
+      result,
+      expected,
       s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
@@ -61,16 +70,18 @@ trait RewriteTest extends AstRewritingTestSupport {
   ): Unit = {
     val (expected, result) = getRewrite(originalQuery, expectedQuery)
     val updatedExpected = additionalExpectedAstUpdates(expected)
-    assert(
-      result === updatedExpected,
+    assertSameRewrite(
+      result,
+      updatedExpected,
       s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(updatedExpected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
 
   protected def assertRewrite(version: CypherVersion, originalQuery: String, expectedQuery: String): Unit = {
     val (expected, result) = getRewrite(version, originalQuery, expectedQuery)
-    assert(
-      result === expected,
+    assertSameRewrite(
+      result,
+      expected,
       s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
@@ -83,16 +94,18 @@ trait RewriteTest extends AstRewritingTestSupport {
   ): Unit = {
     val (expected, result) = getRewrite(version, originalQuery, expectedQuery)
     val updatedExpected = additionalExpectedAstUpdates(expected)
-    assert(
-      result === updatedExpected,
+    assertSameRewrite(
+      result,
+      updatedExpected,
       s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(updatedExpected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
 
   protected def assertRewriteWithFeatures(originalQuery: String, expectedQuery: String): Unit = {
     val (expected, result) = getRewriteWithFeatures(originalQuery, expectedQuery)
-    assert(
-      result === expected,
+    assertSameRewrite(
+      result,
+      expected,
       s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
@@ -103,8 +116,9 @@ trait RewriteTest extends AstRewritingTestSupport {
     expectedQuery: String
   ): Unit = {
     val (expected, result) = getRewriteWithFeatures(version, originalQuery, expectedQuery)
-    assert(
-      result === expected,
+    assertSameRewrite(
+      result,
+      expected,
       s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
@@ -115,8 +129,9 @@ trait RewriteTest extends AstRewritingTestSupport {
     expectedQuery: String
   ): Unit = {
     val (expected, result) = getRewriteWithFeatures(version, originalQuery, expectedQuery)
-    assert(
-      prettifier.asString(expected) === prettifier.asString(result.asInstanceOf[Statement]),
+    assertSameRewrite(
+      prettifier.asString(expected),
+      prettifier.asString(result.asInstanceOf[Statement]),
       s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
@@ -206,8 +221,9 @@ trait RewriteTest extends AstRewritingTestSupport {
       if (sendStatementToRewriterConstructor) rewriterUnderTest(original)
       else rewriterUnderTest
     )
-    assert(
-      result === original,
+    assertSameRewrite(
+      result,
+      original,
       s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
@@ -218,8 +234,9 @@ trait RewriteTest extends AstRewritingTestSupport {
       if (sendStatementToRewriterConstructor) rewriterUnderTest(original)
       else rewriterUnderTest
     )
-    assert(
-      result === original,
+    assertSameRewrite(
+      result,
+      original,
       s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }

@@ -35,9 +35,9 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.ExpandShowWhere
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
+class ExpandShowWhereTest extends CypherFunSuite3 with RewriteTest {
   val rewriterUnderTest: Rewriter = ExpandShowWhere.instance
 
   test("SHOW ALIASES FOR DATABASE") {

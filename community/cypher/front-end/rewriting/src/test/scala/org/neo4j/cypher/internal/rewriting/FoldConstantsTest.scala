@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class FoldConstantsTest extends CypherFunSuite with RewriteTest {
+class FoldConstantsTest extends CypherFunSuite3 with RewriteTest {
   val exceptionFactory = Neo4jCypherExceptionFactory(null, None)
 
   val rewriterUnderTest: Rewriter = fixedPoint(CancellationChecker.neverCancelled())(
@@ -68,6 +68,8 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 1.2=1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1+(5*4)/(3*4)=2 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertIsNotRewritten("MATCH (n) WHERE 1=null RETURN n AS r")
+    assertRewrite("RETURN 0.0/0.0 = 0.0/0.0 AS r", "RETURN false AS r")
+    assertIsNotRewritten("RETURN NaN = NaN AS r")
   }
 
   test("solves not equals comparisons between literals") {
@@ -86,6 +88,7 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
 
     // preserves null
     assertRewrite("MATCH (n) WHERE 1<>null RETURN n AS r", "MATCH (n) WHERE NOT (1=null) RETURN n AS r")
+    assertRewrite("RETURN 0.0/0.0 <> 0.0/0.0 AS r", "RETURN NOT false AS r")
   }
 
   test("solve greater than comparisons between literals") {

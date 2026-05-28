@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.GraphTypeCanon
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.RewriteGraphTypeReferences
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class GraphTypeCanonicalizerTest extends CypherFunSuite with RewriteTest with TestName {
+class GraphTypeCanonicalizerTest extends CypherFunSuite3 with RewriteTest with TestName {
 
   override def rewriterUnderTest: Rewriter = rewriterUnderTest("not used")
 

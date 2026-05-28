@@ -19,10 +19,10 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class QuantifiedPathPatternNodeInsertRewriterTest extends CypherFunSuite with RewriteTest with TestName {
+class QuantifiedPathPatternNodeInsertRewriterTest extends CypherFunSuite3 with RewriteTest with TestName {
 
   override def rewriterUnderTest: Rewriter = QuantifiedPathPatternNodeInsertRewriter.instance
 

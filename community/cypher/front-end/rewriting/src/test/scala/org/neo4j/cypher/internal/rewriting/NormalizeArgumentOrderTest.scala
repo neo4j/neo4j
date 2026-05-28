@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizeArgumentOrder
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTestSupport {
+class NormalizeArgumentOrderTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("a.prop = b.prop rewritten to: a.prop = b.prop") {
     val lhs = prop("a", "prop")
@@ -80,7 +80,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 }
 
-trait NormalizeArgumentOrderIdTestBase extends CypherFunSuite with AstConstructionTestSupport {
+trait NormalizeArgumentOrderIdTestBase extends CypherFunSuite3 with AstConstructionTestSupport {
 
   protected def makeId(e: Expression): FunctionInvocation
 

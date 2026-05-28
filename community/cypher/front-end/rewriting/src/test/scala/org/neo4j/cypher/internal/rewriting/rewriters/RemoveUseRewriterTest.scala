@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class RemoveUseRewriterTest extends CypherFunSuite with RewriteTest {
+class RemoveUseRewriterTest extends CypherFunSuite3 with RewriteTest {
 
   override val rewriterUnderTest: Rewriter = RemoveUseRewriter.instance
 

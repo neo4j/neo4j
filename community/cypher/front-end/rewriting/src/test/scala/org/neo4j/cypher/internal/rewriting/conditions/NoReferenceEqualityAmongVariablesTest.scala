@@ -22,9 +22,9 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
+class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   private val collector: Any => Seq[String] = NoReferenceEqualityAmongVariables(_)(CancellationChecker.NeverCancelled)
 

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizeNotEquals
 import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class NormalizeNotEqualsTest extends CypherFunSuite {
+class NormalizeNotEqualsTest extends CypherFunSuite3 {
 
   val pos = DummyPosition(0).withInputLength(0)
   val lhs: Expression = StringLiteral("42")(pos)

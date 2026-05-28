@@ -104,14 +104,14 @@ case object SearchPredicateNormalizer extends Step with DefaultPostCondition wit
       case n: Not =>
         var isInverted = false
         var e: Expression = n
-        do {
+        while (e.isInstanceOf[Not]) {
           e match {
             case not: Not =>
               e = not.rhs
               isInverted = !isInverted
             case _ =>
           }
-        } while (e.isInstanceOf[Not])
+        }
         e match {
           case p: Property if p.map == bindingVariable =>
             acc => SkipChildren(acc + (n, replaceProperty(p, isInverted)))

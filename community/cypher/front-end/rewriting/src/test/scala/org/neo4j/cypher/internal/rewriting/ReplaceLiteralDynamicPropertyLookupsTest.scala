@@ -21,9 +21,9 @@ import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.ReplaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ReplaceLiteralDynamicPropertyLookupsTest extends CypherFunSuite with AstConstructionTestSupport {
+class ReplaceLiteralDynamicPropertyLookupsTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("Replaces literal dynamic property lookups") {
     val input: ASTNode = containerIndex(varFor("a"), literalString("name"))
