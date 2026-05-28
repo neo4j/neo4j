@@ -390,6 +390,7 @@
               <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
               <jdk.custom.options>${jdk.custom.options}</jdk.custom.options>
+              <s3mock.version>${s3mock.version}</s3mock.version>
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
           </configuration>
