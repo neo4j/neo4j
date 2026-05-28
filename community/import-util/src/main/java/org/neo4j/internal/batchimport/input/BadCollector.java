@@ -166,7 +166,7 @@ public final class BadCollector implements Collector {
         this.backPressureThreshold = backPressureThreshold;
         this.logBadEntries = !skipBadEntriesLogging;
         this.monitor = monitor;
-        this.logger = new AsyncEvents<>(this::processEvent, AsyncEvents.Monitor.NONE);
+        this.logger = new AsyncEvents<>(this::processEvent);
         this.eventProcessor = new Thread(logger);
         this.eventProcessor.start();
     }

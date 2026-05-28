@@ -70,7 +70,7 @@ class AsyncEventsTest {
     void eventsMustBeProcessedByBackgroundThread() throws Exception {
         EventConsumer consumer = new EventConsumer();
 
-        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer);
         executor.submit(asyncEvents);
 
         Event firstSentEvent = new Event();
@@ -91,7 +91,7 @@ class AsyncEventsTest {
     void mustNotProcessEventInSameThreadWhenNotShutDown() throws Exception {
         EventConsumer consumer = new EventConsumer();
 
-        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer);
         executor.submit(asyncEvents);
 
         asyncEvents.send(new Event());
@@ -106,7 +106,7 @@ class AsyncEventsTest {
     void mustProcessEventsDirectlyWhenShutDown() throws InterruptedException {
         EventConsumer consumer = new EventConsumer();
 
-        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer);
         executor.submit(asyncEvents);
 
         asyncEvents.send(new Event());
@@ -128,7 +128,7 @@ class AsyncEventsTest {
         final CountDownLatch startLatch = new CountDownLatch(1);
         final int threads = 10;
         final int iterations = 2_000;
-        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer);
         executor.submit(asyncEvents);
 
         try (ExecutorService threadPool = Executors.newFixedThreadPool(threads)) {
@@ -169,7 +169,7 @@ class AsyncEventsTest {
         final Event specialShutdownObservedEvent = new Event();
         final CountDownLatch awaitStartLatch = new CountDownLatch(1);
         final EventConsumer consumer = new EventConsumer();
-        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer, AsyncEvents.Monitor.NONE);
+        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>(consumer);
         executor.submit(asyncEvents);
 
         // Wait for the background thread to start processing events

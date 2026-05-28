@@ -31,9 +31,8 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.util.concurrent.AsyncEvents;
 
-public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog, AsyncEvents.Monitor {
+public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog {
     private final InternalLog log;
 
     public RotatingRequestLog(InternalLogProvider logProvider) {
@@ -75,9 +74,6 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
             return null;
         }
     }
-
-    @Override
-    public void eventCount(long count) {}
 
     private static String findRequestURI(Request request) {
         var requestURI = swallowExceptions(request, Request::getHttpURI);

@@ -19,7 +19,10 @@
  */
 package org.neo4j.util.concurrent;
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import static java.lang.invoke.ConstantBootstraps.fieldVarHandle;
+import static java.lang.invoke.MethodHandles.lookup;
+
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
@@ -40,21 +43,15 @@ import java.util.function.Consumer;
  *
  * @param <T> The type of events the {@code AsyncEvents} will process.
  */
-public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, Runnable {
-    public interface Monitor {
-        void eventCount(long count);
+public class AsyncEvents<T extends AsyncEvent> implements Runnable {
 
-        Monitor NONE = count -> {};
-    }
+    private static final VarHandle STACK =
+            fieldVarHandle(lookup(), "stack", VarHandle.class, AsyncEvents.class, AsyncEvent.class);
 
-    // TODO use VarHandles in Java 9
-    private static final AtomicReferenceFieldUpdater<AsyncEvents, AsyncEvent> STACK_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(AsyncEvents.class, AsyncEvent.class, "stack");
     private static final Sentinel END_SENTINEL = new Sentinel("END");
     private static final Sentinel SHUTDOWN_SENTINEL = new Sentinel("SHUTDOWN");
 
     private final Consumer<T> eventConsumer;
-    private final Monitor monitor;
     private final BinaryLatch startupLatch;
     private final BinaryLatch shutdownLatch;
 
@@ -69,23 +66,21 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
      *
      * @param eventConsumer The {@link Consumer} used for processing the events that are sent in.
      */
-    public AsyncEvents(Consumer<T> eventConsumer, Monitor monitor) {
+    public AsyncEvents(Consumer<T> eventConsumer) {
         this.eventConsumer = eventConsumer;
-        this.monitor = monitor;
         this.startupLatch = new BinaryLatch();
         this.shutdownLatch = new BinaryLatch();
         this.stack = END_SENTINEL;
     }
 
-    @Override
     public void send(T event) {
-        AsyncEvent prev = STACK_UPDATER.getAndSet(this, event);
+        AsyncEvent prev = (AsyncEvent) STACK.getAndSet(this, event);
         assert prev != null;
         event.next = prev;
         if (prev == END_SENTINEL) {
             LockSupport.unpark(backgroundThread);
         } else if (prev == SHUTDOWN_SENTINEL) {
-            AsyncEvent events = STACK_UPDATER.getAndSet(this, SHUTDOWN_SENTINEL);
+            AsyncEvent events = (AsyncEvent) STACK.getAndSet(this, SHUTDOWN_SENTINEL);
             process(events);
         }
     }
@@ -98,15 +93,18 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
 
         try {
             do {
-                AsyncEvent events = STACK_UPDATER.getAndSet(this, END_SENTINEL);
+                AsyncEvent events = (AsyncEvent) STACK.getAndSet(this, END_SENTINEL);
                 process(events);
                 if (stack == END_SENTINEL && !shutdown) {
                     LockSupport.park(this);
                 }
             } while (!shutdown);
 
-            AsyncEvent events = STACK_UPDATER.getAndSet(this, SHUTDOWN_SENTINEL);
+            AsyncEvent events = (AsyncEvent) STACK.getAndSet(this, SHUTDOWN_SENTINEL);
             process(events);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
         } finally {
             backgroundThread = null;
             shutdownLatch.release();
@@ -126,7 +124,6 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
 
     private AsyncEvent reverseAndStripEndMark(AsyncEvent events) {
         AsyncEvent result = null;
-        long count = 0;
         while (events != END_SENTINEL && events != SHUTDOWN_SENTINEL) {
             AsyncEvent next;
             do {
@@ -135,10 +132,6 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
             events.next = result;
             result = events;
             events = next;
-            count++;
-        }
-        if (count > 0) {
-            monitor.eventCount(count);
         }
         return result;
     }
@@ -152,10 +145,6 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
         assert !shutdown : "Already shut down";
         shutdown = true;
         LockSupport.unpark(backgroundThread);
-    }
-
-    public void awaitStartup() {
-        startupLatch.await();
     }
 
     public void awaitTermination() {
