@@ -5576,7 +5576,7 @@ class ExpandCommandClauseTest extends CypherFunSuite with AstRewritingTestSuppor
     assertRewrite(
       "SHOW USERS YIELD *",
       """SHOW USERS
-        |YIELD user, roles, passwordChangeRequired, suspended, home""".stripMargin
+        |YIELD user, roles, passwordChangeRequired, suspended, home, tags""".stripMargin
     )
   }
 
@@ -5584,8 +5584,8 @@ class ExpandCommandClauseTest extends CypherFunSuite with AstRewritingTestSuppor
     assertRewrite(
       "SHOW USERS WITH AUTH YIELD * RETURN *",
       """SHOW USERS WITH AUTH
-        |YIELD user, roles, passwordChangeRequired, suspended, home, provider, auth
-        |RETURN user, roles, passwordChangeRequired, suspended, home, provider, auth""".stripMargin
+        |YIELD user, roles, passwordChangeRequired, suspended, home, provider, auth, tags
+        |RETURN user, roles, passwordChangeRequired, suspended, home, provider, auth, tags""".stripMargin
     )
   }
 

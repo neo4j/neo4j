@@ -442,11 +442,11 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val user1Map = user(username) ++ Map("passwordChangeRequired" -> null)
     val user2Map = user(newUsername, passwordChangeRequired = false)
     resultWithAuth.toList should be(List(
-      addNativeAuthColumns(defaultUser, pwChangeRequired = true),
-      addExternalAuthColumns(user1Map, "Foo", s"$username.foo@example.com"),
-      addExternalAuthColumns(user1Map, "Bar", s"$username.bar@example.com"),
-      addNativeAuthColumns(user2Map, pwChangeRequired = false),
-      addExternalAuthColumns(user2Map, "Baz", s"$newUsername.baz@example.com")
+      withTags(addNativeAuthColumns(defaultUser, pwChangeRequired = true)),
+      withTags(addExternalAuthColumns(user1Map, "Foo", s"$username.foo@example.com")),
+      withTags(addExternalAuthColumns(user1Map, "Bar", s"$username.bar@example.com")),
+      withTags(addNativeAuthColumns(user2Map, pwChangeRequired = false)),
+      withTags(addExternalAuthColumns(user2Map, "Baz", s"$newUsername.baz@example.com"))
     ).sortBy(m => (m("user").asInstanceOf[String], m("provider").asInstanceOf[String])))
 
     // WHEN
@@ -454,9 +454,9 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     resultWithoutAuth.toList should be(List(
-      defaultUser,
-      user(username) ++ Map("passwordChangeRequired" -> null),
-      user(newUsername, passwordChangeRequired = false)
+      withTags(defaultUser),
+      withTags(user(username) ++ Map("passwordChangeRequired" -> null)),
+      withTags(user(newUsername, passwordChangeRequired = false))
     ).sortBy(m => m("user").asInstanceOf[String]))
   }
 
@@ -2159,6 +2159,9 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val authMap = Map[String, Any]("password" -> "***", "changeRequired" -> pwChangeRequired)
     userMap ++ Map("provider" -> NATIVE_AUTH, "auth" -> authMap)
   }
+
+  private def withTags(userMap: Map[String, Any]): Map[String, Any] =
+    userMap + ("tags" -> List.empty[String])
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {
     val login = authManager.login(SecurityTestUtils.authToken(username, password), EMBEDDED_CONNECTION)

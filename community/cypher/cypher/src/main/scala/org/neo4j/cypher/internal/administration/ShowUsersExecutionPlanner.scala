@@ -36,6 +36,7 @@ import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.HAS_AUTH
 import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER
 import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_CREDENTIALS_EXPIRED_PROPERTY
 import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.USER_TAGS_PROPERTY
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH
 import org.neo4j.values.storable.Values
@@ -65,7 +66,7 @@ case class ShowUsersExecutionPlanner(
       securityAuthorizationHandler,
       s"""MATCH (u:$USER)
          |$authMatch
-         |WITH u.$USER_NAME_PROPERTY as user, null as roles, u.$USER_CREDENTIALS_EXPIRED_PROPERTY AS passwordChangeRequired, null as suspended, null as home
+         |WITH u.$USER_NAME_PROPERTY as user, null as roles, u.$USER_CREDENTIALS_EXPIRED_PROPERTY AS passwordChangeRequired, null as suspended, null as home, [t IN coalesce(u.$USER_TAGS_PROPERTY, []) | t] as tags
          |$authColumns
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
@@ -87,7 +88,7 @@ case class ShowUsersExecutionPlanner(
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""MATCH (u:$USER)
-         |WITH u.$USER_NAME_PROPERTY as user, null as roles, u.$USER_CREDENTIALS_EXPIRED_PROPERTY AS passwordChangeRequired, null as suspended, null as home
+         |WITH u.$USER_NAME_PROPERTY as user, null as roles, u.$USER_CREDENTIALS_EXPIRED_PROPERTY AS passwordChangeRequired, null as suspended, null as home, [t IN coalesce(u.$USER_TAGS_PROPERTY, []) | t] as tags
          |WHERE user = $$`$currentUserKey`
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,

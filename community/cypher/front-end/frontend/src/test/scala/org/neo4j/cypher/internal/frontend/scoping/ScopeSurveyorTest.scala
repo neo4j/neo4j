@@ -4229,18 +4229,24 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
         ExpectedResult.TableResult("custom", "suspended"),
         ExpectedWorkingScope(
           Ast("SHOW USERS"),
-          Declared(variables = Seq("user", "roles", "passwordChangeRequired", "suspended", "home")),
-          Outgoing(variables = Set("user", "roles", "passwordChangeRequired", "suspended", "home")),
-          ExpectedResult.TableResult("user", "roles", "passwordChangeRequired", "suspended", "home")
+          Declared(variables = Seq("user", "roles", "passwordChangeRequired", "suspended", "home", "tags")),
+          Outgoing(variables = Set("user", "roles", "passwordChangeRequired", "suspended", "home", "tags")),
+          ExpectedResult.TableResult("user", "roles", "passwordChangeRequired", "suspended", "home", "tags")
         ),
         ExpectedWorkingScope(
           Ast("YIELD user, suspended"),
-          Incoming(variables = Set("suspended", "user", "roles", "passwordChangeRequired", "home")),
+          Incoming(variables = Set("suspended", "user", "roles", "passwordChangeRequired", "home", "tags")),
           Referenced(Set("suspended", "user")),
           Outgoing(variables = Set("suspended", "user")),
           ExpectedResult.TableResult("suspended", "user"),
-          ExpectedWorkingScope.varExp("user", Set("suspended", "user", "roles", "passwordChangeRequired", "home")),
-          ExpectedWorkingScope.varExp("suspended", Set("suspended", "user", "roles", "passwordChangeRequired", "home"))
+          ExpectedWorkingScope.varExp(
+            "user",
+            Set("suspended", "user", "roles", "passwordChangeRequired", "home", "tags")
+          ),
+          ExpectedWorkingScope.varExp(
+            "suspended",
+            Set("suspended", "user", "roles", "passwordChangeRequired", "home", "tags")
+          )
         ),
         ExpectedWorkingScope(
           Ast("RETURN count(user) AS custom, suspended"),

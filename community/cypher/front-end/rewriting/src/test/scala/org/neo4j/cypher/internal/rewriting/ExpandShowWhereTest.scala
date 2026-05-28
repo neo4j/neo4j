@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
+import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
@@ -206,7 +208,19 @@ class ExpandShowWhereTest extends CypherFunSuite3 with RewriteTest {
         ))
       case o => o
     }
-    val updatedExpected = expected.asInstanceOf[ReadAdministrationCommand].withYieldOrWhere(updatedYield)
+    val withYield = expected.asInstanceOf[ReadAdministrationCommand].withYieldOrWhere(updatedYield)
+    // For commands with non-default columns (e.g. ShowUsers.tags), apply() inflates
+    // defaultColumnSet under YIELD *, but the rewriter preserves the original WHERE-form
+    // defaultColumnSet via copy(). Align expected to the rewriter's view.
+    val updatedExpected = (withYield, result) match {
+      case (e: ShowUsers, r: ShowUsers) =>
+        r.defaultColumnSet.map(_.name) shouldBe expectedDefaultColumns
+        e.copy(defaultColumnSet = r.defaultColumnSet)(e.position)
+      case (e: ShowCurrentUser, r: ShowCurrentUser) =>
+        r.defaultColumnSet.map(_.name) shouldBe expectedDefaultColumns
+        e.copy(defaultColumnSet = r.defaultColumnSet)(e.position)
+      case _ => withYield
+    }
 
     assert(
       result === updatedExpected,

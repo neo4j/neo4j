@@ -348,16 +348,23 @@ final case class ShowUsers(
 object ShowUsers {
 
   def apply(yieldOrWhere: YieldOrWhere, withAuth: Boolean)(position: InputPosition): ShowUsers = {
-    val baseColumns = List(
-      ShowColumn("user")(position),
-      ShowColumn("roles", CTList(CTString))(position),
-      ShowColumn("passwordChangeRequired", CTBoolean)(position),
-      ShowColumn("suspended", CTBoolean)(position),
-      ShowColumn("home")(position)
+    val baseColumns: List[(ShowColumn, DefaultOrAllShowColumns.ShowByDefault)] = List(
+      (ShowColumn("user")(position), true),
+      (ShowColumn("roles", CTList(CTString))(position), true),
+      (ShowColumn("passwordChangeRequired", CTBoolean)(position), true),
+      (ShowColumn("suspended", CTBoolean)(position), true),
+      (ShowColumn("home")(position), true)
     )
-    val columns =
-      if (withAuth) baseColumns ++ List(ShowColumn("provider")(position), ShowColumn("auth", CTMap)(position))
+    val withAuthColumns =
+      if (withAuth)
+        baseColumns ++ List(
+          (ShowColumn("provider")(position), true),
+          (ShowColumn("auth", CTMap)(position), true)
+        )
       else baseColumns
+    // The `tags` column is exposed regardless of the `SemanticFeature.UserTags` flag.
+    val allColumns = withAuthColumns :+ (ShowColumn("tags", CTList(CTString))(position), false)
+    val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
     ShowUsers(
       yieldOrWhere,
       withAuth,
@@ -382,17 +389,19 @@ final case class ShowCurrentUser(
 
 object ShowCurrentUser {
 
-  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowCurrentUser =
-    ShowCurrentUser(
-      yieldOrWhere,
-      List(
-        ShowColumn("user")(position),
-        ShowColumn("roles", CTList(CTString))(position),
-        ShowColumn("passwordChangeRequired", CTBoolean)(position),
-        ShowColumn("suspended", CTBoolean)(position),
-        ShowColumn("home")(position)
-      )
-    )(position)
+  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowCurrentUser = {
+    val allColumns: List[(ShowColumn, DefaultOrAllShowColumns.ShowByDefault)] = List(
+      (ShowColumn("user")(position), true),
+      (ShowColumn("roles", CTList(CTString))(position), true),
+      (ShowColumn("passwordChangeRequired", CTBoolean)(position), true),
+      (ShowColumn("suspended", CTBoolean)(position), true),
+      (ShowColumn("home")(position), true),
+      // The `tags` column is exposed regardless of the `SemanticFeature.UserTags` flag.
+      (ShowColumn("tags", CTList(CTString))(position), false)
+    )
+    val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
+    ShowCurrentUser(yieldOrWhere, columns)(position)
+  }
 }
 
 sealed trait UserAuth extends SemanticAnalysisTooling {
