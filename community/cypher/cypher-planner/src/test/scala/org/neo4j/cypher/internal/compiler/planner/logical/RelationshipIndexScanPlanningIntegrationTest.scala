@@ -533,7 +533,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherPlannerTestSuit
         .produceResults(column("r", "cacheR[r.prop]"), column("r2"))
         .filter(hasLabels("c", "C"), isNotNull(prop("r2", "prop")))
         .expandAll("(b)<-[r2:REL2]-(c)")
-        .filter(andsReorderableAst(hasLabels("b", "B"), hasLabels("a", "A")))
+        .filter("andsReorderable(b: B AND a:A)")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]->(b)",
           indexOrder = IndexOrderNone,
@@ -584,7 +584,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherPlannerTestSuit
           getValue = _ => GetValue,
           indexType = IndexType.RANGE
         )
-        .filter(andsReorderableAst(hasLabels("b", "B"), hasLabels("a", "A")))
+        .filter("andsReorderable(b: B AND a:A)")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]->(b)",
           indexOrder = IndexOrderNone,

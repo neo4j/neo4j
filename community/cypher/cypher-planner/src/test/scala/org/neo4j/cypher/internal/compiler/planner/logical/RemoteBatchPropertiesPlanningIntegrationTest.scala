@@ -33,16 +33,9 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityIntegrationTestSupport
-import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
-import org.neo4j.cypher.internal.frontend.phases.FieldSignature
-import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
-import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.ir.SelectivePathPattern.CountInteger
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
@@ -56,23 +49,9 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode
-import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CTDate
-import org.neo4j.cypher.internal.util.symbols.CTDateTime
-import org.neo4j.cypher.internal.util.symbols.CTDuration
-import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
-import org.neo4j.cypher.internal.util.symbols.CTLocalTime
-import org.neo4j.cypher.internal.util.symbols.CTMap
-import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.symbols.CTTime
-import org.neo4j.cypher.internal.util.symbols.CTZonedDateTime
-import org.neo4j.cypher.internal.util.symbols.CTZonedTime
-import org.neo4j.cypher.internal.util.symbols.CypherType
-
-import scala.collection.immutable.ArraySeq
 
 class RemoteBatchPropertiesPlanningIntegrationTest
     extends AbstractRemoteBatchPropertiesPlanningIntegrationTest(ExecutionModel.default)
@@ -560,6 +539,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
   protected val spdPlanner = plannerBuilder()
     .setDatabaseMode(DatabaseMode.SHARDED)
+    .registerTemporalFunctions()
     .withSetting(
       GraphDatabaseInternalSettings.cypher_remote_batch_properties_implementation,
       RemoteBatchPropertiesImplementation.PLANNER
@@ -1045,7 +1025,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       )
       .nodeByLabelScan("person", "Person")
       .build()
-    plan shouldEqual (expectedPlan)
+    plan shouldEqual expectedPlan
   }
 
   test("probably should but currently does not batch properties when returning entire entities") {
@@ -2313,12 +2293,6 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
   test("date predicate should be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("date")
-          .withInputField("value", CTString)
-          .withOutputType(CTDate)
-          .build()
-      )
       .build()
 
     val query =
@@ -2331,21 +2305,15 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.birthDate] AS `bDate`")
-      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthDate]")(greaterThan(
-        prop("n", "birthDate"),
-        date("1995-09-14")
-      ))
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthDate]")(
+        "n.birthDate > RuntimeConstant(anon_0, date('1995-09-14'))"
+      )
       .allNodeScan("n")
       .build()
   }
 
   test("date predicate without argument should not be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("date")
-          .withOutputType(CTDate)
-          .build()
-      )
       .build()
 
     val query =
@@ -2358,7 +2326,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.prop] AS nProp")
-      .filter(greaterThan(cachedNodeProp("n", "prop"), date()))
+      .filter("cacheN[n.prop] > date()")
       .remoteBatchProperties("cacheNFromStore[n.prop]")
       .allNodeScan("n")
       .build()
@@ -2366,12 +2334,6 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
   test("datetime predicate should be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("datetime")
-          .withInputField("value", CTString)
-          .withOutputType(CTDateTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2384,21 +2346,15 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.birthDate] AS `bDate`")
-      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthDate]")(greaterThan(
-        prop("n", "birthDate"),
-        datetime("2010-01-01")
-      ))
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthDate]")(
+        "n.birthDate > RuntimeConstant(anon_0, datetime('2010-01-01'))"
+      )
       .allNodeScan("n")
       .build()
   }
 
   test("datetime predicate without argument should not be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("datetime")
-          .withOutputType(CTDateTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2411,7 +2367,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.prop] AS nProp")
-      .filter(greaterThan(cachedNodeProp("n", "prop"), datetime()))
+      .filter("cacheN[n.prop] > datetime()")
       .remoteBatchProperties("cacheNFromStore[n.prop]")
       .allNodeScan("n")
       .build()
@@ -2419,12 +2375,6 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
   test("localdatetime predicate should be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("localdatetime")
-          .withInputField("value", CTString)
-          .withOutputType(CTLocalDateTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2437,21 +2387,15 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.birthDate] AS `bDate`")
-      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthDate]")(greaterThan(
-        prop("n", "birthDate"),
-        localdatetime("2010-01-01")
-      ))
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthDate]")(
+        "n.birthDate > RuntimeConstant(anon_0, localdatetime('2010-01-01'))"
+      )
       .allNodeScan("n")
       .build()
   }
 
   test("localdatetime predicate without argument should not be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("localdatetime")
-          .withOutputType(CTLocalDateTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2464,7 +2408,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.prop] AS nProp")
-      .filter(greaterThan(cachedNodeProp("n", "prop"), localdatetime()))
+      .filter("cacheN[n.prop] > localdatetime()")
       .remoteBatchProperties("cacheNFromStore[n.prop]")
       .allNodeScan("n")
       .build()
@@ -2472,12 +2416,6 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
   test("localtime predicate should be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("localtime")
-          .withInputField("value", CTString)
-          .withOutputType(CTLocalTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2490,21 +2428,15 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.birthTime] AS `bTime`")
-      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthTime]")(greaterThan(
-        prop("n", "birthTime"),
-        localtime("04:10")
-      ))
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthTime]")(
+        "n.birthTime > RuntimeConstant(anon_0, localtime('04:10'))"
+      )
       .allNodeScan("n")
       .build()
   }
 
   test("localtime predicate without argument should not be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("localtime")
-          .withOutputType(CTLocalTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2517,7 +2449,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.prop] AS nProp")
-      .filter(greaterThan(cachedNodeProp("n", "prop"), localtime()))
+      .filter("cacheN[n.prop] > localtime()")
       .remoteBatchProperties("cacheNFromStore[n.prop]")
       .allNodeScan("n")
       .build()
@@ -2525,12 +2457,6 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
   test("time predicate should be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("time")
-          .withInputField("value", CTString)
-          .withOutputType(CTTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2543,21 +2469,15 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.birthTime] AS `bTime`")
-      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthTime]")(greaterThan(
-        prop("n", "birthTime"),
-        time("21:40:32+01:00")
-      ))
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.birthTime]")(
+        "n.birthTime > RuntimeConstant(anon_0, time('21:40:32+01:00'))"
+      )
       .allNodeScan("n")
       .build()
   }
 
   test("time predicate without argument should not be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("time")
-          .withOutputType(CTTime)
-          .build()
-      )
       .build()
 
     val query =
@@ -2570,7 +2490,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.prop] AS nProp")
-      .filter(greaterThan(cachedNodeProp("n", "prop"), time()))
+      .filter("cacheN[n.prop] > time()")
       .remoteBatchProperties("cacheNFromStore[n.prop]")
       .allNodeScan("n")
       .build()
@@ -2578,12 +2498,6 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
   test("duration predicate should be pushed down to the shards") {
     val spdPlannerTemporal = spdPlanner.setAllNodesCardinality(10000)
-      .addFunction(
-        functionSignature("duration")
-          .withInputField("value", CTString)
-          .withOutputType(CTDuration)
-          .build()
-      )
       .build()
 
     val query =
@@ -2596,10 +2510,9 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     plan shouldEqual spdPlannerTemporal.subPlanBuilder()
       .projection("cacheN[n.executionDuration] AS `execDur`")
-      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.executionDuration]")(greaterThan(
-        prop("n", "executionDuration"),
-        duration("PT1M")
-      ))
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[n.executionDuration]")(
+        "n.executionDuration > RuntimeConstant(anon_0, duration('PT1M'))"
+      )
       .allNodeScan("n")
       .build()
   }
@@ -2760,7 +2673,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         .projection("cacheN[a.prop] AS `prop`")
         .repeatTrail(`(a) ((left) ... (right))+ (b)`)
         .|.remoteBatchPropertiesWithFilter("cacheRFromStore[rel.prop]")("rel.prop = cacheN[a.prop]")
-        .|.filter(isRepeatTrailUnique("rel"))
+        .|.filter("isRepeatTrailUnique(rel)")
         .|.expandAll("(left)-[rel]->(right)")
         .|.argument("left", "a")
         .remoteBatchProperties("cacheNFromStore[a.prop]")
@@ -3487,16 +3400,9 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
   }
 
   test("should push down parameters or constants to shard") {
-    val durationSignature =
-      functionSignature("duration")
-        .withInputField("value", CTMap)
-        .withOutputType(CTDuration)
-        .build()
-
     val planner =
       spdPlanner
         .setAllNodesCardinality(1000)
-        .addFunction(durationSignature)
         .build()
 
     val query =
@@ -3506,24 +3412,13 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     val plan = planner.plan(query)
 
-    val durationConstant = RuntimeConstant(
-      v"anon_0",
-      function(
-        durationSignature,
-        coerceTo(
-          mapOf("days" -> literalInt(35)),
-          CTMap
-        )
-      )
-    )
-
     plan should equal(
       planner.planBuilder().produceResults("`txn1.duration`")
         .projection("cacheN[txn1.duration] AS `txn1.duration`")
         // as we only use txn1.duration, we only need to fetch that property
         .remoteBatchPropertiesWithFilter("cacheNFromStore[txn1.duration]")(
-          lessThanOrEqual(prop("txn1", "duration"), durationConstant),
-          lessThanOrEqual(prop("txn1", "transactionDate"), parameter("date", CTAny))
+          "txn1.duration <= RuntimeConstant(anon_0, duration({days:35}))",
+          "txn1.transactionDate <= $date"
         )
         .allNodeScan("txn1")
         .build()
@@ -3531,16 +3426,9 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
   }
 
   test("should push down variables of parameters or constants to shard") {
-    val durationSignature =
-      functionSignature("duration")
-        .withInputField("value", CTMap)
-        .withOutputType(CTDuration)
-        .build()
-
     val planner =
       spdPlanner
         .setAllNodesCardinality(1000)
-        .addFunction(durationSignature)
         .build()
 
     val query =
@@ -3551,91 +3439,45 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
 
     val plan = planner.plan(query)
 
-    val durationConstant = RuntimeConstant(
-      v"anon_0",
-      function(
-        durationSignature,
-        coerceTo(
-          mapOf("days" -> literalInt(35)),
-          CTMap
-        )
-      )
-    )
-
     plan should equal(
       planner.planBuilder()
         .produceResults("txn1")
         .remoteBatchPropertiesWithFilter("cacheNFromStore[txn1.duration]")(
-          lessThanOrEqual(prop("txn1", "duration"), durationConstant),
-          lessThanOrEqual(prop("txn1", "transactionDate"), parameter("date", CTAny))
+          "txn1.duration <= RuntimeConstant(anon_0, duration({days:35}))",
+          "txn1.transactionDate <= $date"
         )
         .apply()
         .|.allNodeScan("txn1")
-        .projection(Map("date" -> parameter("date", CTAny), "duration" -> durationConstant))
+        .projection("$date AS date", "RuntimeConstant(anon_0, duration({days:35})) AS duration")
         .argument()
         .build()
     )
   }
 
   test("should push down nested variables of parameters or constants to shard") {
-    val durationSignature =
-      functionSignature("duration")
-        .withInputField("value", CTMap)
-        .withOutputType(CTDuration)
-        .build()
-
     val planner =
       spdPlanner
         .setAllNodesCardinality(1000)
-        .addFunction(durationSignature)
         .build()
 
     val query =
       """WITH $date AS curDate
-        |WITH curDate, curDate-duration({days:35}) AS curDate35
+        |WITH curDate, curDate - duration({days:35}) AS curDate35
         |MATCH (txn1)
         |WHERE txn1.transactionDate <= curDate35
         |RETURN txn1""".stripMargin
 
     val plan = planner.plan(query)
 
-    val subtractionConstant = RuntimeConstant(
-      v"anon_0",
-      subtract(
-        parameter("date", CTAny),
-        function(
-          durationSignature,
-          coerceTo(
-            mapOf("days" -> literalInt(35)),
-            CTMap
-          )
-        )
-      )
-    )
-
-    val durationConstant = RuntimeConstant(
-      v"anon_1",
-      function(
-        durationSignature,
-        coerceTo(
-          mapOf("days" -> literalInt(35)),
-          CTMap
-        )
-      )
-    )
-
     plan should equal(
       planner.planBuilder()
         .produceResults("txn1")
         .remoteBatchPropertiesWithFilter("cacheNFromStore[txn1.transactionDate]")(
-          lessThanOrEqual(
-            prop("txn1", "transactionDate"),
-            subtractionConstant
-          )
+          "txn1.transactionDate <= RuntimeConstant(anon_0, $date - duration({days:35}))"
         )
         .apply()
         .|.allNodeScan("txn1")
-        .projection(Map("curDate35" -> subtract(v"curDate", durationConstant)))
+        .projection("curDate - RuntimeConstant(anon_1, duration({days:35})) AS curDate35")
         .projection("$date AS curDate")
         .argument()
         .build()
@@ -3684,13 +3526,6 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         .build()
     )
   }
-
-  def function(signature: UserFunctionSignature, arguments: Expression*): ResolvedFunctionInvocation =
-    ResolvedFunctionInvocation(
-      signature.name,
-      Some(signature),
-      arguments.toIndexedSeq
-    )(pos)
 
   test("should fetch batch properties before expand even if the variable is renamed") {
     val query =
@@ -3778,87 +3613,4 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .build()
   }
 
-  def temporalRuntimeConstant(_functionName: String, temporalType: CypherType, dateString: String): RuntimeConstant = {
-    RuntimeConstant(
-      varFor("anon_0"),
-      ResolvedFunctionInvocation(
-        functionName(_functionName),
-        Some(UserFunctionSignature(
-          functionName(_functionName),
-          ArraySeq(FieldSignature("value", CTString)),
-          temporalType,
-          Some(DeprecationInfo(false, None)),
-          None,
-          false,
-          1,
-          true
-        )),
-        ArraySeq(CoerceTo(
-          StringLiteral(dateString)(pos),
-          CTString
-        ))
-      )(pos)
-    )
-  }
-
-  def date(date: String): RuntimeConstant = {
-    temporalRuntimeConstant("date", CTDate, date)
-  }
-
-  def datetime(datetime: String): RuntimeConstant = {
-    temporalRuntimeConstant("datetime", CTZonedDateTime, datetime)
-  }
-
-  def localdatetime(localdatetime: String): RuntimeConstant = {
-    temporalRuntimeConstant("localdatetime", CTLocalDateTime, localdatetime)
-  }
-
-  def localtime(localtime: String): RuntimeConstant = {
-    temporalRuntimeConstant("localtime", CTLocalTime, localtime)
-  }
-
-  def time(time: String): RuntimeConstant = {
-    temporalRuntimeConstant("time", CTZonedTime, time)
-  }
-
-  def duration(duration: String): RuntimeConstant = {
-    temporalRuntimeConstant("duration", CTDuration, duration)
-  }
-
-  def temporalFunction(_functionName: String, temporalType: CypherType): ResolvedFunctionInvocation = {
-    ResolvedFunctionInvocation(
-      functionName(_functionName),
-      Some(UserFunctionSignature(
-        functionName(_functionName),
-        ArraySeq(),
-        temporalType,
-        Some(DeprecationInfo(false, None)),
-        None,
-        false,
-        1,
-        true
-      )),
-      ArraySeq()
-    )(InputPosition.NONE)
-  }
-
-  def date(): ResolvedFunctionInvocation = {
-    temporalFunction("date", CTDate)
-  }
-
-  def datetime(): ResolvedFunctionInvocation = {
-    temporalFunction("datetime", CTZonedDateTime)
-  }
-
-  def localdatetime(): ResolvedFunctionInvocation = {
-    temporalFunction("localdatetime", CTLocalDateTime)
-  }
-
-  def localtime(): ResolvedFunctionInvocation = {
-    temporalFunction("localtime", CTLocalTime)
-  }
-
-  def time(): ResolvedFunctionInvocation = {
-    temporalFunction("time", CTZonedTime)
-  }
 }

@@ -86,7 +86,7 @@ class PlanningWithHistogramIntegrationTest extends CypherPlannerTestSuite
         .produceResults("many", "middle", "few")
         .filter(
           "NOT anon_0 = manyFollows",
-          andsReorderableAst(propLessThanEqual("many", "bYear", 1963), propLessThan("manyFollows", "since", 2025)),
+          "andsReorderable(many.bYear <= 1963 AND manyFollows.since < 2025)",
           "many:Person"
         )
         .expandAll("(middle)<-[manyFollows:FOLLOWS]-(many)")

@@ -2935,7 +2935,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         variable = varFor(variable),
         entityType = entityType,
         properties = properties.map(PropertyKeyName(_)(pos)).toSet,
-        predicates = pushdownOperators.filter,
+        predicates = pushdownOperators.filter.map(_.endoRewrite(expressionRewriter)),
         distinctBy = pushdownOperators.distinct,
         orderBy = orderBy,
         limit = pushdownOperators.limit,
@@ -4127,10 +4127,6 @@ object AbstractLogicalPlanBuilder {
 
     def filter(exprs: String*): PushdownOperators = {
       val newPredicates = exprs.map(Parser.Latest.parseExpression)
-      copy(filter = filter ++ newPredicates)
-    }
-
-    def filterExpr(newPredicates: Expression*): PushdownOperators = {
       copy(filter = filter ++ newPredicates)
     }
 

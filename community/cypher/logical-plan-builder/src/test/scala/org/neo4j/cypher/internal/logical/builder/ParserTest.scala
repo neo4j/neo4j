@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.ProcedureName
@@ -105,6 +106,21 @@ class ParserTest extends CypherFunSuite3 with TestName with AstConstructionTestS
         )(pos)
       )(pos)
     )
+  }
+
+  test("RuntimeConstant(v, 5)") {
+    Parser.Latest.parseExpression(testName) should be(
+      RuntimeConstant(varFor("v"), SignedDecimalIntegerLiteral("5")(pos))
+    )
+  }
+
+  test("RuntimeConstant(v, datetime($p))") {
+    Parser.Latest.parseExpression(testName) match {
+      case RuntimeConstant(variable, inner: FunctionInvocation) =>
+        variable shouldBe varFor("v")
+        inner.functionName.name shouldBe "datetime"
+      case other => fail(s"unexpected parse result: $other")
+    }
   }
 
   test("CALL") {

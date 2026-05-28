@@ -2048,8 +2048,8 @@ class EagerPlanningIntegrationTest extends CypherPlannerTestSuite
       .planBuilder()
       .produceResults("r")
       .filter(
-        not(hasTypes("r", "Foo")),
-        andsReorderableAst(not(hasLabels("anon_3", "A")), not(hasLabels("anon_4", "A")))
+        "NOT r:Foo",
+        "andsReorderable(NOT anon_3:A AND NOT anon_4:A)"
       )
       .apply()
       .|.allRelationshipsScan("(anon_3)-[r]->(anon_4)", "anon_0", "anon_2", "anon_1")

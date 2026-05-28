@@ -48,8 +48,6 @@ import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CTDateTime
-import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
@@ -74,12 +72,7 @@ class IndexPlanningIntegrationTest
   private def plannerConfigForRangeIndexOnLabelPropTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForIndexOnLabelPropTests()
       .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
-      .addFunction(
-        functionSignature("datetime")
-          .withInputField("value", CTString)
-          .withOutputType(CTDateTime)
-          .build()
-      )
+      .registerTemporalFunctions()
       .build()
 
   private def plannerConfigForRangeIndexOnRelationshipTypePropTests(): StatisticsBackedLogicalPlanningConfiguration =
@@ -2601,7 +2594,7 @@ class IndexPlanningIntegrationTest
         |RETURN a""".stripMargin
     ).asLogicalPlanBuilderString() should equal(
       """.produceResults(column("a", "cacheN[a.prop]"))
-        |.nodeIndexOperator("a:Label(prop > RuntimeConstant(datetime('2021-01-01')))", indexOrder = IndexOrderNone, paramExpr = Seq(), argumentIds = Set(), getValue = Map("prop" -> GetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
+        |.nodeIndexOperator("a:Label(prop > RuntimeConstant(anon_0, datetime('2021-01-01')))", indexOrder = IndexOrderNone, paramExpr = Seq(), argumentIds = Set(), getValue = Map("prop" -> GetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
         |.build()""".stripMargin
     )
   }

@@ -215,7 +215,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherPlannerTestSui
         relationshipPredicates = Seq(),
         sameNodeMode = AllowSameNode
       )
-      .filter(andsReorderableAst(hasLabels("a", "User"), hasLabels("b", "User")))
+      .filter("andsReorderable(a:User AND b:User)")
       .skip(1)
       .cartesianProduct()
       .|.allNodeScan("b")
@@ -244,7 +244,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherPlannerTestSui
         relationshipPredicates = Seq(),
         sameNodeMode = AllowSameNode
       )
-      .filter(andsReorderableAst(hasLabels("a", "User"), hasLabels("b", "User")))
+      .filter("andsReorderable(a: User AND b:User)")
       .skip(1)
       .cartesianProduct()
       .|.allNodeScan("b")

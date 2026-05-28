@@ -170,7 +170,13 @@ object LogicalPlanToPlanBuilderString {
       case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, false, _) => s"cacheR[${p.propertyAccessString}]"
       case p @ CachedProperty(_, _, _, NODE_TYPE, true, _)          => s"cacheNFromStore[${p.propertyAccessString}]"
       case p @ CachedProperty(_, _, _, RELATIONSHIP_TYPE, true, _)  => s"cacheRFromStore[${p.propertyAccessString}]"
-      case e                                                        => e.asCanonicalStringVal
+      // RuntimeConstant lives in cypher-runtime-util, which again depends on this module.
+      // Therefore, we match on the class name to avoid a dependency cycle.
+      case rc if rc.getClass.getName == "org.neo4j.cypher.internal.runtime.ast.RuntimeConstant" =>
+        val v = rc.productElement(0).asInstanceOf[Expression]
+        val inner = rc.productElement(1).asInstanceOf[Expression]
+        s"RuntimeConstant(${expressionStringifier(v)}, ${expressionStringifier(inner)})"
+      case e => e.asCanonicalStringVal
     }
   }
 

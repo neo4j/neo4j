@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport.FunctionSignatureBuilder
 import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport.ProcedureSignatureBuilder
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureAccessMode
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
+import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
@@ -37,6 +39,22 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 trait ProcedureTestSupport {
   def procedureSignature(qualifiedName: String): ProcedureSignatureBuilder = ProcedureSignatureBuilder(qualifiedName)
   def functionSignature(qualifiedName: String): FunctionSignatureBuilder = FunctionSignatureBuilder(qualifiedName)
+
+  private val pos = InputPosition.NONE
+
+  def resolvedFunction(signature: UserFunctionSignature, arguments: Expression*): ResolvedFunctionInvocation =
+    ResolvedFunctionInvocation(
+      signature.name,
+      Some(signature),
+      arguments.toIndexedSeq
+    )(pos)
+
+  def resolvedFunction(name: String, arguments: Expression*): ResolvedFunctionInvocation =
+    ResolvedFunctionInvocation(
+      FunctionName(name)(pos),
+      None,
+      arguments.toIndexedSeq
+    )(pos)
 }
 
 object ProcedureTestSupport {

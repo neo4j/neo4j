@@ -24,6 +24,9 @@ import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -32,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentUnordered
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PrefixedPatternPart
@@ -50,12 +54,15 @@ import org.neo4j.cypher.internal.parser.v25.ast.factory.Cypher25AstParser
 import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters.RemoveSyntaxTracking
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.FunctionName
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 
@@ -225,6 +232,36 @@ object Parser {
     private val replaceWrongFunctionInvocation: Rewriter = topDown(Rewriter.lift {
       case FunctionInvocation(FunctionName(Namespace(List()), "CoerceToPredicate"), _, Seq(expression), _, _, _, _) =>
         CoerceToPredicate(expression)
+      case FunctionInvocation(
+          FunctionName(Namespace(List()), "isRepeatTrailUnique"),
+          _,
+          Seq(variable: Variable),
+          _,
+          _,
+          _,
+          _
+        ) =>
+        IsRepeatTrailUnique(variable)(InputPosition.NONE)
+      case FunctionInvocation(FunctionName(Namespace(List()), "andsReorderable"), _, Seq(expressions), _, _, _, _) =>
+        def collectConjuncts(expr: Expression): ListSet[Expression] = expr match {
+          case And(lhs, rhs) => collectConjuncts(lhs) ++ collectConjuncts(rhs)
+          case Ands(exprs)   => exprs
+          case other         => ListSet(other)
+        }
+        AndsReorderable(collectConjuncts(expressions))(InputPosition.NONE)
+    })
+
+    private val replaceRuntimeConstant: Rewriter = topDown(Rewriter.lift {
+      case FunctionInvocation(
+          FunctionName(Namespace(List()), "RuntimeConstant"),
+          _,
+          Seq(variable: Variable, inner),
+          _,
+          _,
+          _,
+          _
+        ) =>
+        RuntimeConstant(variable, inner)
     })
 
     val cleanupRewriter = inSequence(
@@ -232,6 +269,7 @@ object Parser {
       injectCachedProperties,
       invalidateInputPositions,
       replaceWrongFunctionInvocation,
+      replaceRuntimeConstant,
       LabelExpressionPredicateNormalizer.instance,
       // Flattening boolean operators otherwise it is impossible to create instances of Ands / Ors
       flattenBooleanOperators.instance(CancellationChecker.NeverCancelled)

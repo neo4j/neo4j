@@ -209,10 +209,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherPlannerTestSuite
     plan shouldEqual planner
       .planBuilder()
       .produceResults("r")
-      .filter(
-        not(hasTypes("r", "Foo")),
-        andsReorderableAst(not(hasLabels("anon_3", "A")), not(hasLabels("anon_4", "A")))
-      )
+      .filter("NOT r:Foo", "andsReorderable(NOT anon_3:A AND NOT anon_4:A)")
       .apply()
       .|.allRelationshipsScan("(anon_3)-[r]->(anon_4)", "anon_0", "anon_2", "anon_1")
       .eager(ListSet(EagernessReason.ReadCreateConflict.withConflict(EagernessReason.Conflict(Id(5), Id(3)))))

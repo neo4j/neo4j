@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
+import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.builder.SimpleResolver
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.util.FunctionName
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -35,12 +37,17 @@ case class TokenContainer(
   def addRelType(relType: String): TokenContainer = this.copy(relTypes = relTypes + relType)
   def addProperty(property: String): TokenContainer = this.copy(properties = properties + property)
 
-  def getResolver(procedures: Set[ProcedureSignature], autoResolveProperties: Boolean): LogicalPlanResolver =
+  def getResolver(
+    procedures: Set[ProcedureSignature],
+    functions: Set[UserFunctionSignature],
+    autoResolveProperties: Boolean
+  ): LogicalPlanResolver =
     new LogicalPlanResolver(
       labels.to(ArrayBuffer),
       properties.to(ArrayBuffer),
       relTypes.to(ArrayBuffer),
-      procedures
+      procedures,
+      functions
     ) { self =>
       override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
         if (autoResolveProperties) {
@@ -57,9 +64,13 @@ class LogicalPlanResolver(
   labels: ArrayBuffer[String] = new ArrayBuffer[String](),
   properties: ArrayBuffer[String] = new ArrayBuffer[String](),
   relTypes: ArrayBuffer[String] = new ArrayBuffer[String](),
-  procedures: Set[ProcedureSignature] = Set.empty
+  procedures: Set[ProcedureSignature] = Set.empty,
+  functions: Set[UserFunctionSignature] = Set.empty
 ) extends SimpleResolver(labels, properties, relTypes, procedures)
     with ReadTokenContext {
+
+  override def functionSignature(name: FunctionName): Option[UserFunctionSignature] =
+    functions.find(_.name == name)
 
   override def getLabelName(id: Int): String =
     if (id >= labels.size) throw new IllegalStateException(s"Label $id undefined") else labels(id)

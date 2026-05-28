@@ -1370,7 +1370,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       }
     }
 
-    val resolver = tokens.getResolver(procedures, autoResolvePropertiesDuringPlanning)
+    val resolver = tokens.getResolver(procedures, functions, autoResolvePropertiesDuringPlanning)
 
     // Get the parsed histograms from the config
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
@@ -1444,7 +1444,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       }
 
       override def getHistograms(labels: Set[LabelId], propertyKey: PropertyKeyId): Set[Histogram] = {
-        val resolver = tokens.getResolver(procedures, autoResolvePropertiesDuringPlanning)
+        val resolver = tokens.getResolver(procedures, functions, autoResolvePropertiesDuringPlanning)
         histograms.filter(histogram =>
           histogram.nodeOrRelationship == NODE_TYPE &&
             resolver.getOptPropertyKeyId(
@@ -1460,7 +1460,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       }
 
       override def getHistograms(typeId: RelTypeId, propertyKey: PropertyKeyId): Set[Histogram] = {
-        val resolver = tokens.getResolver(procedures, autoResolvePropertiesDuringPlanning)
+        val resolver = tokens.getResolver(procedures, functions, autoResolvePropertiesDuringPlanning)
 
         histograms.filter(histogram =>
           histogram.nodeOrRelationship == RELATIONSHIP_TYPE &&

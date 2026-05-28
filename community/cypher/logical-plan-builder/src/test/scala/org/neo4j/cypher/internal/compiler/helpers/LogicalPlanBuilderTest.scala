@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher3.beLike
+import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AndsReorderable
+import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.HasAnyLabel
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Ors
@@ -36,11 +41,12 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.Extractors3.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
 
-class LogicalPlanBuilderTest extends CypherFunSuite3 with AstConstructionTestSupport {
+class LogicalPlanBuilderTest extends CypherFunSuite3 with AstConstructionTestSupport with ProcedureTestSupport {
 
   test("should correctly insert HasLabels/HasTypes/HasLabelsOrTypes in .filter after .input") {
     val plan = new LogicalPlanBuilder()
@@ -259,6 +265,65 @@ class LogicalPlanBuilderTest extends CypherFunSuite3 with AstConstructionTestSup
           varFor("r") -> hasTypes("r", "R"),
           varFor("v") -> hasLabelsOrTypes("v", "V")
         )
+    }
+  }
+
+  test("should resolve function invocations nested inside RuntimeConstant in .filter") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("RuntimeConstant(v, duration('PT15M')) < duration('PT20M')")
+      .allNodeScan("n")
+      .build()
+
+    def durationFunction(value: String) =
+      resolvedFunction(
+        "duration",
+        literalString(value)
+      )
+
+    plan should beLike {
+      case ProduceResult(Selection(Ands(SetExtractor(predicate)), _), _) =>
+        predicate should equal(lessThan(
+          RuntimeConstant(v"v", durationFunction("PT15M")),
+          durationFunction("PT20M")
+        ))
+    }
+  }
+
+  test("should accept isRepeatTrailUnique in expressions") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .filter("isRepeatTrailUnique(variable)")
+      .argument("variable")
+      .build()
+
+    plan should beLike {
+      case Selection(Ands(SetExtractor(IsRepeatTrailUnique(Variable(name)))), _) => name should equal("variable")
+    }
+  }
+
+  test("should accept andsReorderable in expressions") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .filter("andsReorderable(variable AND false)")
+      .argument("variable")
+      .build()
+
+    plan should beLike {
+      // We can use the SetExtractors because
+      //   - the outer set only has one entry
+      //   - and the inner set is a list set, which should preserve the query's order of arguments.
+      case Selection(Ands(SetExtractor(AndsReorderable(SetExtractor(Variable("variable"), False())))), _) =>
+    }
+  }
+
+  test("should flatten nested And in andsReorderable") {
+    // a AND b AND c parses as And(And(a, b), c) before flattenBooleanOperators runs
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .filter("andsReorderable(variable AND false AND true)")
+      .argument("variable")
+      .build()
+
+    plan should beLike {
+      case Selection(Ands(SetExtractor(AndsReorderable(SetExtractor(Variable("variable"), False(), True())))), _) =>
     }
   }
 
