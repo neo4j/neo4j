@@ -316,19 +316,10 @@ public abstract sealed class AbstractNettyConnection implements BoltTestConnecti
     @Override
     public void unwired(Consumer<UnwiredTestConnection> work) {
         this.channel.pipeline().remove(INBOUND_HANDLER_NAME);
-        try {
-            this.channel
-                    .pipeline()
-                    .addLast(
-                            new NotifyingChannelResponseMessageInboundHandler(this.responseMessageList, this.readLock));
-            work.accept(this);
-        } finally {
-            if (this.channel.pipeline().iterator().hasNext()) {
-                this.channel.pipeline().removeLast();
-            }
-
-            this.channel.pipeline().addLast(INBOUND_HANDLER_NAME, getNotifyingChannelInboundHandler());
-        }
+        this.channel
+                .pipeline()
+                .addLast(new NotifyingChannelResponseMessageInboundHandler(this.responseMessageList, this.readLock));
+        work.accept(this);
     }
 
     private NotifyingChannelInboundHandler getNotifyingChannelInboundHandler() {
