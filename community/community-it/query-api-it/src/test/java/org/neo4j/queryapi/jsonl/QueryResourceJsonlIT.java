@@ -41,7 +41,8 @@ import org.neo4j.queryapi.testclient.QueryRequest;
 
 @QueryAPITestExtension(
         contentType = QueryContentType.UNTYPED,
-        acceptedContentTypes = {QueryContentType.UNTYPED_L})
+        acceptedContentTypes = {QueryContentType.UNTYPED_L},
+        bookmarkReadyTimeoutInSeconds = 1)
 class QueryResourceJsonlIT {
 
     private final DatabaseManagementService dbms;

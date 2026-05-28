@@ -37,7 +37,7 @@ import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryRequest;
 
-@QueryAPITestExtension
+@QueryAPITestExtension(bookmarkReadyTimeoutInSeconds = 1)
 class QueryResourceIT {
 
     private final DatabaseManagementService dbms;
