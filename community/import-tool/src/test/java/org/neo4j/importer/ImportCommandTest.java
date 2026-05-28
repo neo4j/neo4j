@@ -243,7 +243,7 @@ class ImportCommandTest {
             var command = new ImportCommand.Full(getExecutionContext());
             var args = Stream.concat(Stream.of("--id-type", alias), requiredArgs.stream());
             new CommandLine(command).parseArgs(args.toArray(String[]::new));
-            assertThat(command.idType).isEqualTo(idType);
+            assertThat(command.defaultIdType).isEqualTo(idType);
         }
     }
 

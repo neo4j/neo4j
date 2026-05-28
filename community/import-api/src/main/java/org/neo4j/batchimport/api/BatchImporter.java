@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.neo4j.batchimport.api.input.FileGroup;
-import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.Input;
 
 /**
@@ -40,10 +39,7 @@ public interface BatchImporter extends Closeable {
     void doImport(Input input) throws IOException;
 
     default void doSuperFastImport(
-            Input input,
-            IdType idType,
-            Charset encoding,
-            Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels)
+            Input input, Charset encoding, Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels)
             throws IOException {
         throw new UnsupportedOperationException("Super-fast import is not supported like this.");
     }

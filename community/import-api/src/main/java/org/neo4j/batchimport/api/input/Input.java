@@ -81,7 +81,8 @@ public interface Input extends AutoCloseable {
     InputIterable relationships(Collector badCollector);
 
     /**
-     * @return {@link IdType} which matches the type of ids this {@link Input} generates.
+     * @return {@link IdType} that is suitable for instantiating an IdMapper that will work
+     * for all {@link IdType}s present in this {@link Input}.
      * Will get populated by node import and later queried by relationship import
      * to resolve potentially temporary input node ids to actual node ids in the database.
      */

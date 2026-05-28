@@ -4885,6 +4885,105 @@ class ParquetInputTest {
         }
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("idMapperTypeCases")
+    void idMapperType(String name, List<ParquetIdMapperTypeFile> files, IdType globalIdType, IdType expectedIdType)
+            throws Exception {
+        var nodeFiles = new LinkedHashMap<Set<String>, List<FileGroup>>();
+        for (int i = 0; i < files.size(); i++) {
+            var spec = files.get(i);
+            var path = createParquetFile(spec.columns(), List.<Object[]>of(spec.row()));
+            nodeFiles.put(Set.of("L" + i), List.of(new FileGroup(new FileGroup.NumberedFile(-1, path))));
+        }
+        try (var input = createParquetInput(nodeFiles, Map.of(), globalIdType, groups, MONITOR)) {
+            assertThat(input.idType()).isEqualTo(expectedIdType);
+        }
+    }
+
+    private static Stream<Arguments> idMapperTypeCases() {
+        return Stream.of(
+                Arguments.of(
+                        "integer column with string id-type override falls back to string",
+                        List.of(new ParquetIdMapperTypeFile(
+                                List.of(stringColumn("id:ID(g1){id-type:string}"), stringColumn("prop")),
+                                new Object[] {"two", "val"})),
+                        INTEGER,
+                        STRING),
+                Arguments.of(
+                        "string column with int id-type override yields integer",
+                        List.of(new ParquetIdMapperTypeFile(
+                                List.of(intColumn("id:ID(g1){id-type:int}"), stringColumn("prop")),
+                                new Object[] {123, "val"})),
+                        STRING,
+                        INTEGER),
+                Arguments.of(
+                        "single int id column with global integer id-type",
+                        List.of(new ParquetIdMapperTypeFile(
+                                List.of(longColumn("id:ID(g1)"), stringColumn("prop")), new Object[] {123L, "val"})),
+                        INTEGER,
+                        INTEGER),
+                Arguments.of(
+                        "single string id column with global string id-type",
+                        List.of(new ParquetIdMapperTypeFile(
+                                List.of(stringColumn("id:ID(g1)"), stringColumn("prop")), new Object[] {"abc", "val"})),
+                        STRING,
+                        STRING),
+                Arguments.of(
+                        "composite id columns yield string",
+                        List.of(new ParquetIdMapperTypeFile(
+                                List.of(
+                                        intColumn("id1:ID(g1){id-type:int}"),
+                                        intColumn("id2:ID(g1){id-type:int}"),
+                                        stringColumn("prop")),
+                                new Object[] {1, 2, "val"})),
+                        INTEGER,
+                        STRING),
+                Arguments.of(
+                        "ACTUAL global id-type stays ACTUAL",
+                        List.of(new ParquetIdMapperTypeFile(
+                                List.of(longColumn("id:ID(g1)"), stringColumn("prop")), new Object[] {1L, "val"})),
+                        ACTUAL,
+                        ACTUAL),
+                Arguments.of(
+                        "any node file with non-long id column yields string",
+                        List.of(
+                                new ParquetIdMapperTypeFile(
+                                        List.of(intColumn("id:ID(g1){id-type:int}"), stringColumn("prop")),
+                                        new Object[] {123, "val"}),
+                                new ParquetIdMapperTypeFile(
+                                        List.of(stringColumn("id:ID(g2){id-type:string}"), stringColumn("prop")),
+                                        new Object[] {"abc", "val"})),
+                        INTEGER,
+                        STRING),
+                Arguments.of(
+                        "all node files with single long id column yield integer",
+                        List.of(
+                                new ParquetIdMapperTypeFile(
+                                        List.of(longColumn("id:ID(g1)"), stringColumn("prop")),
+                                        new Object[] {1L, "val"}),
+                                new ParquetIdMapperTypeFile(
+                                        List.of(longColumn("id:ID(g2){id-type:long}"), stringColumn("prop")),
+                                        new Object[] {2L, "val"})),
+                        INTEGER,
+                        INTEGER));
+    }
+
+    private record ParquetIdMapperTypeFile(List<org.apache.parquet.schema.Type> columns, Object[] row) {}
+
+    private static org.apache.parquet.schema.Type stringColumn(String name) {
+        return Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named(name);
+    }
+
+    private static org.apache.parquet.schema.Type intColumn(String name) {
+        return Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(name);
+    }
+
+    private static org.apache.parquet.schema.Type longColumn(String name) {
+        return Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(name);
+    }
+
     private static ParquetInput createParquetInput(
             Map<Set<String>, List<FileGroup>> nodeFiles,
             Map<String, List<FileGroup>> relationshipFiles,

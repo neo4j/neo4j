@@ -89,7 +89,9 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.factory.Lists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.batchimport.api.InputIterator;
 import org.neo4j.batchimport.api.input.ApplicationMode;
 import org.neo4j.batchimport.api.input.Collector;
@@ -2181,6 +2183,80 @@ class CsvInputTest {
                 assertThat(readNext(nodes)).isFalse();
             }
         }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("idMapperTypeCases")
+    void idMapperType(String name, List<String[]> files, IdType globalIdType, IdType expectedIdType)
+            throws IOException {
+        var dataFactories = new ArrayList<DataFactory>();
+        for (int i = 0; i < files.size(); i++) {
+            var path = writeFile("nodes-" + i, files.get(i));
+            dataFactories.add(DataFactories.data(NO_DECORATOR, defaultCharset(), path));
+        }
+        try (var input = new CsvInput(
+                datas(dataFactories.toArray(DataFactory[]::new)),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                globalIdType,
+                COMMAS,
+                false,
+                NO_MONITOR,
+                groups,
+                INSTANCE)) {
+            input.validateAndEstimate(PROPERTY_SIZE_CALCULATOR, NUMBER_OF_ESTIMATE_THREADS);
+            assertThat(input.idType()).isEqualTo(expectedIdType);
+        }
+    }
+
+    private static Stream<Arguments> idMapperTypeCases() {
+        return Stream.of(
+                Arguments.of(
+                        "integer column with string id-type override falls back to string",
+                        List.<String[]>of(new String[] {"id:ID(g1){id-type:string},prop", "two,val"}),
+                        INTEGER,
+                        STRING),
+                Arguments.of(
+                        "string column with int id-type override yields integer",
+                        List.<String[]>of(new String[] {"id:ID(g1){id-type:int},prop", "123,val"}),
+                        STRING,
+                        INTEGER),
+                Arguments.of(
+                        "single int id column with global integer id-type",
+                        List.<String[]>of(new String[] {"id:ID(g1),prop", "123,val"}),
+                        INTEGER,
+                        INTEGER),
+                Arguments.of(
+                        "single string id column with global string id-type",
+                        List.<String[]>of(new String[] {"id:ID(g1),prop", "abc,val"}),
+                        STRING,
+                        STRING),
+                Arguments.of(
+                        "composite id columns yield string",
+                        List.<String[]>of(
+                                new String[] {"id1:ID(g1){id-type:int},id2:ID(g1){id-type:int},prop", "1,2,val"}),
+                        INTEGER,
+                        STRING),
+                Arguments.of(
+                        "ACTUAL global id-type stays ACTUAL",
+                        List.<String[]>of(new String[] {"id:ID(g1),prop", "1,val"}),
+                        ACTUAL,
+                        ACTUAL),
+                Arguments.of(
+                        "any node file with non-long id column yields string",
+                        List.of(
+                                new String[] {"id:ID(g1){id-type:int},prop", "123,val"},
+                                new String[] {"id:ID(g2){id-type:string},prop", "abc,val"}),
+                        INTEGER,
+                        STRING),
+                Arguments.of(
+                        "all node files with single long id column yield integer",
+                        List.of(
+                                new String[] {"id:ID(g1),prop", "1,val"},
+                                new String[] {"id:ID(g2){id-type:long},prop", "2,val"}),
+                        INTEGER,
+                        INTEGER));
     }
 
     @ParameterizedTest

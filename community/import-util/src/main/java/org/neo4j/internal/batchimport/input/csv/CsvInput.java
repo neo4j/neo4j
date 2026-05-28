@@ -27,7 +27,6 @@ import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractH
 import static org.neo4j.internal.helpers.Exceptions.throwIfInstanceOfOrUnchecked;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -92,7 +91,7 @@ public class CsvInput implements Input {
     private final Iterable<DataFactory> relationshipDataFactory;
     private final Header.Factory relationshipHeaderFactory;
     private final List<SchemaCommand> schemaCommands;
-    private final IdType idType;
+    private final IdType defaultIdType;
     private final Configuration config;
     private final Monitor monitor;
     private final Groups groups;
@@ -102,6 +101,7 @@ public class CsvInput implements Input {
     private List<Header> cachedNodeHeaders;
     private boolean delimitIds;
     private boolean hasBeenValidated;
+    private IdType idType;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -112,7 +112,7 @@ public class CsvInput implements Input {
      * specifies an input group with its own header, extracted by the {@code relationshipHeaderFactory}.
      * From the outside it looks like one stream of relationships.
      * @param relationshipHeaderFactory factory for reading relationship headers.
-     * @param idType {@link IdType} to expect in id fields of node and relationship input.
+     * @param defaultIdType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
      * @param autoSkipHeaders  flag to skip headers
      * @param monitor {@link Monitor} for internal events.
@@ -123,7 +123,7 @@ public class CsvInput implements Input {
             Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory,
             Header.Factory relationshipHeaderFactory,
-            IdType idType,
+            IdType defaultIdType,
             Configuration config,
             boolean autoSkipHeaders,
             Monitor monitor,
@@ -134,7 +134,7 @@ public class CsvInput implements Input {
                 relationshipDataFactory,
                 relationshipHeaderFactory,
                 List.of(),
-                idType,
+                defaultIdType,
                 config,
                 autoSkipHeaders,
                 monitor,
@@ -151,7 +151,7 @@ public class CsvInput implements Input {
      * specifies an input group with its own header, extracted by the {@code relationshipHeaderFactory}.
      * From the outside it looks like one stream of relationships.
      * @param relationshipHeaderFactory factory for reading relationship headers.
-     * @param idType {@link IdType} to expect in id fields of node and relationship input.
+     * @param defaultIdType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
      * @param autoSkipHeaders  flag to skip headers
      * @param monitor {@link Monitor} for internal events.
@@ -163,7 +163,7 @@ public class CsvInput implements Input {
             Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory,
             Header.Factory relationshipHeaderFactory,
-            IdType idType,
+            IdType defaultIdType,
             Configuration config,
             boolean autoSkipHeaders,
             Monitor monitor,
@@ -175,7 +175,7 @@ public class CsvInput implements Input {
                 relationshipDataFactory,
                 relationshipHeaderFactory,
                 List.of(),
-                idType,
+                defaultIdType,
                 config,
                 autoSkipHeaders,
                 monitor,
@@ -193,7 +193,7 @@ public class CsvInput implements Input {
      * From the outside it looks like one stream of relationships.
      * @param relationshipHeaderFactory factory for reading relationship headers.
      * @param schemaCommands the schema changes to apply to the database after the data is imported.
-     * @param idType {@link IdType} to expect in id fields of node and relationship input.
+     * @param defaultIdType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
      * @param autoSkipHeaders  flag to skip headers
      * @param monitor {@link Monitor} for internal events.
@@ -207,7 +207,7 @@ public class CsvInput implements Input {
             Iterable<DataFactory> relationshipDataFactory,
             Header.Factory relationshipHeaderFactory,
             List<SchemaCommand> schemaCommands,
-            IdType idType,
+            IdType defaultIdType,
             Configuration config,
             boolean autoSkipHeaders,
             Monitor monitor,
@@ -222,7 +222,7 @@ public class CsvInput implements Input {
         this.relationshipDataFactory = relationshipDataFactory;
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.schemaCommands = schemaCommands;
-        this.idType = idType;
+        this.defaultIdType = defaultIdType;
         this.config = config;
         this.monitor = monitor;
         this.groups = groups;
@@ -288,7 +288,7 @@ public class CsvInput implements Input {
         return new CsvGroupInputIterator(
                 data.iterator(),
                 headerFactory,
-                idType,
+                defaultIdType,
                 config,
                 badCollector,
                 groups,
@@ -299,6 +299,7 @@ public class CsvInput implements Input {
 
     @Override
     public IdType idType() {
+        Preconditions.checkState(hasBeenValidated, "must call validateAndEstimate before calling idType");
         return idType;
     }
 
@@ -428,6 +429,7 @@ public class CsvInput implements Input {
                 numberOfThreads);
 
         this.delimitIds = hasCompositeIdColumns.isTrue() && singleStartEndIdColumnRefersToCompositeId.isFalse();
+        this.idType = autoDetectIdType(defaultIdType, cachedNodeHeaders);
         this.hasBeenValidated = true;
 
         final var propPreAllocAdditional =
@@ -512,7 +514,8 @@ public class CsvInput implements Input {
                                 // Extract the header from the first file in this group
                                 // This is the only place we monitor type normalization because it's before import and
                                 // it touches all headers
-                                header = extractHeader(source, headerFactory, idType, sampleConfig, groups, monitor);
+                                header = extractHeader(
+                                        source, headerFactory, defaultIdType, sampleConfig, groups, monitor);
                                 headerChecker.accept(header, sourceDescription, decorator == NO_DECORATOR);
                             }
                             headersByPath.put(source.file(), header);
@@ -571,7 +574,7 @@ public class CsvInput implements Input {
                         decorator,
                         header,
                         sampleConfig,
-                        idType,
+                        defaultIdType,
                         EMPTY,
                         CsvGroupInputIterator.extractors(sampleConfig),
                         groupId,
@@ -614,8 +617,8 @@ public class CsvInput implements Input {
                     try (CharSeeker dataStream = charSeeker(new MultiReadable(data.stream()), config, false)) {
                         // Parsing and constructing this header will create this group,
                         // so no need to do something with the result of it right now
-                        cachedNodeHeaders.add(
-                                DataFactories.defaultFormatNodeFileHeader().create(dataStream, config, idType, groups));
+                        cachedNodeHeaders.add(DataFactories.defaultFormatNodeFileHeader()
+                                .create(dataStream, config, defaultIdType, groups));
                     }
                 }
             } catch (IOException e) {
@@ -638,24 +641,26 @@ public class CsvInput implements Input {
                 .ifPresent(entry -> {
                     var options = entry.rawOptions();
                     var labelName = options.get("label");
-                    checkState(labelName != null, "No label was specified for the node index in '%s'", entry);
+                    Preconditions.checkState(
+                            labelName != null, "No label was specified for the node index in '%s'", entry);
                     var keyName = entry.name();
-                    checkState(keyName != null, "No property key was specified for node index in '%s'", entry);
+                    Preconditions.checkState(
+                            keyName != null, "No property key was specified for node index in '%s'", entry);
                     var label = tokenHolders.labelTokens().getIdByName(labelName);
                     var key = tokenHolders.propertyKeyTokens().getIdByName(keyName);
-                    checkState(
+                    Preconditions.checkState(
                             label != TokenConstants.NO_TOKEN,
                             "Label '%s' for node index specified in '%s' does not exist",
                             labelName,
                             entry);
-                    checkState(
+                    Preconditions.checkState(
                             key != TokenConstants.NO_TOKEN,
                             "Property key '%s' for node index specified in '%s' does not exist",
                             keyName,
                             entry);
                     var schemaDescriptor = SchemaDescriptors.forLabel(label, key);
                     var prev = result.put(entry.group().name(), schemaDescriptor);
-                    checkState(
+                    Preconditions.checkState(
                             prev == null || prev.equals(schemaDescriptor),
                             "Multiple different indexes for group " + entry.group());
                 });
@@ -683,6 +688,45 @@ public class CsvInput implements Input {
             case STRING -> extractors.string();
             case INTEGER, ACTUAL -> extractors.long_();
         };
+    }
+
+    /**
+     * @return the {@link IdType} of the {@code IdMapper} that suits the parsed node headers.
+     * Returns {@link IdType#INTEGER} only if every parsed node header contains at most one {@link Type#ID} column
+     * and every {@link Type#ID} column produces a value that can be cast to {@code long}.
+     * Returns {@link IdType#ACTUAL} when the input is configured with that mode.
+     * Falls back to {@code defaultIdType} when no ID column is present at all.
+     */
+    private static IdType autoDetectIdType(IdType defaultIdType, List<Header> nodeHeaders) {
+        if (defaultIdType == IdType.ACTUAL) {
+            return IdType.ACTUAL;
+        }
+        int totalIdColumns = 0;
+        for (Header header : nodeHeaders) {
+            int idColumnsInHeader = 0;
+            for (Header.Entry entry : header.entries()) {
+                if (entry.type() != Type.ID) {
+                    continue;
+                }
+                idColumnsInHeader++;
+                if (!isLongCastable(entry.extractor())) {
+                    return IdType.STRING;
+                }
+            }
+            if (idColumnsInHeader > 1) {
+                return IdType.STRING;
+            }
+            totalIdColumns += idColumnsInHeader;
+        }
+        return totalIdColumns == 0 ? defaultIdType : IdType.INTEGER;
+    }
+
+    private static boolean isLongCastable(Extractor<?> extractor) {
+        if (extractor == null) {
+            return false;
+        }
+        var type = extractor.extractedClass();
+        return type == long.class || type == int.class || type == short.class || type == byte.class;
     }
 
     public interface Monitor extends Header.Monitor {

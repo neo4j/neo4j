@@ -116,7 +116,7 @@ public class FileImporter {
     private final org.neo4j.csv.reader.Configuration csvConfig;
     private final Configuration importConfig;
     private final ThrowingSupplier<OutputStream, IOException> reportOutputStream;
-    private final IdType idType;
+    private final IdType defaultIdType;
     private final Charset inputEncoding;
     private final boolean ignoreExtraColumns;
     private final boolean skipBadRelationships;
@@ -148,7 +148,7 @@ public class FileImporter {
         this.csvConfig = requireNonNull(b.csvConfig);
         this.importConfig = requireNonNull(b.importConfig);
         this.reportOutputStream = requireNonNull(b.reportOutputStream);
-        this.idType = requireNonNull(b.idType);
+        this.defaultIdType = requireNonNull(b.defaultIdType);
         this.inputEncoding = requireNonNull(b.inputEncoding);
         this.ignoreExtraColumns = b.ignoreExtraColumns;
         this.skipBadRelationships = b.skipBadRelationships;
@@ -260,7 +260,7 @@ public class FileImporter {
                         relationshipsData,
                         defaultFormatRelationshipFileHeader(defaultTimeZone, normalizeTypes),
                         schemaCommands,
-                        idType,
+                        defaultIdType,
                         csvConfig,
                         autoSkipHeaders,
                         new PrintingMonitor(stdOut),
@@ -271,7 +271,7 @@ public class FileImporter {
                         nodeFiles,
                         relationshipFiles,
                         schemaCommands,
-                        idType,
+                        defaultIdType,
                         csvConfig,
                         new Groups(),
                         new ParquetMonitor(stdOut));
@@ -326,8 +326,7 @@ public class FileImporter {
                         nodeFiles,
                         indexProviders,
                         shardingArguments,
-                        monitor,
-                        idType);
+                        monitor);
             } else {
                 type.doImport(
                         fileSystem,
@@ -540,7 +539,7 @@ public class FileImporter {
         private org.neo4j.csv.reader.Configuration csvConfig = org.neo4j.csv.reader.Configuration.COMMAS;
         private Configuration importConfig = Configuration.DEFAULT;
         private ThrowingSupplier<OutputStream, IOException> reportOutputStream;
-        private IdType idType = IdType.STRING;
+        private IdType defaultIdType = IdType.STRING;
         private Charset inputEncoding = StandardCharsets.UTF_8;
         private boolean ignoreExtraColumns;
         private boolean skipBadRelationships;
@@ -621,8 +620,8 @@ public class FileImporter {
             return this;
         }
 
-        public Builder withIdType(IdType idType) {
-            this.idType = idType;
+        public Builder withDefaultIdType(IdType idType) {
+            this.defaultIdType = idType;
             return this;
         }
 

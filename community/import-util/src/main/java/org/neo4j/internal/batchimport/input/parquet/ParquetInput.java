@@ -96,11 +96,10 @@ public class ParquetInput implements Input {
             Map<Set<String>, List<FileGroup>> nodeFiles,
             Map<String, List<FileGroup>> relationshipFiles,
             List<SchemaCommand> schemaCommands,
-            IdType idType,
+            IdType defaultIdType,
             Configuration csvConfig,
             Groups groups,
             ParquetMonitor monitor) {
-        this.idType = idType;
         this.groups = groups;
         this.monitor = monitor;
         this.csvConfig = csvConfig;
@@ -108,6 +107,7 @@ public class ParquetInput implements Input {
         this.relationshipFiles = relationshipFiles;
         this.schemaCommands = schemaCommands;
         this.verifiedColumns = verifyColumns(nodeFiles, relationshipFiles);
+        this.idType = autoDetectIdType(defaultIdType, verifiedColumns);
         this.containsVectorData = containsVectorData(verifiedColumns);
         this.nodeDatas = nodeData(verifiedColumns, nodeFiles);
         this.relationshipDatas = relationshipData(verifiedColumns, relationshipFiles);
@@ -141,6 +141,41 @@ public class ParquetInput implements Input {
     @Override
     public ReadableGroups groups() {
         return groups;
+    }
+
+    /**
+     * @return the {@link IdType} of the {@code IdMapper} that suits the parsed parquet node columns.
+     * Returns {@link IdType#INTEGER} only if every node file metadata contains at most one ID column
+     * and every ID column has an effective type that is long-castable.
+     * Returns {@link IdType#ACTUAL} when the input is configured with that mode.
+     * Falls back to {@code defaultIdType} when no node ID columns are present at all.
+     */
+    private static IdType autoDetectIdType(IdType defaultIdType, List<ParquetColumnMetadata> verifiedColumns) {
+        if (defaultIdType == IdType.ACTUAL) {
+            return IdType.ACTUAL;
+        }
+        int totalIdColumns = 0;
+        for (ParquetColumnMetadata metadata : verifiedColumns) {
+            if (metadata.entityType() != EntityType.NODE) {
+                continue;
+            }
+            int idColumnsInMetadata = 0;
+            for (ParquetColumn column : metadata.columns()) {
+                if (!column.isIdColumn()) {
+                    continue;
+                }
+                idColumnsInMetadata++;
+                IdType columnIdType = column.columnIdType() != null ? column.columnIdType() : defaultIdType;
+                if (columnIdType != IdType.INTEGER) {
+                    return IdType.STRING;
+                }
+            }
+            if (idColumnsInMetadata > 1) {
+                return IdType.STRING;
+            }
+            totalIdColumns += idColumnsInMetadata;
+        }
+        return totalIdColumns == 0 ? defaultIdType : IdType.INTEGER;
     }
 
     @Override

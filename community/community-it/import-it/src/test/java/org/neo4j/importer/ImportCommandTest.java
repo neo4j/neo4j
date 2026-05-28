@@ -2661,6 +2661,304 @@ class ImportCommandTest {
                 .hasMessageContaining("'1' is defined more than once in group 'GroupOne'");
     }
 
+    @Test
+    void shouldAllowOverridingIntegerIdTypeWithStringIdTypeInHeader() throws Exception {
+        // given a non-long-castable string value used as the ID, while the global --id-type is Integer
+        var nodeData = createAndWriteFile("persons.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID(GroupOne){id-type:string},name,:LABEL");
+            writer.println("alpha,P1,Person");
+            writer.println("beta,P2,Person");
+        });
+
+        // when
+        runImport("--nodes", nodeData.toAbsolutePath().toString(), "--id-type", IdType.INTEGER.name());
+
+        // then the import succeeds and the ids are stored as strings
+        var db = getDatabaseApi();
+        try (var tx = db.beginTx()) {
+            try (var persons = tx.findNodes(label("Person"))) {
+                var actualIds = new HashSet<String>();
+                while (persons.hasNext()) {
+                    var node = persons.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(String.class);
+                    actualIds.add((String) id);
+                }
+                assertThat(actualIds).containsExactlyInAnyOrder("alpha", "beta");
+            }
+        }
+    }
+
+    @Test
+    void shouldMixGlobalIntegerIdTypeWithStringIdTypeOverrideAcrossGroups() throws Exception {
+        // given --id-type=integer with two CSVs:
+        // GroupOne uses the global integer id-type, GroupTwo overrides to id-type:string
+        var nodeData1 = createAndWriteFile("persons.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID(GroupOne),name,:LABEL");
+            writer.println("123,P1,Person");
+            writer.println("456,P2,Person");
+        });
+        var nodeData2 = createAndWriteFile("games.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID(GroupTwo){id-type:string},name,:LABEL");
+            writer.println("alpha,G1,Game");
+            writer.println("beta,G2,Game");
+        });
+
+        // when
+        runImport(
+                "--nodes",
+                nodeData1.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData2.toAbsolutePath().toString(),
+                "--id-type",
+                IdType.INTEGER.name());
+
+        // then the import succeeds and each group stores its IDs as the type configured for that group
+        var db = getDatabaseApi();
+        try (var tx = db.beginTx()) {
+            try (var persons = tx.findNodes(label("Person"))) {
+                var actualPersonIds = new HashSet<Long>();
+                while (persons.hasNext()) {
+                    var node = persons.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(Long.class);
+                    actualPersonIds.add((Long) id);
+                }
+                assertThat(actualPersonIds).containsExactlyInAnyOrder(123L, 456L);
+            }
+            try (var games = tx.findNodes(label("Game"))) {
+                var actualGameIds = new HashSet<String>();
+                while (games.hasNext()) {
+                    var node = games.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(String.class);
+                    actualGameIds.add((String) id);
+                }
+                assertThat(actualGameIds).containsExactlyInAnyOrder("alpha", "beta");
+            }
+        }
+    }
+
+    @Test
+    void shouldMixGlobalStringIdTypeWithIntIdTypeOverrideAcrossGroups() throws Exception {
+        // given --id-type=string with two CSVs:
+        // GroupOne uses the global string id-type, GroupTwo overrides to id-type:int
+        var nodeData1 = createAndWriteFile("persons.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID(GroupOne),name,:LABEL");
+            writer.println("alpha,P1,Person");
+            writer.println("beta,P2,Person");
+        });
+        var nodeData2 = createAndWriteFile("games.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID(GroupTwo){id-type:int},name,:LABEL");
+            writer.println("123,G1,Game");
+            writer.println("456,G2,Game");
+        });
+
+        // when
+        runImport(
+                "--nodes",
+                nodeData1.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData2.toAbsolutePath().toString(),
+                "--id-type",
+                IdType.STRING.name());
+
+        // then the import succeeds and each group stores its IDs as the type configured for that group
+        var db = getDatabaseApi();
+        try (var tx = db.beginTx()) {
+            try (var persons = tx.findNodes(label("Person"))) {
+                var actualPersonIds = new HashSet<String>();
+                while (persons.hasNext()) {
+                    var node = persons.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(String.class);
+                    actualPersonIds.add((String) id);
+                }
+                assertThat(actualPersonIds).containsExactlyInAnyOrder("alpha", "beta");
+            }
+            try (var games = tx.findNodes(label("Game"))) {
+                var actualGameIds = new HashSet<Integer>();
+                while (games.hasNext()) {
+                    var node = games.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(Integer.class);
+                    actualGameIds.add((Integer) id);
+                }
+                assertThat(actualGameIds).containsExactlyInAnyOrder(123, 456);
+            }
+        }
+    }
+
+    @Test
+    void shouldAllowOverridingIntegerIdTypeWithStringIdTypeInHeaderForParquet() throws Exception {
+        // given a non-long-castable string value used as the ID, while the global --id-type is Integer
+        var nodeTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("id:ID(GroupOne){id-type:string}"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("name"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named(":LABEL"));
+        var nodeData = createParquetFile(
+                "persons.parquet",
+                nodeTypes,
+                List.of(new Object[] {"alpha", "P1", "Person"}, new Object[] {"beta", "P2", "Person"}));
+
+        // when
+        runImport("--input-type=parquet", "--id-type", IdType.INTEGER.name(), "--nodes", nodeData.toString());
+
+        // then the import succeeds and the ids are stored as strings
+        var db = getDatabaseApi();
+        try (var tx = db.beginTx()) {
+            try (var persons = tx.findNodes(label("Person"))) {
+                var actualIds = new HashSet<String>();
+                while (persons.hasNext()) {
+                    var node = persons.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(String.class);
+                    actualIds.add((String) id);
+                }
+                assertThat(actualIds).containsExactlyInAnyOrder("alpha", "beta");
+            }
+        }
+    }
+
+    @Test
+    void shouldMixGlobalIntegerIdTypeWithStringIdTypeOverrideAcrossGroupsForParquet() throws Exception {
+        // given --id-type=integer with two parquet files:
+        // GroupOne uses the global integer id-type, GroupTwo overrides to id-type:string
+        var personTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.INT64).named("id:ID(GroupOne)"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("name"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named(":LABEL"));
+        var personData = createParquetFile(
+                "persons.parquet",
+                personTypes,
+                List.of(new Object[] {123L, "P1", "Person"}, new Object[] {456L, "P2", "Person"}));
+        var gameTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("id:ID(GroupTwo){id-type:string}"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("name"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named(":LABEL"));
+        var gameData = createParquetFile(
+                "games.parquet",
+                gameTypes,
+                List.of(new Object[] {"alpha", "G1", "Game"}, new Object[] {"beta", "G2", "Game"}));
+
+        // when
+        runImport(
+                "--input-type=parquet",
+                "--id-type",
+                IdType.INTEGER.name(),
+                "--nodes",
+                personData.toString(),
+                "--nodes",
+                gameData.toString());
+
+        // then the import succeeds and each group stores its IDs as the type configured for that group
+        var db = getDatabaseApi();
+        try (var tx = db.beginTx()) {
+            try (var persons = tx.findNodes(label("Person"))) {
+                var actualPersonIds = new HashSet<Long>();
+                while (persons.hasNext()) {
+                    var node = persons.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(Long.class);
+                    actualPersonIds.add((Long) id);
+                }
+                assertThat(actualPersonIds).containsExactlyInAnyOrder(123L, 456L);
+            }
+            try (var games = tx.findNodes(label("Game"))) {
+                var actualGameIds = new HashSet<String>();
+                while (games.hasNext()) {
+                    var node = games.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(String.class);
+                    actualGameIds.add((String) id);
+                }
+                assertThat(actualGameIds).containsExactlyInAnyOrder("alpha", "beta");
+            }
+        }
+    }
+
+    @Test
+    void shouldMixGlobalStringIdTypeWithIntIdTypeOverrideAcrossGroupsForParquet() throws Exception {
+        // given --id-type=string with two parquet files:
+        // GroupOne uses the global string id-type, GroupTwo overrides to id-type:int
+        var personTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("id:ID(GroupOne)"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("name"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named(":LABEL"));
+        var personData = createParquetFile(
+                "persons.parquet",
+                personTypes,
+                List.of(new Object[] {"alpha", "P1", "Person"}, new Object[] {"beta", "P2", "Person"}));
+        var gameTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.INT32).named("id:ID(GroupTwo){id-type:int}"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("name"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named(":LABEL"));
+        var gameData = createParquetFile(
+                "games.parquet", gameTypes, List.of(new Object[] {123, "G1", "Game"}, new Object[] {456, "G2", "Game"
+                }));
+
+        // when
+        runImport(
+                "--input-type=parquet",
+                "--id-type",
+                IdType.STRING.name(),
+                "--nodes",
+                personData.toString(),
+                "--nodes",
+                gameData.toString());
+
+        // then the import succeeds and each group stores its IDs as the type configured for that group
+        var db = getDatabaseApi();
+        try (var tx = db.beginTx()) {
+            try (var persons = tx.findNodes(label("Person"))) {
+                var actualPersonIds = new HashSet<String>();
+                while (persons.hasNext()) {
+                    var node = persons.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(String.class);
+                    actualPersonIds.add((String) id);
+                }
+                assertThat(actualPersonIds).containsExactlyInAnyOrder("alpha", "beta");
+            }
+            try (var games = tx.findNodes(label("Game"))) {
+                var actualGameIds = new HashSet<Integer>();
+                while (games.hasNext()) {
+                    var node = games.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(Integer.class);
+                    actualGameIds.add((Integer) id);
+                }
+                assertThat(actualGameIds).containsExactlyInAnyOrder(123, 456);
+            }
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void shouldHandleParquetInput(boolean explicitlySetParquetFormat) throws Exception {

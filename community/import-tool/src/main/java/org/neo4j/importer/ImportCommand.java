@@ -229,7 +229,7 @@ public class ImportCommand {
                         + "For more information on ID handling, please see the Neo4j Manual: "
                         + "https://neo4j.com/docs/operations-manual/current/tools/import/",
                 converter = IdTypeConverter.class)
-        IdType idType = IdType.STRING;
+        IdType defaultIdType = IdType.STRING;
 
         @Option(
                 names = "--input-encoding",
@@ -655,7 +655,7 @@ public class ImportCommand {
                             .withFileSystem(fileSystem)
                             .withStdOut(ctx.out())
                             .withStdErr(ctx.err())
-                            .withIdType(idType)
+                            .withDefaultIdType(defaultIdType)
                             .withInputEncoding(inputEncoding)
                             .withIgnoreExtraColumns(ignoreExtraColumns)
                             .withBadTolerance(badTolerance)
@@ -821,8 +821,7 @@ public class ImportCommand {
                 Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels,
                 IndexProvidersAccess indexProvidersAccess,
                 ShardingArguments shardingArguments,
-                Monitor monitor,
-                IdType idType)
+                Monitor monitor)
                 throws IOException;
 
         protected IndexConfig customiseIndexConfig(Config databaseConfig, IndexConfig indexConfig) {
@@ -1273,8 +1272,7 @@ public class ImportCommand {
                 Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels,
                 IndexProvidersAccess indexProvidersAccess,
                 ShardingArguments shardingArguments,
-                Monitor monitor,
-                IdType idType)
+                Monitor monitor)
                 throws IOException {
             storageEngineFactory
                     .batchImporter(
@@ -1300,7 +1298,7 @@ public class ImportCommand {
                             shardingArguments == null ? 0 : shardingArguments.numShards,
                             shardingArguments == null ? null : shardingArguments.additionalArguments,
                             DatabaseCreationOptions.EMPTY_CREATION_OPTIONS)
-                    .doSuperFastImport(input, idType, encoding, nodeFileGroupsByAdditionalLabels);
+                    .doSuperFastImport(input, encoding, nodeFileGroupsByAdditionalLabels);
         }
 
         @Override
