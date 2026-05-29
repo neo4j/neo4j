@@ -1947,6 +1947,23 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("")
+    public static final Setting<Duration> spd_import_rpc_report_interval = newBuilder(
+                    "internal.db.spd_import.rpc.report_interval", DURATION, ofMinutes(10))
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Boolean> spd_import_rpc_retry =
+            newBuilder("internal.db.spd_import.rpc.retry", BOOL, false).build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Duration> spd_import_rpc_retry_interval = newBuilder(
+                    "internal.db.spd_import.rpc.retry_interval", DURATION, ofSeconds(1))
+            .build();
+
+    @Internal
     @Description("Select how eagerly procedure loader will class load procedures")
     public static final Setting<ProcedureClassPreloading> preload = newBuilder(
                     "internal.dbms.procedures.preload",
