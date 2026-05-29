@@ -170,10 +170,9 @@ class TransactionBoundShowDatabaseService(
 
         val virtualSpdInfo =
           allDbInfos.filter(info => info.details.namedDatabaseId().equals(ref.namedDatabaseId())).head
-        val virtualSpdRequestedStatus = virtualSpdInfo.details.requestedStatus()
 
         graphShardInfos.map(databaseInfo => {
-          val d = databaseDetailsForSPD(databaseInfo.details, status, statusMessage, spdId, virtualSpdRequestedStatus)
+          val d = databaseDetailsForSPD(databaseInfo.details, status, statusMessage, spdId, virtualSpdInfo.details)
           ShowDatabaseResult(
             d,
             d.namedDatabaseId().name().equals(defaultDatabase),
@@ -194,7 +193,7 @@ class TransactionBoundShowDatabaseService(
     actualStatus: String,
     statusMessage: String,
     spdId: NamedDatabaseId,
-    virtualSpdRequestedStatus: String
+    virtualSpdDatabaseDetails: DatabaseDetails
   ): DatabaseDetails = new DatabaseDetails(
     databaseDetails.serverId(),
     databaseDetails.databaseAccess(),
@@ -208,19 +207,18 @@ class TransactionBoundShowDatabaseService(
     OptionalLong.empty(),
     // database level values - will be the same for all members
     spdId,
-    virtualSpdRequestedStatus,
+    virtualSpdDatabaseDetails.requestedStatus(),
     DatabaseDetails.TYPE_STANDARD,
-    // this is not great as these are the options of the graph shard which is not the same as the options of spd
-    databaseDetails.options,
+    virtualSpdDatabaseDetails.options,
     Option.empty.toJava,
     databaseDetails.externalStoreId(),
     null,
     null,
     null,
     null,
-    databaseDetails.creationTime(),
-    databaseDetails.lastStartTime(),
-    databaseDetails.lastStopTime(),
+    virtualSpdDatabaseDetails.creationTime(),
+    virtualSpdDatabaseDetails.lastStartTime(),
+    virtualSpdDatabaseDetails.lastStopTime(),
     databaseDetails.cypherVersion()
   )
 
