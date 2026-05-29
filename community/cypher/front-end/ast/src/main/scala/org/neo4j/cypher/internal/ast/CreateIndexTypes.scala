@@ -69,5 +69,7 @@ case object VectorCreateIndex extends CreateIndexType {
   override val nodeDescription: String = "vector node index"
   override val relDescription: String = "vector relationship index"
   override val allDescription: String = "vector indexes"
-  override val singlePropertyOnly: Boolean = true
+  // Vector indexes have a single vector property but can have multiple additional properties for filtering,
+  // so it is kind of both a single property only and a multi-property index.
+  override val singlePropertyOnly: Boolean = false
 }

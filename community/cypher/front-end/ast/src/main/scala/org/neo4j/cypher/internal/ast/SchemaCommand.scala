@@ -114,6 +114,9 @@ sealed trait CreateIndex extends SchemaCommand {
                 .build()
               error(gql, "Cannot index nested properties", property.position)
             }
+        } chain {
+          if (indexType.singlePropertyOnly) checkSingleProperty(indexType.allDescription, propertiesForSemanticCheck)
+          else SemanticCheck.success
         }
   }
 }
@@ -362,11 +365,7 @@ sealed trait CreateSingleLabelPropertyIndex extends CreateIndex {
   }
 
   override def semanticCheck: SemanticCheck =
-    options.checkOptionsForSchema(entityIndexDescription) chain
-      super.semanticCheck chain {
-        if (indexType.singlePropertyOnly) checkSingleProperty(indexType.allDescription, properties)
-        else SemanticCheck.success
-      }
+    options.checkOptionsForSchema(entityIndexDescription) chain super.semanticCheck
 }
 
 object CreateSingleLabelPropertyIndex {
@@ -425,6 +424,7 @@ sealed trait CreateVectorIndex extends CreateIndex {
 
   override def semanticCheck: SemanticCheck =
     options.checkOptionsForSchema(entityIndexDescription) chain
+      // While vector indexes allow multiple additional properties, they only allow a single vector property
       checkSingleProperty(indexType.allDescription, properties) chain
       super.semanticCheck
 }
