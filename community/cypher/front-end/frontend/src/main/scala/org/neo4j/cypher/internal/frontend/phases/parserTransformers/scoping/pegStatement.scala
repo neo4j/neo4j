@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.ast.TopLevelBraces
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UnmappedUnion
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionResult
@@ -152,7 +154,7 @@ object pegStatement {
         incoming.resultScope(children.last.outgoing, children.last.result, children, referenced)
       case u: UnmappedUnion =>
         val rawChildren =
-          Seq(u.lhs, u.rhs).map(q => scopeUnionBranch(q, incoming, inImportingWith, foreachIterVar))
+          Seq(u.lhs, u.rhs).map(q => apply(q, incoming, inImportingWith, foreachIterVar))
         val children = attachUnionMappingRefs(rawChildren, u.unionMappings)
         val unionVariables = u.unionMappings.map(_.unionVariable)
         val updatedVariables = children.head.result.getColumns.map(r =>
@@ -170,7 +172,7 @@ object pegStatement {
           )
       case u: ProjectingUnion =>
         val rawChildren =
-          Seq(u.lhs, u.rhs).map(q => scopeUnionBranch(q, incoming, inImportingWith, foreachIterVar))
+          Seq(u.lhs, u.rhs).map(q => apply(q, incoming, inImportingWith, foreachIterVar))
         val children = attachUnionMappingRefs(rawChildren, u.unionMappings)
         val unionVariables = u.unionMappings.map(_.unionVariable)
 
@@ -198,6 +200,47 @@ object pegStatement {
             branchIncoming.resultScope(queryScope.outgoing, queryScope.result, branchChildren, referenced)
         }
         incoming.resultScope(children.head.outgoing, children.head.result, children)
+      case sq @ SingleQuery(clauses) if inImportingWith =>
+        val partitioned = sq.partitionedClauses
+        val initialUseOpt: Option[UseGraph] = partitioned.initialGraphSelection.collect { case u: UseGraph => u }
+        val subsequentUseOpt: Option[UseGraph] = partitioned.subsequentGraphSelection.collect { case u: UseGraph => u }
+        val impWithOpt: Option[With] = partitioned.importingWith
+        val restClauses = partitioned.clausesExceptImportingWithAndLeadingGraphSelection
+
+        val initialUseScopeOpt = initialUseOpt.map(uc => pegClause(uc, incoming, foreachIterVar))
+        val impWithScopeOpt = impWithOpt.map(w => pegClause(w, incoming, foreachIterVar))
+
+        val importedVariables: Set[LogicalVariable] = impWithOpt match {
+          case None                                => unitVariables
+          case Some(_) if sq.importColumns.isEmpty => incoming.allSymbols
+          case Some(_) => incoming.allSymbols.filter(s => sq.importColumns.exists(_.name == s.name))
+        }
+        val queryIncoming = RegularContext(unitVariables, importedVariables, incoming.localCallables)
+        val subsequentUseScopeOpt = subsequentUseOpt.map(uc => pegClause(uc, queryIncoming, foreachIterVar))
+
+        val queryChildren = restClauses.scanLeft(WorkingScope.apriori(queryIncoming)) {
+          case (previous, clause) => pegClause(clause, previous.outgoing, foreachIterVar) match {
+              case ws @ StatementScope(_: UnresolvedCall, _, _, _, _, TableResult(_), _, _) =>
+                ws.copy(result = NoResult)
+              case ws => ws
+            }
+        }.tail
+
+        val nestedUnderWith = subsequentUseScopeOpt.toSeq ++ queryChildren
+        val children = impWithScopeOpt match {
+          case Some(w) => initialUseScopeOpt.toSeq :+ w.withChildren(w.children ++ nestedUnderWith)
+          case None    => initialUseScopeOpt.toSeq ++ queryChildren
+        }
+        val outgoing = queryChildren.lastOption.map(_.outgoing).getOrElse(queryIncoming)
+        val result = queryChildren.lastOption.map(_.result).getOrElse(NoResult)
+        val refSources =
+          initialUseScopeOpt.toSeq ++ impWithScopeOpt.toSeq ++ subsequentUseScopeOpt.toSeq ++ queryChildren
+        val referenced =
+          Some(WorkingScope.referencedInChildren(refSources) intersectByTarget incoming.constantsAndVariables)
+        incoming
+          .resultScope(outgoing, result, children, referenced)(sq)
+          .tagForCache(inImportingWith, foreachIterVar)
+
       case sq @ SingleQuery(clauses) =>
         if (clauses.size == 1 && clauses.head.isInstanceOf[UnresolvedCall]) {
           val child = pegClause(clauses.head, incoming, foreachIterVar)
@@ -233,22 +276,6 @@ object pegStatement {
        * To make match exhaustive
        */
       case _ => UnexpectedAstNodeScopingError(astNode, incoming)
-    }
-  }
-
-  private def scopeUnionBranch(
-    branch: Statement,
-    incoming: RegularContext,
-    inImportingWith: Boolean,
-    foreachIterVar: Option[LogicalVariable]
-  )(implicit c: PegContext): WorkingScope = {
-    branch match {
-      case q: SingleQuery if inImportingWith =>
-        val branchIncoming =
-          if (q.isCorrelated && q.importColumns.isEmpty) incoming
-          else incoming.replaceWith(incoming.variables.filter(q.importColumns.toSet))
-        apply(q, branchIncoming, inImportingWith = true, foreachIterVar = foreachIterVar)
-      case other => apply(other, incoming, inImportingWith, foreachIterVar)
     }
   }
 

@@ -498,6 +498,62 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
       E42N62("undefinedVariable"),
       Seq("s")
     ),
+    TestQuery(
+      """UNWIND graph.names() AS graphName
+        |CALL () {
+        |    USE graph.byName( graphName )
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id
+        |}
+        |CALL (id) {
+        |    USE graph.byName( graphName )
+        |    WITH id
+        |    MATCH (n)
+        |    WHERE elementId(n) = id
+        |    DETACH DELETE n
+        |} IN TRANSACTIONS""".stripMargin,
+      E42N62("graphName"),
+      Seq()
+    ),
+    TestQuery(
+      """MATCH (a)
+        |CALL {
+        |    RETURN a.p + 1 AS y
+        |}
+        |RETURN y""".stripMargin,
+      E42N62("a"),
+      Seq()
+    ),
+    TestQuery(
+      """MATCH (a)
+        |RETURN a AS x, COUNT { CALL { RETURN a.p + 1 AS y } RETURN y } + count(a)""".stripMargin,
+      E42N62("a"),
+      Seq()
+    ),
+    TestQuery(
+      """UNWIND graph.names() AS graphName
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id, graphName AS newName
+        |}
+        |RETURN id, newName""".stripMargin,
+      E42N62("graphName"),
+      Seq("id", "newName")
+    ),
+    TestQuery(
+      """WITH 1 AS x
+        |UNWIND graph.names() AS graphName
+        |CALL {
+        |    WITH x
+        |    USE graph.byName( graphName )
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id, x + 1 AS y
+        |}
+        |RETURN id, y""".stripMargin,
+      E42N62("graphName"),
+      Seq("id", "y")
+    ),
 
     // Positive tests
     TestQuery(
@@ -939,6 +995,129 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
       ignoreBeforeCypher25(Passes),
       Seq("name", "txId", "indexEntityType", "spec", "function"),
       compositionRestriction = NoLocalCallableBody
+    ),
+    TestQuery(
+      """UNWIND graph.names() AS graphName
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id
+        |}
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    WITH id
+        |    MATCH (n)
+        |    WHERE elementId(n) = id
+        |    DETACH DELETE n
+        |} IN TRANSACTIONS""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """UNWIND graph.names() AS graphName
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id
+        |}
+        |WITH graphName, id
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    WITH id
+        |    MATCH (n)
+        |    WHERE elementId(n) = id
+        |    DETACH DELETE n
+        |} IN TRANSACTIONS""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """UNWIND [1,2,3] AS value
+        |CALL {
+        |    WITH value
+        |    MATCH (n)
+        |    RETURN value + 1 AS inc, elementId(n) AS id
+        |}
+        |WITH value, id, inc
+        |CALL {
+        |    WITH value, id, inc
+        |    WITH *, value + inc + 2 AS inc2
+        |    MATCH (n)
+        |    WHERE elementId(n) = id
+        |    DETACH DELETE n
+        |} IN TRANSACTIONS""".stripMargin,
+      Passes,
+      Seq()
+    ),
+    TestQuery(
+      """UNWIND graph.names() AS graphName
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id
+        |}
+        |RETURN id""".stripMargin,
+      Passes,
+      Seq("id")
+    ),
+    TestQuery(
+      """WITH 1 AS x
+        |UNWIND graph.names() AS graphName
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    WITH x
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id, x + 1 AS y
+        |}
+        |RETURN id, y""".stripMargin,
+      Passes,
+      Seq("id", "y")
+    ),
+    TestQuery(
+      """WITH 1 AS x, "name" AS stringName
+        |UNWIND graph.names() AS graphName
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    WITH x
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id, x + 1 AS y
+        |    UNION
+        |    USE graph.byName( stringName )
+        |    WITH x
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id, x + 1 AS y
+        |}
+        |RETURN id, y""".stripMargin,
+      Passes,
+      Seq("id", "y")
+    ),
+    TestQuery(
+      """WITH 1 AS x, "name" AS stringName
+        |UNWIND graph.names() AS graphName
+        |CALL {
+        |    USE graph.byName( graphName )
+        |    WITH x
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id, x + 1 AS y, "hello" AS newString
+        |    UNION
+        |    USE graph.byName( stringName )
+        |    WITH x, stringName
+        |    MATCH (n)
+        |    RETURN elementId(n) AS id, x + 1 AS y, stringName AS newString
+        |}
+        |RETURN id, y, newString""".stripMargin,
+      Passes,
+      Seq("id", "y", "newString")
+    ),
+    TestQuery(
+      """MATCH (a)
+        |CALL {
+        |    WITH *
+        |    RETURN a.p + 1 AS y
+        |}
+        |RETURN y""".stripMargin,
+      Passes,
+      Seq("y")
     )
   )
 }

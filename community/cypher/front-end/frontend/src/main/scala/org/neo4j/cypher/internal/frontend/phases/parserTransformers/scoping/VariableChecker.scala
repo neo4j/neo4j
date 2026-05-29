@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.LocalCallableDefinition
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
@@ -47,6 +48,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.IterableExpression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -420,10 +422,18 @@ case class VariableChecker(
           TraverseChildrenNewAccForSiblings(updatedAcc, acc => { acc.inProjectionContext(_acc.projectionContext) })
         })
 
-    case s @ StatementScope(_: SubqueryCall, _, _, _, _, _, children, _) => acc =>
+    case s @ StatementScope(call: SubqueryCall, outerIncoming, _, _, _, _, _, _) => acc =>
+        val importedSymbols: Set[LogicalVariable] = call match {
+          case ImportingWithSubqueryCall(query, _, _) =>
+            if (query.isCorrelated && query.importColumns.isEmpty) outerIncoming.allSymbols
+            else outerIncoming.allSymbols.filter(s => query.importColumns.exists(_.name == s.name))
+          case ScopeClauseSubqueryCall(_, isImportingAll, importedVars, _, _, _) =>
+            if (isImportingAll) outerIncoming.allSymbols
+            else outerIncoming.allSymbols.filter(s => importedVars.exists(_.name == s.name))
+        }
         updateAccAndTraverse(acc, s)(_acc => {
           TraverseChildrenNewAccForSiblings(
-            _acc.dropIncomingVariablesToClause(children.head.incoming.allSymbols),
+            _acc.dropIncomingVariablesToClause(importedSymbols),
             acc => { acc.inProjectionContext(_acc.projectionContext) }
           )
         })

@@ -124,22 +124,12 @@ object pegClause {
        * Clause
        */
       case call @ ImportingWithSubqueryCall(query, inTransactionsParameters, _) =>
-        val importingAll = query.isCorrelated && query.importColumns.isEmpty
         val explicitImportedVariables = query.importColumns.toSet
-
-        val importedVariableSet: Set[LogicalVariable] =
-          if (importingAll) incoming.allSymbols
-          else incoming.allSymbols.filter(x => explicitImportedVariables.exists(x.name == _.name))
-        val graphSelectionScopes = query.getGraphSelections.map(gs =>
-          pegExpression(gs.graphReference, incoming.constantChildContext())
-        )
-        val innerQueryIncoming =
-          RegularContext(constants = unitVariables, variables = importedVariableSet, incoming.localCallables)
         val scope = scopeInlineSubquery(
           call,
           incoming,
           explicitImportedVariables,
-          innerQueryIncoming,
+          innerQueryIncoming = incoming,
           inTransactionsParameters
         )
 
@@ -153,7 +143,7 @@ object pegClause {
           case _ => None
         }.flatten
 
-        scope.withChildren(scope.children ++ graphSelectionScopes).addReferences(additionalImportingWithRefs)
+        scope.addReferences(additionalImportingWithRefs)
 
       case call @ ScopeClauseSubqueryCall(_, isImportingAll, importedVariables, inTransactionsParameters, _, _) =>
         val innerQueryIncoming =
