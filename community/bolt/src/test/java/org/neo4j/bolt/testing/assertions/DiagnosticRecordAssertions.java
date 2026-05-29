@@ -28,6 +28,7 @@ import org.neo4j.gqlstatus.ErrorClassification;
 public final class DiagnosticRecordAssertions extends AbstractMetadataAssertionBuilder<DiagnosticRecordAssertions> {
 
     private static final String CLASSIFICATION_KEY = "_classification";
+    private static final String IDEMPOTENT_KEY = "_idempotent";
     private static final String POSITION_KEY = "_position";
     private static final String POSITION_COLUMN_KEY = "column";
     private static final String POSITION_LINE_KEY = "line";
@@ -61,5 +62,10 @@ public final class DiagnosticRecordAssertions extends AbstractMetadataAssertionB
                 .containsEntry(POSITION_LINE_KEY, line)
                 .containsEntry(POSITION_OFFSET_KEY, offset)
                 .containsOnlyKeys(POSITION_COLUMN_KEY, POSITION_LINE_KEY, POSITION_OFFSET_KEY));
+    }
+
+    public DiagnosticRecordAssertions isIdempotent() {
+        return this.registerAssertion(
+                IDEMPOTENT_KEY, actual -> Assertions.assertThat(actual).isEqualTo(true));
     }
 }

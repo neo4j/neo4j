@@ -148,6 +148,7 @@ class SchedulerBusyIT {
                                         .hasDescription(
                                                 "error: system configuration or operation exception - internal resource exhaustion. The DBMS is unable to handle the request, please retry later or contact the system operator. More information is present in the logs.")
                                         .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
+                                                .isIdempotent()
                                                 .hasClassification(ErrorClassification.TRANSIENT_ERROR))
                                         .hasCause(FailureCauseAssertions.create()
                                                 .hasStatus(GqlStatusInfoCodes.STATUS_51N38)
@@ -185,7 +186,8 @@ class SchedulerBusyIT {
                                             .hasDescription(
                                                     "error: system configuration or operation exception - internal resource exhaustion. The DBMS is unable to handle the request, please retry later or contact the system operator. More information is present in the logs.")
                                             .hasDiagnosticRecord(DiagnosticRecordAssertions.create()
-                                                    .hasClassification(ErrorClassification.TRANSIENT_ERROR))
+                                                    .hasClassification(ErrorClassification.TRANSIENT_ERROR)
+                                                    .isIdempotent())
                                             .hasCause(FailureCauseAssertions.create()
                                                     .hasStatus(GqlStatusInfoCodes.STATUS_51N38)
                                                     .hasDescription(

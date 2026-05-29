@@ -57,6 +57,7 @@ public class BoltException extends GqlException implements Status.HasStatus {
     public static BoltException failedToAcquireExecutionThread() {
         // DRI-055
         var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N59)
+                .withDiagnosticRecordProperty(BoltDiagnosticRecordProperty.IDEMPOTENT, true)
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N38)
                         .build())
                 .build();
