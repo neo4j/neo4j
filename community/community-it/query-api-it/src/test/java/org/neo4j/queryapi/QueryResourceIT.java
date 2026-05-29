@@ -26,11 +26,13 @@ import static org.neo4j.queryapi.testclient.QueryRequest.returnOne;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -58,6 +60,7 @@ class QueryResourceIT {
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(BoltConnectorInternalSettings.local_channel_address, QueryResourceIT.class.getSimpleName())
+                .setConfig(GraphDatabaseSettings.bookmark_ready_timeout, Duration.ofSeconds(1))
                 .setConfig(BoltConnector.enabled, true)
                 .impermanent()
                 .build();
