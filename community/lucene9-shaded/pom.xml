@@ -29,12 +29,30 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>compile-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <phase>compile</phase>
+          </execution>
+          <execution>
+            <id>default-jar</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
             <goals>
               <goal>shade</goal>
             </goals>
+            <phase>compile</phase>
             <configuration>
               <extraArtifacts>
                 <extraArtifact>org.apache.lucene:lucene-core:${lucene9.version}</extraArtifact>
@@ -73,6 +91,8 @@
                 </transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
               </transformers>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
             </configuration>
           </execution>
         </executions>
