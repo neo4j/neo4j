@@ -40,13 +40,21 @@ case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])(val id: I
     val scopedMemoryTracker =
       state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     var arrayList: HeapTrackingArrayList[CypherRow] = HeapTrackingArrayList.newArrayList(256, scopedMemoryTracker)
-    while (input.hasNext) {
-      val row = input.next()
-      // Note, not safe to call row.compact() here, like we do in pipelined, because sort is not breaking in slotted.
-      scopedMemoryTracker.allocateHeap(row.estimatedHeapUsage())
-      arrayList.add(row)
+    try {
+      while (input.hasNext) {
+        val row = input.next()
+        // Note, not safe to call row.compact() here, like we do in pipelined, because sort is not breaking in slotted.
+        scopedMemoryTracker.allocateHeap(row.estimatedHeapUsage())
+        arrayList.add(row)
+      }
+      arrayList.sort(comparator)
+    } catch {
+      case t: Throwable =>
+        try input.close()
+        finally
+          try scopedMemoryTracker.close()
+          finally throw t
     }
-    arrayList.sort(comparator)
     new DelegatingClosingIterator[CypherRow](arrayList.iterator().asScala) {
       override def closeMore(): Unit = {
         arrayList = null

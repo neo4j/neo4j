@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.Descending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
@@ -83,6 +84,39 @@ class SortPipeTest extends CypherFunSuite {
       Map[String, Any]("x" -> "B", "y" -> 20),
       Map[String, Any]("x" -> "B", "y" -> 10)
     ))
+  }
+
+  test("should close input when materialise loop throws") {
+    val source = new FakePipe(List(
+      mutable.Map[String, Any]("x" -> 1),
+      mutable.Map[String, Any]("x" -> 2),
+      mutable.Map[String, Any]("x" -> 3)
+    ))
+
+    val boom = new RuntimeException("boom")
+    val throwingProber = ProberPipe(
+      source,
+      new Prober.Probe {
+        private var seen = 0
+        override def onRow(row: AnyRef, state: AnyRef): Unit = {
+          seen += 1
+          if (seen == 2) throw boom
+        }
+      }
+    )()
+
+    val sortPipe =
+      SortPipe(throwingProber, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))))()
+
+    val thrown = the[RuntimeException] thrownBy {
+      sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList
+    }
+    thrown should be theSameInstanceAs boom
+
+    // Regression: SortPipe materialises its input up-front; if that loop throws,
+    // the returned DelegatingClosingIterator is never built, so the only path
+    // that closes `input` is the catch block. Without it, upstream cursors leak.
+    source.wasClosed shouldBe true
   }
 
   test("should handle null values") {
