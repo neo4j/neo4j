@@ -137,6 +137,11 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     }
 
     @Override
+    public void skip(int length) throws IOException {
+        throw new IllegalStateException("Skipping bytes not supported");
+    }
+
+    @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException {
         positionMarker.mark(channel.getLogVersion(), position());
         return positionMarker;

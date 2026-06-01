@@ -400,6 +400,11 @@ public class InMemoryClosableChannel
         throw new IllegalStateException("Skipping log entries not supported");
     }
 
+    @Override
+    public void skip(int length) throws IOException {
+        throw new IllegalStateException("Skipping bytes not supported");
+    }
+
     ByteBufferBase getCurrentBuffer() {
         return isReader ? reader : writer;
     }
@@ -629,6 +634,11 @@ public class InMemoryClosableChannel
         @Override
         public LogPosition goToEndOfEntry() throws IOException {
             throw new IllegalStateException("Skipping log entries not supported");
+        }
+
+        @Override
+        public void skip(int length) throws IOException {
+            throw new IllegalStateException("Skipping bytes not supported");
         }
     }
 

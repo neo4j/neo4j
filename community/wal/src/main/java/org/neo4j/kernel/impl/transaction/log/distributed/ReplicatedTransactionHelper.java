@@ -46,7 +46,7 @@ public class ReplicatedTransactionHelper {
                 throw new IllegalStateException("Negative replication metadata length at position="
                         + parseProgress.newPosition() + " length=" + metadataBytes);
             }
-            skipForward(channel, metadataBytes);
+            channel.skip(metadataBytes);
             channel.getCurrentLogPosition(parseProgress);
             byte contentCode = channel.get();
             if (contentCode != REPLICATED_TX_CONTENT_TYPE) {
@@ -70,9 +70,5 @@ public class ReplicatedTransactionHelper {
             }
             channel.getCurrentLogPosition(parseProgress);
         }
-    }
-
-    private static void skipForward(ReadableLogPositionAwareChannel channel, int metadataBytes) throws IOException {
-        channel.get(new byte[metadataBytes], metadataBytes);
     }
 }

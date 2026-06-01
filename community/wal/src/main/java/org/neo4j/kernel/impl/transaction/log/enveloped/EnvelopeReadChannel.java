@@ -619,6 +619,33 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     }
 
     @Override
+    public void skip(int length) throws IOException {
+        assert length >= 0;
+
+        try {
+            int bytesToRead = length;
+
+            while (bytesToRead != 0) {
+                readEnvelopeHeaderIfRequired();
+
+                int envelopeRemaining = payloadEndOffset - buffer.position();
+
+                if (envelopeRemaining >= bytesToRead) {
+                    // position in current envelope so skip and end
+                    buffer.position(buffer.position() + bytesToRead);
+                    bytesToRead = 0;
+                } else {
+                    // skip over this envelope
+                    buffer.position(payloadEndOffset);
+                    bytesToRead -= envelopeRemaining;
+                }
+            }
+        } catch (ClosedChannelException e) {
+            handleClosedChannelException(e);
+        }
+    }
+
+    @Override
     public boolean isOpen() {
         return !closed;
     }

@@ -2004,6 +2004,126 @@ class EnvelopeReadChannelTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldSkipWithinOneEnvelope(int segmentSize) throws Exception {
+        // GIVEN
+        final var bytesValue = bytes(random, 39);
+
+        final var intValue = 55555;
+        final var payloadLength = Integer.BYTES + bytesValue.length + Long.BYTES + Integer.BYTES;
+
+        final var payloadChecksum =
+                buildChecksum(EnvelopeType.FULL, payloadLength, BASE_TX_CHECKSUM, (buffer) -> buffer.putInt(intValue)
+                        .put(bytesValue)
+                        .putLong(1L)
+                        .putInt(intValue));
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            writeLogEnvelopeHeader(
+                    buffer, payloadChecksum, EnvelopeType.FULL, payloadLength, BASE_TX_CHECKSUM, START_INDEX);
+            buffer.putInt(intValue);
+            buffer.put(bytesValue);
+            buffer.putLong(1L);
+            buffer.putInt(intValue);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            assertThat(intValue).isEqualTo(channel.getInt());
+            channel.skip(bytesValue.length + Long.BYTES);
+            assertThat(intValue).isEqualTo(channel.getInt());
+
+            assertThat(payloadChecksum).isEqualTo(channel.getChecksum());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldSkipAcrossEnvelopes(int segmentSize) throws Exception {
+        // GIVEN
+        final var bytesValue = bytes(random, segmentSize + 20);
+        final var beginChunkSize = segmentSize - HEADER_SIZE;
+
+        var endChecksum = new MutableInt();
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+
+            var checksum = writeHeaderAndPayload(
+                    buffer,
+                    EnvelopeType.BEGIN,
+                    BASE_TX_CHECKSUM,
+                    copyOfRange(bytesValue, 0, beginChunkSize),
+                    START_INDEX);
+            checksum = writeHeaderAndPayload(
+                    buffer,
+                    EnvelopeType.END,
+                    checksum,
+                    copyOfRange(bytesValue, beginChunkSize, bytesValue.length),
+                    START_INDEX);
+            endChecksum.setValue(checksum);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN skip over into next envelope
+            var skipInto = beginChunkSize + 10;
+            channel.skip(skipInto);
+            var remainingBytes = copyOfRange(bytesValue, skipInto, bytesValue.length);
+            var readPart = new byte[bytesValue.length - skipInto];
+            // remaining bytes should match
+            channel.read(ByteBuffer.wrap(readPart));
+            assertThat(remainingBytes).isEqualTo(readPart);
+
+            assertThat(endChecksum.intValue()).isEqualTo(channel.getChecksum());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldSkipAcrossLogFiles(int segmentSize) throws Exception {
+        // GIVEN
+        final var path1 = file(0);
+        final var path2 = file(1);
+
+        final var segment1Size = segmentSize - HEADER_SIZE;
+        final var segment2Size = 42;
+        final var bytes0 = bytes(random, segment1Size);
+        final var bytes1 = bytes(random, segment1Size);
+        final var bytes2 = bytes(random, segment2Size);
+
+        final var endChecksum = new MutableInt();
+        writeSomeData(path1, buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+
+            var checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes0, START_INDEX);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.MIDDLE, checksum, bytes1, START_INDEX);
+            endChecksum.setValue(checksum);
+        });
+        writeSomeData(path2, buffer -> {
+            writeZeroSegment(buffer, segmentSize, endChecksum.intValue());
+            writeHeaderAndPayload(buffer, EnvelopeType.END, endChecksum.intValue(), bytes2, START_INDEX);
+        });
+
+        final var logChannel = logChannel(path1);
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, new TwoFileLogVersionBridge(path2), EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            final var part2Skip = segment2Size / 2;
+            final var skipInto = segment1Size + segment1Size + part2Skip;
+            // skip into middle of final envelope in second file
+            channel.skip(skipInto);
+            final var bytesRead = new byte[segment2Size - part2Skip];
+            channel.get(bytesRead, bytesRead.length);
+            assertThat(bytesRead).isEqualTo(copyOfRange(bytes2, part2Skip, bytes2.length));
+        }
+    }
+
     private Path file(int index) {
         return directory.homePath().resolve(String.valueOf(index));
     }

@@ -120,6 +120,11 @@ public class FormatSwitchingReadAheadLogChannel implements ReadableLogChannel {
     }
 
     @Override
+    public void skip(int length) throws IOException {
+        delegate.skip(length);
+    }
+
+    @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException {
         return delegate.getCurrentLogPosition(positionMarker);
     }

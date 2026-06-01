@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 
 public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPositionAwareChannel {
@@ -114,4 +115,16 @@ public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPos
      * from {@link ReadableLogPositionAwareChannel#supportsEntrySkipping()}
      */
     LogPosition goToEndOfEntry() throws IOException;
+
+    /**
+     * Skips the next {@code length} bytes from this channel{@code bytes} as if they had been read.
+     * If the channel maintains a checksum this will include the skipped bytes and thus the validation
+     * should be updated accordingly, but the channel may otherwise optimize the skipping.
+     *
+     * @param length number of bytes to read from the channel.
+     * @throws IOException I/O error from channel.
+     * @throws ReadPastEndException if not enough data was available.
+     * @throws IllegalStateException if called on a channel that returns false from {@link ReadableLogPositionAwareChannel#supportsEntrySkipping()}
+     */
+    void skip(int length) throws IOException;
 }
