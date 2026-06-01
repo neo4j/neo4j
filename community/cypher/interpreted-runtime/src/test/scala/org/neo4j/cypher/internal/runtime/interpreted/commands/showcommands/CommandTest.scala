@@ -39,12 +39,21 @@ import org.neo4j.values.virtual.VirtualValues
 
 class CommandTest extends ShowCommandTestBase {
 
+  test("`extractNames` should return empty list when given no names") {
+    // When
+    val result = Command.extractNames(None, queryState, initialCypherRow, "", CypherVersion.Cypher25)
+
+    // Then
+    result should be(List.empty)
+  }
+
   test("`extractNames` should filter out duplicates from list of strings") {
     // Given
     val names = List("foo", "bar", "baz", "bar", "foo")
 
     // When
-    val result = Command.extractNames(Left(names), queryState, initialCypherRow, "", CypherVersion.Cypher25)
+    val result =
+      Command.extractNames(Some(stringList(names: _*)), queryState, initialCypherRow, "", CypherVersion.Cypher25)
 
     // Then
     result should have size 3
@@ -59,7 +68,7 @@ class CommandTest extends ShowCommandTestBase {
 
     // Then
     the[ParameterWrongTypeException] thrownBy {
-      Command.extractNames(Right(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
+      Command.extractNames(Some(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
     } should have message "Expected a string or a list of strings, but got: Boolean('true')"
   }
 
@@ -71,7 +80,7 @@ class CommandTest extends ShowCommandTestBase {
 
     // Then
     the[ParameterWrongTypeException] thrownBy {
-      Command.extractNames(Right(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
+      Command.extractNames(Some(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
     } should have message "Expected a string, but got: Boolean('true')"
   }
 
@@ -87,7 +96,7 @@ class CommandTest extends ShowCommandTestBase {
     val originOperation = "rxdtfcyvgbhnjkml,dfgh"
     val thrown = the[ParameterWrongTypeException] thrownBy {
       Command.extractNames(
-        Right(expression),
+        Some(expression),
         queryStateWithParams,
         initialCypherRow,
         originOperation,
@@ -110,7 +119,7 @@ class CommandTest extends ShowCommandTestBase {
 
     // When
     val result =
-      Command.extractNames(Right(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
+      Command.extractNames(Some(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
 
     // Then
     result should have size 1
@@ -131,7 +140,7 @@ class CommandTest extends ShowCommandTestBase {
 
     // When
     val result =
-      Command.extractNames(Right(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
+      Command.extractNames(Some(expression), queryStateWithParams, initialCypherRow, "", CypherVersion.Cypher25)
 
     // Then
     result should have size 3
@@ -153,7 +162,7 @@ class CommandTest extends ShowCommandTestBase {
 
     // When
     val result = Command.extractNames(
-      Right(listExpression),
+      Some(listExpression),
       queryStateWithParams,
       expressionCypherRow,
       "",
@@ -179,7 +188,7 @@ class CommandTest extends ShowCommandTestBase {
     // When
     val expressionNullDirectly = ParameterFromSlot(0, "name")
     val resultNullDirectly = Command.extractNames(
-      Right(expressionNullDirectly),
+      Some(expressionNullDirectly),
       queryStateWithParams,
       initialCypherRow,
       "",
@@ -192,7 +201,7 @@ class CommandTest extends ShowCommandTestBase {
     // When
     val expressionNullInList = ParameterFromSlot(1, "name")
     val resultNullInList = Command.extractNames(
-      Right(expressionNullInList),
+      Some(expressionNullInList),
       queryStateWithParams,
       initialCypherRow,
       "",
@@ -213,7 +222,7 @@ class CommandTest extends ShowCommandTestBase {
     val expressionNullDirectly = ParameterFromSlot(0, "name")
     val exceptionNullDirectly = the[ParameterWrongTypeException] thrownBy {
       Command.extractNames(
-        Right(expressionNullDirectly),
+        Some(expressionNullDirectly),
         queryStateWithParams,
         initialCypherRow,
         "*command*",
@@ -235,7 +244,7 @@ class CommandTest extends ShowCommandTestBase {
     val expressionNullInList = ParameterFromSlot(1, "name")
     val exceptionNullInList = the[ParameterWrongTypeException] thrownBy {
       Command.extractNames(
-        Right(expressionNullInList),
+        Some(expressionNullInList),
         queryStateWithParams,
         initialCypherRow,
         "*command*",

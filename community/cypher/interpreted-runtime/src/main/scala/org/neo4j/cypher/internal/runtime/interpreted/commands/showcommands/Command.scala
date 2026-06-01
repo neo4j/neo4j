@@ -87,39 +87,37 @@ abstract class Command(
 
 object Command {
 
-  // Get the string values from `names`, removing possible duplicates (keeps NO_VALUE/null)
+  // Get the string values from `names`, removing possible duplicates (keeps NO_VALUE/null from Cypher 25)
   // names could for example be the id lists for `SHOW TRANSACTIONS ['id1', 'id2']`
   protected[showcommands] def extractNames(
-    names: Either[List[String], Expression],
+    names: Option[Expression],
     state: QueryState,
     baseRow: CypherRow,
     originOperation: String,
     cypherVersion: CypherVersion
   ): List[String] =
-    names match {
-      case Left(ls) => ls.toSet.toList
-      case Right(e) =>
-        e(baseRow, state) match {
-          case s: StringValue => List(s.stringValue())
-          case l: ListValue =>
-            val list = l.iterator().asScala
-            list.map {
-              case s: StringValue                                                     => s.stringValue()
-              case _: NoValue if cypherVersion.isEqualOrAfter(CypherVersion.Cypher25) => null
-              case x =>
-                throw ParameterWrongTypeException.expectedStringButGotValue(
-                  originOperation,
-                  String.valueOf(x),
-                  x.prettify()
-                )
-            }.toSet.toList
-          case _: NoValue if cypherVersion.isEqualOrAfter(CypherVersion.Cypher25) => List(null)
-          case x =>
-            throw ParameterWrongTypeException.expectedStringOrStringList(
-              originOperation,
-              String.valueOf(x),
-              x.prettify()
-            )
-        }
-    }
+    names.map(e =>
+      e(baseRow, state) match {
+        case s: StringValue => List(s.stringValue())
+        case l: ListValue =>
+          val list = l.iterator().asScala
+          list.map {
+            case s: StringValue                                                     => s.stringValue()
+            case _: NoValue if cypherVersion.isEqualOrAfter(CypherVersion.Cypher25) => null
+            case x =>
+              throw ParameterWrongTypeException.expectedStringButGotValue(
+                originOperation,
+                String.valueOf(x),
+                x.prettify()
+              )
+          }.toSet.toList
+        case _: NoValue if cypherVersion.isEqualOrAfter(CypherVersion.Cypher25) => List(null)
+        case x =>
+          throw ParameterWrongTypeException.expectedStringOrStringList(
+            originOperation,
+            String.valueOf(x),
+            x.prettify()
+          )
+      }
+    ).getOrElse(List.empty)
 }

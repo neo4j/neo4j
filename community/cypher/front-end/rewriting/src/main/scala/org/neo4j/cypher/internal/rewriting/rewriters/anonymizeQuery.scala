@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.CommandClauseWithNames
 import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
@@ -83,8 +82,7 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: GraphTypeConstraintName => x.copy(name = anonymizer.constraintName(x.name))(x.position)
     case x: GraphTypeConstraintDefinition =>
       x.copy(name = x.name.map(name => anonymizer.constraintName(name)))(x.position)
-    case x: CommandClauseWithNames => x.withNames(anonymizeCommandClauseNames(x.names, anonymizer.literal))
-    case x: User                   => x.copy(anonymizer.identifierAsString(x.name))(x.position)
+    case x: User => x.copy(anonymizer.identifierAsString(x.name))(x.position)
   })
 
   private def anonymizeSchemaName(
@@ -99,15 +97,5 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
       case other =>
         // Should have thrown in semantic checking already and not get here
         other
-    }
-
-  private def anonymizeCommandClauseNames(
-    names: Either[List[String], Expression],
-    anonymizeStringName: String => String
-  ): Either[List[String], Expression] =
-    names match {
-      case Left(strings) => Left(strings.map(anonymizeStringName))
-      // The expression will be anonymized separately and doesn't need to be handled here
-      case other => other
     }
 }

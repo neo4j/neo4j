@@ -103,7 +103,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 // SHOW TRANSACTION[S] [transaction-id[,...]] [WHERE clause|YIELD clause]
 case class ShowTransactionsCommand(
-  givenIds: Either[List[String], Expression],
+  givenIds: Option[Expression],
   defaultColumns: List[CommandDefaultColumn],
   yieldColumns: List[CommandYieldColumn],
   cypherVersion: CypherVersion

@@ -41,7 +41,7 @@ class CommandClauseTest extends CypherFunSuite with AstConstructionTestSupport {
           ShowAndTerminateColumn("username", CTString),
           ShowAndTerminateColumn("message", CTString)
         ),
-        Right(StringLiteral("neo4j-transaction-2")(pos)),
+        ExpressionNames(StringLiteral("neo4j-transaction-2")(pos)),
         List(CommandResultItem("nope", Variable("nope")(pos, false))(pos)),
         false,
         None,

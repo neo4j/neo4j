@@ -42,6 +42,8 @@ import org.neo4j.cypher.internal.ast.AuthRuleCondition
 import org.neo4j.cypher.internal.ast.AuthRuleEnabled
 import org.neo4j.cypher.internal.ast.AuthRuleSetClause
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
+import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.Create
@@ -86,6 +88,7 @@ import org.neo4j.cypher.internal.ast.ExpandHintInto
 import org.neo4j.cypher.internal.ast.ExpandHintMode
 import org.neo4j.cypher.internal.ast.ExplicitGroupingElements
 import org.neo4j.cypher.internal.ast.ExpressionBody
+import org.neo4j.cypher.internal.ast.ExpressionNames
 import org.neo4j.cypher.internal.ast.ExternalAuth
 import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
@@ -134,6 +137,7 @@ import org.neo4j.cypher.internal.ast.NamedDatabasesScope
 import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NextStatement
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Node
 import org.neo4j.cypher.internal.ast.OidcCredentialForwarding
@@ -1591,9 +1595,11 @@ case class Prettifier(
       s"$INDENT${s.name}$optionalName$where$yielded"
     }
 
-    private def namesAsString(ids: Either[List[String], Expression]): String = ids match {
-      case Left(s)  => if (s.nonEmpty) s.map(id => expr.quote(id)).mkString(" ", ", ", "") else ""
-      case Right(e) => s" ${expr(e, shouldBacktickEmpty = true)}"
+    private def namesAsString(ids: CommandClauseNames): String = ids match {
+      case NoNames => ""
+      case CommaSeparatedNames(l) =>
+        l.expressions.map(id => expr(id, shouldBacktickEmpty = true)).mkString(" ", ", ", "")
+      case ExpressionNames(e) => s" ${expr(e, shouldBacktickEmpty = true)}"
     }
 
     private def yieldAsString(

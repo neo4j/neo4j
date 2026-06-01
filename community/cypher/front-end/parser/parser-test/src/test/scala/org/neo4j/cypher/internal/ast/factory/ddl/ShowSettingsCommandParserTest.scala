@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
+import org.neo4j.cypher.internal.ast.ExpressionNames
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -31,47 +34,78 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   Seq("SETTING", "SETTINGS").foreach { settingKeyword =>
     test(s"SHOW $settingKeyword") {
       assertAst(
-        singleQuery(ShowSettingsClause(Left(List.empty[String]), None, List.empty, yieldAll = false, None)(defaultPos))
+        singleQuery(ShowSettingsClause(NoNames, None, List.empty, yieldAll = false, None)(defaultPos))
       )
     }
 
     test(s"SHOW $settingKeyword 'foo'") {
       assertAst(
         singleQuery(
-          ShowSettingsClause(Right(literalString("foo")), None, List.empty, yieldAll = false, None)(defaultPos)
+          ShowSettingsClause(
+            ExpressionNames(literalString("foo")),
+            None,
+            List.empty,
+            yieldAll = false,
+            None
+          )(defaultPos)
         )
       )
     }
 
     test(s"SHOW $settingKeyword ''") {
       assertAst(
-        singleQuery(ShowSettingsClause(Right(literalString("")), None, List.empty, yieldAll = false, None)(defaultPos))
+        singleQuery(ShowSettingsClause(
+          ExpressionNames(literalString("")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None
+        )(defaultPos))
       )
     }
 
     test(s"SHOW $settingKeyword null") {
       assertAst(
-        singleQuery(ShowSettingsClause(Right(nullLiteral), None, List.empty, yieldAll = false, None)(defaultPos))
+        singleQuery(ShowSettingsClause(
+          ExpressionNames(nullLiteral),
+          None,
+          List.empty,
+          yieldAll = false,
+          None
+        )(defaultPos))
       )
     }
 
     test(s"SHOW $settingKeyword $$param") {
       assertAst(
         singleQuery(
-          ShowSettingsClause(Right(parameter("param", CTAny)), None, List.empty, yieldAll = false, None)(defaultPos)
+          ShowSettingsClause(
+            ExpressionNames(parameter("param", CTAny)),
+            None,
+            List.empty,
+            yieldAll = false,
+            None
+          )(defaultPos)
         )
       )
     }
 
     test(s"SHOW $settingKeyword 'foo', 'bar'") {
       assertAst(
-        singleQuery(ShowSettingsClause(Left(List("foo", "bar")), None, List.empty, yieldAll = false, None)(defaultPos))
+        singleQuery(ShowSettingsClause(
+          CommaSeparatedNames(listOfString("foo", "bar")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None
+        )(defaultPos)),
+        obfuscator = false
       )
     }
 
     test(s"SHOW $settingKeyword 'foo'+'.'+$$name") {
       assertAst(singleQuery(ShowSettingsClause(
-        Right(
+        ExpressionNames(
           add(add(literalString("foo"), literalString(".")), parameter("name", CTAny))
         ),
         None,
@@ -83,7 +117,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
     test(s"SHOW $settingKeyword ['foo', 'bar']") {
       assertAst(singleQuery(ShowSettingsClause(
-        Right(listOfString("foo", "bar")),
+        ExpressionNames(listOfString("foo", "bar")),
         None,
         List.empty,
         yieldAll = false,
@@ -96,7 +130,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
         SingleQuery(
           List(
             use(List("db"), !cypher5),
-            ShowSettingsClause(Left(List.empty[String]), None, List.empty, yieldAll = false, None)((1, 8, 7))
+            ShowSettingsClause(NoNames, None, List.empty, yieldAll = false, None)((1, 8, 7))
           )
         )((1, 8, 7))
       )
@@ -108,7 +142,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING WHERE name = 'db.setting.sub_setting'") {
     assertAst(singleQuery(ShowSettingsClause(
-      Left(List.empty[String]),
+      NoNames,
       Some(where(
         equals(
           varFor("name"),
@@ -123,7 +157,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING WHERE name IN ['db.setting.sub_setting', 'db.another.setting']") {
     assertAst(singleQuery(ShowSettingsClause(
-      Left(List.empty[String]),
+      NoNames,
       Some(where(
         in(
           varFor("name", (1, 20, 19)),
@@ -141,7 +175,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING WHERE name = $name") {
     assertAst(singleQuery(ShowSettingsClause(
-      Left(List.empty[String]),
+      NoNames,
       Some(where(
         equals(
           varFor("name"),
@@ -157,7 +191,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS WHERE (`name`) = ($`s`)") {
     def expected(nameIsEscaped: Boolean) =
       singleQuery(ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         Some(where(
           equals(
             varFor("name", nameIsEscaped),
@@ -176,7 +210,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING WHERE name IN $list") {
     assertAst(singleQuery(ShowSettingsClause(
-      Left(List.empty[String]),
+      NoNames,
       Some(where(
         in(
           varFor("name"),
@@ -191,7 +225,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING 'foo' WHERE isDynamic") {
     assertAst(singleQuery(ShowSettingsClause(
-      Right(literalString("foo")),
+      ExpressionNames(literalString("foo")),
       Some(where(varFor("isDynamic"))),
       List.empty,
       yieldAll = false,
@@ -200,18 +234,21 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   }
 
   test("SHOW SETTING 'foo', 'bar' WHERE isDynamic") {
-    assertAst(singleQuery(ShowSettingsClause(
-      Left(List("foo", "bar")),
-      Some(where(varFor("isDynamic"))),
-      List.empty,
-      yieldAll = false,
-      None
-    )(defaultPos)))
+    assertAst(
+      singleQuery(ShowSettingsClause(
+        CommaSeparatedNames(listOfString("foo", "bar")),
+        Some(where(varFor("isDynamic"))),
+        List.empty,
+        yieldAll = false,
+        None
+      )(defaultPos)),
+      obfuscator = false
+    )
   }
 
   test("SHOW SETTING $foo WHERE pp < 50.0") {
     assertAst(singleQuery(ShowSettingsClause(
-      Right(parameter("foo", CTAny)),
+      ExpressionNames(parameter("foo", CTAny)),
       Some(where(lessThan(varFor("pp"), literalFloat(50.0)))),
       List.empty,
       yieldAll = false,
@@ -222,7 +259,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD description") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty[String]),
+        NoNames,
         None,
         List(commandResultItem("description")),
         yieldAll = false,
@@ -234,7 +271,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty[String]),
+        NoNames,
         None,
         List.empty,
         yieldAll = true,
@@ -253,7 +290,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD * ORDER BY name OFFSET 2 LIMIT 5") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty[String]),
+        NoNames,
         None,
         List.empty,
         yieldAll = true,
@@ -272,7 +309,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTING YIELD name, description, value WHERE name = 'db.setting.sub_setting'") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty[String]),
+        NoNames,
         None,
         List(
           commandResultItem("name"),
@@ -299,7 +336,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
         singleQuery(
           use(List("db"), !cypher5),
           ShowSettingsClause(
-            Left(List.empty[String]),
+            NoNames,
             None,
             List(commandResultItem("name"), commandResultItem("description", Some("pp"))),
             yieldAll = false,
@@ -320,7 +357,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
     assertAst(
       singleQuery(
         ShowSettingsClause(
-          Left(List.empty[String]),
+          NoNames,
           None,
           List(commandResultItem("name", Some("SETTING")), commandResultItem("mode", Some("OUTPUT"))),
           yieldAll = false,
@@ -334,7 +371,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS 'db.setting.sub_setting' YIELD description") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Right(literalString("db.setting.sub_setting")),
+        ExpressionNames(literalString("db.setting.sub_setting")),
         None,
         List(commandResultItem("description")),
         yieldAll = false,
@@ -346,23 +383,26 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   }
 
   test("SHOW SETTINGS 'db.setting.sub_setting', 'db.another.setting' YIELD description") {
-    assertAst(singleQuery(
-      ShowSettingsClause(
-        Left(List("db.setting.sub_setting", "db.another.setting")),
-        None,
-        List(commandResultItem("description")),
-        yieldAll = false,
-        Some(withFromYield(
-          returnAllItems.withDefaultOrderOnColumns(List("description"))
-        ))
-      )(defaultPos)
-    ))
+    assertAst(
+      singleQuery(
+        ShowSettingsClause(
+          CommaSeparatedNames(listOfString("db.setting.sub_setting", "db.another.setting")),
+          None,
+          List(commandResultItem("description")),
+          yieldAll = false,
+          Some(withFromYield(
+            returnAllItems.withDefaultOrderOnColumns(List("description"))
+          ))
+        )(defaultPos)
+      ),
+      obfuscator = false
+    )
   }
 
   test("SHOW SETTINGS $list YIELD description") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Right(parameter("list", CTAny)),
+        ExpressionNames(parameter("list", CTAny)),
         None,
         List(commandResultItem("description")),
         yieldAll = false,
@@ -376,7 +416,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS $list YIELD name, description, isExplicitlySet WHERE isExplicitlySet") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Right(parameter("list", CTAny)),
+        ExpressionNames(parameter("list", CTAny)),
         None,
         List(
           commandResultItem("name"),
@@ -395,7 +435,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD (123 + xyz)") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Right(function("YIELD", add(literalInt(123), varFor("xyz")))),
+        ExpressionNames(function("YIELD", add(literalInt(123), varFor("xyz")))),
         None,
         List.empty,
         yieldAll = false,
@@ -406,14 +446,14 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTINGS YIELD") {
     assertAst(singleQuery(
-      ShowSettingsClause(Right(varFor("YIELD")), None, List.empty, yieldAll = false, None)(pos)
+      ShowSettingsClause(ExpressionNames(varFor("YIELD")), None, List.empty, yieldAll = false, None)(pos)
     ))
   }
 
   test("SHOW SETTINGS YIELD a ORDER BY a WHERE a = 1") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a")),
         yieldAll = false,
@@ -429,7 +469,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a AS b ORDER BY b WHERE b = 1") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -445,7 +485,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a AS b ORDER BY a WHERE a = 1") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -461,7 +501,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a")),
         yieldAll = false,
@@ -477,7 +517,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a")),
         yieldAll = false,
@@ -493,7 +533,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -509,7 +549,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -528,7 +568,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -544,7 +584,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -567,7 +607,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("SHOW SETTINGS YIELD name as value, value as name where size(value) > 0 RETURN value as name") {
     assertAst(singleQuery(
       ShowSettingsClause(
-        Left(List.empty),
+        NoNames,
         None,
         List(
           commandResultItem("name", Some("value")),
@@ -591,7 +631,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
     assertAst(
       singleQuery(
         ShowSettingsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("name")),
           yieldAll = false,
@@ -608,7 +648,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'RETURN'")
       case _ => _.toAstPositioned(singleQuery(
           ShowSettingsClause(
-            Left(List.empty[String]),
+            NoNames,
             Some(where(
               equals(
                 varFor("name"),
@@ -629,7 +669,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'RETURN'")
       case _ => _.toAstPositioned(singleQuery(
           ShowSettingsClause(
-            Left(List.empty[String]),
+            NoNames,
             Some(where(trueLiteral)),
             List.empty,
             yieldAll = false,
@@ -647,7 +687,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
         _.withSyntaxErrorContaining("Invalid input '': expected an expression")
       case _ => _.toAstPositioned(singleQuery(
           ShowSettingsClause(
-            Left(List.empty[String]),
+            NoNames,
             None,
             List.empty,
             yieldAll = false,

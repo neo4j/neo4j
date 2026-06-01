@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityCypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.InputPosition
@@ -127,6 +129,9 @@ class ShowCommandTestBase extends CypherFunSuite {
     when(dbContext.dependencies).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[TransactionRegistry])).thenReturn(txRegistry)
   }
+
+  protected def stringList(strings: String*): ListLiteral =
+    ListLiteral(strings.map(s => Literal(Values.stringValue(s))): _*)
 
   // Procedure and function variables and functions
 

@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.ExpressionNames
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 
@@ -33,7 +35,8 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       parsesIn[ast.Statements] {
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
-          val expectedClauses = showTx(Right(varFor("tx")), None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
+          val expectedClauses =
+            showTx(ExpressionNames(varFor("tx")), None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -42,7 +45,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       parsesIn[ast.Statements] {
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
-          val expectedClauses = clauseSeq :+ showTx(Left(List.empty), None, yieldAll = false, List.empty, None)(pos)
+          val expectedClauses = clauseSeq :+ showTx(NoNames, None, yieldAll = false, List.empty, None)(pos)
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -52,7 +55,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
           val expectedClauses =
-            terminateTx(Right(varFor("tx")), None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
+            terminateTx(ExpressionNames(varFor("tx")), None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -62,7 +65,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
           val expectedClauses =
-            clauseSeq :+ terminateTx(Right(varFor("tx")), None, yieldAll = false, List.empty, None)(pos)
+            clauseSeq :+ terminateTx(ExpressionNames(varFor("tx")), None, yieldAll = false, List.empty, None)(pos)
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -72,7 +75,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
           val expectedClauses =
-            showSetting(Right(varFor("setting")), None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
+            showSetting(ExpressionNames(varFor("setting")), None, yieldAll = false, List.empty, None)(pos) +: clauseSeq
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -82,7 +85,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case Cypher5 => _.withMessageStart("Invalid input")
         case _ =>
           val expectedClauses =
-            clauseSeq :+ showSetting(Left(List.empty), None, yieldAll = false, List.empty, None)(pos)
+            clauseSeq :+ showSetting(NoNames, None, yieldAll = false, List.empty, None)(pos)
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
       }
     }
@@ -212,9 +215,9 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       ("SHOW CONSTRAINTS", showConstraint(ast.AllConstraints, _, _, _, _)),
       ("SHOW FUNCTIONS", showFunction(ast.AllFunctions, None, _, _, _, _)),
       ("SHOW PROCEDURES", showProcedure(None, _, _, _, _)),
-      ("SHOW SETTINGS set", showSetting(Right(varFor("set")), _, _, _, _)),
-      ("SHOW TRANSACTIONS tx", showTx(Right(varFor("tx")), _, _, _, _)),
-      ("TERMINATE TRANSACTION tx", terminateTx(Right(varFor("tx")), _, _, _, _)),
+      ("SHOW SETTINGS set", showSetting(ExpressionNames(varFor("set")), _, _, _, _)),
+      ("SHOW TRANSACTIONS tx", showTx(ExpressionNames(varFor("tx")), _, _, _, _)),
+      ("TERMINATE TRANSACTION tx", terminateTx(ExpressionNames(varFor("tx")), _, _, _, _)),
       ("SHOW CURRENT GRAPH TYPE", showCurrentGraphType(false, _, _, _, _)),
       ("SHOW DATABASE foo", showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _))
     )
@@ -544,13 +547,19 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case _ if command.contains("TERMINATE") =>
           // Since TERMINATE requires an expression it'll think the `WITH * MATCH (n)` is one (compared to SHOW where the expression is optional)
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Right(multiply(varFor("WITH"), function("MATCH", varFor("n")))), None, false, List.empty, None),
+            clause(
+              ExpressionNames(multiply(varFor("WITH"), function("MATCH", varFor("n")))),
+              None,
+              false,
+              List.empty,
+              None
+            ),
             return_(variableReturnItem("n"))
           )
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expected: _*))))
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Left(List.empty), None, false, List.empty, None),
+            clause(NoNames, None, false, List.empty, None),
             withAll(),
             match_(nodePat(Some("n"))),
             return_(variableReturnItem("n"))
@@ -572,7 +581,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case _ if command.contains("TERMINATE") =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
             clause(
-              Right(multiply(multiply(varFor("YIELD"), varFor("WITH")), function("MATCH", varFor("n")))),
+              ExpressionNames(multiply(multiply(varFor("YIELD"), varFor("WITH")), function("MATCH", varFor("n")))),
               None,
               false,
               List.empty,
@@ -583,7 +592,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expected: _*))))
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Left(List.empty), None, true, List.empty, Some(withFromYield(returnAllItems))),
+            clause(NoNames, None, true, List.empty, Some(withFromYield(returnAllItems))),
             withAll(),
             match_(nodePat(Some("n"))),
             return_(variableReturnItem("n"))
@@ -611,7 +620,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
             unwind(function("range", literalInt(1), literalInt(10)), varFor("b")),
-            clause(Left(List.empty), None, true, List.empty, Some(withFromYield(returnAllItems))),
+            clause(NoNames, None, true, List.empty, Some(withFromYield(returnAllItems))),
             returnAll
           )
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expected: _*))))
@@ -635,7 +644,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Left(List.empty), None, false, List.empty, None),
+            clause(NoNames, None, false, List.empty, None),
             with_(returnItem(varFor("name"), "name"), returnItem(varFor("type"), "type")),
             returnAll
           )
@@ -666,7 +675,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
             with_(aliasedReturnItem(literalString("n"), "n")),
             clause(
-              Left(List.empty),
+              NoNames,
               None,
               false,
               List(commandResultItem("name")),
@@ -695,7 +704,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Left(List.empty), None, false, List.empty, None),
+            clause(NoNames, None, false, List.empty, None),
             return_(aliasedReturnItem(varFor("name"), "numIndexes"))
           )
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expected: _*))))
@@ -719,7 +728,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Left(List.empty), None, false, List.empty, None),
+            clause(NoNames, None, false, List.empty, None),
             with_(aliasedReturnItem(literalInt(1), "c")),
             return_(aliasedReturnItem(varFor("name"), "numIndexes"))
           )
@@ -744,7 +753,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Left(List.empty), None, false, List.empty, None),
+            clause(NoNames, None, false, List.empty, None),
             with_(aliasedReturnItem(literalInt(1), "c"))
           )
           _.toAstPositioned(ast.Statements(Seq(singleQuery(expected: _*))))
@@ -772,7 +781,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
             clause(
-              Left(List.empty),
+              NoNames,
               None,
               false,
               List(commandResultItem("a")),
@@ -802,7 +811,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
           )
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
-            clause(Left(List.empty), None, false, List.empty, None),
+            clause(NoNames, None, false, List.empty, None),
             unwind(varFor("as"), varFor("a")),
             return_(variableReturnItem("a"))
           )
@@ -831,7 +840,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
         case _ =>
           val expected: List[ast.Clause] = maybeUseClause.toList ++ List(
             clause(
-              Left(List.empty),
+              NoNames,
               None,
               false,
               List(commandResultItem("as")),
@@ -1152,7 +1161,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       "SHOW CURRENT GRAPH TYPE AS GRAPH YIELD a8, b8 AS c8, d8 AS d8, e8 AS f8, g8 AS e8 ORDER BY a8, b8, d8, e8 WHERE a8 AND b8 AND d8 AND e8 RETURN a"
   ) {
     val showTxClause = showTx(
-      Left(List.empty),
+      NoNames,
       None,
       yieldAll = false,
       List(
@@ -1185,7 +1194,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       ))
     )
     val terminateTxClause = terminateTx(
-      Right(literalString("id")),
+      ExpressionNames(literalString("id")),
       None,
       yieldAll = false,
       List(
@@ -1218,7 +1227,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       ))
     )
     val showSettingsClause = showSetting(
-      Left(List.empty),
+      NoNames,
       None,
       yieldAll = false,
       List(
@@ -1438,7 +1447,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       case Cypher5 =>
         _.toAstPositioned(ast.Statements(Seq(singleQuery(
           ast.ShowTransactionsClause(
-            Right(function("MATCH", varFor("n"))),
+            ExpressionNames(function("MATCH", varFor("n"))),
             None,
             List.empty,
             yieldAll = false,
@@ -1449,7 +1458,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       case _ =>
         _.toAstPositioned(ast.Statements(Seq(singleQuery(
           ast.ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List.empty,
             yieldAll = false,
@@ -1468,7 +1477,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       case _ =>
         _.toAstPositioned(ast.Statements(Seq(singleQuery(
           ast.ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List.empty,
             yieldAll = false,
@@ -1485,7 +1494,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ast.ShowTransactionsClause(
-          Right(function("MATCH", varFor("n"))),
+          ExpressionNames(function("MATCH", varFor("n"))),
           None,
           List(commandResultItem("x", Some("x")), commandResultItem("y", Some("y"))),
           yieldAll = false,
@@ -1501,7 +1510,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ast.ShowTransactionsClause(
-          Right(function("MATCH", varFor("n"))),
+          ExpressionNames(function("MATCH", varFor("n"))),
           None,
           List(commandResultItem("x", Some("x")), commandResultItem("y", Some("y"))),
           yieldAll = false,
@@ -1518,7 +1527,7 @@ class CombineCommandsAndRegularCypherParserTest extends CombineCommandsParserTes
       case Cypher5 => _.withMessageStart("Invalid input '>': expected an expression (")
       case _ =>
         _.toAstPositioned(ast.Statements(Seq(singleQuery(
-          showTx(Left(List.empty), None, yieldAll = false, List.empty, None)(pos),
+          showTx(NoNames, None, yieldAll = false, List.empty, None)(pos),
           match_(relationshipChain(
             nodePat(Some("n")),
             relPat(direction = SemanticDirection.OUTGOING),

@@ -46,7 +46,7 @@ import scala.util.Try
 
 // SHOW SETTING[S] [names | nameExpression] [WHERE clause | YIELD clause]
 case class ShowSettingsCommand(
-  givenNames: Either[List[String], Expression],
+  givenNames: Option[Expression],
   columns: List[CommandDefaultColumn],
   yieldColumns: List[CommandYieldColumn],
   cypherVersion: CypherVersion

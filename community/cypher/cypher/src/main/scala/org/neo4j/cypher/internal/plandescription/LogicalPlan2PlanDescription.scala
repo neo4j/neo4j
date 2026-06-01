@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
+import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.CreateConstraintType
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.ExecutableBy
+import org.neo4j.cypher.internal.ast.ExpressionNames
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
@@ -1896,11 +1900,8 @@ case class LogicalPlan2PlanDescription(
         )
 
       case s: ShowTransactions =>
-        val idsDescription = s.ids match {
-          case Left(ls) =>
-            asPrettyString.raw(if (ls.isEmpty) "allTransactions" else s"transactions(${ls.mkString(", ")})")
-          case Right(e) => asPrettyString.raw(s"transactions(${e.asCanonicalStringVal})")
-        }
+        val idsDescription =
+          getInnerNameDescriptions(s.ids).map(i => pretty"transactions($i)").getOrElse(pretty"allTransactions")
         val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
@@ -1913,10 +1914,13 @@ case class LogicalPlan2PlanDescription(
         )
 
       case t: TerminateTransactions =>
-        val idsDescription = t.ids match {
-          case Left(ls) => asPrettyString.raw(ls.mkString(", "))
-          case Right(e) => asPrettyString.raw(s"${e.asCanonicalStringVal}")
-        }
+        val idsDescription = getInnerNameDescriptions(t.ids).getOrElse(
+          // We always parse ids so it shouldn't be able to be empty
+          throw InternalException.internalError(
+            this.getClass.getSimpleName,
+            "Terminate transactions had no id's."
+          )
+        )
         val colsDescription = commandColumnInfo(t.yieldColumns, t.yieldAll)
         PlanDescriptionImpl(
           id,
@@ -1929,11 +1933,8 @@ case class LogicalPlan2PlanDescription(
         )
 
       case s: ShowSettings =>
-        val namesDescription = s.names match {
-          case Left(Seq()) => asPrettyString.raw("allSettings")
-          case Left(names) => asPrettyString.raw(s"settings(${names.mkString(", ")})")
-          case Right(e)    => asPrettyString.raw(s"settings(${e.asCanonicalStringVal})")
-        }
+        val namesDescription =
+          getInnerNameDescriptions(s.names).map(i => pretty"settings($i)").getOrElse(pretty"allSettings")
         val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
@@ -4435,6 +4436,14 @@ case class LogicalPlan2PlanDescription(
       }).mkString("columns(", ", ", ")"))
     else if (yieldAll) pretty"allColumns"
     else pretty"defaultColumns"
+
+  private def getInnerNameDescriptions(names: CommandClauseNames): Option[PrettyString] = names match {
+    case NoNames => None
+    case CommaSeparatedNames(ls) =>
+      val es = ls.expressions.map(_.asCanonicalStringVal)
+      Some(asPrettyString.raw(es.mkString(", ")))
+    case ExpressionNames(e) => Some(asPrettyString.raw(e.asCanonicalStringVal))
+  }
 
   private def formatPropertyPredicatesForDynamicIndexSeek(
     idName: PrettyString,

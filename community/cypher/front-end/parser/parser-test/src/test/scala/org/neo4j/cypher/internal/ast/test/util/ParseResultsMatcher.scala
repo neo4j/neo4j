@@ -135,8 +135,11 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
     matchers.and(haveEqualWithGraph(expected))
   }
 
-  def toAstIgnorePos(expected: ASTNode): Self = toAstWith(expected, comparePositions = false)
-  def toAstPositioned(expected: T): Self = toAstIgnorePos(expected).and(havePositionedAst(expected))
+  def toAstIgnorePos(expected: ASTNode, obfuscator: Boolean = true): Self =
+    toAstWith(expected, comparePositions = false, obfuscator = obfuscator)
+
+  def toAstPositioned(expected: T, obfuscator: Boolean = true): Self =
+    toAstIgnorePos(expected, obfuscator).and(havePositionedAst(expected))
   def toAsts(expected: PartialFunction[ParserInTest, T]): Self = and(expected.andThen(haveAst(_)))
   def containing[C <: ASTNode : ClassTag](expected: C*): Self = and(haveAstContaining(expected: _*))
   def withPrettifierRoundTrip: Self = and(PrettifyToTheSameAst)

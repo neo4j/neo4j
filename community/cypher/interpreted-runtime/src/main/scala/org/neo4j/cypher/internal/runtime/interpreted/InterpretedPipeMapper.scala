@@ -1198,10 +1198,7 @@ case class InterpretedPipeMapper(
         ))(id)
 
       case s: ShowTransactions =>
-        val newIds = s.ids match {
-          case Right(e) => Right(buildExpression(e))
-          case Left(l)  => Left(l)
-        }
+        val newIds = s.ids.maybeExpression.map(e => buildExpression(e))
         CommandPipe(ShowTransactionsCommand(
           newIds,
           s.defaultColumns,
@@ -1210,17 +1207,11 @@ case class InterpretedPipeMapper(
         )(id))(id)
 
       case t: TerminateTransactions =>
-        val newIds = t.ids match {
-          case Right(e) => Right(buildExpression(e))
-          case Left(l)  => Left(l)
-        }
+        val newIds = t.ids.maybeExpression.map(e => buildExpression(e))
         CommandPipe(TerminateTransactionsCommand(newIds, t.defaultColumns, t.yieldColumns, cypherVersion))(id)
 
       case s: ShowSettings =>
-        val newNames = s.names match {
-          case Right(e) => Right(buildExpression(e))
-          case Left(l)  => Left(l)
-        }
+        val newNames = s.names.maybeExpression.map(e => buildExpression(e))
         CommandPipe(ShowSettingsCommand(newNames, s.defaultColumns, s.yieldColumns, cypherVersion))(id)
 
       // System database only

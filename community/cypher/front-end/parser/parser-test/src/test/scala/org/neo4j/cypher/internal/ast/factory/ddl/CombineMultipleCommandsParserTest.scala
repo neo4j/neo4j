@@ -17,8 +17,11 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
+import org.neo4j.cypher.internal.ast.CommandClauseNames
+import org.neo4j.cypher.internal.ast.ExpressionNames
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.util.InputPosition
@@ -32,7 +35,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
 
   private type CommandClauseWithNames =
     (
-      Either[List[String], Expression],
+      CommandClauseNames,
       Option[(ast.Where, InputPosition)],
       Boolean,
       List[ast.CommandResultItem],
@@ -342,25 +345,25 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       // show transaction combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW TRANSACTIONS",
-        showTx(Left(List.empty), _, _, _, _),
+        showTx(NoNames, _, _, _, _),
         "SHOW FUNCTIONS",
         showFunction(ast.AllFunctions, None, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW SETTINGS",
-        showSetting(Left(List.empty), _, _, _, _),
+        showSetting(NoNames, _, _, _, _),
         "SHOW TRANSACTIONS",
-        showTx(Left(List.empty), _, _, _, _)
+        showTx(NoNames, _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW ALL FUNCTIONS EXECUTABLE BY SHOW",
         showFunction(ast.AllFunctions, Some(ast.User("SHOW")(pos)), _, _, _, _),
         "SHOW TRANSACTIONS 'db1-transaction-123'",
-        showTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW TRANSACTIONS",
-        showTx(Left(List.empty), _, _, _, _),
+        showTx(NoNames, _, _, _, _),
         "SHOW PROCEDURES EXECUTABLE BY SHOW",
         showProcedure(Some(ast.User("SHOW")(pos)), _, _, _, _)
       ),
@@ -368,11 +371,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW PROCEDURES",
         showProcedure(None, _, _, _, _),
         "SHOW TRANSACTIONS 'db1-transaction-123'",
-        showTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW TRANSACTIONS",
-        showTx(Left(List.empty), _, _, _, _),
+        showTx(NoNames, _, _, _, _),
         "SHOW CONSTRAINTS",
         showConstraint(ast.AllConstraints, _, _, _, _)
       ),
@@ -380,11 +383,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW PROPERTY TYPE CONSTRAINTS",
         showConstraint(ast.PropTypeConstraints, _, _, _, _),
         "SHOW TRANSACTIONS 'db1-transaction-123'",
-        showTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW TRANSACTIONS",
-        showTx(Left(List.empty), _, _, _, _),
+        showTx(NoNames, _, _, _, _),
         "SHOW INDEXES",
         showIndex(ast.AllIndexes, _, _, _, _)
       ),
@@ -392,11 +395,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW POINT INDEXES",
         showIndex(ast.PointIndexes, _, _, _, _),
         "SHOW TRANSACTIONS 'db1-transaction-123'",
-        showTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW TRANSACTIONS",
-        showTx(Left(List.empty), _, _, _, _),
+        showTx(NoNames, _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
         showCurrentGraphType(false, _, _, _, _)
       ),
@@ -404,11 +407,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW CURRENT GRAPH TYPE",
         showCurrentGraphType(false, _, _, _, _),
         "SHOW TRANSACTIONS 'db1-transaction-123'",
-        showTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW TRANSACTIONS",
-        showTx(Left(List.empty), _, _, _, _),
+        showTx(NoNames, _, _, _, _),
         "SHOW DATABASES",
         showDatabase(ast.AllDatabasesScope()(pos), _, _, _, _)
       ),
@@ -416,12 +419,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW HOME DATABASE",
         showDatabase(ast.HomeDatabaseScope()(pos), _, _, _, _),
         "SHOW TRANSACTIONS 'db1-transaction-123'",
-        showTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        showTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       // terminate transaction combined with remaining commands
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _),
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _),
         "SHOW BUILT IN FUNCTIONS",
         showFunction(ast.BuiltInFunctions, None, _, _, _, _)
       ),
@@ -429,11 +432,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW FUNCTIONS EXECUTABLE BY TERMINATE",
         showFunction(ast.AllFunctions, Some(ast.User("TERMINATE")(pos)), _, _, _, _),
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _),
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _),
         "SHOW PROCEDURES",
         showProcedure(None, _, _, _, _)
       ),
@@ -441,11 +444,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW PROCEDURES EXECUTABLE BY TERMINATE",
         showProcedure(Some(ast.User("TERMINATE")(pos)), _, _, _, _),
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _),
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _),
         "SHOW NODE EXISTENCE CONSTRAINTS",
         showConstraint(ast.NodeAllExistsConstraints, _, _, _, _)
       ),
@@ -453,11 +456,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW CONSTRAINTS",
         showConstraint(ast.AllConstraints, _, _, _, _),
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _),
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _),
         "SHOW RANGE INDEXES",
         showIndex(ast.RangeIndexes, _, _, _, _)
       ),
@@ -465,11 +468,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW INDEXES",
         showIndex(ast.AllIndexes, _, _, _, _),
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _),
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _),
         "SHOW CURRENT GRAPH TYPE AS GRAPH",
         showCurrentGraphType(true, _, _, _, _)
       ),
@@ -477,11 +480,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW CURRENT GRAPH TYPE",
         showCurrentGraphType(false, _, _, _, _),
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _),
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _),
         "SHOW DEFAULT DATABASE",
         showDatabase(ast.DefaultDatabaseScope()(pos), _, _, _, _)
       ),
@@ -489,12 +492,12 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW DATABASE foo",
         showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _),
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
-        terminateTx(Right(literalString("db1-transaction-123")), _, _, _, _)
+        terminateTx(ExpressionNames(literalString("db1-transaction-123")), _, _, _, _)
       ),
       // show settings combined with remaining commands
       CommandCombinationsNoNames(
         "SHOW SETTINGS",
-        showSetting(Left(List.empty), _, _, _, _),
+        showSetting(NoNames, _, _, _, _),
         "SHOW USER DEFINED FUNCTIONS EXECUTABLE",
         showFunction(ast.UserDefinedFunctions, Some(ast.CurrentUser), _, _, _, _)
       ),
@@ -502,11 +505,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW FUNCTIONS",
         showFunction(ast.AllFunctions, None, _, _, _, _),
         "SHOW SETTINGS $setting",
-        showSetting(Right(parameter("setting", CTAny)), _, _, _, _)
+        showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW SETTINGS",
-        showSetting(Left(List.empty), _, _, _, _),
+        showSetting(NoNames, _, _, _, _),
         "SHOW PROCEDURES EXECUTABLE",
         showProcedure(Some(ast.CurrentUser), _, _, _, _)
       ),
@@ -514,11 +517,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW PROCEDURES",
         showProcedure(None, _, _, _, _),
         "SHOW SETTINGS $setting",
-        showSetting(Right(parameter("setting", CTAny)), _, _, _, _)
+        showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW SETTINGS",
-        showSetting(Left(List.empty), _, _, _, _),
+        showSetting(NoNames, _, _, _, _),
         "SHOW UNIQUENESS CONSTRAINTS",
         showConstraint(ast.UniqueConstraints.cypher25, _, _, _, _)
       ),
@@ -526,11 +529,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW CONSTRAINTS",
         showConstraint(ast.AllConstraints, _, _, _, _),
         "SHOW SETTINGS $setting",
-        showSetting(Right(parameter("setting", CTAny)), _, _, _, _)
+        showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW SETTINGS",
-        showSetting(Left(List.empty), _, _, _, _),
+        showSetting(NoNames, _, _, _, _),
         "SHOW TEXT INDEXES",
         showIndex(ast.TextIndexes, _, _, _, _)
       ),
@@ -538,11 +541,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW INDEXES",
         showIndex(ast.AllIndexes, _, _, _, _),
         "SHOW SETTINGS $setting",
-        showSetting(Right(parameter("setting", CTAny)), _, _, _, _)
+        showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW SETTINGS",
-        showSetting(Left(List.empty), _, _, _, _),
+        showSetting(NoNames, _, _, _, _),
         "SHOW CURRENT GRAPH TYPE",
         showCurrentGraphType(false, _, _, _, _)
       ),
@@ -550,11 +553,11 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW CURRENT GRAPH TYPE AS GRAPH",
         showCurrentGraphType(true, _, _, _, _),
         "SHOW SETTINGS $setting",
-        showSetting(Right(parameter("setting", CTAny)), _, _, _, _)
+        showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _)
       ),
       CommandCombinationsNoNames(
         "SHOW SETTINGS",
-        showSetting(Left(List.empty), _, _, _, _),
+        showSetting(NoNames, _, _, _, _),
         "SHOW DATABASE foo",
         showDatabase(ast.SingleNamedDatabaseScope(ast.NamespacedName("foo")(pos))(pos), _, _, _, _)
       ),
@@ -562,7 +565,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         "SHOW DATABASES",
         showDatabase(ast.AllDatabasesScope()(pos), _, _, _, _),
         "SHOW SETTINGS $setting",
-        showSetting(Right(parameter("setting", CTAny)), _, _, _, _)
+        showSetting(ExpressionNames(parameter("setting", CTAny)), _, _, _, _)
       ),
       // show functions combined with remaining commands
       CommandCombinationsNoNames(
@@ -756,9 +759,9 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       case CommandCombinationsWithNames(firstCommand, firstClause, secondCommand, secondClause, supportedInCypher5) =>
         CommandCombinationsNoNames(
           s"$firstCommand 'txId1'",
-          firstClause(Right(literalString("txId1")), _, _, _, _),
+          firstClause(ExpressionNames(literalString("txId1")), _, _, _, _),
           s"$secondCommand 'txId2'",
-          secondClause(Right(literalString("txId2")), _, _, _, _),
+          secondClause(ExpressionNames(literalString("txId2")), _, _, _, _),
           supportedInCypher5
         )
     } ++ commandCombinationsWithoutExpressions
@@ -804,7 +807,14 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
     assertAstVersionAware(supportedInCypher5 = true, expectedClauses: _*)
 
   // Can't be named `assertAst` or `assertAstVersionBased` as that leads to compile errors on `Cannot resolve overloaded method`
-  private def assertAstVersionAware(supportedInCypher5: Boolean, expectedClauses: ast.Clause*): Unit = {
+  private def assertAstVersionAware(supportedInCypher5: Boolean, expectedClauses: ast.Clause*): Unit =
+    assertAstVersionAware(supportedInCypher5, true, expectedClauses *)
+
+  private def assertAstVersionAware(
+    supportedInCypher5: Boolean,
+    obfuscator: Boolean,
+    expectedClauses: ast.Clause*
+  ): Unit = {
     parsesIn[ast.Statements] {
       case Cypher5 if !supportedInCypher5 =>
         _.withSyntaxErrorContaining(
@@ -813,8 +823,9 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
           "error: syntax error or access rule violation - invalid input. Invalid input ",
           fuzzyStatusDescr = true
         )
-      case Cypher5 => _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses.map(updateForCypher5): _*))))
-      case _       => _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
+      case Cypher5 =>
+        _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses.map(updateForCypher5): _*))), obfuscator)
+      case _ => _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))), obfuscator)
     }
   }
 
@@ -1202,8 +1213,9 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       test(s"$firstCommand 'db1-transaction-123' $secondCommand 'db1-transaction-123'") {
         assertAstVersionAware(
           supportedInCypher5,
-          firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(defaultPos),
-          secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
+          false,
+          firstClause(ExpressionNames(literalString("db1-transaction-123")), None, false, List.empty, None)(defaultPos),
+          secondClause(ExpressionNames(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
         )
       }
 
@@ -1212,22 +1224,29 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       ) {
         assertAstVersionAware(
           supportedInCypher5,
+          false,
           firstClause(
-            Left(List("db1-transaction-123", "db1-transaction-123")),
+            CommaSeparatedNames(listOfString("db1-transaction-123", "db1-transaction-123")),
             None,
             false,
             List.empty,
             None
           )(defaultPos),
-          secondClause(Left(List("db1-transaction-123", "db1-transaction-123")), None, false, List.empty, None)(pos)
+          secondClause(
+            CommaSeparatedNames(listOfString("db1-transaction-123", "db1-transaction-123")),
+            None,
+            false,
+            List.empty,
+            None
+          )(pos)
         )
       }
 
       test(s"$firstCommand $$txId $secondCommand $$txId") {
         assertAstVersionAware(
           supportedInCypher5,
-          firstClause(Right(parameter("txId", CTAny)), None, false, List.empty, None)(defaultPos),
-          secondClause(Right(parameter("txId", CTAny)), None, false, List.empty, None)(pos)
+          firstClause(ExpressionNames(parameter("txId", CTAny)), None, false, List.empty, None)(defaultPos),
+          secondClause(ExpressionNames(parameter("txId", CTAny)), None, false, List.empty, None)(pos)
         )
       }
 
@@ -1235,22 +1254,22 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
             false,
             List.empty,
             None
           )(defaultPos),
-          secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
+          secondClause(ExpressionNames(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
         )
       }
 
       test(s"$firstCommand 'id' $secondCommand 'db1-transaction-123' WHERE transactionId = '123'") {
         assertAstVersionAware(
           supportedInCypher5,
-          firstClause(Right(literalString("id")), None, false, List.empty, None)(defaultPos),
+          firstClause(ExpressionNames(literalString("id")), None, false, List.empty, None)(defaultPos),
           secondClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
             false,
             List.empty,
@@ -1267,14 +1286,14 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             Some((where(equals(varFor("transactionId"), literalString("123"))), where1Pos)),
             false,
             List.empty,
             None
           )(defaultPos),
           secondClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             Some((where(equals(varFor("transactionId"), literalString("123"))), where2Pos)),
             false,
             List.empty,
@@ -1287,22 +1306,22 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             None,
             false,
             List(commandResultItem("transactionId", Some("txId"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))))
           )(defaultPos),
-          secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
+          secondClause(ExpressionNames(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
         )
       }
 
       test(s"$firstCommand 'id' $secondCommand 'db1-transaction-123' YIELD transactionId AS txId") {
         assertAstVersionAware(
           supportedInCypher5,
-          firstClause(Right(literalString("id")), None, false, List.empty, None)(defaultPos),
+          firstClause(ExpressionNames(literalString("id")), None, false, List.empty, None)(defaultPos),
           secondClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             false,
             List(commandResultItem("transactionId", Some("txId"))),
@@ -1317,14 +1336,14 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             None,
             false,
             List(commandResultItem("transactionId", Some("txId"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))))
           )(defaultPos),
           secondClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             false,
             List(commandResultItem("username")),
@@ -1339,7 +1358,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             None,
             false,
             List(commandResultItem("transactionId", Some("txId"))),
@@ -1347,7 +1366,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
           )(defaultPos),
           returnClause(returnItems(variableReturnItem("txId"))),
           secondClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             false,
             List(commandResultItem("username")),
@@ -1363,14 +1382,14 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             None,
             false,
             List(commandResultItem("transactionId", Some("txId"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))))
           )(defaultPos),
           secondClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             false,
             List(commandResultItem("username")),
@@ -1390,7 +1409,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             false,
             List(
@@ -1401,7 +1420,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId", "currentQuery", "user"))))
           )(defaultPos),
           secondClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             false,
             List(
@@ -1432,10 +1451,16 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
           ) {
             assertAstVersionAware(
               supportedInCypher5 && secondSupportedInCypher5,
-              firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(defaultPos),
-              secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(pos),
-              thirdClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(pos),
-              fourthClause(Right(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
+              firstClause(
+                ExpressionNames(literalString("db1-transaction-123")),
+                None,
+                false,
+                List.empty,
+                None
+              )(defaultPos),
+              secondClause(ExpressionNames(literalString("db1-transaction-123")), None, false, List.empty, None)(pos),
+              thirdClause(ExpressionNames(literalString("db1-transaction-123")), None, false, List.empty, None)(pos),
+              fourthClause(ExpressionNames(literalString("db1-transaction-123")), None, false, List.empty, None)(pos)
             )
           }
 
@@ -1444,10 +1469,10 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
           ) {
             assertAstVersionAware(
               supportedInCypher5 && secondSupportedInCypher5,
-              firstClause(Right(parameter("txId", CTAny)), None, false, List.empty, None)(defaultPos),
-              secondClause(Right(parameter("txId", CTAny)), None, false, List.empty, None)(pos),
-              thirdClause(Right(parameter("txId", CTAny)), None, false, List.empty, None)(pos),
-              fourthClause(Right(parameter("txId", CTAny)), None, false, List.empty, None)(pos)
+              firstClause(ExpressionNames(parameter("txId", CTAny)), None, false, List.empty, None)(defaultPos),
+              secondClause(ExpressionNames(parameter("txId", CTAny)), None, false, List.empty, None)(pos),
+              thirdClause(ExpressionNames(parameter("txId", CTAny)), None, false, List.empty, None)(pos),
+              fourthClause(ExpressionNames(parameter("txId", CTAny)), None, false, List.empty, None)(pos)
             )
           }
 
@@ -1464,28 +1489,28 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
             assertAstVersionAware(
               supportedInCypher5 && secondSupportedInCypher5,
               firstClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 true,
                 List.empty,
                 Some(withFromYield(returnAllItems))
               )(defaultPos),
               secondClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 true,
                 List.empty,
                 Some(withFromYield(returnAllItems))
               )(pos),
               thirdClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 true,
                 List.empty,
                 Some(withFromYield(returnAllItems))
               )(pos),
               fourthClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 true,
                 List.empty,
@@ -1508,14 +1533,14 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
             assertAstVersionAware(
               supportedInCypher5 && secondSupportedInCypher5,
               firstClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 false,
                 List(commandResultItem("transactionId", Some("txId"))),
                 Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))))
               )(defaultPos),
               secondClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 false,
                 List(
@@ -1525,14 +1550,14 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
                 Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId", "username"))))
               )(pos),
               thirdClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 false,
                 List(commandResultItem("transactionId", Some("txId"))),
                 Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))))
               )(pos),
               fourthClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 None,
                 false,
                 List(
@@ -1559,28 +1584,28 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
             assertAstVersionAware(
               supportedInCypher5 && secondSupportedInCypher5,
               firstClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where1Pos)),
                 false,
                 List.empty,
                 None
               )(defaultPos),
               secondClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where2Pos)),
                 false,
                 List.empty,
                 None
               )(pos),
               thirdClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where3Pos)),
                 false,
                 List.empty,
                 None
               )(pos),
               fourthClause(
-                Right(literalString("db1-transaction-123")),
+                ExpressionNames(literalString("db1-transaction-123")),
                 Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where4Pos)),
                 false,
                 List.empty,
@@ -1596,13 +1621,13 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             None,
             false,
             List(commandResultItem("transactionId", Some("txId"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))))
           )(defaultPos),
-          secondClause(Right(varFor("txId")), None, false, List.empty, None)(pos)
+          secondClause(ExpressionNames(varFor("txId")), None, false, List.empty, None)(pos)
         )
       }
 
@@ -1610,13 +1635,13 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(varFor("foo")),
+            ExpressionNames(varFor("foo")),
             None,
             false,
             List(commandResultItem("transactionId", Some("show"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("show"))))
           )(defaultPos),
-          secondClause(Right(varFor("show")), None, false, List.empty, None)(pos)
+          secondClause(ExpressionNames(varFor("show")), None, false, List.empty, None)(pos)
         )
       }
 
@@ -1626,13 +1651,13 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(listOfString("db1-transaction-123", "db2-transaction-456")),
+            ExpressionNames(listOfString("db1-transaction-123", "db2-transaction-456")),
             None,
             false,
             List(commandResultItem("transactionId", Some("show"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("show"))))
           )(defaultPos),
-          secondClause(Right(varFor("show")), None, false, List.empty, None)(pos)
+          secondClause(ExpressionNames(varFor("show")), None, false, List.empty, None)(pos)
         )
       }
 
@@ -1640,13 +1665,13 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(literalString("id")),
+            ExpressionNames(literalString("id")),
             None,
             false,
             List(commandResultItem("transactionId", Some("txId"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))))
           )(defaultPos),
-          secondClause(Right(add(varFor("txId"), literalString("123"))), None, false, List.empty, None)(pos)
+          secondClause(ExpressionNames(add(varFor("txId"), literalString("123"))), None, false, List.empty, None)(pos)
         )
       }
 
@@ -1654,13 +1679,13 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         assertAstVersionAware(
           supportedInCypher5,
           firstClause(
-            Right(varFor("yield")),
+            ExpressionNames(varFor("yield")),
             None,
             false,
             List(commandResultItem("transactionId", Some("show"))),
             Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("show"))))
           )(defaultPos),
-          secondClause(Right(varFor("show")), None, false, List.empty, None)(pos)
+          secondClause(ExpressionNames(varFor("show")), None, false, List.empty, None)(pos)
         )
       }
   }
@@ -1687,7 +1712,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
       singleQuery(
         use(List("test"), resolveStrictly),
         ast.ShowTransactionsClause(
-          Right(literalString("")),
+          ExpressionNames(literalString("")),
           None,
           List.empty,
           yieldAll = true,
@@ -1695,7 +1720,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
           returnCypher5Types
         )(pos),
         ast.ShowTransactionsClause(
-          Left(List("", "", "")),
+          CommaSeparatedNames(listOfString("", "", "")),
           None,
           List.empty,
           yieldAll = true,
@@ -1703,7 +1728,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
           returnCypher5Types
         )(pos),
         ast.ShowTransactionsClause(
-          Right(varFor("콺", variablesAreEscaped)),
+          ExpressionNames(varFor("콺", variablesAreEscaped)),
           None,
           List(
             commandResultItem("碌", variablesAreEscaped),
@@ -1750,7 +1775,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
     assertAstVersionAware(
       supportedInCypher5 = false,
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(
@@ -1783,7 +1808,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         ))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(
@@ -1816,7 +1841,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         ))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(
@@ -2000,7 +2025,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
     assertAstVersionAware(
       supportedInCypher5 = false,
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(
@@ -2033,7 +2058,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         ))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(
@@ -2066,7 +2091,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         ))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(
@@ -2335,21 +2360,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
     assertAstVersionAware(
       supportedInCypher5 = false,
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2385,21 +2410,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2435,21 +2460,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2485,21 +2510,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2580,21 +2605,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
     assertAstVersionAware(
       false,
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2644,21 +2669,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2708,21 +2733,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2772,21 +2797,21 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       terminateTx(
-        Right(literalString("id")),
+        ExpressionNames(literalString("id")),
         None,
         yieldAll = false,
         List(commandResultItem("a")),
         Some(withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))))
       ),
       showSetting(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),
@@ -2844,7 +2869,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
   test(manyCommands) {
     val clauses = (for (_ <- 1 to 300) yield List(
       showTx(
-        Left(List.empty),
+        NoNames,
         None,
         yieldAll = false,
         List(commandResultItem("a")),

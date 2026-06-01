@@ -2709,21 +2709,45 @@ case class ShowAndTerminateColumn(name: String, cypherType: CypherType = CTStrin
 // Command clauses which can take strings or string expressions
 // For example, transaction ids or setting names
 sealed trait CommandClauseWithNames extends CommandClause {
-  // Either:
-  // - a list of strings
-  // - a single expression (resolving to a single string or a list of strings)
-  def names: Either[List[String], Expression]
+  // The potential strings or string expressions
+  def names: CommandClauseNames
   // To anonymize the name
-  def withNames(names: Either[List[String], Expression]): CommandClauseWithNames
+  def withNames(names: CommandClauseNames): CommandClauseWithNames
 
   // Semantic check:
-  private def expressionCheck: SemanticCheck = names match {
-    case Right(e) => SemanticExpressionCheck.simple(e)
-    case _        => SemanticCheck.success
-  }
+  private def expressionCheck: SemanticCheck =
+    names.maybeExpression.map(e => SemanticExpressionCheck.simple(e))
+      .getOrElse(SemanticCheck.success)
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     expressionCheck chain super.clauseSpecificSemanticCheck
+}
+
+// The representation of the strings or string expressions for command clauses with names
+// - NoNames: no given names
+// - CommaSeparatedNames: a list of strings (stored as a ListLiteral with StringLiterals)
+// - ExpressionNames: a single expression (should resolve to a single string or a list of strings)
+sealed trait CommandClauseNames extends ASTNode {
+  def maybeExpression: Option[Expression]
+}
+
+case object NoNames extends CommandClauseNames {
+  val maybeExpression: Option[Expression] = None
+
+  // This represents nothing given so we don't really have a position
+  override def position: InputPosition = InputPosition.NONE
+}
+
+case class CommaSeparatedNames(names: ListLiteral) extends CommandClauseNames {
+  val maybeExpression: Option[Expression] = Some(names)
+
+  override def position: InputPosition = names.position
+}
+
+case class ExpressionNames(names: Expression) extends CommandClauseNames {
+  val maybeExpression: Option[Expression] = Some(names)
+
+  override def position: InputPosition = names.position
 }
 
 // For a query to be allowed to run on system it needs to consist of:
@@ -3163,7 +3187,7 @@ sealed trait TransactionsCommandClause extends CommandClauseWithNames with Comma
 case class ShowTransactionsClause(
   briefTransactionColumns: List[ShowAndTerminateColumn],
   allTransactionColumns: List[ShowAndTerminateColumn],
-  names: Either[List[String], Expression],
+  names: CommandClauseNames,
   where: Option[Where],
   yieldItems: List[CommandResultItem],
   yieldAll: Boolean,
@@ -3171,7 +3195,7 @@ case class ShowTransactionsClause(
 )(val position: InputPosition) extends TransactionsCommandClause {
 
   override def name: String = "SHOW TRANSACTIONS"
-  def withNames(names: Either[List[String], Expression]): ShowTransactionsClause = copy(names = names)(position)
+  def withNames(names: CommandClauseNames): ShowTransactionsClause = copy(names = names)(position)
 
   private val useAllColumns = yieldItems.nonEmpty || yieldAll
 
@@ -3234,7 +3258,7 @@ object ShowTransactionsClause {
   val currentQueryProgressColumn = "currentQueryProgress"
 
   def apply(
-    ids: Either[List[String], Expression],
+    ids: CommandClauseNames,
     where: Option[Where],
     yieldItems: List[CommandResultItem],
     yieldAll: Boolean,
@@ -3309,7 +3333,7 @@ object ShowTransactionsClause {
 
 case class TerminateTransactionsClause(
   originalColumns: List[ShowAndTerminateColumn],
-  names: Either[List[String], Expression],
+  names: CommandClauseNames,
   yieldItems: List[CommandResultItem],
   yieldAll: Boolean,
   yieldWith: Option[With],
@@ -3317,7 +3341,7 @@ case class TerminateTransactionsClause(
 )(val position: InputPosition) extends TransactionsCommandClause {
 
   override def name: String = "TERMINATE TRANSACTIONS"
-  def withNames(names: Either[List[String], Expression]): TerminateTransactionsClause = copy(names = names)(position)
+  def withNames(names: CommandClauseNames): TerminateTransactionsClause = copy(names = names)(position)
 
   private val columns = originalColumns.map(c => ShowColumn(c.name, c.cypherType)(position))
 
@@ -3350,7 +3374,7 @@ object TerminateTransactionsClause {
   val messageColumn = "message"
 
   def apply(
-    ids: Either[List[String], Expression],
+    ids: CommandClauseNames,
     yieldItems: List[CommandResultItem],
     yieldAll: Boolean,
     yieldWith: Option[With],
@@ -3377,7 +3401,7 @@ object TerminateTransactionsClause {
 case class ShowSettingsClause(
   briefSettingColumns: List[ShowAndTerminateColumn],
   allSettingColumns: List[ShowAndTerminateColumn],
-  names: Either[List[String], Expression],
+  names: CommandClauseNames,
   where: Option[Where],
   yieldItems: List[CommandResultItem],
   yieldAll: Boolean,
@@ -3385,7 +3409,7 @@ case class ShowSettingsClause(
 )(val position: InputPosition) extends CommandClauseWithNames with CommandClauseAllowedOnSystem {
 
   override def name: String = "SHOW SETTINGS"
-  def withNames(names: Either[List[String], Expression]): ShowSettingsClause = copy(names = names)(position)
+  def withNames(names: CommandClauseNames): ShowSettingsClause = copy(names = names)(position)
 
   private val useAllColumns = yieldItems.nonEmpty || yieldAll
 
@@ -3425,7 +3449,7 @@ object ShowSettingsClause {
   val isDeprecatedColumn = "isDeprecated"
 
   def apply(
-    names: Either[List[String], Expression],
+    names: CommandClauseNames,
     where: Option[Where],
     yieldItems: List[CommandResultItem],
     yieldAll: Boolean,

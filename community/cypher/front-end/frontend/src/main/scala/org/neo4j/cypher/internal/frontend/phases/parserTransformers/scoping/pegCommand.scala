@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AlterCurrentGraphType
 import org.neo4j.cypher.internal.ast.CommandClause
+import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.CommandClauseWithNames
 import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateIndex
@@ -40,7 +41,6 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.UnexpectedAstNodeScopingError
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
@@ -192,7 +192,7 @@ object pegCommand {
   private def scopeCommandClause(
     command: CommandClause,
     incoming: RegularContext,
-    namesOpt: Option[Either[List[String], Expression]]
+    namesOpt: Option[CommandClauseNames]
   )(implicit c: PegContext): WorkingScope = {
     val (yieldWithOpt, yieldItems, yieldAll, whereOpt, position) =
       (command.yieldWith, command.yieldItems, command.yieldAll, command.where, command.position)
@@ -231,10 +231,9 @@ object pegCommand {
       .amendedWithConstant(incoming.constants)
       .amendedWith(incoming.variables)
 
-    val namesScope = namesOpt.flatMap {
-      case Right(expr) => Some(pegExpression(expr, incomingWithDefaults.constantChildContext()))
-      case Left(_)     => None
-    }
+    val namesScope = namesOpt.flatMap(n =>
+      n.maybeExpression.map(expr => pegExpression(expr, incomingWithDefaults.constantChildContext()))
+    )
 
     val modifiedYield = yieldWithOpt match {
       case Some(yW @ With(_, returnItems, _, _, _, _, _, _)) =>

@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.logical.plans.CommandDefaultColumn
 import org.neo4j.cypher.internal.logical.plans.CommandYieldColumn
@@ -72,7 +73,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
 
   private val defaultColumns =
     ShowTransactionsClause(
-      Left(List.empty),
+      NoNames,
       None,
       List.empty,
       yieldAll = false,
@@ -85,7 +86,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
 
   private val allColumns =
     ShowTransactionsClause(
-      Left(List.empty),
+      NoNames,
       None,
       List.empty,
       yieldAll = true,
@@ -537,7 +538,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -625,7 +626,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), allColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, allColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -776,7 +777,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List(tx1)), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(Some(stringList(tx1)), defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -794,7 +795,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When: given transactions not ordered by id
-    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then: will collect the transactions by database
@@ -813,7 +814,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
 
     // When: given transactions not ordered by id
     val showTx =
-      ShowTransactionsCommand(Left(List(tx2, tx3, tx1)), defaultColumns, List.empty, CypherVersion.Cypher25)()
+      ShowTransactionsCommand(Some(stringList(tx2, tx3, tx1)), defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then: will collect the transactions by database
@@ -830,8 +831,12 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set.empty[KernelTransactionHandle].asJava)
 
     // When
-    val showTx =
-      ShowTransactionsCommand(Left(List("unknown-transaction-1")), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(
+      Some(stringList("unknown-transaction-1")),
+      defaultColumns,
+      List.empty,
+      CypherVersion.Cypher25
+    )()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -848,7 +853,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(txHandle1.isClosing).thenReturn(true)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -876,7 +881,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(dbCtxProvider.registeredDatabases).thenReturn(databaseMap)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -909,7 +914,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -934,7 +939,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(securityContext.allowsAdminAction(any())).thenReturn(PermissionState.EXPLICIT_DENY)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -972,7 +977,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     )
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), allColumns, yieldColumns, CypherVersion.Cypher25)()
+    val showTx = ShowTransactionsCommand(None, allColumns, yieldColumns, CypherVersion.Cypher25)()
     val resultOriginal = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1008,7 +1013,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), allColumns, List.empty, CypherVersion.Cypher5)()
+    val showTx = ShowTransactionsCommand(None, allColumns, List.empty, CypherVersion.Cypher5)()
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then

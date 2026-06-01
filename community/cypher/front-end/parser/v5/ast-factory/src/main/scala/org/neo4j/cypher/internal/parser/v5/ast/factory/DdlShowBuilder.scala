@@ -26,19 +26,23 @@ import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
 import org.neo4j.cypher.internal.ast.CommandClause
+import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.ExecutableBy
+import org.neo4j.cypher.internal.ast.ExpressionNames
 import org.neo4j.cypher.internal.ast.FreeProjection
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LookupIndexes
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.NodeAllExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.NodePropExistsConstraints
@@ -96,6 +100,7 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -434,7 +439,7 @@ trait DdlShowBuilder extends Cypher5ParserListener {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(
         composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()),
-        names = ctx.stringsOrExpression().ast[Either[List[String], Expression]]
+        names = ctx.stringsOrExpression().ast[CommandClauseNames]
       )
       .buildTerminateTransaction(pos(ctx.getParent))
   }
@@ -449,7 +454,12 @@ trait DdlShowBuilder extends Cypher5ParserListener {
     ctx: Cypher5Parser.NamesAndClausesContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
-      .copy(names = astOpt[Either[List[String], Expression]](ctx.stringsOrExpression(), Left(List.empty)))
+      .copy(names =
+        astOpt[CommandClauseNames](
+          ctx.stringsOrExpression(),
+          NoNames
+        )
+      )
   }
 
   final override def exitStringsOrExpression(
@@ -457,11 +467,11 @@ trait DdlShowBuilder extends Cypher5ParserListener {
   ): Unit = {
     val stringList = ctx.stringList()
     ctx.ast = if (stringList != null) {
-      Left[List[String], Expression](
-        stringList.ast[Seq[StringLiteral]]().map(_.value).toList
+      CommaSeparatedNames(
+        ListLiteral(stringList.ast[Seq[StringLiteral]]())(pos(ctx))
       )
     } else {
-      Right[List[String], Expression](ctx.expression.ast())
+      ExpressionNames(ctx.expression.ast())
     }
   }
 
@@ -602,7 +612,7 @@ object DdlShowBuilder {
     yieldClause: Option[Yield] = None,
     returnClause: Option[Return] = None,
     composableClauses: Option[Seq[Clause]] = None,
-    names: Either[List[String], Expression] = Left(List.empty)
+    names: CommandClauseNames = NoNames
   ) {
 
     def buildConstraintClauses(constraintType: ShowConstraintType, position: InputPosition): Seq[Clause] = {

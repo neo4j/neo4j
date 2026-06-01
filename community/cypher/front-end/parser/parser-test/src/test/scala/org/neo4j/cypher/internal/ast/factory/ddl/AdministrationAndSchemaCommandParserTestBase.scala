@@ -57,7 +57,8 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
   protected def assertAstVersionBased(
     expected: Boolean => ast.Statements,
     comparePosition: Boolean = true,
-    supportedInCypher5: Boolean = true
+    supportedInCypher5: Boolean = true,
+    obfuscator: Boolean = true
   ): Unit =
     parsesIn[ast.Statements] {
       case Cypher5 if !supportedInCypher5 =>
@@ -67,10 +68,10 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
           "error: syntax error or access rule violation - invalid input. Invalid input ",
           fuzzyStatusDescr = true
         )
-      case Cypher5 if comparePosition => _.toAstPositioned(expected(true))
-      case Cypher5                    => _.toAst(expected(true))
-      case _ if comparePosition       => _.toAstPositioned(expected(false))
-      case _                          => _.toAst(expected(false))
+      case Cypher5 if comparePosition => _.toAstPositioned(expected(true), obfuscator)
+      case Cypher5                    => _.toAstWith(expected(true), obfuscator = obfuscator)
+      case _ if comparePosition       => _.toAstPositioned(expected(false), obfuscator)
+      case _                          => _.toAstWith(expected(false), obfuscator = obfuscator)
     }
 
   implicit val stringToLeftConvertor: String => Either[String, Parameter] = s => Left(s)

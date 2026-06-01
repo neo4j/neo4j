@@ -24,10 +24,10 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.logical.plans.CommandDefaultColumn
 import org.neo4j.cypher.internal.logical.plans.CommandYieldColumn
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.dbms.database.DatabaseContext
@@ -61,7 +61,13 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
 
   // Terminate transaction currently have no non-default columns
   private val columns =
-    TerminateTransactionsClause(Left(List.empty), List.empty, yieldAll = false, None, None)(InputPosition.NONE)
+    TerminateTransactionsClause(
+      NoNames,
+      List.empty,
+      yieldAll = false,
+      None,
+      None
+    )(InputPosition.NONE)
       .unfilteredColumns
       .columns
       .map(sc => CommandDefaultColumn(sc.name, sc.cypherType))
@@ -155,7 +161,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
 
     // When
     val terminateTx =
-      TerminateTransactionsCommand(Left(List(tx1, tx2, tx3)), columns, List.empty, CypherVersion.Cypher25)
+      TerminateTransactionsCommand(Some(stringList(tx1, tx2, tx3)), columns, List.empty, CypherVersion.Cypher25)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -194,7 +200,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
 
     // When
     val terminateTx =
-      TerminateTransactionsCommand(Left(List(tx1, tx2, tx3)), columns, List.empty, CypherVersion.Cypher5)
+      TerminateTransactionsCommand(Some(stringList(tx1, tx2, tx3)), columns, List.empty, CypherVersion.Cypher5)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -233,7 +239,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
 
     // When: given transactions not ordered by id
     val terminateTx =
-      TerminateTransactionsCommand(Left(List(tx2, tx3, tx1)), columns, List.empty, CypherVersion.Cypher25)
+      TerminateTransactionsCommand(Some(stringList(tx2, tx3, tx1)), columns, List.empty, CypherVersion.Cypher25)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then: will collect the transactions by database
@@ -247,13 +253,9 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     when(userTxRegistry.executingTransactions).thenReturn(Set.empty[KernelTransactionHandle].asJava)
     when(systemTxRegistry.executingTransactions).thenReturn(Set.empty[KernelTransactionHandle].asJava)
 
-    // Given
-    val emptyList = Left(List.empty)
-    val emptyExpression = Right(ListLiteral())
-
     // Then
     the[InvalidSemanticsException] thrownBy {
-      TerminateTransactionsCommand(emptyList, columns, List.empty, CypherVersion.Cypher25)
+      TerminateTransactionsCommand(Some(stringList()), columns, List.empty, CypherVersion.Cypher25)
         .originalNameRows(queryState, initialCypherRow)
     } should (
       have message
@@ -264,9 +266,9 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
         ))
     )
 
-    // Then
+    // Then (nothing given, shouldn't even parse)
     the[InvalidSemanticsException] thrownBy {
-      TerminateTransactionsCommand(emptyExpression, columns, List.empty, CypherVersion.Cypher25)
+      TerminateTransactionsCommand(None, columns, List.empty, CypherVersion.Cypher25)
         .originalNameRows(queryState, initialCypherRow)
     } should (have message
       "Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`."
@@ -283,7 +285,12 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
 
     // When
     val terminateTx =
-      TerminateTransactionsCommand(Left(List("unknown-transaction-1")), columns, List.empty, CypherVersion.Cypher25)
+      TerminateTransactionsCommand(
+        Some(stringList("unknown-transaction-1")),
+        columns,
+        List.empty,
+        CypherVersion.Cypher25
+      )
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -306,7 +313,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     when(txHandle1.isClosing).thenReturn(true)
 
     // When
-    val terminateTx = TerminateTransactionsCommand(Left(List(tx1)), columns, List.empty, CypherVersion.Cypher25)
+    val terminateTx = TerminateTransactionsCommand(Some(stringList(tx1)), columns, List.empty, CypherVersion.Cypher25)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -329,7 +336,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val terminateTx = TerminateTransactionsCommand(Left(List(tx1)), columns, List.empty, CypherVersion.Cypher25)
+    val terminateTx = TerminateTransactionsCommand(Some(stringList(tx1)), columns, List.empty, CypherVersion.Cypher25)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -373,7 +380,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
 
     // When
     val terminateTx =
-      TerminateTransactionsCommand(Left(List(tx1, tx2, tx3)), columns, List.empty, CypherVersion.Cypher25)
+      TerminateTransactionsCommand(Some(stringList(tx1, tx2, tx3)), columns, List.empty, CypherVersion.Cypher25)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -415,7 +422,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     when(securityContext.allowsAdminAction(any())).thenReturn(PermissionState.EXPLICIT_DENY)
 
     // When
-    val terminateTx = TerminateTransactionsCommand(Left(List(tx1)), columns, List.empty, CypherVersion.Cypher25)
+    val terminateTx = TerminateTransactionsCommand(Some(stringList(tx1)), columns, List.empty, CypherVersion.Cypher25)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -469,7 +476,8 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val terminateTx = TerminateTransactionsCommand(Left(List(tx1, tx3)), columns, List.empty, CypherVersion.Cypher25)
+    val terminateTx =
+      TerminateTransactionsCommand(Some(stringList(tx1, tx3)), columns, List.empty, CypherVersion.Cypher25)
     terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -521,7 +529,8 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val terminateTx = TerminateTransactionsCommand(Left(List(tx3, tx2)), columns, List.empty, CypherVersion.Cypher25)
+    val terminateTx =
+      TerminateTransactionsCommand(Some(stringList(tx3, tx2)), columns, List.empty, CypherVersion.Cypher25)
     terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -550,7 +559,7 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     )
 
     // When
-    val terminateTx = TerminateTransactionsCommand(Left(List(tx1)), columns, yieldColumns, CypherVersion.Cypher25)
+    val terminateTx = TerminateTransactionsCommand(Some(stringList(tx1)), columns, yieldColumns, CypherVersion.Cypher25)
     val resultOriginal = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then

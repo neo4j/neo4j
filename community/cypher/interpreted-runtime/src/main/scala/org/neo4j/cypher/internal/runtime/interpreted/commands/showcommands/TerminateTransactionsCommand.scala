@@ -43,7 +43,7 @@ import org.neo4j.values.storable.Values
 
 // TERMINATE TRANSACTION[S] transaction-id[,...]
 case class TerminateTransactionsCommand(
-  givenIds: Either[List[String], Expression],
+  givenIds: Option[Expression],
   columns: List[CommandDefaultColumn],
   yieldColumns: List[CommandYieldColumn],
   cypherVersion: CypherVersion

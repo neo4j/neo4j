@@ -27,13 +27,16 @@ import org.neo4j.cypher.internal.ast.AllExistsConstraints
 import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.ExpressionNames
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NodeAllExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKey
@@ -5042,7 +5045,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowSettings(
-          Left(List.empty[String]),
+          NoNames,
           defaultColumns,
           List.empty,
           yieldAll = true,
@@ -5063,7 +5066,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowSettings(
-          Left(List("Foo", "Bar")),
+          CommaSeparatedNames(listOfString("Foo", "Bar")),
           defaultColumns,
           List.empty,
           yieldAll = false,
@@ -5084,7 +5087,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowSettings(
-          Right(stringLiteral("foo.*")),
+          ExpressionNames(stringLiteral("foo.*")),
           List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy"), commandDefaultColumn("vvv")),
           List(
             CommandYieldColumn("xxx", "xxx"),
@@ -5113,7 +5116,14 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
 
     assertGood(
       attach(
-        ShowTransactions(Left(List.empty), defaultColumns, List.empty, yieldAll = false, defaultVariables, Set.empty),
+        ShowTransactions(
+          NoNames,
+          defaultColumns,
+          List.empty,
+          yieldAll = false,
+          defaultVariables,
+          Set.empty
+        ),
         1.0
       ),
       planDescription(
@@ -5128,7 +5138,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowTransactions(
-          Left(List("db1-transaction-123")),
+          CommaSeparatedNames(listOfString("db1-transaction-123")),
           defaultColumns,
           List.empty,
           yieldAll = true,
@@ -5149,7 +5159,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowTransactions(
-          Left(List("db1-transaction-123", "db2-transaction-456")),
+          CommaSeparatedNames(listOfString("db1-transaction-123", "db2-transaction-456")),
           List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy"), commandDefaultColumn("vvv")),
           List(
             CommandYieldColumn("xxx", "xxx"),
@@ -5174,7 +5184,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowTransactions(
-          Right(parameter("foo", CTAny)),
+          ExpressionNames(parameter("foo", CTAny)),
           defaultColumns,
           List.empty,
           yieldAll = false,
@@ -5195,7 +5205,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowTransactions(
-          Right(varFor("foo")),
+          ExpressionNames(varFor("foo")),
           defaultColumns,
           List.empty,
           yieldAll = false,
@@ -5216,7 +5226,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         ShowTransactions(
-          Right(Add(varFor("foo"), stringLiteral("123"))(pos)),
+          ExpressionNames(Add(varFor("foo"), stringLiteral("123"))(pos)),
           defaultColumns,
           List.empty,
           yieldAll = false,
@@ -5242,7 +5252,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         TerminateTransactions(
-          Left(List("db1-transaction-123")),
+          CommaSeparatedNames(listOfString("db1-transaction-123")),
           defaultColumns,
           List.empty,
           yieldAll = false,
@@ -5263,7 +5273,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         TerminateTransactions(
-          Left(List("db1-transaction-123", "db2-transaction-456")),
+          CommaSeparatedNames(listOfString("db1-transaction-123", "db2-transaction-456")),
           defaultColumns,
           List(CommandYieldColumn("xxx", "xxx"), CommandYieldColumn("yyy", "zzz")),
           yieldAll = false,
@@ -5284,7 +5294,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         TerminateTransactions(
-          Right(parameter("foo", CTAny)),
+          ExpressionNames(parameter("foo", CTAny)),
           defaultColumns,
           List.empty,
           yieldAll = true,
@@ -5305,7 +5315,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
     assertGood(
       attach(
         TerminateTransactions(
-          Right(number("123")),
+          ExpressionNames(number("123")),
           defaultColumns,
           List.empty,
           yieldAll = true,
@@ -5421,7 +5431,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
       attach(
         Apply(
           ShowTransactions(
-            Left(List("db1-transaction-123", "db2-transaction-456")),
+            CommaSeparatedNames(listOfString("db1-transaction-123", "db2-transaction-456")),
             List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy"), commandDefaultColumn("vvv")),
             List(
               CommandYieldColumn("xxx", "xxx"),
@@ -5433,7 +5443,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
             Set.empty
           ),
           TerminateTransactions(
-            Right(parameter("foo", CTAny)),
+            ExpressionNames(parameter("foo", CTAny)),
             List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy")),
             List.empty,
             yieldAll = true,
@@ -5483,7 +5493,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
             Set.empty
           ),
           ShowSettings(
-            Right(parameter("foo", CTAny)),
+            ExpressionNames(parameter("foo", CTAny)),
             List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy")),
             List.empty,
             yieldAll = true,
@@ -5628,7 +5638,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         Union(
           ShowProcedures(None, List.empty, List.empty, yieldAll = false, Set.empty, Set.empty),
           ShowSettings(
-            Left(List("Foo", "Bar")),
+            CommaSeparatedNames(listOfString("Foo", "Bar")),
             List(commandDefaultColumn("xxx"), commandDefaultColumn("yyy")),
             List.empty,
             yieldAll = false,

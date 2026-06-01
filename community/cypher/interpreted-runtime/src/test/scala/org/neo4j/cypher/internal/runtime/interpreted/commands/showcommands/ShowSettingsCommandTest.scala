@@ -24,6 +24,7 @@ import org.mockito.Mockito.when
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.SettingImpl
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.logical.plans.CommandDefaultColumn
 import org.neo4j.cypher.internal.logical.plans.CommandYieldColumn
@@ -46,14 +47,26 @@ import scala.util.Try
 class ShowSettingsCommandTest extends ShowCommandTestBase {
 
   private val defaultColumns =
-    ShowSettingsClause(Left(List.empty), None, List.empty, yieldAll = false, None)(InputPosition.NONE)
+    ShowSettingsClause(
+      NoNames,
+      None,
+      List.empty,
+      yieldAll = false,
+      None
+    )(InputPosition.NONE)
       .unfilteredColumns
       .columns
       .map(sc => CommandDefaultColumn(sc.name, sc.cypherType))
 
   // The yield/with doesn't impact columns so can set it to None here even if we have the yieldAll=true
   private val allColumns =
-    ShowSettingsClause(Left(List.empty), None, List.empty, yieldAll = true, None)(InputPosition.NONE)
+    ShowSettingsClause(
+      NoNames,
+      None,
+      List.empty,
+      yieldAll = true,
+      None
+    )(InputPosition.NONE)
       .unfilteredColumns
       .columns
       .map(sc => CommandDefaultColumn(sc.name, sc.cypherType))
@@ -134,7 +147,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
 
   test("show settings should give back correct default values") {
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -163,7 +176,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
 
   test("show settings should give back correct full values - Cypher 25") {
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), allColumns, List.empty, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(None, allColumns, List.empty, CypherVersion.Cypher25)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -187,7 +200,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
 
   test("show settings should give back correct full values - Cypher 5") {
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), allColumns, List.empty, CypherVersion.Cypher5)
+    val showSettings = ShowSettingsCommand(None, allColumns, List.empty, CypherVersion.Cypher5)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -225,7 +238,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(mockConfig.getDeclaredSettings).thenReturn(mixedSettings.asJava)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -248,7 +261,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(ctx.getConfig).thenReturn(mockConfig)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -273,7 +286,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(ctx.getConfig).thenReturn(mockConfig)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), allColumns, List.empty, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(None, allColumns, List.empty, CypherVersion.Cypher25)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -281,7 +294,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     checkResult(result.head, name = settingName, isDeprecated = true)
   }
 
-  test("show settings should only return specified settings when given names (string list)") {
+  test("show settings should only return specified settings when given names (list)") {
     // Given
     // sort settings on something else than name,
     // then pick first and last 5 settings to just get some random ones
@@ -290,7 +303,12 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     val wantedSettingNames = wantedSettings.map(setting => setting("name").asInstanceOf[String])
 
     // When
-    val showSettings = ShowSettingsCommand(Left(wantedSettingNames), defaultColumns, List.empty, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(
+      Some(stringList(wantedSettingNames: _*)),
+      defaultColumns,
+      List.empty,
+      CypherVersion.Cypher25
+    )
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -301,7 +319,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     }
   }
 
-  test("show settings should only return specified settings when given names (string expression)") {
+  test("show settings should only return specified settings when given names (parameter)") {
     // Given
     // pick random setting
     val wantedSetting = allNonInternalSettings.slice(42, 43).head("name").asInstanceOf[String]
@@ -311,7 +329,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
 
     // When
     val showSettings =
-      ShowSettingsCommand(Right(wantedSettingExpression), defaultColumns, List.empty, CypherVersion.Cypher25)
+      ShowSettingsCommand(Some(wantedSettingExpression), defaultColumns, List.empty, CypherVersion.Cypher25)
     val result = showSettings.originalNameRows(queryStateWithParams, initialCypherRow).toList
 
     // Then
@@ -332,7 +350,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(securityContext.mode()).thenReturn(accessMode)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), defaultColumns, List.empty, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(None, defaultColumns, List.empty, CypherVersion.Cypher25)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -364,7 +382,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     )
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), allColumns, yieldColumns, CypherVersion.Cypher25)
+    val showSettings = ShowSettingsCommand(None, allColumns, yieldColumns, CypherVersion.Cypher25)
     val resultOriginal = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then

@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
+import org.neo4j.cypher.internal.ast.ExpressionNames
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
@@ -31,7 +34,14 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     test(s"SHOW $transactionKeyword") {
       assertAstVersionBased(fromCypher5 =>
         singleQuery(
-          ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false, None, fromCypher5)(defaultPos)
+          ShowTransactionsClause(
+            NoNames,
+            None,
+            List.empty,
+            yieldAll = false,
+            None,
+            fromCypher5
+          )(defaultPos)
         )
       )
     }
@@ -40,7 +50,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       assertAstVersionBased(fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             List.empty,
             yieldAll = false,
@@ -55,7 +65,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       assertAstVersionBased(fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(literalString("db1-transaction-123")),
+            ExpressionNames(literalString("db1-transaction-123")),
             None,
             List.empty,
             yieldAll = false,
@@ -69,7 +79,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     test(s"SHOW $transactionKeyword 'my.db-transaction-123'") {
       assertAstVersionBased(fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(literalString("my.db-transaction-123")),
+          ExpressionNames(literalString("my.db-transaction-123")),
           None,
           List.empty,
           yieldAll = false,
@@ -82,7 +92,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     test(s"SHOW $transactionKeyword $$param") {
       assertAstVersionBased(fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(parameter("param", CTAny)),
+          ExpressionNames(parameter("param", CTAny)),
           None,
           List.empty,
           yieldAll = false,
@@ -95,7 +105,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     test(s"SHOW $transactionKeyword $$where") {
       assertAstVersionBased(fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(parameter("where", CTAny)),
+          ExpressionNames(parameter("where", CTAny)),
           None,
           List.empty,
           yieldAll = false,
@@ -106,22 +116,24 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"""SHOW $transactionKeyword 'db1 - transaction - 123', "db2-transaction-45a6"""") {
-      assertAstVersionBased(fromCypher5 =>
-        singleQuery(ShowTransactionsClause(
-          Left(List("db1 - transaction - 123", "db2-transaction-45a6")),
-          None,
-          List.empty,
-          yieldAll = false,
-          None,
-          fromCypher5
-        )(defaultPos))
+      assertAstVersionBased(
+        fromCypher5 =>
+          singleQuery(ShowTransactionsClause(
+            CommaSeparatedNames(listOfString("db1 - transaction - 123", "db2-transaction-45a6")),
+            None,
+            List.empty,
+            yieldAll = false,
+            None,
+            fromCypher5
+          )(defaultPos)),
+        obfuscator = false
       )
     }
 
     test(s"SHOW $transactionKeyword 'yield-transaction-123'") {
       assertAstVersionBased(fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(literalString("yield-transaction-123")),
+          ExpressionNames(literalString("yield-transaction-123")),
           None,
           List.empty,
           yieldAll = false,
@@ -134,7 +146,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     test(s"SHOW $transactionKeyword 'where-transaction-123'") {
       assertAstVersionBased(fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(literalString("where-transaction-123")),
+          ExpressionNames(literalString("where-transaction-123")),
           None,
           List.empty,
           yieldAll = false,
@@ -149,7 +161,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         fromCypher5 =>
           singleQuery(
             use(List("db"), !fromCypher5),
-            ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false, None, fromCypher5)(pos)
+            ShowTransactionsClause(NoNames, None, List.empty, yieldAll = false, None, fromCypher5)(pos)
           ),
         comparePosition = false
       )
@@ -161,7 +173,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(subtract(subtract(varFor("db"), varFor("transaction")), literalInt(123))),
+          ExpressionNames(subtract(subtract(varFor("db"), varFor("transaction")), literalInt(123))),
           None,
           List.empty,
           yieldAll = false,
@@ -176,7 +188,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
+          ExpressionNames(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
           None,
           List.empty,
           yieldAll = false,
@@ -191,7 +203,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
+          ExpressionNames(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
           None,
           List.empty,
           yieldAll = false,
@@ -206,7 +218,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(listOfString("db1-transaction-123", "db2-transaction-456")),
+          ExpressionNames(listOfString("db1-transaction-123", "db2-transaction-456")),
           None,
           List.empty,
           yieldAll = false,
@@ -221,7 +233,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(listOf(nullLiteral)),
+          ExpressionNames(listOf(nullLiteral)),
           None,
           List.empty,
           yieldAll = false,
@@ -235,7 +247,14 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTION foo") {
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
-        ShowTransactionsClause(Right(varFor("foo")), None, List.empty, yieldAll = false, None, fromCypher5)(pos)
+        ShowTransactionsClause(
+          ExpressionNames(varFor("foo")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None,
+          fromCypher5
+        )(pos)
       )
     )
   }
@@ -244,7 +263,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(add(varFor("x"), literalInt(2))),
+          ExpressionNames(add(varFor("x"), literalInt(2))),
           None,
           List.empty,
           yieldAll = false,
@@ -260,7 +279,14 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTIONS YIELD") {
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
-        ShowTransactionsClause(Right(varFor("YIELD")), None, List.empty, yieldAll = false, None, fromCypher5)(pos)
+        ShowTransactionsClause(
+          ExpressionNames(varFor("YIELD")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None,
+          fromCypher5
+        )(pos)
       )
     )
   }
@@ -269,7 +295,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(function("YIELD", add(literalInt(123), varFor("xyz")))),
+          ExpressionNames(function("YIELD", add(literalInt(123), varFor("xyz")))),
           None,
           List.empty,
           yieldAll = false,
@@ -283,7 +309,14 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTIONS ALL") {
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
-        ShowTransactionsClause(Right(varFor("ALL")), None, List.empty, yieldAll = false, None, fromCypher5)(pos)
+        ShowTransactionsClause(
+          ExpressionNames(varFor("ALL")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None,
+          fromCypher5
+        )(pos)
       )
     )
   }
@@ -294,7 +327,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
           List.empty,
           yieldAll = false,
@@ -310,7 +343,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List(commandResultItem("database")),
             yieldAll = false,
@@ -326,7 +359,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List("db1-transaction-123", "db2-transaction-456")),
+          CommaSeparatedNames(listOfString("db1-transaction-123", "db2-transaction-456")),
           None,
           List.empty,
           yieldAll = true,
@@ -342,7 +375,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Left(List("db1-transaction-123", "db2-transaction-456", "yield")),
+            CommaSeparatedNames(listOfString("db1-transaction-123", "db2-transaction-456", "yield")),
             None,
             List.empty,
             yieldAll = true,
@@ -359,7 +392,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List.empty,
             yieldAll = true,
@@ -382,7 +415,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         singleQuery(
           use(List("db"), !fromCypher5),
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List(
               commandResultItem("transactionId"),
@@ -409,7 +442,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         singleQuery(
           use(List("db"), !fromCypher5),
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List(
               commandResultItem("transactionId"),
@@ -439,7 +472,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         singleQuery(
           use(List("db"), !fromCypher5),
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List(
               commandResultItem("transactionId"),
@@ -466,7 +499,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(parameter("param", CTAny)),
+            ExpressionNames(parameter("param", CTAny)),
             None,
             List(
               commandResultItem("transactionId", Some("TRANSACTION")),
@@ -486,7 +519,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(literalString("where")),
+            ExpressionNames(literalString("where")),
             None,
             List(
               commandResultItem("transactionId", Some("TRANSACTION")),
@@ -505,7 +538,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(
       fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(literalString("db1-transaction-123")),
+          ExpressionNames(literalString("db1-transaction-123")),
           Some(where(equals(varFor("transactionId"), literalString("db1-transaction-124")))),
           List.empty,
           yieldAll = false,
@@ -520,7 +553,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(
       fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(literalString("yield")),
+          ExpressionNames(literalString("yield")),
           Some(where(equals(varFor("transactionId"), literalString("where")))),
           List.empty,
           yieldAll = false,
@@ -537,14 +570,15 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(
       fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Left(List("db1-transaction-123", "db1-transaction-124")),
+          CommaSeparatedNames(listOfString("db1-transaction-123", "db1-transaction-124")),
           Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))),
           List.empty,
           yieldAll = false,
           None,
           fromCypher5
         )(pos)),
-      comparePosition = false
+      comparePosition = false,
+      obfuscator = false
     )
   }
 
@@ -554,7 +588,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(
       fromCypher5 =>
         singleQuery(ShowTransactionsClause(
-          Right(subtract(subtract(varFor("db1"), varFor("transaction")), literalInt(123))),
+          ExpressionNames(subtract(subtract(varFor("db1"), varFor("transaction")), literalInt(123))),
           Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))),
           List.empty,
           yieldAll = false,
@@ -570,7 +604,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(listOfString("db1-transaction-123", "db2-transaction-456")),
+            ExpressionNames(listOfString("db1-transaction-123", "db2-transaction-456")),
             None,
             List.empty,
             yieldAll = true,
@@ -587,7 +621,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(add(parameter("x", CTAny), literalString("123"))),
+            ExpressionNames(add(parameter("x", CTAny), literalString("123"))),
             None,
             List(commandResultItem("transactionId", Some("TRANSACTION")), commandResultItem("database", Some("SHOW"))),
             yieldAll = false,
@@ -604,7 +638,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("where")),
+            ExpressionNames(varFor("where")),
             None,
             List.empty,
             yieldAll = true,
@@ -621,7 +655,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("yield")),
+            ExpressionNames(varFor("yield")),
             None,
             List.empty,
             yieldAll = true,
@@ -638,7 +672,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("show")),
+            ExpressionNames(varFor("show")),
             None,
             List.empty,
             yieldAll = true,
@@ -655,7 +689,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("terminate")),
+            ExpressionNames(varFor("terminate")),
             None,
             List.empty,
             yieldAll = true,
@@ -672,7 +706,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List(commandResultItem("yield")),
             yieldAll = false,
@@ -689,7 +723,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("where")),
+            ExpressionNames(varFor("where")),
             Some(where(trueLiteral)),
             List.empty,
             yieldAll = false,
@@ -706,7 +740,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("yield")),
+            ExpressionNames(varFor("yield")),
             Some(where(trueLiteral)),
             List.empty,
             yieldAll = false,
@@ -723,7 +757,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("show")),
+            ExpressionNames(varFor("show")),
             Some(where(trueLiteral)),
             List.empty,
             yieldAll = false,
@@ -740,7 +774,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Right(varFor("terminate")),
+            ExpressionNames(varFor("terminate")),
             Some(where(trueLiteral)),
             List.empty,
             yieldAll = false,
@@ -756,7 +790,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     def expected(yieldIsEscaped: Boolean, returnCypher5Types: Boolean) =
       singleQuery(
         ShowTransactionsClause(
-          Right(varFor("yield", yieldIsEscaped)),
+          ExpressionNames(varFor("yield", yieldIsEscaped)),
           None,
           List.empty,
           yieldAll = true,
@@ -774,7 +808,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     def expected(whereIsEscaped: Boolean, returnCypher5Types: Boolean) =
       singleQuery(
         ShowTransactionsClause(
-          Right(varFor("where", whereIsEscaped)),
+          ExpressionNames(varFor("where", whereIsEscaped)),
           Some(where(trueLiteral)),
           List.empty,
           yieldAll = false,
@@ -792,7 +826,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a")),
           yieldAll = false,
@@ -811,7 +845,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -830,7 +864,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -849,7 +883,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a")),
           yieldAll = false,
@@ -868,7 +902,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a")),
           yieldAll = false,
@@ -887,7 +921,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -906,7 +940,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -932,7 +966,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -951,7 +985,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Left(List.empty),
+          NoNames,
           None,
           List(commandResultItem("a", Some("b"))),
           yieldAll = false,
@@ -976,26 +1010,28 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test(
     "SHOW TRANSACTIONS 'id', 'id' YIELD username as transactionId, transactionId as username WHERE size(transactionId) > 0 RETURN transactionId as username"
   ) {
-    assertAstVersionBased(fromCypher5 =>
-      singleQuery(
-        ShowTransactionsClause(
-          Left(List("id", "id")),
-          None,
-          List(
-            commandResultItem("username", Some("transactionId")),
-            commandResultItem("transactionId", Some("username"))
-          ),
-          yieldAll = false,
-          Some(withFromYield(
-            returnAllItems.withDefaultOrderOnColumns(List("transactionId", "username")),
-            where = Some(where(
-              greaterThan(size(varFor("transactionId")), literalInt(0))
-            ))
-          )),
-          fromCypher5
-        )(pos),
-        return_(aliasedReturnItem("transactionId", "username"))
-      )
+    assertAstVersionBased(
+      fromCypher5 =>
+        singleQuery(
+          ShowTransactionsClause(
+            CommaSeparatedNames(listOfString("id", "id")),
+            None,
+            List(
+              commandResultItem("username", Some("transactionId")),
+              commandResultItem("transactionId", Some("username"))
+            ),
+            yieldAll = false,
+            Some(withFromYield(
+              returnAllItems.withDefaultOrderOnColumns(List("transactionId", "username")),
+              where = Some(where(
+                greaterThan(size(varFor("transactionId")), literalInt(0))
+              ))
+            )),
+            fromCypher5
+          )(pos),
+          return_(aliasedReturnItem("transactionId", "username"))
+        ),
+      obfuscator = false
     )
   }
 
@@ -1006,7 +1042,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       fromCypher5 =>
         singleQuery(
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List(commandResultItem("name")),
             yieldAll = false,
@@ -1025,7 +1061,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       case _ =>
         _.toAstPositioned(singleQuery(
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
             List.empty,
             yieldAll = false,
@@ -1043,7 +1079,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       case _ =>
         _.toAstPositioned(singleQuery(
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             Some(where(trueLiteral)),
             List.empty,
             yieldAll = false,
@@ -1061,7 +1097,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       case _ =>
         _.toAstPositioned(singleQuery(
           ShowTransactionsClause(
-            Left(List.empty),
+            NoNames,
             None,
             List.empty,
             yieldAll = false,
@@ -1167,7 +1203,14 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTION BRIEF") {
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
-        ShowTransactionsClause(Right(varFor("BRIEF")), None, List.empty, yieldAll = false, None, fromCypher5)(pos)
+        ShowTransactionsClause(
+          ExpressionNames(varFor("BRIEF")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None,
+          fromCypher5
+        )(pos)
       )
     )
   }
@@ -1176,7 +1219,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(varFor("BRIEF")),
+          ExpressionNames(varFor("BRIEF")),
           None,
           List.empty,
           yieldAll = true,
@@ -1191,7 +1234,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(varFor("BRIEF")),
+          ExpressionNames(varFor("BRIEF")),
           Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
           List.empty,
           yieldAll = false,
@@ -1205,7 +1248,14 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTION VERBOSE") {
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
-        ShowTransactionsClause(Right(varFor("VERBOSE")), None, List.empty, yieldAll = false, None, fromCypher5)(pos)
+        ShowTransactionsClause(
+          ExpressionNames(varFor("VERBOSE")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None,
+          fromCypher5
+        )(pos)
       )
     )
   }
@@ -1214,7 +1264,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(varFor("VERBOSE")),
+          ExpressionNames(varFor("VERBOSE")),
           None,
           List.empty,
           yieldAll = true,
@@ -1229,7 +1279,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
         ShowTransactionsClause(
-          Right(varFor("VERBOSE")),
+          ExpressionNames(varFor("VERBOSE")),
           Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
           List.empty,
           yieldAll = false,
@@ -1243,7 +1293,14 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("SHOW TRANSACTION OUTPUT") {
     assertAstVersionBased(fromCypher5 =>
       singleQuery(
-        ShowTransactionsClause(Right(varFor("OUTPUT")), None, List.empty, yieldAll = false, None, fromCypher5)(pos)
+        ShowTransactionsClause(
+          ExpressionNames(varFor("OUTPUT")),
+          None,
+          List.empty,
+          yieldAll = false,
+          None,
+          fromCypher5
+        )(pos)
       )
     )
   }
@@ -1258,7 +1315,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'RETURN'")
       case _ => _.toAstPositioned(singleQuery(
           ShowTransactionsClause(
-            Right(varFor("BRIEF")),
+            ExpressionNames(varFor("BRIEF")),
             None,
             List.empty,
             yieldAll = false,
@@ -1284,7 +1341,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'RETURN'")
       case _ => _.toAstPositioned(singleQuery(
           ShowTransactionsClause(
-            Right(varFor("VERBOSE")),
+            ExpressionNames(varFor("VERBOSE")),
             None,
             List.empty,
             yieldAll = false,

@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.DatabaseScope
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 
 /* Test base for combining listing and terminating commands */
@@ -27,7 +27,7 @@ class CombineCommandsParserTestBase extends AdministrationAndSchemaCommandParser
   override protected def ignorePrettifier: Boolean = true
 
   protected def showTx(
-    ids: Either[List[String], Expression],
+    ids: CommandClauseNames,
     where: Option[(ast.Where, InputPosition)],
     yieldAll: Boolean,
     yieldItems: List[ast.CommandResultItem],
@@ -36,7 +36,7 @@ class CombineCommandsParserTestBase extends AdministrationAndSchemaCommandParser
     ast.ShowTransactionsClause(ids, where.map(_._1), yieldItems, yieldAll, yieldWith, returnCypher5Types = false)
 
   protected def terminateTx(
-    ids: Either[List[String], Expression],
+    ids: CommandClauseNames,
     where: Option[(ast.Where, InputPosition)],
     yieldAll: Boolean,
     yieldItems: List[ast.CommandResultItem],
@@ -45,7 +45,7 @@ class CombineCommandsParserTestBase extends AdministrationAndSchemaCommandParser
     ast.TerminateTransactionsClause(ids, yieldItems, yieldAll, yieldWith, where.map(_._2))
 
   protected def showSetting(
-    ids: Either[List[String], Expression],
+    ids: CommandClauseNames,
     where: Option[(ast.Where, InputPosition)],
     yieldAll: Boolean,
     yieldItems: List[ast.CommandResultItem],

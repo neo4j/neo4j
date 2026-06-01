@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ParameterName
@@ -26,7 +27,6 @@ import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.ast.SingleNamedDatabaseScope
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -136,7 +136,7 @@ case class ShowFunctions(
 }
 
 case class ShowTransactions(
-  ids: Either[List[String], Expression],
+  ids: CommandClauseNames,
   defaultColumns: List[CommandDefaultColumn],
   yieldColumns: List[CommandYieldColumn],
   yieldAll: Boolean,
@@ -154,11 +154,11 @@ case class ShowTransactions(
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 
-  override def usedVariables: Set[LogicalVariable] = ids.map(_.dependencies).getOrElse(Set.empty)
+  override def usedVariables: Set[LogicalVariable] = ids.maybeExpression.map(_.dependencies).getOrElse(Set.empty)
 }
 
 case class TerminateTransactions(
-  ids: Either[List[String], Expression],
+  ids: CommandClauseNames,
   defaultColumns: List[CommandDefaultColumn],
   yieldColumns: List[CommandYieldColumn],
   yieldAll: Boolean,
@@ -176,11 +176,11 @@ case class TerminateTransactions(
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 
-  override def usedVariables: Set[LogicalVariable] = ids.map(_.dependencies).getOrElse(Set.empty)
+  override def usedVariables: Set[LogicalVariable] = ids.maybeExpression.map(_.dependencies).getOrElse(Set.empty)
 }
 
 case class ShowSettings(
-  names: Either[List[String], Expression],
+  names: CommandClauseNames,
   defaultColumns: List[CommandDefaultColumn],
   yieldColumns: List[CommandYieldColumn],
   yieldAll: Boolean,
@@ -198,7 +198,7 @@ case class ShowSettings(
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 
-  override def usedVariables: Set[LogicalVariable] = names.map(_.dependencies).getOrElse(Set.empty)
+  override def usedVariables: Set[LogicalVariable] = names.maybeExpression.map(_.dependencies).getOrElse(Set.empty)
 }
 
 // System database only commands

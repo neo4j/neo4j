@@ -75,7 +75,9 @@ import org.neo4j.cypher.internal.ast.CascadeAliases
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
 import org.neo4j.cypher.internal.ast.CommandClause
+import org.neo4j.cypher.internal.ast.CommandClauseNames
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConditionalQueryBranch
@@ -155,6 +157,7 @@ import org.neo4j.cypher.internal.ast.ExpandHintInto
 import org.neo4j.cypher.internal.ast.ExpandStep
 import org.neo4j.cypher.internal.ast.ExplicitGroupingElements
 import org.neo4j.cypher.internal.ast.ExpressionBody
+import org.neo4j.cypher.internal.ast.ExpressionNames
 import org.neo4j.cypher.internal.ast.FileResource
 import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
@@ -226,6 +229,7 @@ import org.neo4j.cypher.internal.ast.NamedDatabasesScope
 import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NextStatement
+import org.neo4j.cypher.internal.ast.NoNames
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.Node
@@ -2592,22 +2596,20 @@ class AstGenerator(
   /* names for show commands:
    * - can be an expression or a list of strings
    * - a singular string is parsed as string expression
-   * - no names gives an empty list
-   * - two or more names give an name list
+   * - two or more names give a name list
    */
-  private def namesOrNameExpression: Gen[Either[List[String], Expression]] = for {
-    multiIdList <- twoOrMore(string)
-    idList <- oneOf(List.empty, multiIdList)
-    expr <- _expression
-    ids <- oneOf(Left(idList), Right(expr))
+  private def namesOrNameExpression: Gen[CommandClauseNames] = for {
+    nonEmptyIds <- namesOrNameExpressionNonEmpty
+    ids <- oneOf(nonEmptyIds, NoNames)
   } yield {
     ids
   }
 
-  private def namesOrNameExpressionNonEmpty: Gen[Either[List[String], Expression]] = for {
-    multiIdList <- twoOrMore(string)
+  private def namesOrNameExpressionNonEmpty: Gen[CommandClauseNames] = for {
+    multiIdStringList <- twoOrMore(_stringLit)
+    multiIdList <- const(ListLiteral(multiIdStringList)(pos))
     expr <- _expression
-    ids <- oneOf(Left(multiIdList), Right(expr))
+    ids <- oneOf(CommaSeparatedNames(multiIdList), ExpressionNames(expr))
   } yield {
     ids
   }
