@@ -88,6 +88,11 @@ class Lucene9IndexWriter implements LuceneIndexWriter {
     }
 
     @Override
+    public void maybeMerge() throws IOException {
+        indexWriter.maybeMerge();
+    }
+
+    @Override
     public void markAsOnline() {
         indexWriter.setLiveCommitData(ONLINE_COMMIT_USER_DATA);
     }

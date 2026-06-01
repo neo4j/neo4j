@@ -56,6 +56,8 @@ public interface LuceneIndexWriter extends Closeable {
 
     void forceMerge(int maxNumSegments) throws IOException;
 
+    void maybeMerge() throws IOException;
+
     void markAsOnline();
 
     int getMaxDocs();

@@ -172,7 +172,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
         DatabaseIndex<VectorIndexReader> luceneIndex = builder.build();
         luceneIndex.open();
-        forceMergeSegments(scheduler, luceneIndex);
+        maybeMergeSegments(scheduler, luceneIndex);
 
         IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, vectorIndexConfig.dimensions());
         Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
@@ -239,13 +239,15 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
 
     /**
      * Use given {@link JobScheduler} to force the segment merges
-     * @see #forceMergeSegments(DatabaseIndex)
+     * @see #maybeMergeSegments(DatabaseIndex)
      */
-    private static void forceMergeSegments(JobScheduler scheduler, DatabaseIndex<?> luceneIndex) {
+    private static void maybeMergeSegments(JobScheduler scheduler, DatabaseIndex<?> luceneIndex) {
         scheduler.schedule(
                 Group.INDEX_POPULATION,
                 JobMonitoringParams.systemJob("Merging vector index segments"),
-                IOUtils.uncheckedRunnable(() -> forceMergeSegments(luceneIndex)));
+                IOUtils.uncheckedRunnable(() -> {
+                    maybeMergeSegments(luceneIndex);
+                }));
     }
 
     /**
@@ -253,11 +255,11 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
      * to enable faster population, but at the cost of more segment files.
      * This coerces the index to merge the segments to the {@link LuceneSettings#vector_standard_merge_factor}
      */
-    private static void forceMergeSegments(DatabaseIndex<?> luceneIndex) throws IOException {
+    private static void maybeMergeSegments(DatabaseIndex<?> luceneIndex) throws IOException {
         IOException exception = null;
         for (AbstractIndexPartition partition : luceneIndex.getPartitions()) {
             try {
-                partition.getIndexWriter().forceMerge(Integer.MAX_VALUE);
+                partition.getIndexWriter().maybeMerge();
             } catch (IOException e) {
                 if (exception != null) {
                     exception.addSuppressed(e);
