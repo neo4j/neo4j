@@ -782,10 +782,10 @@ object pegClause {
   ): RegularContext = {
     if (newVariables.isEmpty) incoming
     else {
-      val shadowedNames = newVariables.iterator.map(_.name).toSet
+      val shadowedNames = newVariables.map(_.name)
       RegularContext(
-        constants = incoming.constants.filterNot(c => shadowedNames.contains(c.name)),
-        variables = incoming.variables.filterNot(v => shadowedNames.contains(v.name)) union newVariables,
+        constants = incoming.constants,
+        variables = incoming.variables.filterNot(v => shadowedNames(v.name)) union newVariables,
         localCallables = incoming.localCallables
       )
     }
