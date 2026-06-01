@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -31,14 +30,14 @@ public class CommunitySchemaCommandReaderTest extends SchemaCommandReaderTest {
     public SchemaCommandReader createReader(FileSystemAbstraction fs, SchemaCommandReader.ReaderConfig readerConfig) {
         return new SchemaCommandReader(
                 fs,
-                SchemaCommandParser.createCommunity(CypherConfiguration.fromConfig(Config.defaults())),
+                SchemaCommandParser.createCommunity(CypherConfiguration.fromConfig(readerConfig.config())),
                 readerConfig);
     }
 
     @Test
     void doesNotParseGraphTypeStatements() throws IOException {
         var cypher = createCypher("CYPHER 25 ALTER CURRENT GRAPH TYPE SET { }");
-        var reader = createReader(SchemaCommandReader.ReaderConfig.forTesting(true, true, VECTOR_INDEX_VERSION));
+        var reader = createReader(SchemaCommandReader.ReaderConfig.forTesting(true, true, CONFIG));
         assertThatThrownBy(() -> reader.parse(cypher))
                 .hasMessageContainingAll("GRAPH TYPE requires Enterprise Edition");
     }

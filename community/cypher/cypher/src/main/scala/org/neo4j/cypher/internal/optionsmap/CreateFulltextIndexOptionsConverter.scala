@@ -42,7 +42,7 @@ case class CreateFulltextIndexOptionsConverter(context: IndexProviderContext)
     cypherVersion: CypherVersion
   ): OptionsConverterResult[CreateIndexWithFullOptions] = {
     val (indexProvider, indexConfig, notifications) =
-      getOptionsParts(options, schemaType, IndexType.FULLTEXT, cypherVersion)
+      getOptionsParts(options, schemaType, IndexType.FULLTEXT, cypherVersion, getAlwaysUseLatestIndexProvider(config))
     ParsedWithNotifications(CreateIndexWithFullOptions(indexProvider, indexConfig), notifications)
   }
 

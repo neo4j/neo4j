@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.notification.VectorIndexDimensionsNotSpecifiedNotification
 import org.neo4j.cypher.internal.runtime.IndexProviderContext
@@ -67,7 +68,7 @@ case class CreateVectorIndexOptionsConverter(context: IndexProviderContext, late
     cypherVersion: CypherVersion
   ): OptionsConverterResult[CreateIndexWithFullOptions] = {
     val (indexProvider, indexConfig, notifications) =
-      getOptionsParts(options, schemaType, IndexType.VECTOR, cypherVersion)
+      getOptionsParts(options, schemaType, IndexType.VECTOR, cypherVersion, getAlwaysUseLatestIndexProvider(config))
     val finalNotifications =
       if (indexConfig.get(VECTOR_DIMENSIONS.getSettingName) == null) {
         notifications + VectorIndexDimensionsNotSpecifiedNotification
@@ -77,7 +78,7 @@ case class CreateVectorIndexOptionsConverter(context: IndexProviderContext, late
     ParsedWithNotifications(CreateIndexWithFullOptions(indexProvider, indexConfig), finalNotifications)
   }
 
-  // VECTOR indexes has vector config settings
+  // VECTOR indexes have vector config settings
   override protected def assertValidAndTransformConfig(
     config: AnyValue,
     schemaType: String,

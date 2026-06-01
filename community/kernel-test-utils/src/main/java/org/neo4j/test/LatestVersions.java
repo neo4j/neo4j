@@ -28,10 +28,13 @@ import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.KernelVersionProviders;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 
 public final class LatestVersions {
+    private LatestVersions() {}
+
     public static final KernelVersion LATEST_KERNEL_VERSION = KernelVersion.getLatestVersion(Config.defaults());
     public static final KernelVersionProvider LATEST_KERNEL_VERSION_PROVIDER =
             KernelVersionProviders.fixed(LATEST_KERNEL_VERSION);
@@ -62,5 +65,6 @@ public final class LatestVersions {
         throw new IllegalArgumentException("No matching Dbms version found for " + version.toString());
     }
 
-    private LatestVersions() {}
+    public static final VectorIndexVersion LATEST_VECTOR_INDEX_VERSION =
+            VectorIndexVersion.latestSupportedVersion(LATEST_KERNEL_VERSION);
 }

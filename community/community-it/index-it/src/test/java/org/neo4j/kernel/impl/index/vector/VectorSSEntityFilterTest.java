@@ -33,12 +33,10 @@ import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
@@ -53,9 +51,8 @@ class VectorSSEntityFilterTest extends VectorSSFTestBase {
     private static final int NUM_ENTITIES = 1000;
     private static final int ITERATIONS = 100;
 
-    private static final VectorSimilarityFunction SIMILARITY_FUNCTION = VectorIndexVersion.latestSupportedVersion(
-                    KernelVersion.getLatestVersion(Configuration.EMPTY))
-            .similarityFunction("COSINE");
+    private static final VectorSimilarityFunction SIMILARITY_FUNCTION =
+            LatestVersions.LATEST_VECTOR_INDEX_VERSION.similarityFunction("COSINE");
 
     @Inject
     private RandomSupport random;

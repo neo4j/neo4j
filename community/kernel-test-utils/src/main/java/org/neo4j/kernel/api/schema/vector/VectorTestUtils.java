@@ -666,8 +666,7 @@ public class VectorTestUtils {
     }
 
     public static Set<VectorIndexVersion> inclusiveVersionRangeFrom(VectorIndexVersion from) {
-        return inclusiveVersionRange(
-                from, VectorIndexVersion.latestSupportedVersion(LatestVersions.LATEST_KERNEL_VERSION));
+        return inclusiveVersionRange(from, LatestVersions.LATEST_VECTOR_INDEX_VERSION);
     }
 
     public static Set<VectorIndexVersion> inclusiveVersionRange(VectorIndexVersion from, VectorIndexVersion to) {

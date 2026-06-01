@@ -59,7 +59,7 @@ public class SchemaCommandReader {
 
     public SchemaCommandReader(
             FileSystemAbstraction fileSystem, SchemaCommandParser parser, ReaderConfig readerConfig) {
-        this(fileSystem, parser, new SchemaCommandConverter(), readerConfig);
+        this(fileSystem, parser, new SchemaCommandConverter(readerConfig.config()), readerConfig);
     }
 
     /**
@@ -104,33 +104,40 @@ public class SchemaCommandReader {
 
         boolean allowDropOperations();
 
+        Config config();
+
         VectorIndexVersion latestVectorIndexVersion();
 
         static ReaderConfig communityImporter(Config config) {
-            return new ReaderConfigImpl(
-                    false, false, VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(config)));
+            return new ReaderConfigImpl(false, false, config);
         }
 
         static ReaderConfig enterpriseImporter(Config config) {
-            return new ReaderConfigImpl(
-                    true, false, VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(config)));
+            return new ReaderConfigImpl(true, false, config);
         }
 
         static ReaderConfig enterpriseIncrementalImporter(Config config) {
-            return new ReaderConfigImpl(
-                    true, true, VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(config)));
+            return new ReaderConfigImpl(true, true, config);
         }
 
         @VisibleForTesting
-        static ReaderConfig forTesting(
-                boolean allowEnterpriseFeatures,
-                boolean allowDropOperations,
-                VectorIndexVersion latestVectorIndexVersion) {
-            return new ReaderConfigImpl(allowEnterpriseFeatures, allowDropOperations, latestVectorIndexVersion);
+        static ReaderConfig forTesting(boolean allowEnterpriseFeatures, boolean allowDropOperations, Config config) {
+            return new ReaderConfigImpl(allowEnterpriseFeatures, allowDropOperations, config);
         }
     }
 
     private record ReaderConfigImpl(
-            boolean allowEnterpriseFeatures, boolean allowDropOperations, VectorIndexVersion latestVectorIndexVersion)
-            implements ReaderConfig {}
+            boolean allowEnterpriseFeatures,
+            boolean allowDropOperations,
+            Config config,
+            VectorIndexVersion latestVectorIndexVersion)
+            implements ReaderConfig {
+        ReaderConfigImpl(boolean allowEnterpriseFeatures, boolean allowDropOperations, Config config) {
+            this(
+                    allowEnterpriseFeatures,
+                    allowDropOperations,
+                    config,
+                    VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(config)));
+        }
+    }
 }

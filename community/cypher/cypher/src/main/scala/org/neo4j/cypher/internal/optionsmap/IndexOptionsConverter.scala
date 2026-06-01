@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.optionsmap
 
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.MapValueOps.Ops
 import org.neo4j.cypher.internal.notification.DeprecatedIndexProviderOption
@@ -60,11 +62,19 @@ import scala.math.Ordering.comparatorToOrdering
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   protected def context: IndexProviderContext
 
+  protected def getAlwaysUseLatestIndexProvider(config: Option[Config]): Boolean = {
+    config match {
+      case Some(cfg) => Boolean unbox cfg.get(GraphDatabaseInternalSettings.always_use_latest_index_provider)
+      case None      => true
+    }
+  }
+
   protected def getOptionsParts(
     options: MapValue,
     schemaType: String,
     indexType: IndexType,
-    version: CypherVersion
+    version: CypherVersion,
+    alwaysUseLatestIndexProvider: Boolean
   ): (Option[IndexProviderDescriptor], IndexConfig, Set[InternalNotification]) = {
 
     val (validOptions, errorMessageOverride) =
@@ -89,18 +99,26 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       )
     )
 
+    // User provided index provider is deprecated in Cypher 5, and removed in Cypher 25.
+    // Should use the actual index provider for index configuration validation.
+    // By default the latest index provider is used, but is configurable with internal setting.
     val maybeIndexProvider = options.getOption("indexprovider")
+    val deprecatedUserProvidedIndexProvider =
+      maybeIndexProvider.map(assertValidIndexProvider(_, schemaType, indexType, version))
+    val indexProvider: Option[IndexProviderDescriptor] = deprecatedUserProvidedIndexProvider match {
+      case Some(_) if alwaysUseLatestIndexProvider => None
+      case any                                     => any
+    }
+
     // If there are mandatory options we should call convert with empty options to throw expected errors
     val maybeConfig = options.getOption("indexconfig").orElse(Option.when(hasMandatoryOptions)(VirtualValues.EMPTY_MAP))
-
-    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, schemaType, indexType, version))
     val indexConfig =
       maybeConfig.map(assertValidAndTransformConfig(_, schemaType, indexProvider)).getOrElse(IndexConfig.empty)
-    if (indexProvider.nonEmpty) {
-      (indexProvider, indexConfig, Set(DeprecatedIndexProviderOption()))
-    } else {
-      (indexProvider, indexConfig, Set())
-    }
+
+    val notifications: Set[InternalNotification] =
+      if (deprecatedUserProvidedIndexProvider.nonEmpty) Set(DeprecatedIndexProviderOption()) else Set.empty
+
+    (indexProvider, indexConfig, notifications)
   }
 
   protected def toIndexConfig: java.util.Map[String, Object] => IndexConfig =

@@ -23,6 +23,7 @@ import org.assertj.core.api.Condition
 import org.awaitility.Awaitility.await
 import org.neo4j.collection.Dependencies
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
@@ -74,6 +75,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import java.lang.Boolean.FALSE
 import java.nio.file.Path
 import java.time.Duration
 import java.util.UUID
@@ -311,12 +313,35 @@ trait GraphDatabaseTestSupport
     startGraphDatabase(config, maybeExternalPath = maybeExternalPath)
   }
 
-  protected def restartWithIndexProvider(
+  /**
+   * Restarts the database with `config`.
+   * After `runTest` is finished, restarts the database for the next test using the default config.
+   */
+  protected def restartWithConfigScoped(config: Map[Setting[?], Object])(runTest: => Unit): Unit = {
+    try {
+      restartWithConfig(config)
+      runTest
+    } finally {
+      restartWithConfig()
+    }
+  }
+
+  protected def restartWithIndexProviderScoped(
     factory: AbstractIndexProviderFactory[? <: IndexProvider],
-    provider: IndexProviderDescriptor
-  ): Unit = {
-    managementService.shutdown()
-    startGraphDatabase(maybeProvider = Some((factory, provider)))
+    provider: IndexProviderDescriptor,
+    config: Map[Setting[?], Object] = databaseConfig()
+  )(runTest: => Unit): Unit = {
+    try {
+      managementService.shutdown()
+      startGraphDatabase(
+        config ++ Map(GraphDatabaseInternalSettings.always_use_latest_index_provider -> FALSE),
+        maybeProvider = Some((factory, provider))
+      )
+      runTest
+    } finally {
+      managementService.shutdown()
+      startGraphDatabase()
+    }
   }
 
   override protected def afterEach(): Unit = {

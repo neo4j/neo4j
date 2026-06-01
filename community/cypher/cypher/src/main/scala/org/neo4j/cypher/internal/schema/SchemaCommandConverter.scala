@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.schema
 
 import org.eclipse.collections.api.factory.Lists
 import org.eclipse.collections.api.factory.Sets
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AlterCurrentGraphType
@@ -94,7 +95,7 @@ import java.util
 
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
-class SchemaCommandConverter {
+class SchemaCommandConverter(config: Config) {
 
   private val ERROR_SUFFIX = " in import schema commands."
 
@@ -126,11 +127,12 @@ class SchemaCommandConverter {
       val desc = if (isNodeIndex) indexType.nodeDescription else indexType.relDescription
       val name = indexName.map(n => checkName(n, desc + " name")).orNull
       val notExists = ifNotExists(ifExistsDo)
-      validateOptions(options, CreateLookupIndexOptionsConverter(providerContext), cypherVersion)
+      validateOptions(options, CreateLookupIndexOptionsConverter(providerContext), cypherVersion, Some(config))
       if (isNodeIndex) new NodeLookup(name, notExists)
       else new RelationshipLookup(name, notExists)
     case index @ CreateFulltextIndex(_, entityNames, properties, indexName, _, ifExistsDo, options) =>
-      val config = validateOptions(options, CreateFulltextIndexOptionsConverter(providerContext), cypherVersion)
+      val providerOptions =
+        validateOptions(options, CreateFulltextIndexOptionsConverter(providerContext), cypherVersion, Some(config))
       val desc = index.entityIndexDescription
       val name = indexName.map(n => checkName(n, desc + " name")).orNull
       val props = setLikeList(properties.map((p: Property) => p.propertyKey.name), desc, "property")
@@ -141,14 +143,14 @@ class SchemaCommandConverter {
             setLikeList(labels.map(l => l.name), desc, "label"),
             props,
             ifNotExists(ifExistsDo),
-            indexConfig(config)
+            indexConfig(providerOptions)
           )
         case Right(types) => new RelationshipFulltext(
             name,
             setLikeList(types.map(t => t.name), desc, "relationship"),
             props,
             ifNotExists(ifExistsDo),
-            indexConfig(config)
+            indexConfig(providerOptions)
           )
       }
     case index @ CreateVectorIndex(
@@ -161,11 +163,12 @@ class SchemaCommandConverter {
         ifExistsDo,
         options
       ) =>
-      val config =
+      val providerOptions =
         validateOptions(
           options,
           CreateVectorIndexOptionsConverter(providerContext, latestVectorIndexVersion),
-          cypherVersion
+          cypherVersion,
+          Some(config)
         )
       val desc = index.entityIndexDescription
       val name = indexName.map(n => checkName(n, desc + " name")).orNull
@@ -179,8 +182,9 @@ class SchemaCommandConverter {
             setLikeList(labels.map(l => l.name), desc, "label"),
             vectorProperty,
             additionalProps,
+            latestVectorIndexVersion.descriptor,
             ifNotExists(ifExistsDo),
-            indexConfig(config)
+            indexConfig(providerOptions)
           )
         case Right(types) =>
           new RelationshipVector(
@@ -188,8 +192,9 @@ class SchemaCommandConverter {
             setLikeList(types.map(t => t.name), desc, "relationship"),
             vectorProperty,
             additionalProps,
+            latestVectorIndexVersion.descriptor,
             ifNotExists(ifExistsDo),
-            indexConfig(config)
+            indexConfig(providerOptions)
           )
       }
     case index @ CreateSingleLabelPropertyIndex(
@@ -208,7 +213,7 @@ class SchemaCommandConverter {
       indexType match {
         case _: RangeCreateIndex =>
           val props = setLikeList(properties.map((p: Property) => p.propertyKey.name), desc, "property")
-          validateOptions(options, CreateRangeIndexOptionsConverter(desc, providerContext), cypherVersion)
+          validateOptions(options, CreateRangeIndexOptionsConverter(desc, providerContext), cypherVersion, Some(config))
           if (isNode) {
             new NodeRange(
               name,
@@ -225,7 +230,7 @@ class SchemaCommandConverter {
             )
           }
         case TextCreateIndex =>
-          validateOptions(options, CreateTextIndexOptionsConverter(providerContext), cypherVersion)
+          validateOptions(options, CreateTextIndexOptionsConverter(providerContext), cypherVersion, Some(config))
           if (isNode) {
             new NodeText(
               name,
@@ -242,14 +247,15 @@ class SchemaCommandConverter {
             )
           }
         case PointCreateIndex =>
-          val config = validateOptions(options, CreatePointIndexOptionsConverter(providerContext), cypherVersion)
+          val providerOptions =
+            validateOptions(options, CreatePointIndexOptionsConverter(providerContext), cypherVersion, Some(config))
           if (isNode) {
             new NodePoint(
               name,
               entityName,
               singleProperty(properties),
               ifNotExists(ifExistsDo),
-              indexConfig(config)
+              indexConfig(providerOptions)
             )
           } else {
             new RelationshipPoint(
@@ -257,7 +263,7 @@ class SchemaCommandConverter {
               entityName,
               singleProperty(properties),
               ifNotExists(ifExistsDo),
-              indexConfig(config)
+              indexConfig(providerOptions)
             )
           }
         case _ =>
@@ -391,11 +397,12 @@ class SchemaCommandConverter {
   private def validateOptions[OPTION](
     options: Options,
     converter: IndexOptionsConverter[OPTION],
-    cypherVersion: CypherVersion
+    cypherVersion: CypherVersion,
+    config: Option[Config] = None
   ): Option[OPTION] = {
     if (options.isInstanceOf[OptionsParam])
       throw new SchemaCommandReaderException("Parameterised options are not allowed" + ERROR_SUFFIX)
-    converter.convert(cypherVersion, options, MapValue.EMPTY, Option.empty).toOption
+    converter.convert(cypherVersion, options, MapValue.EMPTY, config).toOption
   }
 
   private def asList[TYPE](list: Seq[TYPE]): util.List[TYPE] =

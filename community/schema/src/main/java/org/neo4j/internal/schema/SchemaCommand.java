@@ -21,7 +21,6 @@ package org.neo4j.internal.schema;
 
 import static org.neo4j.internal.schema.AllIndexProviderDescriptors.DEFAULT_FULLTEXT_DESCRIPTOR;
 import static org.neo4j.internal.schema.AllIndexProviderDescriptors.DEFAULT_TEXT_DESCRIPTOR;
-import static org.neo4j.internal.schema.AllIndexProviderDescriptors.DEFAULT_VECTOR_DESCRIPTOR;
 import static org.neo4j.internal.schema.AllIndexProviderDescriptors.POINT_DESCRIPTOR;
 import static org.neo4j.internal.schema.AllIndexProviderDescriptors.RANGE_DESCRIPTOR;
 import static org.neo4j.internal.schema.AllIndexProviderDescriptors.TOKEN_DESCRIPTOR;
@@ -333,6 +332,7 @@ public sealed interface SchemaCommand extends Serializable {
                     List<String> labels,
                     String property,
                     List<String> additionalProperties,
+                    IndexProviderDescriptor providerDescriptor,
                     boolean ifNotExists,
                     IndexConfig config)
                     implements Create {
@@ -348,7 +348,7 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public IndexPrototype toPrototype(TokenHolders tokenHolders) {
-                    final List<String> allProperties = new ArrayList<>(1 + additionalProperties.size());
+                    List<String> allProperties = new ArrayList<>(1 + additionalProperties.size());
                     allProperties.add(property);
                     allProperties.addAll(additionalProperties);
                     return withName(
@@ -359,7 +359,7 @@ public sealed interface SchemaCommand extends Serializable {
                                                     EntityType.NODE,
                                                     tokenHolders.labelsForNames(labels),
                                                     tokenHolders.propertiesForName(allProperties)),
-                                            DEFAULT_VECTOR_DESCRIPTOR)
+                                            providerDescriptor)
                                     .withIndexConfig(config),
                             tokenHolders);
                 }
@@ -371,6 +371,7 @@ public sealed interface SchemaCommand extends Serializable {
                     List<String> types,
                     String property,
                     List<String> additionalProperties,
+                    IndexProviderDescriptor providerDescriptor,
                     boolean ifNotExists,
                     IndexConfig config)
                     implements Create {
@@ -386,7 +387,7 @@ public sealed interface SchemaCommand extends Serializable {
 
                 @Override
                 public IndexPrototype toPrototype(TokenHolders tokenHolders) {
-                    final List<String> allProperties = new ArrayList<>(1 + additionalProperties.size());
+                    List<String> allProperties = new ArrayList<>(1 + additionalProperties.size());
                     allProperties.add(property);
                     allProperties.addAll(additionalProperties);
                     return withName(
@@ -397,7 +398,7 @@ public sealed interface SchemaCommand extends Serializable {
                                                     EntityType.RELATIONSHIP,
                                                     tokenHolders.relationshipsForNames(types),
                                                     tokenHolders.propertiesForName(allProperties)),
-                                            DEFAULT_VECTOR_DESCRIPTOR)
+                                            providerDescriptor)
                                     .withIndexConfig(config),
                             tokenHolders);
                 }

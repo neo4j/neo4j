@@ -92,7 +92,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${nodeKey.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params)
+          .convert(cypherVersion, options, params, Some(ctx.getConfig))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -118,7 +118,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${relKey.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params)
+          .convert(cypherVersion, options, params, Some(ctx.getConfig))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -144,7 +144,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${nodePropUnique.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params)
+          .convert(cypherVersion, options, params, Some(ctx.getConfig))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -170,7 +170,7 @@ object ConstraintCommandPlanner {
       val constraintName = getName(name, params)
       val (maybeIndexProvider, notifications) =
         IndexBackedConstraintsOptionsConverter(s"${relPropUnique.description} constraint", indexContext(ctx))
-          .convert(cypherVersion, options, params)
+          .convert(cypherVersion, options, params, Some(ctx.getConfig))
           .toOptionNotification
       val indexProvider = maybeIndexProvider.flatMap(_.provider)
       val propertyKeys = props.map(p => p.propertyKey.name)
@@ -313,16 +313,16 @@ object ConstraintCommandPlanner {
       val conversionResult = assertion match {
         case nodeKey: NodeKey =>
           IndexBackedConstraintsOptionsConverter(s"${nodeKey.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, Some(ctx.getConfig))
         case relKey: RelationshipKey =>
           IndexBackedConstraintsOptionsConverter(s"${relKey.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, Some(ctx.getConfig))
         case nodePropUnique: NodePropertyUniqueness =>
           IndexBackedConstraintsOptionsConverter(s"${nodePropUnique.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, Some(ctx.getConfig))
         case relPropUnique: RelationshipPropertyUniqueness =>
           IndexBackedConstraintsOptionsConverter(s"${relPropUnique.description} constraint", indexContext(ctx))
-            .convert(cypherVersion, options, params)
+            .convert(cypherVersion, options, params, Some(ctx.getConfig))
         case NodePropertyExistence =>
           PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", indexContext(ctx))
             .convert(cypherVersion, options, params)

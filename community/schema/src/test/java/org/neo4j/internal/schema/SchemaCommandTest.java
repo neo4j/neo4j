@@ -392,7 +392,14 @@ class SchemaCommandTest {
         String property = random.among(PROPERTIES);
         IndexConfig config = random.among(VECTOR_CONFIGS);
 
-        assertThat(new NodeVector(name, List.of(label), property, List.of(), IF_NOT_EXISTS, config)
+        assertThat(new NodeVector(
+                                name,
+                                List.of(label),
+                                property,
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                IF_NOT_EXISTS,
+                                config)
                         .toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -414,7 +421,14 @@ class SchemaCommandTest {
         String property = random.among(PROPERTIES);
         IndexConfig config = random.among(VECTOR_CONFIGS);
 
-        assertThat(new RelationshipVector(name, List.of(type), property, List.of(), IF_NOT_EXISTS, config)
+        assertThat(new RelationshipVector(
+                                name,
+                                List.of(type),
+                                property,
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                IF_NOT_EXISTS,
+                                config)
                         .toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -437,7 +451,14 @@ class SchemaCommandTest {
         final var additionalProperties = listFrom(PROPERTIES, random.nextInt(1, 3));
         final var config = random.among(VECTOR_CONFIGS);
 
-        assertThat(new NodeVector(name, labels, vectorProperty, additionalProperties, IF_NOT_EXISTS, config)
+        assertThat(new NodeVector(
+                                name,
+                                labels,
+                                vectorProperty,
+                                additionalProperties,
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                IF_NOT_EXISTS,
+                                config)
                         .toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -462,7 +483,14 @@ class SchemaCommandTest {
         final var additionalProperties = listFrom(PROPERTIES, random.nextInt(1, 3));
         final var config = random.among(VECTOR_CONFIGS);
 
-        assertThat(new RelationshipVector(name, types, vectorProperty, additionalProperties, IF_NOT_EXISTS, config)
+        assertThat(new RelationshipVector(
+                                name,
+                                types,
+                                vectorProperty,
+                                additionalProperties,
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                IF_NOT_EXISTS,
+                                config)
                         .toPrototype(tokenHolders))
                 .satisfies(p -> {
                     assertIndexName(p.getName(), name);
@@ -783,6 +811,7 @@ class SchemaCommandTest {
                         List.of(track(LABELS, labels, random)),
                         track(PROPERTIES, properties, random),
                         List.of(),
+                        DEFAULT_VECTOR_DESCRIPTOR,
                         IF_NOT_EXISTS,
                         random.among(VECTOR_CONFIGS)),
                 new RelationshipVector(
@@ -790,6 +819,7 @@ class SchemaCommandTest {
                         List.of(track(TYPES, relationships, random)),
                         track(PROPERTIES, properties, random),
                         List.of(),
+                        DEFAULT_VECTOR_DESCRIPTOR,
                         IF_NOT_EXISTS,
                         random.among(VECTOR_CONFIGS)));
         List<ConstraintCommand.Create> constraints = List.of(

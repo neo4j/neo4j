@@ -37,7 +37,8 @@ case class CreateLookupIndexOptionsConverter(context: IndexProviderContext)
     config: Option[Config],
     cypherVersion: CypherVersion
   ): OptionsConverterResult[CreateIndexProviderOnlyOptions] = {
-    val (indexProvider, _, notifications) = getOptionsParts(options, schemaType, IndexType.LOOKUP, cypherVersion)
+    val (indexProvider, _, notifications) =
+      getOptionsParts(options, schemaType, IndexType.LOOKUP, cypherVersion, getAlwaysUseLatestIndexProvider(config))
     ParsedWithNotifications(CreateIndexProviderOnlyOptions(indexProvider), notifications)
   }
 

@@ -36,7 +36,8 @@ abstract class CreateRangeOptionsConverter(schemaType: String)
     config: Option[Config],
     cypherVersion: CypherVersion
   ): OptionsConverterResult[CreateIndexProviderOnlyOptions] = {
-    val (indexProvider, _, notifications) = getOptionsParts(options, schemaType, IndexType.RANGE, cypherVersion)
+    val (indexProvider, _, notifications) =
+      getOptionsParts(options, schemaType, IndexType.RANGE, cypherVersion, getAlwaysUseLatestIndexProvider(config))
     ParsedWithNotifications(CreateIndexProviderOnlyOptions(indexProvider), notifications)
   }
 

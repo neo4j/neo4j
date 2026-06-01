@@ -19,8 +19,10 @@
  */
 package org.neo4j.importer;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.internal.schema.AllIndexProviderDescriptors.DEFAULT_VECTOR_DESCRIPTOR;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -64,8 +66,6 @@ import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.internal.schema.constraints.VectorType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -73,30 +73,21 @@ import org.neo4j.values.storable.Values;
 
 @TestDirectoryExtension
 public abstract class SchemaCommandReaderTest {
+    protected static final Config CONFIG = Config.defaults();
+
     private static final String INVALID_OPTION_CYPHER_5 =
             "Invalid option provided, valid options are `indexProvider` and `indexConfig`";
-    private static final IndexConfig VECTOR_CONFIG_V1 =
-            IndexConfig.with(Map.of("vector.similarity_function", Values.stringValue("COSINE")));
-    private static final IndexConfig VECTOR_DIMENSIONS_V1 =
-            VECTOR_CONFIG_V1.withIfAbsent("vector.dimensions", Values.intValue(1536));
-    private static final IndexConfig VECTOR_CONFIG_V2 = IndexConfig.with(Map.of(
-            "vector.hnsw.ef_construction",
-            Values.intValue(100),
-            "vector.hnsw.m",
-            Values.intValue(16),
-            "vector.quantization.enabled",
-            Values.booleanValue(true),
-            "vector.similarity_function",
-            Values.stringValue("COSINE")));
-    private static final IndexConfig VECTOR_DIMENSIONS_V2 =
-            VECTOR_CONFIG_V2.withIfAbsent("vector.dimensions", Values.intValue(1536));
+    private static final IndexConfig VECTOR_CONFIG = IndexConfig.with(Map.ofEntries(
+            entry("vector.similarity_function", Values.stringValue("COSINE")),
+            entry("vector.quantization.enabled", Values.booleanValue(true)),
+            entry("vector.hnsw.m", Values.intValue(16)),
+            entry("vector.hnsw.ef_construction", Values.intValue(100))));
+    private static final IndexConfig VECTOR_CONFIG_WITH_DIMENSIONS =
+            VECTOR_CONFIG.withIfAbsent("vector.dimensions", Values.intValue(1536));
     private static final IndexConfig POINT_CONFIG =
             IndexConfig.with(Map.of("spatial.cartesian.min", Values.doubleArray(new double[] {0.0, 0.0})));
     private static final IndexConfig FULLTEXT_CONFIG =
             IndexConfig.with(Map.of("fulltext.eventually_consistent", Values.booleanValue(true)));
-
-    public static final VectorIndexVersion VECTOR_INDEX_VERSION =
-            VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(Config.defaults()));
 
     @Inject
     private FileSystemAbstraction fs;
@@ -112,7 +103,7 @@ public abstract class SchemaCommandReaderTest {
 
     @Test
     void requiresValidCypherPath() throws IOException {
-        final var changeReader = createReader(ReaderConfig.forTesting(false, false, VECTOR_INDEX_VERSION));
+        final var changeReader = createReader(ReaderConfig.forTesting(false, false, CONFIG));
         assertThatThrownBy(() -> changeReader.parse((Path) null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("The path to the Cypher schema commands must exist");
@@ -128,12 +119,12 @@ public abstract class SchemaCommandReaderTest {
                 .hasMessageContaining("Unexpected end of input");
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource
     void createsCorrectChanges(String cypherText, List<SchemaCommand> expectedChanges) throws IOException {
         // Might need to be enabled when the next experimental version appear:
         // config.set(GraphDatabaseInternalSettings.enable_experimental_cypher_versions, true);
-        final var reader = createReader(ReaderConfig.forTesting(true, true, VECTOR_INDEX_VERSION));
+        final var reader = createReader(ReaderConfig.forTesting(true, true, CONFIG));
         assertThat(reader.parse(createCypher(cypherText))).containsExactlyElementsOf(expectedChanges);
     }
 
@@ -143,7 +134,7 @@ public abstract class SchemaCommandReaderTest {
         final var cypher = createCypher(cypherText);
         // Might need to be enabled when the next experimental version appear:
         // config.set(GraphDatabaseInternalSettings.enable_experimental_cypher_versions, true);
-        final var reader = createReader(ReaderConfig.forTesting(true, true, VECTOR_INDEX_VERSION));
+        final var reader = createReader(ReaderConfig.forTesting(true, true, CONFIG));
         assertThatThrownBy(() -> reader.parse(cypher)).hasMessageContainingAll(errors);
     }
 
@@ -163,7 +154,7 @@ public abstract class SchemaCommandReaderTest {
                    FOR (n:LabelName2)
                    ON (n2.propertyName);
                 """);
-        final var reader = createReader(ReaderConfig.forTesting(true, true, VECTOR_INDEX_VERSION));
+        final var reader = createReader(ReaderConfig.forTesting(true, true, CONFIG));
         assertThatThrownBy(() -> reader.parse(cypher))
                 .hasMessageContainingAll(
                         "Unable to parse the Cypher in import change commands.",
@@ -177,7 +168,7 @@ public abstract class SchemaCommandReaderTest {
     @MethodSource
     void disallowDropIfConfigDenies(String cypherText) throws IOException {
         final var cypher = createCypher(cypherText);
-        final var reader = createReader(ReaderConfig.forTesting(true, false, VECTOR_INDEX_VERSION));
+        final var reader = createReader(ReaderConfig.forTesting(true, false, CONFIG));
         assertThatThrownBy(() -> reader.parse(cypher))
                 .hasMessageContainingAll("Dropping indexes or constraints is not currently supported");
     }
@@ -186,7 +177,7 @@ public abstract class SchemaCommandReaderTest {
     @MethodSource
     void disallowEnterpriseFeaturesIfConfigDenies(String cypherText) throws IOException {
         final var cypher = createCypher(cypherText);
-        final var reader = createReader(ReaderConfig.forTesting(false, true, VECTOR_INDEX_VERSION));
+        final var reader = createReader(ReaderConfig.forTesting(false, true, CONFIG));
         assertThatThrownBy(() -> reader.parse(cypher))
                 .hasMessageContainingAll("Enterprise features are not currently supported");
     }
@@ -754,7 +745,14 @@ public abstract class SchemaCommandReaderTest {
                     FOR (n:LabelName)
                     ON (n.propertyName)
                     """,
-                        new NodeVector(null, List.of("LabelName"), "propertyName", List.of(), false, VECTOR_CONFIG_V2)),
+                        new NodeVector(
+                                null,
+                                List.of("LabelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                false,
+                                VECTOR_CONFIG)),
                 arguments(
                         """
                     CREATE VECTOR INDEX testing
@@ -763,7 +761,13 @@ public abstract class SchemaCommandReaderTest {
                     OPTIONS {}
                     """,
                         new NodeVector(
-                                "testing", List.of("LabelName"), "propertyName", List.of(), false, VECTOR_CONFIG_V2)),
+                                "testing",
+                                List.of("LabelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                false,
+                                VECTOR_CONFIG)),
                 arguments(
                         """
                     CREATE VECTOR INDEX testing
@@ -780,8 +784,9 @@ public abstract class SchemaCommandReaderTest {
                                 List.of("LabelName"),
                                 "propertyName",
                                 List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
                                 false,
-                                VECTOR_DIMENSIONS_V2)),
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 arguments(
                         """
                     CREATE VECTOR INDEX testing IF NOT EXISTS
@@ -798,8 +803,9 @@ public abstract class SchemaCommandReaderTest {
                                 List.of("LabelName"),
                                 "propertyName",
                                 List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
                                 true,
-                                VECTOR_DIMENSIONS_V2)),
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 arguments(
                         """
                     CYPHER 5 CREATE VECTOR INDEX testing
@@ -818,8 +824,9 @@ public abstract class SchemaCommandReaderTest {
                                 List.of("LabelName"),
                                 "propertyName",
                                 List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR, // ignores legacy provider, uses latest
                                 false,
-                                VECTOR_DIMENSIONS_V1)),
+                                VECTOR_CONFIG_WITH_DIMENSIONS)), // and the config parsed as if latest
                 arguments(
                         """
                     CYPHER 25 CREATE VECTOR INDEX testing
@@ -837,8 +844,9 @@ public abstract class SchemaCommandReaderTest {
                                 List.of("LabelName"),
                                 "propertyName",
                                 List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
                                 false,
-                                VECTOR_DIMENSIONS_V2)),
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 // REL VECTOR INDEX
                 arguments(
                         """
@@ -848,7 +856,13 @@ public abstract class SchemaCommandReaderTest {
                     OPTIONS {}
                     """,
                         new RelationshipVector(
-                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_CONFIG_V2)),
+                                "testing",
+                                List.of("RelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                false,
+                                VECTOR_CONFIG)),
                 arguments(
                         """
                     CREATE VECTOR INDEX
@@ -861,7 +875,13 @@ public abstract class SchemaCommandReaderTest {
                     }
                     """,
                         new RelationshipVector(
-                                null, List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
+                                null,
+                                List.of("RelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                false,
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 arguments(
                         """
                     CREATE VECTOR INDEX testing
@@ -874,7 +894,13 @@ public abstract class SchemaCommandReaderTest {
                     }
                     """,
                         new RelationshipVector(
-                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
+                                "testing",
+                                List.of("RelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                false,
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 arguments(
                         """
                     CREATE VECTOR INDEX testing IF NOT EXISTS
@@ -887,7 +913,13 @@ public abstract class SchemaCommandReaderTest {
                     }
                     """,
                         new RelationshipVector(
-                                "testing", List.of("RelName"), "propertyName", List.of(), true, VECTOR_DIMENSIONS_V2)),
+                                "testing",
+                                List.of("RelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                true,
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 arguments(
                         """
                     CYPHER 5 CREATE VECTOR INDEX testing
@@ -901,7 +933,13 @@ public abstract class SchemaCommandReaderTest {
                     }
                     """,
                         new RelationshipVector(
-                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
+                                "testing",
+                                List.of("RelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                false,
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 arguments(
                         """
                     CYPHER 25 CREATE VECTOR INDEX testing
@@ -914,7 +952,13 @@ public abstract class SchemaCommandReaderTest {
                     }
                     """,
                         new RelationshipVector(
-                                "testing", List.of("RelName"), "propertyName", List.of(), false, VECTOR_DIMENSIONS_V2)),
+                                "testing",
+                                List.of("RelName"),
+                                "propertyName",
+                                List.of(),
+                                DEFAULT_VECTOR_DESCRIPTOR,
+                                false,
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 // VECTOR INDEX with multiple labels and additional filter properties
                 arguments(
                         """
@@ -933,8 +977,9 @@ public abstract class SchemaCommandReaderTest {
                                 List.of("LabelOne", "LabelTwo"),
                                 "embedding",
                                 List.of("filterOne", "filterTwo"),
+                                DEFAULT_VECTOR_DESCRIPTOR,
                                 false,
-                                VECTOR_DIMENSIONS_V2)),
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 arguments(
                         """
                     CYPHER 25 CREATE VECTOR INDEX testing
@@ -952,8 +997,9 @@ public abstract class SchemaCommandReaderTest {
                                 List.of("RelOne", "RelTwo"),
                                 "embedding",
                                 List.of("filterOne"),
+                                DEFAULT_VECTOR_DESCRIPTOR,
                                 false,
-                                VECTOR_DIMENSIONS_V2)),
+                                VECTOR_CONFIG_WITH_DIMENSIONS)),
                 // constraints
                 arguments("""
                     CREATE CONSTRAINT

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.schema
 
 import org.eclipse.collections.api.factory.Lists
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast
@@ -48,6 +49,9 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.schema.ConstraintType
+import org.neo4j.internal.schema.AllIndexProviderDescriptors.DEFAULT_VECTOR_DESCRIPTOR
+import org.neo4j.internal.schema.AllIndexProviderDescriptors.VECTOR_V1_DESCRIPTOR
+import org.neo4j.internal.schema.AllIndexProviderDescriptors.VECTOR_V3_DESCRIPTOR
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.SchemaCommand.ConstraintCommand.Create.NodeExistence
 import org.neo4j.internal.schema.SchemaCommand.ConstraintCommand.Create.NodeKey
@@ -74,7 +78,9 @@ import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
+import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException
+import org.neo4j.test.LatestVersions
 import org.neo4j.values.storable.Values
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -84,78 +90,54 @@ import java.util
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
 class SchemaCommandConverterTest extends CommunityCypherTestSuite {
+  private val config = Config.defaults
 
   private val cypher5InvalidOptionMessage =
     "Invalid option provided, valid options are `indexProvider` and `indexConfig`"
   private val cypher25InvalidOptionMessage = "22N04: Invalid input 'duff' for 'OPTIONS'. Expected 'indexConfig'"
 
   class WrappedSchemaCommandConverter(cypherVersion: CypherVersion, latestVectorIndexVersion: VectorIndexVersion) {
-    private val converter = new SchemaCommandConverter
+    private val converter = new SchemaCommandConverter(config)
     def apply(command: ast.SchemaCommand) = converter.apply(command, cypherVersion, latestVectorIndexVersion)
   }
 
-  private val v1VectorConverterForDefaultCypherVersion =
+  private val vectorV1ConverterForDefaultCypherVersion =
     new WrappedSchemaCommandConverter(CypherVersion.Legacy.legacyVersion(), VectorIndexVersion.V1_0)
 
-  private val v1VectorConverterForCypher5 =
+  private val vectorV1ConverterForCypher5 =
     new WrappedSchemaCommandConverter(CypherVersion.Cypher5, VectorIndexVersion.V1_0)
 
-  private val v1VectorConverterForCypher25 =
+  private val vectorV1ConverterForCypher25 =
     new WrappedSchemaCommandConverter(CypherVersion.Cypher25, VectorIndexVersion.V1_0)
 
-  private val converterForDefaultCypherVersion =
-    new WrappedSchemaCommandConverter(CypherVersion.Legacy.legacyVersion(), VectorIndexVersion.V2_0)
-  private val converterForCypher5 = new WrappedSchemaCommandConverter(CypherVersion.Cypher5, VectorIndexVersion.V2_0)
-  private val converterForCypher25 = new WrappedSchemaCommandConverter(CypherVersion.Cypher25, VectorIndexVersion.V2_0)
-
-  private val converterForDefaultCypherVersionV3 =
+  private val vectorV3ConverterForDefaultCypherVersion =
     new WrappedSchemaCommandConverter(CypherVersion.Legacy.legacyVersion(), VectorIndexVersion.V3_0)
-  private val converterForCypher5V3 = new WrappedSchemaCommandConverter(CypherVersion.Cypher5, VectorIndexVersion.V3_0)
 
-  private val converterForCypher25V3 =
+  private val vectorV3ConverterForCypher5 =
+    new WrappedSchemaCommandConverter(CypherVersion.Cypher5, VectorIndexVersion.V3_0)
+
+  private val vectorV3ConverterForCypher25 =
     new WrappedSchemaCommandConverter(CypherVersion.Cypher25, VectorIndexVersion.V3_0)
 
-  private val VECTOR_CONFIG_V1 = IndexConfig.`with`(util.Map.of(
-    "vector.dimensions",
-    Values.intValue(768),
-    "vector.similarity_function",
-    Values.stringValue("COSINE")
-  ))
+  private val converterForDefaultCypherVersion =
+    new WrappedSchemaCommandConverter(CypherVersion.Legacy.legacyVersion(), LatestVersions.LATEST_VECTOR_INDEX_VERSION)
 
-  private val VECTOR_CONFIG_V2 = IndexConfig.`with`(util.Map.of(
-    "vector.hnsw.ef_construction",
-    Values.intValue(100),
-    "vector.hnsw.m",
-    Values.intValue(16),
-    "vector.quantization.enabled",
-    Values.booleanValue(true),
-    "vector.similarity_function",
-    Values.stringValue("COSINE")
-  ))
+  private val converterForCypher5 =
+    new WrappedSchemaCommandConverter(CypherVersion.Cypher5, LatestVersions.LATEST_VECTOR_INDEX_VERSION)
 
-  private val VECTOR_CONFIG_V2_ALT = IndexConfig.`with`(util.Map.of(
-    "vector.dimensions",
-    Values.intValue(768),
-    "vector.hnsw.ef_construction",
-    Values.intValue(100),
-    "vector.hnsw.m",
-    Values.intValue(8),
-    "vector.quantization.enabled",
-    Values.booleanValue(true),
-    "vector.similarity_function",
-    Values.stringValue("COSINE")
-  ))
+  private val converterForCypher25 =
+    new WrappedSchemaCommandConverter(CypherVersion.Cypher25, LatestVersions.LATEST_VECTOR_INDEX_VERSION)
 
-  private val VECTOR_CONFIG_V3 = IndexConfig.`with`(util.Map.of(
-    "vector.hnsw.ef_construction",
-    Values.intValue(100),
-    "vector.hnsw.m",
-    Values.intValue(16),
-    "vector.quantization.enabled",
-    Values.booleanValue(true),
-    "vector.similarity_function",
-    Values.stringValue("COSINE")
-  ))
+  private val VECTOR_V1_CONFIG = VectorIndexSettings.create
+    .withDimensions(768)
+    .withSimilarityFunction("COSINE")
+    .toIndexConfigWith(VectorIndexVersion.V1_0)
+
+  private val VECTOR_V3_CONFIG = VectorIndexSettings.create
+    .toIndexConfigWith(VectorIndexVersion.V3_0)
+
+  private val VECTOR_LATEST_CONFIG = VectorIndexSettings.create
+    .toIndexConfigWith(LatestVersions.LATEST_VECTOR_INDEX_VERSION)
 
   private val v = Variable("v")(InputPosition.NONE, Variable.isIsolatedDefault)
 
@@ -428,7 +410,15 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           indexName(ixName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), false, VECTOR_CONFIG_V2))
+        )) == new NodeVector(
+          commandName(ixName),
+          asList(label.name),
+          "name",
+          asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
+          false,
+          VECTOR_LATEST_CONFIG
+        ))
       }
 
       test(s"CREATE VECTOR INDEX $ixName IF NOT EXISTS FOR (v:L) ON (v.name)") {
@@ -437,25 +427,49 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           indexName(ixName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), true, VECTOR_CONFIG_V2))
+        )) == new NodeVector(
+          commandName(ixName),
+          asList(label.name),
+          "name",
+          asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
+          true,
+          VECTOR_LATEST_CONFIG
+        ))
       }
 
       test(s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) V3") {
-        assert(converterForDefaultCypherVersionV3.apply(vectorNodeIndex(
+        assert(vectorV3ConverterForDefaultCypherVersion.apply(vectorNodeIndex(
           List(prop("name")),
           indexName(ixName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), false, VECTOR_CONFIG_V3))
+        )) == new NodeVector(
+          commandName(ixName),
+          asList(label.name),
+          "name",
+          asList(),
+          VECTOR_V3_DESCRIPTOR,
+          false,
+          VECTOR_V3_CONFIG
+        ))
       }
 
       test(s"CREATE VECTOR INDEX $ixName IF NOT EXISTS FOR (v:L) ON (v.name) V3") {
-        assert(converterForDefaultCypherVersionV3.apply(vectorNodeIndex(
+        assert(vectorV3ConverterForDefaultCypherVersion.apply(vectorNodeIndex(
           List(prop("name")),
           indexName(ixName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), true, VECTOR_CONFIG_V3))
+        )) == new NodeVector(
+          commandName(ixName),
+          asList(label.name),
+          "name",
+          asList(),
+          VECTOR_V3_DESCRIPTOR,
+          true,
+          VECTOR_V3_CONFIG
+        ))
       }
 
       test(s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) OPTIONS {}") {
@@ -464,7 +478,15 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           indexName(ixName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)(InputPosition.NONE)
-        )) == new NodeVector(commandName(ixName), asList(label.name), "name", asList(), false, VECTOR_CONFIG_V2))
+        )) == new NodeVector(
+          commandName(ixName),
+          asList(label.name),
+          "name",
+          asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
+          false,
+          VECTOR_LATEST_CONFIG
+        ))
       }
 
       test(s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) OPTIONS {indexConfig : {`vector.dimensions`: 1536}}") {
@@ -480,15 +502,18 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(label.name),
           "name",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2.withIfAbsent("vector.dimensions", Values.intValue(1536))
+          VectorIndexSettings.create
+            .withDimensions(1536)
+            .toIndexConfigWith(LatestVersions.LATEST_VECTOR_INDEX_VERSION)
         ))
       }
 
       test(
         s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) OPTIONS {indexConfig : {`vector.dimensions`: 1536}} V3"
       ) {
-        assert(converterForDefaultCypherVersionV3.apply(vectorNodeIndex(
+        assert(vectorV3ConverterForDefaultCypherVersion.apply(vectorNodeIndex(
           List(prop("name")),
           indexName(ixName),
           ast.IfExistsThrowError,
@@ -500,13 +525,16 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(label.name),
           "name",
           asList(),
+          VECTOR_V3_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V3.withIfAbsent("vector.dimensions", Values.intValue(1536))
+          VectorIndexSettings.create
+            .withDimensions(1536)
+            .toIndexConfigWith(VectorIndexVersion.V3_0)
         ))
       }
 
       test(
-        s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.hnsw.m`:8}}"
+        s"CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.hnsw.m`: 8}}"
       ) {
         assert(converterForDefaultCypherVersion.apply(vectorNodeIndex(
           List(prop("name")),
@@ -521,20 +549,24 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(label.name),
           "name",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2_ALT
+          VectorIndexSettings.create
+            .withDimensions(768)
+            .withHnswM(8)
+            .toIndexConfigWith(LatestVersions.LATEST_VECTOR_INDEX_VERSION)
         ))
       }
 
       Seq(
         (
-          v1VectorConverterForCypher5,
-          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v1name) OPTIONS {indexProvider : 'vector-1.0',indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher5,
+          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v1name) OPTIONS {indexProvider : 'vector-1.0', indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           Some("vector-1.0")
         ),
         (
-          v1VectorConverterForCypher25,
-          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v1name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher25,
+          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v1name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           None
         )
       ).foreach { case (conv, query, ixProvider) =>
@@ -554,21 +586,22 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
             asList(label.name),
             "v1name",
             asList(),
+            VECTOR_V1_DESCRIPTOR,
             false,
-            VECTOR_CONFIG_V1
+            VECTOR_V1_CONFIG
           ))
         }
       }
 
       Seq(
         (
-          v1VectorConverterForCypher5,
-          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v2name) OPTIONS {indexProvider : 'vector-1.0',indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher5,
+          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v2name) OPTIONS {indexProvider : 'vector-1.0', indexConfig: {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           Some("vector-1.0")
         ),
         (
-          v1VectorConverterForCypher25,
-          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v2name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher25,
+          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR (v:L) ON (v.v2name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           None
         )
       ).foreach { case (conv, query, ixProvider) =>
@@ -588,8 +621,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
             asList(label.name),
             "v2name",
             asList(),
+            VECTOR_V1_DESCRIPTOR,
             false,
-            VECTOR_CONFIG_V1
+            VECTOR_V1_CONFIG
           ))
         }
       }
@@ -606,8 +640,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(label.name),
           "name",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR, // ignores legacy provider, uses latest
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG // and the config parsed as if latest
         ))
       }
 
@@ -624,8 +659,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList("L1", "L2"),
           "embedding",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -642,8 +678,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(label.name),
           "embedding",
           asList("f1", "f2"),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -660,8 +697,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList("L1", "L2"),
           "embedding",
           asList("f1", "f2"),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -678,8 +716,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList("L1", "L2"),
           "embedding",
           asList("f1"),
+          DEFAULT_VECTOR_DESCRIPTOR,
           true,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -811,12 +850,12 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           None
         ),
         (
-          converterForCypher5V3,
+          vectorV3ConverterForCypher5,
           s"CYPHER 5 CREATE FULLTEXT INDEX $ixName FOR (v:L) ON EACH [v.name] OPTIONS {indexProvider : 'fulltext-2.0', indexConfig : {`fulltext.eventually_consistent`: true}}",
           Some("fulltext-2.0")
         ),
         (
-          converterForCypher25V3,
+          vectorV3ConverterForCypher25,
           s"CYPHER 25 CREATE FULLTEXT INDEX $ixName FOR (v:L) ON EACH [v.name] OPTIONS {indexConfig : {`fulltext.eventually_consistent`: false}}",
           None
         )
@@ -1110,8 +1149,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(relType.name),
           "name",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -1126,8 +1166,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(relType.name),
           "name",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           true,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -1142,8 +1183,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(relType.name),
           "name",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -1162,20 +1204,23 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(relType.name),
           "name",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2.withIfAbsent("vector.dimensions", Values.intValue(1536))
+          VectorIndexSettings.create
+            .withDimensions(1536)
+            .toIndexConfigWith(LatestVersions.LATEST_VECTOR_INDEX_VERSION)
         ))
       }
 
       Seq(
         (
-          v1VectorConverterForCypher5,
-          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v1name) OPTIONS {indexProvider : 'vector-1.0',indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher5,
+          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v1name) OPTIONS {indexProvider : 'vector-1.0',indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           Some("vector-1.0")
         ),
         (
-          v1VectorConverterForCypher25,
-          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v1name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher25,
+          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v1name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           None
         )
       ).foreach { case (conv, query, ixProvider) =>
@@ -1195,21 +1240,22 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
             asList(relType.name),
             "v1name",
             asList(),
+            VECTOR_V1_DESCRIPTOR,
             false,
-            VECTOR_CONFIG_V1
+            VECTOR_V1_CONFIG
           ))
         }
       }
 
       Seq(
         (
-          v1VectorConverterForCypher5,
-          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v2name) OPTIONS {indexProvider : 'vector-1.0',indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher5,
+          s"CYPHER 5 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v2name) OPTIONS {indexProvider : 'vector-1.0',indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           Some("vector-1.0")
         ),
         (
-          v1VectorConverterForCypher25,
-          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v2name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`:'COSINE'}}",
+          vectorV1ConverterForCypher25,
+          s"CYPHER 25 CREATE VECTOR INDEX $ixName FOR ()-[v:R]-() ON (v.v2name) OPTIONS {indexConfig : {`vector.dimensions`: 768, `vector.similarity_function`: 'COSINE'}}",
           None
         )
       ).foreach { case (conv, query, ixProvider) =>
@@ -1229,8 +1275,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
             asList(relType.name),
             "v2name",
             asList(),
+            VECTOR_V1_DESCRIPTOR,
             false,
-            VECTOR_CONFIG_V1
+            VECTOR_V1_CONFIG
           ))
         }
       }
@@ -1248,8 +1295,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList("R1", "R2"),
           "embedding",
           asList(),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -1266,8 +1314,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList(relType.name),
           "embedding",
           asList("f1", "f2"),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -1284,8 +1333,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList("R1", "R2"),
           "embedding",
           asList("f1", "f2"),
+          DEFAULT_VECTOR_DESCRIPTOR,
           false,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -1302,8 +1352,9 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
           asList("R1", "R2"),
           "embedding",
           asList("f1"),
+          DEFAULT_VECTOR_DESCRIPTOR,
           true,
-          VECTOR_CONFIG_V2
+          VECTOR_LATEST_CONFIG
         ))
       }
 
@@ -1393,12 +1444,12 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
 
       Seq(
         (
-          v1VectorConverterForCypher5,
+          vectorV1ConverterForCypher5,
           s"CYPHER 5 CREATE FULLTEXT INDEX $ixName FOR ()-[v:R]-() ON EACH [v.name] OPTIONS {indexProvider : 'fulltext-1.0', indexConfig : {`fulltext.eventually_consistent`: true}}",
           Some("fulltext-1.0")
         ),
         (
-          v1VectorConverterForCypher25,
+          vectorV1ConverterForCypher25,
           s"CYPHER 25 CREATE FULLTEXT INDEX $ixName FOR ()-[v:R]-() ON EACH [v.name] OPTIONS {indexConfig : {`fulltext.eventually_consistent`: true}}",
           None
         )
@@ -2174,10 +2225,10 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
       }
 
       test(
-        s"CREATE VECTOR INDEX FOR $pattern ON (v.name) OPTIONS { indexConfig : {`vector.dimensions`: 50, `vector.quantization.enabled`: true }"
+        s"CREATE VECTOR INDEX FOR $pattern ON (v.name) OPTIONS { indexConfig : {`vector.dimensions`: 1536, `vector.quantization.enabled`: true }"
       ) {
         val error = intercept[InvalidArgumentsException] {
-          v1VectorConverterForDefaultCypherVersion.apply(createIndex(
+          vectorV1ConverterForDefaultCypherVersion.apply(createIndex(
             List(prop("name")),
             None,
             ast.IfExistsThrowError,

@@ -88,7 +88,7 @@ abstract class ExecutionEngineWithoutRestartFunSuite
    * Restarts the database with `config`.
    * After `runTest` is finished, restarts the database for the next test using the default config.
    */
-  protected def restartWithConfigScoped(config: Map[Setting[?], Object])(runTest: => Unit): Unit = {
+  override protected def restartWithConfigScoped(config: Map[Setting[?], Object])(runTest: => Unit): Unit = {
     try {
       super.restartWithConfig(config)
       runTest
