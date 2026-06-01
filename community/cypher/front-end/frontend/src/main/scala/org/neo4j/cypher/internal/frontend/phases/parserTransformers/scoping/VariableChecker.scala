@@ -286,9 +286,10 @@ case class VariableChecker(
         x.name == path.name && x.position != path.position
       ))
         .map(_ => SemanticError.variableAlreadyDeclared(path.name, path.position)).toSeq)
-    case (acc, Scope.Pattern.Quantified(topo, declared))
-      if declared.intersect(topo).nonEmpty =>
-      acc(declared.intersect(topo).map(v =>
+    case (acc, Scope.Pattern.Quantified(topo, declared, pathVars)) =>
+      val pathNames = pathVars.map(_.name)
+      val conflicts = declared.intersect(topo).filterNot(v => pathNames(v.name))
+      acc(conflicts.map(v =>
         SemanticError.variableAlreadyDeclared(v.name, v.position)
       ).toSeq)
     case Scope.Pattern.VariableInUpdatingPatternAlreadyDeclared(acc, name, position) =>

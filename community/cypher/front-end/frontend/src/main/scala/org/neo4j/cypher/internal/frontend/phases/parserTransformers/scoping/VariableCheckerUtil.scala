@@ -348,10 +348,13 @@ trait VariableCheckerUtil {
 
       object Quantified {
 
-        def unapply(scope: WorkingScope): Option[(Set[LogicalVariable], Set[LogicalVariable])] =
+        def unapply(scope: WorkingScope): Option[(Set[LogicalVariable], Set[LogicalVariable], Set[LogicalVariable])] =
           scope match {
-            case PatternScope(QuantifiedPath(_, _, _, _), PatternScope.Topo(topo), _, declared, _, _) =>
-              Some((topo, declared.allSymbols.toSet))
+            case PatternScope(_: QuantifiedPath, PatternScope.Topo(topo), _, declared, _, children) =>
+              val pathVars = children.collectFirst {
+                case ps: PatternScope => ps.patternIncoming.pathConstants
+              }.getOrElse(Set.empty[LogicalVariable])
+              Some((topo, declared.allSymbols.toSet, pathVars))
             case _ => None
           }
 
