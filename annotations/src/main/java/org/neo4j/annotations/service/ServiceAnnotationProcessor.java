@@ -24,14 +24,14 @@ import static java.util.stream.Collectors.toSet;
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static javax.tools.Diagnostic.Kind.NOTE;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
-import static org.apache.commons.lang3.StringUtils.substringBefore;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,7 +52,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.FileObject;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Handles {@link Service} and {@link ServiceProvider} annotations. For each service type it collects associated service providers and creates
@@ -204,9 +203,9 @@ public class ServiceAnnotationProcessor extends AbstractProcessor {
                 }
             }
             lines.stream()
-                    .map(s -> substringBefore(s, "#"))
+                    .map(ServiceAnnotationProcessor::substringBeforeHash)
                     .map(String::trim)
-                    .filter(StringUtils::isNotEmpty)
+                    .filter(s -> !s.isEmpty())
                     .forEach(result::add);
             info("Loaded existing providers: " + result);
         } catch (IOException ignore) {
@@ -222,10 +221,23 @@ public class ServiceAnnotationProcessor extends AbstractProcessor {
     }
 
     private void error(String msg, Exception e) {
-        processingEnv.getMessager().printMessage(ERROR, msg + ": " + getStackTrace(e));
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw, true));
+        processingEnv.getMessager().printMessage(ERROR, msg + ": " + sw.toString());
     }
 
     private void error(String msg, Element element) {
         processingEnv.getMessager().printMessage(ERROR, msg, element);
+    }
+
+    private static String substringBeforeHash(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        final int pos = str.indexOf("#");
+        if (pos == -1) {
+            return str;
+        }
+        return str.substring(0, pos);
     }
 }

@@ -31,12 +31,13 @@ import static javax.tools.Diagnostic.Kind.ERROR;
 import static javax.tools.Diagnostic.Kind.NOTE;
 import static javax.tools.Diagnostic.Kind.WARNING;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
 import static org.neo4j.annotations.AnnotationConstants.WINDOWS_NEW_LINE;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -139,7 +140,9 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor {
                 process(roundEnv);
             }
         } catch (Exception e) {
-            error("Public API annotation processor failed: " + getStackTrace(e));
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw, true));
+            error("Public API annotation processor failed: " + sw.toString());
         }
         return false;
     }
