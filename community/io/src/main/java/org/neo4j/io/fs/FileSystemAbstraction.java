@@ -101,6 +101,13 @@ public interface FileSystemAbstraction extends Closeable {
     }
 
     /**
+     * @see #openAsOutputStream(Path, Set, int)
+     */
+    default OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options) throws IOException {
+        return openAsOutputStream(fileName, options, DEFAULT_OUTPUT_STREAM_BUFFER_SIZE);
+    }
+
+    /**
      * Opens a file denoted by the {@code fileName} and returns an {@link OutputStream} to write binary data to it.
      * The semantics of how this file is opened is the equivalence of:
      * <ul>
@@ -117,6 +124,27 @@ public interface FileSystemAbstraction extends Closeable {
      * @throws IOException on I/O error opening/creating the file.
      */
     OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize) throws IOException;
+
+    /**
+     * Opens a file denoted by the {@code fileName} and returns a {@link OutputStream} to write binary data to it.
+     * This call can alternatively even create the file if it doesn't already exist, depending on the provided {@code options}.
+     *
+     * @param fileName the path to the file to open.
+     * @param options a set of options to apply to this call. Common such options include:
+     * <ul>
+     *     <li>{@link StandardOpenOption#WRITE}: open the file for writing into it}</li>
+     *     <li>{@link StandardOpenOption#CREATE}: create the file before opening it, if it doesn't already exist</li>
+     *     <li>{@link StandardOpenOption#CREATE_NEW}: create the file and fail if it already exists</li>
+     *     <li>{@link StandardOpenOption#TRUNCATE_EXISTING}: truncate the file to 0 bytes if the file already existed</li>
+     *     <li>{@link StandardOpenOption#APPEND}: accompanied {@link StandardOpenOption#WRITE} this places the write position
+     *     at the end of the file, if it already contains data</li>
+     * </ul>
+     * @param bufferSize size of the buffer to use for this stream.
+     * @return the {@link StoreChannel} used to interact with the opened file.
+     * @throws IOException on I/O error opening/creating the file with the provided set of {@code options}, or if the provided options
+     * doesn't match the state of the file, e.g. if the options prohibits the file from existing, but it already exists.
+     */
+    OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException;
 
     /**
      * Opens a file denoted by the {@code fileName} and returns an {@link InputStream} to read from it.

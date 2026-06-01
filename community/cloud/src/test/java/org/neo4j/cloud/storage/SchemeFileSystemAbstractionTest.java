@@ -242,6 +242,19 @@ class SchemeFileSystemAbstractionTest {
     }
 
     @Test
+    void openAsOutputStreamWithOptions() throws IOException {
+        final var options = Set.<OpenOption>of(
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        when(fs.openAsOutputStream(eq(FS_PATH), eq(options), anyInt())).thenReturn(mock(OutputStream.class));
+        when(systemProvider.newOutputStream(eq(schemePath), eq(options.toArray(OpenOption[]::new))))
+                .thenReturn(mock(OutputStream.class));
+
+        assertThat(schemeFs.openAsOutputStream(FS_PATH, options)).isNotNull();
+        assertThat(schemeFs.openAsOutputStream(schemePath, options)).isNotNull();
+    }
+
+    @Test
     void openAsInputStream() throws IOException {
         when(fs.openAsInputStream(eq(FS_PATH))).thenReturn(mock(InputStream.class));
         when(systemProvider.newInputStream(eq(schemePath))).thenReturn(mock(InputStream.class));

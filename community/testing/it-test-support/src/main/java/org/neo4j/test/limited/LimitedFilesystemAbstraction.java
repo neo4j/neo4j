@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,7 +49,22 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
 
     @Override
     public OutputStream openAsOutputStream(Path fileName, boolean append, int bufferSize) throws IOException {
-        return new ChannelOutputStream(write(fileName), append, INSTANCE, bufferSize);
+        var channel = write(fileName);
+        if (!append) {
+            channel.truncate(0);
+        }
+        return new ChannelOutputStream(channel, append, INSTANCE, bufferSize);
+    }
+
+    @Override
+    public OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException {
+        var channel = open(fileName, options);
+        boolean truncate =
+                options.contains(StandardOpenOption.TRUNCATE_EXISTING) || !options.contains(StandardOpenOption.APPEND);
+        if (truncate) {
+            channel.truncate(0);
+        }
+        return new ChannelOutputStream(channel, !truncate, INSTANCE, bufferSize);
     }
 
     @Override

@@ -52,6 +52,7 @@ import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Dumper.DumpOutput;
 import org.neo4j.dbms.archive.Dumper.FileOutput;
 import org.neo4j.dbms.archive.Dumper.StdoutOutput;
+import org.neo4j.dbms.archive.Manifest;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -184,7 +185,7 @@ public class DumpCommand extends AbstractAdminCommand {
                     try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
                         checkDbState(fs, databaseLayout, config, memoryTracker, databaseName, log);
                         logFormatDeprecationWarning(log, databaseLayout, config, fs);
-                        dump(dumper, databaseLayout, databaseName, storagePath);
+                        dump(dumper, databaseLayout, databaseName, storagePath, fs);
                     } catch (FileLockException e) {
                         throw new CommandFailedException(
                                 "The database is in use. Stop database '" + databaseName + "' and try again.", e);
@@ -269,13 +270,13 @@ public class DumpCommand extends AbstractAdminCommand {
 
     record FailedDump(String dbName, Exception e) {}
 
-    private DumpOutput openDumpStream(Dumper dumper, String databaseName, Path storagePath) throws IOException {
+    private DumpOutput openDumpStream(FileSystemAbstraction fs, String databaseName, Path storagePath)
+            throws IOException {
         if (storagePath == null) {
             return new StdoutOutput(ctx);
         }
 
         final var archive = storagePath.resolve(databaseName + DUMP_EXTENSION).toAbsolutePath();
-        var fs = ctx.fs();
         // Allow "overwriting" of existing dumps.
         if (fs.fileExists(archive) && overwriteDestination) {
             fs.delete(archive);
@@ -283,7 +284,12 @@ public class DumpCommand extends AbstractAdminCommand {
         return FileOutput.of(fs, archive);
     }
 
-    private void dump(Dumper dumper, DatabaseLayout databaseLayout, String databaseName, Path storagePath) {
+    private void dump(
+            Dumper dumper,
+            DatabaseLayout databaseLayout,
+            String databaseName,
+            Path storagePath,
+            FileSystemAbstraction fs) {
         Path databasePath = databaseLayout.databaseDirectory();
         try {
             var format = DumpFormatSelector.selectWriteFormat(ctx.err());
@@ -291,13 +297,11 @@ public class DumpCommand extends AbstractAdminCommand {
             var quarantineMarkerFile =
                     databaseLayout.quarantineFile().getFileName().toString();
             // this is closed inside the dump call
-            var out = openDumpStream(dumper, databaseName, storagePath);
-            dumper.dump(
+            Manifest mf = Dumper.collectManifest(
                     databasePath,
                     databaseLayout.getTransactionLogsDirectory(),
-                    out,
-                    format,
                     path -> oneOf(path, lockFile, quarantineMarkerFile));
+            dumper.dump(openDumpStream(fs, databaseName, storagePath), format, mf);
         } catch (FileAlreadyExistsException e) {
             throw new CommandFailedException(format("Archive already exists: %s", e.getMessage()), e);
         } catch (NoSuchFileException e) {

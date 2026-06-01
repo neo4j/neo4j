@@ -83,6 +83,12 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException {
+        adversary.injectFailure(NoSuchFileException.class, SecurityException.class);
+        return new AdversarialOutputStream(delegate.openAsOutputStream(fileName, options, bufferSize), adversary);
+    }
+
+    @Override
     public StoreChannel write(Path fileName) throws IOException {
         adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
         return AdversarialFileChannel.wrap((StoreFileChannel) delegate.write(fileName), adversary);

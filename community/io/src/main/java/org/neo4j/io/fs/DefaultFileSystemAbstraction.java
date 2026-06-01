@@ -81,6 +81,11 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException {
+        return toBufferedStream(fileName, this::getStoreFileChannel, options, bufferSize);
+    }
+
+    @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
         return new BufferedInputStream(openFileInputStream(fileName), (int) kibiBytes(8));
     }
@@ -277,11 +282,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
             int length;
+            int left = len;
             for (int offset = off; offset < off + len; offset += length) {
                 if (!buffer.hasRemaining()) {
                     flushBuffer();
                 }
-                length = Math.min(len - offset, buffer.remaining());
+                length = Math.min(left, buffer.remaining());
+                left -= length;
                 buffer.put(b, offset, length);
             }
         }

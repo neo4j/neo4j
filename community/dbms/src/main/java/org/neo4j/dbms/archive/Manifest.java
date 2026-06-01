@@ -50,8 +50,12 @@ public final class Manifest {
             var key = record.target();
             var existing = content.putIfAbsent(key, record);
             if (existing != null) {
-                throw new IllegalArgumentException(
-                        "Duplicate target: %s in %s and %s".formatted(key, record, existing));
+                if (existing instanceof DirectoryRecord && record instanceof DirectoryRecord) {
+                    // Merge overlapping directories
+                } else {
+                    throw new IllegalArgumentException(
+                            "Duplicate target: %s in %s and %s".formatted(key, record, existing));
+                }
             }
         }
         Arrays.sort(records, Comparator.comparing(ManifestRecord::target));

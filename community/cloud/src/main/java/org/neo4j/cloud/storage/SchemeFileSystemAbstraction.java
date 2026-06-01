@@ -194,6 +194,16 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     }
 
     @Override
+    public OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException {
+        if (fileName instanceof StoragePath path) {
+            //noinspection resource
+            return provider(path).newOutputStream(fileName, options.toArray(OpenOption[]::new));
+        }
+
+        return fs.openAsOutputStream(fileName, options, bufferSize);
+    }
+
+    @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
         if (fileName instanceof StoragePath path) {
             //noinspection resource

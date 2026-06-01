@@ -54,20 +54,23 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.mockito.ArgumentCaptor;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.archive.Dumper;
+import org.neo4j.dbms.archive.Dumper.DumpOutput;
 import org.neo4j.dbms.archive.Dumper.FileOutput;
 import org.neo4j.dbms.archive.Dumper.StdoutOutput;
+import org.neo4j.dbms.archive.Manifest;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -136,14 +139,12 @@ class DumpCommandIT {
     @Test
     void shouldDumpTheDatabaseToTheArchive() throws Exception {
         execute("foo");
-        var output = FileOutput.of(fs, archive);
-        verify(dumper)
-                .dump(
-                        eq(homeDir.resolve("data/databases/foo")),
-                        eq(homeDir.resolve("data/transactions/foo")),
-                        eq(output),
-                        any(),
-                        any());
+        var outputCaptor = ArgumentCaptor.forClass(DumpOutput.class);
+        verify(dumper).dump(outputCaptor.capture(), any(), any());
+        assertThat(outputCaptor.getValue()).isInstanceOfSatisfying(FileOutput.class, output -> {
+            assertThat(output.path()).isEqualTo(archive);
+            assertThat(output.fs()).isInstanceOf(SchemeFileSystemAbstraction.class);
+        });
     }
 
     @Test
@@ -157,7 +158,8 @@ class DumpCommandIT {
         putStoreInDirectory(buildConfig(), databaseDir);
 
         execute("foo");
-        verify(dumper).dump(eq(databaseDir), eq(txLogsDir), any(), any(), any());
+        var mf = Dumper.collectManifest(databaseDir, txLogsDir, DumpCommandIT::excludeDatabaseLock);
+        verify(dumper).dump(any(), any(), eq(mf));
     }
 
     @Test
@@ -173,7 +175,8 @@ class DumpCommandIT {
         putStoreInDirectory(buildConfig(), databaseDir);
 
         execute("foo");
-        verify(dumper).dump(eq(databaseDir), eq(txlogsRoot.resolve("foo")), any(), any(), any());
+        var mf = Dumper.collectManifest(databaseDir, txlogsRoot.resolve("foo"), DumpCommandIT::excludeDatabaseLock);
+        verify(dumper).dump(any(), any(), eq(mf));
     }
 
     @Test
@@ -195,23 +198,30 @@ class DumpCommandIT {
         putStoreInDirectory(buildConfig(), realDatabaseDir);
 
         execute("foo");
-        verify(dumper).dump(eq(realDatabaseDir), eq(txLogsDir), any(), any(), any());
+        var mf = Dumper.collectManifest(realDatabaseDir, txLogsDir, DumpCommandIT::excludeDatabaseLock);
+        verify(dumper).dump(any(), any(), eq(mf));
     }
 
     @Test
     void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory() throws Exception {
         Path to = testDirectory.directory("some-dir");
-        FileOutput expected = FileOutput.of(fs, to.resolve("foo.dump"));
         execute("foo", to);
-        verify(dumper).dump(any(), any(), eq(expected), any(), any());
+        var outputCaptor = ArgumentCaptor.forClass(DumpOutput.class);
+        verify(dumper).dump(outputCaptor.capture(), any(), any());
+        assertThat(outputCaptor.getValue()).isInstanceOfSatisfying(FileOutput.class, output -> {
+            assertThat(output.path()).isEqualTo(to.resolve("foo.dump"));
+        });
     }
 
     @Test
     void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile() throws Exception {
         Files.createFile(archive);
-        FileOutput expected = FileOutput.of(fs, archive);
         execute("foo");
-        verify(dumper).dump(any(), any(), eq(expected), any(), any());
+        var outputCaptor = ArgumentCaptor.forClass(DumpOutput.class);
+        verify(dumper).dump(outputCaptor.capture(), any(), any());
+        assertThat(outputCaptor.getValue()).isInstanceOfSatisfying(FileOutput.class, output -> {
+            assertThat(output.path()).isEqualTo(archive);
+        });
     }
 
     @Test
@@ -269,7 +279,7 @@ class DumpCommandIT {
     @Test
     void shouldReleaseTheDatabaseLockEvenIfThereIsAnError() throws Exception {
         Dumper dumper1 = doThrow(IOException.class).when(dumper);
-        dumper1.dump(any(), any(), any(), any(), any());
+        dumper1.dump(any(), any(), any());
         assertThrows(CommandFailedException.class, () -> execute("foo"));
         assertCanLockDatabase(databaseDirectory);
     }
@@ -283,7 +293,7 @@ class DumpCommandIT {
                     return null;
                 })
                 .when(dumper)
-                .dump(any(), any(), any(), any(), any());
+                .dump(any(), any(), any());
 
         execute("foo");
     }
@@ -305,13 +315,15 @@ class DumpCommandIT {
     void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows() throws Exception {
         Path lockFile = DatabaseLayout.ofFlat(Path.of(".")).databaseLockFile();
         doAnswer(invocation -> {
-                    Predicate<Path> exclude = invocation.getArgument(4);
-                    assertThat(exclude.test(lockFile.getFileName())).isEqualTo(true);
-                    assertThat(exclude.test(Path.of("some-other-file"))).isEqualTo(false);
+                    Manifest mf = invocation.getArgument(2);
+                    assertThat(mf.files())
+                            .noneMatch(record -> record instanceof Manifest.FileRecord fr
+                                    && fr.source().getFileName().equals(lockFile));
+                    assertThat(mf.files()).isNotEmpty();
                     return null;
                 })
                 .when(dumper)
-                .dump(any(), any(), any(), any(), any());
+                .dump(any(), any(), any());
 
         execute("foo");
     }
@@ -327,14 +339,13 @@ class DumpCommandIT {
         putStoreInDirectory(buildConfig(), databaseDir);
 
         execute(DEFAULT_DATABASE_NAME);
-        verify(dumper).dump(eq(databaseDir), eq(txLogsDir), any(), any(), any());
+        var mf = Dumper.collectManifest(databaseDir, txLogsDir, DumpCommandIT::excludeDatabaseLock);
+        verify(dumper).dump(any(), any(), eq(mf));
     }
 
     @Test
     void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception {
-        doThrow(new FileAlreadyExistsException("the-archive-path"))
-                .when(dumper)
-                .dump(any(), any(), any(), any(), any());
+        doThrow(new FileAlreadyExistsException("the-archive-path")).when(dumper).dump(any(), any(), any());
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
         assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
         assertThat(commandFailed.getMessage()).contains("Archive already exists: the-archive-path");
@@ -351,7 +362,7 @@ class DumpCommandIT {
     void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception {
         doThrow(new NoSuchFileException(archive.getParent().toString()))
                 .when(dumper)
-                .dump(any(), any(), any(), any(), any());
+                .dump(any(), any(), any());
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
         assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
         assertThat(commandFailed.getMessage()).contains("NoSuchFileException: " + archive.getParent());
@@ -360,7 +371,7 @@ class DumpCommandIT {
     @Test
     void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws Exception {
-        doThrow(new IOException("the-message")).when(dumper).dump(any(), any(), any(), any(), any());
+        doThrow(new IOException("the-message")).when(dumper).dump(any(), any(), any());
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo"));
         assertThat(commandFailed.getMessage()).contains("Dump failed for databases: 'foo'");
         assertThat(commandFailed.getMessage()).contains("IOException: the-message");
@@ -379,13 +390,11 @@ class DumpCommandIT {
         CommandLine.populateCommand(command, "--to-stdout", "foo");
         command.execute();
 
-        verify(dumper)
-                .dump(
-                        eq(homeDir.resolve("data/databases/foo")),
-                        eq(homeDir.resolve("data/transactions/foo")),
-                        eq(new StdoutOutput(ctx)),
-                        any(),
-                        any());
+        var mf = Dumper.collectManifest(
+                homeDir.resolve("data/databases/foo"),
+                homeDir.resolve("data/transactions/foo"),
+                DumpCommandIT::excludeDatabaseLock);
+        verify(dumper).dump(eq(new StdoutOutput(ctx)), any(), eq(mf));
         verifyNoMoreInteractions(dumper);
     }
 
@@ -405,13 +414,11 @@ class DumpCommandIT {
         CommandLine.populateCommand(command, "--to-stdout", "--verbose", databaseName);
         command.execute();
 
-        verify(dumper)
-                .dump(
-                        eq(homeDir.resolve("data/databases/foo")),
-                        eq(homeDir.resolve("data/transactions/foo")),
-                        eq(new StdoutOutput(ctx)),
-                        any(),
-                        any());
+        var mf = Dumper.collectManifest(
+                homeDir.resolve("data/databases/foo"),
+                homeDir.resolve("data/transactions/foo"),
+                DumpCommandIT::excludeDatabaseLock);
+        verify(dumper).dump(eq(new StdoutOutput(ctx)), any(), eq(mf));
         verifyNoMoreInteractions(dumper);
 
         assertThat(out.toString()).doesNotContain("Starting dump of database", databaseName);
@@ -490,6 +497,10 @@ class DumpCommandIT {
                 .build()) {
             databaseLayout = ((GraphDatabaseAPI) managementService.database(databaseName)).databaseLayout();
         }
+    }
+
+    private static boolean excludeDatabaseLock(Path path) {
+        return path.getFileName().toString().equals("database_lock");
     }
 
     private static Closeable withPermissions(Path file, Set<PosixFilePermission> permissions) throws IOException {

@@ -76,21 +76,23 @@ import org.neo4j.util.Preconditions;
 public class SplittingOutputStream extends OutputStream {
     private final Iterator<? extends OutputStream> it;
     private final long blksize;
+    private final Runnable onClose;
 
     private OutputStream out;
     private long remainingBytes;
     private boolean closed = false;
 
     public SplittingOutputStream(Iterable<? extends OutputStream> iterable, long blksize) {
-        this(iterable.iterator(), blksize);
+        this(iterable.iterator(), blksize, null);
     }
 
-    public SplittingOutputStream(Iterator<? extends OutputStream> iterator, long blksize) {
+    public SplittingOutputStream(Iterator<? extends OutputStream> iterator, long blksize, Runnable onClose) {
         Preconditions.checkArgument(blksize > 0, "blksize must be positive");
         this.out = null;
         this.it = iterator;
         this.blksize = blksize;
         this.remainingBytes = blksize;
+        this.onClose = onClose;
     }
 
     @Override
@@ -154,6 +156,9 @@ public class SplittingOutputStream extends OutputStream {
             var closeable = out;
             out = null;
             closeable.close();
+            if (onClose != null) {
+                onClose.run();
+            }
         }
     }
 

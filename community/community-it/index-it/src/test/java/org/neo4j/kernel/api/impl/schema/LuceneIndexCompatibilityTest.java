@@ -427,11 +427,12 @@ class LuceneIndexCompatibilityTest {
             layout.databaseLockFile().getFileName(), layout.quarantineFile().getFileName()
         };
         dumper.dump(
-                layout.databaseDirectory(),
-                layout.getTransactionLogsDirectory(),
                 Dumper.FileOutput.of(fs, dump),
                 DumpFormatSelector.selectWriteFormat(),
-                path -> ArrayUtil.contains(exclude, path.getFileName()));
+                Dumper.collectManifest(
+                        layout.databaseDirectory(),
+                        layout.getTransactionLogsDirectory(),
+                        path -> ArrayUtil.contains(exclude, path.getFileName())));
     }
 
     private static SortedSet<IndexDefinition> existingLuceneNodeIndexes(Transaction tx) {

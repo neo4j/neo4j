@@ -25,6 +25,8 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.configuration.SettingConstraints.any;
+import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.lessThanOrEqualLong;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
@@ -44,6 +46,7 @@ import static org.neo4j.configuration.SettingValueParsers.UNSIGNED_BYTE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
@@ -2089,6 +2092,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Duration> import_detailed_reporting_interval = newBuilder(
                     "internal.db.import.detailed_reporting_interval", DURATION, Duration.ofMinutes(1))
             .addConstraint(resolution(ChronoUnit.SECONDS))
+            .build();
+
+    @Internal
+    @Description("The size of individual files when creating a split archive with multiple files (dump or backup). "
+            + "If it's 0 then the resulting archive won't be split into multiple files regardless of the total size.")
+    public static final Setting<Long> split_archive_file_size = newBuilder(
+                    "internal.db.backup.split_file_size", BYTES, 0L)
+            .addConstraint(any(min(gibiBytes(1)), is(0L)))
             .build();
 
     // Helper method

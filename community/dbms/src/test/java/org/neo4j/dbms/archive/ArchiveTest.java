@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -135,9 +136,11 @@ class ArchiveTest {
         Path archive = testDirectory.file("the-archive.dump");
         Dumper dumper = new Dumper(filesystem);
         dumper.dump(
-                directory, directory, FileOutput.of(filesystem, archive), compressionFormat, path -> path.getFileName()
+                FileOutput.of(filesystem, archive),
+                compressionFormat,
+                Dumper.collectManifest(directory, directory, path -> path.getFileName()
                         .toString()
-                        .equals("another-file"));
+                        .equals("another-file")));
         Path txRootDirectory = testDirectory.directory("tx-root_directory");
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot(txRootDirectory, "the-new-directory");
         Loader loader = new Loader(testDirectory.getFileSystem());
@@ -160,11 +163,12 @@ class ArchiveTest {
         touch(subdir.resolve("a-file"));
 
         Path archive = testDirectory.file("the-archive.dump");
+        Predicate<Path> excludeSubdir = (path) -> directory.relativize(path).startsWith(subdir.getFileName());
         Dumper dumper = new Dumper(filesystem);
         dumper.dump(
-                directory, directory, FileOutput.of(filesystem, archive), compressionFormat, path -> path.getFileName()
-                        .toString()
-                        .equals("subdir"));
+                FileOutput.of(filesystem, archive),
+                compressionFormat,
+                Dumper.collectManifest(directory, directory, excludeSubdir));
         Path txLogsRoot = testDirectory.directory("txLogsRoot");
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot(txLogsRoot, "the-new-directory");
 
@@ -192,11 +196,9 @@ class ArchiveTest {
         Path archive = testDirectory.file("the-archive.dump");
         Dumper dumper = new Dumper(filesystem);
         dumper.dump(
-                testDatabaseLayout.databaseDirectory(),
-                txLogsDirectory,
                 FileOutput.of(filesystem, archive),
                 compressionFormat,
-                alwaysFalse());
+                Dumper.collectManifest(testDatabaseLayout.databaseDirectory(), txLogsDirectory, alwaysFalse()));
 
         Path newTxLogsRoot = testDirectory.directory("newTxLogsRoot");
         DatabaseLayout newDatabaseLayout = layoutWithCustomTxRoot(newTxLogsRoot, "the-new-database");
@@ -244,7 +246,7 @@ class ArchiveTest {
     private void assertRoundTrips(Path oldDirectory, DumpFormat compressionFormat) throws IOException, IncorrectFormat {
         Path archive = testDirectory.file("the-archive.dump");
         Dumper dumper = new Dumper(filesystem);
-        dumper.dump(oldDirectory, oldDirectory, FileOutput.of(filesystem, archive), compressionFormat, alwaysFalse());
+        dumper.dump(FileOutput.of(filesystem, archive), compressionFormat, Dumper.collectManifest(oldDirectory));
         Path newDirectory = testDirectory.file("the-new-directory");
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(newDirectory);
         Loader loader = new Loader(testDirectory.getFileSystem());

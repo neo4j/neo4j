@@ -175,6 +175,17 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException {
+        var channel = open(fileName, options);
+        boolean truncate =
+                options.contains(StandardOpenOption.TRUNCATE_EXISTING) || !options.contains(StandardOpenOption.APPEND);
+        if (truncate) {
+            channel.truncate(0);
+        }
+        return new ChannelOutputStream(channel, !truncate, INSTANCE, bufferSize);
+    }
+
+    @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
         return new ChannelInputStream(read(fileName), INSTANCE);
     }

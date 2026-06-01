@@ -194,6 +194,11 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public OutputStream openAsOutputStream(Path fileName, Set<OpenOption> options, int bufferSize) throws IOException {
+        return delegate.openAsOutputStream(fileName, options, bufferSize);
+    }
+
+    @Override
     public void copyRecursively(Path fromDirectory, Path toDirectory) throws IOException {
         delegate.copyRecursively(fromDirectory, toDirectory);
     }

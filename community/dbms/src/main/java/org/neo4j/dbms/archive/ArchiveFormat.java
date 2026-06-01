@@ -23,4 +23,5 @@ public class ArchiveFormat {
     public static final int MAGIC_PREFIX_LENGTH = 4;
     public static final char DUMP_PREFIX = 'D';
     public static final char BACKUP_PREFIX = 'B';
+    public static final char SPLIT_FILE_PREFIX = 'S';
 }

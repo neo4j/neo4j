@@ -42,7 +42,7 @@ class SplittingOutputStreamTest {
 
     @Test
     void requirePositiveBlockSize() {
-        assertThatThrownBy(() -> new SplittingOutputStream(Collections.emptyIterator(), 0))
+        assertThatThrownBy(() -> new SplittingOutputStream(Collections.emptyIterator(), 0, null))
                 .hasMessage("blksize must be positive");
     }
 
@@ -56,6 +56,17 @@ class SplittingOutputStreamTest {
                 .hasMessage("stream closed");
 
         verifyNoMoreInteractions();
+    }
+
+    @Test
+    void emptyWriteShouldNotRunCloseAction() throws IOException {
+        var onClose = Mockito.mock(Runnable.class);
+        var os = new SplittingOutputStream(files.iterator(), 1, onClose);
+        os.write(new byte[0]);
+        os.close();
+
+        verifyNoMoreInteractions();
+        Mockito.verifyNoMoreInteractions(onClose);
     }
 
     @Test
@@ -298,6 +309,31 @@ class SplittingOutputStreamTest {
     }
 
     @Test
+    void callsCloseActionWhenClosing() throws IOException {
+        var onClose = Mockito.mock(Runnable.class);
+        try (var os = new SplittingOutputStream(files.iterator(), 10, onClose)) {
+            os.write(0);
+        }
+        Mockito.verify(onClose).run();
+    }
+
+    @Test
+    void callsCloseActionOnlyWhenClosingMultipleTimes() throws IOException {
+        var onClose = Mockito.mock(Runnable.class);
+        var os = new SplittingOutputStream(files.iterator(), 10, onClose);
+        os.write(0);
+        os.close();
+        os.close();
+
+        // Underlying stream gets closed once.
+        verify(sink1).write(0);
+        verify(sink1).close();
+        verifyNoMoreInteractions();
+        Mockito.verify(onClose).run();
+        Mockito.verifyNoMoreInteractions(onClose);
+    }
+
+    @Test
     void propagateCloseFailure() throws IOException {
         Mockito.doThrow(new IOException("oops")).when(sink1).close();
 
@@ -344,7 +380,7 @@ class SplittingOutputStreamTest {
         var second = new ByteArrayOutputStream(10);
 
         var sinks = List.of(first, second).iterator();
-        try (var os = new SplittingOutputStream(sinks, 10)) {
+        try (var os = new SplittingOutputStream(sinks, 10, null)) {
             os.write(expected);
         }
 

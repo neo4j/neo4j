@@ -20,6 +20,11 @@
 package org.neo4j.io.fs;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -870,6 +875,67 @@ public abstract class FileSystemAbstractionTest {
             // noop
         }
         assertThat(fsa.getFileSize(target)).isEqualTo(0);
+    }
+
+    @Test
+    void openAsOutputStreamWithTruncateExistingTruncatesFile() throws IOException {
+        ensureDirectoryExists(path);
+        Path target = path.resolve("target");
+
+        try (var os = fsa.openAsOutputStream(target, false)) {
+            byte[] data = new byte[1024];
+            Arrays.fill(data, (byte) 'a');
+            os.write(data);
+        }
+        try (var os = fsa.openAsOutputStream(target, Set.of(WRITE, TRUNCATE_EXISTING))) {
+            // noop
+        }
+        assertThat(fsa.getFileSize(target)).isEqualTo(0);
+    }
+
+    @Test
+    void openAsOutputStreamWithAppendOptionAppendsToExistingFile() throws IOException {
+        ensureDirectoryExists(path);
+        Path target = path.resolve("target");
+
+        byte[] initial = {1, 2, 3};
+        try (var os = fsa.openAsOutputStream(target, false)) {
+            os.write(initial);
+        }
+
+        byte[] more = {4, 5};
+        try (var os = fsa.openAsOutputStream(target, Set.of(CREATE, APPEND))) {
+            os.write(more);
+        }
+        assertThat(fsa.getFileSize(target)).isEqualTo(initial.length + more.length);
+
+        try (InputStream is = fsa.openAsInputStream(target)) {
+            byte[] read = is.readAllBytes();
+            assertThat(read).containsExactly(1, 2, 3, 4, 5);
+        }
+    }
+
+    @Test
+    void openAsOutputStreamWithCreateNewFailsIfFileExists() throws IOException {
+        ensureDirectoryExists(path);
+        Path target = path.resolve("target");
+        fsa.write(target).close();
+
+        assertThrows(FileAlreadyExistsException.class, () -> fsa.openAsOutputStream(target, Set.of(CREATE_NEW, WRITE))
+                .close());
+    }
+
+    @Test
+    void openAsOutputStreamWithBufferSizeWritesContents() throws IOException {
+        ensureDirectoryExists(path);
+        Path target = path.resolve("target");
+
+        byte[] data = new byte[2048];
+        Arrays.fill(data, (byte) 'b');
+        try (var os = fsa.openAsOutputStream(target, Set.of(CREATE, WRITE, TRUNCATE_EXISTING), 256)) {
+            os.write(data);
+        }
+        assertThat(fsa.getFileSize(target)).isEqualTo(data.length);
     }
 
     private void generateFileWithRecords(Path file, int recordCount) throws IOException {
