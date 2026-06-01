@@ -38,10 +38,12 @@ case class UndirectedRelationshipByIdSeekPipe(
   override protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
     val relIds = relIdExpr.expressions(ctx, state)
+    val cursor = state.query.scanCursor()
+    state.query.resources.trace(cursor)
     val relationships = new UndirectedRelationshipIdSeekIterator(
       relIds.iterator(),
       state.query.transactionalContext.dataRead,
-      state.query.scanCursor()
+      cursor
     )
     PrimitiveLongHelper.map(
       relationships,
