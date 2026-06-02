@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Ands
-import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
@@ -97,7 +97,7 @@ class SelectHasLabelWithJoinTest extends CypherPlannerTestSuite with LogicalPlan
     inside(plan._1) {
       case Selection(Ands(exprs), ProcedureCall(Argument(_), _)) =>
         exprs.toList should matchPatternLike {
-          case List(HasLabelsOrTypes(_, _)) => ()
+          case List(HasLabels(_, _)) => ()
         }
     }
   }

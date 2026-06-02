@@ -20,6 +20,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.IfChangedSetSemantics
+import org.neo4j.cypher.internal.frontend.phases.ResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case class ParsingConfig(
+  resolveCallables: ResolveCallables,
   extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
   /* TODO: This is not part of configuration - Move to BaseState */
   parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,

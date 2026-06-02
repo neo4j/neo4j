@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollected
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerConfig
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
@@ -29,6 +30,8 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnal
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ShadowedFunctionsUnresolved
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
+import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizePredicates
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -73,7 +76,10 @@ object CNFNormalizerTestUtil {
             BaseContains[Statement](),
             ShadowedFunctionsUnresolved,
             LocalFunctionsResolved,
+            CallInvocationsResolved,
+            FunctionInvocationsResolved,
             SemanticAnalysisPossible,
+            ObfuscationMetadataCollected,
             NormalizePredicates.completed
           )
         )

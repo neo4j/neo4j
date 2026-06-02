@@ -47,7 +47,7 @@ import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQueryTransformer
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.compiler.phases.ResolveCallablesFromPlanContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.NameDeduplication
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -577,7 +577,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport
       SemanticAnalysis(warn = Some(true)) andThen
       AstRewriting() andThen
       ExtractLocalDefinitions andThen
-      RewriteProcedureCalls andThen
+      ResolveCallablesFromPlanContext andThen
       SemanticAnalysis(warn = Some(true)) andThen
       Namespacer andThen
       isolateAggregation andThen

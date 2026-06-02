@@ -279,13 +279,13 @@ object pegClause {
             }
         }
       // resolved non-local named call
-      case ResolvedNonLocalCall(signature, callArguments, callResults, _, _, _, _) =>
+      case ResolvedNonLocalCall(signature, callArguments, callResults, _, declaredResults, yieldAll, _) =>
         val children = callArguments.map(arg => pegExpression(arg, incoming.constantChildContext()))
         val referenced = Some(WorkingScope.referencedInChildren(children))
 
         val (declared, result) = signature.outputSignature match {
           case Some(_) =>
-            val resultColumns = callResults.map(_.variable)
+            val resultColumns = if (declaredResults || yieldAll) callResults.map(_.variable) else Seq.empty
             (Declarations(constants = Seq.empty, variables = resultColumns), TableResult(resultColumns))
           case None => (Declarations.noDeclarations, OmittedResult)
 

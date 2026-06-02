@@ -54,6 +54,7 @@ import org.neo4j.dbms.api.DatabaseNotFoundHelper;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.executor.Location;
+import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -109,9 +110,10 @@ public class QueryProcessorImpl implements QueryProcessor {
             TargetService targetService,
             LocationService locationService,
             CancellationChecker cancellationChecker,
-            DatabaseReference sessionDatabase) {
+            DatabaseReference sessionDatabase,
+            QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
 
-        var cachedValue = getFromCache(query, preParsedQuery, cancellationChecker, sessionDatabase);
+        var cachedValue = getFromCache(query, preParsedQuery, cancellationChecker, sessionDatabase, statementLifecycle);
 
         QueryTarget queryTarget = targetService.target(cachedValue.catalogInfo());
 
@@ -154,7 +156,8 @@ public class QueryProcessorImpl implements QueryProcessor {
             Query query,
             PreParsedQuery preParsedQuery,
             CancellationChecker cancellationChecker,
-            DatabaseReference sessionDatabase) {
+            DatabaseReference sessionDatabase,
+            QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
         var notificationLogger = new RecordingNotificationLogger();
         var shadowedFunctions = globalProcedures
                 .getCurrentView()
@@ -163,7 +166,13 @@ public class QueryProcessorImpl implements QueryProcessor {
 
         if (cachedValue == null) {
             var preparedForCacheQuery = prepareQueryForCache(
-                    preParsedQuery, notificationLogger, query, cancellationChecker, sessionDatabase, shadowedFunctions);
+                    preParsedQuery,
+                    notificationLogger,
+                    query,
+                    cancellationChecker,
+                    sessionDatabase,
+                    shadowedFunctions,
+                    statementLifecycle);
             if (preparedForCacheQuery.catalogInfo().canBeCached()) {
                 cache.put(preParsedQuery, query.parameters(), preparedForCacheQuery);
             }
@@ -178,7 +187,8 @@ public class QueryProcessorImpl implements QueryProcessor {
             Query query,
             CancellationChecker cancellationChecker,
             DatabaseReference sessionDatabase,
-            Set<String> shadowedFunctions) {
+            Set<String> shadowedFunctions,
+            QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
         var queryTracer = tracer.compileQuery(query.text());
         var resolver = new ExceptionTranslatingResolver(
                 SignatureResolver.from(globalProcedures.getCurrentView(), preParsedQuery.resolvedLanguage()));
@@ -190,7 +200,8 @@ public class QueryProcessorImpl implements QueryProcessor {
                 notificationLogger,
                 cancellationChecker,
                 sessionDatabase,
-                shadowedFunctions);
+                shadowedFunctions,
+                statementLifecycle);
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
         var catalogInfo = resolveCatalogInfo(
                 statementType,
@@ -311,8 +322,10 @@ public class QueryProcessorImpl implements QueryProcessor {
             RecordingNotificationLogger notificationLogger,
             CancellationChecker cancellationChecker,
             DatabaseReference sessionDatabase,
-            Set<String> shadowedFunctions) {
-        return parsing.parseQuery(
+            Set<String> shadowedFunctions,
+            QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
+        // Wire the obfuscator onto the ExecutingQuery as soon as obfuscation metadata is collected.
+        return parsing.parseQueryWithObfuscatorCallback(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
                 preParsedQuery.resolvedLanguage(),
@@ -325,7 +338,9 @@ public class QueryProcessorImpl implements QueryProcessor {
                 resolver,
                 sessionDatabase,
                 preParsedQuery.options().queryOptions().planMode().isScope(),
-                CollectionHasAsScala(shadowedFunctions).asScala().toSet());
+                CollectionHasAsScala(shadowedFunctions).asScala().toSet(),
+                metadata -> statementLifecycle.onObfuscatorReady(
+                        metadata, preParsedQuery.options().offset()));
     }
 
     private TargetService.CatalogInfo toCatalogInfo(Seq<Option<StaticUseEvaluation.CatalogInfo>> graphSelections) {

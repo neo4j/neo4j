@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.FreeProjection
+import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -28,20 +29,39 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.DeprecatedSyntaxReplaced
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LocalFunctionsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
+import org.neo4j.cypher.internal.rewriting.conditions.GQLAliasFunctionNameRewritten
+import org.neo4j.cypher.internal.rewriting.conditions.ProcedureCallWrappedAndExpanded
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.ProcedureName
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.bottomUpWithParent
 
 import scala.util.Try
 
-trait RewriteProcedureCalls {
+/**
+ * Resolves [[UnresolvedCall]] into resolved procedure calls and [[FunctionInvocation]] into
+ * [[ResolvedFunctionInvocation]] if needed using a [[ScopedProcedureSignatureResolver]]. Subclasses
+ * pick the policy for unresolved calls — [[StrictResolveCallables]] throws,
+ * [[TryResolveCallables]] leaves them as-is.
+ */
+sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, BaseState] {
+  self: Product =>
 
-  def process(from: BaseState, context: BaseContext, resolver: ScopedProcedureSignatureResolver): BaseState = {
+  def resolver: ScopedProcedureSignatureResolver
+
+  override def phase = AST_REWRITE
+
+  override def process(from: BaseState, context: BaseContext): BaseState = {
     val instrumentedResolver = new InstrumentedProcedureSignatureResolver(resolver)
     val rewrittenStatement = from.statement().endoRewrite(rewriter(from, context, instrumentedResolver))
 
@@ -55,20 +75,28 @@ trait RewriteProcedureCalls {
   def rewriter(from: BaseState, context: BaseContext, resolver: ScopedProcedureSignatureResolver): Rewriter =
     resolverProcedureCall(from, context, resolver) andThen fakeStandaloneCallDeclarations
 
+  def rewriter(from: BaseState, context: BaseContext): Rewriter = rewriter(from, context, resolver)
+
   // rewriter that amends unresolved procedure calls with procedure signature information
   private def resolverProcedureCall(
     from: BaseState,
     context: BaseContext,
     resolver: ScopedProcedureSignatureResolver
   ): Rewriter =
-    bottomUp(Rewriter.lift {
-      case unresolved: UnresolvedCall =>
-        resolveProcedure(from, context, resolver, unresolved)
+    bottomUpWithParent(
+      RewriterWithParent.lift {
+        case (unresolved: UnresolvedCall, _) =>
+          resolveProcedure(from, context, resolver, unresolved)
 
-      case function: FunctionInvocation
-        if function.scopedNeedsToBeResolved(QueryLanguage.toCypherVersion(resolver.queryLanguage)) =>
-        resolveFunction(resolver, function)
-    })
+        case (function: FunctionInvocation, Some(_: GraphFunctionReference)) =>
+          function
+
+        case (function: FunctionInvocation, _)
+          if function.scopedNeedsToBeResolved(QueryLanguage.toCypherVersion(resolver.queryLanguage)) =>
+          resolveFunction(resolver, function)
+      },
+      cancellation = context.cancellationChecker
+    )
 
   def resolveProcedure(
     from: BaseState,
@@ -157,17 +185,43 @@ trait RewriteProcedureCalls {
 }
 
 /**
- * Rewrites unresolved calls into resolved calls. Throws if a procedure or function is not found.
+ * StepSequencer entry point and parse-pipeline factory for callable resolution. Delegates to the
+ * [[ResolveCallables]] phase carried on [[ParsingConfig.resolveCallables]].
  */
-case class StrictRewriteProcedureCalls(resolver: ScopedProcedureSignatureResolver)
-    extends Phase[BaseContext, BaseState, BaseState] with RewriteProcedureCalls {
+object ResolveCallables
+    extends StepSequencer.Step
+    with ParsePipelineTransformerFactory {
 
-  override def phase = AST_REWRITE
-
-  override def process(from: BaseState, context: BaseContext): BaseState = process(from, context, resolver)
+  override def preConditions: Set[StepSequencer.Condition] =
+    Set(
+      LocalFunctionsResolved,
+      ProcedureCallWrappedAndExpanded,
+      GQLAliasFunctionNameRewritten,
+      DeprecatedSyntaxReplaced
+    )
 
   override def postConditions: Set[StepSequencer.Condition] =
     Set(CallInvocationsResolved, FunctionInvocationsResolved)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    config.resolveCallables
+}
+
+/**
+ * Rewrites unresolved calls into resolved calls. Throws if a procedure or function is not found.
+ */
+case class StrictResolveCallables(resolver: ScopedProcedureSignatureResolver) extends ResolveCallables {
+
+  override def postConditions: Set[StepSequencer.Condition] =
+    Set(CallInvocationsResolved, FunctionInvocationsResolved)
+}
+
+object StrictResolveCallables {
+
+  /** No procedure registry available; any procedure/function call resolution will throw. Intended for tests. */
+  val NoResolver: StrictResolveCallables = StrictResolveCallables(ScopedProcedureSignatureResolver.NoResolver)
 }
 
 /**
@@ -176,14 +230,9 @@ case class StrictRewriteProcedureCalls(resolver: ScopedProcedureSignatureResolve
  * Used in fabricParsing to best-effort resolve procedures/functions against the local coordinator's
  * registry before query fragmentation. This allows QueryType to classify fragments as Read/Write.
  * Procedures unknown to the local registry remain unresolved (QueryType.ReadPlusUnresolved) and
- * are resolved later by StrictRewriteProcedureCalls on individual fragments.
+ * are resolved later by StrictResolveCallables on individual fragments.
  */
-case class TryRewriteProcedureCalls(resolver: ScopedProcedureSignatureResolver)
-    extends Phase[BaseContext, BaseState, BaseState] with RewriteProcedureCalls {
-
-  override def phase = AST_REWRITE
-
-  override def process(from: BaseState, context: BaseContext): BaseState = process(from, context, resolver)
+case class TryResolveCallables(resolver: ScopedProcedureSignatureResolver) extends ResolveCallables {
 
   override def postConditions: Set[StepSequencer.Condition] = Set()
 
@@ -204,8 +253,6 @@ case class TryRewriteProcedureCalls(resolver: ScopedProcedureSignatureResolver)
       case _                                                       => unresolved
     }
   }
-
-  def rewriter(from: BaseState, context: BaseContext): Rewriter = rewriter(from, context, resolver)
 }
 
 class InstrumentedProcedureSignatureResolver(resolver: ScopedProcedureSignatureResolver)

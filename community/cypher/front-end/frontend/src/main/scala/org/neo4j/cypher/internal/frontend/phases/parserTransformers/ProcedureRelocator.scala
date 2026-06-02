@@ -20,22 +20,32 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.NoOp
+import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.util.Namespace
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
+
+case object ProceduresRelocated extends Condition
 
 /**
  * Rewrites certain procedures to a different implementation in graph engine.
  * For example: CALL db.labels() ==> CALL internal.virtual_graph.override.db.labels()
  */
-object ProcedureRelocator {
+case object ProcedureRelocator extends Phase[BaseContext, BaseState, BaseState]
+    with StepSequencer.Step
+    with ParsePipelineTransformerFactory {
 
   private val supportedProcedures: Set[String] = Set(
     "apoc.meta.schema",
@@ -82,18 +92,18 @@ object ProcedureRelocator {
     )(functionInvocation.position)
   }
 
-  private case object InnerTransformer extends Transformer[BaseContext, BaseState, BaseState] {
+  override def process(from: BaseState, context: BaseContext): BaseState =
+    from.withStatement(from.statement().endoRewrite(rewriter))
 
-    override def transform(from: BaseState, context: BaseContext): BaseState =
-      from.withStatement(from.statement().endoRewrite(rewriter))
-    override def name: String = "Procedure Relocator"
-    override def postConditions: Set[StepSequencer.Condition] = Set.empty
+  override def phase: CompilationPhaseTracer.CompilationPhase = AST_REWRITE
 
-    override def invalidatedConditions: Set[StepSequencer.Condition] =
-      Set(CallInvocationsResolved, FunctionInvocationsResolved)
-  }
+  override def preConditions: Set[StepSequencer.Condition] = Set(ShadowedFunctionsUnresolved)
 
-  def transformer(enabled: Boolean): Transformer[BaseContext, BaseState, BaseState] =
-    if (enabled) InnerTransformer else NoOp()
+  override def postConditions: Set[StepSequencer.Condition] = Set(ProceduresRelocated)
 
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    Set(CallInvocationsResolved, FunctionInvocationsResolved)
+
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    if (config.enabledVirtualGraph) this else NoOp()
 }

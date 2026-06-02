@@ -249,7 +249,8 @@ public class QueryRouterImpl implements QueryRouter {
                     context.targetService(),
                     locationService,
                     cancellationChecker(context.routerTransaction()),
-                    context.sessionDatabaseReference());
+                    context.sessionDatabaseReference(),
+                    statementLifecycle);
             StatementType statementType = processedQueryInfo.statementType();
             QueryOptions queryOptions = processedQueryInfo.queryOptions();
             CypherExecutionMode executionMode = executionMode(queryOptions, transactionInfo.isComposite());

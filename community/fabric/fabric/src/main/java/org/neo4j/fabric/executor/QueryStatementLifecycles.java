@@ -125,6 +125,9 @@ public class QueryStatementLifecycles {
         public void doneFabricProcessing(FabricPlan plan, int preParserOffset) {}
 
         @Override
+        public void onObfuscatorReady(ObfuscationMetadata obfuscationMetadata, InputPosition preParserOffset) {}
+
+        @Override
         public void doneRouterProcessing(
                 ObfuscationMetadata obfuscateMetadata,
                 InputPosition preParserOffset,
@@ -184,6 +187,12 @@ public class QueryStatementLifecycles {
             } else {
                 monitoringMode = new SingleQueryMonitoringMode();
             }
+        }
+
+        @Override
+        public void onObfuscatorReady(ObfuscationMetadata obfuscationMetadata, InputPosition preParserOffset) {
+            executingQuery.onObfuscatorReady(
+                    CypherQueryObfuscator.apply(obfuscationMetadata), preParserOffset.offset());
         }
 
         @Override
@@ -321,6 +330,9 @@ public class QueryStatementLifecycles {
         void donePreParsing(PreParsedQuery preParsedQuery);
 
         void doneFabricProcessing(FabricPlan plan, int preParserOffset);
+
+        // Wire the obfuscator onto the {@link ExecutingQuery} as soon as obfuscation metadata is available.
+        void onObfuscatorReady(ObfuscationMetadata obfuscationMetadata, InputPosition preParserOffset);
 
         void doneRouterProcessing(
                 ObfuscationMetadata obfuscateMetadata,

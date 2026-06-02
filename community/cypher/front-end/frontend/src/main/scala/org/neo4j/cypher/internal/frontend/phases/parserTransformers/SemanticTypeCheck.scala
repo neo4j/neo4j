@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_TYPE_CHECK
+import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
@@ -263,8 +264,12 @@ object ListCoercedToBooleanCheck extends ExpectedBooleanTypeCheck {
   def listCoercedToBooleanCheck: SemanticErrorCheck = (baseState, _) => {
 
     baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
+      // ResolvedFunctionInvocation calls are exempted, due to legacy behavior when
+      // callables were not resolved before type checking.
       case p: Expression
-        if isListCoercedToBoolean(baseState.semanticTable(), p) && !p.isInstanceOf[PatternExpression] =>
+        if isListCoercedToBoolean(baseState.semanticTable(), p)
+          && !p.isInstanceOf[PatternExpression]
+          && !p.isInstanceOf[ResolvedFunctionInvocation] =>
         errors =>
           SkipChildren(errors :+ SemanticError.invalidCoercion(
             "LIST",

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpTo
 import org.neo4j.cypher.internal.notification.DeprecatedFunctionNamespaceUsed
 import org.neo4j.cypher.internal.notification.DeprecatedProcedureNamespaceUsed
 import org.neo4j.cypher.internal.notification.ShadowingInternalFunction
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -62,7 +63,8 @@ case object UnresolveShadowedFunctions extends StatementRewriter with StepSequen
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ShadowedFunctionsUnresolved)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + UpToDateScopes
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    SemanticInfoAvailable ++ Set(UpToDateScopes, FunctionInvocationsResolved)
 
   override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
     UnresolveShadowedFunctions

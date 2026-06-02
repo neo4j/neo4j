@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.frontend.phases.If
+import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollected
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
@@ -39,8 +40,11 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting.SemanticAnalysisPossible
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableChecker
+import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoNodesOfType
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
@@ -155,7 +159,10 @@ case object SemanticAnalysis extends StepSequencer.Step with ParsePipelineTransf
     BaseContains[Statement](),
     SemanticAnalysisPossible,
     ShadowedFunctionsUnresolved,
-    LocalFunctionsResolved
+    LocalFunctionsResolved,
+    CallInvocationsResolved,
+    FunctionInvocationsResolved,
+    ObfuscationMetadataCollected
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
@@ -165,7 +172,7 @@ case object SemanticAnalysis extends StepSequencer.Step with ParsePipelineTransf
     ExpressionsHaveComputedDependencies
   ) ++ SemanticInfoAvailable
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(UpToDateScopes)
 
   /**
    * Transformer for the parse pipeline

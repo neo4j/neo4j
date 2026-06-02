@@ -536,6 +536,7 @@ case object VariableChecker extends Phase[BaseContext, BaseState, BaseState] wit
     "42I37", // Invalid use of RETURN *
     "42I38",
     "42I69",
+    "42N25",
     "42N71",
     "22N27",
     "42I41",

@@ -80,8 +80,6 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.gqlstatus.GqlHelper
 
-import java.util.Locale
-
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
   def check(
@@ -116,24 +114,6 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
         case AllReduce =>
           error(SemanticError.invalidAllReduceSyntax(invocation.position))
-
-        case f: Function
-          if invocation.name.equalsIgnoreCase("graph.names") || invocation.name.equalsIgnoreCase(
-            "graph.propertiesByName"
-          ) && invocation.maybeLocalFunction.isEmpty =>
-          SemanticCheck.fromState(state =>
-            if (state.workingGraph.nonEmpty) { // We are targeting a constituent graph.
-              val pos = invocation.position
-              SemanticError.apply(
-                GqlHelper.getGql42001_42N72(pos.offset, pos.line, pos.column),
-                "Calling %s() is only supported on composite databases.".formatted(invocation.name),
-                pos
-              )
-            } else {
-              SemanticExpressionCheck.check(ctx, invocation.arguments) chain
-                semanticCheck(ctx, invocation)
-            }
-          )
 
         case f: Function => whenState(
             !_.features.contains(SemanticFeature.UUIDType) && isUUIDFunction(f)
@@ -354,24 +334,6 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
           checkArgs(invocation, 1, ToString.signatures) ifOkChain
             checkToSpecifiedTypeOfArgument(invocation, ToString.validInputTypes) ifOkChain
             specifyType(CTString, invocation)
-
-        // distance has been replaced with point.distance, make sure we provide a nice error message
-        case UnresolvedFunction
-          if invocation.functionName.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase(
-            Locale.ROOT
-          ) == "distance" =>
-          val pos = invocation.position
-          val gql = GqlHelper.getGql42001_42N48(
-            "distance",
-            pos.offset,
-            pos.line,
-            pos.column
-          )
-          SemanticError(
-            gql,
-            s"'distance' has been replaced by 'point.distance'",
-            pos
-          )
 
         case Distance =>
           checkArgs(invocation, 2, Distance.signatures) ifOkChain

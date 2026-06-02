@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.StrictResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
@@ -46,8 +47,11 @@ import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.values.virtual.MapValue
+
+import java.util.function.Consumer
 
 class CypherParsing(
   monitors: Monitors,
@@ -80,12 +84,109 @@ class CypherParsing(
       tracer,
       params,
       cancellationChecker,
+      resolver,
       sessionDatabase,
       isScopeQuery,
       shadowedFunctions
     )
-    CompilationPhases.parsing(parsingConfig, resolver, parameters = params)
+    CompilationPhases.parsing(parsingConfig, parameters = params)
       .transform(startState, context)
+  }
+
+  /**
+   * Run the pre-obfuscator portion of the parse pipeline. Returns a [[BaseState]]
+   * with [[BaseState.maybeObfuscationMetadata]] populated. Callers that want the obfuscator
+   * wired onto the [[org.neo4j.kernel.api.query.ExecutingQuery]] before later parse steps
+   * can throw should call this, perform the side-effect, and then call [[parseQueryPostObfuscator]].
+   */
+  def parseQueryPreObfuscator(
+    queryText: String,
+    rawQueryText: String,
+    cypherVersion: CypherVersion,
+    notificationLogger: InternalNotificationLogger,
+    plannerNameText: String = IDPPlannerName.name,
+    offset: Option[InputPosition],
+    tracer: CompilationPhaseTracer,
+    params: MapValue,
+    cancellationChecker: CancellationChecker,
+    resolver: ScopedProcedureSignatureResolver,
+    sessionDatabase: DatabaseReference,
+    isScopeQuery: Boolean,
+    shadowedFunctions: Set[String]
+  ): (BaseState, BaseContext, ParsingConfig) = {
+    val (startState, context, parsingConfig) = prepareParsingContext(
+      queryText,
+      rawQueryText,
+      cypherVersion,
+      notificationLogger,
+      plannerNameText,
+      offset,
+      tracer,
+      params,
+      cancellationChecker,
+      resolver,
+      sessionDatabase,
+      isScopeQuery,
+      shadowedFunctions
+    )
+    val preState = CompilationPhases.parsingPre(parsingConfig)
+      .transform(startState, context)
+    (preState, context, parsingConfig)
+  }
+
+  /**
+   * Run the post-obfuscator portion of the parse pipeline on a state produced by
+   * [[parseQueryPreObfuscator]].
+   */
+  def parseQueryPostObfuscator(
+    preState: BaseState,
+    context: BaseContext,
+    parsingConfig: ParsingConfig,
+    params: MapValue
+  ): BaseState =
+    CompilationPhases.parsingPost(parsingConfig, parameters = params)
+      .transform(preState, context)
+
+  /**
+   * Java-friendly variant of [[parseQuery]] that invokes `onObfuscatorReady` with the
+   * collected [[ObfuscationMetadata]] between the pre- and post-obfuscator halves. Lets
+   * callers wire the obfuscator onto an [[org.neo4j.kernel.api.query.ExecutingQuery]]
+   * (or any other consumer) before later parse steps can throw, so that failures
+   * during the post-half carry the query text into the debug/query log.
+   */
+  def parseQueryWithObfuscatorCallback(
+    queryText: String,
+    rawQueryText: String,
+    cypherVersion: CypherVersion,
+    notificationLogger: InternalNotificationLogger,
+    plannerNameText: String,
+    offset: Option[InputPosition],
+    tracer: CompilationPhaseTracer,
+    params: MapValue,
+    cancellationChecker: CancellationChecker,
+    resolver: ScopedProcedureSignatureResolver,
+    sessionDatabase: DatabaseReference,
+    isScopeQuery: Boolean,
+    shadowedFunctions: Set[String],
+    onObfuscatorReady: Consumer[ObfuscationMetadata]
+  ): BaseState = {
+    val (preState, context, parsingConfig) = parseQueryPreObfuscator(
+      queryText,
+      rawQueryText,
+      cypherVersion,
+      notificationLogger,
+      plannerNameText,
+      offset,
+      tracer,
+      params,
+      cancellationChecker,
+      resolver,
+      sessionDatabase,
+      isScopeQuery,
+      shadowedFunctions
+    )
+    onObfuscatorReady.accept(preState.maybeObfuscationMetadata.getOrElse(ObfuscationMetadata.empty()))
+    parseQueryPostObfuscator(preState, context, parsingConfig, params)
   }
 
   private def prepareParsingContext(
@@ -98,6 +199,7 @@ class CypherParsing(
     tracer: CompilationPhaseTracer,
     params: MapValue,
     cancellationChecker: CancellationChecker,
+    resolver: ScopedProcedureSignatureResolver,
     sessionDatabase: DatabaseReference,
     isScopeQuery: Boolean,
     shadowedFunctions: Set[String]
@@ -127,6 +229,7 @@ class CypherParsing(
     val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint)
 
     val parsingConfig = ParsingConfig(
+      resolveCallables = StrictResolveCallables(resolver),
       extractLiterals = config.extractLiterals,
       parameterTypeMapping = paramTypes,
       obfuscateLiterals = config.obfuscateLiterals(),

@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.compiler.phases.ResolveCallablesFromPlanContext
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -1349,7 +1349,7 @@ class RewriteLocalProcedureCallsTest extends CypherPlannerTestSuite with TestNam
       ScopeSurveyor andThen
       SemanticAnalysis(warn = Some(false)) andThen
       ExtractLocalDefinitions andThen
-      RewriteProcedureCalls
+      ResolveCallablesFromPlanContext
 
   private def initialStateWithQuery(query: String): InitialState =
     InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)

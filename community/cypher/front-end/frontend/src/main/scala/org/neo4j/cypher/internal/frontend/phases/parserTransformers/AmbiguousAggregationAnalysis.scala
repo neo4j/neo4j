@@ -24,19 +24,27 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
+import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.AggregationChecker
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 
 /**
  * Verify aggregation expressions and make sure there are no ambiguous grouping keys.
  */
 
-case object AmbiguousAggregationAnalysis extends VisitorPhase[BaseContext, BaseState] with StepSequencer.Step {
+case object AggregationsChecked extends Condition
+
+case object AmbiguousAggregationAnalysis extends VisitorPhase[BaseContext, BaseState]
+    with StepSequencer.Step
+    with ParsePipelineTransformerFactory {
 
   def findErrors(from: BaseState): Seq[SemanticErrorDef] = {
     val errors = from.statement().folder.treeFold(Set.empty[SemanticErrorDef]) {
@@ -73,4 +81,8 @@ case object AmbiguousAggregationAnalysis extends VisitorPhase[BaseContext, BaseS
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(AggregationsChecked)
 }

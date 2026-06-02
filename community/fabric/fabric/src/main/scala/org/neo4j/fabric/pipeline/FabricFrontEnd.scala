@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.setti
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.TryResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
@@ -124,6 +125,7 @@ case class FabricFrontEnd(
     ) ++ Seq(MultipleGraphs, UseAsMultipleGraphsSelector)
 
     private val parsingConfig = ParsingConfig(
+      resolveCallables = TryResolveCallables(signatures),
       extractLiterals = cypherConfig.extractLiterals,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params, cypherConfig.useParameterSizeHint),
       obfuscateLiterals = cypherConfig.obfuscateLiterals,
@@ -156,7 +158,7 @@ case class FabricFrontEnd(
 
       private val transformer =
         CompilationPhases
-          .fabricParsing(parsingConfig, signatures, params)
+          .fabricParsing(parsingConfig, params)
 
       def process(): BaseState =
         transformer.transform(

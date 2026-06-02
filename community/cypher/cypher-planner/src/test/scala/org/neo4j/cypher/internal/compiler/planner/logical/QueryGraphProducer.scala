@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.compiler.phases.ResolveCallablesFromPlanContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
@@ -133,7 +133,7 @@ trait QueryGraphProducer {
       semanticFeatures = semanticFeatures
     )
     val output = (
-      RewriteProcedureCalls andThen
+      ResolveCallablesFromPlanContext andThen
         SemanticAnalysis(warn = Some(false)) andThen
         ScopeSurveyor andThen
         Namespacer andThen

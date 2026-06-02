@@ -126,6 +126,7 @@ import org.neo4j.cypher.internal.spi.TransactionBoundIndexComparatorFactory
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.DisallowedOnSystemException
@@ -431,6 +432,15 @@ final class TransformingPlanner private[planning] (
 
   /**
    * Get the parsed query from cache, or parses and caches it.
+   *
+   * Parsing is split at the obfuscation-metadata boundary. On a cache miss we run the pre-half,
+   * wire the obfuscator onto the [[ExecutingQuery]] via `onObfuscatorReady`, then run the post-half.
+   * This enables semantic analysis errors to propagate with the query text already attached to the
+   * executing-query, so the logs can carry the `query` field.
+   * Failures in the pre-half remain un-attached (best-effort: no obfuscator yet).
+   *
+   * On a cache hit we return the cached fully-parsed [[BaseState]]. The obfuscator is wired up
+   * later by the caller's existing `onObfuscatorReady` call at the planning stage.
    */
   @throws(classOf[SyntaxException])
   private def getOrParse(
@@ -443,23 +453,32 @@ final class TransformingPlanner private[planning] (
     resolver: ScopedProcedureSignatureResolver,
     sessionDatabase: DatabaseReference,
     shadowedFunctions: Set[String],
-    cacheStrategy: CacheStrategy
+    cacheStrategy: CacheStrategy,
+    transactionalContextWrapper: TransactionalContextWrapper
   ): BaseState = {
-    def parseQuery(): BaseState = parsing.parseQuery(
-      queryText = preParsedQuery.statement,
-      rawQueryText = preParsedQuery.rawStatement,
-      cypherVersion = preParsedQuery.resolvedLanguage,
-      notificationLogger = notificationLogger,
-      plannerNameText = preParsedQuery.options.queryOptions.planner.name,
-      offset = Some(offset),
-      tracer = tracer,
-      params = params,
-      cancellationChecker = cancellationChecker,
-      resolver = resolver,
-      sessionDatabase = sessionDatabase,
-      isScopeQuery = preParsedQuery.options.queryOptions.planMode.isScope,
-      shadowedFunctions = shadowedFunctions
-    )
+    def parseQuery(): BaseState = {
+      val (preState, context, parsingConfig) = parsing.parseQueryPreObfuscator(
+        queryText = preParsedQuery.statement,
+        rawQueryText = preParsedQuery.rawStatement,
+        cypherVersion = preParsedQuery.resolvedLanguage,
+        notificationLogger = notificationLogger,
+        plannerNameText = preParsedQuery.options.queryOptions.planner.name,
+        offset = Some(offset),
+        tracer = tracer,
+        params = params,
+        cancellationChecker = cancellationChecker,
+        resolver = resolver,
+        sessionDatabase = sessionDatabase,
+        isScopeQuery = preParsedQuery.options.queryOptions.planMode.isScope,
+        shadowedFunctions = shadowedFunctions
+      )
+
+      val obfuscator = CypherQueryObfuscator(preState.maybeObfuscationMetadata.getOrElse(ObfuscationMetadata.empty()))
+      transactionalContextWrapper.kernelTransactionalContext.executingQuery
+        .onObfuscatorReady(obfuscator, offset.offset)
+
+      parsing.parseQueryPostObfuscator(preState, context, parsingConfig, params)
+    }
 
     if (!cacheStrategy.astShouldBeCached) {
       val parsedQuery = parseQuery()
@@ -529,7 +548,8 @@ final class TransformingPlanner private[planning] (
       resolver,
       sessionDatabase = sessionDatabase,
       shadowedFunctions,
-      cacheStrategy
+      cacheStrategy,
+      transactionalContextWrapper
     )
     val cacheStrategyAfterParsing = cacheStrategy.updateFromAst(syntacticQuery.statement)
 

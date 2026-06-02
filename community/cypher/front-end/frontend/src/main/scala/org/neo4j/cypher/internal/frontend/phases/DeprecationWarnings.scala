@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.notification.DeprecatedFunctionFieldNotification
 import org.neo4j.cypher.internal.notification.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.notification.DeprecatedProcedureFieldNotification
@@ -29,13 +31,28 @@ import org.neo4j.cypher.internal.notification.DeprecatedProcedureReturnFieldNoti
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.notification.ProcedureWarningNotification
 import org.neo4j.cypher.internal.notification.RedundantOptionalProcedure
+import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
+
+case object ProcedureAndFunctionDeprecationsThrown extends Condition
+case object ProcedureWarningsThrown extends Condition
 
 /**
  * Find calls to deprecated procedures and functions and generate warnings for them.
  */
-case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
+case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseContext, BaseState]
+    with StepSequencer.Step
+    with ParsePipelineTransformerFactory {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(CallInvocationsResolved, FunctionInvocationsResolved)
+  override def postConditions: Set[StepSequencer.Condition] = Set(ProcedureAndFunctionDeprecationsThrown)
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 
   override def visit(value: BaseState, context: BaseContext): Unit = {
     val warnings = findDeprecations(value.statement())
@@ -118,7 +135,15 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
 /**
  * Find calls to procedures with warnings.
  */
-case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
+case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState]
+    with StepSequencer.Step
+    with ParsePipelineTransformerFactory {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(CallInvocationsResolved, FunctionInvocationsResolved)
+  override def postConditions: Set[StepSequencer.Condition] = Set(ProcedureWarningsThrown)
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 
   override def visit(value: BaseState, context: BaseContext): Unit = {
     val warnings = findWarnings(value.statement())

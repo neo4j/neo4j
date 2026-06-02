@@ -22,20 +22,21 @@ package org.neo4j.cypher.internal.compiler.phases
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.Phase
-import org.neo4j.cypher.internal.frontend.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.frontend.phases.StrictResolveCallables
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.util.StepSequencer
 
 /**
  * Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls.
+ * Planner-side wrapper around [[StrictResolveCallables]] that pulls the resolver from [[PlannerContext]].
  */
-case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseState] with RewriteProcedureCalls {
+case object ResolveCallablesFromPlanContext extends Phase[PlannerContext, BaseState, BaseState] {
 
   override def phase = AST_REWRITE
 
   override def process(from: BaseState, context: PlannerContext): BaseState =
-    process(from, context, context.planContext)
+    StrictResolveCallables(context.planContext).process(from, context)
 
   override def postConditions: Set[StepSequencer.Condition] =
     Set(CallInvocationsResolved, FunctionInvocationsResolved)

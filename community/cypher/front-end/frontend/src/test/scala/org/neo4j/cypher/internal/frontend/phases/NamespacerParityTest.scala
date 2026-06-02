@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.postParsingBase
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
@@ -49,7 +48,9 @@ class NamespacerParityTest
   // Use the production step-sequenced pre-Namespacer pipeline so the state we hand to
   // processOld / processNew matches what the real compiler would produce.
   override def preProcessTransformer: Transformer[BaseContext, BaseState, BaseState] =
-    postParsingBase(ParsingConfig()) andThen AstRewriting() andThen SemanticAnalysis(Some(false))
+    FrontEndCompilationPhases.parsing(
+      ParsingConfig(StrictResolveCallables.NoResolver)
+    ) andThen AstRewriting() andThen SemanticAnalysis(Some(false))
 
   test("no renamings required") {
     assertParity("MATCH (n) RETURN n AS n")
@@ -385,7 +386,7 @@ class NamespacerParityTest
   test("two co-travelling exports through three-level CALL nesting with WITH pass-throughs") {
     assertParity(
       """UNWIND [] AS x
-        |WITH x, datetime() AS t
+        |WITH x, 1 AS t
         |CALL (x, t) {
         |  MERGE (a:A)
         |  MERGE (b:B)

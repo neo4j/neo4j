@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.Monitors
-import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.StrictResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.notification.devNullLogger
@@ -57,7 +57,9 @@ class InputQueryTest extends CommunityCypherTestSuite {
     )
 
   private def parser =
-    CompilationPhases.parsing(ParsingConfig(), ScopedProcedureSignatureResolver.NoResolver)
+    CompilationPhases.parsing(
+      ParsingConfig(resolveCallables = StrictResolveCallables.NoResolver)
+    )
 
   private def toPreParsedQuery(queryString: String, version: CypherVersion) =
     preParser.preParseQuery(queryString, devNullLogger, version)

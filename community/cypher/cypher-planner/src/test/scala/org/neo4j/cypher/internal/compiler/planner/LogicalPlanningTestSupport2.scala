@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
+import org.neo4j.cypher.internal.frontend.phases.StrictResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -208,7 +209,10 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     Map(GraphDatabaseInternalSettings.planning_intersection_scans_enabled -> java.lang.Boolean.TRUE)
   )
 
-  val defaultParsingConfig: ParsingConfig = ParsingConfig(extractLiterals = ExtractLiteral.NEVER)
+  val defaultParsingConfig: ParsingConfig = ParsingConfig(
+    resolveCallables = StrictResolveCallables.NoResolver,
+    extractLiterals = ExtractLiteral.NEVER
+  )
 
   def pipeLine(
     parsingConfig: ParsingConfig,
@@ -220,7 +224,9 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     val p1 =
       new Transformer[PlannerContext, BaseState, BaseState] {
         override def transform(from: BaseState, context: PlannerContext): BaseState =
-          parsing(parsingConfig, context.planContext).transform(from, context)
+          parsing(
+            parsingConfig.copy(resolveCallables = StrictResolveCallables(context.planContext))
+          ).transform(from, context)
         override def name: String = "parsing-with-context-resolver"
         override def postConditions: Set[StepSequencer.Condition] = Set.empty
       } andThen

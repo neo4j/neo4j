@@ -102,7 +102,13 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
             final var preParsedQuery = queryProcessor.preParse(query, defaultQueryLanguage);
             statementLifecycle.donePreParsing(preParsedQuery);
             var processedQuery = queryProcessor.processQuery(
-                    query, preParsedQuery, targetService, (dbRef) -> location, cancellationChecker, sessionDatabase());
+                    query,
+                    preParsedQuery,
+                    targetService,
+                    (dbRef) -> location,
+                    cancellationChecker,
+                    sessionDatabase(),
+                    statementLifecycle);
             var notifications = Stream.concat(
                             processedQuery.routingNotifications().stream(),
                             processedQuery.parsingNotifications().stream())

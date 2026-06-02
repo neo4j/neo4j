@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage.Cypher25
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
-import org.neo4j.cypher.internal.frontend.phases.TryRewriteProcedureCalls
+import org.neo4j.cypher.internal.frontend.phases.TryResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractLocalDefinitions
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ResolveLocalFunctions
@@ -98,7 +98,7 @@ trait LocalCallablesSemanticAnalysisTest
         extraStepBefore = Some(
           ScopeSurveyor andThen ResolveLocalFunctions andThen ExtractLocalDefinitions
         ),
-        extraStepInBetween = Some(TryRewriteProcedureCalls(makeResolverMock))
+        extraStepInBetween = Some(TryResolveCallables(makeResolverMock))
       ),
       features ++ Seq(LocalCallables): _*
     )

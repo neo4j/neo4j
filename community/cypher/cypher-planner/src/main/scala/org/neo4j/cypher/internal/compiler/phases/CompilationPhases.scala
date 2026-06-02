@@ -20,6 +20,9 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
@@ -64,6 +67,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LocalFunctionsResolved
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ParsePipelineTransformer
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ShadowedFunctionsUnresolved
@@ -72,6 +76,9 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates
 import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
+import org.neo4j.cypher.internal.rewriting.conditions.ContainsNoNodesOfType
+import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
@@ -99,10 +106,16 @@ object CompilationPhases extends FrontEndCompilationPhases {
         initialConditions =
           Set(BaseContains[Statement](), ShadowedFunctionsUnresolved, LocalFunctionsResolved)
             ++ PreparatoryRewriting.postConditions
+            ++ ParsePipelineTransformer.postConditions
             ++ AstRewriting.postConditions
             // ExpressionsHaveComputedDependencies is introduced by SemanticAnalysis.
             // It is currently not allowed to then also have it as an initial condition
             - ExpressionsHaveComputedDependencies
+            - PatternExpressionsHaveSemanticInfo
+            - BaseContains[SemanticState]
+            - BaseContains[SemanticTable]
+            - ContainsNoNodesOfType[UnaliasedReturnItem]()
+            - ProjectionClausesHaveSemanticInfo
       )
 
   // these steps work on LogicalPlanState.maybeQuery, up until LogicalPlanState.maybeLogicalPlan is created
@@ -173,7 +186,7 @@ object CompilationPhases extends FrontEndCompilationPhases {
   def systemPipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     ScopeSurveyor andThen
       SetSemanticsNotUpToDate andThen
-      RewriteProcedureCalls andThen
+      ResolveCallablesFromPlanContext andThen
       simplifyPredicates andThen
       AdministrationCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.phases.PlannerContextImpl
-import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.compiler.phases.ResolveCallablesFromPlanContext
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -99,7 +99,7 @@ class CypherQueryObfuscatorFactory {
 
   private val pipeline =
     Parse andThen
-      RewriteProcedureCalls andThen
+      ResolveCallablesFromPlanContext andThen
       ExtractSensitiveLiterals.andThen(ObfuscationMetadataCollection)
 
   private def plannerContext(version: CypherVersion, query: String) =

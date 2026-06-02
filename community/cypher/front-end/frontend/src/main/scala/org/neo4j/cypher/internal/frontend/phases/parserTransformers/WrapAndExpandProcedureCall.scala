@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.StatementRewriter
@@ -55,7 +53,7 @@ import org.neo4j.cypher.internal.util.bottomUp
  */
 case object WrapAndExpandProcedureCall extends StatementRewriter with ParsePipelineTransformerFactory with Step {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[SemanticTable]())
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ProcedureCallWrappedAndExpanded)
 

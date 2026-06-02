@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
-import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
@@ -38,7 +37,8 @@ import org.neo4j.cypher.internal.frontend.phases.LocalDefinitionsDirectory
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.ResolvedNonLocalCall
-import org.neo4j.cypher.internal.frontend.phases.TryRewriteProcedureCalls
+import org.neo4j.cypher.internal.frontend.phases.StrictResolveCallables
+import org.neo4j.cypher.internal.frontend.phases.TryResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode
@@ -54,7 +54,7 @@ import org.scalatest.Inside
 import scala.util.Success
 import scala.util.Try
 
-class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstructionTestSupport with Inside {
+class ResolveCallablesTest extends CypherPlannerTestSuite with AstConstructionTestSupport with Inside {
 
   private val name = procedureName("my", "proc", "foo")
   private val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
@@ -68,8 +68,8 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
     val original = SingleQuery(Seq(unresolved)) _
 
     val resolver = makeResolver()
-    val rewritten = rewriteProcedureCalls(resolver, original)
-    val rewrittenTry = tryRewriteProcedureCalls(resolver, original)
+    val rewritten = strictResolveCallables(resolver, original)
+    val rewrittenTry = tryResolveCallables(resolver, original)
 
     val expected = SingleQuery(
       Seq(
@@ -101,8 +101,8 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
     val original = SingleQuery(Seq(headClause, unresolved))(pos)
 
     val resolver = makeResolver()
-    val rewritten = rewriteProcedureCalls(resolver, original)
-    val rewrittenTry = tryRewriteProcedureCalls(resolver, original)
+    val rewritten = strictResolveCallables(resolver, original)
+    val rewrittenTry = tryResolveCallables(resolver, original)
 
     val expected =
       SingleQuery(Seq(headClause, ResolvedNonLocalCall(resolver.procedureSignature)(unresolved).coerceArguments))(pos)
@@ -111,22 +111,22 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
     rewrittenTry should equal(expected)
   }
 
-  test("TryRewriteProcedureCalls should return original for unresolved procedures") {
+  test("TryResolveCallables should return original for unresolved procedures") {
     val unresolved = UnresolvedCall(name, None, None, isStandalone = false)(pos)
     val headClause = Unwind(v"x", v"y")(pos)
     val original = SingleQuery(Seq(headClause, unresolved))(pos)
 
     val rewrittenTry =
-      Try(tryRewriteProcedureCalls(makeResolver(procSignatureLookup = _ => throw new Exception("not found")), original))
+      Try(tryResolveCallables(makeResolver(procSignatureLookup = _ => throw new Exception("not found")), original))
 
     rewrittenTry should matchPatternLike { case Success(`original`) => }
   }
 
-  test("TryRewriteProcedureCalls should return original for unresolved functions") {
+  test("TryResolveCallables should return original for unresolved functions") {
     val headClause = Unwind(function("missing", v"x"), v"y")(pos)
     val original = SingleQuery(Seq(headClause))(pos)
 
-    val rewrittenTry = tryRewriteProcedureCalls(makeResolver(), original)
+    val rewrittenTry = tryResolveCallables(makeResolver(), original)
 
     rewrittenTry should equal(original)
   }
@@ -140,8 +140,8 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
     val procLookupNoOutput: ProcedureName => ProcedureSignature = _ => signature.copy(outputSignature = None)
 
     val resolver = makeResolver(procSignatureLookup = procLookupNoOutput)
-    val rewritten = rewriteProcedureCalls(resolver, original)
-    val rewrittenTry = tryRewriteProcedureCalls(resolver, original)
+    val rewritten = strictResolveCallables(resolver, original)
+    val rewrittenTry = tryResolveCallables(resolver, original)
 
     val resolved = ResolvedNonLocalCall(procLookupNoOutput)(unresolved).coerceArguments.withFakedFullDeclarations
     val expected = SingleQuery(Seq(resolved))(pos)
@@ -162,8 +162,8 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
       resolver.signatureVersionIfResolved
     }
 
-    evaluate(resolver => rewriteProcedureCalls(resolver, original)) shouldBe None
-    evaluate(resolver => tryRewriteProcedureCalls(resolver, original)) shouldBe None
+    evaluate(resolver => strictResolveCallables(resolver, original)) shouldBe None
+    evaluate(resolver => tryResolveCallables(resolver, original)) shouldBe None
 
   }
 
@@ -179,8 +179,8 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
       resolver.signatureVersionIfResolved
     }
 
-    evaluate(resolver => rewriteProcedureCalls(resolver, original)) shouldBe defined
-    evaluate(resolver => tryRewriteProcedureCalls(resolver, original)) shouldBe defined
+    evaluate(resolver => strictResolveCallables(resolver, original)) shouldBe defined
+    evaluate(resolver => tryResolveCallables(resolver, original)) shouldBe defined
   }
 
   def makeResolver(
@@ -194,7 +194,7 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
 
   private val context = TestContext()
 
-  def rewriteProcedureCalls(
+  def strictResolveCallables(
     resolver: InstrumentedProcedureSignatureResolver,
     original: Query
   ): Query = {
@@ -203,11 +203,11 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
       maybeLocalDefinitions = Some(LocalDefinitionsDirectory.empty)
     )
     original.endoRewrite(
-      RewriteProcedureCalls.rewriter(ScopeSurveyor.process(from, context), context, resolver)
+      StrictResolveCallables(resolver).rewriter(ScopeSurveyor.process(from, context), context)
     )
   }
 
-  def tryRewriteProcedureCalls(
+  def tryResolveCallables(
     resolver: InstrumentedProcedureSignatureResolver,
     original: Query
   ): Query = {
@@ -216,7 +216,7 @@ class RewriteProcedureCallsTest extends CypherPlannerTestSuite with AstConstruct
       maybeLocalDefinitions = Some(LocalDefinitionsDirectory.empty)
     )
     original.endoRewrite(
-      TryRewriteProcedureCalls(resolver).rewriter(ScopeSurveyor.process(from, context), context)
+      TryResolveCallables(resolver).rewriter(ScopeSurveyor.process(from, context), context)
     )
   }
 }

@@ -17,9 +17,11 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.*
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.error
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -36,6 +38,7 @@ import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ZippableUtil.Zippable
 import org.neo4j.cypher.internal.util.symbols
+import org.neo4j.gqlstatus.GqlHelper
 
 import java.util.Locale
 
@@ -108,11 +111,21 @@ case class ResolvedFunctionInvocation(
     case None => this
   }
 
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = fcnSignature match {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    signatureCheck chain illegalAggregationCheck(ctx)
+
+  private def signatureCheck: SemanticCheck = fcnSignature match {
     case None =>
       functionName match {
         case fn: FunctionName if fn.name.equalsIgnoreCase("not") =>
           SemanticError.unknownFunctionNamedNot(position)
+        case FunctionName(ns, qn)
+          if ns.parts.isEmpty && qn.toLowerCase(Locale.ROOT) == "distance" =>
+          SemanticError(
+            GqlHelper.getGql42001_42N48("distance", position.offset, position.line, position.column),
+            "'distance' has been replaced by 'point.distance'",
+            position
+          )
         case _ =>
           otherCypherVersionIfExists match {
             case Some(otherVersion) =>
@@ -122,11 +135,29 @@ case class ResolvedFunctionInvocation(
           }
       }
     case Some(signature) =>
+      // `graph.names()` and `graph.propertiesByName()` are only valid when not targeting a constituent graph.
+      val fullName = functionName.fullName
+      val graphFunctionCheck: SemanticCheck =
+        if (
+          fullName.equalsIgnoreCase("graph.names") ||
+          fullName.equalsIgnoreCase("graph.propertiesByName")
+        ) {
+          SemanticCheck.fromState { state =>
+            if (state.workingGraph.nonEmpty) {
+              SemanticError(
+                GqlHelper.getGql42001_42N72(position.offset, position.line, position.column),
+                "Calling %s() is only supported on composite databases.".formatted(fullName),
+                position
+              )
+            } else success
+          }
+        } else success
+
       val expectedNumArgs = signature.inputSignature.length
       val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
       val actualNumArgs = callArguments.length + usedDefaultArgs.length
 
-      if (expectedNumArgs == actualNumArgs) {
+      val argCheck: SemanticCheck = if (expectedNumArgs == actualNumArgs) {
         // this zip is fine since it will only verify provided args in callArguments
         // default values are checked at load time
         signature.inputSignature.zip(callArguments).map {
@@ -155,6 +186,34 @@ case class ResolvedFunctionInvocation(
           )
         )
       }
+
+      graphFunctionCheck chain argCheck
+  }
+
+  private def checkNoNestedAggregateFunctions: SemanticCheck =
+    arguments.collectFirst {
+      case expr if expr.containsAggregate => expr.findAggregate.get
+    } foldSemanticCheck {
+      val prettifier = ExpressionStringifier()
+      expr =>
+        SemanticCheck.error(SemanticError.aggregateExpressionsNotAllowedInAggregationFunctions(
+          prettifier(expr),
+          expr.position
+        ))
+    }
+
+  private def illegalAggregationCheck(ctx: SemanticContext): SemanticCheck = {
+    when(isAggregate) {
+      when(ctx == Expression.SemanticContext.Simple) {
+        SemanticCheck.error(
+          SemanticError.aggregateExpressionsNotAllowedInSimpleExpressions(
+            functionName.fullName,
+            functionName.name,
+            position
+          )
+        )
+      } chain checkNoNestedAggregateFunctions
+    }
   }
 
   override def isAggregate: Boolean = fcnSignature.exists(_.isAggregate)

@@ -177,7 +177,7 @@ class ConstituentTransactionFactoryImplTest {
                 InputPosition.NONE(), cypherQueryOptions, derivedQueryOptions, false, false, systemDefaultLanguage);
         StatementType statementType = StatementType.of(StatementType.Query());
         QueryProcessor.ProcessedQueryInfo processedQueryInfo = mock(QueryProcessor.ProcessedQueryInfo.class);
-        when(queryProcessor.processQuery(any(), any(), any(), any(), any(), any()))
+        when(queryProcessor.processQuery(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(processedQueryInfo);
         when(processedQueryInfo.obfuscationMetadata()).thenReturn(Optional.of(ObfuscationMetadata.empty()));
         when(processedQueryInfo.queryOptions()).thenReturn(queryOptions);

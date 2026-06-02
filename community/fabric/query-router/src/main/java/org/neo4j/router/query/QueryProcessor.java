@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.preparser.QueryOptions;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.dbms.database.DatabaseContextProvider;
+import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.location.LocationService;
@@ -56,7 +57,8 @@ public interface QueryProcessor {
             TargetService targetService,
             LocationService locationService,
             CancellationChecker cancellationChecker,
-            DatabaseReference sessionDatabase);
+            DatabaseReference sessionDatabase,
+            QueryStatementLifecycles.StatementLifecycle statementLifecycle);
 
     long clearQueryCachesForDatabase(String databaseName);
 

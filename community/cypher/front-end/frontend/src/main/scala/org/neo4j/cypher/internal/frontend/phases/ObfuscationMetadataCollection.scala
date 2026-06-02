@@ -25,21 +25,37 @@ import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
+import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.FoldingBehavior
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.LiteralOffset
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
+
+case object ObfuscationMetadataCollected extends Condition
 
 /**
- * Collect sensitive literals and parameters.
+ * Collect sensitive literals and parameters. Must run after procedure/function resolution
+ * so that SensitiveParameter markers placed by SensitiveParameterRewriter are visible.
  */
-case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, BaseState] {
+case object ObfuscationMetadataCollection
+    extends Phase[BaseContext, BaseState, BaseState]
+    with StepSequencer.Step
+    with ParsePipelineTransformerFactory {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = METADATA_COLLECTION
 
-  override def postConditions: Set[StepSequencer.Condition] = Set.empty
+  override def preConditions: Set[StepSequencer.Condition] =
+    Set(CallInvocationsResolved, FunctionInvocationsResolved)
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(ObfuscationMetadataCollected)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val extractedParamNames = from.maybeExtractedParams.map(_.keySet.map(_.name)).getOrElse(Set.empty)
@@ -92,4 +108,6 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
     extractedParamNames: Set[String]
   ): Set[String] =
     queryParams.folder.findAllByClass[SensitiveParameter].map(_.name).toSet -- extractedParamNames
+
+  override def getTransformer(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = this
 }
