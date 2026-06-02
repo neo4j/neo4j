@@ -28,32 +28,11 @@ import java.util.Map;
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.VectorQuantizationType;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
-import org.neo4j.test.extension.RequireAlignedFormat;
 
-// doubles are currently not supported via the block serialization, IND-409
-@RequireAlignedFormat
 public class VectorQuantizationTest extends VectorSSFTestBase {
-
     public static final int DIMENSION = 8;
-
-    @Override
-    @ExtensionCallback
-    protected void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(
-                        GraphDatabaseInternalSettings.latest_kernel_version,
-                        KernelVersion.VERSION_VECTOR_BINARY_QUANTIZATION.version())
-                .setConfig(
-                        GraphDatabaseInternalSettings.latest_runtime_version,
-                        DbmsRuntimeVersion.fromKernelVersion(KernelVersion.VERSION_VECTOR_BINARY_QUANTIZATION)
-                                .getVersion());
-    }
 
     @ParameterizedTest
     @EnumSource(VectorQuantizationType.class)

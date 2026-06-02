@@ -25,17 +25,17 @@ import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene104.Lucene104Codec;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig;
 
-public class Neo4j202605BinaryVectorCodec extends FilterCodec implements Lucene10Codec {
-    private static final String CODEC_NAME = "Neo4j202605BinaryVectorCodec";
+public class Neo4j202606BinaryVectorCodec extends FilterCodec implements Lucene10Codec {
+    private static final String CODEC_NAME = "Neo4j202606BinaryVectorCodec";
     private final KnnVectorsFormat vectorFormat;
 
     /// Used by Lucene Service Loader when reading segments, will load actual values from disk
-    public Neo4j202605BinaryVectorCodec() {
+    public Neo4j202606BinaryVectorCodec() {
         this(VectorIndexConfig.EMPTY);
     }
 
     /// Used for writing and created programmatically when creating the IndexWriter
-    public Neo4j202605BinaryVectorCodec(VectorIndexConfig config) {
+    public Neo4j202606BinaryVectorCodec(VectorIndexConfig config) {
         super(CODEC_NAME, new Lucene104Codec());
         int maxDimensions = config.maxDimensions();
         this.vectorFormat = new LuceneKnnBinaryQuantizedVectorFormat(maxDimensions, config.hnsw());

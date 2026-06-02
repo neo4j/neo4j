@@ -1,4 +1,4 @@
 org.neo4j.kernel.api.impl.index.lucene.v10.codec.VectorCodecV3
 org.neo4j.kernel.api.impl.index.lucene.v10.codec.Neo4j202604NoneVectorCodec
 org.neo4j.kernel.api.impl.index.lucene.v10.codec.Neo4j202604ScalarVectorCodec
-org.neo4j.kernel.api.impl.index.lucene.v10.codec.Neo4j202605BinaryVectorCodec
+org.neo4j.kernel.api.impl.index.lucene.v10.codec.Neo4j202606BinaryVectorCodec

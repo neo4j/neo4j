@@ -56,6 +56,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptors
+import org.neo4j.internal.schema.SettingsAccessor
 import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.impl.schema.fulltext.analyzer.providers.StandardNoStopWords
@@ -108,9 +109,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val rangeProvider = AllIndexProviderDescriptors.RANGE_DESCRIPTOR.name()
   private val lookupProvider = AllIndexProviderDescriptors.TOKEN_DESCRIPTOR.name()
   private val pointProvider = AllIndexProviderDescriptors.POINT_DESCRIPTOR.name()
-  private val textV3Provider = AllIndexProviderDescriptors.TEXT_V3_DESCRIPTOR.name()
-  private val textV2Provider = AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR.name()
   private val textV1Provider = AllIndexProviderDescriptors.TEXT_V1_DESCRIPTOR.name()
+  private val textV2Provider = AllIndexProviderDescriptors.TEXT_V2_DESCRIPTOR.name()
+  private val textV3Provider = AllIndexProviderDescriptors.TEXT_V3_DESCRIPTOR.name()
   private val fulltextV1Provider = AllIndexProviderDescriptors.FULLTEXT_V1_DESCRIPTOR.name()
   private val fulltextV2Provider = AllIndexProviderDescriptors.FULLTEXT_V2_DESCRIPTOR.name()
   private val vectorV1Provider = AllIndexProviderDescriptors.VECTOR_V1_DESCRIPTOR.name()
@@ -197,10 +198,11 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val relFulltextConfigMapString =
     s"{`$fulltextAnalyzer`: '$fulltextAnalyzerName2',`$fulltextEventuallyConsistent`: true}"
 
-  private def vectorConfig: IndexConfig = IndexSettingUtil.defaultConfigForTest(IndexType.VECTOR.toPublicApi)
+  private def rawVectorSettings: SettingsAccessor =
+    new IndexConfigAccessor(IndexSettingUtil.defaultConfigForTest(IndexType.VECTOR.toPublicApi))
 
   private def vectorConfig(version: VectorIndexVersion): IndexConfig =
-    version.indexSettingValidator.validateToTypedConfig(new IndexConfigAccessor(vectorConfig)).config
+    version.indexSettingValidator.validateToTypedConfig(rawVectorSettings).config
 
   private def vectorConfigMap(version: VectorIndexVersion): MapValue = {
     val entries = vectorConfig(version).entries
@@ -324,21 +326,21 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       .materialise(9)
 
   private val vectorNodeIndexDescriptor =
-    IndexPrototype.forSchema(labelDescriptor, VectorIndexVersion.V1_0.descriptor())
+    IndexPrototype.forSchema(labelDescriptor, AllIndexProviderDescriptors.VECTOR_V1_DESCRIPTOR)
       .withIndexType(IndexType.VECTOR)
       .withName("index10")
       .withIndexConfig(vectorConfig(VectorIndexVersion.V1_0)) // emulating the actual config
       .materialise(10)
 
   private val vectorRelIndexDescriptor =
-    IndexPrototype.forSchema(relTypeDescriptor, VectorIndexVersion.V2_0.descriptor())
+    IndexPrototype.forSchema(relTypeDescriptor, AllIndexProviderDescriptors.VECTOR_V2_DESCRIPTOR)
       .withIndexType(IndexType.VECTOR)
       .withName("index11")
       .withIndexConfig(vectorConfig(VectorIndexVersion.V2_0)) // emulating the actual config
       .materialise(10)
 
   private val vectorRelV3IndexDescriptor =
-    IndexPrototype.forSchema(relTypeDescriptor, VectorIndexVersion.V3_0.descriptor())
+    IndexPrototype.forSchema(relTypeDescriptor, AllIndexProviderDescriptors.VECTOR_V3_DESCRIPTOR)
       .withIndexType(IndexType.VECTOR)
       .withName("index12")
       .withIndexConfig(vectorConfig(VectorIndexVersion.V3_0)) // emulating the actual config
@@ -2033,7 +2035,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = vectorV3Provider,
-      options = Map("indexConfig" -> vectorConfigMap(VectorIndexVersion.V2_0)),
+      options = Map("indexConfig" -> vectorConfigMap(VectorIndexVersion.V3_0)),
       createStatement = s"CREATE VECTOR INDEX `index12` FOR ()-[r:`$relType`]-() ON (r.`$prop`) " +
         s"OPTIONS {indexConfig: ${vectorConfigMapString(VectorIndexVersion.V3_0)}}"
     )

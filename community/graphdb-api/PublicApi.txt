@@ -490,10 +490,12 @@ org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_3D_Max() org.neo4j.graphdb.
 org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_3D_Min() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Max() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Min() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::vector_Default_Search_Expansion_Factor() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::vector_Dimensions() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::vector_Hnsw_Ef_Construction() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::vector_Hnsw_M() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::vector_Quantization_Enabled() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::vector_Quantization_Type() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::vector_Similarity_Function() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.IndexType>
 org.neo4j.graphdb.schema.IndexType::FULLTEXT org.neo4j.graphdb.schema.IndexType public static final

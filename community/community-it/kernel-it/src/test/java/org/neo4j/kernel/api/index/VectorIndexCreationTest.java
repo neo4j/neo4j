@@ -67,7 +67,6 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.InternalIndexSetting;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.KernelVersion;
@@ -79,6 +78,7 @@ import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.Tokens;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -89,7 +89,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class VectorIndexCreationTest {
-    private static final KernelVersion KERNEL_VERSION = KernelVersion.VERSION_VECTOR_BINARY_QUANTIZATION;
+    private static final KernelVersion KERNEL_VERSION = LatestVersions.LATEST_KERNEL_VERSION;
     private static final VectorIndexVersion LATEST = VectorIndexVersion.latestSupportedVersion(KERNEL_VERSION);
 
     abstract static class Entity {
@@ -518,7 +518,7 @@ public class VectorIndexCreationTest {
 
         @Nested
         class DefaultSearchExpansionFactor extends TestBase {
-            private static final IndexSetting SETTING = InternalIndexSetting.vector_Default_Search_Expansion_Factor();
+            private static final IndexSetting SETTING = IndexSetting.vector_Default_Search_Expansion_Factor();
             private static final Map<VectorQuantizationType, Value> DEFAULT_VALUES = Map.ofEntries(
                     entry(VectorQuantizationType.NONE, Values.doubleValue(1.0)),
                     entry(VectorQuantizationType.SCALAR, Values.doubleValue(1.5)),
@@ -778,7 +778,7 @@ public class VectorIndexCreationTest {
 
         @Nested
         class QuantizationTypes extends TestBase {
-            private static final IndexSetting SETTING = InternalIndexSetting.vector_Quantization_Type();
+            private static final IndexSetting SETTING = IndexSetting.vector_Quantization_Type();
             private static final Value DEFAULT_VALUE = Values.utf8Value(VectorQuantizationType.SCALAR.name());
 
             QuantizationTypes() {

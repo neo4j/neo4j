@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.notification.VectorIndexDimensionsNotSpecifiedNotification
 import org.neo4j.cypher.internal.runtime.IndexProviderContext
+import org.neo4j.cypher.operations.CypherTypeValueMapper.valueType
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.internal.helpers.InclusiveRange
@@ -42,6 +43,7 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
@@ -127,6 +129,7 @@ case class CreateVectorIndexOptionsConverter(context: IndexProviderContext, late
       val legacyExceptionValidTypes: Map[Class[_], String] =
         Map(
           classOf[IntegralValue] -> "an Integer",
+          classOf[FloatingPointValue] -> "a Float",
           classOf[TextValue] -> "a String",
           classOf[BooleanValue] -> "a Boolean"
         )
@@ -160,9 +163,7 @@ case class CreateVectorIndexOptionsConverter(context: IndexProviderContext, late
           requirement.get match {
             case range: InclusiveRange[_] => throw InvalidArgumentsException.indexSettingOutOfRange(
                 invalidValue.settingName,
-                // In practice all vector setting ranges are INTEGER,
-                //  if that changes we need to update this
-                "INTEGER NOT NULL",
+                valueType(Values.of(range.min)),
                 range.min.toString,
                 range.max.toString,
                 value

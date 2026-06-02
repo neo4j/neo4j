@@ -37,10 +37,12 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MIN
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DEFAULT_SEARCH_EXPANSION_FACTOR
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_HNSW_EF_CONSTRUCTION
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_HNSW_M
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_QUANTIZATION_ENABLED
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_QUANTIZATION_TYPE
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.IndexConfig
@@ -215,7 +217,9 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
     indexSettingsToCaseInsensitiveNames(
       VECTOR_DIMENSIONS,
       VECTOR_SIMILARITY_FUNCTION,
+      VECTOR_DEFAULT_SEARCH_EXPANSION_FACTOR,
       VECTOR_QUANTIZATION_ENABLED,
+      VECTOR_QUANTIZATION_TYPE,
       VECTOR_HNSW_M,
       VECTOR_HNSW_EF_CONSTRUCTION
     )

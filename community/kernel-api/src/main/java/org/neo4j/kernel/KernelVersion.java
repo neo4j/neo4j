@@ -124,11 +124,11 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING = V2026_01;
     public static final KernelVersion VERSION_PARTITIONED_BLOCK_SCHEMA_RULE_TEXT = V2026_01;
     public static final KernelVersion VERSION_SPD_FILTERED_PROPERTY_SHARD_TX_LOG = V2026_02;
-    public static final KernelVersion VERSION_VECTOR_BINARY_QUANTIZATION = GLORIOUS_FUTURE;
+    public static final KernelVersion VERSION_VECTOR_BINARY_QUANTIZATION = V2026_06;
 
     // Keep updated each time there is an new schema rule added
     // related to IntegrityValidator
-    public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING;
+    public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_VECTOR_BINARY_QUANTIZATION;
     public static final KernelVersion VERSION_UUID_VALUE_INTRODUCED = GLORIOUS_FUTURE;
 
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database

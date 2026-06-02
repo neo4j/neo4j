@@ -91,7 +91,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
     }
 
     public static String stringify(Object value) {
-        return value instanceof final AnyValue anyValue ? anyValue.prettify() : String.valueOf(value);
+        return value instanceof AnyValue anyValue ? anyValue.prettify() : String.valueOf(value);
     }
 
     public void reset() {

@@ -2225,7 +2225,7 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
       }
 
       test(
-        s"CREATE VECTOR INDEX FOR $pattern ON (v.name) OPTIONS { indexConfig : {`vector.dimensions`: 1536, `vector.quantization.enabled`: true }"
+        s"CREATE VECTOR INDEX FOR $pattern ON (v.name) OPTIONS { indexConfig : {`vector.dimensions`: 1536, `vector.quantization.type`: 'SCALAR' }"
       ) {
         val error = intercept[InvalidArgumentsException] {
           vectorV1ConverterForDefaultCypherVersion.apply(createIndex(
@@ -2235,14 +2235,14 @@ class SchemaCommandConverterTest extends CommunityCypherTestSuite {
             ast.OptionsMap(Map(
               "indexConfig" -> mapOf(
                 "vector.dimensions" -> literalInt(1536),
-                "vector.quantization.enabled" -> literalBoolean(true)
+                "vector.quantization.type" -> literalString("SCALAR")
               )
             ))(InputPosition.NONE)
           ))
         }
         error.getMessage should includeAllOf(
-          "Could not create vector index with specified index config '{vector.dimensions: 1536, vector.quantization.enabled: true}'",
-          "'vector.quantization.enabled' is an unrecognized setting. Supported: [vector.dimensions, vector.similarity_function]"
+          "Could not create vector index with specified index config '{vector.dimensions: 1536, vector.quantization.type: \"SCALAR\"}'",
+          "'vector.quantization.type' is an unrecognized setting. Supported: [vector.dimensions, vector.similarity_function]"
         )
       }
   }

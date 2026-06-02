@@ -176,8 +176,33 @@ public interface IndexSetting {
         return IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION;
     }
 
+    /**
+     * Configure the default search expansion factor used in vector indexes; indexes of type {@link IndexType#VECTOR}
+     * This setting is given as a {@link Double}.
+     */
+    static IndexSetting vector_Default_Search_Expansion_Factor() {
+        return IndexSettingImpl.VECTOR_DEFAULT_SEARCH_EXPANSION_FACTOR;
+    }
+
+    /**
+     * Enable quantization of the vectors used in vector indexes; indexes of type {@link IndexType#VECTOR}
+     * This setting is given as a {@link Boolean}.
+     * @deprecated As of Neo4j 2026.06 with newer vector indexes, please use {@link #vector_Quantization_Type()}
+     * instead.
+     * @see #vector_Quantization_Type()
+     */
+    @Deprecated(since = "Neo4j 2026.06")
     static IndexSetting vector_Quantization_Enabled() {
         return IndexSettingImpl.VECTOR_QUANTIZATION_ENABLED;
+    }
+
+    /**
+     * Configure the quantization type of the vectors used in vector indexes; indexes of type {@link IndexType#VECTOR}
+     * This setting is given as a {@link String}.
+     * Possible values are {@code "NONE"}, {@code "SCALAR"}, and {@code "BINARY"}.
+     */
+    static IndexSetting vector_Quantization_Type() {
+        return IndexSettingImpl.VECTOR_QUANTIZATION_TYPE;
     }
 
     /**

@@ -307,12 +307,13 @@ public class InvalidArgumentsException extends GqlException implements Status.Ha
 
     public static InvalidArgumentsException invalidVectorIndexConfig(String schemaType, AnyValue input) {
         var oldMsg = String.format(
-                "Could not create %s with specified index config '%s'. Expected a map from String to Strings, Integers and Booleans.",
+                "Could not create %s with specified index config '%s'. "
+                        + "Expected a map from String to Booleans, Strings, Integers and Doubles.",
                 schemaType, input.prettify());
         return invalidInput(
                 input,
                 GqlParams.StringParam.cmd.process("indexConfig"),
-                List.of("MAP<STRING, BOOLEAN | STRING | INTEGER>"),
+                List.of("MAP<STRING, BOOLEAN | STRING | INTEGER | FLOAT>"),
                 oldMsg);
     }
 

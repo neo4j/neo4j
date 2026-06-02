@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
@@ -47,8 +48,8 @@ import org.eclipse.collections.api.factory.primitive.ShortLists;
 import org.eclipse.collections.api.list.MutableList;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingUtil;
+import org.neo4j.internal.helpers.NameUtil;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.InternalIndexSetting;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.SettingsAccessor.IndexSettingObjectMapAccessor;
 import org.neo4j.kernel.api.impl.schema.vector.Neo4jVectorSimilarityFunction;
@@ -57,6 +58,8 @@ import org.neo4j.kernel.api.impl.schema.vector.VectorQuantizationType;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.AnyValueWriter.EntityMode;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.LongValue;
@@ -64,6 +67,7 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.storable.VectorValue;
+import org.neo4j.values.utils.PrettyPrinter;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -730,7 +734,7 @@ public class VectorTestUtils {
         }
 
         public VectorIndexSettings withDefaultSearchExpansionFactor(double expansionFactor) {
-            return set(InternalIndexSetting.vector_Default_Search_Expansion_Factor(), expansionFactor);
+            return set(IndexSetting.vector_Default_Search_Expansion_Factor(), expansionFactor);
         }
 
         public VectorIndexSettings withQuantizationEnabled() {
@@ -750,7 +754,7 @@ public class VectorTestUtils {
         }
 
         public VectorIndexSettings withQuantizationType(String quantizationType) {
-            return set(InternalIndexSetting.vector_Quantization_Type(), quantizationType);
+            return set(IndexSetting.vector_Quantization_Type(), quantizationType);
         }
 
         public VectorIndexSettings withHnswM(int M) {
@@ -789,6 +793,14 @@ public class VectorTestUtils {
             return from(toIndexConfigWith(version)).toStringObjectMap();
         }
 
+        public SortedMap<String, Value> toStringValueMap() {
+            return toIndexConfig().asMap();
+        }
+
+        public SortedMap<String, Value> toStringValueMapWith(VectorIndexVersion version) {
+            return toIndexConfigWith(version).asMap();
+        }
+
         public MapValue toMapValue() {
             MapValueBuilder mapBuilder = new MapValueBuilder(settings.size());
             settings.forEach(
@@ -806,6 +818,32 @@ public class VectorTestUtils {
 
         public SettingsAccessor toSettingsAccessorWith(VectorIndexVersion version) {
             return new IndexSettingObjectMapAccessor(toMapWith(version));
+        }
+
+        @Override
+        public String toString() {
+            PrettyPrinter pp = new PrettyPrinter();
+            writeTo(pp);
+            return pp.value();
+        }
+
+        public String toStringWith(VectorIndexVersion version) {
+            PrettyPrinter pp = new PrettyPrinter("'", EntityMode.FULL);
+            write(pp, toStringValueMapWith(version));
+            return pp.value();
+        }
+
+        public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
+            write(writer, toStringValueMap());
+        }
+
+        private static <E extends Exception> void write(AnyValueWriter<E> writer, Map<String, Value> map) throws E {
+            writer.beginMap(map.size());
+            for (Entry<String, Value> entry : map.entrySet()) {
+                writer.writeString(NameUtil.forceEscapeName(entry.getKey()));
+                entry.getValue().writeTo(writer);
+            }
+            writer.endMap();
         }
     }
 }

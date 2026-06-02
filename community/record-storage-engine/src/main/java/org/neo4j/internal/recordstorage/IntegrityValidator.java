@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.TypeRepresentation;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -65,10 +66,10 @@ class IntegrityValidator {
             return;
         }
 
-        if (schemaRule instanceof final IndexDescriptor index) {
+        if (schemaRule instanceof IndexDescriptor index) {
             final String schemaType = "index";
 
-            final SchemaDescriptor schema = index.schema();
+            SchemaDescriptor schema = index.schema();
             if (index.getIndexType() == IndexType.VECTOR) {
                 switch (schema.entityType()) {
                     case NODE -> {
@@ -92,8 +93,8 @@ class IntegrityValidator {
                 }
             }
 
-        } else if (schemaRule instanceof final ConstraintDescriptor constraint) {
-            final var schemaType = "constraint";
+        } else if (schemaRule instanceof ConstraintDescriptor constraint) {
+            final String schemaType = "constraint";
 
             if ((constraint.isRelationshipUniquenessConstraint() || constraint.isRelationshipKeyConstraint())
                     && kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)) {
@@ -107,7 +108,8 @@ class IntegrityValidator {
                             schemaType, constraint, kernelVersion, VERSION_TYPE_CONSTRAINTS_INTRODUCED);
                 }
 
-                final var propertyType = constraint.asPropertyTypeConstraint().propertyType();
+                PropertyTypeSet propertyType =
+                        constraint.asPropertyTypeConstraint().propertyType();
                 if ((TypeRepresentation.isUnion(propertyType) || TypeRepresentation.hasListTypes(propertyType))
                         && kernelVersion.isLessThan(VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED)) {
                     throw upgradeNeededForSchemaRule(

@@ -54,7 +54,6 @@ import org.neo4j.internal.schema.IndexSettingsProcessor;
 import org.neo4j.internal.schema.IndexSettingsProcessor.ValidatingIndexSettingsProcessor;
 import org.neo4j.internal.schema.IndexSettingsRequirements.ClassRequirement;
 import org.neo4j.internal.schema.IndexSettingsRequirements.DefaultRequirement;
-import org.neo4j.internal.schema.InternalIndexSetting;
 import org.neo4j.internal.schema.KnownIndexSettingRecords;
 import org.neo4j.internal.schema.SingleIndexSettingConverter.IntegerToOptionalIntConverter;
 import org.neo4j.internal.schema.SingleIndexSettingConverter.StringToUpperCaseConverter;
@@ -78,10 +77,9 @@ import org.neo4j.values.storable.Values;
 public class VectorIndexConfigUtils {
     static final IndexSetting DIMENSIONS = IndexSetting.vector_Dimensions();
     static final IndexSetting SIMILARITY_FUNCTION = IndexSetting.vector_Similarity_Function();
-    static final IndexSetting DEFAULT_SEARCH_EXPANSION_FACTOR =
-            InternalIndexSetting.vector_Default_Search_Expansion_Factor();
+    static final IndexSetting DEFAULT_SEARCH_EXPANSION_FACTOR = IndexSetting.vector_Default_Search_Expansion_Factor();
     static final IndexSetting QUANTIZATION_ENABLED = IndexSetting.vector_Quantization_Enabled();
-    static final IndexSetting QUANTIZATION_TYPE = InternalIndexSetting.vector_Quantization_Type();
+    static final IndexSetting QUANTIZATION_TYPE = IndexSetting.vector_Quantization_Type();
     static final IndexSetting HNSW_M = IndexSetting.vector_Hnsw_M();
     static final IndexSetting HNSW_EF_CONSTRUCTION = IndexSetting.vector_Hnsw_Ef_Construction();
 
