@@ -60,7 +60,7 @@ public record ChunkedBatchRepresentation(
                 new MutableLong(logEntryChunkStart.getAppendIndex()),
                 logEntryChunkStart.getTimeWritten(),
                 (start instanceof LogEntryStart es) ? es.getLastCommittedTxWhenTransactionStarted() : UNKNOWN_TX_ID,
-                logEntryChunkStart.getTimeWritten(),
+                (end instanceof LogEntryCommit ec) ? ec.getTimeWritten() : logEntryChunkStart.getTimeWritten(),
                 (logEntryChunkStart.getLeaseId() != NO_LEASE) ? logEntryChunkStart.getLeaseId() : leaseId,
                 logEntryChunkStart.kernelVersion(),
                 Subject.AUTH_DISABLED);
