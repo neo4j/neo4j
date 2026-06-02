@@ -625,6 +625,167 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
         }
 
+        // e.g. FOR (n) WHERE n.prop1 = date('2024-08-23'), one case per allow-listed temporal
+        test(
+          s"property rules using WHERE syntax with allow-listed temporal functions should pass semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val cases = Seq[(String, Expression)](
+            ("date", function("date", literalString("2024-08-23"))),
+            ("datetime", function("datetime", literalString("2024-08-24T12:50:35+01:00"))),
+            ("localdatetime", function("localdatetime", literalString("2024-08-24T12:50:35"))),
+            ("localtime", function("localtime", literalString("12:50:35"))),
+            ("time", function("time", literalString("12:50:35+01:00"))),
+            ("duration", function("duration", literalString("PT30S"))),
+            ("point", function("point", mapOfInt("x" -> 1, "y" -> 2)))
+          )
+          cases.map(_._1) should contain theSameElementsAs
+            AdministrationCommand.propertyRuleAllowedTemporalFunctions
+          cases.foreach { case (name, call) =>
+            withClue(s"$name: ") {
+              val privilege = new GrantPrivilege(
+                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+                false,
+                None,
+                qualifierFn(
+                  Some(varFor("n", p)),
+                  op(
+                    prop(varFor("n"), "prop1"),
+                    call
+                  )
+                ),
+                Seq(literalString("role1"))
+              )(p)
+
+              val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
+              result.errors.isEmpty shouldBe true
+            }
+          }
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = DATE('2024-08-23')
+        test(
+          s"property rules using WHERE syntax with allow-listed temporal functions are case-insensitive ($qualifierDescription)($operator)"
+        ) {
+          Seq[(String, Expression)](
+            ("DATE", function("DATE", literalString("2024-08-23"))),
+            ("DateTime", function("DateTime", literalString("2024-08-24T12:50:35+01:00"))),
+            ("POINT", function("POINT", mapOfInt("x" -> 1, "y" -> 2)))
+          ).foreach { case (name, call) =>
+            withClue(s"$name: ") {
+              val privilege = new GrantPrivilege(
+                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+                false,
+                None,
+                qualifierFn(
+                  Some(varFor("n", p)),
+                  op(
+                    prop(varFor("n"), "prop1"),
+                    call
+                  )
+                ),
+                Seq(literalString("role1"))
+              )(p)
+
+              val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
+              result.errors.isEmpty shouldBe true
+            }
+          }
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = toLower('x') — built-in but not allow-listed
+        test(
+          s"property rules using WHERE syntax with non-allow-listed built-in functions should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          Seq[(String, Expression)](
+            ("toLower", function("toLower", literalString("X"))),
+            ("coalesce", function("coalesce", literalString("a"), literalString("b")))
+          ).foreach { case (name, call) =>
+            withClue(s"$name: ") {
+              val privilege = new GrantPrivilege(
+                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+                false,
+                None,
+                qualifierFn(
+                  Some(varFor("n", p)),
+                  op(
+                    prop(varFor("n"), "prop1"),
+                    call
+                  )
+                ),
+                Seq(literalString("role1"))
+              )(p)
+
+              val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
+              result.errors.size shouldBe 1
+              val e = result.errors.head
+              e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+              e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+              e.msg should startWith("Failed to administer property rule.")
+              e.msg should include(
+                "is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+              )
+            }
+          }
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = my.test.func() — namespaced UDF call
+        test(
+          s"property rules using WHERE syntax with a namespaced user-defined function should fail semantic checking on DENY ($qualifierDescription)($operator)"
+        ) {
+          val privilege = new DenyPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(varFor("n", p)),
+              op(
+                prop(varFor("n"), "prop1"),
+                function(Seq("my", "test"), "func")
+              )
+            ),
+            Seq(literalString("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
+          result.errors.size shouldBe 1
+          val e = result.errors.head
+          e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+          e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+          e.msg should startWith("Failed to administer property rule.")
+          e.msg should include(
+            "is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+          )
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = my.test.date() — namespaced UDF whose tail name shadows an allow-listed temporal
+        test(
+          s"property rules using WHERE syntax with a namespaced user-defined function shadowing a temporal name should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(varFor("n", p)),
+              op(
+                prop(varFor("n"), "prop1"),
+                function(Seq("my", "test"), "date")
+              )
+            ),
+            Seq(literalString("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
+          result.errors.size shouldBe 1
+          val e = result.errors.head
+          e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+          e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+          e.msg should startWith("Failed to administer property rule.")
+          e.msg should include(
+            "is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+          )
+        }
+
         // e.g. FOR (n) WHERE n.prop1 = [1, 2]
         test(
           s"property rules using WHERE syntax with List of literals should fail semantic checking ($qualifierDescription)($operator)"
@@ -3697,6 +3858,165 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
     // Does not fail since we don't evaluate the inner expression
     authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("CREATE AUTH RULE authRule SET CONDITION accepts every allow-listed function") {
+    val allowListed = Seq(
+      "abac.oidc.user_attribute",
+      "abac.local.user_tags",
+      "range",
+      "reduce",
+      "reverse",
+      "tail",
+      "toBooleanList",
+      "toFloatList",
+      "toIntegerList",
+      "toStringList",
+      "abs",
+      "ceil",
+      "floor",
+      "isNaN",
+      "round",
+      "sign",
+      "all",
+      "any",
+      "isEmpty",
+      "none",
+      "single",
+      "char_length",
+      "character_length",
+      "coalesce",
+      "head",
+      "last",
+      "nullIf",
+      "size",
+      "toBoolean",
+      "toBooleanOrNull",
+      "toFloat",
+      "toFloatOrNull",
+      "toInteger",
+      "toIntegerOrNull",
+      "btrim",
+      "left",
+      "lower",
+      "ltrim",
+      "replace",
+      "right",
+      "rtrim",
+      "split",
+      "substring",
+      "toLower",
+      "toString",
+      "toStringOrNull",
+      "toUpper",
+      "trim",
+      "upper",
+      "duration",
+      "duration.between",
+      "duration.inDays",
+      "duration.inMonths",
+      "duration.inSeconds",
+      "date",
+      "date.transaction",
+      "date.truncate",
+      "datetime",
+      "datetime.transaction",
+      "datetime.fromEpoch",
+      "datetime.fromEpochMillis",
+      "datetime.truncate",
+      "localdatetime",
+      "localdatetime.transaction",
+      "localdatetime.truncate",
+      "localtime",
+      "localtime.transaction",
+      "localtime.truncate",
+      "time",
+      "time.transaction",
+      "time.truncate"
+    )
+
+    allowListed.map(_.toLowerCase) should contain theSameElementsAs
+      AdministrationCommand.authRuleAllowListedFunctions
+
+    allowListed.foreach { fnName =>
+      withClue(s"$fnName: ") {
+        val authRule = CreateAuthRule(
+          literalString("authRule"),
+          IfExistsThrowError,
+          List(
+            AuthRuleCondition(Equals(
+              FunctionInvocation(
+                name = FunctionName(fnName)(p),
+                argument = literalString("x")
+              )(p),
+              literalString("v")
+            )(p))(p)
+          )
+        )(p)
+
+        authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+      }
+    }
+  }
+
+  test("CREATE AUTH RULE authRule SET CONDITION accepts uppercase variants of allow-listed functions") {
+    Seq("DATE", "DateTime", "TOLOWER").foreach { fnName =>
+      withClue(s"$fnName: ") {
+        val authRule = CreateAuthRule(
+          literalString("authRule"),
+          IfExistsThrowError,
+          List(
+            AuthRuleCondition(Equals(
+              FunctionInvocation(
+                name = FunctionName(fnName)(p),
+                argument = literalString("x")
+              )(p),
+              literalString("v")
+            )(p))(p)
+          )
+        )(p)
+
+        authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+      }
+    }
+  }
+
+  test("ALTER AUTH RULE authRule SET CONDITION my.test.date('x') = 'v' — UDF shadowing an allow-listed name") {
+    // Uses ALTER (rather than CREATE like its siblings) so the AuthRule check chain is exercised
+    // through both entry points.
+    val authRule = AlterAuthRule(
+      literalString("authRule"),
+      ifExists = false,
+      List(
+        AuthRuleCondition(Equals(
+          FunctionInvocation(
+            name = FunctionName(Namespace(List("my", "test"))(pos1), "date")(pos1),
+            argument = literalString("x")
+          )(pos1),
+          literalString("v")
+        )(p))(p)
+      )
+    )(p)
+
+    authRule.semanticCheck.run(
+      initialStateWithFeatureFlags,
+      semanticContextCypher25
+    ).errors should equal(SemanticCheckResult
+      .error(
+        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+          .atPosition(pos1.offset, pos1.line, pos1.column)
+          .withCause(
+            ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N05)
+              .atPosition(pos1.offset, pos1.line, pos1.column)
+              .withParam(GqlParams.StringParam.input, "my.test.date")
+              .withParam(GqlParams.StringParam.context, "function in auth rule condition")
+              .build()
+          ).build(),
+        initialStateWithFeatureFlags,
+        """42001
+          |22N05: Invalid input 'my.test.date' for function in auth rule condition.""".stripMargin,
+        pos1
+      ).errors)
   }
 
   test("CREATE AUTH RULE authRule SET CONDITION unknown.function('HELLO') = 'SE'") {

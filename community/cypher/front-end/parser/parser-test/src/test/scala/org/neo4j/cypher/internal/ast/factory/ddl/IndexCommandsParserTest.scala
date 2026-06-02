@@ -2800,6 +2800,14 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     )
   }
 
+  test("CREATE LOOKUP INDEX FOR (n) ON EACH my.labels(n)") {
+    failsParsing[ast.Statements].withMessageStart("Invalid input '.'")
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH my.type(r)") {
+    failsParsing[ast.Statements].withMessageStart("Invalid input '.'")
+  }
+
   test("CREATE INDEX FOR n1:Person ON (n2.name)") {
     failsParsing[ast.Statements].withSyntaxError(
       """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))

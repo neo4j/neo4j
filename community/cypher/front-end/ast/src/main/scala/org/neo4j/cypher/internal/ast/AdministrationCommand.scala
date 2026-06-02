@@ -18,8 +18,10 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
+import org.neo4j.cypher.internal.ast.AdministrationCommand.authRuleAllowListedFunctions
 import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringLiteralOrParameter
 import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringOrStringListOrParameter
+import org.neo4j.cypher.internal.ast.AdministrationCommand.propertyRuleAllowedTemporalFunctions
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -112,6 +114,92 @@ sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnaly
 
 object AdministrationCommand extends SemanticAnalysisTooling {
   val NATIVE_AUTH = "native"
+
+  val propertyRuleAllowedTemporalFunctions: Seq[String] =
+    Seq("date", "datetime", "localdatetime", "localtime", "time", "duration", "point")
+
+  val authRuleAllowListedFunctions: Seq[String] = Seq(
+    // ABAC oidc user attributes function
+    "abac.oidc.user_attribute",
+    // ABAC local user tags function
+    "abac.local.user_tags",
+    // List functions
+    "range",
+    "reduce",
+    "reverse",
+    "tail",
+    "toBooleanList",
+    "toFloatList",
+    "toIntegerList",
+    "toStringList",
+    // Numeric functions
+    "abs",
+    "ceil",
+    "floor",
+    "isNaN",
+    "round",
+    "sign",
+    // Predicate functions,
+    "all",
+    "any",
+    "isEmpty",
+    "none",
+    "single",
+    // Scalar functions
+    "char_length",
+    "character_length",
+    "coalesce",
+    "head",
+    "last",
+    "nullIf",
+    "size",
+    "toBoolean",
+    "toBooleanOrNull",
+    "toFloat",
+    "toFloatOrNull",
+    "toInteger",
+    "toIntegerOrNull",
+    // String Functions
+    "btrim",
+    "left",
+    "lower",
+    "ltrim",
+    "replace",
+    "right",
+    "rtrim",
+    "split",
+    "substring",
+    "toLower",
+    "toString",
+    "toStringOrNull",
+    "toUpper",
+    "trim",
+    "upper",
+    // Temporal duration functions
+    "duration",
+    "duration.between",
+    "duration.inDays",
+    "duration.inMonths",
+    "duration.inSeconds",
+    // Temporal instant functions
+    "date",
+    "date.transaction",
+    "date.truncate",
+    "datetime",
+    "datetime.transaction",
+    "datetime.fromEpoch",
+    "datetime.fromEpochMillis",
+    "datetime.truncate",
+    "localdatetime",
+    "localdatetime.transaction",
+    "localdatetime.truncate",
+    "localtime",
+    "localtime.transaction",
+    "localtime.truncate",
+    "time",
+    "time.transaction",
+    "time.truncate"
+  ).map(_.toLowerCase)
 
   private[ast] def checkIsStringLiteralOrParameter(value: String, expression: Expression): SemanticCheck =
     expression match {
@@ -1026,92 +1114,13 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
   }
 
   protected def checkAllowlist(functionInvocation: FunctionInvocationLike): SemanticCheck = {
-    val allowListedFunctions = Seq(
-      // ABAC oidc user attributes function
-      "abac.oidc.user_attribute",
-      // ABAC local user tags function
-      "abac.local.user_tags",
-      // List functions
-      "range",
-      "reduce",
-      "reverse",
-      "tail",
-      "toBooleanList",
-      "toFloatList",
-      "toIntegerList",
-      "toStringList",
-      // Numeric functions
-      "abs",
-      "ceil",
-      "floor",
-      "isNaN",
-      "round",
-      "sign",
-      // Predicate functions,
-      "all",
-      "any",
-      "isEmpty",
-      "none",
-      "single",
-      // Scalar functions
-      "char_length",
-      "character_length",
-      "coalesce",
-      "head",
-      "last",
-      "nullIf",
-      "size",
-      "toBoolean",
-      "toBooleanOrNull",
-      "toFloat",
-      "toFloatOrNull",
-      "toInteger",
-      "toIntegerOrNull",
-      // String Functions
-      "btrim",
-      "left",
-      "lower",
-      "ltrim",
-      "replace",
-      "reverse",
-      "right",
-      "rtrim",
-      "split",
-      "substring",
-      "toLower",
-      "toString",
-      "toStringOrNull",
-      "toUpper",
-      "trim",
-      "upper",
-      // Temporal duration functions
-      "duration",
-      "duration.between",
-      "duration.inDays",
-      "duration.inMonths",
-      "duration.inSeconds",
-      // Temporal instant functions
-      "date",
-      "date.transaction",
-      "date.truncate",
-      "datetime",
-      "datetime.transaction",
-      "datetime.fromEpoch",
-      "datetime.fromEpochMillis",
-      "datetime.truncate",
-      "localdatetime",
-      "localdatetime.transaction",
-      "localdatetime.truncate",
-      "localtime",
-      "localtime.transaction",
-      "localtime.truncate",
-      "time",
-      "time.transaction",
-      "time.truncate"
-    ).map(_.toLowerCase)
 
     val name = functionInvocation.functionName.fullName
-    if (allowListedFunctions.contains(name.toLowerCase))
+    // TODO: once function resolution runs before this semantic check, also verify the resolved
+    //  identity, not just the name. Unlike the property-rule check, builtIn=true is not enough
+    //  here: abac.oidc.user_attribute and abac.local.user_tags are registered CallableUserFunctions,
+    //  not compiler built-ins, so they must be allowed to resolve to the genuine abac functions.
+    if (authRuleAllowListedFunctions.contains(name.toLowerCase))
       SemanticCheck.success
     else
       SemanticCheck.error(SemanticError.authRuleConditionHaveInvalidFunctionInCondition(
@@ -1539,8 +1548,8 @@ sealed abstract class PrivilegeCommand(
       value match {
         case _: Literal | _: ExplicitParameter => SemanticCheck.success
         case f: FunctionInvocationLike
-          if Seq("date", "datetime", "localdatetime", "localtime", "time", "duration", "point")
-            .contains(f.functionName.name) =>
+          // TODO: once function resolution runs before this semantic check, also check that builtIn=true
+          if propertyRuleAllowedTemporalFunctions.contains(f.functionName.fullName.toLowerCase) =>
           SemanticCheck.success
         case _ =>
           AdministrationCommandSemanticAnalysis.invalidPropertyBasedAccessControlRuleInvolvingNontrivialPredicatesError(
