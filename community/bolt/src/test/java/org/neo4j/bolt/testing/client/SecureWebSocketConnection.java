@@ -50,7 +50,9 @@ public final class SecureWebSocketConnection extends WebSocketConnection impleme
 
     @Override
     protected SslContext sslContext() throws SSLException {
-        var builder = SslContextBuilder.forClient().trustManager(NaiveTrustManager.getInstance());
+        var builder = SslContextBuilder.forClient()
+                .endpointIdentificationAlgorithm(null)
+                .trustManager(NaiveTrustManager.getInstance());
 
         if (this.certificate != null) {
             builder.keyManager(this.privateKey, this.certificate);
