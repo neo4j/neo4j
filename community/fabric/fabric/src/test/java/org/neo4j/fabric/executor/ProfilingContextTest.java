@@ -149,7 +149,7 @@ class ProfilingContextTest {
 
                 """;
 
-        assertThat(profileContent).isEqualTo(expected);
+        assertThat(profileContent).isEqualToNormalizingNewlines(expected);
     }
 
     void recordProfile(int dbId, String query, long duration, String profileName) {
