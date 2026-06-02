@@ -34,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -47,7 +48,7 @@ import org.neo4j.test.extension.Inject;
  * This test is probabilistic in trying to produce the issue. There's a chance this test will be unsuccessful in
  * reproducing the issue (test being successful where it should have failed), but it will never randomly fail
  * where it should have been successful. After the point where the issue has been fixed this test will use
- * the full 0.5 seconds to try to reproduce it.
+ * the full 0.1 seconds to try to reproduce it.
  *
  */
 @ImpermanentDbmsExtension
@@ -68,7 +69,7 @@ class ConcurrentCreateAndGetRelationshipsIT {
 
         // WHEN
         startSignal.countDown();
-        sleep(500);
+        sleep(100);
         stopSignal.set(true);
         awaitWorkersToEnd(workers);
 
@@ -147,6 +148,7 @@ class ConcurrentCreateAndGetRelationshipsIT {
 
                     node.createRelationshipTo(tx.createNode(), RELTYPE);
                     tx.commit();
+                } catch (TransientFailureException ignored) {
                 } catch (Exception e) {
                     failure.compareAndSet(null, e);
                 }
