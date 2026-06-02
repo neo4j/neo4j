@@ -634,7 +634,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     (runtime.compileToExecutable(rewrittenLogicalQuery, runtimeContext, txContext.databaseMode()), runtimeContext)
   }
 
-  private def rewriteLogicalQuery(
+  protected def rewriteLogicalQuery(
     logicalQuery: LogicalQuery,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]

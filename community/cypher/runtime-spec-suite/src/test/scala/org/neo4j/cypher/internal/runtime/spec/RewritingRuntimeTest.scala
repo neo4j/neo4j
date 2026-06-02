@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.runtime.QueryRuntimeConfig
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport.WorkloadMode
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.logging.InternalLogProvider
@@ -38,11 +37,6 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
   self: RuntimeTestSuite[CONTEXT] =>
 
   def rewriter(logicalQuery: LogicalQuery): Rewriter
-
-  private def rewriteLogicalQuery(logicalQuery: LogicalQuery): LogicalQuery = {
-    val rewrittenPlan = logicalQuery.logicalPlan.endoRewrite(rewriter(logicalQuery))
-    logicalQuery.copy(logicalPlan = rewrittenPlan)
-  }
 
   override protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
@@ -63,27 +57,14 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
     debugOptions: CypherDebugOptions = CypherDebugOptions.default
   ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions) {
 
-    override def buildPlan(
+    override protected def rewriteLogicalQuery(
       logicalQuery: LogicalQuery,
-      runtime: CypherRuntime[CONTEXT],
-      testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
-      queryConfig: QueryRuntimeConfig
-    ): ExecutionPlan = {
-      super.buildPlan(rewriteLogicalQuery(logicalQuery), runtime, testPlanCombinationRewriterHints, queryConfig)
-    }
-
-    override def buildPlanAndContext(
-      logicalQuery: LogicalQuery,
-      runtime: CypherRuntime[CONTEXT],
-      testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint],
-      queryConfig: QueryRuntimeConfig
-    ): (ExecutionPlan, CONTEXT) = {
-      super.buildPlanAndContext(
-        rewriteLogicalQuery(logicalQuery),
-        runtime,
-        testPlanCombinationRewriterHints,
-        queryConfig
-      )
+      anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+      testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+    ): LogicalQuery = {
+      val rewrittenPlan = logicalQuery.logicalPlan.endoRewrite(rewriter(logicalQuery))
+      val afterTraitRewrite = logicalQuery.copy(logicalPlan = rewrittenPlan)
+      super.rewriteLogicalQuery(afterTraitRewrite, anonymousVariableNameGenerator, testPlanCombinationRewriterHints)
     }
   }
 }
