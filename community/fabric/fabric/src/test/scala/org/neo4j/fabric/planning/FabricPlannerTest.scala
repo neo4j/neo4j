@@ -68,8 +68,8 @@ import org.neo4j.cypher.internal.preparser.QueryOptions
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlException
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlStatus
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils

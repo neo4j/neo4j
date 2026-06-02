@@ -53,7 +53,7 @@ class FabricFragmenter(
     case command: ast.AdministrationCommand =>
       Fragment.AdminCommand(systemUse, command)
     case command: ast.SchemaCommand =>
-      val use = command.useGraph.map(Use.Declared).getOrElse(defaultUse)
+      val use = command.useGraph.map(Use.Declared(_)).getOrElse(defaultUse)
       Fragment.SchemaCommand(use, command)
   }
 
@@ -86,7 +86,7 @@ class FabricFragmenter(
             val use =
               sq.partitionedClauses
                 .leadingGraphSelection
-                .map(Use.Declared)
+                .map(Use.Declared(_))
                 .getOrElse(init.use)
             Init(
               use,
