@@ -76,7 +76,7 @@ final class ObfuscatorSteps @Inject() (
   private[this] var scenarioTag: String = _
   private[this] var start: Instant = _
 
-  Before { scenario: Scenario =>
+  Before { (scenario: Scenario) =>
     assumeFalse(expectations.fails(scenario), "Ignoring scenario because of @fails tag")
     assumeFalse(expectations.ignore(scenario), "Ignoring scenario because of @ignore tag")
     this.start = Instant.now()

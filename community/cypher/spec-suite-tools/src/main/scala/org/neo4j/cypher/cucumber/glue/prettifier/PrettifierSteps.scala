@@ -68,7 +68,7 @@ final class PrettifierSteps @Inject() () extends CypherCucumberSteps {
   private[this] var atLeastOneSuccess = false
   private[this] var lastParseFailure: Throwable = _
 
-  After { scenario: Scenario =>
+  After { (scenario: Scenario) =>
     val expectFailure = PrettifierSteps.expectFailure(scenario)
     // Do not quietly pass if nothing parse, if that happens something is probably wrong with the test implementation.
     // We ignore partial parsing failures and rely on the regular feature tests to catch those.

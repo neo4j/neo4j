@@ -106,7 +106,7 @@ final class RegularCypherSteps @Inject() (
 
   override def lastExecutionResult: QueryExecution = lastResult
 
-  Before { scenario: Scenario => initialize(scenario) }
+  Before { (scenario: Scenario) => initialize(scenario) }
 
   def initialize(scenario: Scenario, dynamicSettings: Settings = Map.empty): Unit = {
     // Note, @fail tags are handled in SkipFailsScenarios (or OnlyFailsScenarios).
@@ -258,7 +258,6 @@ final class RegularCypherSteps @Inject() (
     val actual = lastGraphState match {
       case state: KernelGraphState => state.sideEffects(KernelGraphState.recordGraphState(db.database))
       case state: CypherGraphState => state.sideEffects(CypherGraphState.recordGraphState(openTx))
-      case other                   => throw new IllegalStateException(s"Unexpected graph state: " + other)
     }
     val expected = SideEffects.from(expectedTable)
     if (actual != expected) {

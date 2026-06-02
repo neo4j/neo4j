@@ -32,7 +32,7 @@ import org.neo4j.cypher.cucumber.glue.regular.Expectations
  */
 class OnlyFailsScenarios @Inject() (denyList: Expectations) extends ScalaDsl with EN {
 
-  Before(Int.MinValue) { scenario: Scenario =>
+  Before(Int.MinValue) { (scenario: Scenario) =>
     assumeTrue(denyList.fails(scenario), "Scenario ignored because it's expected to pass")
   }
 }

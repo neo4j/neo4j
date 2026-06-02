@@ -52,6 +52,7 @@ import java.util
 import java.util.function
 import java.util.stream.StreamSupport
 
+import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 /** Maps result values to work with Cucumber test assertions. */
@@ -147,21 +148,23 @@ final object ResultValueMapper extends ValueMapper {
   /** Converts embedded API values. */
   final object EmbeddedValueMapper {
 
+    @tailrec
     def convertEmbeddedValue(value: AnyRef): AnyRef = value match {
-      case string: java.lang.String       => string
-      case v: java.lang.Short             => java.lang.Long.valueOf(v.shortValue())
-      case v: java.lang.Integer           => java.lang.Long.valueOf(v.longValue())
-      case v: java.lang.Byte              => java.lang.Long.valueOf(v.longValue())
-      case v: java.lang.Long              => v
-      case double: java.lang.Double       => java.lang.Double.valueOf(double.doubleValue() + 0.0) // + 0.0 to avoid -0.0
-      case float: java.lang.Float         => java.lang.Double.valueOf(float.doubleValue() + 0.0)
-      case list: util.List[_]             => convertList(list)
-      case map: util.Map[_, _]            => convertMap(map)
-      case n: Node                        => convertNode(n)
-      case r: Relationship                => convertRel(r)
-      case p: Path                        => convertPath(p)
-      case array: Array[_]                => convertList(java.util.Arrays.asList(array: _*))
-      case temporal: Temporal             => temporal.toString // Yes, temporals are treated as strings here
+      case string: java.lang.String => string
+      case v: java.lang.Short       => java.lang.Long.valueOf(v.shortValue())
+      case v: java.lang.Integer     => java.lang.Long.valueOf(v.longValue())
+      case v: java.lang.Byte        => java.lang.Long.valueOf(v.longValue())
+      case v: java.lang.Long        => v
+      case double: java.lang.Double => java.lang.Double.valueOf(double.doubleValue() + 0.0) // + 0.0 to avoid -0.0
+      case float: java.lang.Float   => java.lang.Double.valueOf(float.doubleValue() + 0.0)
+      case list: util.List[_]       => convertList(list)
+      case map: util.Map[_, _]      => convertMap(map)
+      case n: Node                  => convertNode(n)
+      case r: Relationship          => convertRel(r)
+      case p: Path                  => convertPath(p)
+      case array: Array[AnyRef]     => convertList(java.util.Arrays.asList(array: _*))
+      case array: Array[_]          => convertEmbeddedValue(array.map(_.asInstanceOf[AnyRef])) // force boxed values
+      case temporal: Temporal       => temporal.toString // Yes, temporals are treated as strings here
       case temporalAmount: TemporalAmount => temporalAmount.toString // Yes, also temporal amounts
       case uuid: java.util.UUID           => Values.uuidValue(uuid)
       case value                          => value

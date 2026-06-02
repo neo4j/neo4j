@@ -79,12 +79,12 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
   // And
   // ===
 
-  And("having executed:") { query: String => havingExecuted(query) }
+  And("having executed:") { (query: String) => havingExecuted(query) }
 
   // When
   // ====
 
-  When("executing query:") { query: String => executingQuery(query) }
+  When("executing query:") { (query: String) => executingQuery(query) }
 
   When("""executing control query:""") { (query: String) =>
     executingControlQuery(query)
@@ -154,7 +154,7 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
     sideEffectsShouldBe(DataTable.emptyDataTable())
   }
 
-  Then("the side effects should be:") { expected: DataTable =>
+  Then("the side effects should be:") { (expected: DataTable) =>
     sideEffectsShouldBe(expected)
   }
 
@@ -163,7 +163,7 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
   // - classification, the expected error classification.
   // - description, error status description, supports in-lining regex: ${regex:.*}.
   //
-  Then("an error should be raised:") { table: DataTable =>
+  Then("an error should be raised:") { (table: DataTable) =>
     errorShouldBeRaised(ExpectedGqlError(table))
   }
 
@@ -171,7 +171,7 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
     notificationsShouldBeRaised(ExpectedGqlNotification.empty)
   }
 
-  Then("notifications should be raised:") { table: DataTable =>
+  Then("notifications should be raised:") { (table: DataTable) =>
     notificationsShouldBeRaised(ExpectedGqlNotification(table))
   }
 
@@ -181,7 +181,7 @@ trait CypherCucumberSteps extends InOpenTxCypherCucumberSteps {
   //   "b": "${json-unit.any-string}"
   // }
   // See https://github.com/lukas-krecan/JsonUnit
-  Then("query log should contain:") { log: String =>
+  Then("query log should contain:") { (log: String) =>
     queryLogShouldContain(log)
   }
 
@@ -271,12 +271,12 @@ trait InOpenTxCypherCucumberSteps extends ScalaDsl with EN {
   // And
   // ===
 
-  And("having executed, in open tx:") { query: String => havingExecutedInOpenTx(query) }
+  And("having executed, in open tx:") { (query: String) => havingExecutedInOpenTx(query) }
 
   // When
   // ====
 
-  When("executing query, in open tx:") { query: String => executingQueryInOpenTx(query) }
+  When("executing query, in open tx:") { (query: String) => executingQueryInOpenTx(query) }
   When("executing control query, in open tx:") { (query: String) => executingControlQueryInOpenTx(query) }
 
   When("open transaction is commited and re-opened") {

@@ -19,19 +19,28 @@
  */
 package org.neo4j.cypher.cucumber.value
 
+import fastparse.!
+import fastparse.?
 import fastparse.CharIn
 import fastparse.CharsWhile
 import fastparse.CharsWhileIn
-import fastparse.EagerOps
-import fastparse.EagerOpsStr
 import fastparse.End
 import fastparse.IgnoreCase
+import fastparse.LiteralStr
 import fastparse.P
 import fastparse.Parsed
 import fastparse.ParsingRun
 import fastparse.Start
 import fastparse.Whitespace
 import fastparse.internal.Msgs
+import fastparse.map
+import fastparse.rep
+import fastparse.repX
+import fastparse.|
+import fastparse.~
+import fastparse.~/
+import fastparse.~~
+import fastparse.~~/
 import org.neo4j.cypher.cucumber.value.ValueRepresentation.Connection
 import org.neo4j.cypher.cucumber.value.ValueRepresentation.NoIdNode
 import org.neo4j.cypher.cucumber.value.ValueRepresentation.NoIdPath
@@ -51,7 +60,7 @@ import scala.jdk.CollectionConverters.SetHasAsJava
 object CypherCucumberValueParser {
 
   def parse(value: String, asDriverParameter: Boolean = false): AnyRef = {
-    fastparse.parse[AnyRef](value, statement(_, asDriverParameter), verboseFailures = true) match {
+    fastparse.parse[AnyRef](value, statement(using _, asDriverParameter), verboseFailures = true) match {
       case Parsed.Success(value, _) => value
       case failure: Parsed.Failure  => throw new IllegalArgumentException(s"Failed to parse $value: ${failure.msg}")
     }

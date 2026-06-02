@@ -49,11 +49,11 @@ final class ScenarioRecordingSteps @Inject() (
 
   private var steps: ArrayBuffer[RecordedStep] = _
 
-  Before { _: Scenario =>
+  Before { (_: Scenario) =>
     steps = new ArrayBuffer(8)
   }
 
-  After { scenario: Scenario =>
+  After { (scenario: Scenario) =>
     recorder.record(RecordedScenario(
       name = scenario.getName,
       uri = scenario.getUri,

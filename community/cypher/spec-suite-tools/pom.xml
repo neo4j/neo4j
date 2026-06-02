@@ -72,13 +72,20 @@
 
     <dependency>
       <groupId>com.lihaoyi</groupId>
-      <artifactId>fastparse_${scala.binary.version}</artifactId>
+      <artifactId>fastparse_3</artifactId>
       <version>3.1.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.lihaoyi</groupId>
+          <artifactId>sourcecode_3</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>com.lihaoyi</groupId>
-      <artifactId>sourcecode_2.13</artifactId>
+      <artifactId>sourcecode_3</artifactId>
+      <version>0.4.2</version>
     </dependency>
 
     <dependency>
@@ -299,12 +306,6 @@
       <artifactId>neo4j-test-util</artifactId>
       <version>${project.version}</version>
       <scope>compile</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.lihaoyi</groupId>
-          <artifactId>sourcecode_${scala.binary.version}</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -366,6 +367,39 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>${scala-maven-plugin.version}</version>
+        <configuration>
+          <scalaVersion>${scala3.version}</scalaVersion>
+          <scalaCompatVersion>3</scalaCompatVersion>
+          <recompileMode>${scala.plugin.recompileMode}</recompileMode>
+          <args>
+            <!-- Silence Scala 3 syntax deprecation warnings -->
+            <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
+          </args>
+          <jvmArgs>
+            <jvmArg>-Xms256m</jvmArg>
+            <jvmArg>-Xmx1024m</jvmArg>
+            <jvmArg>-Xss4M</jvmArg>
+          </jvmArgs>
+          <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <scala>
+            <scalafmt>
+              <scalaMajorVersion>2.13</scalaMajorVersion>
+              <file>${maven.multiModuleProjectDirectory}/public/build-resources/scalafmt3.conf</file>
+            </scalafmt>
+          </scala>
+        </configuration>
+      </plugin>
+
+      <plugin>
         <!-- disable only the ban-test-dependencies-in-compile enforcer rule
         since this project creates test utilities -->
         <groupId>org.apache.maven.plugins</groupId>
@@ -426,9 +460,11 @@
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
             <configuration>
-              <args combine.children="append">
+              <args combine.self="override">
                 <arg>-Xfatal-warnings</arg>
                 <arg>-feature</arg>
+                <!-- Silence Scala 3 syntax deprecation warnings -->
+                <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
               </args>
             </configuration>
           </plugin>

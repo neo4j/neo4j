@@ -42,7 +42,7 @@ import org.neo4j.cypher.cucumber.steps.CypherCucumberSteps
 import org.neo4j.cypher.cucumber.synthesise.read.ScenarioReader
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations
 import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.scalatest.LoneElement
 
 import java.io.ByteArrayOutputStream
@@ -56,7 +56,7 @@ import java.util.function.Consumer
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.Try
 
-class CypherCucumberTest extends CypherFunSuite with LoneElement {
+class CypherCucumberTest extends CypherFunSuiteWithMacroShadowing with LoneElement {
 
   test("cucumber based cypher tests can fail and pass in various ways", Tags.NoSpdOverride) {
     val request = LauncherDiscoveryRequestBuilder.request()
