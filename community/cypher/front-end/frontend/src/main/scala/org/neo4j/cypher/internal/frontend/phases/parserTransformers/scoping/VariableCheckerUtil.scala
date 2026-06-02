@@ -55,7 +55,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 trait VariableCheckerUtil {
 
   protected type SimpleVariableCheck = PartialFunction[WorkingScope, Set[SemanticError]]
-  protected type VariableCheck = PartialFunction[(Acc, WorkingScope), Acc]
 
   sealed trait ReturnContext
   case object Unopinionated extends ReturnContext
