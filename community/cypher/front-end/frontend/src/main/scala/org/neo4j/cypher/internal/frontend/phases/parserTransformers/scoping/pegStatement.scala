@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.ConditionalQueryBranch
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.ExpressionBody
@@ -220,9 +221,8 @@ object pegStatement {
 
         val queryChildren = restClauses.scanLeft(WorkingScope.apriori(queryIncoming)) {
           case (previous, clause) => pegClause(clause, previous.outgoing, foreachIterVar) match {
-              case ws @ StatementScope(_: UnresolvedCall, _, _, _, _, TableResult(_), _, _) =>
-                ws.copy(result = NoResult)
-              case ws => ws
+              case ws @ StatementScope(_: CallClause, _, _, _, _, TableResult(_), _, _) => ws.copy(result = NoResult)
+              case ws                                                                   => ws
             }
         }.tail
 
@@ -250,10 +250,8 @@ object pegStatement {
         } else {
           val children = clauses.scanLeft(WorkingScope.apriori(incoming)) {
             case (previous, clause) => pegClause(clause, previous.outgoing, foreachIterVar) match {
-                // adjusting for in-query calls to have no result
-                case ws @ StatementScope(_: UnresolvedCall, _, _, _, _, TableResult(_), _, _) =>
-                  ws.copy(result = NoResult)
-                case ws => ws
+                case ws @ StatementScope(_: CallClause, _, _, _, _, TableResult(_), _, _) => ws.copy(result = NoResult)
+                case ws                                                                   => ws
               }
           }.tail
           // Alternatively, referenced can be computed by referencedInChildren minus "declaredInChildren"
