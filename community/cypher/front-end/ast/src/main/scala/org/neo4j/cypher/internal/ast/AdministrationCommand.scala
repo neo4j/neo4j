@@ -628,8 +628,9 @@ final case class CreateUser(
 
 object CreateUser {
 
-  def unapply(c: CreateUser): Some[(Expression, UserOptions, IfExistsDo, List[ExternalAuth], Option[NativeAuth])] =
-    Some((c.userName, c.userOptions, c.ifExistsDo, c.externalAuths, c.nativeAuth))
+  def unapply(c: CreateUser)
+    : Some[(Expression, UserOptions, IfExistsDo, List[ExternalAuth], Option[NativeAuth], Option[SetTags])] =
+    Some((c.userName, c.userOptions, c.ifExistsDo, c.externalAuths, c.nativeAuth, c.tags))
 }
 
 final case class DropUser(userName: Expression, ifExists: Boolean)(val position: InputPosition)
@@ -705,8 +706,16 @@ final case class AlterUser(
 object AlterUser {
 
   def unapply(a: AlterUser)
-    : Some[(Expression, UserOptions, Boolean, List[ExternalAuth], Option[NativeAuth], RemoveAuth)] =
-    Some((a.userName, a.userOptions, a.ifExists, a.externalAuths, a.nativeAuth, a.removeAuth))
+    : Some[(
+      Expression,
+      UserOptions,
+      Boolean,
+      List[ExternalAuth],
+      Option[NativeAuth],
+      RemoveAuth,
+      Seq[UserTagsAction]
+    )] =
+    Some((a.userName, a.userOptions, a.ifExists, a.externalAuths, a.nativeAuth, a.removeAuth, a.tags))
 }
 
 final case class AlterUsers(

@@ -229,7 +229,7 @@ class FabricPlannerTest
         .should(not(include("*")))
 
       parse(remote.query).as[CreateUser] match {
-        case CreateUser(_, _, _, _, Some(nativeAuth)) =>
+        case CreateUser(_, _, _, _, Some(nativeAuth), _) =>
           nativeAuth.password should matchPattern { case Some(Password(_: SensitiveParameter, _)) => }
         case _ => fail("missing native auth")
       }

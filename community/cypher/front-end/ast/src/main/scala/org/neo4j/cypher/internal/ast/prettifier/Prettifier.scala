@@ -568,7 +568,7 @@ case class Prettifier(
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
 
-      case x @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth) =>
+      case x @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth, tags) =>
         val userNameString = Prettifier.escapeName(userName)
         val ifNotExists = ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax => " IF NOT EXISTS"
@@ -600,7 +600,7 @@ case class Prettifier(
           ind.asString(auth)
         }.mkString
 
-        val tagsString = x.tags.map(t => s" ${userTagsActionAsString(t)(expr)}").getOrElse("")
+        val tagsString = tags.map(t => s" ${userTagsActionAsString(t)(expr)}").getOrElse("")
 
         s"${x.name} $userNameString$ifNotExists$oldStyleNativeAuthString$statusString$homeDatabaseString$setAuthNativeString$externalAuthString$tagsString"
 
@@ -611,7 +611,7 @@ case class Prettifier(
         if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
         else s"${x.name} ${Prettifier.escapeName(userName)}"
 
-      case x @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth) =>
+      case x @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth, tags) =>
         val userNameString = Prettifier.escapeName(userName)
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
 
@@ -672,13 +672,13 @@ case class Prettifier(
         }.mkString
 
         // CIP-254: canonical order is REMOVE* ADD* SET* (matching grammar); within SET, tags come last
-        val removeTagsString = x.tags.collect {
+        val removeTagsString = tags.collect {
           case t: RemoveTags    => t
           case t: RemoveAllTags => t
         }.map(t => s" ${userTagsActionAsString(t)(expr)}").mkString
-        val addTagsString = x.tags.collect { case t: AddTags => t }
+        val addTagsString = tags.collect { case t: AddTags => t }
           .map(t => s" ${userTagsActionAsString(t)(expr)}").mkString
-        val setTagsString = x.tags.collect { case t: SetTags => t }
+        val setTagsString = tags.collect { case t: SetTags => t }
           .map(t => s" ${userTagsActionAsString(t)(expr)}").mkString
 
         s"${x.name} $userNameString$ifExistsString$removeHomeDatabase$removeAuthString$removeTagsString$addTagsString$oldStyleNativeAuthString$statusString$setHomeDatabaseString$setAuthNativeString$externalAuthString$setTagsString"

@@ -290,7 +290,7 @@ trait AbstractPrettifierTest extends CypherFunSuite {
         na.copy(authAttributes = authAttributes)(na.position)
 
       // order Auths and default to SET PASSWORD CHANGE REQUIRED
-      case u @ CreateUser(_, _, _, externalAuths, nativeAuths)
+      case u @ CreateUser(_, _, _, externalAuths, nativeAuths, _)
         if externalAuths.size > 1 || nativeAuths.nonEmpty =>
         val nativeAuthsWithDefault = nativeAuths.map {
           case a @ NativeAuth(attributes) if (attributes collectFirst { case PasswordChange(_) => () }).isEmpty =>
@@ -310,7 +310,7 @@ trait AbstractPrettifierTest extends CypherFunSuite {
         u.copy(newStyleAuth = newStyleAuth, oldStyleAuth = oldStyleAuth)(u.position)
 
       // order Auths and remove redundant REMOVE AUTHs
-      case u @ AlterUser(_, _, _, externalAuths, nativeAuths, removeAuth)
+      case u @ AlterUser(_, _, _, externalAuths, nativeAuths, removeAuth, _)
         if (externalAuths.size + nativeAuths.toList.size) > 1 || removeAuth.all =>
         val oldStyleNativeAuth = nativeAuths.filter(_ => u.usesOldStyleNativeAuth)
         val oldStyleAuth = oldStyleNativeAuth.map { (a: NativeAuth) =>

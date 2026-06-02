@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
-import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AlterUsers
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -126,6 +125,7 @@ import org.neo4j.cypher.internal.ast.SetDatabaseDefaultLanguageAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserMetadataAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShardDefinition
 import org.neo4j.cypher.internal.ast.ShowAliasAction
@@ -417,11 +417,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case su: ShowCurrentUser => Some(plans.ShowCurrentUser(su.defaultColumnNames.map(varFor), su.yields, su.returns))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH [PLAINTEXT | ENCRYPTED] PASSWORD password
-      case c @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth) =>
+      case c @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth, tags) =>
+        val dbmsActions = CreateUserAction +: Vector(
+          (ifExistsDo == IfExistsReplace, DropUserAction),
+          (tags.nonEmpty, SetUserMetadataAction)
+        ).collect { case (true, action) => action }
+        val assertAllowed = plans.AssertAllowedDbmsActions(None, dbmsActions)
+
         val source = ifExistsDo match {
           case IfExistsReplace => plans.DropUser(
               plans.AssertNotCurrentUser(
-                plans.AssertAllowedDbmsActions(None, Seq(DropUserAction, CreateUserAction)),
+                assertAllowed,
                 userName,
                 "replace",
                 "Deleting yourself is not allowed",
@@ -432,12 +438,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             )
           case IfExistsDoNothing =>
             plans.DoNothingIfExists(
-              plans.AssertAllowedDbmsActions(CreateUserAction),
+              assertAllowed,
               "CREATE USER",
               plans.UserEntity,
               userName
             )
-          case _ => plans.AssertAllowedDbmsActions(CreateUserAction)
+          case _ => assertAllowed
         }
         Some(plans.LogSystemCommand(
           plans.CreateUser(
@@ -447,7 +453,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             userOptions.homeDatabase,
             externalAuths,
             nativeAuth,
-            c.tags
+            tags
           ),
           prettifier.asString(c)
         ))
@@ -484,15 +490,16 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
-      case c @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth) =>
+      case c @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth, tags) =>
         val dbmsActions = Vector(
           (nativeAuth.nonEmpty, SetPasswordsAction),
           (externalAuths.nonEmpty || removeAuth.nonEmpty, SetAuthAction),
           (userOptions.suspended.nonEmpty, SetUserStatusAction),
-          (userOptions.homeDatabase.nonEmpty, SetUserHomeDatabaseAction)
+          (userOptions.homeDatabase.nonEmpty, SetUserHomeDatabaseAction),
+          (tags.nonEmpty, SetUserMetadataAction)
         ).collect { case (true, action) => action }
 
-        if (dbmsActions.isEmpty && c.tags.isEmpty) throw InternalException.internalError(
+        if (dbmsActions.isEmpty) throw InternalException.internalError(
           this.getClass.getSimpleName,
           "Alter user has nothing to do.",
           "Alter user has nothing to do"
@@ -522,14 +529,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             nativeAuth,
             externalAuths,
             removeAuth,
-            c.tags
+            tags
           ),
           prettifier.asString(c)
         ))
 
       // ALTER USERS
       case c @ AlterUsers(userNames, ifExists, tags) =>
-        val source = plans.AssertAllowedDbmsActions(AlterUserAction)
+        val source = plans.AssertAllowedDbmsActions(SetUserMetadataAction)
         Some(plans.LogSystemCommand(
           plans.AlterUsers(source, userNames.map(expressionToEitherStringParam), ifExists, tags),
           prettifier.asString(c)

@@ -138,4 +138,10 @@ object ShowUsersExecutionPlanner {
       ", provider, auth"
     )
   }
+
+  def getTagsColumnCypher(userVariable: String, allowedToSeeTagsKey: String): String =
+    s"""CASE $$`$allowedToSeeTagsKey`
+       |  WHEN true THEN [t IN coalesce($userVariable.$USER_TAGS_PROPERTY, []) | t]
+       |  ELSE null
+       |END AS tags""".stripMargin
 }
