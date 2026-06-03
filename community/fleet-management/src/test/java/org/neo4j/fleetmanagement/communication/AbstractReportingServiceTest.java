@@ -19,11 +19,8 @@
  */
 package org.neo4j.fleetmanagement.communication;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -103,8 +100,8 @@ class AbstractReportingServiceTest {
 
         ReportingResponse result = service.callApi(testMessage, ENDPOINT, ReportingResponse.class);
 
-        assertEquals("ok", result.status);
-        assertTrue(state.isConnected());
+        assertThat(result.status).isEqualTo("ok");
+        assertThat(state.isConnected()).isTrue();
     }
 
     @Test
@@ -112,44 +109,45 @@ class AbstractReportingServiceTest {
         when(mockPostRequest.transmit(any(byte[].class))).thenReturn(200);
         when(mockPostRequest.getResponseBody()).thenReturn(new byte[0]);
 
-        RuntimeException thrown = assertThrows(
-                RuntimeException.class, () -> service.callApi(testMessage, ENDPOINT, ReportingResponse.class));
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(() -> service.callApi(testMessage, ENDPOINT, ReportingResponse.class))
+                .withCauseInstanceOf(EmptyResponseException.class);
 
-        assertInstanceOf(EmptyResponseException.class, thrown.getCause());
-        assertFalse(state.isConnected());
+        assertThat(state.isConnected()).isFalse();
     }
 
     @Test
-    void callApi_non2xx_throwsResponseStatusExceptionAndDisconnects() throws IOException {
+    void callApi_non2xx_throwsResponseStatusExceptionAndDisconnects() throws Exception {
         when(mockPostRequest.transmit(any(byte[].class))).thenReturn(500);
         String errJson = "{\"code\": 5000, \"message\": \"Server error\"}";
         when(mockPostRequest.getResponseBody()).thenReturn(errJson.getBytes(StandardCharsets.UTF_8));
 
-        assertThrows(
-                ResponseStatusException.class, () -> service.callApi(testMessage, ENDPOINT, ReportingResponse.class));
+        assertThatExceptionOfType(ResponseStatusException.class)
+                .isThrownBy(() -> service.callApi(testMessage, ENDPOINT, ReportingResponse.class));
 
-        assertFalse(state.isConnected());
+        assertThat(state.isConnected()).isFalse();
     }
 
     @Test
-    void callApi_jsonParseFailure_wrapsAndDisconnects() throws IOException {
+    void callApi_jsonParseFailure_wrapsAndDisconnects() throws Exception {
         when(mockPostRequest.transmit(any(byte[].class))).thenReturn(200);
         when(mockPostRequest.getResponseBody()).thenReturn("not-json".getBytes(StandardCharsets.UTF_8));
 
-        RuntimeException thrown = assertThrows(
-                RuntimeException.class, () -> service.callApi(testMessage, ENDPOINT, ReportingResponse.class));
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(() -> service.callApi(testMessage, ENDPOINT, ReportingResponse.class))
+                .withCauseInstanceOf(JsonProcessingException.class);
 
-        assertInstanceOf(JsonProcessingException.class, thrown.getCause());
-        assertFalse(state.isConnected());
+        assertThat(state.isConnected()).isFalse();
     }
 
     @Test
-    void callApi_ioExceptionOnTransmit_disconnectsAndWraps() throws IOException {
+    void callApi_ioExceptionOnTransmit_disconnectsAndWraps() throws Exception {
         when(mockPostRequest.transmit(any(byte[].class))).thenThrow(new IOException("network"));
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> service.callApi(testMessage, ENDPOINT));
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(() -> service.callApi(testMessage, ENDPOINT))
+                .withCauseInstanceOf(IOException.class);
 
-        assertInstanceOf(IOException.class, thrown.getCause());
-        assertFalse(state.isConnected());
+        assertThat(state.isConnected()).isFalse();
     }
 }

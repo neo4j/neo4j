@@ -19,7 +19,7 @@
  */
 package org.neo4j.fleetmanagement.configuration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,10 +35,12 @@ class StateTest {
 
         state.addPropertyChangeListener(listener);
         state.setActive(true);
-        assertEquals(1, callCount.get());
+        assertThat(callCount.get()).isOne();
 
         state.removePropertyChangeListeners();
         state.setActive(false);
-        assertEquals(1, callCount.get(), "Listener should not have been called after removal");
+        assertThat(callCount.get())
+                .as("Listener should not have been called after removal")
+                .isOne();
     }
 }

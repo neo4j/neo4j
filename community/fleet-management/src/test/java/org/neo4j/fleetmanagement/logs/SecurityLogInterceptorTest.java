@@ -19,12 +19,12 @@
  */
 package org.neo4j.fleetmanagement.logs;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -85,10 +85,10 @@ class SecurityLogInterceptorTest {
 
         mockLogMonitor.onLogMessage(level, neo4jMessage, throwable);
 
-        Assertions.assertEquals("message", neo4jMessage.get("message"));
+        assertThat(neo4jMessage.get("message")).isEqualTo("message");
 
         var interceptedLog = objectMapper.readValue(neo4jMessage.asString("JSON"), SecurityLog.class);
-        Assertions.assertNotNull(interceptedLog);
+        assertThat(interceptedLog).isNotNull();
 
         Mockito.verify(mockSecurityLogsService, Mockito.times(1)).add(any(SecurityLog.class));
     }

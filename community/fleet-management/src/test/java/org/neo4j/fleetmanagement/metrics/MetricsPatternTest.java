@@ -19,15 +19,13 @@
  */
 package org.neo4j.fleetmanagement.metrics;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.neo4j.fleetmanagement.utils.PatternCompiler;
 
-public class MetricsPatternTest {
+class MetricsPatternTest {
     @Test
     void shouldMatchExactPattern() {
         // Given
@@ -35,8 +33,8 @@ public class MetricsPatternTest {
         Pattern pattern = PatternCompiler.constructPattern(patternStr);
 
         // Then
-        assertTrue(pattern.matcher("metrics.test.value").matches());
-        assertFalse(pattern.matcher("metrics.test.other").matches());
+        assertThat(pattern.matcher("metrics.test.value").matches()).isTrue();
+        assertThat(pattern.matcher("metrics.test.other").matches()).isFalse();
     }
 
     @Test
@@ -49,8 +47,8 @@ public class MetricsPatternTest {
         var matcher = pattern.matcher("metrics.test.value");
 
         // Then
-        assertTrue(matcher.matches());
-        assertEquals("test", matcher.group("name"));
+        assertThat(matcher.matches()).isTrue();
+        assertThat(matcher.group("name")).isEqualTo("test");
     }
 
     @Test
@@ -63,9 +61,9 @@ public class MetricsPatternTest {
         var matcher = pattern.matcher("metrics.system.test.value");
 
         // Then
-        assertTrue(matcher.matches());
-        assertEquals("system", matcher.group("group"));
-        assertEquals("test", matcher.group("name"));
+        assertThat(matcher.matches()).isTrue();
+        assertThat(matcher.group("group")).isEqualTo("system");
+        assertThat(matcher.group("name")).isEqualTo("test");
     }
 
     @Test
@@ -75,9 +73,9 @@ public class MetricsPatternTest {
         Pattern pattern = PatternCompiler.constructPattern(patternStr);
 
         // Then
-        assertTrue(pattern.matcher("prefix.test.value").matches());
-        assertTrue(pattern.matcher("a.b.c.test.value").matches());
-        assertFalse(pattern.matcher("test.value").matches()); // Missing wildcard content
+        assertThat(pattern.matcher("prefix.test.value").matches()).isTrue();
+        assertThat(pattern.matcher("a.b.c.test.value").matches()).isTrue();
+        assertThat(pattern.matcher("test.value").matches()).isFalse(); // Missing wildcard content
     }
 
     @Test
@@ -90,10 +88,10 @@ public class MetricsPatternTest {
         var matcher = pattern.matcher("a.b.c.test.e.value");
 
         // Then
-        assertTrue(matcher.matches());
-        assertEquals("test", matcher.group("name"));
-        assertTrue(pattern.matcher("prefix.test.middle.value").matches());
-        assertFalse(pattern.matcher("test.value").matches()); // Missing wildcard content
+        assertThat(matcher.matches()).isTrue();
+        assertThat(matcher.group("name")).isEqualTo("test");
+        assertThat(pattern.matcher("prefix.test.middle.value").matches()).isTrue();
+        assertThat(pattern.matcher("test.value").matches()).isFalse(); // Missing wildcard content
     }
 
     @Test
@@ -103,9 +101,9 @@ public class MetricsPatternTest {
         Pattern pattern = PatternCompiler.constructPattern(patternStr);
 
         // Then
-        assertTrue(pattern.matcher("metrics.test.value").matches());
-        assertFalse(pattern.matcher("metrics.value").matches()); // Missing name
-        assertFalse(pattern.matcher("metrics.test").matches()); // Missing value
+        assertThat(pattern.matcher("metrics.test.value").matches()).isTrue();
+        assertThat(pattern.matcher("metrics.value").matches()).isFalse(); // Missing name
+        assertThat(pattern.matcher("metrics.test").matches()).isFalse(); // Missing value
     }
 
     @Test
@@ -115,10 +113,10 @@ public class MetricsPatternTest {
         Pattern pattern = PatternCompiler.constructPattern(patternStr);
 
         // Then
-        assertTrue(pattern.matcher("prefix.neo4j.middle.committed").matches());
-        assertTrue(pattern.matcher("a.b.c.system.d.active").matches());
-        assertFalse(pattern.matcher("prefix.neo4j").matches()); // Missing type
-        assertFalse(pattern.matcher("prefix.type").matches()); // Missing database
+        assertThat(pattern.matcher("prefix.neo4j.middle.committed").matches()).isTrue();
+        assertThat(pattern.matcher("a.b.c.system.d.active").matches()).isTrue();
+        assertThat(pattern.matcher("prefix.neo4j").matches()).isFalse(); // Missing type
+        assertThat(pattern.matcher("prefix.type").matches()).isFalse(); // Missing database
     }
 
     @Test
@@ -128,8 +126,8 @@ public class MetricsPatternTest {
         Pattern pattern = PatternCompiler.constructPattern(patternStr);
 
         // Then
-        assertTrue(pattern.matcher("metrics.test.neo4j.value").matches());
-        assertFalse(pattern.matcher("metricsxtestxneo4jxvalue").matches()); // Different separator
-        assertFalse(pattern.matcher("metrics.test.neo4j_value").matches()); // Wrong separator
+        assertThat(pattern.matcher("metrics.test.neo4j.value").matches()).isTrue();
+        assertThat(pattern.matcher("metricsxtestxneo4jxvalue").matches()).isFalse(); // Different separator
+        assertThat(pattern.matcher("metrics.test.neo4j_value").matches()).isFalse(); // Wrong separator
     }
 }

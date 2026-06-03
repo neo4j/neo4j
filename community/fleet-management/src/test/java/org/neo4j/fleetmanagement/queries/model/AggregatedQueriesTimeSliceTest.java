@@ -19,7 +19,7 @@
  */
 package org.neo4j.fleetmanagement.queries.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,9 +46,9 @@ class AggregatedQueriesTimeSliceTest {
 
         timeSlice.add(query, null);
 
-        assertEquals(1, timeSlice.size());
+        assertThat(timeSlice.size()).isOne();
         UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
-        assertEquals("", key.getQueryText());
+        assertThat(key.getQueryText()).isEmpty();
     }
 
     @Test
@@ -66,8 +66,8 @@ class AggregatedQueriesTimeSliceTest {
 
         timeSlice.add(query, null);
 
-        assertEquals(1, timeSlice.size());
+        assertThat(timeSlice.size()).isOne();
         UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
-        assertEquals(obfuscatedText, key.getQueryText());
+        assertThat(key.getQueryText()).isEqualTo(obfuscatedText);
     }
 }

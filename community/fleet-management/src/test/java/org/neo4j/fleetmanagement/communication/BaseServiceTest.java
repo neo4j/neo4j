@@ -19,9 +19,7 @@
  */
 package org.neo4j.fleetmanagement.communication;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +38,7 @@ class BaseServiceTest {
     private ITransactor mockTransactor;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         Logger.initLogger(mock(Log.class));
 
         mockTransactor = mock(ITransactor.class);
@@ -57,22 +55,22 @@ class BaseServiceTest {
         // when response body is empty
         byte[] emptyResponseBody = null;
         baseService.handleErrorResponse(errMsgPrefix, responseCode, emptyResponseBody);
-        assertFalse(baseService.state.isConnected());
+        assertThat(baseService.state.isConnected()).isFalse();
 
         // when fail to deserialize an error message
         var unparsableResponseBody = "abc".getBytes();
         baseService.handleErrorResponse(errMsgPrefix, responseCode, unparsableResponseBody);
-        assertFalse(baseService.state.isConnected());
+        assertThat(baseService.state.isConnected()).isFalse();
 
         // when parsed response is invalid
         var parsedInvalidResponseBody = "{}".getBytes();
         baseService.handleErrorResponse(errMsgPrefix, responseCode, parsedInvalidResponseBody);
-        assertFalse(baseService.state.isConnected());
+        assertThat(baseService.state.isConnected()).isFalse();
 
         // when parsed response has invalid values
         var parsedInvalidValueResponseBody = "{\"code\": 9999}".getBytes();
         baseService.handleErrorResponse(errMsgPrefix, responseCode, parsedInvalidValueResponseBody);
-        assertFalse(baseService.state.isConnected());
+        assertThat(baseService.state.isConnected()).isFalse();
     }
 
     @Test
@@ -83,31 +81,29 @@ class BaseServiceTest {
         var tokenRotationErr = "{\"code\": 1000, \"message\": \"Token needs rotation\"}";
         baseService.handleErrorResponse(errMsgPrefix, 401, tokenRotationErr.getBytes());
         Mockito.verify(mockTransactor).rotateToken();
-        assertTrue(state.isRotatingToken());
+        assertThat(state.isRotatingToken()).isTrue();
 
         // token expired
         var tokenExpiredErr = "{\"code\": 1001, \"message\": \"Token expired\"}";
         baseService.handleErrorResponse(errMsgPrefix, 401, tokenExpiredErr.getBytes());
         Mockito.verify(mockTransactor).deleteToken();
-        assertFalse(state.isConnected());
-        assertEquals(
-                "Fleet management token is permanently expired - register a new one to resume operation",
-                state.getConnectionMessage());
+        assertThat(state.isConnected()).isFalse();
+        assertThat(state.getConnectionMessage())
+                .isEqualTo("Fleet management token is permanently expired - register a new one to resume operation");
 
         // token revoked
         var tokenRevokedErr = "{\"code\": 1002, \"message\": \"Token revoked\"}";
         baseService.handleErrorResponse(errMsgPrefix, 401, tokenRevokedErr.getBytes());
         Mockito.verify(mockTransactor, Mockito.times(2)).deleteToken();
-        assertFalse(state.isConnected());
-        assertEquals(
-                "Fleet management token is revoked - register a new one to resume operation",
-                state.getConnectionMessage());
+        assertThat(state.isConnected()).isFalse();
+        assertThat(state.getConnectionMessage())
+                .isEqualTo("Fleet management token is revoked - register a new one to resume operation");
 
         // access denied
         var accessDeniedErr = "{\"code\": 1003, \"message\": \"Access denied\"}";
         baseService.handleErrorResponse(errMsgPrefix, 401, accessDeniedErr.getBytes());
         Mockito.verify(mockTransactor, Mockito.times(3)).deleteToken();
-        assertFalse(state.isConnected());
-        assertEquals("Fleet management access denied - check your permissions", state.getConnectionMessage());
+        assertThat(state.isConnected()).isFalse();
+        assertThat(state.getConnectionMessage()).isEqualTo("Fleet management access denied - check your permissions");
     }
 }

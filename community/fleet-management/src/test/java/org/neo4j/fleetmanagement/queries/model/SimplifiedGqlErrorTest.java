@@ -19,8 +19,7 @@
  */
 package org.neo4j.fleetmanagement.queries.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,8 +37,8 @@ class SimplifiedGqlErrorTest {
         error2.statusDescription = "message";
         error2.gqlStatus = "01000";
 
-        assertEquals(error1, error2);
-        assertEquals(error1.hashCode(), error2.hashCode());
+        assertThat(error2).isEqualTo(error1);
+        assertThat(error2).hasSameHashCodeAs(error1);
     }
 
     @Test
@@ -54,7 +53,7 @@ class SimplifiedGqlErrorTest {
         error2.statusDescription = "message2";
         error2.gqlStatus = "01000";
 
-        assertNotEquals(error1, error2);
+        assertThat(error2).isNotEqualTo(error1);
     }
 
     @Test
@@ -69,8 +68,8 @@ class SimplifiedGqlErrorTest {
         SimplifiedGqlError error2 = new SimplifiedGqlError();
         error2.cause = cause2;
 
-        assertEquals(error1, error2);
-        assertEquals(error1.hashCode(), error2.hashCode());
+        assertThat(error2).isEqualTo(error1);
+        assertThat(error2).hasSameHashCodeAs(error1);
     }
 
     @Test
@@ -80,9 +79,8 @@ class SimplifiedGqlErrorTest {
         error.statusDescription = "message";
         error.gqlStatus = "01000";
 
-        String toString = error.toString();
-        assertEquals(
-                "SimplifiedGqlError{cause=null, classification='CLIENT_ERROR', message='message', gqlStatus='01000'}",
-                toString);
+        assertThat(error)
+                .hasToString(
+                        "SimplifiedGqlError{cause=null, classification='CLIENT_ERROR', message='message', gqlStatus='01000'}");
     }
 }

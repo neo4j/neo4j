@@ -19,7 +19,7 @@
  */
 package org.neo4j.fleetmanagement.queries.model;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -39,10 +39,10 @@ class QueryAggregationMetaSerializationTest {
         // Actually, let's just check if the fields are present in the JSON.
         String json = mapper.writeValueAsString(meta);
 
-        assertTrue(json.contains("\"avgElapsedMs\""), "Should contain avgElapsedMs");
-        assertTrue(json.contains("\"avgWaitTimeMs\""), "Should contain avgWaitTimeMs");
-        assertTrue(json.contains("\"avgPageHits\""), "Should contain avgPageHits");
-        assertTrue(json.contains("\"avgPageFaults\""), "Should contain avgPageFaults");
-        assertTrue(json.contains("\"avgAllocatedBytes\""), "Should contain avgAllocatedBytes");
+        assertThat(json).as("Should contain avgElapsedMs").contains("\"avgElapsedMs\"");
+        assertThat(json).as("Should contain avgWaitTimeMs").contains("\"avgWaitTimeMs\"");
+        assertThat(json).as("Should contain avgPageHits").contains("\"avgPageHits\"");
+        assertThat(json).as("Should contain avgPageFaults").contains("\"avgPageFaults\"");
+        assertThat(json).as("Should contain avgAllocatedBytes").contains("\"avgAllocatedBytes\"");
     }
 }

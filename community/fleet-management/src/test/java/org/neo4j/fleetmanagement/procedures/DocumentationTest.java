@@ -20,17 +20,19 @@
 
 package org.neo4j.fleetmanagement.procedures;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class DocumentationTest {
+class DocumentationTest {
     @Test
-    public void testGenerateDocumentation() throws Exception {
+    void generateDocumentation() throws Exception {
         Documentation documentation = new Documentation();
         documentation.generateDocumentation().forEach(System.out::println);
         Stream<Documentation.DocumentationResult> result = documentation.generateDocumentation();
-        Assertions.assertEquals(
-                164, result.count(), "Payload messages have changed, consider updating the documentation");
+        assertThat(result.count())
+                .as("Payload messages have changed, consider updating the documentation")
+                .isEqualTo(164);
     }
 }

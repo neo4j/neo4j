@@ -20,7 +20,7 @@ package org.neo4j.fleetmanagement.common;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
@@ -28,7 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
-public class CachedMethodTest {
+class CachedMethodTest {
 
     @Test
     void shouldReturnValueFromSupplier() {
@@ -39,7 +39,7 @@ public class CachedMethodTest {
         String result = cachedMethod.GetCachedOrRun(() -> "test value");
 
         // Then
-        assertEquals("test value", result);
+        assertThat(result).isEqualTo("test value");
     }
 
     @Test
@@ -56,9 +56,9 @@ public class CachedMethodTest {
         Integer secondResult = cachedMethod.GetCachedOrRun(() -> counter.incrementAndGet());
 
         // Then
-        assertEquals(1, firstResult);
-        assertEquals(1, secondResult);
-        assertEquals(1, counter.get(), "Lambda should only be executed once");
+        assertThat(firstResult).isOne();
+        assertThat(secondResult).isOne();
+        assertThat(counter.get()).as("Lambda should only be executed once").isOne();
     }
 
     @Test
@@ -80,8 +80,8 @@ public class CachedMethodTest {
         Integer secondResult = cachedMethod.GetCachedOrRun(() -> counter.incrementAndGet());
 
         // Then
-        assertEquals(1, firstResult);
-        assertEquals(2, secondResult);
-        assertEquals(2, counter.get(), "Lambda should be executed twice");
+        assertThat(firstResult).isOne();
+        assertThat(secondResult).isEqualTo(2);
+        assertThat(counter.get()).as("Lambda should be executed twice").isEqualTo(2);
     }
 }
