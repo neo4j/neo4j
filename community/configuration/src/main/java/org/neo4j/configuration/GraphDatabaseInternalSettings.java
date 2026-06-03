@@ -1909,20 +1909,38 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("")
+    public static final Setting<Double> spd_segment_memory_reclaim = newBuilder(
+                    "internal.db.spd_import.segment_memory_reclaim", DOUBLE, 0.1)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Double> spd_segment_memory_reclaim_trigger = newBuilder(
+                    "internal.db.spd_import.segment_memory_reclaim_trigger", DOUBLE, 0.8)
+            .build();
+
+    @Internal
+    @Description("")
     public static final Setting<Integer> spd_import_segment_buffer_size = newBuilder(
                     "internal.db.spd_import.segment_buffer_size", INT, 8 * 1024 * 1024)
             .build();
 
     @Internal
     @Description("")
-    public static final Setting<Integer> spd_import_max_segment_records = newBuilder(
-                    "internal.db.spd_import.max_segment_records", INT, 100_000)
+    public static final Setting<Integer> spd_import_segment_records_increment = newBuilder(
+                    "internal.db.spd_import.segment_records_icrement", INT, 10_000)
             .build();
 
     @Internal
     @Description("")
-    public static final Setting<Double> spd_import_heap_for_segment_records = newBuilder(
-                    "internal.db.spd_import.heap_for_segment_records", DOUBLE, 0.1)
+    public static final Setting<Double> spd_import_segment_records_heap_limit = newBuilder(
+                    "internal.db.spd_import.segment_records_heap_limit", DOUBLE, 0.1)
+            .build();
+
+    @Internal
+    @Description("")
+    public static final Setting<Integer> spd_import_max_segment_records = newBuilder(
+                    "internal.db.spd_import.max_segment_records", INT, 100_000)
             .build();
 
     @Internal
