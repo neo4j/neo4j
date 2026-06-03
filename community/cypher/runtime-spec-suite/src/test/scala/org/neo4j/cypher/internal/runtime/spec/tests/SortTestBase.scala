@@ -390,14 +390,6 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not leak the seek cursor when an eager consumer aborts mid-stream") {
-    // Relationship-by-id seek allocates a pooled RelationshipScanCursor. Unlike every
-    // other relationship scan, the by-id seek pipes did not register that cursor with the
-    // ResourceManager (state.query.resources.trace), so its only release path was the
-    // iterator close cascade. Sort is an eager pipe: it drains its input before building
-    // the iterator whose close would propagate down to the seek, so when the input throws
-    // mid-fill that cascade never runs and the cursor leaks - surfacing as a suppressed
-    // "cursor was not closed!" at tx close under track_cursor_close. Tracing the cursor
-    // makes release independent of any consumer, so this passes for every runtime.
     val (_, relationships) = givenGraph { circleGraph(10) }
     val ids = relationships.map(_.getId)
 
@@ -406,9 +398,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       override def onRow(row: AnyRef, state: AnyRef): Unit = {
         seen += 1
         // Throw only after at least one row has flowed through, so the seek cursor is
-        // already open when the eager sort fails (>= guards against the parallel runtime,
-        // where the counter is touched from several worker threads).
-        if (seen >= 2) throw new SeekConsumerAborted
+        if (seen >= 2) throw new SortInputException
       }
     }
 
@@ -419,10 +409,8 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .relationshipByIdSeek("(x)-[r]-(y)", Set.empty, ids: _*)
       .build()
 
-    // Assert on our own exception type: a leaked-cursor IllegalStateException at tx close
-    // is then a test failure rather than being mistaken for the expected error.
-    a[SeekConsumerAborted] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+    a[SortInputException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
-  private class SeekConsumerAborted extends RuntimeException("simulated abort while an eager pipe consumes the seek")
+  private class SortInputException extends RuntimeException("simulated failure while sort materialises its input")
 }

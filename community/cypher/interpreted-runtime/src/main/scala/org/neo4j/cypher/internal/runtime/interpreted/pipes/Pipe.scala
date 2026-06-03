@@ -99,6 +99,13 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
           } catch {
             case afterError: Throwable =>
               createResultsError.addSuppressed(afterError)
+          } finally {
+            try {
+              sourceResult.close()
+            } catch {
+              case closeError: Throwable =>
+                createResultsError.addSuppressed(closeError)
+            }
           }
           throw createResultsError
       }
