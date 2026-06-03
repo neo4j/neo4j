@@ -24,7 +24,6 @@ import org.neo4j.cypher.CypherITTestSuite
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunctions
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.options.CypherVersionOption
-import org.neo4j.cypher.util.SkipOnSpd
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N00
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N01
 import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N02
@@ -65,7 +64,7 @@ import org.neo4j.notifications.NotificationCodeWithDescription.procedureWarning
 import org.neo4j.notifications.NotificationDetail
 import org.neo4j.notifications.NotificationDetail.deprecatedName
 import org.neo4j.notifications.NotificationDetail.deprecationNotificationDetail
-import org.neo4j.test.extension.SkipOnSpd.Note
+import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER
 import org.scalatest.BeforeAndAfterAll
 
 abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with BeforeAndAfterAll
@@ -82,6 +81,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
     dbms.shutdown()
   }
 
+  private val dbName = if ("spd".equals(FACTORY_SUPPLIER)) "neo4j-g000" else "neo4j"
   private val startPosition = new InputPosition(0, 1, 1)
 
   // DEPRECATED PROCEDURE THINGS
@@ -408,7 +408,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
 
   // DEPRECATIONS in 5.X
 
-  test("deprecated legacy reltype separator", SkipOnSpd(note = Note.temporary)) {
+  test("deprecated legacy reltype separator") {
 
     val queries = Seq(
       "MATCH (a)-[:A|:B|:C]-() RETURN a"
@@ -430,21 +430,21 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
         ),
         TestGqlStatusObject(
           STATUS_01N51.getStatusString,
-          "warn: relationship type does not exist. The relationship type `A` does not exist in database `neo4j`. Verify that the spelling is correct.",
+          s"warn: relationship type does not exist. The relationship type `A` does not exist in database `$dbName`. Verify that the spelling is correct.",
           SeverityLevel.WARNING,
           NotificationClassification.UNRECOGNIZED,
           new InputPosition(12, 1, 13)
         ),
         TestGqlStatusObject(
           STATUS_01N51.getStatusString,
-          "warn: relationship type does not exist. The relationship type `B` does not exist in database `neo4j`. Verify that the spelling is correct.",
+          s"warn: relationship type does not exist. The relationship type `B` does not exist in database `$dbName`. Verify that the spelling is correct.",
           SeverityLevel.WARNING,
           NotificationClassification.UNRECOGNIZED,
           new InputPosition(15, 1, 16)
         ),
         TestGqlStatusObject(
           STATUS_01N51.getStatusString,
-          "warn: relationship type does not exist. The relationship type `C` does not exist in database `neo4j`. Verify that the spelling is correct.",
+          s"warn: relationship type does not exist. The relationship type `C` does not exist in database `$dbName`. Verify that the spelling is correct.",
           SeverityLevel.WARNING,
           NotificationClassification.UNRECOGNIZED,
           new InputPosition(18, 1, 19)
@@ -551,7 +551,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
     assertNoDeprecations(Seq(query))
   }
 
-  test("deprecate fixed length relationships in shortestPath and allShortestPaths", SkipOnSpd(note = Note.temporary)) {
+  test("deprecate fixed length relationships in shortestPath and allShortestPaths") {
     assertNotification(
       Seq("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b"),
       shouldContainNotification = true,
@@ -594,7 +594,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
         ),
         TestGqlStatusObject(
           STATUS_01N51.getStatusString,
-          "warn: relationship type does not exist. The relationship type `TYPE` does not exist in database `neo4j`. Verify that the spelling is correct.",
+          s"warn: relationship type does not exist. The relationship type `TYPE` does not exist in database `$dbName`. Verify that the spelling is correct.",
           SeverityLevel.WARNING,
           NotificationClassification.UNRECOGNIZED,
           new InputPosition(37, 1, 38)
@@ -739,15 +739,14 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
   private def propWarning(position: InputPosition): TestGqlStatusObject =
     TestGqlStatusObject(
       STATUS_01N52.getStatusString,
-      "warn: property key does not exist. The property `prop` does not exist in database `neo4j`. Verify that the spelling is correct.",
+      s"warn: property key does not exist. The property `prop` does not exist in database `$dbName`. Verify that the spelling is correct.",
       SeverityLevel.WARNING,
       NotificationClassification.UNRECOGNIZED,
       position
     )
 
   test(
-    "deprecate using unescaped variable named \"where\" in node pattern if directly followed by a property key-value expression only",
-    SkipOnSpd(note = Note.temporary)
+    "deprecate using unescaped variable named \"where\" in node pattern if directly followed by a property key-value expression only"
   ) {
     val queries = Seq(
       ("MATCH (", ") RETURN *"),
@@ -811,8 +810,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
   }
 
   test(
-    "deprecate using unescaped variable named \"where\" in relationship pattern if directly followed by a property key-value expression only",
-    SkipOnSpd(note = Note.temporary)
+    "deprecate using unescaped variable named \"where\" in relationship pattern if directly followed by a property key-value expression only"
   ) {
     val queries = Seq(
       ("MATCH ()-[", "]->() RETURN *"),
@@ -933,15 +931,14 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
   private def labelWarning(label: String, position: InputPosition) =
     TestGqlStatusObject(
       STATUS_01N50.getStatusString,
-      s"warn: label does not exist. The label `$label` does not exist in database `neo4j`. Verify that the spelling is correct.",
+      s"warn: label does not exist. The label `$label` does not exist in database `$dbName`. Verify that the spelling is correct.",
       SeverityLevel.WARNING,
       NotificationClassification.UNRECOGNIZED,
       position
     )
 
   test(
-    "deprecate unparenthesized label expression predicate as right-hand side operators of `+`",
-    SkipOnSpd(note = Note.temporary)
+    "deprecate unparenthesized label expression predicate as right-hand side operators of `+`"
   ) {
     /*
      * Format: ((labelExpr, labelExprOffset), Seq((label1, label1Offset), (label2, label2Offset))
@@ -1017,8 +1014,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
   }
 
   test(
-    "do not warn about parenthesized label expression predicate as right-hand side operators of \"+\"",
-    SkipOnSpd(note = Note.temporary)
+    "do not warn about parenthesized label expression predicate as right-hand side operators of \"+\""
   ) {
     val labelExpressions = Seq(
       ("n:A", Seq(("A", 2))),
