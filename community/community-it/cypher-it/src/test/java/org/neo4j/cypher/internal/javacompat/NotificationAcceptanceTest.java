@@ -51,7 +51,9 @@ import org.neo4j.test.extension.SkipOnSpd;
 class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
-    @SkipOnSpd(reason = "Temporarily skipped on SPD", notes = SkipOnSpd.Note.temporary)
+    @SkipOnSpd(
+            reason = "SPD always runs on enterprise where pipelined is supported",
+            notes = SkipOnSpd.Note.incompatible)
     void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery() {
         shouldNotifyInStream(
                 "EXPLAIN CYPHER runtime=pipelined RETURN 1",
