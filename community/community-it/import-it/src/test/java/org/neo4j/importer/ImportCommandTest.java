@@ -765,16 +765,12 @@ class ImportCommandTest {
     }
 
     private static String labelsOf(Node node) {
-        StringBuilder builder = new StringBuilder();
-        for (Label label : node.getLabels()) {
-            builder.append(label.name()).append(" ");
-        }
-        return builder.toString();
+        return String.join(" ", Iterables.map(node.getLabels(), Label::name));
     }
 
     private static boolean nodeHasLabels(Node node, String[] labels) {
         for (String name : labels) {
-            if (!node.hasLabel(Label.label(name))) {
+            if (!node.hasLabel(label(name))) {
                 return false;
             }
         }
@@ -866,11 +862,13 @@ class ImportCommandTest {
 
         // WHEN
         runImport(
-                "--nodes", nodeHeader(config, groupOne) + "," + nodeData(false, config, groupOneNodeIds, TRUE),
-                "--nodes", nodeHeader(config, groupTwo) + "," + nodeData(false, config, groupTwoNodeIds, TRUE),
+                "--nodes",
+                nodeHeader(config, groupOne) + "," + nodeData(false, config, groupOneNodeIds, TRUE),
+                "--nodes",
+                nodeHeader(config, groupTwo) + "," + nodeData(false, config, groupTwoNodeIds, TRUE),
                 "--relationships",
-                        relationshipHeader(config, groupOne, groupTwo, true) + ","
-                                + relationshipData(false, config, rels.iterator(), TRUE, true));
+                relationshipHeader(config, groupOne, groupTwo, true) + ","
+                        + relationshipData(false, config, rels.iterator(), TRUE, true));
 
         // THEN
         GraphDatabaseService db = getDatabaseApi();
@@ -897,11 +895,11 @@ class ImportCommandTest {
         // WHEN
         runImport(
                 "--nodes",
-                        nodeHeader(config, "MyGroup").toAbsolutePath() + ","
-                                + nodeData(false, config, groupOneNodeIds, TRUE).toAbsolutePath(),
+                nodeHeader(config, "MyGroup").toAbsolutePath() + ","
+                        + nodeData(false, config, groupOneNodeIds, TRUE).toAbsolutePath(),
                 "--nodes",
-                        nodeHeader(config).toAbsolutePath() + ","
-                                + nodeData(false, config, groupTwoNodeIds, TRUE).toAbsolutePath());
+                nodeHeader(config).toAbsolutePath() + ","
+                        + nodeData(false, config, groupTwoNodeIds, TRUE).toAbsolutePath());
 
         // THEN
         verifyData(6, 0, Validators.emptyValidator(), Validators.emptyValidator());
@@ -1145,15 +1143,14 @@ class ImportCommandTest {
 
         // WHEN
         runImport(
-                "--input-encoding", charset.name(),
+                "--input-encoding",
+                charset.name(),
                 "--nodes",
-                        nodeData(true, config, nodeIds, TRUE, charset)
-                                .toAbsolutePath()
-                                .toString(),
+                nodeData(true, config, nodeIds, TRUE, charset).toAbsolutePath().toString(),
                 "--relationships",
-                        relationshipData(true, config, nodeIds, TRUE, true, charset)
-                                .toAbsolutePath()
-                                .toString());
+                relationshipData(true, config, nodeIds, TRUE, true, charset)
+                        .toAbsolutePath()
+                        .toString());
 
         // THEN
         verifyData();
@@ -1183,13 +1180,13 @@ class ImportCommandTest {
         // WHEN
         runImport(
                 "--nodes",
-                        nodeData(true, Configuration.COMMAS, nodeIds, TRUE)
-                                .toAbsolutePath()
-                                .toString(),
+                nodeData(true, Configuration.COMMAS, nodeIds, TRUE)
+                        .toAbsolutePath()
+                        .toString(),
                 "--relationships",
-                        relationshipData(true, Configuration.COMMAS, relationshipData.iterator(), TRUE, true)
-                                .toAbsolutePath()
-                                .toString());
+                relationshipData(true, Configuration.COMMAS, relationshipData.iterator(), TRUE, true)
+                        .toAbsolutePath()
+                        .toString());
 
         // THEN
         GraphDatabaseService db = getDatabaseApi();
@@ -1448,14 +1445,16 @@ class ImportCommandTest {
 
         // WHEN
         runImport(
-                "--delimiter", "\\t",
-                "--array-delimiter", String.valueOf(config.arrayDelimiter()),
+                "--delimiter",
+                "\\t",
+                "--array-delimiter",
+                String.valueOf(config.arrayDelimiter()),
                 "--nodes",
-                        nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
+                nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
                 "--relationships",
-                        relationshipData(true, config, nodeIds, TRUE, true)
-                                .toAbsolutePath()
-                                .toString());
+                relationshipData(true, config, nodeIds, TRUE, true)
+                        .toAbsolutePath()
+                        .toString());
 
         // THEN
         verifyData();
@@ -1469,16 +1468,16 @@ class ImportCommandTest {
 
         // WHEN
         assertThatThrownBy(() -> runImport(
-                        "--delimiter", "\\bogus",
-                        "--array-delimiter", String.valueOf(config.arrayDelimiter()),
+                        "--delimiter",
+                        "\\bogus",
+                        "--array-delimiter",
+                        String.valueOf(config.arrayDelimiter()),
                         "--nodes",
-                                nodeData(true, config, nodeIds, TRUE)
-                                        .toAbsolutePath()
-                                        .toString(),
+                        nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
                         "--relationships",
-                                relationshipData(true, config, nodeIds, TRUE, true)
-                                        .toAbsolutePath()
-                                        .toString()))
+                        relationshipData(true, config, nodeIds, TRUE, true)
+                                .toAbsolutePath()
+                                .toString()))
                 .isInstanceOf(ParameterException.class)
                 .hasMessageContaining("bogus");
     }
@@ -1645,20 +1644,24 @@ class ImportCommandTest {
         store(
                 stringMap(
                         databases_root_path.name(),
-                                layout.databasesDirectory().toAbsolutePath().toString(),
-                        GraphDatabaseInternalSettings.array_block_size.name(), String.valueOf(arrayBlockSize),
-                        GraphDatabaseInternalSettings.string_block_size.name(), String.valueOf(stringBlockSize),
-                        transaction_logs_root_path.name(), getTransactionLogsRoot()),
+                        layout.databasesDirectory().toAbsolutePath().toString(),
+                        GraphDatabaseInternalSettings.array_block_size.name(),
+                        String.valueOf(arrayBlockSize),
+                        GraphDatabaseInternalSettings.string_block_size.name(),
+                        String.valueOf(stringBlockSize),
+                        transaction_logs_root_path.name(),
+                        getTransactionLogsRoot()),
                 dbConfig);
         final var nodeIds = nodeIds();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--additional-config",
+                dbConfig.toAbsolutePath().toString(),
                 "--nodes",
-                        nodeData(true, Configuration.COMMAS, nodeIds, value -> true)
-                                .toAbsolutePath()
-                                .toString());
+                nodeData(true, Configuration.COMMAS, nodeIds, value -> true)
+                        .toAbsolutePath()
+                        .toString());
 
         // THEN
         final var db = assumeAlignedFormat(getDatabaseApi());
@@ -3006,7 +3009,8 @@ class ImportCommandTest {
                 "nodes.parquet", types, List.of(new Object[] {1L, "Tom"}, new Object[] {2L, "Jerry"}));
 
         // when
-        runImport("--input-type=parquet", "--nodes", header.toString(), parquet.toString());
+        var nodesFiles = "--nodes=" + header.toString() + "," + parquet.toString();
+        runImport("--input-type=parquet", nodesFiles);
 
         // then
         try (var tx = getDatabaseApi().beginTx()) {
@@ -3035,7 +3039,8 @@ class ImportCommandTest {
                 "nodes.parquet", types, List.of(new Object[] {1L, "Tom"}, new Object[] {2L, "Jerry"}));
 
         // when
-        runImport("--delimiter", "|", "--input-type=parquet", "--nodes", header.toString(), parquet.toString());
+        var nodesFiles = "--nodes=" + header.toString() + "," + parquet.toString();
+        runImport("--delimiter", "|", "--input-type=parquet", nodesFiles);
 
         // then
         try (var tx = getDatabaseApi().beginTx()) {
@@ -3141,6 +3146,279 @@ class ImportCommandTest {
             boolean[] booleanArray = (boolean[]) c_list_boolean;
             assertThat(booleanArray).hasSize(3);
             assertThat(booleanArray).containsExactly(true, false, true);
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithMultipleNodeGroupsEachWithOwnHeader() throws Exception {
+        // given - two node groups with different parquet schemas, each with their own header file
+        var personTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.INT32).named("person_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("person_name"));
+        var personParquet = createParquetFile(
+                "persons.parquet", personTypes, List.of(new Object[] {1, "Alice"}, new Object[] {2, "Bob"}));
+        var personHeader = createAndWriteFile("persons-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID,name");
+            writer.println("person_id,person_name");
+        });
+
+        var companyTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("company_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("company_name"));
+        var companyParquet = createParquetFile(
+                "companies.parquet", companyTypes, List.of(new Object[] {"c1", "Acme"}, new Object[] {"c2", "BigCorp"
+                }));
+        var companyHeader = createAndWriteFile("companies-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID,name");
+            writer.println("company_id,company_name");
+        });
+
+        // when - two separate --nodes groups each with their own header, no explicit label prefix
+        runImport(
+                "--input-type=parquet",
+                "--nodes=" + personHeader.toAbsolutePath() + "," + personParquet.toAbsolutePath(),
+                "--nodes=" + companyHeader.toAbsolutePath() + "," + companyParquet.toAbsolutePath());
+
+        // then - all 4 nodes should be imported using each group's own header
+        try (var tx = getDatabaseApi().beginTx()) {
+            var allNames = new HashSet<String>();
+            tx.getAllNodes()
+                    .forEach(node -> allNames.add(node.getProperty("name").toString()));
+            assertThat(allNames).containsExactlyInAnyOrder("Alice", "Bob", "Acme", "BigCorp");
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithMultipleNodeGroupsEachWithOwnHeaderAndExplicitLabels() throws Exception {
+        // given - two node groups with different parquet schemas, each with their own header file
+        var personTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.INT32).named("person_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("person_name"));
+        var personParquet = createParquetFile(
+                "persons.parquet", personTypes, List.of(new Object[] {1, "Alice"}, new Object[] {2, "Bob"}));
+        var personHeader = createAndWriteFile("persons-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID,name");
+            writer.println("person_id,person_name");
+        });
+
+        var companyTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("company_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("company_name"));
+        var companyParquet = createParquetFile(
+                "companies.parquet", companyTypes, List.of(new Object[] {"c1", "Acme"}, new Object[] {"c2", "BigCorp"
+                }));
+        var companyHeader = createAndWriteFile("companies-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID,name");
+            writer.println("company_id,company_name");
+        });
+
+        // when - two separate --nodes groups each with their own header, with explicit label prefix
+        runImport(
+                "--input-type=parquet",
+                "--nodes=Person=" + personHeader.toAbsolutePath() + "," + personParquet.toAbsolutePath(),
+                "--nodes=Company=" + companyHeader.toAbsolutePath() + "," + companyParquet.toAbsolutePath());
+
+        // then - all 4 nodes should be imported using each group's own header
+        try (var tx = getDatabaseApi().beginTx()) {
+            var allNames = new HashSet<String>();
+            tx.getAllNodes()
+                    .forEach(node -> allNames.add("%s:%s"
+                            .formatted(labelsOf(node), node.getProperty("name").toString())));
+            assertThat(allNames)
+                    .containsExactlyInAnyOrder("Person:Alice", "Person:Bob", "Company:Acme", "Company:BigCorp");
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithMultipleNodeGroupsEachWithOwnHeaderAndLabelsFromInput() throws Exception {
+        // given - two node groups with different parquet schemas, each with their own header file
+        var personTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.INT32).named("person_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("person_name"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("label"));
+        var personParquet = createParquetFile(
+                "persons.parquet",
+                personTypes,
+                List.of(new Object[] {1, "Alice", "Person"}, new Object[] {2, "Bob", "Person"}));
+        var personHeader = createAndWriteFile("persons-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID,name,:LABEL");
+            writer.println("person_id,person_name,label");
+        });
+
+        var companyTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("company_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("company_name"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("label"));
+        var companyParquet = createParquetFile(
+                "companies.parquet",
+                companyTypes,
+                List.of(new Object[] {"c1", "Acme", "Company"}, new Object[] {"c2", "BigCorp", "Company"}));
+        var companyHeader = createAndWriteFile("companies-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID,name,:LABEL");
+            writer.println("company_id,company_name,label");
+        });
+
+        // when - two separate --nodes groups each with their own header, no explicit label prefix but labels from data
+        runImport(
+                "--input-type=parquet",
+                "--nodes=" + personHeader.toAbsolutePath() + "," + personParquet.toAbsolutePath(),
+                "--nodes=" + companyHeader.toAbsolutePath() + "," + companyParquet.toAbsolutePath());
+
+        // then - all 4 nodes should be imported using each group's own header
+        try (var tx = getDatabaseApi().beginTx()) {
+            var allNames = new HashSet<String>();
+            tx.getAllNodes()
+                    .forEach(node -> allNames.add("%s:%s"
+                            .formatted(labelsOf(node), node.getProperty("name").toString())));
+            assertThat(allNames)
+                    .containsExactlyInAnyOrder("Person:Alice", "Person:Bob", "Company:Acme", "Company:BigCorp");
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithMultipleRelationshipGroupsEachWithOwnHeader() throws Exception {
+        // given - nodes with string IDs
+        var nodeTypes = List.<org.apache.parquet.schema.Type>of(Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named("nid"));
+        var nodeParquet = createParquetFile(
+                "nodes.parquet", nodeTypes, List.of(new Object[] {"a"}, new Object[] {"b"}, new Object[] {"c"}));
+        var nodeHeader = createAndWriteFile("nodes-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID");
+            writer.println("nid");
+        });
+
+        var relTypes0 = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("src"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("tgt"));
+        var relParquet0 = createParquetFile("knows.parquet", relTypes0, List.<Object[]>of(new Object[] {"a", "b"}));
+        var relHeader0 = createAndWriteFile("knows-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println(":START_ID,:END_ID");
+            writer.println("src,tgt");
+        });
+
+        var relTypes1 = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("from_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("to_id"));
+        var relParquet1 = createParquetFile("likes.parquet", relTypes1, List.<Object[]>of(new Object[] {"b", "c"}));
+        var relHeader1 = createAndWriteFile("likes-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println(":START_ID,:END_ID");
+            writer.println("from_id,to_id");
+        });
+
+        // when
+        runImport(
+                "--input-type=parquet",
+                "--id-type=string",
+                "--nodes=" + nodeHeader.toAbsolutePath() + "," + nodeParquet.toAbsolutePath(),
+                "--relationships=KNOWS=" + relHeader0.toAbsolutePath() + "," + relParquet0.toAbsolutePath(),
+                "--relationships=LIKES=" + relHeader1.toAbsolutePath() + "," + relParquet1.toAbsolutePath());
+
+        // then
+        try (var tx = getDatabaseApi().beginTx()) {
+            assertThat(count(tx.findRelationships(withName("KNOWS")))).isEqualTo(1);
+            assertThat(count(tx.findRelationships(withName("LIKES")))).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldHandleParquetInputWithMultipleRelationshipGroupsEachWithOwnHeaderAndLabelsFromInput() throws Exception {
+        // given - nodes with string IDs
+        var nodeTypes = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("nid"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("label"));
+        var nodeParquet = createParquetFile(
+                "nodes.parquet",
+                nodeTypes,
+                List.of(new Object[] {"a", "LabelA"}, new Object[] {"b", "LabelB"}, new Object[] {"c", "LabelC"}));
+        var nodeHeader = createAndWriteFile("nodes-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println("nodeId:ID,:LABEL");
+            writer.println("nid,label");
+        });
+
+        var relTypes0 = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("src"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("tgt"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("type"));
+        var relParquet0 =
+                createParquetFile("knows.parquet", relTypes0, List.<Object[]>of(new Object[] {"a", "b", "KNOWS"}));
+        var relHeader0 = createAndWriteFile("knows-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println(":START_ID,:END_ID,:TYPE");
+            writer.println("src,tgt,type");
+        });
+
+        var relTypes1 = List.<org.apache.parquet.schema.Type>of(
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("from_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("to_id"),
+                Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                        .as(LogicalTypeAnnotation.stringType())
+                        .named("type"));
+        var relParquet1 =
+                createParquetFile("likes.parquet", relTypes1, List.<Object[]>of(new Object[] {"b", "c", "LIKES"}));
+        var relHeader1 = createAndWriteFile("likes-header.csv", Charset.defaultCharset(), writer -> {
+            writer.println(":START_ID,:END_ID,:TYPE");
+            writer.println("from_id,to_id,type");
+        });
+
+        // when
+        runImport(
+                "--input-type=parquet",
+                "--id-type=string",
+                "--nodes=" + nodeHeader.toAbsolutePath() + "," + nodeParquet.toAbsolutePath(),
+                "--relationships=" + relHeader0.toAbsolutePath() + "," + relParquet0.toAbsolutePath(),
+                "--relationships=" + relHeader1.toAbsolutePath() + "," + relParquet1.toAbsolutePath());
+
+        // then
+        try (var tx = getDatabaseApi().beginTx()) {
+            assertThat(count(tx.findNodes(label("LabelA")))).isEqualTo(1);
+            assertThat(count(tx.findNodes(label("LabelB")))).isEqualTo(1);
+            assertThat(count(tx.findNodes(label("LabelC")))).isEqualTo(1);
+            assertThat(count(tx.findRelationships(withName("KNOWS")))).isEqualTo(1);
+            assertThat(count(tx.findRelationships(withName("LIKES")))).isEqualTo(1);
         }
     }
 
