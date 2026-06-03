@@ -118,7 +118,8 @@ object InternalNotifications {
     "DeprecatedFunctionNamespaceUsed",
     "DeprecatedProcedureNamespaceUsed",
     "ShadowingInternalFunction",
-    "IdentifierShadowsVariableNotification"
+    "IdentifierShadowsVariableNotification",
+    "VirtualGraphPostProcessingNotification"
   )
 
   def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
@@ -221,6 +222,8 @@ case class GrantRoleToAuthRuleCommandHasNoEffectNotification(command: String) ex
 case class RevokeRoleFromAuthRuleCommandHasNoEffectNotification(command: String) extends InternalNotification
 
 case class ShardedPerformanceNotification() extends InternalNotification
+
+case object VirtualGraphPostProcessingNotification extends InternalNotification
 
 case class ImpossibleRevokeCommandWarning(command: String, cause: String) extends InternalNotification
 

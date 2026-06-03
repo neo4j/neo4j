@@ -290,6 +290,10 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             new GqlParams.GqlParam[] {GqlParams.StringParam.cfgSetting, GqlParams.StringParam.cause},
             "code generation failed",
             NotificationClassification.PERFORMANCE),
+    STATUS_03N97(
+            "The query execution plan contains a post-processing step that materialize intermediate results. This may transfer large amounts of data from the remote source and increase memory usage. Consider rewriting the query so that aggregation, `ORDER BY`, `DISTINCT`, and `LIMIT` can be pushed down to the remote source.",
+            "virtual graph post-processing",
+            NotificationClassification.PERFORMANCE),
     STATUS_08000("", "", ErrorClassification.UNKNOWN),
     STATUS_08007("", "transaction resolution unknown", ErrorClassification.UNKNOWN),
     STATUS_08N00(

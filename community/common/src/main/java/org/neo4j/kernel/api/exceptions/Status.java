@@ -297,6 +297,11 @@ public interface Status {
                         + "be materialized in main memory before proceeding",
                 SeverityLevel.INFORMATION,
                 NotificationCategory.PERFORMANCE),
+        VirtualGraphPostProcessing(
+                ClientNotification,
+                "The query plan against a virtual graph contains a potentially expensive post-processing step.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
         JoinHintUnfulfillableWarning(
                 ClientNotification,
                 "The database was unable to plan a hinted join.",

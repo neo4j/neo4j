@@ -168,6 +168,10 @@ public enum NotificationCodeWithDescription {
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                     + "how problems could be avoided."),
+    VIRTUAL_GRAPH_POST_PROCESSING(
+            Status.Statement.VirtualGraphPostProcessing,
+            GqlStatusInfoCodes.STATUS_03N97,
+            GqlStatusInfoCodes.STATUS_03N97.getTemplate()),
     DEPRECATED_FORMAT(
             Status.Request.DeprecatedFormat,
             GqlStatusInfoCodes.STATUS_01N01,
@@ -652,6 +656,10 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation eagerLoadCsv(InputPosition position) {
         return EAGER_LOAD_CSV.notification(position);
+    }
+
+    public static NotificationImplementation graphEngineFallbackPostProcessing() {
+        return VIRTUAL_GRAPH_POST_PROCESSING.notification(InputPosition.empty);
     }
 
     public static NotificationImplementation deprecatedFormat(

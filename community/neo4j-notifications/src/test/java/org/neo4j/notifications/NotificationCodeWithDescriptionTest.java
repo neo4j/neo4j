@@ -2239,6 +2239,23 @@ class NotificationCodeWithDescriptionTest {
                         + "Regardless of what the variable evaluates to, it is the literal `indexName` that will be used.");
     }
 
+    @Test
+    void shouldConstructNotificationsFor_VIRTUAL_GRAPH_POST_PROCESSING() {
+        final var notification = NotificationCodeWithDescription.graphEngineFallbackPostProcessing();
+
+        verifyNotification(
+                notification,
+                "The query plan against a virtual graph contains a potentially expensive post-processing step.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Statement.VirtualGraphPostProcessing",
+                "The query execution plan contains a post-processing step that materialize intermediate results. This may transfer large amounts of data from the remote source and increase memory usage. Consider rewriting the query so that aggregation, `ORDER BY`, `DISTINCT`, and `LIMIT` can be pushed down to the remote source.",
+                NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
+                "03N97",
+                new DiagnosticRecord(info, NotificationClassification.PERFORMANCE, -1, -1, -1).asMap(),
+                "info: virtual graph post-processing. The query execution plan contains a post-processing step that materialize intermediate results. This may transfer large amounts of data from the remote source and increase memory usage. Consider rewriting the query so that aggregation, `ORDER BY`, `DISTINCT`, and `LIMIT` can be pushed down to the remote source.");
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -2347,8 +2364,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            79, 11, -68, 122, 116, 43, 68, 105, -65, -10, -106, -39, -2, -120, 76, 45, 43, -105, -27, 52, -57, -34, 104,
-            102, -47, -51, 58, 28, 49, -19, 58, 16
+            70, 40, 5, -121, -10, -70, -87, -12, 111, 21, 113, -46, -81, -28, -121, 109, 98, -113, 127, -16, -40, 39,
+            65, 28, -62, -91, 43, 119, 31, -8, 113, -53
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {
