@@ -1578,6 +1578,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("A feature toggle behind which the secrets manager feature is developed")
+    public static final Setting<Boolean> secrets_manager_enabled =
+            newBuilder("internal.dbms.secrets_manager_enabled", BOOL, false).build();
+
+    @Internal
     @Description("Just to be used in tests: A way to indicate to fallback to latest dbms runtime component version. "
             + "Can be needed when purposefully not initializing the system graph, but testing newer features")
     public static final Setting<Boolean> fallback_to_latest_runtime_version = newBuilder(
