@@ -1331,14 +1331,14 @@ case class RemoteBatchPropertiesWithFilter(
  */
 case class RemoteNodeIndexSeek(
   idName: LogicalVariable,
-  override val labels: Seq[LabelToken],
+  override val label: LabelToken,
   properties: Seq[IndexedProperty],
   valueExpr: QueryExpression[Expression],
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType,
   supportPartitionedScan: Boolean
-)(implicit idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
+)(implicit idGen: IdGen) extends NodeIndexSeekSingleLabelLeafPlan(idGen) {
   override val localAvailableSymbols: Set[LogicalVariable] = argumentIds + idName
 
   override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
