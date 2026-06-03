@@ -81,6 +81,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -2349,6 +2350,37 @@ class IndexedIdGeneratorTest {
 
             // then
             assertThat(t1Id).isGreaterThan(t2Id);
+        }
+    }
+
+    @Test
+    void nextConsecutiveIdRangeShouldBeStrictForSingleId() throws Exception {
+        // given
+        var barrier = new Barrier.Control();
+        var monitor = new IndexedIdGenerator.Monitor() {
+            @Override
+            public void markedAsReserved(long markedId, int numberOfIds) {
+                barrier.reached();
+            }
+        };
+        open(customization().with(monitor));
+        idGenerator.start(freeIds(0, 1), NULL_CONTEXT);
+
+        // when
+        try (var t2 = new OtherThreadExecutor("T2");
+                var t3 = new OtherThreadExecutor("T3")) {
+            var scanAndCacheFuture = t2.executeDontWait(() -> idGenerator.nextConsecutiveIdRange(1, 0, NULL_CONTEXT));
+            barrier.await();
+
+            var t3AllocFuture = t3.executeDontWait(() -> idGenerator.nextConsecutiveIdRange(1, 0, NULL_CONTEXT));
+            assertThatThrownBy(() -> t3AllocFuture.get(1, TimeUnit.SECONDS)).isInstanceOf(TimeoutException.class);
+            barrier.release();
+            var t2Id = scanAndCacheFuture.get();
+            var t3Id = t3AllocFuture.get();
+
+            // then
+            assertThat(t2Id.id()).isEqualTo(0);
+            assertThat(t3Id.id()).isEqualTo(1);
         }
     }
 

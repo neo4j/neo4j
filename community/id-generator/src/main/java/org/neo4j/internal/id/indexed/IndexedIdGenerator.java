@@ -547,10 +547,9 @@ public class IndexedIdGenerator implements IdGenerator {
                     monitor.allocatedFromReused(id.id(), id.numberOfIds());
                     return id;
                 }
-            } while (allowSmaller
-                    && strictlyPrioritizeFreelist
+            } while (strictlyPrioritizeFreelist
                     && scanner.hasMoreFreeIds(false, numberOfIds)
-                    && retries++ < REUSE_RETRY_ATTEMPTS);
+                    && (numberOfIds == 1 || (allowSmaller && retries++ < REUSE_RETRY_ATTEMPTS)));
         }
 
         boolean favorSamePage = (flags & IdSequence.FLAG_FAVOR_SAME_PAGE) != 0;
