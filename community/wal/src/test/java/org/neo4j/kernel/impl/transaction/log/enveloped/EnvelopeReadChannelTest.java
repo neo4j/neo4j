@@ -40,6 +40,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.zip.Checksum;
@@ -790,7 +791,7 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, new byte[startOffsetLength], 0);
             writeLogEnvelopeHeader(
                     buffer, mainPayloadChecksum, EnvelopeType.FULL, mainPayloadLength, BASE_TX_CHECKSUM, START_INDEX);
             buffer.putLong(longValue);
@@ -821,13 +822,13 @@ class EnvelopeReadChannelTest {
         byte[] bytes2 = bytes(random, dataLength);
         writeSomeData(path1, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, new byte[startOffsetLength], 0);
             endChecksum.setValue(
                     writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX));
         });
         writeSomeData(path2, buffer -> {
             writeZeroSegment(buffer, segmentSize, endChecksum.intValue());
-            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, new byte[startOffsetLength], 0);
             writeHeaderAndPayload(buffer, EnvelopeType.FULL, endChecksum.intValue(), bytes2, START_INDEX);
         });
 
@@ -856,7 +857,7 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, new byte[startOffsetLength], 0);
             writeLogEnvelopeHeader(
                     buffer, mainPayloadChecksum, EnvelopeType.FULL, mainPayloadLength, BASE_TX_CHECKSUM, START_INDEX);
             buffer.putLong(longValue);
@@ -894,7 +895,11 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeStartOffsetEnvelope(buffer, startOffsetLength, true);
+            byte[] payload;
+            do {
+                payload = bytes(random, startOffsetLength);
+            } while (Arrays.equals(payload, new byte[startOffsetLength])); // make sure it's not all zeros
+            writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, payload, 0);
             writeLogEnvelopeHeader(buffer, mainPayloadChecksum, EnvelopeType.FULL, mainPayloadLength, 0, START_INDEX);
             buffer.putLong(longValue);
         });
@@ -939,7 +944,7 @@ class EnvelopeReadChannelTest {
 
             // Write second segment:
             // - First the offset:
-            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, new byte[startOffsetLength], 0);
             // - Then the second full:
             writeLogEnvelopeHeader(
                     buffer,
@@ -1001,7 +1006,7 @@ class EnvelopeReadChannelTest {
             buffer.putInt(firstPayloadIntValue);
 
             // Write the offset positioned wrong:
-            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, new byte[startOffsetLength], 0);
 
             // Write another payload:
             writeLogEnvelopeHeader(
@@ -2309,11 +2314,6 @@ class EnvelopeReadChannelTest {
                 .putInt(previousChecksum)
                 .putLong(term)
                 .put(contentType);
-    }
-
-    private void writeStartOffsetEnvelope(ByteBuffer buffer, int length, boolean gibberish) {
-        final var payload = gibberish ? bytes(random, length) : new byte[length];
-        writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, payload, 0);
     }
 
     private static class RawCapturingLogVersionBridge implements LogVersionBridge {
