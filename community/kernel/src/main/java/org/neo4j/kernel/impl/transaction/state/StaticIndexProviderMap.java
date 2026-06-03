@@ -27,6 +27,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -45,12 +47,12 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
 
     private final Map<IndexProviderDescriptor, IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String, IndexProvider> indexProvidersByName = new HashMap<>();
-    private final EnumMap<IndexType, List<IndexProvider>> indexProvidersByType = new EnumMap<>(IndexType.class);
+    private final Map<IndexType, List<IndexProvider>> indexProvidersByType = new EnumMap<>(IndexType.class);
     private final DependencyResolver dependencies;
 
-    public StaticIndexProviderMap(DependencyResolver dependencies, IndexProvider... indexProviders) {
+    public StaticIndexProviderMap(DependencyResolver dependencies, Iterable<IndexProvider> indexProviders) {
         this.dependencies = dependencies;
-        for (var provider : indexProviders) {
+        for (IndexProvider provider : indexProviders) {
             add(provider);
         }
     }
@@ -107,7 +109,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
 
     @Override
     public List<IndexProvider> lookup(IndexType indexType) {
-        var indexProviders = indexProvidersByType.get(indexType);
+        List<IndexProvider> indexProviders = indexProvidersByType.get(indexType);
         assertProviderFoundByType(indexProviders, indexType);
         return indexProviders;
     }
@@ -137,21 +139,21 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     }
 
     private void assertProviderFoundByType(List<IndexProvider> indexProviders, IndexType indexType) {
-        if (indexProviders == null) {
-            var providerNamesByType = indexProvidersByType.entrySet().stream()
-                    .map(entry -> {
-                        IndexType type = entry.getKey();
-                        List<IndexProvider> providers = entry.getValue();
-                        return type + "="
-                                + providers.stream()
-                                        .map(provider ->
-                                                provider.getProviderDescriptor().name())
-                                        .toList();
-                    })
-                    .toList();
-            throw new IndexProviderNotFoundException("Tried to get index providers for index type " + indexType
-                    + " but could not find any. Available index providers per type are " + providerNamesByType);
+        if (indexProviders != null) {
+            return;
         }
+
+        List<String> providerNamesByType = new ArrayList<>();
+        for (Entry<IndexType, List<IndexProvider>> entry : indexProvidersByType.entrySet()) {
+            StringJoiner joiner = new StringJoiner(", ", "[", "]");
+            for (IndexProvider provider : entry.getValue()) {
+                joiner.add(provider.getProviderDescriptor().name());
+            }
+            String providerByType = entry.getKey() + "=" + joiner;
+            providerNamesByType.add(providerByType);
+        }
+        throw new IndexProviderNotFoundException("Tried to get index providers for index type " + indexType
+                + " but could not find any. Available index providers per type are " + providerNamesByType);
     }
 
     @Override
@@ -167,13 +169,14 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
             return;
         }
 
-        var providerDescriptor = requireNonNull(provider.getProviderDescriptor());
-        var existing = indexProvidersByDescriptor.putIfAbsent(providerDescriptor, provider);
+        IndexProviderDescriptor providerDescriptor = requireNonNull(provider.getProviderDescriptor());
+        IndexProvider existing = indexProvidersByDescriptor.putIfAbsent(providerDescriptor, provider);
         if (existing != null) {
             throw new IllegalArgumentException(
                     "Tried to load multiple schema index providers with the same provider descriptor "
                             + providerDescriptor + ". First loaded " + existing + " then " + provider);
         }
+
         indexProvidersByName.putIfAbsent(providerDescriptor.name(), provider);
         List<IndexProvider> providersForType =
                 indexProvidersByType.computeIfAbsent(provider.getIndexType(), it -> new ArrayList<>());

@@ -41,7 +41,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -527,7 +526,7 @@ public class VectorIndexCreationTest {
             DefaultSearchExpansionFactor() {
                 super(
                         Entity.this.factory,
-                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V3_0)));
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V2026_06)));
             }
 
             @ParameterizedTest
@@ -680,7 +679,6 @@ public class VectorIndexCreationTest {
             }
         }
 
-        @Disabled("Needs existing new implementation to be moved to a new vector version: IND-417")
         @Nested
         class QuantizationEnabled extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Quantization_Enabled();
@@ -784,7 +782,7 @@ public class VectorIndexCreationTest {
             QuantizationTypes() {
                 super(
                         Entity.this.factory,
-                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V3_0)));
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V2026_06)));
             }
 
             @ParameterizedTest

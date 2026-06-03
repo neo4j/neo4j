@@ -19,22 +19,25 @@
  */
 package org.neo4j.kernel.database;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions.assertThatThrownBy;
 import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
 import static org.neo4j.test.UpgradeTestUtil.upgradeDbms;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.eclipse.collections.api.tuple.Pair;
-import org.eclipse.collections.impl.tuple.Tuples;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -61,7 +64,6 @@ import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
-import org.neo4j.kernel.api.schema.vector.VectorTestUtils;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -199,10 +201,16 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
 
     @ParameterizedTest
     @MethodSource("introducedSettings")
-    void shouldBeBlockedFromCreatingVectorIndexWithNewSettingsOnOlderVersion(
+    void shouldBeBlockedFromCreatingVectorIndexWithNewSettingsOnOlderVersionWithSameIndexVersion(
             VectorIndexVersion indexVersion, EntityType entityType, IndexSetting setting, Object validValue) {
         KernelVersion introducedKernelVersion = VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS.get(setting);
         KernelVersion previousVersion = previousFrom(introducedKernelVersion);
+        assumeThat(VectorIndexVersion.latestSupportedVersion(previousVersion))
+                .as(
+                        "'%s' was introduced with a new %s",
+                        setting.getSettingName(), VectorIndexVersion.class.getSimpleName())
+                .isSameAs(indexVersion);
+
         setup(previousVersion);
         assertThatThrownBy(() -> {
                     try (Transaction tx = database.beginTx()) {
@@ -241,55 +249,39 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     }
 
     private static Stream<Arguments> introducedSettings() {
-        List<Pair<IndexSetting, Object>> introducedSettings = List.of(
-                Tuples.pair(IndexSetting.vector_Quantization_Enabled(), true),
-                Tuples.pair(IndexSetting.vector_Hnsw_M(), 32),
-                Tuples.pair(IndexSetting.vector_Hnsw_M(), 256));
+        Map<IndexSetting, Object> introducedSettings = Map.ofEntries(
+                entry(IndexSetting.vector_Dimensions(), 1536),
+                entry(IndexSetting.vector_Similarity_Function(), "COSINE"),
+                entry(IndexSetting.vector_Default_Search_Expansion_Factor(), 4.0),
+                entry(IndexSetting.vector_Quantization_Enabled(), true),
+                entry(IndexSetting.vector_Quantization_Type(), "BINARY"),
+                entry(IndexSetting.vector_Hnsw_M(), 32),
+                entry(IndexSetting.vector_Hnsw_Ef_Construction(), 256));
 
         Builder<Arguments> arguments = Stream.builder();
-        for (Pair<IndexSetting, Object> introducedSetting : introducedSettings) {
-            IndexSetting setting = introducedSetting.getOne();
-            Object validValue = introducedSetting.getTwo();
+        for (Entry<IndexSetting, Object> introducedSetting : introducedSettings.entrySet()) {
+            IndexSetting setting = introducedSetting.getKey();
+            Object validValue = introducedSetting.getValue();
 
             KernelVersion introducedKernelVersion =
                     VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS.get(setting);
             VectorIndexVersion version = VectorIndexVersion.latestSupportedVersion(introducedKernelVersion);
-            for (EntityType entityType : EntityType.ENTITY_TYPES) {
-                arguments.accept(Arguments.of(version, entityType, setting, validValue));
+            if (introducedKernelVersion.isAtLeast(KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED)) {
+                arguments.accept(Arguments.of(version, EntityType.NODE, setting, validValue));
+            }
+            if (introducedKernelVersion.isAtLeast(KernelVersion.VERSION_VECTOR_2_INTRODUCED)) {
+                arguments.accept(Arguments.of(version, EntityType.RELATIONSHIP, setting, validValue));
             }
         }
         return arguments.build();
     }
 
     @ParameterizedTest
-    @MethodSource("multiTokenIndexVersions")
-    void shouldBeBlockedFromCreatingVectorIndexWithMultiTokenOnFirstWriteOfUpgradeWithDefaultProvider(
-            VectorIndexVersion indexVersion, EntityType entityType) {
-        KernelVersion previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
-        setup(previousVersion);
-        // write expected tokens before upgrade, as to not create a write
-        TokenIds tokenIds = TokenIds.from(database, entityType, 2, 2);
-        upgradeDbms(dbms);
-        assertKernelVersion(database, previousVersion);
-
-        assertThatThrownBy(() -> {
-                    try (Transaction tx = database.beginTx()) {
-                        createIndex(tx, entityType, tokenIds, VectorIndexVersion.UNKNOWN, defaultSettings());
-                        tx.commit();
-                    }
-                })
-                .isInstanceOf(InvalidArgumentException.class)
-                .hasGqlStatus(GqlStatusInfoCodes.STATUS_51N31)
-                .hasMessageContainingAll(
-                        "Creating a filtering vector index with provider",
-                        "is not supported in Neo4j",
-                        "Please use a newer index provider");
-    }
-
-    @ParameterizedTest
-    @MethodSource("multiTokenIndexVersions")
-    void shouldBeBlockedFromCreatingVectorIndexWithMultiToken(VectorIndexVersion indexVersion, EntityType entityType) {
-        KernelVersion previousVersion = previousFrom(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
+    @EnumSource
+    void shouldBeBlockedFromCreatingVectorIndexWithMultiToken(EntityType entityType) {
+        KernelVersion introducedKernelVersion = KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING;
+        VectorIndexVersion indexVersion = VectorIndexVersion.latestSupportedVersion(introducedKernelVersion);
+        KernelVersion previousVersion = previousFrom(introducedKernelVersion);
         setup(previousVersion);
         assertThatThrownBy(() -> {
                     try (Transaction tx = database.beginTx()) {
@@ -304,15 +296,16 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
                         "vector index is not supported in",
                         previousVersion.name(),
                         "Required version for operation is",
-                        KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING.name(),
+                        introducedKernelVersion.name(),
                         "Please upgrade DBMS");
     }
 
     @ParameterizedTest
-    @MethodSource("multiTokenIndexVersions")
-    void shouldBePossibleToCreateVectorIndexWithMultiTokenAfterUpgrade(
-            VectorIndexVersion indexVersion, EntityType entityType) {
-        KernelVersion previousVersion = previousFrom(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
+    @EnumSource
+    void shouldBePossibleToCreateVectorIndexWithMultiTokenAfterUpgrade(EntityType entityType) {
+        KernelVersion introducedKernelVersion = KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING;
+        VectorIndexVersion indexVersion = VectorIndexVersion.latestSupportedVersion(introducedKernelVersion);
+        KernelVersion previousVersion = previousFrom(introducedKernelVersion);
         setup(previousVersion);
         UpgradeTestUtil.upgradeDatabase(dbms, database, previousVersion, KERNEL_VERSION);
 
@@ -324,18 +317,6 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
         try (Transaction tx = database.beginTx()) {
             assertThat(tx.schema().getIndexes()).hasSize(1);
         }
-    }
-
-    private static Stream<Arguments> multiTokenIndexVersions() {
-        Builder<Arguments> arguments = Stream.builder();
-        VectorIndexVersion minimumVersion =
-                VectorIndexVersion.latestSupportedVersion(KernelVersion.VERSION_VECTOR_INDEX_SINGLE_STAGE_FILTERING);
-        for (VectorIndexVersion version : VectorTestUtils.inclusiveVersionRangeFrom(minimumVersion)) {
-            for (EntityType entityType : EntityType.ENTITY_TYPES) {
-                arguments.accept(Arguments.of(version, entityType));
-            }
-        }
-        return arguments.build();
     }
 
     private static IndexDescriptor createIndex(
@@ -454,6 +435,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
                     case V5_22 -> ZippedStoreCommunity.REC_AF11_V522_EMPTY;
                     case V2025_08 -> ZippedStoreCommunity.REC_AF11_V202508_EMPTY;
                     case V2025_11 -> ZippedStoreCommunity.REC_AF11_V202511_EMPTY;
+                    case V2026_02 -> ZippedStoreCommunity.REC_AF11_V202602_EMPTY;
                     default ->
                         throw InvalidArgumentException.internalError(
                                 this.getClass().getSimpleName(),

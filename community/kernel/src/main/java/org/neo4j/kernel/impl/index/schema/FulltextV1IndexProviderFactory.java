@@ -45,7 +45,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
-public class FulltextIndexProviderFactoryV1 extends AbstractIndexProviderFactory<FulltextIndexProvider> {
+public class FulltextV1IndexProviderFactory extends AbstractIndexProviderFactory<FulltextIndexProvider> {
 
     @Override
     protected Class<?> loggingClass() {

@@ -78,7 +78,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactoryV2;
+import org.neo4j.kernel.impl.index.schema.FulltextV2IndexProviderFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.NullLogService;
@@ -151,7 +151,7 @@ class FulltextIndexEntryUpdateTest {
         DefaultReadOnlyDatabases readOnlyDatabases = new DefaultReadOnlyDatabases(configBasedLookup);
         DatabaseReadOnlyChecker readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        provider = new FulltextIndexProviderFactoryV2()
+        provider = new FulltextV2IndexProviderFactory()
                 .create(
                         pageCache,
                         fs,

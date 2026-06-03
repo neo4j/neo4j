@@ -56,41 +56,21 @@ import org.neo4j.internal.schema.IndexSettingRecord.RecordWithValue;
 import org.neo4j.internal.schema.IndexSettingRecord.State;
 import org.neo4j.internal.schema.IndexSettingRecordsByState;
 import org.neo4j.internal.schema.SettingsAccessor;
-import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.internal.schema.TypedIndexSettingsValidator;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig.HnswConfig;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-class VectorIndexV3ForGLORIOUSFUTUREConfigValidationTest {
-    private static final VectorIndexVersion VERSION = VectorIndexVersion.V3_0;
+class VectorIndexV202606ConfigValidationTest {
+    private static final VectorIndexVersion VERSION = VectorIndexVersion.V2026_06;
     private static final TypedIndexSettingsValidator<VectorIndexConfig> VALIDATOR =
-            VERSION.indexSettingValidator(KernelVersion.GLORIOUS_FUTURE);
-
-    @Test
-    void validV3ForV202509IndexConfig() {
-        SettingsAccessor settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withHnswM(16)
-                .withHnswEfConstruction(100)
-                .withQuantizationEnabled()
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .toSettingsAccessor();
-
-        VectorIndexConfig vectorIndexConfigAsIfCreatedOn202509 =
-                VERSION.indexSettingValidator(KernelVersion.V2025_09).validateToTypedConfig(settings);
-
-        VectorIndexConfig vectorIndexConfig = VALIDATOR.interpretAuthoritativeToTypedConfig(
-                new IndexConfigAccessor(vectorIndexConfigAsIfCreatedOn202509.config()));
-
-        assertThat(vectorIndexConfig).isEqualTo(vectorIndexConfigAsIfCreatedOn202509);
-    }
+            VERSION.indexSettingValidator(LatestVersions.LATEST_KERNEL_VERSION);
 
     @Test
     void validIndexConfig() {

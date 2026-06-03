@@ -43,7 +43,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
-public class TrigramV3IndexProviderFactory extends AbstractIndexProviderFactory<TrigramIndexProvider> {
+public class TextV3IndexProviderFactory extends AbstractIndexProviderFactory<TrigramIndexProvider> {
 
     @Override
     protected Class<?> loggingClass() {

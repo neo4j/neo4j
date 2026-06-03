@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -32,14 +34,16 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactoryV1;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactoryV2;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.FulltextV1IndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.FulltextV2IndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TextV1IndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TextV2IndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TextV3IndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TrigramV2IndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TrigramV3IndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.VectorIndexProviderFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
@@ -101,216 +105,79 @@ public class StaticIndexProviderMapFactory {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             DependencyResolver dependencies) {
-        var tokenIndexProvider = life.add(new TokenIndexProviderFactory()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
 
-        var textIndexProvider = life.add(new TextIndexProviderFactory()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var fulltextV1IndexProvider = life.add(new FulltextIndexProviderFactoryV1()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var fulltextV2IndexProvider = life.add(new FulltextIndexProviderFactoryV2()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var rangeIndexProvider = life.add(new RangeIndexProviderFactory()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var pointIndexProvider = life.add(new PointIndexProviderFactory()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var trigramV2IndexProvider = life.add(new TrigramV2IndexProviderFactory()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var trigramV3IndexProvider = life.add(new TrigramV3IndexProviderFactory()
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var vectorV1IndexProvider = life.add(new VectorIndexProviderFactory(VectorIndexVersion.V1_0)
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var vectorV2IndexProvider = life.add(new VectorIndexProviderFactory(VectorIndexVersion.V2_0)
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
-
-        var vectorV3IndexProvider = life.add(new VectorIndexProviderFactory(VectorIndexVersion.V3_0)
-                .create(
-                        pageCache,
-                        fs,
-                        logService,
-                        monitors,
-                        databaseConfig,
-                        kernelVersionProvider,
-                        readOnlyChecker,
-                        mode,
-                        recoveryCleanupWorkCollector,
-                        databaseLayout,
-                        tokenHolders,
-                        scheduler,
-                        contextFactory,
-                        pageCacheTracer,
-                        dependencies));
+        Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = new ArrayList<>();
+        indexProviderFactories.add(new TokenIndexProviderFactory());
+        indexProviderFactories.add(new RangeIndexProviderFactory());
+        indexProviderFactories.add(new PointIndexProviderFactory());
+        indexProviderFactories.add(new TextV1IndexProviderFactory());
+        indexProviderFactories.add(new TextV2IndexProviderFactory());
+        indexProviderFactories.add(new TextV3IndexProviderFactory());
+        indexProviderFactories.add(new FulltextV1IndexProviderFactory());
+        indexProviderFactories.add(new FulltextV2IndexProviderFactory());
+        for (VectorIndexVersion vectorIndexVersion : VectorIndexVersion.KNOWN_VERSIONS) {
+            indexProviderFactories.add(new VectorIndexProviderFactory(vectorIndexVersion));
+        }
 
         return new StaticIndexProviderMap(
                 dependencies,
-                tokenIndexProvider,
-                rangeIndexProvider,
-                pointIndexProvider,
-                textIndexProvider,
-                trigramV2IndexProvider,
-                trigramV3IndexProvider,
-                fulltextV1IndexProvider,
-                fulltextV2IndexProvider,
-                vectorV1IndexProvider,
-                vectorV2IndexProvider,
-                vectorV3IndexProvider);
+                createIndexProviders(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        kernelVersionProvider,
+                        readOnlyChecker,
+                        mode,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory,
+                        pageCacheTracer,
+                        dependencies,
+                        life,
+                        indexProviderFactories));
+    }
+
+    private static Iterable<IndexProvider> createIndexProviders(
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            LogService logService,
+            Monitors monitors,
+            Config config,
+            KernelVersionProvider kernelVersionProvider,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            HostedOnMode mode,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout,
+            TokenHolders tokenHolders,
+            JobScheduler scheduler,
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver,
+            LifeSupport life,
+            Collection<AbstractIndexProviderFactory<?>> indexProviderFactories) {
+        Collection<IndexProvider> indexProviders = new ArrayList<>(indexProviderFactories.size());
+        for (AbstractIndexProviderFactory<?> indexProviderFactory : indexProviderFactories) {
+            indexProviders.add(life.add(indexProviderFactory.create(
+                    pageCache,
+                    fs,
+                    logService,
+                    monitors,
+                    config,
+                    kernelVersionProvider,
+                    readOnlyChecker,
+                    mode,
+                    recoveryCleanupWorkCollector,
+                    databaseLayout,
+                    tokenHolders,
+                    scheduler,
+                    contextFactory,
+                    pageCacheTracer,
+                    dependencyResolver)));
+        }
+        return indexProviders;
     }
 }

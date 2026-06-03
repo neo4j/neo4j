@@ -230,6 +230,7 @@ public enum VectorIndexVersion {
             return candidate instanceof VectorCandidate;
         }
     },
+
     V3_0(
             AllIndexProviderDescriptors.VECTOR_V3_DESCRIPTOR,
             KernelVersion.VERSION_LUCENE_10_INTRODUCED,
@@ -238,74 +239,92 @@ public enum VectorIndexVersion {
             3200,
             Set.of(EUCLIDEAN, L2_NORM_COSINE),
             Set.of(false, true),
+            Collections.emptySet()) {
+        @Override
+        protected Map<KernelVersion, TypedIndexSettingsValidator<VectorIndexConfig>> configureValidators() {
+            return Map.ofEntries(entry(
+                    KernelVersion.VERSION_LUCENE_10_INTRODUCED,
+                    new VersionedValidator(
+                            this,
+                            new IndexSettingExtractors(
+                                    DIMENSIONS_EXTRACTOR,
+                                    SIMILARITY_FUNCTION_EXTRACTOR,
+                                    QUANTIZATION_ENABLED_EXTRACTOR,
+                                    HNSW_M_EXTRACTOR,
+                                    HNSW_EF_CONSTRUCTION_EXTRACTOR),
+                            mergeToValidatingProcessor(
+                                    OPTIONAL_DIMENSION_CONVERTER,
+                                    optionalDimensionDefault(OptionalInt.empty()),
+                                    optionalDimensionValidator(1, maxDimensions()),
+                                    SIMILARITY_FUNCTION_UPPER_CASE_CONVERTER,
+                                    similarityFunctionDefault(L2_NORM_COSINE),
+                                    similarityFunctionLookup(nameToSimilarityFunction()),
+                                    similarityFunctionNormalizer(nameToSimilarityFunction()),
+                                    quantizationEnabledDefault(false, true),
+                                    QUANTIZATION_ENABLED_VALIDATOR,
+                                    quantizationEnabledToTypeMigrator(VectorQuantizationType.SCALAR),
+                                    hnswMDefault(16),
+                                    hnswMValidator(1, maxHnswM()),
+                                    hnswEfConstructionDefault(100),
+                                    hnswEfConstructionValidator(1, maxHnswEfConstruction())),
+                            defaultSearchExpansionFactor(1.0))));
+        }
+
+        @Override
+        public boolean acceptsValueInstanceType(Value candidate) {
+            return candidate instanceof VectorCandidate;
+        }
+    },
+
+    V2026_06(
+            AllIndexProviderDescriptors.VECTOR_V2026_06_DESCRIPTOR,
+            KernelVersion.VERSION_VECTOR_BINARY_QUANTIZATION,
+            4096,
+            512,
+            3200,
+            Set.of(EUCLIDEAN, L2_NORM_COSINE),
+            Set.of(false, true),
             Set.of(VectorQuantizationType.NONE, VectorQuantizationType.SCALAR, VectorQuantizationType.BINARY)) {
         @Override
         protected Map<KernelVersion, TypedIndexSettingsValidator<VectorIndexConfig>> configureValidators() {
-            return Map.ofEntries(
-                    entry(
-                            KernelVersion.VERSION_LUCENE_10_INTRODUCED,
-                            new VersionedValidator(
-                                    this,
-                                    new IndexSettingExtractors(
-                                            DIMENSIONS_EXTRACTOR,
-                                            SIMILARITY_FUNCTION_EXTRACTOR,
-                                            QUANTIZATION_ENABLED_EXTRACTOR,
-                                            HNSW_M_EXTRACTOR,
-                                            HNSW_EF_CONSTRUCTION_EXTRACTOR),
-                                    mergeToValidatingProcessor(
-                                            OPTIONAL_DIMENSION_CONVERTER,
-                                            optionalDimensionDefault(OptionalInt.empty()),
-                                            optionalDimensionValidator(1, maxDimensions()),
-                                            SIMILARITY_FUNCTION_UPPER_CASE_CONVERTER,
-                                            similarityFunctionDefault(L2_NORM_COSINE),
-                                            similarityFunctionLookup(nameToSimilarityFunction()),
-                                            similarityFunctionNormalizer(nameToSimilarityFunction()),
-                                            quantizationEnabledDefault(false, true),
-                                            QUANTIZATION_ENABLED_VALIDATOR,
-                                            quantizationEnabledToTypeMigrator(VectorQuantizationType.SCALAR),
-                                            hnswMDefault(16),
-                                            hnswMValidator(1, maxHnswM()),
-                                            hnswEfConstructionDefault(100),
-                                            hnswEfConstructionValidator(1, maxHnswEfConstruction())),
-                                    defaultSearchExpansionFactor(1.0))),
-                    entry(
-                            KernelVersion.VERSION_VECTOR_BINARY_QUANTIZATION,
-                            new VersionedValidator(
-                                    this,
-                                    new IndexSettingExtractors(
-                                            DIMENSIONS_EXTRACTOR,
-                                            SIMILARITY_FUNCTION_EXTRACTOR,
-                                            DEFAULT_SEARCH_EXPANSION_FACTOR_EXTRACTOR,
-                                            QUANTIZATION_ENABLED_EXTRACTOR, // allowed in initial creation
-                                            QUANTIZATION_TYPE_EXTRACTOR,
-                                            HNSW_M_EXTRACTOR,
-                                            HNSW_EF_CONSTRUCTION_EXTRACTOR),
-                                    mergeToValidatingProcessor(
-                                            OPTIONAL_DIMENSION_CONVERTER,
-                                            optionalDimensionDefault(OptionalInt.empty()),
-                                            optionalDimensionValidator(1, maxDimensions()),
-                                            SIMILARITY_FUNCTION_UPPER_CASE_CONVERTER,
-                                            similarityFunctionDefault(L2_NORM_COSINE),
-                                            similarityFunctionLookup(nameToSimilarityFunction()),
-                                            similarityFunctionNormalizer(nameToSimilarityFunction()),
-                                            OPTIONAL_QUANTIZATION_ENABLED_CONVERTER,
-                                            optionalQuantizationEnabledDefault(Optional.empty()),
-                                            QUANTIZATION_TYPE_UPPER_CASE_CONVERTER,
-                                            quantizationTypeDefault(VectorQuantizationType.SCALAR),
-                                            quantizationTypeLookup(supportedQuantizationTypes()),
-                                            REMOVE_QUANTIZATION_ENABLED,
-                                            quantizationTypeNormalizer(supportedQuantizationTypes()),
-                                            defaultSearchExpansionFactorDefault(
-                                                    1.0,
-                                                    Map.ofEntries(
-                                                            entry(VectorQuantizationType.NONE, 1.0),
-                                                            entry(VectorQuantizationType.SCALAR, 1.5),
-                                                            entry(VectorQuantizationType.BINARY, 2.0))),
-                                            defaultSearchExpansionFactorValidator(1.0, 10_000.0),
-                                            hnswMDefault(16),
-                                            hnswMValidator(1, maxHnswM()),
-                                            hnswEfConstructionDefault(100),
-                                            hnswEfConstructionValidator(1, maxHnswEfConstruction())))));
+            return Map.ofEntries(entry(
+                    KernelVersion.VERSION_VECTOR_BINARY_QUANTIZATION,
+                    new VersionedValidator(
+                            this,
+                            new IndexSettingExtractors(
+                                    DIMENSIONS_EXTRACTOR,
+                                    SIMILARITY_FUNCTION_EXTRACTOR,
+                                    DEFAULT_SEARCH_EXPANSION_FACTOR_EXTRACTOR,
+                                    QUANTIZATION_ENABLED_EXTRACTOR, // allowed in initial creation
+                                    QUANTIZATION_TYPE_EXTRACTOR,
+                                    HNSW_M_EXTRACTOR,
+                                    HNSW_EF_CONSTRUCTION_EXTRACTOR),
+                            mergeToValidatingProcessor(
+                                    OPTIONAL_DIMENSION_CONVERTER,
+                                    optionalDimensionDefault(OptionalInt.empty()),
+                                    optionalDimensionValidator(1, maxDimensions()),
+                                    SIMILARITY_FUNCTION_UPPER_CASE_CONVERTER,
+                                    similarityFunctionDefault(L2_NORM_COSINE),
+                                    similarityFunctionLookup(nameToSimilarityFunction()),
+                                    similarityFunctionNormalizer(nameToSimilarityFunction()),
+                                    OPTIONAL_QUANTIZATION_ENABLED_CONVERTER,
+                                    optionalQuantizationEnabledDefault(Optional.empty()),
+                                    QUANTIZATION_TYPE_UPPER_CASE_CONVERTER,
+                                    quantizationTypeDefault(VectorQuantizationType.SCALAR),
+                                    quantizationTypeLookup(supportedQuantizationTypes()),
+                                    REMOVE_QUANTIZATION_ENABLED,
+                                    quantizationTypeNormalizer(supportedQuantizationTypes()),
+                                    defaultSearchExpansionFactorDefault(
+                                            1.0,
+                                            Map.ofEntries(
+                                                    entry(VectorQuantizationType.NONE, 1.0),
+                                                    entry(VectorQuantizationType.SCALAR, 1.5),
+                                                    entry(VectorQuantizationType.BINARY, 2.0))),
+                                    defaultSearchExpansionFactorValidator(1.0, 10_000.0),
+                                    hnswMDefault(16),
+                                    hnswMValidator(1, maxHnswM()),
+                                    hnswEfConstructionDefault(100),
+                                    hnswEfConstructionValidator(1, maxHnswEfConstruction())))));
         }
 
         @Override

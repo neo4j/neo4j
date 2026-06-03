@@ -42,7 +42,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
-public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextIndexProvider> {
+public class TextV1IndexProviderFactory extends AbstractIndexProviderFactory<TextIndexProvider> {
     @Override
     protected Class<?> loggingClass() {
         return TextIndexProvider.class;

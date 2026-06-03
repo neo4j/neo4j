@@ -27,7 +27,7 @@ class VectorDocumentStructures {
             case UNKNOWN -> null;
             case V1_0 -> V1;
             case V2_0 -> V2;
-            case V3_0 -> V3;
+            case V3_0, V2026_06 -> V3;
         };
     }
 
@@ -189,7 +189,6 @@ class VectorDocumentStructures {
 
         @Override
         public String temporalValueKeyFor(int propertyIndex, ValueGroup group) {
-
             return "temporal-" + group.name() + "-" + propertyIndex;
         }
 

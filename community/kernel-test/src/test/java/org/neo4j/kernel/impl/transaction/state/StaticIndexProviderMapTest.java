@@ -24,200 +24,148 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.api.impl.schema.fulltext.FulltextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.text.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
-import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 
 class StaticIndexProviderMapTest {
 
     @Test
     void testGetters() throws Exception {
-        var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.EARLIEST);
-        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE, KernelVersion.EARLIEST);
-        var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT, KernelVersion.EARLIEST);
-        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST);
-        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT, KernelVersion.V5_0);
-        var fulltextIndexProvider =
-                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT, KernelVersion.EARLIEST);
-        var vectorV1IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST);
-        var vectorV2IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.V5_0);
-        var map = new StaticIndexProviderMap(
+        IndexProvider tokenIndexProvider = mockProvider(IndexType.LOOKUP);
+        IndexProvider rangeIndexProvider = mockProvider(IndexType.RANGE);
+        IndexProvider pointIndexProvider = mockProvider(IndexType.POINT);
+        IndexProvider textOLDIndexProvider = mockProvider(IndexType.TEXT);
+        IndexProvider textNEWIndexProvider = mockProvider(IndexType.TEXT, KernelVersion.V5_0);
+        IndexProvider fulltextIndexProvider = mockProvider(IndexType.FULLTEXT);
+        IndexProvider vectorOLDIndexProvider = mockProvider(IndexType.VECTOR);
+        IndexProvider vectorNEWIndexProvider = mockProvider(IndexType.VECTOR, KernelVersion.V5_0);
+        StaticIndexProviderMap map = new StaticIndexProviderMap(
                 new Dependencies(),
-                tokenIndexProvider,
-                rangeIndexProvider,
-                pointIndexProvider,
-                textIndexProvider,
-                trigramIndexProvider,
-                fulltextIndexProvider,
-                vectorV1IndexProvider,
-                vectorV2IndexProvider);
+                asList(
+                        tokenIndexProvider, rangeIndexProvider,
+                        pointIndexProvider, textOLDIndexProvider,
+                        textNEWIndexProvider, fulltextIndexProvider,
+                        vectorOLDIndexProvider, vectorNEWIndexProvider));
         map.init();
 
         assertThat(map.getTokenIndexProvider(LATEST_KERNEL_VERSION)).isEqualTo(tokenIndexProvider);
         assertThat(map.getDefaultProvider(LATEST_KERNEL_VERSION)).isEqualTo(rangeIndexProvider);
-        assertThat(map.getTextIndexProvider(LATEST_KERNEL_VERSION)).isEqualTo(trigramIndexProvider);
+        assertThat(map.getTextIndexProvider(LATEST_KERNEL_VERSION)).isEqualTo(textNEWIndexProvider);
         assertThat(map.getFulltextProvider(LATEST_KERNEL_VERSION)).isEqualTo(fulltextIndexProvider);
         assertThat(map.getPointIndexProvider(LATEST_KERNEL_VERSION)).isEqualTo(pointIndexProvider);
-        assertThat(map.getVectorIndexProvider(LATEST_KERNEL_VERSION)).isEqualTo(vectorV2IndexProvider);
+        assertThat(map.getVectorIndexProvider(LATEST_KERNEL_VERSION)).isEqualTo(vectorNEWIndexProvider);
     }
 
     @Test
     void testLookup() throws Exception {
-        var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.EARLIEST);
-        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE, KernelVersion.EARLIEST);
-        var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT, KernelVersion.EARLIEST);
-        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST);
-        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST);
-        var fulltextIndexProvider =
-                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT, KernelVersion.EARLIEST);
-        var vectorV1IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST);
-        var vectorV2IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST);
-        var map = new StaticIndexProviderMap(
-                new Dependencies(),
-                tokenIndexProvider,
-                rangeIndexProvider,
-                pointIndexProvider,
-                textIndexProvider,
-                trigramIndexProvider,
-                fulltextIndexProvider,
-                vectorV1IndexProvider,
-                vectorV2IndexProvider);
+        Collection<IndexProvider> indexProviders = Arrays.stream(IndexType.values())
+                .map(StaticIndexProviderMapTest::mockProvider)
+                .toList();
+        StaticIndexProviderMap map = new StaticIndexProviderMap(new Dependencies(), indexProviders);
         map.init();
 
-        asList(
-                        tokenIndexProvider,
-                        rangeIndexProvider,
-                        pointIndexProvider,
-                        textIndexProvider,
-                        trigramIndexProvider,
-                        fulltextIndexProvider,
-                        vectorV1IndexProvider,
-                        vectorV2IndexProvider)
-                .forEach(p -> {
-                    assertThat(map.lookup(p.getProviderDescriptor()))
-                            .as("lookup by descriptor")
-                            .isEqualTo(p);
+        var indexProviderDescriptorAssert = assertThat(indexProviders).map(IndexProvider::getProviderDescriptor);
 
-                    assertThat(map.lookup(p.getProviderDescriptor().name()))
-                            .as("lookup by descriptor name")
-                            .isEqualTo(p);
-                });
+        indexProviderDescriptorAssert
+                .as("lookup by descriptor")
+                .map(map::lookup)
+                .containsExactlyElementsOf(indexProviders);
+
+        indexProviderDescriptorAssert
+                .as("lookup by descriptor name")
+                .map(IndexProviderDescriptor::name)
+                .map(map::lookup)
+                .containsExactlyElementsOf(indexProviders);
     }
 
     @Test
     void testAccept() throws Exception {
-        var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.EARLIEST);
-        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE, KernelVersion.EARLIEST);
-        var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT, KernelVersion.EARLIEST);
-        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST);
-        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST);
-        var fulltextIndexProvider =
-                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT, KernelVersion.EARLIEST);
-        var vectorV1IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST);
-        var vectorV2IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST);
-        var map = new StaticIndexProviderMap(
-                new Dependencies(),
-                tokenIndexProvider,
-                rangeIndexProvider,
-                pointIndexProvider,
-                textIndexProvider,
-                trigramIndexProvider,
-                fulltextIndexProvider,
-                vectorV1IndexProvider,
-                vectorV2IndexProvider);
+        Collection<IndexProvider> indexProviders = Arrays.stream(IndexType.values())
+                .map(StaticIndexProviderMapTest::mockProvider)
+                .toList();
+        StaticIndexProviderMap map = new StaticIndexProviderMap(new Dependencies(), indexProviders);
         map.init();
 
-        var accepted = new ArrayList<>();
+        Collection<IndexProvider> accepted = new ArrayList<>();
         map.accept(accepted::add);
 
-        assertThat(accepted)
-                .containsExactlyInAnyOrder(
-                        tokenIndexProvider,
-                        rangeIndexProvider,
-                        textIndexProvider,
-                        trigramIndexProvider,
-                        fulltextIndexProvider,
-                        pointIndexProvider,
-                        vectorV1IndexProvider,
-                        vectorV2IndexProvider);
+        assertThat(accepted).containsExactlyInAnyOrderElementsOf(indexProviders);
     }
 
     @Test
     void testWithExtension() throws Exception {
-        var extension = mockProvider(IndexProvider.class, IndexType.RANGE, KernelVersion.EARLIEST);
-        RangeIndexProvider rangeIndexProvider =
-                mockProvider(RangeIndexProvider.class, IndexType.RANGE, KernelVersion.EARLIEST);
-        var map = new StaticIndexProviderMap(
-                dependenciesOf(extension),
-                mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.EARLIEST),
-                rangeIndexProvider,
-                mockProvider(PointIndexProvider.class, IndexType.POINT, KernelVersion.EARLIEST),
-                mockProvider(TextIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST),
-                mockProvider(TrigramIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST),
-                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT, KernelVersion.EARLIEST),
-                mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST),
-                mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST));
+        IndexProvider extension = mockProvider(IndexType.RANGE);
+        IndexProvider rangeIndexProvider = mockProvider(IndexType.RANGE);
+        StaticIndexProviderMap map = new StaticIndexProviderMap(
+                Dependencies.dependenciesOf(extension),
+                asList(
+                        mockProvider(IndexType.LOOKUP),
+                        rangeIndexProvider,
+                        mockProvider(IndexType.POINT),
+                        mockProvider(IndexType.TEXT),
+                        mockProvider(IndexType.FULLTEXT),
+                        mockProvider(IndexType.VECTOR)));
         map.init();
 
         assertThat(map.lookup(extension.getProviderDescriptor())).isEqualTo(extension);
         assertThat(map.lookup(extension.getProviderDescriptor().name())).isEqualTo(extension);
         assertThat(map.lookup(IndexType.RANGE)).containsExactlyInAnyOrder(extension, rangeIndexProvider);
-        var accepted = new ArrayList<>();
+        Collection<IndexProvider> accepted = new ArrayList<>();
         map.accept(accepted::add);
         assertThat(accepted).contains(extension);
     }
 
     @Test
     void testLookupByMissingType() throws Exception {
-        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE, KernelVersion.EARLIEST);
-        var map = new StaticIndexProviderMap(
+        IndexProvider rangeIndexProvider = mockProvider(IndexType.RANGE);
+        StaticIndexProviderMap map = new StaticIndexProviderMap(
                 new Dependencies(),
-                mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.EARLIEST),
-                rangeIndexProvider,
-                mockProvider(
-                        PointIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST), // <- Specifically NOT point
-                mockProvider(TextIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST),
-                mockProvider(TrigramIndexProvider.class, IndexType.TEXT, KernelVersion.EARLIEST),
-                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT, KernelVersion.EARLIEST),
-                mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST),
-                mockProvider(VectorIndexProvider.class, IndexType.VECTOR, KernelVersion.EARLIEST));
+                asList(
+                        mockProvider(IndexType.LOOKUP),
+                        rangeIndexProvider,
+                        mockProvider(IndexType.TEXT),
+                        mockProvider(IndexType.FULLTEXT),
+                        mockProvider(IndexType.VECTOR)));
         map.init();
 
         assertThatThrownBy(() -> map.lookup(IndexType.POINT))
                 .isInstanceOf(IndexProviderNotFoundException.class)
-                .hasMessageContaining("Tried to get index providers for index type " + IndexType.POINT
-                        + " but could not find any. Available index providers per type are ")
-                .hasMessageContaining(IndexType.RANGE + "=["
-                        + rangeIndexProvider.getProviderDescriptor().name() + "]");
+                .hasMessageContainingAll(
+                        "Tried to get index providers for index type ",
+                        IndexType.POINT.name(),
+                        "but could not find any",
+                        "Available index providers per type are",
+                        "%s=[%s]"
+                                .formatted(
+                                        IndexType.RANGE,
+                                        rangeIndexProvider
+                                                .getProviderDescriptor()
+                                                .name()));
     }
 
     @Test
     void testKernelVersion() throws Exception {
-        var provider40 = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.V4_0);
-        var provider42 = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.V4_2);
-        var providerGF = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.GLORIOUS_FUTURE);
-        var provider50 = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.V5_0);
-        var provider202505 = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.V2025_05);
-        var provider525 = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP, KernelVersion.V5_25);
+        IndexProvider provider40 = mockProvider(IndexType.LOOKUP, KernelVersion.V4_0);
+        IndexProvider provider42 = mockProvider(IndexType.LOOKUP, KernelVersion.V4_2);
+        IndexProvider providerGF = mockProvider(IndexType.LOOKUP, KernelVersion.GLORIOUS_FUTURE);
+        IndexProvider provider50 = mockProvider(IndexType.LOOKUP, KernelVersion.V5_0);
+        IndexProvider provider202505 = mockProvider(IndexType.LOOKUP, KernelVersion.V2025_05);
+        IndexProvider provider525 = mockProvider(IndexType.LOOKUP, KernelVersion.V5_25);
 
-        var map = new StaticIndexProviderMap(
-                new Dependencies(), provider40, provider42, providerGF, provider50, provider202505, provider525);
+        StaticIndexProviderMap map = new StaticIndexProviderMap(
+                new Dependencies(),
+                asList(provider40, provider42, providerGF, provider50, provider202505, provider525));
         map.init();
 
         assertThat(map.getTokenIndexProvider(KernelVersion.V4_0)).isEqualTo(provider40);
@@ -229,16 +177,15 @@ class StaticIndexProviderMapTest {
         assertThat(map.getTokenIndexProvider(KernelVersion.GLORIOUS_FUTURE)).isEqualTo(providerGF);
     }
 
-    private static <T extends IndexProvider> T mockProvider(Class<? extends T> clazz) {
-        var mock = mock(clazz);
-        var version = UUID.randomUUID().toString();
-        when(mock.getProviderDescriptor()).thenReturn(new IndexProviderDescriptor(clazz.getName(), version));
-        return mock;
+    private static IndexProvider mockProvider(IndexType indexType) {
+        return mockProvider(indexType, KernelVersion.EARLIEST);
     }
 
-    private static <T extends IndexProvider> T mockProvider(
-            Class<? extends T> clazz, IndexType indexType, KernelVersion kernelVersion) {
-        var mock = mockProvider(clazz);
+    private static IndexProvider mockProvider(IndexType indexType, KernelVersion kernelVersion) {
+        IndexProvider mock = mock(IndexProvider.class);
+        String version = UUID.randomUUID().toString();
+        when(mock.getProviderDescriptor())
+                .thenReturn(new IndexProviderDescriptor(IndexProvider.class.getName(), version));
         when(mock.getIndexType()).thenReturn(indexType);
         when(mock.getMinimumRequiredVersion()).thenReturn(kernelVersion);
         return mock;
