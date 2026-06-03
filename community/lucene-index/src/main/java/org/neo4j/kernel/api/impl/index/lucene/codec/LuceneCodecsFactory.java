@@ -19,8 +19,23 @@
  */
 package org.neo4j.kernel.api.impl.index.lucene.codec;
 
+import java.util.concurrent.ExecutorService;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig;
 
 public interface LuceneCodecsFactory {
-    LuceneCodec codecFor(VectorIndexConfig config);
+    /**
+     * Returns a codec for reading or writing vector index segments. The merge path is single-threaded.
+     */
+    default LuceneCodec codecFor(VectorIndexConfig config) {
+        return codecFor(config, 1, null);
+    }
+
+    /**
+     * Returns a codec for writing vector index segments with optional intra-merge parallelism.
+     *
+     * @param numMergeWorkers number of worker threads to parallelize each HNSW graph merge across.
+     *                        Must be {@code >= 1}. If {@code 1}, {@code mergeExec} must be {@code null}.
+     * @param mergeExec executor service backing intra-merge parallelism, or {@code null} for serial merging.
+     */
+    LuceneCodec codecFor(VectorIndexConfig config, int numMergeWorkers, ExecutorService mergeExec);
 }

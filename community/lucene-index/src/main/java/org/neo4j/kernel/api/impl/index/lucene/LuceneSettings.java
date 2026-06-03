@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index.lucene;
 
 import static java.lang.Boolean.TRUE;
+import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
@@ -205,5 +206,15 @@ public class LuceneSettings implements SettingsDeclaration {
     @Description("Determines the maximum value for the ef search of a nearest neighbor query")
     public static final Setting<Integer> vector_hnsw_max_ef_search = newBuilder(
                     "internal.dbms.index.vector.hnsw.max_ef_search", INT, 10_000)
+            .build();
+
+    @Internal
+    @Description("Number of threads used to parallelize HNSW graph construction within a single segment merge "
+            + "of a vector index. Maps to Lucene's numMergeWorkers / mergeExec on the HNSW vectors format. "
+            + "Set to 1 to disable intra-merge parallelism; higher values trade more CPU for faster merges, "
+            + "which dominate the cost of building or rebuilding large vector indexes.")
+    public static final Setting<Integer> vector_intra_merge_workers = newBuilder(
+                    "internal.dbms.index.vector.intra_merge_workers", INT, 1)
+            .addConstraint(min(1))
             .build();
 }

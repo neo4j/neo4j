@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index.lucene.v10.codec;
 
+import static org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding.UNSIGNED_BYTE;
+import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.HNSW_GRAPH_THRESHOLD;
+
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.KnnVectorsReader;
 import org.apache.lucene.codecs.KnnVectorsWriter;
@@ -43,6 +47,20 @@ public class LuceneKnnScalarQuantizedVectorFormatV2 extends KnnVectorsFormat {
         super(FORMAT_NAME);
         this.maxDimensions = maxDimensions;
         this.vectorsFormat = new Lucene104HnswScalarQuantizedVectorsFormat(hnswConfig.M(), hnswConfig.efConstruction());
+    }
+
+    /// Used for writing with intra-merge parallelism.
+    public LuceneKnnScalarQuantizedVectorFormatV2(
+            int maxDimensions, HnswConfig hnswConfig, int numMergeWorkers, ExecutorService mergeExec) {
+        super(FORMAT_NAME);
+        this.maxDimensions = maxDimensions;
+        this.vectorsFormat = new Lucene104HnswScalarQuantizedVectorsFormat(
+                UNSIGNED_BYTE,
+                hnswConfig.M(),
+                hnswConfig.efConstruction(),
+                numMergeWorkers,
+                mergeExec,
+                HNSW_GRAPH_THRESHOLD);
     }
 
     @Override

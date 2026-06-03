@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index.lucene.v10.codec;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.KnnVectorsReader;
 import org.apache.lucene.codecs.KnnVectorsWriter;
@@ -43,6 +44,15 @@ public class LuceneKnnVectorFormatV2 extends KnnVectorsFormat {
         super(FORMAT_NAME);
         this.maxDimensions = maxDimensions;
         this.vectorsFormat = new Lucene99HnswVectorsFormat(hnswConfig.M(), hnswConfig.efConstruction());
+    }
+
+    /// Used for writing with intra-merge parallelism.
+    public LuceneKnnVectorFormatV2(
+            int maxDimensions, HnswConfig hnswConfig, int numMergeWorkers, ExecutorService mergeExec) {
+        super(FORMAT_NAME);
+        this.maxDimensions = maxDimensions;
+        this.vectorsFormat =
+                new Lucene99HnswVectorsFormat(hnswConfig.M(), hnswConfig.efConstruction(), numMergeWorkers, mergeExec);
     }
 
     @Override

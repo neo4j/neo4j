@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.lucene.v10.codec;
 
+import java.util.concurrent.ExecutorService;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.KnnVectorsFormat;
@@ -36,9 +37,16 @@ public class Neo4j202606BinaryVectorCodec extends FilterCodec implements Lucene1
 
     /// Used for writing and created programmatically when creating the IndexWriter
     public Neo4j202606BinaryVectorCodec(VectorIndexConfig config) {
+        this(config, 1, null);
+    }
+
+    /// Used for writing with intra-merge parallelism.
+    public Neo4j202606BinaryVectorCodec(VectorIndexConfig config, int numMergeWorkers, ExecutorService mergeExec) {
         super(CODEC_NAME, new Lucene104Codec());
         int maxDimensions = config.maxDimensions();
-        this.vectorFormat = new LuceneKnnBinaryQuantizedVectorFormat(maxDimensions, config.hnsw());
+        this.vectorFormat = (mergeExec == null || numMergeWorkers <= 1)
+                ? new LuceneKnnBinaryQuantizedVectorFormat(maxDimensions, config.hnsw())
+                : new LuceneKnnBinaryQuantizedVectorFormat(maxDimensions, config.hnsw(), numMergeWorkers, mergeExec);
     }
 
     @Override

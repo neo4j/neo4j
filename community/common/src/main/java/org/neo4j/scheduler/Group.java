@@ -79,6 +79,12 @@ public enum Group {
      */
     INDEX_POPULATION_WORK("IndexPopulationWork", ExecutorServiceFactory.cached()),
     /**
+     * Intra-merge parallelism for vector indexes. Threads in this group are used by Lucene's
+     * {@code ConcurrentHnswMerger} to parallelize HNSW graph construction within a single segment merge.
+     * Sized via {@code internal.dbms.index.vector.intra_merge_workers}.
+     */
+    VECTOR_INDEX_MERGE("VectorIndexMerge", ExecutorServiceFactory.cached()),
+    /**
      * Background index sampling
      */
     INDEX_SAMPLING("IndexSampling", true),

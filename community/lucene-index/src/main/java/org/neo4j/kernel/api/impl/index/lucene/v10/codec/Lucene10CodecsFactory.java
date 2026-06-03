@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.lucene.v10.codec;
 
+import java.util.concurrent.ExecutorService;
 import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodec;
 import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodecsFactory;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig;
@@ -27,11 +28,11 @@ public class Lucene10CodecsFactory implements LuceneCodecsFactory {
     public static final LuceneCodecsFactory INSTANCE = new Lucene10CodecsFactory();
 
     @Override
-    public LuceneCodec codecFor(VectorIndexConfig config) {
+    public LuceneCodec codecFor(VectorIndexConfig config, int numMergeWorkers, ExecutorService mergeExec) {
         return switch (config.quantization()) {
-            case NONE -> new Neo4j202604NoneVectorCodec(config);
-            case BINARY -> new Neo4j202606BinaryVectorCodec(config);
-            case SCALAR -> new Neo4j202604ScalarVectorCodec(config);
+            case NONE -> new Neo4j202604NoneVectorCodec(config, numMergeWorkers, mergeExec);
+            case BINARY -> new Neo4j202606BinaryVectorCodec(config, numMergeWorkers, mergeExec);
+            case SCALAR -> new Neo4j202604ScalarVectorCodec(config, numMergeWorkers, mergeExec);
         };
     }
 }

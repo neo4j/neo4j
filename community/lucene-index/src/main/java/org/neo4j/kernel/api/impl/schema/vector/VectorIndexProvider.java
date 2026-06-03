@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.OptionalInt;
+import java.util.concurrent.ExecutorService;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigMode;
+import org.neo4j.kernel.api.impl.index.JobSchedulerExecutorService;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneSettings;
 import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodec;
@@ -130,7 +132,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 .interpretAuthoritativeToTypedConfig(new IndexConfigAccessor(descriptor.getIndexConfig()));
         OptionalInt dimensions = vectorIndexConfig.dimensions();
 
-        LuceneCodec codec = luceneContext.codecsFactory().codecFor(vectorIndexConfig);
+        LuceneCodec codec = codecForVectorIndex(vectorIndexConfig, true);
         IndexWriterConfigBuilder writerConfigBuilder = new IndexWriterConfigBuilder(
                         IndexWriterConfigMode.VECTOR_POPULATION, config)
                 .withLogProvider(logProvider)
@@ -163,7 +165,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             throws IOException {
         VectorIndexConfig vectorIndexConfig = settingsValidator()
                 .interpretAuthoritativeToTypedConfig(new IndexConfigAccessor(descriptor.getIndexConfig()));
-        LuceneCodec codec = luceneContext.codecsFactory().codecFor(vectorIndexConfig);
+        LuceneCodec codec = codecForVectorIndex(vectorIndexConfig, false);
         VectorIndexBuilder builder = VectorIndexBuilder.create(
                         descriptor, vectorIndexConfig, documentStructure, codec, readOnlyChecker, config, logProvider)
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
@@ -235,6 +237,19 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         throw new IllegalArgumentException(
                 "'%s' vector similarity function is expected to be compatible with Lucene. Provided: %s"
                         .formatted(vectorSimilarityFunction.functionName(), vectorSimilarityFunction));
+    }
+
+    /**
+     * Build a codec for the given vector index config, wiring an intra-merge executor when
+     * {@link LuceneSettings#vector_intra_merge_workers} > 1. The executor is backed by
+     * {@link Group#VECTOR_INDEX_MERGE} and shares lifecycle with the {@link JobScheduler}.
+     */
+    private LuceneCodec codecForVectorIndex(VectorIndexConfig vectorIndexConfig, boolean allowIntraParallelMerge) {
+        int numMergeWorkers = allowIntraParallelMerge ? config.get(LuceneSettings.vector_intra_merge_workers) : 1;
+        ExecutorService mergeExec = numMergeWorkers > 1
+                ? JobSchedulerExecutorService.nonShutdownable(scheduler, Group.VECTOR_INDEX_MERGE)
+                : null;
+        return luceneContext.codecsFactory().codecFor(vectorIndexConfig, numMergeWorkers, mergeExec);
     }
 
     /**

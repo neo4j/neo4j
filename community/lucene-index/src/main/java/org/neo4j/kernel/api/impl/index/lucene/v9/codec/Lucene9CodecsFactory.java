@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.lucene.v9.codec;
 
+import java.util.concurrent.ExecutorService;
 import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodec;
 import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodecsFactory;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig;
@@ -27,7 +28,8 @@ public class Lucene9CodecsFactory implements LuceneCodecsFactory {
     public static final LuceneCodecsFactory INSTANCE = new Lucene9CodecsFactory();
 
     @Override
-    public LuceneCodec codecFor(VectorIndexConfig config) {
+    public LuceneCodec codecFor(VectorIndexConfig config, int numMergeWorkers, ExecutorService mergeExec) {
+        // we don't support intra-parallel workers with Lucene 9
         return new VectorCodecV2(config);
     }
 }
