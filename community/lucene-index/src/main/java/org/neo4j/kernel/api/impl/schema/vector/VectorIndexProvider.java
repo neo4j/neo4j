@@ -46,7 +46,9 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigMode;
 import org.neo4j.kernel.api.impl.index.JobSchedulerExecutorService;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneContext;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.lucene.LuceneSettings;
+import org.neo4j.kernel.api.impl.index.lucene.LuceneSettings.PostPopulationCompaction;
 import org.neo4j.kernel.api.impl.index.lucene.codec.LuceneCodec;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -174,7 +176,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
         DatabaseIndex<VectorIndexReader> luceneIndex = builder.build();
         luceneIndex.open();
-        maybeMergeSegments(scheduler, luceneIndex);
+        compactSegments(scheduler, luceneIndex, config);
 
         IgnoreStrategy ignoreStrategy = new IgnoreStrategy(version, vectorIndexConfig.dimensions());
         Neo4jVectorSimilarityFunction similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
@@ -254,27 +256,49 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
 
     /**
      * Use given {@link JobScheduler} to force the segment merges
-     * @see #maybeMergeSegments(DatabaseIndex)
+     * @see #compactSegments(DatabaseIndex, Config)
+     * Schedule asynchronous post-population compaction of the index on {@link Group#INDEX_POPULATION}.
+     * The actual operation performed is dictated by
+     * {@link LuceneSettings#vector_post_population_compaction}.
+     * @see #compactSegments(DatabaseIndex, Config)
      */
-    private static void maybeMergeSegments(JobScheduler scheduler, DatabaseIndex<?> luceneIndex) {
+    private static void compactSegments(JobScheduler scheduler, DatabaseIndex<?> luceneIndex, Config config) {
         scheduler.schedule(
                 Group.INDEX_POPULATION,
-                JobMonitoringParams.systemJob("Merging vector index segments"),
-                IOUtils.uncheckedRunnable(() -> {
-                    maybeMergeSegments(luceneIndex);
-                }));
+                JobMonitoringParams.systemJob("Compacting vector index segments"),
+                IOUtils.uncheckedRunnable(() -> compactSegments(luceneIndex, config)));
     }
 
     /**
-     * {@link LuceneSettings#vector_population_merge_factor} should be larger than {@link LuceneSettings#vector_standard_merge_factor}
-     * to enable faster population, but at the cost of more segment files.
-     * This coerces the index to merge the segments to the {@link LuceneSettings#vector_standard_merge_factor}
+     * Perform post-population compaction of the index according to
+     * {@link LuceneSettings#vector_post_population_compaction}.
+     * <ul>
+     *   <li>{@link PostPopulationCompaction#NONE} — skip merging entirely.</li>
+     *   <li>{@link PostPopulationCompaction#AUTO} — invoke Lucene's natural merge policy via
+     *       {@code maybeMerge()}. The configured merge policy decides which segments (if any) to merge.</li>
+     *   <li>{@link PostPopulationCompaction#PARTIAL} — force-merge down to
+     *       {@link LuceneSettings#vector_standard_merge_factor} segments per partition.</li>
+     *   <li>{@link PostPopulationCompaction#FULL} — force-merge each partition to a single segment.</li>
+     * </ul>
      */
-    private static void maybeMergeSegments(DatabaseIndex<?> luceneIndex) throws IOException {
+    private static void compactSegments(DatabaseIndex<?> luceneIndex, Config config) throws IOException {
+        PostPopulationCompaction mode = config.get(LuceneSettings.vector_post_population_compaction);
+        if (mode == PostPopulationCompaction.NONE) {
+            return;
+        }
+        int forceMergeTarget =
+                mode == PostPopulationCompaction.PARTIAL ? IndexWriterConfigMode.VECTOR.getMergeFactor(config) : 1;
         IOException exception = null;
         for (AbstractIndexPartition partition : luceneIndex.getPartitions()) {
             try {
-                partition.getIndexWriter().maybeMerge();
+                LuceneIndexWriter writer = partition.getIndexWriter();
+                switch (mode) {
+                    case NONE -> {
+                        // handled above
+                    }
+                    case AUTO -> writer.maybeMerge();
+                    case PARTIAL, FULL -> writer.forceMerge(forceMergeTarget);
+                }
             } catch (IOException e) {
                 if (exception != null) {
                     exception.addSuppressed(e);

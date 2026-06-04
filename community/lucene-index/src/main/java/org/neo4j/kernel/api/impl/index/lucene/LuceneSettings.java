@@ -71,7 +71,9 @@ public class LuceneSettings implements SettingsDeclaration {
     @Description("Determines how often segment indices are merged by addDocument(). With smaller values, "
             + "less RAM is used while indexing, and searches are faster, but indexing speed is slower. "
             + "With larger values, more RAM is used during indexing, and while searches is slower, indexing is faster. "
-            + "This is only used on vector indexes after they have been created.")
+            + "This is only used on vector indexes after they have been created. "
+            + "It is also used as the forceMerge target when "
+            + "`internal.dbms.index.vector.post_population_compaction` is set to PARTIAL.")
     public static final Setting<Integer> vector_standard_merge_factor = newBuilder(
                     "internal.dbms.index.vector.standard_merge_factor", INT, 50)
             .build();
@@ -216,5 +218,36 @@ public class LuceneSettings implements SettingsDeclaration {
     public static final Setting<Integer> vector_intra_merge_workers = newBuilder(
                     "internal.dbms.index.vector.intra_merge_workers", INT, 1)
             .addConstraint(min(1))
+            .build();
+
+    /**
+     * Controls how aggressively a vector index is consolidated after population finishes,
+     * mapping to a specific Lucene IndexWriter operation.
+     */
+    public enum PostPopulationCompaction {
+        /** Skip post-population merging entirely (write-optimized; leaves the index fragmented). */
+        NONE,
+        /** Invoke Lucene's natural merge policy via {@code maybeMerge()}. Converges to whatever the
+         *  configured merge policy considers a balanced tier distribution. */
+        AUTO,
+        /** Issue {@code forceMerge(vector_standard_merge_factor)}: cap the segment count at the same
+         *  level the merge policy considers balanced for steady-state operation. */
+        PARTIAL,
+        /** Issue {@code forceMerge(1)}: consolidate to a single segment (read-optimized, most expensive). */
+        FULL
+    }
+
+    @Internal
+    @Description("Controls how aggressively the vector index is consolidated after population finishes. "
+            + "NONE skips post-population merging entirely (write-optimized, leaves the index fragmented). "
+            + "AUTO invokes Lucene's natural merge policy (maybeMerge), which converges to a balanced "
+            + "tier distribution per the configured merge policy. "
+            + "PARTIAL issues forceMerge(vector_standard_merge_factor), explicitly capping the segment "
+            + "count at the same level the merge policy considers balanced for steady-state operation. "
+            + "FULL issues forceMerge(1), consolidating to a single segment (read-optimized, most expensive).")
+    public static final Setting<PostPopulationCompaction> vector_post_population_compaction = newBuilder(
+                    "internal.dbms.index.vector.post_population_compaction",
+                    ofEnum(PostPopulationCompaction.class),
+                    PostPopulationCompaction.AUTO)
             .build();
 }
