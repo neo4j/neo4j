@@ -19,17 +19,12 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Entity;
@@ -40,7 +35,7 @@ class PropertiesRepresentationTest {
         Map<String, Object> values = new HashMap<>();
         values.put("foo", "bar");
         Map<String, Object> serialized = serialize(new PropertiesRepresentation(container(values)));
-        assertEquals("bar", serialized.get("foo"));
+        assertThat(serialized).containsEntry("foo", "bar");
     }
 
     @Test
@@ -49,7 +44,7 @@ class PropertiesRepresentationTest {
         values.put("foo", "bar");
         PropertiesRepresentation properties = new PropertiesRepresentation(container(values));
         Map<String, Object> map = serialize(properties);
-        assertEquals(values, map);
+        assertThat(map).containsExactlyEntriesOf(values);
     }
 
     @Test
@@ -67,14 +62,14 @@ class PropertiesRepresentationTest {
         PropertiesRepresentation properties = new PropertiesRepresentation(container(values));
         Map<String, Object> map = serialize(properties);
 
-        assertEquals("value", map.get("string"));
-        assertEquals(5, ((Number) map.get("int")).longValue());
-        assertEquals(17, ((Number) map.get("long")).longValue());
-        assertEquals(3.14, ((Number) map.get("double")).doubleValue(), 0.0);
-        assertEquals(42.0, ((Number) map.get("float")).doubleValue(), 0.0);
-        assertEqualContent(Arrays.asList("one", "two"), (List) map.get("string array"));
-        assertEqualContent(Arrays.asList(5L, 17L), (List) map.get("long array"));
-        assertEqualContent(Arrays.asList(3.14, 42.0), (List) map.get("double array"));
+        assertThat(map.get("string")).isEqualTo("value");
+        assertThat(((Number) map.get("int")).longValue()).isEqualTo(5L);
+        assertThat(((Number) map.get("long")).longValue()).isEqualTo(17L);
+        assertThat(((Number) map.get("double")).doubleValue()).isEqualTo(3.14);
+        assertThat(((Number) map.get("float")).doubleValue()).isEqualTo(42.0);
+        assertThat(map.get("string array")).asList().containsExactly("one", "two");
+        assertThat(map.get("long array")).asList().containsExactly(5L, 17L);
+        assertThat(map.get("double array")).asList().containsExactly(3.14, 42.0);
     }
 
     @Test
@@ -82,16 +77,9 @@ class PropertiesRepresentationTest {
         PropertiesRepresentation properties = new PropertiesRepresentation(container(new HashMap<>()));
         Map<String, Object> values = new HashMap<>();
         values.put("key", "value");
-        assertTrue(properties.isEmpty());
+        assertThat(properties.isEmpty()).isTrue();
         properties = new PropertiesRepresentation(container(values));
-        assertFalse(properties.isEmpty());
-    }
-
-    private static void assertEqualContent(List<?> expected, List<?> actual) {
-        assertEquals(expected.size(), actual.size());
-        for (Iterator<?> ex = expected.iterator(), ac = actual.iterator(); ex.hasNext() && ac.hasNext(); ) {
-            assertEquals(ex.next(), ac.next());
-        }
+        assertThat(properties.isEmpty()).isFalse();
     }
 
     static Entity container(Map<String, Object> values) {

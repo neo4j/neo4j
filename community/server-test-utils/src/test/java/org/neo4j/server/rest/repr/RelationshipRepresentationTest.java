@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
@@ -40,7 +39,7 @@ class RelationshipRepresentationTest {
 
     @Test
     void shouldHaveType() {
-        assertNotNull(relrep(1234).getType());
+        assertThat(relrep(1234).getType()).isNotNull();
     }
 
     @Test
@@ -67,7 +66,7 @@ class RelationshipRepresentationTest {
     @Test
     void shouldSerialiseToMap() {
         Map<String, Object> repr = serialize(relrep(1234));
-        assertNotNull(repr);
+        assertThat(repr).isNotNull();
         verifySerialisation(repr);
     }
 
@@ -89,15 +88,15 @@ class RelationshipRepresentationTest {
         assertUriMatches(RELATIONSHIP_URI_PATTERN, relrep.get("self").toString());
         assertUriMatches(NODE_URI_PATTERN, relrep.get("start").toString());
         assertUriMatches(NODE_URI_PATTERN, relrep.get("end").toString());
-        assertNotNull(relrep.get("type"));
+        assertThat(relrep.get("type")).isNotNull();
         assertUriMatches(
                 RELATIONSHIP_URI_PATTERN + "/properties",
                 relrep.get("properties").toString());
         assertUriMatches(RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", (String) relrep.get("property"));
-        assertNotNull(relrep.get("data"));
-        assertNotNull(relrep.get("metadata"));
+        assertThat(relrep.get("data")).isNotNull();
+        assertThat(relrep.get("metadata")).isNotNull();
         Map metadata = (Map) relrep.get("metadata");
-        assertNotNull(metadata.get("type"));
-        assertTrue(((Number) metadata.get("id")).longValue() >= 0);
+        assertThat(metadata.get("type")).isNotNull();
+        assertThat(((Number) metadata.get("id")).longValue()).isGreaterThanOrEqualTo(0);
     }
 }

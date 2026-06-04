@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
@@ -32,7 +30,6 @@ import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
@@ -43,7 +40,7 @@ class PathRepresentationTest {
 
     @Test
     void shouldHaveLength() {
-        assertNotNull(pathrep().length());
+        assertThat(pathrep().length()).isNotNull();
     }
 
     @Test
@@ -58,23 +55,23 @@ class PathRepresentationTest {
 
     @Test
     void shouldHaveNodeList() {
-        assertNotNull(pathrep().nodes());
+        assertThat(pathrep().nodes()).isNotNull();
     }
 
     @Test
     void shouldHaveRelationshipList() {
-        assertNotNull(pathrep().relationships());
+        assertThat(pathrep().relationships()).isNotNull();
     }
 
     @Test
     void shouldHaveDirectionList() {
-        assertNotNull(pathrep().directions());
+        assertThat(pathrep().directions()).isNotNull();
     }
 
     @Test
     void shouldSerialiseToMap() {
         Map<String, Object> repr = serialize(pathrep());
-        assertNotNull(repr);
+        assertThat(repr).isNotNull();
         verifySerialisation(repr);
     }
 
@@ -118,34 +115,22 @@ class PathRepresentationTest {
     }
 
     public static void verifySerialisation(Map<String, Object> pathrep) {
-        assertNotNull(pathrep.get("length"));
+        assertThat(pathrep.get("length")).isNotNull();
         int length = Integer.parseInt(pathrep.get("length").toString());
 
         assertUriMatches(NODE_URI_PATTERN, pathrep.get("start").toString());
         assertUriMatches(NODE_URI_PATTERN, pathrep.get("end").toString());
 
-        Object nodes = pathrep.get("nodes");
-        assertInstanceOf(List.class, nodes);
-        List nodeList = (List) nodes;
-        assertEquals(length + 1, nodeList.size());
-        for (Object node : nodeList) {
-            assertUriMatches(NODE_URI_PATTERN, node.toString());
-        }
+        assertThat(pathrep.get("nodes"))
+                .asList()
+                .hasSize(length + 1)
+                .allSatisfy(node -> assertUriMatches(NODE_URI_PATTERN, node.toString()));
 
-        Object rels = pathrep.get("relationships");
-        assertInstanceOf(List.class, rels);
-        List relList = (List) rels;
-        assertEquals(length, relList.size());
-        for (Object rel : relList) {
-            assertUriMatches(RELATIONSHIP_URI_PATTERN, rel.toString());
-        }
+        assertThat(pathrep.get("relationships"))
+                .asList()
+                .hasSize(length)
+                .allSatisfy(rel -> assertUriMatches(RELATIONSHIP_URI_PATTERN, rel.toString()));
 
-        Object directions = pathrep.get("directions");
-        assertInstanceOf(List.class, directions);
-        List directionList = (List) directions;
-        assertEquals(length, directionList.size());
-        assertEquals("->", directionList.get(0).toString());
-        assertEquals("<-", directionList.get(1).toString());
-        assertEquals("->", directionList.get(2).toString());
+        assertThat(pathrep.get("directions")).asList().hasSize(length).containsExactly("->", "<-", "->");
     }
 }

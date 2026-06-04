@@ -23,9 +23,6 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 import java.net.URI;
@@ -155,12 +152,12 @@ class MapRepresentationTest {
 
             Map<String, Object> map = JsonHelper.jsonToMap(serializedMap);
 
-            assertEquals(1, map.size());
+            assertThat(map).hasSize(1);
             Object actual = map.get("null");
             if (value == null) {
-                assertNull(actual);
+                assertThat(actual).isNull();
             } else {
-                assertNotNull(actual);
+                assertThat(actual).isNotNull();
             }
         }
     }

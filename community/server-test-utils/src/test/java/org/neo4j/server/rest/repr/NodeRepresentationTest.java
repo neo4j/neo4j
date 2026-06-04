@@ -22,8 +22,6 @@ package org.neo4j.server.rest.repr;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
@@ -100,7 +98,7 @@ class NodeRepresentationTest {
     @Test
     void shouldSerialiseToMap() {
         Map<String, Object> repr = serialize(noderep(1234));
-        assertNotNull(repr);
+        assertThat(repr).isNotNull();
         verifySerialisation(repr);
     }
 
@@ -137,11 +135,11 @@ class NodeRepresentationTest {
         assertUriMatches(uriPattern("/properties/\\{key\\}"), (String) noderep.get("property"));
         assertUriMatches(uriPattern("/traverse/\\{returnType\\}"), (String) noderep.get("traverse"));
         assertUriMatches(uriPattern("/labels"), (String) noderep.get("labels"));
-        assertNotNull(noderep.get("data"));
+        assertThat(noderep.get("data")).isNotNull();
         Map metadata = (Map) noderep.get("metadata");
         List labels = (List) metadata.get("labels");
-        assertTrue(labels.isEmpty() || labels.equals(asList("Label")));
-        assertTrue(((Number) metadata.get("id")).longValue() >= 0);
+        assertThat(labels.isEmpty() || labels.equals(asList("Label"))).isTrue();
+        assertThat(((Number) metadata.get("id")).longValue()).isGreaterThanOrEqualTo(0);
         assertThat(((String) metadata.get("elementId"))).isNotEmpty();
     }
 }

@@ -20,9 +20,6 @@
 package org.neo4j.server.rest.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
 import java.util.Base64;
@@ -41,9 +38,9 @@ class AuthorizationHeadersTest {
         var parsed = decode(header);
 
         // Then
-        assertNotNull(parsed);
-        assertEquals(username, parsed.values()[0]);
-        assertEquals(password, parsed.values()[1]);
+        assertThat(parsed).isNotNull();
+        assertThat(parsed.values()[0]).isEqualTo(username);
+        assertThat(parsed.values()[1]).isEqualTo(password);
     }
 
     @Test
@@ -56,20 +53,22 @@ class AuthorizationHeadersTest {
         var parsed = decode(header);
 
         // Then
-        assertNotNull(parsed);
-        assertThat(parsed.values().length).isEqualTo(1);
+        assertThat(parsed).isNotNull();
+        assertThat(parsed.values()).hasSize(1);
         assertThat(parsed.values()[0]).isEqualTo(token);
     }
 
     @Test
     void shouldHandleSadPaths() {
         // When & then
-        assertNull(decode(""));
-        assertNull(decode("Basic"));
-        assertNull(decode("Bearer"));
-        assertNull(decode("Basic not valid value"));
-        assertNull(decode("Bearer too many args"));
-        assertNull(decode("Basic " + Base64.getEncoder().encodeToString("".getBytes())));
-        assertNull(decode("Bearer " + Base64.getEncoder().encodeToString("".getBytes())));
+        assertThat(decode("")).isNull();
+        assertThat(decode("Basic")).isNull();
+        assertThat(decode("Bearer")).isNull();
+        assertThat(decode("Basic not valid value")).isNull();
+        assertThat(decode("Bearer too many args")).isNull();
+        assertThat(decode("Basic " + Base64.getEncoder().encodeToString("".getBytes())))
+                .isNull();
+        assertThat(decode("Bearer " + Base64.getEncoder().encodeToString("".getBytes())))
+                .isNull();
     }
 }

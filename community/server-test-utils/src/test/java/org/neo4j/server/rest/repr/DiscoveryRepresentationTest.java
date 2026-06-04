@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.repr.Serializer.joinBaseWithRelativePath;
 
@@ -55,13 +53,13 @@ class DiscoveryRepresentationTest {
         var mappedDataUri = mapOfUris.get("data");
         var mappedBoltUri = mapOfUris.get("bolt_direct");
 
-        assertNotNull(mappedManagementUri);
-        assertNotNull(mappedDataUri);
-        assertNotNull(mappedBoltUri);
+        assertThat(mappedManagementUri).isNotNull();
+        assertThat(mappedDataUri).isNotNull();
+        assertThat(mappedBoltUri).isNotNull();
 
-        assertEquals(joinBaseWithRelativePath(baseUri, managementUri), mappedManagementUri.toString());
-        assertEquals(joinBaseWithRelativePath(baseUri, dataUri), mappedDataUri.toString());
-        assertEquals("bolt://neo4j.org:7687", mappedBoltUri.toString());
+        assertThat(mappedManagementUri).hasToString(joinBaseWithRelativePath(baseUri, managementUri));
+        assertThat(mappedDataUri).hasToString(joinBaseWithRelativePath(baseUri, dataUri));
+        assertThat(mappedBoltUri).hasToString("bolt://neo4j.org:7687");
     }
 
     @Test
@@ -75,11 +73,11 @@ class DiscoveryRepresentationTest {
         var edition = mapOfUris.get("neo4j_edition");
         var authConfig = mapOfUris.get("auth_config");
 
-        assertNotNull(version);
-        assertNotNull(edition);
+        assertThat(version).isNotNull();
+        assertThat(edition).isNotNull();
 
-        assertEquals("myVersion", version.toString());
-        assertEquals("myEdition", edition.toString());
-        assertNull(authConfig); // No auth_config for community.
+        assertThat(version).hasToString("myVersion");
+        assertThat(edition).hasToString("myEdition");
+        assertThat(authConfig).isNull(); // No auth_config for community.
     }
 }

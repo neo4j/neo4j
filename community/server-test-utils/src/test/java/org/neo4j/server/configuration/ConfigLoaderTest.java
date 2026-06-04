@@ -20,9 +20,7 @@
 package org.neo4j.server.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -34,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
@@ -63,7 +60,7 @@ class ConfigLoaderTest {
                 .build();
 
         // then
-        assertNotNull(config);
+        assertThat(config).isNotNull();
     }
 
     @Test
@@ -80,8 +77,7 @@ class ConfigLoaderTest {
                 .build();
 
         // then
-        final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.get(default_advertised_address).toString());
+        assertThat(testConf.get(default_advertised_address)).hasToString("bar");
     }
 
     @Test
@@ -96,9 +92,8 @@ class ConfigLoaderTest {
                 .build();
 
         // then
-        Assertions.assertEquals(
-                testDirectory.absolutePath().toString(),
-                testConf.get(neo4j_home).toString());
+        assertThat(testConf.get(neo4j_home))
+                .hasToString(testDirectory.absolutePath().toString());
     }
 
     @Test
@@ -110,9 +105,9 @@ class ConfigLoaderTest {
         Config testConf = Config.newBuilder().fromFile(configFile).build();
 
         // then
-        assertEquals(
-                Path.of(System.getProperty("user.dir")).toAbsolutePath().toString(),
-                testConf.get(neo4j_home).toString());
+        assertThat(testConf.get(neo4j_home))
+                .hasToString(
+                        Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
     }
 
     @Test
@@ -130,9 +125,8 @@ class ConfigLoaderTest {
                 .build();
 
         // then
-        assertNotNull(testConf);
-        final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.get(default_advertised_address).toString());
+        assertThat(testConf).isNotNull();
+        assertThat(testConf.get(default_advertised_address)).hasToString("bar");
     }
 
     @Test
@@ -150,8 +144,8 @@ class ConfigLoaderTest {
         ConfigUtils.disableAllConnectors(testConf);
 
         // then
-        assertNotNull(testConf);
-        assertEquals(false, testConf.get(BoltConnector.enabled));
+        assertThat(testConf).isNotNull();
+        assertThat(testConf.get(BoltConnector.enabled)).isFalse();
     }
 
     @Test
@@ -167,8 +161,8 @@ class ConfigLoaderTest {
         ConfigUtils.disableAllConnectors(testConf);
 
         // then
-        assertNotNull(testConf);
-        assertEquals(false, testConf.get(BoltConnector.enabled));
+        assertThat(testConf).isNotNull();
+        assertThat(testConf.get(BoltConnector.enabled)).isFalse();
     }
 
     @Test
@@ -194,8 +188,7 @@ class ConfigLoaderTest {
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get(ServerSettings.third_party_packages);
-        assertNotNull(thirdpartyJaxRsPackages);
-        assertEquals(3, thirdpartyJaxRsPackages.size());
+        assertThat(thirdpartyJaxRsPackages).isNotNull().hasSize(3);
     }
 
     @Test
@@ -216,11 +209,10 @@ class ConfigLoaderTest {
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get(ServerSettings.third_party_packages);
-
-        assertEquals(3, thirdpartyJaxRsPackages.size());
-        assertEquals("/extension1", thirdpartyJaxRsPackages.get(0).mountPoint());
-        assertEquals("/extension2", thirdpartyJaxRsPackages.get(1).mountPoint());
-        assertEquals("/extension3", thirdpartyJaxRsPackages.get(2).mountPoint());
+        assertThat(thirdpartyJaxRsPackages)
+                .hasSize(3)
+                .extracting(ThirdPartyJaxRsPackage::mountPoint)
+                .containsExactly("/extension1", "/extension2", "/extension3");
     }
 
     @Test
@@ -229,7 +221,7 @@ class ConfigLoaderTest {
         Path nonExistentConfigFile = Path.of("/tmp/" + System.currentTimeMillis());
 
         // When
-        assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Config.newBuilder()
                 .fromFile(nonExistentConfigFile)
                 .set(neo4j_home, testDirectory.homePath())
                 .build());
@@ -247,7 +239,7 @@ class ConfigLoaderTest {
                 .build();
 
         // Then
-        assertNotNull(config);
+        assertThat(config).isNotNull();
     }
 
     @Test
