@@ -26,22 +26,21 @@ import java.util.function.Predicate;
 import org.neo4j.bolt.fsm.StateMachineConfiguration;
 import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
-import org.neo4j.bolt.protocol.io.reader.DateReader;
-import org.neo4j.bolt.protocol.io.reader.DateTimeReader;
-import org.neo4j.bolt.protocol.io.reader.DateTimeZoneIdReader;
-import org.neo4j.bolt.protocol.io.reader.DurationReader;
-import org.neo4j.bolt.protocol.io.reader.LocalDateTimeReader;
-import org.neo4j.bolt.protocol.io.reader.LocalTimeReader;
-import org.neo4j.bolt.protocol.io.reader.Point2dReader;
-import org.neo4j.bolt.protocol.io.reader.Point3dReader;
-import org.neo4j.bolt.protocol.io.reader.TimeReader;
-import org.neo4j.bolt.protocol.io.reader.VectorReader;
-import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
+import org.neo4j.bolt.protocol.io.reader.struct.DateReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DateTimeZoneIdReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DurationReader;
+import org.neo4j.bolt.protocol.io.reader.struct.LocalDateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.LocalTimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.Point2dReader;
+import org.neo4j.bolt.protocol.io.reader.struct.Point3dReader;
+import org.neo4j.bolt.protocol.io.reader.struct.TimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.VectorReader;
+import org.neo4j.bolt.protocol.io.writer.DefaultVersionedValueWriter;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
@@ -56,8 +55,10 @@ import org.neo4j.bolt.protocol.v56.BoltProtocolV56;
 import org.neo4j.bolt.protocol.v57.BoltProtocolV57;
 import org.neo4j.bolt.protocol.v58.BoltProtocolV58;
 import org.neo4j.bolt.protocol.v60.BoltProtocolV60;
+import org.neo4j.bolt.protocol.v61.BoltProtocolV61;
 import org.neo4j.boltmessages.request.RequestMessage;
 import org.neo4j.boltmessages.response.ResponseMessage;
+import org.neo4j.packstream.io.Type;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.values.storable.Value;
@@ -79,7 +80,8 @@ public interface BoltProtocol {
                 BoltProtocolV56.getInstance(),
                 BoltProtocolV57.getInstance(),
                 BoltProtocolV58.getInstance(),
-                BoltProtocolV60.getInstance());
+                BoltProtocolV60.getInstance(),
+                BoltProtocolV61.getInstance());
     }
 
     static String latestVersionInstalled() {
@@ -97,7 +99,8 @@ public interface BoltProtocol {
     }
 
     /**
-     * Identifies the version number via which this protocol implementation is identified during the negotiation process.
+     * Identifies the version number via which this protocol implementation is identified during the
+     * negotiation process.
      *
      * @return a protocol version number.
      */
@@ -114,12 +117,13 @@ public interface BoltProtocol {
     }
 
     /**
-     * Retrieves a set of features which are always enabled on this connection regardless of whether they have been
-     * negotiated or not.
-     * <p />
-     * Note: Features listed within this set are effectively blacklisted (e.g. cannot be negotiated later) and should
-     * thus be provided through reader/writer pipeline configurators within the protocol implementations rather than
-     * relying on the configuration functions provided by {@link Feature}.
+     * Retrieves a set of features which are always enabled on this connection regardless of whether
+     * they have been negotiated or not.
+     * <p/>
+     * Note: Features listed within this set are effectively blacklisted (e.g. cannot be negotiated
+     * later) and should thus be provided through reader/writer pipeline configurators within the
+     * protocol implementations rather than relying on the configuration functions provided by
+     * {@link Feature}.
      *
      * @return a set of features.
      */
@@ -154,7 +158,8 @@ public interface BoltProtocol {
     StructRegistry<Connection, ResponseMessage> responseMessageRegistry();
 
     /**
-     * Registers protocol specific struct readers for decoding of values sent to the server by a client.
+     * Registers protocol specific struct readers for decoding of values sent to the server by a
+     * client.
      *
      * @param builder a struct registry.
      */
@@ -172,12 +177,32 @@ public interface BoltProtocol {
     }
 
     /**
-     * Registers protocol specific struct writers for encoding of values through the result streaming APIs.
+     * Registers protocol specific struct writers for encoding of values through the result streaming
+     * APIs.
      *
      * @param pipeline a writer pipeline.
      */
     default void registerStructWriters(WriterPipeline pipeline) {
-        pipeline.addLast(DefaultStructWriter.getInstance());
+        pipeline.addLast(DefaultVersionedValueWriter.getInstance());
+    }
+
+    /**
+     * Checks whether a given Packstream value type is supported by this protocol version.
+     *
+     * @param type a Packstream type.
+     * @return true if supported, false otherwise.
+     */
+    default boolean supportsPackstreamType(Type type) {
+        return true;
+    }
+
+    /**
+     * Retrieves a list of Packstream value types supported by this protocol version.
+     *
+     * @return a list of Packstream value types.
+     */
+    default List<Type> supportedPackstreamTypes() {
+        return Type.VALID_TYPES.stream().filter(this::supportsPackstreamType).toList();
     }
 
     /**
@@ -188,6 +213,4 @@ public interface BoltProtocol {
     default MetadataHandler metadataHandler() {
         return DefaultMetadataHandler.getInstance();
     }
-
-    default void onConnectionNegotiated(ConnectionHandle connection) {}
 }

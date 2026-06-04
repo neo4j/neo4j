@@ -74,6 +74,8 @@ public enum TypeMarker {
     MAP32(0xDA, Type.MAP, UINT32),
     // FIXME: MAP_STREAM 0xDB
 
+    UUID(0xE0, Type.UUID, NONE),
+
     @Deprecated // Not documented
     STRUCT8(0xDC, Type.STRUCT, UINT8),
     @Deprecated // Not documented

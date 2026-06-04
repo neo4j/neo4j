@@ -19,9 +19,7 @@
  */
 package org.neo4j.bolt.protocol.io.writer;
 
-import java.util.Map;
 import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
-import org.neo4j.notifications.NotificationCodeWithDescription;
 import org.neo4j.values.storable.Float32Vector;
 import org.neo4j.values.storable.Float64Vector;
 import org.neo4j.values.storable.Int16Vector;
@@ -30,54 +28,51 @@ import org.neo4j.values.storable.Int64Vector;
 import org.neo4j.values.storable.Int8Vector;
 
 @Deprecated(since = "2025.7", forRemoval = true)
-public final class VectorAsMapMarkerStructWriter implements StructWriter {
-    private static final VectorAsMapMarkerStructWriter INSTANCE = new VectorAsMapMarkerStructWriter();
+public final class VectorUnknownTypeVersionedValueWriter extends AbstractUnknownTypeVersionedValueWriter {
+    private static final VectorUnknownTypeVersionedValueWriter INSTANCE = new VectorUnknownTypeVersionedValueWriter();
 
-    private VectorAsMapMarkerStructWriter() {}
+    private VectorUnknownTypeVersionedValueWriter() {}
 
-    public static VectorAsMapMarkerStructWriter getInstance() {
+    public static VectorUnknownTypeVersionedValueWriter getInstance() {
         return INSTANCE;
     }
 
     @Override
+    protected String typeName() {
+        return "VECTOR";
+    }
+
+    private String generateTypeDescription(int dimension, String type) {
+        return String.format("VECTOR(%d, %s)", dimension, type);
+    }
+
+    @Override
     public void writeVector(WriterContext ctx, byte[] values) {
-        handleVector(ctx, generateVectorMap(values.length, Int8Vector.NESTED_TYPE_NAME));
+        this.reportUnknownType(ctx, this.generateTypeDescription(values.length, Int8Vector.NESTED_TYPE_NAME));
     }
 
     @Override
     public void writeVector(WriterContext ctx, short[] values) {
-        handleVector(ctx, generateVectorMap(values.length, Int16Vector.NESTED_TYPE_NAME));
+        this.reportUnknownType(ctx, this.generateTypeDescription(values.length, Int16Vector.NESTED_TYPE_NAME));
     }
 
     @Override
     public void writeVector(WriterContext ctx, int[] values) {
-        handleVector(ctx, generateVectorMap(values.length, Int32Vector.NESTED_TYPE_NAME));
+        this.reportUnknownType(ctx, this.generateTypeDescription(values.length, Int32Vector.NESTED_TYPE_NAME));
     }
 
     @Override
     public void writeVector(WriterContext ctx, long[] values) {
-        handleVector(ctx, generateVectorMap(values.length, Int64Vector.NESTED_TYPE_NAME));
+        this.reportUnknownType(ctx, this.generateTypeDescription(values.length, Int64Vector.NESTED_TYPE_NAME));
     }
 
     @Override
     public void writeVector(WriterContext ctx, float[] values) {
-        handleVector(ctx, generateVectorMap(values.length, Float32Vector.NESTED_TYPE_NAME));
+        this.reportUnknownType(ctx, this.generateTypeDescription(values.length, Float32Vector.NESTED_TYPE_NAME));
     }
 
     @Override
     public void writeVector(WriterContext ctx, double[] values) {
-        handleVector(ctx, generateVectorMap(values.length, Float64Vector.NESTED_TYPE_NAME));
-    }
-
-    private void handleVector(WriterContext ctx, Map<String, Object> unknownVectorMap) {
-        var notificationManager = ctx.connection().fsm().connection().notificationManager();
-        notificationManager.addNotification(NotificationCodeWithDescription.clientDoesNotSupportType("VECTOR"));
-        notificationManager.addGqlStatus(NotificationCodeWithDescription.clientDoesNotSupportType("VECTOR"));
-        ctx.buffer().writeMap(unknownVectorMap);
-    }
-
-    private static Map<String, Object> generateVectorMap(int dimensions, String vectorTypeName) {
-        return Map.of(
-                "originalType", String.format("VECTOR(%s, %s)", dimensions, vectorTypeName), "reason", "UNKNOWN_TYPE");
+        this.reportUnknownType(ctx, this.generateTypeDescription(values.length, Float64Vector.NESTED_TYPE_NAME));
     }
 }

@@ -24,7 +24,6 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.values.storable.Values;
@@ -58,7 +57,7 @@ class AuthenticationMetadataUtilsTest {
         builder.add("credentials", Values.stringValue("0m3g4s3cr37"));
         var meta = builder.build();
 
-        var reader = (PackstreamValueReader<Connection>) Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
         Mockito.doReturn(meta).when(reader).readPrimitiveMap(Mockito.anyLong());
 

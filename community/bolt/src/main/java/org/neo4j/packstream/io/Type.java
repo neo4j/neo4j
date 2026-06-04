@@ -41,6 +41,7 @@ public enum Type {
     LIST,
     MAP,
     STRING,
+    UUID,
     STRUCT;
 
     public static final long TINY_INT_MIN = -16;
@@ -56,5 +57,8 @@ public enum Type {
 
     public static final Charset STRING_CHARSET = StandardCharsets.UTF_8;
 
-    public static final List<Type> VALID_TYPES = List.of(BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING, STRUCT);
+    public static final List<Type> VALID_TYPES = List.of(BYTES, BOOLEAN, FLOAT, INT, LIST, MAP, STRING, UUID, STRUCT);
+
+    public static final List<String> VALID_TYPE_NAMES =
+            VALID_TYPES.stream().map(Type::toString).toList();
 }

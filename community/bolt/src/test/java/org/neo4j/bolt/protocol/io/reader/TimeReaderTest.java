@@ -26,6 +26,7 @@ import static org.neo4j.bolt.testing.util.ErrorUtil.useNewMessage;
 import java.time.temporal.ChronoField;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.protocol.io.reader.struct.TimeReader;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;

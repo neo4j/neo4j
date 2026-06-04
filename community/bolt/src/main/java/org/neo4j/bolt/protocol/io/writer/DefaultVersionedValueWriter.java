@@ -65,13 +65,13 @@ import org.neo4j.values.virtual.RelationshipValue;
  * supported Bolt types.
  */
 @SuppressWarnings("removal") // TODO: 6.0 - Merge UtcStructWriter with this implementation
-public final class DefaultStructWriter extends UtcStructWriter implements StructWriter {
+public final class DefaultVersionedValueWriter extends UtcVersionedValueWriter implements VersionedValueWriter {
 
-    private static final DefaultStructWriter INSTANCE = new DefaultStructWriter();
+    private static final DefaultVersionedValueWriter INSTANCE = new DefaultVersionedValueWriter();
 
-    private DefaultStructWriter() {}
+    private DefaultVersionedValueWriter() {}
 
-    public static StructWriter getInstance() {
+    public static VersionedValueWriter getInstance() {
         return INSTANCE;
     }
 
@@ -426,5 +426,10 @@ public final class DefaultStructWriter extends UtcStructWriter implements Struct
         for (var e : values) {
             buffer.raw().writeDouble(e);
         }
+    }
+
+    @Override
+    public void writeUUID(WriterContext ctx, long msb, long lsb) {
+        ctx.buffer().writeUUID(msb, lsb);
     }
 }

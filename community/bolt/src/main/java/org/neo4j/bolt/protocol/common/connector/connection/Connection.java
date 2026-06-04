@@ -226,7 +226,7 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      * @param buf a buffer.
      * @return a packstream value reader.
      */
-    PackstreamValueReader<Connection> valueReader(PackstreamBuf buf);
+    PackstreamValueReader valueReader(PackstreamBuf buf);
 
     /**
      * Creates a writer context around a given target buffer.

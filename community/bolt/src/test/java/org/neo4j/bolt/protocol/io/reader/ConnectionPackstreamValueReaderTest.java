@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.packstream.io.value;
+package org.neo4j.bolt.protocol.io.reader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,9 +31,14 @@ import java.util.List;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.BoltProtocol;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeMarkerException;
@@ -49,13 +54,24 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
-class PackstreamValueReaderTest {
+class ConnectionPackstreamValueReaderTest {
+
+    private Connection connection;
+
+    @BeforeEach
+    void prepare() {
+        var protocol = Mockito.mock(BoltProtocol.class);
+        Mockito.when(protocol.supportsPackstreamType(Mockito.any())).thenReturn(true);
+
+        this.connection =
+                ConnectionMockFactory.newFactory().withProtocol(protocol).build();
+    }
 
     @Test
     void readPrimitiveValueShouldFailWithUnexpectedTypeWhenStructIsGiven() {
         var buf = PackstreamBuf.allocUnpooled().writeStructHeader(new StructHeader(2, (short) 42));
 
-        var reader = new PackstreamValueReader<>(null, buf, null);
+        var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
         assertThatThrownBy(() -> reader.readPrimitiveValue(-1))
                 .isInstanceOf(UnexpectedTypeException.class)
                 // TODO: Check with errors why no message here.
@@ -66,7 +82,7 @@ class PackstreamValueReaderTest {
     void shouldReadNull() throws UnexpectedTypeMarkerException {
         var buf = PackstreamBuf.allocUnpooled().writeNull();
 
-        var reader = new PackstreamValueReader<>(null, buf, null);
+        var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
         var value = reader.readNull();
 
         assertThat(value).isSameAs(NO_VALUE);
@@ -80,7 +96,7 @@ class PackstreamValueReaderTest {
                 .map(expected -> dynamicTest(Boolean.toString(expected), () -> {
                     var buf = PackstreamBuf.allocUnpooled().writeBoolean(expected);
 
-                    var reader = new PackstreamValueReader<>(null, buf, null);
+                    var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
                     var actual = reader.readBoolean();
 
                     assertThat(actual.booleanValue()).isEqualTo(expected);
@@ -95,7 +111,7 @@ class PackstreamValueReaderTest {
                 .mapToObj(expected -> dynamicTest(Double.toString(expected), () -> {
                     var buf = PackstreamBuf.allocUnpooled().writeFloat64(expected);
 
-                    var reader = new PackstreamValueReader<>(null, buf, null);
+                    var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
                     var actual = reader.readDouble();
 
                     assertThat(actual.value()).isEqualTo(expected);
@@ -115,7 +131,7 @@ class PackstreamValueReaderTest {
             return dynamicTest(String.format("%d elements", size), () -> {
                 var buf = PackstreamBuf.allocUnpooled().writeBytes(Unpooled.wrappedBuffer(payload));
 
-                var reader = new PackstreamValueReader<>(null, buf, null);
+                var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
                 var actual = reader.readByteArray();
 
                 assertThat(actual.asObjectCopy()).isEqualTo(payload);
@@ -133,7 +149,7 @@ class PackstreamValueReaderTest {
             return dynamicTest(String.format("%d characters", size), () -> {
                 var buf = PackstreamBuf.allocUnpooled().writeString(payload);
 
-                var reader = new PackstreamValueReader<>(null, buf, null);
+                var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
                 var actual = reader.readText();
 
                 assertThat(actual.stringValue()).isEqualTo(payload);
@@ -174,7 +190,7 @@ class PackstreamValueReaderTest {
                         }
                     });
 
-                    var reader = new PackstreamValueReader<>(null, buf, null);
+                    var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
                     var actual = reader.readList();
 
                     assertThat(actual).isEqualTo(expected);
@@ -189,7 +205,7 @@ class PackstreamValueReaderTest {
                 .writeStructHeader(new StructHeader(3, (short) 42))
                 .writeString("foo");
 
-        var reader = new PackstreamValueReader<>(null, buf, null);
+        var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
         assertThatThrownBy(() -> reader.readPrimitiveList(-1))
                 .isInstanceOf(UnexpectedTypeException.class)
                 // TODO: Check with errors why no message here.
@@ -230,7 +246,7 @@ class PackstreamValueReaderTest {
             }
         });
 
-        var reader = new PackstreamValueReader<>(null, buf, null);
+        var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
         var actual = reader.readMap();
 
         assertThat(actual).isEqualTo(expected);
@@ -240,7 +256,7 @@ class PackstreamValueReaderTest {
     void readMapShouldHandleEmptyMap() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled().writeMapHeader(0);
 
-        var reader = new PackstreamValueReader<>(null, buf, null);
+        var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
         var map = reader.readMap();
 
         assertThat(map).isSameAs(MapValue.EMPTY);
@@ -257,7 +273,7 @@ class PackstreamValueReaderTest {
                 .writeString("answer")
                 .writeInt(42);
 
-        var reader = new PackstreamValueReader<>(null, buf, null);
+        var reader = new ConnectionPackstreamValueReader(buf, this.connection, null);
         assertThatThrownBy(() -> reader.readPrimitiveMap(-1))
                 .isInstanceOf(UnexpectedTypeException.class)
                 // TODO: Check with errors why no message here.

@@ -64,7 +64,7 @@ public final class DefaultRouteMessageDecoder implements MessageDecoder<RouteMes
         return new RouteMessage(routingContext, bookmarkList, databaseName, impersonatedUser);
     }
 
-    protected List<String> readBookmarks(PackstreamBuf buffer, PackstreamValueReader<Connection> valueReader)
+    protected List<String> readBookmarks(PackstreamBuf buffer, PackstreamValueReader valueReader)
             throws PackstreamReaderException {
         if (buffer.peekType() == Type.NONE) {
             return Collections.emptyList();

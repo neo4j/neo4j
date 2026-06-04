@@ -17,26 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.io.reader;
+package org.neo4j.bolt.testing.messages;
 
-import org.neo4j.bolt.protocol.io.reader.struct.Point2dReader;
-import org.neo4j.packstream.struct.StructReader;
-import org.neo4j.values.storable.PointValue;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
+import org.neo4j.bolt.protocol.v61.BoltProtocolV61;
 
-class Point2dReaderTest extends AbstractPointReaderTest {
+public class BoltV61Wire extends BoltV60Wire {
 
-    @Override
-    protected StructReader<?, PointValue> getReader() {
-        return Point2dReader.getInstance();
+    protected BoltV61Wire(ProtocolVersion version) {
+        super(version);
+    }
+
+    public BoltV61Wire() {
+        this(BoltProtocolV61.VERSION);
     }
 
     @Override
-    protected double[] getCoordinates() {
-        return new double[] {21.0, 42.0};
+    public ProtocolVersion getProtocolVersion() {
+        return super.getProtocolVersion();
     }
 
     @Override
-    protected long getStructSize() {
-        return 3;
+    public String getUserAgent() {
+        return "BoltWire/6.1";
     }
 }

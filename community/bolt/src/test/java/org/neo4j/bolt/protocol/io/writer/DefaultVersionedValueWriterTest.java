@@ -47,7 +47,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.TypeMarker;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-class DefaultStructWriterTest {
+class DefaultVersionedValueWriterTest {
 
     @TestFactory
     Stream<DynamicTest> shouldWritePoint() {
@@ -58,7 +58,8 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writePoint(ctx, CoordinateReferenceSystem.CARTESIAN, coords);
+                    DefaultVersionedValueWriter.getInstance()
+                            .writePoint(ctx, CoordinateReferenceSystem.CARTESIAN, coords);
 
                     var header = buf.readStructHeader();
                     var code = buf.readInt();
@@ -92,7 +93,8 @@ class DefaultStructWriterTest {
 
         Mockito.doReturn(buf).when(ctx).buffer();
 
-        DefaultStructWriter.getInstance().writePoint(ctx, CoordinateReferenceSystem.WGS_84, new double[] {42.5, 85});
+        DefaultVersionedValueWriter.getInstance()
+                .writePoint(ctx, CoordinateReferenceSystem.WGS_84, new double[] {42.5, 85});
 
         var header = buf.readStructHeader();
         var code = buf.readInt();
@@ -116,7 +118,7 @@ class DefaultStructWriterTest {
 
         Mockito.doReturn(buf).when(ctx).buffer();
 
-        DefaultStructWriter.getInstance()
+        DefaultVersionedValueWriter.getInstance()
                 .writePoint(ctx, CoordinateReferenceSystem.WGS_84_3D, new double[] {42.25, 84.5, 169});
 
         var header = buf.readStructHeader();
@@ -143,7 +145,7 @@ class DefaultStructWriterTest {
 
         Mockito.doReturn(buf).when(ctx).buffer();
 
-        DefaultStructWriter.getInstance().writeDuration(ctx, 3, 2, 1, 214284);
+        DefaultVersionedValueWriter.getInstance().writeDuration(ctx, 3, 2, 1, 214284);
 
         var header = buf.readStructHeader();
         var months = buf.readInt();
@@ -177,7 +179,7 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeDate(ctx, date);
+                    DefaultVersionedValueWriter.getInstance().writeDate(ctx, date);
 
                     var header = buf.readStructHeader();
                     var epochDay = buf.readInt();
@@ -200,7 +202,7 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeLocalTime(ctx, time);
+                    DefaultVersionedValueWriter.getInstance().writeLocalTime(ctx, time);
 
                     var header = buf.readStructHeader();
                     var nanoOfDay = buf.readInt();
@@ -226,7 +228,7 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeTime(ctx, time);
+                    DefaultVersionedValueWriter.getInstance().writeTime(ctx, time);
 
                     var header = buf.readStructHeader();
                     var nanoOfDay = buf.readInt();
@@ -257,7 +259,7 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeLocalDateTime(ctx, dateTime);
+                    DefaultVersionedValueWriter.getInstance().writeLocalDateTime(ctx, dateTime);
 
                     var header = buf.readStructHeader();
                     var epochSecond = buf.readInt();
@@ -288,7 +290,7 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeDateTime(ctx, dateTime);
+                    DefaultVersionedValueWriter.getInstance().writeDateTime(ctx, dateTime);
 
                     var header = buf.readStructHeader();
                     var epochSeconds = buf.readInt();
@@ -321,7 +323,7 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeDateTime(ctx, dateTime);
+                    DefaultVersionedValueWriter.getInstance().writeDateTime(ctx, dateTime);
 
                     var header = buf.readStructHeader();
                     var epochSecond = buf.readInt();
@@ -351,7 +353,8 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
+                    DefaultVersionedValueWriter.getInstance()
+                            .writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
 
                     var header = buf.readStructHeader();
                     var tag = buf.readBytes();
@@ -384,7 +387,8 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
+                    DefaultVersionedValueWriter.getInstance()
+                            .writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
 
                     var header = buf.readStructHeader();
                     var tag = buf.readBytes();
@@ -417,7 +421,8 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
+                    DefaultVersionedValueWriter.getInstance()
+                            .writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
 
                     var header = buf.readStructHeader();
                     var tag = buf.readBytes();
@@ -450,7 +455,8 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
+                    DefaultVersionedValueWriter.getInstance()
+                            .writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
 
                     var header = buf.readStructHeader();
                     var tag = buf.readBytes();
@@ -484,7 +490,8 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
+                    DefaultVersionedValueWriter.getInstance()
+                            .writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
 
                     var header = buf.readStructHeader();
                     var tag = buf.readBytes();
@@ -518,7 +525,8 @@ class DefaultStructWriterTest {
 
                     Mockito.doReturn(buf).when(ctx).buffer();
 
-                    DefaultStructWriter.getInstance().writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
+                    DefaultVersionedValueWriter.getInstance()
+                            .writeVector(ctx, ArrayUtils.toPrimitive(vector.coordinates));
 
                     var header = buf.readStructHeader();
                     var tag = buf.readBytes();

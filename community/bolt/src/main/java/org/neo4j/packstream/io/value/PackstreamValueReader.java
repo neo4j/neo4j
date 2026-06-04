@@ -19,16 +19,9 @@
  */
 package org.neo4j.packstream.io.value;
 
-import static org.neo4j.values.storable.NoValue.NO_VALUE;
-
-import java.util.List;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeMarkerException;
-import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.Type;
-import org.neo4j.packstream.io.function.Reader;
-import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteArray;
@@ -36,26 +29,12 @@ import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.UUIDValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.VirtualValues;
 
-/**
- * Provides utility functions which permit the reading of kernel values from Packstream buffers.
- */
-public class PackstreamValueReader<CTX> {
-    private final CTX ctx;
-    private final PackstreamBuf buf;
-    private final StructRegistry<CTX, Value> structRegistry;
-
-    public PackstreamValueReader(CTX ctx, PackstreamBuf buf, StructRegistry<CTX, Value> structRegistry) {
-        this.ctx = ctx;
-        this.buf = buf;
-        this.structRegistry = structRegistry;
-    }
+public interface PackstreamValueReader {
 
     /**
      * Decodes an arbitrary native Packstream value from a given buffer.
@@ -63,18 +42,7 @@ public class PackstreamValueReader<CTX> {
      * @return a value.
      * @throws PackstreamReaderException when a given value is malformed or exceeds a limit.
      */
-    public AnyValue readValue() throws PackstreamReaderException {
-        return this.doReadValue(this.buf.peekType());
-    }
-
-    private AnyValue doReadValue(Type type) throws PackstreamReaderException {
-        return switch (type) {
-            case STRUCT -> this.readStruct();
-            case LIST -> this.readList();
-            case MAP -> this.readMap();
-            default -> this.doReadPrimitiveValue(type, -1);
-        };
-    }
+    AnyValue readValue() throws PackstreamReaderException;
 
     /**
      * Decodes an arbitrary native Packstream value from a given buffer.
@@ -82,28 +50,18 @@ public class PackstreamValueReader<CTX> {
      * @return a value.
      * @throws PackstreamReaderException when a given value is malformed or exceeds a limit.
      */
-    public AnyValue readPrimitiveValue(long limit) throws PackstreamReaderException {
-        return this.doReadPrimitiveValue(buf.peekType(), limit);
+    default AnyValue readPrimitiveValue() throws PackstreamReaderException {
+        return this.readPrimitiveValue(-1);
     }
 
-    private AnyValue doReadPrimitiveValue(Type type, long limit) throws PackstreamReaderException {
-        return switch (type) {
-            case NONE -> this.readNull();
-            case BYTES -> this.readByteArray(limit);
-            case BOOLEAN -> this.readBoolean();
-            case FLOAT -> this.readDouble();
-            case INT -> this.readLong();
-            case LIST -> this.readPrimitiveList(limit);
-            case MAP -> this.readPrimitiveMap(limit);
-            case STRING -> this.readText(limit);
-            default ->
-                throw UnexpectedTypeException.wrongType(
-                        // DRI-030
-                        String.valueOf(limit),
-                        List.of("NONE", "BYTES", "BOOLEAN", "FLOAT", "INT", "LIST", "MAP", "STRING"),
-                        type);
-        };
-    }
+    /**
+     * Decodes an arbitrary native Packstream value from a given buffer.
+     *
+     * @param limit a size constraint for the permitted values.
+     * @return a value.
+     * @throws PackstreamReaderException when a given value is malformed or exceeds a limit.
+     */
+    AnyValue readPrimitiveValue(long limit) throws PackstreamReaderException;
 
     /**
      * Decodes a null value from a given buffer.
@@ -111,10 +69,7 @@ public class PackstreamValueReader<CTX> {
      * @return a null value.
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      */
-    public NoValue readNull() throws UnexpectedTypeMarkerException {
-        buf.readNull();
-        return NO_VALUE;
-    }
+    NoValue readNull() throws UnexpectedTypeMarkerException;
 
     /**
      * Decodes a boolean value from a given buffer.
@@ -122,9 +77,7 @@ public class PackstreamValueReader<CTX> {
      * @return a boolean value.
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      */
-    public BooleanValue readBoolean() throws UnexpectedTypeException {
-        return Values.booleanValue(this.buf.readBoolean());
-    }
+    BooleanValue readBoolean() throws UnexpectedTypeException;
 
     /**
      * Decodes a long value from a given buffer.
@@ -132,9 +85,7 @@ public class PackstreamValueReader<CTX> {
      * @return a long value.
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      */
-    public LongValue readLong() throws UnexpectedTypeException {
-        return Values.longValue(this.buf.readInt());
-    }
+    LongValue readLong() throws UnexpectedTypeException;
 
     /**
      * Decodes a double value from a given buffer.
@@ -142,9 +93,7 @@ public class PackstreamValueReader<CTX> {
      * @return a double value.
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      */
-    public DoubleValue readDouble() throws UnexpectedTypeMarkerException {
-        return Values.doubleValue(this.buf.readFloat64());
-    }
+    DoubleValue readDouble() throws UnexpectedTypeMarkerException;
 
     /**
      * Decodes a byte array value from a given buffer.
@@ -153,7 +102,7 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public ByteArray readByteArray() throws PackstreamReaderException {
+    default ByteArray readByteArray() throws PackstreamReaderException {
         return this.readByteArray(-1);
     }
 
@@ -164,14 +113,7 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public ByteArray readByteArray(long limit) throws PackstreamReaderException {
-        var payload = this.buf.readBytes(limit);
-
-        var heap = new byte[payload.readableBytes()];
-        payload.readBytes(heap);
-
-        return Values.byteArray(heap);
-    }
+    ByteArray readByteArray(long limit) throws PackstreamReaderException;
 
     /**
      * Decodes a text value from a given buffer.
@@ -180,20 +122,27 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public TextValue readText(long limit) throws PackstreamReaderException {
-        return Values.stringValue(this.buf.readString(limit));
-    }
-
-    /**
-     * Decodes a text value from a given buffer.
-     *
-     * @return a text value.
-     * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
-     * @throws PackstreamReaderException     when the value is malformed.
-     */
-    public TextValue readText() throws PackstreamReaderException {
+    default TextValue readText() throws PackstreamReaderException {
         return this.readText(-1);
     }
+
+    /**
+     * Decodes a text value from a given buffer.
+     *
+     * @return a text value.
+     * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
+     * @throws PackstreamReaderException     when the value is malformed.
+     */
+    TextValue readText(long limit) throws PackstreamReaderException;
+
+    /**
+     * Decodes a UUID value from a given buffer.
+     *
+     * @return a UUID value.
+     * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
+     * @throws PackstreamReaderException when the value is malformed.
+     */
+    UUIDValue readUUID() throws PackstreamReaderException;
 
     /**
      * Decodes a list value from a given buffer.
@@ -202,8 +151,17 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public ListValue readList() throws PackstreamReaderException {
-        return VirtualValues.fromList(buf.readList(buf -> this.readValue()));
+    ListValue readList() throws PackstreamReaderException;
+
+    /**
+     * Decodes a list value consisting of primitive values from a given buffer.
+     *
+     * @return a list value.
+     * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
+     * @throws PackstreamReaderException     when the value is malformed.
+     */
+    default ListValue readPrimitiveList() throws PackstreamReaderException {
+        return this.readPrimitiveList(-1);
     }
 
     /**
@@ -213,9 +171,7 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public ListValue readPrimitiveList(long limit) throws PackstreamReaderException {
-        return VirtualValues.fromList(buf.readList(limit, buf -> this.readPrimitiveValue(limit)));
-    }
+    ListValue readPrimitiveList(long limit) throws PackstreamReaderException;
 
     /**
      * Decodes a map value from a given buffer.
@@ -224,8 +180,17 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public MapValue readMap() throws PackstreamReaderException {
-        return this.doReadMap(-1, buf -> this.readValue());
+    MapValue readMap() throws PackstreamReaderException;
+
+    /**
+     * Decodes a map value consisting of primitive values from a given buffer.
+     *
+     * @return a map value.
+     * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
+     * @throws PackstreamReaderException     when the value is malformed.
+     */
+    default MapValue readPrimitiveMap() throws PackstreamReaderException {
+        return this.readPrimitiveMap(-1);
     }
 
     /**
@@ -235,21 +200,7 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public MapValue readPrimitiveMap(long limit) throws PackstreamReaderException {
-        return doReadMap(limit, buf -> this.readPrimitiveValue(limit));
-    }
-
-    private MapValue doReadMap(long limit, Reader<AnyValue> reader) throws PackstreamReaderException {
-        var map = buf.readMap(limit, reader);
-        if (map.isEmpty()) {
-            return MapValue.EMPTY;
-        }
-
-        // TODO: Refactor - Duplicate map construction
-        var builder = new MapValueBuilder(map.size());
-        map.forEach(builder::add);
-        return builder.build();
-    }
+    MapValue readPrimitiveMap(long limit) throws PackstreamReaderException;
 
     /**
      * Decodes a struct value from a given buffer.
@@ -258,7 +209,5 @@ public class PackstreamValueReader<CTX> {
      * @throws UnexpectedTypeMarkerException when an unexpected type marker is encountered.
      * @throws PackstreamReaderException     when the value is malformed.
      */
-    public Value readStruct() throws PackstreamReaderException {
-        return buf.readStruct(this.ctx, this.structRegistry);
-    }
+    Value readStruct() throws PackstreamReaderException;
 }

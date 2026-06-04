@@ -51,6 +51,7 @@ import org.neo4j.bolt.protocol.common.fsm.response.NetworkResponseHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
+import org.neo4j.bolt.protocol.io.reader.ConnectionPackstreamValueReader;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.boltmessages.notifications.NotificationsConfig;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
@@ -62,7 +63,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.values.storable.Value;
 
@@ -313,9 +313,6 @@ public abstract class AbstractConnection implements ConnectionHandle {
         var fsm = protocol.stateMachine().createInstance(this, this.logService);
         this.fsm = fsm;
 
-        // notify the protocol in order to register legacy compliance listeners
-        protocol.onConnectionNegotiated(this);
-
         // last notify any registered listeners to let them prepare the state machine if necessary
         this.notifyListeners(listener -> listener.onStateMachineInitialized(fsm));
     }
@@ -413,13 +410,13 @@ public abstract class AbstractConnection implements ConnectionHandle {
     }
 
     @Override
-    public PackstreamValueReader<Connection> valueReader(PackstreamBuf buf) {
+    public ConnectionPackstreamValueReader valueReader(PackstreamBuf buf) {
         var structRegistry = this.structRegistry.get();
         if (structRegistry == null) {
             throw new IllegalStateException("Connection has yet to select a protocol version");
         }
 
-        return new PackstreamValueReader<>(this, buf, structRegistry);
+        return new ConnectionPackstreamValueReader(buf, this, structRegistry);
     }
 
     @Override

@@ -33,7 +33,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-public interface StructWriter {
+public interface VersionedValueWriter {
 
     default void writePoint(WriterContext ctx, CoordinateReferenceSystem crs, double[] coords) {
         ctx.firePoint(crs, coords);
@@ -133,7 +133,7 @@ public interface StructWriter {
         ctx.fireVector(values);
     }
 
-    default void writeUID(WriterContext ctx, long msb, long lsb) {
+    default void writeUUID(WriterContext ctx, long msb, long lsb) {
         ctx.fireUUID(msb, lsb);
     }
 }

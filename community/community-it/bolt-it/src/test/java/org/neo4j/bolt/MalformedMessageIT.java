@@ -174,7 +174,7 @@ public class MalformedMessageIT {
                                                 .withString("RESERVED")
                                                 .withList(
                                                         "BYTES", "BOOLEAN", "FLOAT", "INT", "LIST", "MAP", "STRING",
-                                                        "STRUCT")
+                                                        "UUID", "STRUCT")
                                                 .withString("RESERVED"))
                                 .hasDescriptionFuzzy(
                                         "error: data exception - invalid type. Expected the value RESERVED to be of type")

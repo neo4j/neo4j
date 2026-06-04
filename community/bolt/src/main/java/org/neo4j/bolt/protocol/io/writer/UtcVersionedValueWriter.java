@@ -31,15 +31,15 @@ import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
  * This writer implementation is present on legacy connections which negotiated support for the UTC date time
  * functionality.
  *
- * @deprecated Scheduled for removal in 6.0 - Contents will be merged with {@link DefaultStructWriter}.
+ * @deprecated Scheduled for removal in 6.0 - Contents will be merged with {@link DefaultVersionedValueWriter}.
  */
 @Deprecated(forRemoval = true, since = "5.0")
-public class UtcStructWriter implements StructWriter {
-    private static final UtcStructWriter INSTANCE = new UtcStructWriter();
+public class UtcVersionedValueWriter implements VersionedValueWriter {
+    private static final UtcVersionedValueWriter INSTANCE = new UtcVersionedValueWriter();
 
-    protected UtcStructWriter() {}
+    protected UtcVersionedValueWriter() {}
 
-    public static StructWriter getInstance() {
+    public static VersionedValueWriter getInstance() {
         return INSTANCE;
     }
 

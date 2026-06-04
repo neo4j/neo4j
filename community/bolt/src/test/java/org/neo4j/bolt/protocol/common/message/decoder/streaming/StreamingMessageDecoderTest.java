@@ -31,7 +31,7 @@ import org.neo4j.boltmessages.request.streaming.AbstractStreamingMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValueReader;
+import org.neo4j.packstream.io.value.AbstractPackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -47,7 +47,7 @@ public interface StreamingMessageDecoderTest<
 
     @Test
     default void shouldReadMessage() throws PackstreamReaderException {
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
         var buf = PackstreamBuf.allocUnpooled();
 
         var builder = new MapValueBuilder();
@@ -70,7 +70,7 @@ public interface StreamingMessageDecoderTest<
 
     @Test
     default void shouldPermitOmittedStatementId() throws PackstreamReaderException {
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
         var buf = PackstreamBuf.allocUnpooled();
 
         var builder = new MapValueBuilder();
@@ -93,7 +93,7 @@ public interface StreamingMessageDecoderTest<
     @Test
     default void shouldFailWithIllegalStructArgumentWhenNegativeStreamLimitIsGiven() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         meta.add("n", Values.longValue(-2));
@@ -116,7 +116,7 @@ public interface StreamingMessageDecoderTest<
     @Test
     default void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
         var ex = PackstreamReaderException.internalError(this.getClass().getSimpleName(), "Something went kaput :(");
 
         Mockito.doThrow(ex).when(reader).readMap();
@@ -135,7 +135,7 @@ public interface StreamingMessageDecoderTest<
     default void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed()
             throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         meta.add("n", Values.stringValue("✨✨ nonsense ✨✨"));
@@ -155,7 +155,7 @@ public interface StreamingMessageDecoderTest<
 
     @Test
     default void shouldFailWithIllegalStructArgumentWhenNumberOfRecordsIsOmitted() throws PackstreamReaderException {
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
         var ex = PackstreamReaderException.internalError(this.getClass().getSimpleName(), "Something went kaput :(");
 
         Mockito.doThrow(ex).when(reader).readMap();

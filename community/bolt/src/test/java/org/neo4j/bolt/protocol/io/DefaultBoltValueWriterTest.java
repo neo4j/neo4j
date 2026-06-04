@@ -29,7 +29,7 @@ import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
-import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
+import org.neo4j.bolt.protocol.io.writer.DefaultVersionedValueWriter;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
@@ -54,7 +54,7 @@ class DefaultBoltValueWriterTest {
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
         var properties = propertyBuilder.build();
 
-        DefaultStructWriter.getInstance()
+        DefaultVersionedValueWriter.getInstance()
                 .writeNode(ctx, "42", 42, stringArray("foo", "bar", "baz"), propertyBuilder.build(), false);
 
         var header = buf.readStructHeader();
@@ -85,7 +85,7 @@ class DefaultBoltValueWriterTest {
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
         var properties = propertyBuilder.build();
 
-        DefaultStructWriter.getInstance()
+        DefaultVersionedValueWriter.getInstance()
                 .writeRelationship(
                         ctx, "42", 42, "21", 21, "84", 84, stringValue("LIKES_WORKING_WITH"), properties, false);
 
@@ -124,7 +124,8 @@ class DefaultBoltValueWriterTest {
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
         var properties = propertyBuilder.build();
 
-        DefaultStructWriter.getInstance().writeUnboundRelationship(ctx, "42", 42, "LIKES_WORKING_WITH", properties);
+        DefaultVersionedValueWriter.getInstance()
+                .writeUnboundRelationship(ctx, "42", 42, "LIKES_WORKING_WITH", properties);
 
         var header = buf.readStructHeader();
         var relationshipId = buf.readInt();
@@ -157,7 +158,7 @@ class DefaultBoltValueWriterTest {
         var nodes = new NodeValue[] {person, computer, vendor};
         var rels = new RelationshipValue[] {owns, makes};
 
-        DefaultStructWriter.getInstance().writePath(ctx, nodes, rels);
+        DefaultVersionedValueWriter.getInstance().writePath(ctx, nodes, rels);
 
         var header = buf.readStructHeader();
         var nodesHeader = buf.readLengthPrefixMarker(Type.LIST);
@@ -198,7 +199,7 @@ class DefaultBoltValueWriterTest {
             var nodes = new NodeValue[] {person, computer, cpu};
             var rels = new RelationshipValue[] {owns, makes};
 
-            DefaultStructWriter.getInstance().writePath(ctx, nodes, rels);
+            DefaultVersionedValueWriter.getInstance().writePath(ctx, nodes, rels);
         }
 
         var header = buf.readStructHeader();
@@ -230,7 +231,7 @@ class DefaultBoltValueWriterTest {
         var nodes = new NodeValue[] {person, computer, person};
         var rels = new RelationshipValue[] {owns, owns};
 
-        DefaultStructWriter.getInstance().writePath(ctx, nodes, rels);
+        DefaultVersionedValueWriter.getInstance().writePath(ctx, nodes, rels);
 
         var header = buf.readStructHeader();
         var nodesHeader = buf.readLengthPrefixMarker(Type.LIST);

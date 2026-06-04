@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.io.reader;
+package org.neo4j.bolt.protocol.io.reader.struct;
 
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;

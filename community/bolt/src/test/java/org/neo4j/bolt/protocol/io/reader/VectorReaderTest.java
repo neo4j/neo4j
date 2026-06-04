@@ -31,6 +31,7 @@ import static org.neo4j.packstream.io.TypeMarker.INT8;
 
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.protocol.io.reader.struct.VectorReader;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;

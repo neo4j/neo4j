@@ -40,6 +40,7 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.io.value.AbstractPackstreamValueReader;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
@@ -86,7 +87,7 @@ public abstract class AbstractHelloMessageDecoderTest<D extends MessageDecoder<H
     @Test
     protected void shouldReadMessageWithoutRoutingContext() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         this.appendRequiredFields(meta);
@@ -112,7 +113,7 @@ public abstract class AbstractHelloMessageDecoderTest<D extends MessageDecoder<H
     @Test
     protected void shouldReadMessageWithPatchOptions() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         this.appendRequiredFields(meta);
@@ -140,7 +141,7 @@ public abstract class AbstractHelloMessageDecoderTest<D extends MessageDecoder<H
     @Test
     void shouldIgnoreUnknownPatchOptions() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         this.appendRequiredFields(meta);
@@ -168,7 +169,7 @@ public abstract class AbstractHelloMessageDecoderTest<D extends MessageDecoder<H
     @Test
     protected void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled().writeInt(42);
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
         var ex = PackstreamReaderException.internalError(this.getClass().getSimpleName(), "Something went kaput :(");
 
         Mockito.doThrow(ex).when(reader).readPrimitiveMap(Mockito.anyLong());
@@ -187,7 +188,7 @@ public abstract class AbstractHelloMessageDecoderTest<D extends MessageDecoder<H
     protected void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed()
             throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         meta.add("user_agent", Values.longValue(42));
@@ -207,7 +208,7 @@ public abstract class AbstractHelloMessageDecoderTest<D extends MessageDecoder<H
     @Test
     protected void shouldFailWithIllegalStructArgumentWhenUserAgentIsOmitted() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         meta.add("scheme", Values.stringValue("none"));

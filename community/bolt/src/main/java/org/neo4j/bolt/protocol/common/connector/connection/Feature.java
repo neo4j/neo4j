@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
-import org.neo4j.bolt.protocol.io.reader.DateTimeReader;
-import org.neo4j.bolt.protocol.io.reader.DateTimeZoneIdReader;
-import org.neo4j.bolt.protocol.io.writer.UtcStructWriter;
+import org.neo4j.bolt.protocol.io.reader.struct.DateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DateTimeZoneIdReader;
+import org.neo4j.bolt.protocol.io.writer.UtcVersionedValueWriter;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.values.storable.Value;
 
@@ -54,7 +54,7 @@ public enum Feature {
         @Override
         @SuppressWarnings("removal")
         public void configureWriterPipeline(WriterPipeline pipeline) {
-            pipeline.addFirst(UtcStructWriter.getInstance());
+            pipeline.addFirst(UtcVersionedValueWriter.getInstance());
         }
     };
 

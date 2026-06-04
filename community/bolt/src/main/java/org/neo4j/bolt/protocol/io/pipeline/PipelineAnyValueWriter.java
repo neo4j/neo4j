@@ -141,6 +141,6 @@ public class PipelineAnyValueWriter extends PackstreamValueWriter {
 
     @Override
     public void writeUUID(long msb, long lsb) throws RuntimeException {
-        this.context.writeUID(msb, lsb);
+        this.context.writeUUID(msb, lsb);
     }
 }

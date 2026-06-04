@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.io.StructType;
-import org.neo4j.bolt.protocol.io.writer.StructWriterV40;
+import org.neo4j.bolt.protocol.io.writer.VersionedValueWriterV40;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -55,7 +55,7 @@ public class BoltV40Wire extends AbstractBoltWire {
 
     @Override
     protected void configurePipeline() {
-        this.pipeline.addLast(StructWriterV40.getInstance());
+        this.pipeline.addLast(VersionedValueWriterV40.getInstance());
 
         super.configurePipeline();
     }

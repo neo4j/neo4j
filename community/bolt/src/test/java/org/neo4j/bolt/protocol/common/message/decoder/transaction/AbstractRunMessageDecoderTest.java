@@ -32,7 +32,7 @@ import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValueReader;
+import org.neo4j.packstream.io.value.AbstractPackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -59,7 +59,7 @@ public abstract class AbstractRunMessageDecoderTest<D extends MessageDecoder<Run
         var buf = PackstreamBuf.allocUnpooled().writeString("RETURN 1");
         var ex = PackstreamReaderException.internalError(this.getClass().getSimpleName(), "Something went kaput :(");
 
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
         Mockito.doThrow(ex).when(reader).readMap();
 
         var connection =
@@ -75,7 +75,7 @@ public abstract class AbstractRunMessageDecoderTest<D extends MessageDecoder<Run
     @Test
     void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         buf.writeString("RETURN $n");
 

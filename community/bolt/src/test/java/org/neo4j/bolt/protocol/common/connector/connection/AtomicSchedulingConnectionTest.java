@@ -730,7 +730,6 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
         Mockito.verify(this.protocol).metadataHandler();
-        Mockito.verify(this.protocol).onConnectionNegotiated(this.connection);
         Mockito.verifyNoMoreInteractions(this.fsm);
         Mockito.verifyNoMoreInteractions(this.protocol);
 
@@ -747,7 +746,6 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
-        Mockito.verify(this.protocol).onConnectionNegotiated(this.connection);
         Mockito.verify(this.protocol).metadataHandler();
         Mockito.verifyNoMoreInteractions(this.protocol);
 

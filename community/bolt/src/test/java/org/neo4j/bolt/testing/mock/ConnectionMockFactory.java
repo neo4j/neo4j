@@ -220,7 +220,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<ConnectionHandle,
         return captor;
     }
 
-    public ConnectionMockFactory withValueReader(PackstreamValueReader<Connection> valueReader) {
+    public ConnectionMockFactory withValueReader(PackstreamValueReader valueReader) {
         return this.withStaticValue(mock -> mock.valueReader(ArgumentMatchers.any()), valueReader);
     }
 

@@ -46,12 +46,12 @@ import org.neo4j.values.virtual.MapValue;
  * @deprecated Scheduled for removal in 6.0 - Support for 4.x drivers will be dropped entirely
  */
 @Deprecated(since = "5.0", forRemoval = true)
-public final class StructWriterV40 implements StructWriter {
-    private static final StructWriterV40 INSTANCE = new StructWriterV40();
+public final class VersionedValueWriterV40 implements VersionedValueWriter {
+    private static final VersionedValueWriterV40 INSTANCE = new VersionedValueWriterV40();
 
-    private StructWriterV40() {}
+    private VersionedValueWriterV40() {}
 
-    public static StructWriter getInstance() {
+    public static VersionedValueWriter getInstance() {
         return INSTANCE;
     }
 

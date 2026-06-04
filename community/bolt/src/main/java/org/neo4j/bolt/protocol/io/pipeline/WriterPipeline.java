@@ -28,7 +28,7 @@ import java.time.ZonedDateTime;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.io.writer.StructWriter;
+import org.neo4j.bolt.protocol.io.writer.VersionedValueWriter;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -53,7 +53,7 @@ public class WriterPipeline {
         return new Context(buf);
     }
 
-    public WriterPipeline addLast(StructWriter writer) {
+    public WriterPipeline addLast(VersionedValueWriter writer) {
         this.lock.lock();
 
         try {
@@ -74,7 +74,7 @@ public class WriterPipeline {
         return this;
     }
 
-    public WriterPipeline addFirst(StructWriter writer) {
+    public WriterPipeline addFirst(VersionedValueWriter writer) {
         this.lock.lock();
 
         try {
@@ -95,7 +95,7 @@ public class WriterPipeline {
         return this;
     }
 
-    public WriterPipeline remove(StructWriter writer) {
+    public WriterPipeline remove(VersionedValueWriter writer) {
         this.lock.lock();
 
         try {
@@ -128,7 +128,7 @@ public class WriterPipeline {
         return this;
     }
 
-    public StructWriter removeFirst() {
+    public VersionedValueWriter removeFirst() {
         this.lock.lock();
 
         ChainElement first;
@@ -149,7 +149,7 @@ public class WriterPipeline {
         return first.writer;
     }
 
-    public StructWriter removeLast() {
+    public VersionedValueWriter removeLast() {
         this.lock.lock();
 
         ChainElement last;
@@ -173,15 +173,15 @@ public class WriterPipeline {
     private static class ChainElement {
         private volatile ChainElement next;
         private volatile ChainElement prev;
-        private final StructWriter writer;
+        private final VersionedValueWriter writer;
 
-        public ChainElement(ChainElement prev, ChainElement next, StructWriter writer) {
+        public ChainElement(ChainElement prev, ChainElement next, VersionedValueWriter writer) {
             this.prev = prev;
             this.next = next;
             this.writer = writer;
         }
 
-        public ChainElement(ChainElement prev, StructWriter writer) {
+        public ChainElement(ChainElement prev, VersionedValueWriter writer) {
             this(prev, null, writer);
         }
     }
@@ -207,7 +207,7 @@ public class WriterPipeline {
             return this.buf;
         }
 
-        private void fire(String eventName, Consumer<StructWriter> consumer) {
+        private void fire(String eventName, Consumer<VersionedValueWriter> consumer) {
             var prev = this.current;
             var next = prev.next;
             if (next == null) {
@@ -227,7 +227,7 @@ public class WriterPipeline {
             value.writeTo(this.valueWriter);
         }
 
-        private void write(Consumer<StructWriter> consumer) {
+        private void write(Consumer<VersionedValueWriter> consumer) {
             var origin = this.current;
             var next = head;
 
@@ -349,8 +349,8 @@ public class WriterPipeline {
         }
 
         @Override
-        public void writeUID(long msb, long lsb) {
-            this.write(writer -> writer.writeUID(this, msb, lsb));
+        public void writeUUID(long msb, long lsb) {
+            this.write(writer -> writer.writeUUID(this, msb, lsb));
         }
 
         @Override
@@ -468,7 +468,7 @@ public class WriterPipeline {
 
         @Override
         public void fireUUID(long msb, long lsb) {
-            this.fire("uid", writer -> writer.writeUID(this, msb, lsb));
+            this.fire("uuid", writer -> writer.writeUUID(this, msb, lsb));
         }
     }
 }

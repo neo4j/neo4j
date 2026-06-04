@@ -59,6 +59,10 @@ public enum StructType {
         this(tag, defaultSize, defaultSize);
     }
 
+    StructType(int tag, int defaultSize) {
+        this((char) tag, defaultSize);
+    }
+
     public short getTag() {
         return tag;
     }

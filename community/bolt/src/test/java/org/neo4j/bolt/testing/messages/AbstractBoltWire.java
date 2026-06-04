@@ -33,7 +33,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
-import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
+import org.neo4j.bolt.protocol.io.writer.DefaultVersionedValueWriter;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.boltmessages.request.connection.RoutingContext;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -80,7 +80,7 @@ public abstract class AbstractBoltWire implements BoltWire {
     }
 
     protected void configurePipeline() {
-        this.pipeline.addLast(DefaultStructWriter.getInstance());
+        this.pipeline.addLast(DefaultVersionedValueWriter.getInstance());
     }
 
     @Override

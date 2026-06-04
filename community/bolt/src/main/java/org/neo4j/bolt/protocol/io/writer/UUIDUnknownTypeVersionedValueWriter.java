@@ -17,26 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.io.reader;
+package org.neo4j.bolt.protocol.io.writer;
 
-import org.neo4j.bolt.protocol.io.reader.struct.Point2dReader;
-import org.neo4j.packstream.struct.StructReader;
-import org.neo4j.values.storable.PointValue;
+import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
 
-class Point2dReaderTest extends AbstractPointReaderTest {
+public final class UUIDUnknownTypeVersionedValueWriter extends AbstractUnknownTypeVersionedValueWriter {
 
-    @Override
-    protected StructReader<?, PointValue> getReader() {
-        return Point2dReader.getInstance();
+    private static final UUIDUnknownTypeVersionedValueWriter INSTANCE = new UUIDUnknownTypeVersionedValueWriter();
+
+    private UUIDUnknownTypeVersionedValueWriter() {}
+
+    public static UUIDUnknownTypeVersionedValueWriter getInstance() {
+        return INSTANCE;
     }
 
     @Override
-    protected double[] getCoordinates() {
-        return new double[] {21.0, 42.0};
+    protected String typeName() {
+        return "UUID";
     }
 
     @Override
-    protected long getStructSize() {
-        return 3;
+    public void writeUUID(WriterContext ctx, long msb, long lsb) {
+        this.reportUnknownType(ctx);
     }
 }

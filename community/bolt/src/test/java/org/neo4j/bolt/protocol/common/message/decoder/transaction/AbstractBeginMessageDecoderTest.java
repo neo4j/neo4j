@@ -37,7 +37,7 @@ import org.neo4j.boltmessages.request.transaction.BeginMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValueReader;
+import org.neo4j.packstream.io.value.AbstractPackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
@@ -52,7 +52,7 @@ public abstract class AbstractBeginMessageDecoderTest<D extends MessageDecoder<B
     protected void shouldFailWithBookmarkParserExceptionWhenParsingFails(AnyValue bookmarkValue)
             throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         meta.add("bookmarks", bookmarkValue);
@@ -80,7 +80,7 @@ public abstract class AbstractBeginMessageDecoderTest<D extends MessageDecoder<B
     @Test
     protected void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
         var ex = PackstreamReaderException.internalError(this.getClass().getSimpleName(), "Something went kaput :(");
 
         Mockito.doThrow(ex).when(reader).readMap();
@@ -99,7 +99,7 @@ public abstract class AbstractBeginMessageDecoderTest<D extends MessageDecoder<B
     protected void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed()
             throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         meta.add("tx_timeout", Values.stringValue("✨✨ nonsense ✨✨"));

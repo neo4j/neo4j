@@ -63,6 +63,7 @@ import static org.neo4j.packstream.io.TypeMarker.TINY_LIST;
 import static org.neo4j.packstream.io.TypeMarker.TINY_MAP;
 import static org.neo4j.packstream.io.TypeMarker.TINY_STRING;
 import static org.neo4j.packstream.io.TypeMarker.TRUE;
+import static org.neo4j.packstream.io.TypeMarker.UUID;
 import static org.neo4j.packstream.io.TypeMarker.decodeLengthNibble;
 import static org.neo4j.packstream.io.TypeMarker.encodeLengthNibble;
 import static org.neo4j.packstream.io.TypeMarker.requireEncodableLength;
@@ -78,6 +79,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1583,6 +1585,23 @@ public final class PackstreamBuf implements ReferenceCounted {
         }
 
         return this.writeMarker(MAP32, payload.size()).writeMapValue(payload, writer);
+    }
+
+    public UUID readUUID() throws PackstreamReaderException {
+        this.readExpectedMarker(UUID);
+
+        var msb = this.raw().readLong();
+        var lsb = this.raw().readLong();
+
+        return new UUID(msb, lsb);
+    }
+
+    public PackstreamBuf writeUUID(long mostSignificantBits, long leastSignificantBits) {
+        this.writeMarker(UUID);
+
+        this.raw().writeLong(mostSignificantBits).writeLong(leastSignificantBits);
+
+        return this;
     }
 
     /**

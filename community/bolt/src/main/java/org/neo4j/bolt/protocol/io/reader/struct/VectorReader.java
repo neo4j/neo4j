@@ -17,10 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.io.reader;
-
-import static org.neo4j.packstream.io.TypeMarker.FLOAT32;
-import static org.neo4j.packstream.io.TypeMarker.FLOAT64;
+package org.neo4j.bolt.protocol.io.reader.struct;
 
 import java.util.List;
 import org.neo4j.bolt.protocol.io.StructType;

@@ -41,7 +41,8 @@ public interface StateMachineProvider {
                 StateMachineV56Provider.getInstance(),
                 StateMachineV57Provider.getInstance(),
                 StateMachineV58Provider.getInstance(),
-                StateMachineV60Provider.getInstance());
+                StateMachineV60Provider.getInstance(),
+                StateMachineV61Provider.getInstance());
     }
 
     default ProtocolVersion version() {

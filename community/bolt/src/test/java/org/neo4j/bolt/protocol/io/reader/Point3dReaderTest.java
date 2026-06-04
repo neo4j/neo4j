@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.io.reader;
 
+import org.neo4j.bolt.protocol.io.reader.struct.Point2dReader;
 import org.neo4j.packstream.struct.StructReader;
 import org.neo4j.values.storable.PointValue;
 

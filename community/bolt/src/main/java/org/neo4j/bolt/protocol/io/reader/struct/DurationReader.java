@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.io.reader;
+package org.neo4j.bolt.protocol.io.reader.struct;
 
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
@@ -25,33 +25,34 @@ import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
-import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.DurationValue;
 
-public final class LocalDateTimeReader<CTX> implements StructReader<CTX, LocalDateTimeValue> {
-    private static final LocalDateTimeReader<?> INSTANCE = new LocalDateTimeReader<>();
+public final class DurationReader<CTX> implements StructReader<CTX, DurationValue> {
+    private static final DurationReader<?> INSTANCE = new DurationReader<>();
 
-    private LocalDateTimeReader() {}
+    private DurationReader() {}
 
     @SuppressWarnings("unchecked")
-    public static <CTX> LocalDateTimeReader<CTX> getInstance() {
-        return (LocalDateTimeReader<CTX>) INSTANCE;
+    public static <CTX> DurationReader<CTX> getInstance() {
+        return (DurationReader<CTX>) INSTANCE;
     }
 
     @Override
     public short getTag() {
-        return StructType.LOCAL_DATE_TIME.getTag();
+        return StructType.DURATION.getTag();
     }
 
     @Override
-    public LocalDateTimeValue read(CTX ctx, PackstreamBuf buffer, StructHeader header)
-            throws PackstreamReaderException {
-        if (header.length() != 2) {
-            throw IllegalStructSizeException.illegalStructSize(2, header.length());
+    public DurationValue read(CTX ctx, PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
+        if (header.length() != 4) {
+            throw IllegalStructSizeException.illegalStructSize(4, header.length());
         }
 
-        var epochSecond = buffer.readInt();
+        var months = buffer.readInt();
+        var days = buffer.readInt();
+        var seconds = buffer.readInt();
         var nanos = buffer.readInt();
 
-        return LocalDateTimeValue.localDateTime(epochSecond, nanos);
+        return DurationValue.duration(months, days, seconds, nanos);
     }
 }

@@ -31,7 +31,7 @@ import org.neo4j.boltmessages.notifications.SelectiveNotificationsConfig;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValueReader;
+import org.neo4j.packstream.io.value.AbstractPackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
@@ -54,7 +54,7 @@ public class DefaultRunMessageDecoderTest extends AbstractRunMessageDecoderTest<
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         buf.writeString("RETURN $n");
 
@@ -110,7 +110,7 @@ public class DefaultRunMessageDecoderTest extends AbstractRunMessageDecoderTest<
     @Test
     void shouldFallbackToDefaults() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         buf.writeString("RETURN $n");
 

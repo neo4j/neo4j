@@ -19,18 +19,18 @@
  */
 package org.neo4j.packstream.testing;
 
-import org.neo4j.bolt.protocol.io.reader.DateReader;
-import org.neo4j.bolt.protocol.io.reader.DateTimeReader;
-import org.neo4j.bolt.protocol.io.reader.DateTimeZoneIdReader;
-import org.neo4j.bolt.protocol.io.reader.DurationReader;
-import org.neo4j.bolt.protocol.io.reader.LocalDateTimeReader;
-import org.neo4j.bolt.protocol.io.reader.LocalTimeReader;
-import org.neo4j.bolt.protocol.io.reader.Point2dReader;
-import org.neo4j.bolt.protocol.io.reader.Point3dReader;
-import org.neo4j.bolt.protocol.io.reader.TimeReader;
-import org.neo4j.bolt.protocol.io.reader.VectorReader;
 import org.neo4j.bolt.protocol.io.reader.legacy.LegacyDateTimeReader;
 import org.neo4j.bolt.protocol.io.reader.legacy.LegacyDateTimeZoneIdReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DateReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DateTimeZoneIdReader;
+import org.neo4j.bolt.protocol.io.reader.struct.DurationReader;
+import org.neo4j.bolt.protocol.io.reader.struct.LocalDateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.LocalTimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.Point2dReader;
+import org.neo4j.bolt.protocol.io.reader.struct.Point3dReader;
+import org.neo4j.bolt.protocol.io.reader.struct.TimeReader;
+import org.neo4j.bolt.protocol.io.reader.struct.VectorReader;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
@@ -84,6 +84,7 @@ public final class PackstreamTestValueReader {
             case MAP -> buf.readMap(ignore -> readValue(buf, structRegistry));
             case STRING -> buf.readString();
             case STRUCT -> buf.readStruct(null, structRegistry);
+            case UUID -> buf.readUUID();
         };
     }
 
@@ -111,6 +112,7 @@ public final class PackstreamTestValueReader {
             case LIST -> readListValue(buf, structRegistry);
             case MAP -> readMapValue(buf, structRegistry);
             case STRING -> Values.stringValue(buf.readString());
+            case UUID -> Values.uuidValue(buf.readUUID());
             case STRUCT -> buf.readStruct(null, structRegistry);
         };
     }

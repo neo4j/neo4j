@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.io.reader;
-
-import static org.neo4j.internal.helpers.TimeUtil.zoneOffsetOfTotalSeconds;
+package org.neo4j.bolt.protocol.io.reader.struct;
 
 import java.time.DateTimeException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.zone.ZoneRulesException;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
@@ -34,19 +33,19 @@ import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 import org.neo4j.values.storable.DateTimeValue;
 
-public final class DateTimeReader<CTX> implements StructReader<CTX, DateTimeValue> {
-    private static final DateTimeReader<?> INSTANCE = new DateTimeReader<>();
+public final class DateTimeZoneIdReader<CTX> implements StructReader<CTX, DateTimeValue> {
+    private static final DateTimeZoneIdReader<?> INSTANCE = new DateTimeZoneIdReader<>();
 
-    private DateTimeReader() {}
+    private DateTimeZoneIdReader() {}
 
     @SuppressWarnings("unchecked")
-    public static <CTX> DateTimeReader<CTX> getInstance() {
-        return (DateTimeReader<CTX>) INSTANCE;
+    public static <CTX> DateTimeZoneIdReader<CTX> getInstance() {
+        return (DateTimeZoneIdReader<CTX>) INSTANCE;
     }
 
     @Override
     public short getTag() {
-        return StructType.DATE_TIME.getTag();
+        return StructType.DATE_TIME_ZONE_ID.getTag();
     }
 
     @Override
@@ -57,33 +56,24 @@ public final class DateTimeReader<CTX> implements StructReader<CTX, DateTimeValu
 
         var epochSecond = buffer.readInt();
         var nanos = buffer.readInt();
-        var offsetSeconds = buffer.readInt();
+        var zoneName = buffer.readString();
 
         if (nanos > Integer.MAX_VALUE || nanos < Integer.MIN_VALUE) {
-            // DRI-022
             throw IllegalStructArgumentException.wrongTypeForFieldNameOrOutOfRange(
-                    "nanoseconds", "INTEGER", Integer.MIN_VALUE, Integer.MAX_VALUE, nanos, "Value is out of bounds");
-        }
-        if (offsetSeconds > Integer.MAX_VALUE || offsetSeconds < Integer.MIN_VALUE) {
-            throw IllegalStructArgumentException.wrongTypeForFieldNameOrOutOfRange(
-                    "tz_offset_seconds",
-                    "INTEGER",
-                    Integer.MIN_VALUE,
-                    Integer.MAX_VALUE,
-                    offsetSeconds,
-                    "Value is out of bounds");
+                    "nanoseconds", "INTEGER", Integer.MIN_VALUE, Integer.MAX_VALUE, nanos, "Value exceeds bounds");
         }
 
-        ZoneOffset offset;
         Instant instant;
-
+        ZoneId zoneId;
         try {
-            offset = zoneOffsetOfTotalSeconds((int) offsetSeconds);
             instant = Instant.ofEpochSecond(epochSecond, nanos);
+            zoneId = ZoneId.of(zoneName);
+        } catch (ZoneRulesException ex) {
+            throw IllegalStructArgumentException.invalidZoneId(zoneName, ex);
         } catch (DateTimeException | ArithmeticException ex) {
             throw IllegalStructArgumentException.invalidTemporalComponent("seconds", epochSecond, nanos, ex);
         }
 
-        return DateTimeValue.datetime(OffsetDateTime.ofInstant(instant, offset));
+        return DateTimeValue.datetime(ZonedDateTime.ofInstant(instant, zoneId));
     }
 }

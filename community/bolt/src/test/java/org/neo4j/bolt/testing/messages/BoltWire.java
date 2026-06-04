@@ -60,7 +60,8 @@ public interface BoltWire {
                 new BoltV56Wire(),
                 new BoltV57Wire(),
                 new BoltV58Wire(),
-                new BoltV60Wire());
+                new BoltV60Wire(),
+                new BoltV61Wire());
     }
 
     static BoltWire latest() {

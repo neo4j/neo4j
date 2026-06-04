@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
@@ -56,7 +55,7 @@ public final class AuthenticationMetadataUtils {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public static Map<String, Object> convertExtraMap(PackstreamValueReader<Connection> reader, int limit)
+    public static Map<String, Object> convertExtraMap(PackstreamValueReader reader, int limit)
             throws PackstreamReaderException {
         MapValue metadataMapValue;
         try {

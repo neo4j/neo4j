@@ -17,39 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.v60;
+package org.neo4j.bolt.testing.fsm;
 
 import org.neo4j.bolt.negotiation.version.ProtocolVersion;
-import org.neo4j.bolt.protocol.AbstractBoltProtocol;
-import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
-import org.neo4j.bolt.protocol.io.writer.UUIDUnknownTypeVersionedValueWriter;
-import org.neo4j.packstream.io.Type;
+import org.neo4j.bolt.protocol.common.BoltProtocol;
+import org.neo4j.bolt.protocol.v61.BoltProtocolV61;
+import org.neo4j.bolt.testing.messages.BoltMessages;
+import org.neo4j.bolt.testing.messages.BoltV58Messages;
 
-public final class BoltProtocolV60 extends AbstractBoltProtocol {
+public final class StateMachineV61Provider implements StateMachineProvider {
 
-    public static final ProtocolVersion VERSION = new ProtocolVersion(6, 0);
+    private static final StateMachineV61Provider INSTANCE = new StateMachineV61Provider();
 
-    private static final BoltProtocolV60 INSTANCE = new BoltProtocolV60();
+    private StateMachineV61Provider() {}
 
-    private BoltProtocolV60() {}
-
-    public static BoltProtocolV60 getInstance() {
+    public static StateMachineV61Provider getInstance() {
         return INSTANCE;
     }
 
     @Override
     public ProtocolVersion version() {
-        return VERSION;
+        return BoltProtocolV61.VERSION;
     }
 
     @Override
-    public void registerStructWriters(WriterPipeline pipeline) {
-        pipeline.addLast(UUIDUnknownTypeVersionedValueWriter.getInstance());
-        super.registerStructWriters(pipeline);
+    public BoltMessages messages() {
+        return BoltV58Messages.getInstance();
     }
 
     @Override
-    public boolean supportsPackstreamType(Type type) {
-        return type != Type.UUID;
+    public BoltProtocol protocol() {
+        return BoltProtocolV61.getInstance();
     }
 }

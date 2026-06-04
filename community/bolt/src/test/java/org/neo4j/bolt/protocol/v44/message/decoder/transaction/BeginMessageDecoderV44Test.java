@@ -29,7 +29,7 @@ import org.neo4j.boltmessages.AccessMode;
 import org.neo4j.boltmessages.TransactionType;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValueReader;
+import org.neo4j.packstream.io.value.AbstractPackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
@@ -51,7 +51,7 @@ class BeginMessageDecoderV44Test extends AbstractBeginMessageDecoderTest<BeginMe
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var txMetadata = new MapValueBuilder();
         txMetadata.add("foo", Values.stringValue("bar"));
@@ -90,7 +90,7 @@ class BeginMessageDecoderV44Test extends AbstractBeginMessageDecoderTest<BeginMe
     @Test
     void shouldIgnoreType() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         meta.add("tx_type", Values.stringValue("IMPLICIT"));
@@ -109,7 +109,7 @@ class BeginMessageDecoderV44Test extends AbstractBeginMessageDecoderTest<BeginMe
     @Test
     void shouldIgnoreNotifications() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
         var list = ListValueBuilder.newListBuilder(1);

@@ -28,7 +28,7 @@ import org.neo4j.boltmessages.request.connection.RouteMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
-import org.neo4j.packstream.io.value.PackstreamValueReader;
+import org.neo4j.packstream.io.value.AbstractPackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -48,7 +48,7 @@ public class DefaultRouteMessageDecoderTest implements MultiParameterMessageDeco
 
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
-        var reader = Mockito.mock(PackstreamValueReader.class);
+        var reader = Mockito.mock(AbstractPackstreamValueReader.class);
 
         var builder = new MapValueBuilder();
         builder.add("address", Values.stringValue("potato.example.org"));
