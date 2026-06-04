@@ -83,6 +83,11 @@ object PegContext {
   private def identityEquivalent(a: WorkingContext, b: WorkingContext): Boolean =
     sameInstances(a.allSymbolsAndKeys, b.allSymbolsAndKeys)
 
-  private def sameInstances(as: Set[LogicalVariable], bs: Set[LogicalVariable]): Boolean =
-    as.size == bs.size && as.forall(v => bs.exists(w => w.name == v.name && (w eq v)))
+  private def sameInstances(as: Set[LogicalVariable], bs: Set[LogicalVariable]): Boolean = {
+    if (as.size != bs.size) false
+    else {
+      val bRefs = bs.iterator.map(Ref(_)).toSet
+      as.iterator.forall(v => bRefs.contains(Ref(v)))
+    }
+  }
 }
