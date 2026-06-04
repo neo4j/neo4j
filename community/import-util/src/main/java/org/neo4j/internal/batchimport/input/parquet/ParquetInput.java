@@ -61,11 +61,11 @@ import org.neo4j.batchimport.api.input.PropertySizeCalculator;
 import org.neo4j.batchimport.api.input.ReadableGroups;
 import org.neo4j.cloud.storage.io.ReadableChannel;
 import org.neo4j.csv.reader.Configuration;
+import org.neo4j.importer.SchemaCommandSource;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.HeaderException;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.DataFactories;
-import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.token.TokenHolders;
@@ -81,7 +81,7 @@ public class ParquetInput implements Input {
 
     private final List<ParquetData> nodeDatas;
     private final List<ParquetData> relationshipDatas;
-    private final List<SchemaCommand> schemaCommands;
+    private final SchemaCommandSource schemaCommandSource;
     private final IdType idType;
     private final Groups groups;
     private final ParquetMonitor monitor;
@@ -95,7 +95,7 @@ public class ParquetInput implements Input {
     public ParquetInput(
             Map<Set<String>, List<FileGroup>> nodeFiles,
             Map<String, List<FileGroup>> relationshipFiles,
-            List<SchemaCommand> schemaCommands,
+            SchemaCommandSource schemaCommandSource,
             IdType defaultIdType,
             Configuration csvConfig,
             Groups groups,
@@ -105,7 +105,7 @@ public class ParquetInput implements Input {
         this.csvConfig = csvConfig;
         this.nodeFiles = nodeFiles;
         this.relationshipFiles = relationshipFiles;
-        this.schemaCommands = schemaCommands;
+        this.schemaCommandSource = schemaCommandSource;
         this.verifiedColumns = verifyColumns(nodeFiles, relationshipFiles);
         this.idType = autoDetectIdType(defaultIdType, verifiedColumns);
         this.containsVectorData = containsVectorData(verifiedColumns);
@@ -179,8 +179,8 @@ public class ParquetInput implements Input {
     }
 
     @Override
-    public List<SchemaCommand> schemaCommands() {
-        return schemaCommands;
+    public SchemaCommandSource schemaCommandSource() {
+        return schemaCommandSource;
     }
 
     @Override

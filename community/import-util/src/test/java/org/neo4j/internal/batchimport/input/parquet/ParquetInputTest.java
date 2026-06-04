@@ -76,6 +76,7 @@ import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.csv.reader.Configuration;
+import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputException;
@@ -5006,7 +5007,8 @@ class ParquetInputTest {
             Groups idGroups,
             ParquetMonitor parquetMonitor,
             Configuration csvConfig) {
-        return new ParquetInput(nodeFiles, relationshipFiles, List.of(), idType, csvConfig, idGroups, parquetMonitor);
+        return new ParquetInput(
+                nodeFiles, relationshipFiles, ResolvedSchemaCommands.of(), idType, csvConfig, idGroups, parquetMonitor);
     }
 
     private Path createNonParquetFile() throws Exception {

@@ -197,9 +197,7 @@ object SchemaCommandParser {
 
   def createEnterpriseIncremental(configuration: CypherConfiguration): SchemaCommandParser = new SchemaCommandParser(
     configuration,
-    // TODO(graphTypes): Restore support for incremental importer when constraint enforcement is fixed.
-    //                   Supported(Set(AlterCurrentGraphType.Add, AlterCurrentGraphType.Drop))
-    Unsupported("GRAPH TYPE is not supported by the incremental importer")
+    Supported(Set(AlterCurrentGraphType.Add, AlterCurrentGraphType.Drop, AlterCurrentGraphType.Alter))
   )
 
 }

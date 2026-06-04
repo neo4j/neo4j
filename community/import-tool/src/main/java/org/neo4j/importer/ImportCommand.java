@@ -77,12 +77,14 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.importer.FileImporter.FileInputType;
 import org.neo4j.importer.SchemaCommandReader.ReaderConfig;
+import org.neo4j.importer.SchemaCommandSource.DeferredSchemaCommands;
+import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.input.BadCollector;
-import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.internal.schema.SchemaCommand.SchemaCommandReaderException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction.PatternStyle;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -93,7 +95,6 @@ import org.neo4j.kernel.api.exceptions.ConsoleFriendlyException;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadataFactory;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailMetadataFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.impl.util.Converters;
@@ -106,6 +107,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.DeprecatedFormatWarning;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -768,7 +771,6 @@ public class ImportCommand {
                 JobScheduler jobScheduler,
                 CursorContextFactory contextFactory,
                 Configuration importConfig,
-                LogTailMetadataFactory logTailMetadataFactory,
                 IndexProvidersAccess indexProvidersAccess,
                 PrintStream stdOut,
                 boolean verbose,
@@ -883,26 +885,40 @@ public class ImportCommand {
                                                     .collect(Collectors.joining(","))));
         }
 
-        private List<SchemaCommand> parseSchemaCommands(SchemeFileSystemAbstraction fileSystem, Config config)
+        private SchemaCommandSource parseSchemaCommands(SchemeFileSystemAbstraction fileSystem, Config config)
                 throws IOException {
             if (schemaCommands == null) {
-                return List.of();
+                return ResolvedSchemaCommands.of();
             }
-
             final var schemaPath = schemaCommandsPath(fileSystem);
+            Preconditions.checkState(
+                    fileSystem.fileExists(schemaPath), "The path to the Cypher schema commands must exist");
 
-            final var reader = schemaCommandReader(fileSystem, config);
+            String cypherText;
             try {
-                return reader.parse(schemaPath);
-            } catch (SchemaCommandReaderException ex) {
-                throw new CommandFailedException("Error parsing schema commands", ex);
+                cypherText = FileSystemUtils.readString(fileSystem, schemaPath, EmptyMemoryTracker.INSTANCE);
             } catch (IOException ex) {
                 throw new CommandFailedException("Unable to read schema commands", ex);
             }
+            if (cypherText == null || cypherText.isEmpty()) {
+                return ResolvedSchemaCommands.of();
+            }
+
+            return new DeferredSchemaCommands((adaptor, tokens) -> {
+                final var reader = schemaCommandReader(fileSystem, config, adaptor, tokens);
+                try {
+                    return reader.parse(cypherText);
+                } catch (SchemaCommandReaderException ex) {
+                    throw new CommandFailedException("Error parsing schema commands", ex);
+                }
+            });
         }
 
         protected abstract SchemaCommandReader schemaCommandReader(
-                SchemeFileSystemAbstraction fileSystem, Config config);
+                SchemeFileSystemAbstraction fileSystem,
+                Config config,
+                DeferredSchemaCommands.Adaptor adaptor,
+                TokenHolders tokenHolders);
 
         private Path schemaCommandsPath(SchemeFileSystemAbstraction fileSystem) throws IOException {
             assert schemaCommands != null;
@@ -1216,7 +1232,6 @@ public class ImportCommand {
                 JobScheduler jobScheduler,
                 CursorContextFactory contextFactory,
                 Configuration importConfig,
-                LogTailMetadataFactory logTailMetadataFactory,
                 IndexProvidersAccess indexProvidersAccess,
                 PrintStream stdOut,
                 boolean verbose,
@@ -1233,7 +1248,7 @@ public class ImportCommand {
                     stdOut,
                     verbose,
                     DefaultAdditionalIds.EMPTY,
-                    logTailMetadataFactory,
+                    new LogTailMetadataFactoryImpl(fileSystem),
                     databaseConfig,
                     monitor,
                     jobScheduler,
@@ -1352,7 +1367,11 @@ public class ImportCommand {
         }
 
         @Override
-        protected SchemaCommandReader schemaCommandReader(SchemeFileSystemAbstraction fileSystem, Config config) {
+        protected SchemaCommandReader schemaCommandReader(
+                SchemeFileSystemAbstraction fileSystem,
+                Config config,
+                DeferredSchemaCommands.Adaptor adaptor,
+                TokenHolders tokenHolders) {
             return new SchemaCommandReader(
                     fileSystem,
                     SchemaCommandParser.createCommunity(CypherConfiguration.fromConfig(config)),

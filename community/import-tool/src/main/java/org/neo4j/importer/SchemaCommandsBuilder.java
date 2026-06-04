@@ -73,8 +73,8 @@ class SchemaCommandsBuilder {
 
     private final SchemaCommandConverter schemaCommandConverter;
 
-    private boolean hasGraphType;
-    private boolean hasConstraint;
+    private int numGraphTypeStatements = 0;
+    private int numConstraintStatements = 0;
 
     SchemaCommandsBuilder(ReaderConfig readerConfig, SchemaCommandConverter commandConverter) {
         this.readerConfig = Objects.requireNonNull(readerConfig);
@@ -100,9 +100,9 @@ class SchemaCommandsBuilder {
         }
 
         if (command instanceof SchemaCommand.GraphType) {
-            hasGraphType = true;
+            numGraphTypeStatements += 1;
         } else if (command instanceof ConstraintCommand) {
-            hasConstraint = true;
+            numConstraintStatements += 1;
         }
 
         allCommands.add(command);
@@ -114,8 +114,12 @@ class SchemaCommandsBuilder {
         final var namedCommands = new LinkedHashMap<String, SchemaCommand>();
         final var allSchemas = Multimaps.mutable.list.<String, SchemaCommand>empty();
 
-        if (hasGraphType && hasConstraint) {
-            throw new SchemaCommandReaderException("Graph type commands can not be mixed with constraint commands");
+        if (numGraphTypeStatements > 0 && numConstraintStatements > 0) {
+            throw new SchemaCommandReaderException("Graph type command can not be mixed with constraint commands");
+        }
+
+        if (numGraphTypeStatements > 1) {
+            throw new SchemaCommandReaderException("Specify a single graph type command");
         }
 
         for (var command : allCommands) {

@@ -437,7 +437,7 @@ sealed class TransactionBoundQueryContext(
     transactionalContext.schemaWrite.indexDrop(name)
 
   override def createConstraint(constraint: ConstraintCommand.Create): Unit = {
-
+    // Note: This method creates the tokens necessary for the constraint.
     def propertyKeyIds(properties: util.List[String]): Seq[Int] = {
       properties.asScala.map(getOrCreatePropertyKeyId).toSeq
     }
@@ -1746,32 +1746,12 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = {
-    val schemaRead: SchemaReadCore = transactionalContext.schemaRead.snapshot()
-    val constraints = schemaRead.constraintsGetAll().asScala.toList
-
-    constraints.foldLeft(Map[ConstraintDescriptor, ConstraintInfo]()) {
-      (map, constraint) =>
-        val schema = constraint.schema
-        val labelsOrTypes = tokenRead.entityTokensGetNames(schema.entityType(), schema.getEntityTokenIds).toList
-        val properties = schema.getPropertyIds.map(id => tokenRead.propertyKeyGetName(id)).toList
-        val maybeIndex =
-          try {
-            Some(schemaRead.indexGetForName(constraint.getName))
-          } catch {
-            case _: IndexNotFoundKernelException => None
-          }
-        val (enforcedLabel, endPointType) =
-          if (constraint.isRelationshipEndpointLabelConstraint) {
-            val relEndpointConstraint = constraint.asRelationshipEndpointLabelConstraint
-            val labelName = tokenRead.labelGetName(relEndpointConstraint.endpointLabelId)
-            (Some(labelName), Some(relEndpointConstraint.endpointType))
-          } else if (constraint.isNodeLabelExistenceConstraint) {
-            val labelName = tokenRead.labelGetName(constraint.asNodeLabelExistenceConstraint.requiredLabelId)
-            (Some(labelName), None)
-          } else (None, None)
-
-        map + (constraint -> runtime.ConstraintInfo(labelsOrTypes, properties, maybeIndex, enforcedLabel, endPointType))
-    }
+    val snapshot = transactionalContext.schemaRead.snapshot()
+    TransactionBoundQueryContext.getAllConstraints(
+      snapshot.constraintsGetAll().asScala.toList,
+      snapshot.indexGetForName,
+      tokenRead
+    )
   }
 
   override def getGeneratedNameForConstraint(
@@ -1779,13 +1759,13 @@ private[internal] class TransactionBoundReadQueryContext(
     entityId: Int,
     propertyIds: ArraySeq[Int],
     descriptor: SchemaDescriptor => ConstraintDescriptor
-  ): String = {
-    val schemaDescriptor =
-      if (forNode) SchemaDescriptors.forLabel(entityId, propertyIds: _*)
-      else SchemaDescriptors.forRelType(entityId, propertyIds: _*)
-
-    SchemaNameUtil.generateName(descriptor(schemaDescriptor), tokenNameLookup)
-  }
+  ): String = TransactionBoundQueryContext.getGeneratedNameForConstraint(
+    forNode,
+    entityId,
+    propertyIds,
+    descriptor,
+    tokenNameLookup
+  )
 
   private val tokenNameLookup: TokenNameLookup = new TokenNameLookup {
     def propertyKeyGetName(propertyKeyId: Int): String = getPropertyKeyName(propertyKeyId)
@@ -2028,6 +2008,51 @@ private[internal] class TransactionBoundReadQueryContext(
 }
 
 object TransactionBoundQueryContext {
+
+  def getAllConstraints(
+    constraints: List[ConstraintDescriptor],
+    indexLookup: (String => IndexDescriptor),
+    tokenRead: TokenNameLookup
+  ): Map[ConstraintDescriptor, ConstraintInfo] = {
+
+    constraints.foldLeft(Map[ConstraintDescriptor, ConstraintInfo]()) {
+      (map, constraint) =>
+        val schema = constraint.schema
+        val labelsOrTypes = tokenRead.entityTokensGetNames(schema.entityType(), schema.getEntityTokenIds).toList
+        val properties: List[String] = schema.getPropertyIds.map(id => tokenRead.propertyKeyGetName(id)).toList
+        val maybeIndex =
+          try {
+            Some(indexLookup.apply(constraint.getName))
+          } catch {
+            case _: IndexNotFoundKernelException => None
+          }
+        val (enforcedLabel, endPointType) =
+          if (constraint.isRelationshipEndpointLabelConstraint) {
+            val relEndpointConstraint = constraint.asRelationshipEndpointLabelConstraint
+            val labelName = tokenRead.labelGetName(relEndpointConstraint.endpointLabelId)
+            (Some(labelName), Some(relEndpointConstraint.endpointType))
+          } else if (constraint.isNodeLabelExistenceConstraint) {
+            val labelName = tokenRead.labelGetName(constraint.asNodeLabelExistenceConstraint.requiredLabelId)
+            (Some(labelName), None)
+          } else (None, None)
+
+        map + (constraint -> runtime.ConstraintInfo(labelsOrTypes, properties, maybeIndex, enforcedLabel, endPointType))
+    }
+  }
+
+  def getGeneratedNameForConstraint(
+    forNode: Boolean,
+    entityId: Int,
+    propertyIds: ArraySeq[Int],
+    descriptor: SchemaDescriptor => ConstraintDescriptor,
+    tokenNameLookup: TokenNameLookup
+  ): String = {
+    val schemaDescriptor =
+      if (forNode) SchemaDescriptors.forLabel(entityId, propertyIds: _*)
+      else SchemaDescriptors.forRelType(entityId, propertyIds: _*)
+
+    SchemaNameUtil.generateName(descriptor(schemaDescriptor), tokenNameLookup)
+  }
 
   class ReferenceCursorIterator(refCursor: ReferenceCursor) extends PrimitiveCursorIterator {
     override protected def fetchNext(): Long = if (refCursor.next()) refCursor.reference() else -1L

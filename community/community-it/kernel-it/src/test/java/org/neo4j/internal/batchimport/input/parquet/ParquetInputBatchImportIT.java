@@ -100,6 +100,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.BadCollector;
@@ -383,7 +384,7 @@ class ParquetInputBatchImportIT {
                         Set.of("ENDTHING"),
                         List.of(new FileGroup(new FileGroup.NumberedFile(1, nodeGroup2)))),
                 Map.of("", List.of(new FileGroup(new FileGroup.NumberedFile(2, relationships)))),
-                List.of(),
+                ResolvedSchemaCommands.of(),
                 INTEGER,
                 Configuration.newBuilder().build(),
                 groups,
@@ -396,7 +397,7 @@ class ParquetInputBatchImportIT {
         return new ParquetInput(
                 Map.of(Set.of(""), Collections.singletonList(nodeFileGroup)),
                 Map.of("", Collections.singletonList(relationshipFileGroup)),
-                List.of(),
+                ResolvedSchemaCommands.of(),
                 idType,
                 Configuration.newBuilder().build(),
                 groups,

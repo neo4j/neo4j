@@ -45,12 +45,12 @@ import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
 import org.neo4j.batchimport.api.input.ReadableGroups;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.importer.SchemaCommandSource;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
 import org.neo4j.internal.helpers.ArrayUtil;
-import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.RandomValues;
@@ -88,7 +88,7 @@ public class DataGeneratorInput implements Input {
     private final Header nodeHeader;
     private final Header relationshipHeader;
     private final Groups groups;
-    private final List<SchemaCommand> schemaCommands;
+    private final SchemaCommandSource schemaCommandSource;
 
     public DataGeneratorInput(
             DataDistribution dataDistribution,
@@ -98,7 +98,7 @@ public class DataGeneratorInput implements Input {
             Header nodeHeader,
             Header relationshipHeader,
             Groups groups,
-            List<SchemaCommand> schemaCommands) {
+            SchemaCommandSource schemaCommandSource) {
         this.dataDistribution = dataDistribution;
         this.idType = idType;
         this.seed = seed;
@@ -106,7 +106,7 @@ public class DataGeneratorInput implements Input {
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
         this.groups = groups;
-        this.schemaCommands = schemaCommands;
+        this.schemaCommandSource = schemaCommandSource;
     }
 
     public static DataDistribution data(long nodeCount, long relationshipCount) {
@@ -136,8 +136,8 @@ public class DataGeneratorInput implements Input {
     }
 
     @Override
-    public List<SchemaCommand> schemaCommands() {
-        return schemaCommands;
+    public SchemaCommandSource schemaCommandSource() {
+        return schemaCommandSource;
     }
 
     @Override

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -47,6 +46,7 @@ import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.DataStatistics;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.NodeDegreeCountStage;
@@ -109,7 +109,7 @@ class HumanUnderstandableExecutionMonitorIT {
                 bareboneNodeHeader(idType, group, extractors),
                 bareboneRelationshipHeader(idType, group, extractors),
                 groups,
-                emptyList());
+                ResolvedSchemaCommands.of());
 
         // when
         try (JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {

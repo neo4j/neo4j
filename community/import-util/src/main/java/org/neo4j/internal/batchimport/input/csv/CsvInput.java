@@ -62,10 +62,11 @@ import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
+import org.neo4j.importer.SchemaCommandSource;
+import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.Inputs;
-import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.ByteUnit;
@@ -90,7 +91,7 @@ public class CsvInput implements Input {
     private final Header.Factory nodeHeaderFactory;
     private final Iterable<DataFactory> relationshipDataFactory;
     private final Header.Factory relationshipHeaderFactory;
-    private final List<SchemaCommand> schemaCommands;
+    private final SchemaCommandSource schemaCommandSource;
     private final IdType defaultIdType;
     private final Configuration config;
     private final Monitor monitor;
@@ -133,7 +134,7 @@ public class CsvInput implements Input {
                 nodeHeaderFactory,
                 relationshipDataFactory,
                 relationshipHeaderFactory,
-                List.of(),
+                ResolvedSchemaCommands.of(),
                 defaultIdType,
                 config,
                 autoSkipHeaders,
@@ -174,7 +175,7 @@ public class CsvInput implements Input {
                 nodeHeaderFactory,
                 relationshipDataFactory,
                 relationshipHeaderFactory,
-                List.of(),
+                ResolvedSchemaCommands.of(),
                 defaultIdType,
                 config,
                 autoSkipHeaders,
@@ -192,7 +193,7 @@ public class CsvInput implements Input {
      * specifies an input group with its own header, extracted by the {@code relationshipHeaderFactory}.
      * From the outside it looks like one stream of relationships.
      * @param relationshipHeaderFactory factory for reading relationship headers.
-     * @param schemaCommands the schema changes to apply to the database after the data is imported.
+     * @param schemaCommandSource the schema changes to apply to the database after the data is imported.
      * @param defaultIdType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
      * @param autoSkipHeaders  flag to skip headers
@@ -206,7 +207,7 @@ public class CsvInput implements Input {
             Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory,
             Header.Factory relationshipHeaderFactory,
-            List<SchemaCommand> schemaCommands,
+            SchemaCommandSource schemaCommandSource,
             IdType defaultIdType,
             Configuration config,
             boolean autoSkipHeaders,
@@ -221,7 +222,7 @@ public class CsvInput implements Input {
         this.nodeHeaderFactory = nodeHeaderFactory;
         this.relationshipDataFactory = relationshipDataFactory;
         this.relationshipHeaderFactory = relationshipHeaderFactory;
-        this.schemaCommands = schemaCommands;
+        this.schemaCommandSource = schemaCommandSource;
         this.defaultIdType = defaultIdType;
         this.config = config;
         this.monitor = monitor;
@@ -248,8 +249,8 @@ public class CsvInput implements Input {
     }
 
     @Override
-    public List<SchemaCommand> schemaCommands() {
-        return schemaCommands;
+    public SchemaCommandSource schemaCommandSource() {
+        return schemaCommandSource;
     }
 
     @Override

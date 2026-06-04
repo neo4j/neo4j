@@ -34,7 +34,6 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.IOException;
@@ -51,8 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.list.MutableList;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.Monitor;
 import org.neo4j.batchimport.api.UnsupportedFormatException;
@@ -66,6 +63,7 @@ import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.importer.ImportCommand.ShardingArguments;
+import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.batchimport.input.Groups;
@@ -77,7 +75,6 @@ import org.neo4j.internal.batchimport.input.csv.CsvInput.PrintingMonitor;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.input.parquet.ParquetInput;
 import org.neo4j.internal.batchimport.input.parquet.ParquetMonitor;
-import org.neo4j.internal.schema.SchemaCommand;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -90,7 +87,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
-import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.InternalLogProvider;
@@ -136,7 +132,7 @@ public class FileImporter {
     private final MemoryTracker memoryTracker;
     private final boolean force;
     private final InternalLogProvider logProvider;
-    private final List<SchemaCommand> schemaCommands;
+    private final SchemaCommandSource schemaCommands;
     private final FileInputType fileImportType;
     private final ShardingArguments shardingArguments;
     private final Monitor monitor;
@@ -178,7 +174,7 @@ public class FileImporter {
         printOverview(true);
 
         try (var input = importInput();
-                var jobScheduler = createScheduler()) {
+                var jobScheduler = createInitialisedScheduler()) {
             type.doDryRun(
                     input,
                     fileSystem,
@@ -188,7 +184,6 @@ public class FileImporter {
                     jobScheduler,
                     contextFactory,
                     importConfig,
-                    (config, databaseLayout, storageEngineFactory) -> new EmptyLogTailMetadata(config),
                     new IndexProvidersAccess() {
                         @Override
                         public IndexProviderMap access(
@@ -517,7 +512,10 @@ public class FileImporter {
                 ProblemReporters.jsonOutputProblemHandler(reportOutputStream.get()),
                 badTolerance,
                 BadCollector.collectFlag(
-                        skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns, !schemaCommands.isEmpty()),
+                        skipBadRelationships,
+                        skipDuplicateNodes,
+                        ignoreExtraColumns,
+                        SchemaCommandSource.mayHaveCommands(schemaCommands)),
                 skipBadEntriesLogging);
     }
 
@@ -560,7 +558,7 @@ public class FileImporter {
         private PrintStream stdErr = System.err;
         private boolean force;
         private InternalLogProvider logProvider = NullLogProvider.getInstance();
-        private final MutableList<SchemaCommand> schemaCommands = Lists.mutable.empty();
+        private SchemaCommandSource schemaCommands = ResolvedSchemaCommands.of();
         private FileInputType fileInputType = FileInputType.CSV;
         private ShardingArguments shardingArguments;
         private Monitor monitor = Monitor.NO_MONITOR;
@@ -731,8 +729,8 @@ public class FileImporter {
             return this;
         }
 
-        public Builder withSchemaCommands(List<SchemaCommand> schemaCommands) {
-            this.schemaCommands.addAll(requireNonNull(schemaCommands));
+        public Builder withSchemaCommands(SchemaCommandSource schemaCommands) {
+            this.schemaCommands = requireNonNull(schemaCommands);
             return this;
         }
 

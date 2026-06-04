@@ -21,12 +21,12 @@ package org.neo4j.batchimport.api.input;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 import org.neo4j.batchimport.api.BatchImporter;
 import org.neo4j.batchimport.api.InputIterable;
 import org.neo4j.batchimport.api.InputIterator;
-import org.neo4j.internal.schema.SchemaCommand;
+import org.neo4j.importer.SchemaCommandSource;
+import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.token.TokenHolders;
 
@@ -121,8 +121,8 @@ public interface Input extends AutoCloseable {
     /**
      * @return the schema commands to be applied after the data has been imported.
      */
-    default List<SchemaCommand> schemaCommands() {
-        return List.of();
+    default SchemaCommandSource schemaCommandSource() {
+        return ResolvedSchemaCommands.of();
     }
 
     /**
@@ -154,11 +154,6 @@ public interface Input extends AutoCloseable {
             @Override
             public IdType idType() {
                 return idType;
-            }
-
-            @Override
-            public List<SchemaCommand> schemaCommands() {
-                return List.of();
             }
 
             @Override
@@ -259,8 +254,8 @@ public interface Input extends AutoCloseable {
         }
 
         @Override
-        public List<SchemaCommand> schemaCommands() {
-            return delegate.schemaCommands();
+        public SchemaCommandSource schemaCommandSource() {
+            return delegate.schemaCommandSource();
         }
 
         @Override

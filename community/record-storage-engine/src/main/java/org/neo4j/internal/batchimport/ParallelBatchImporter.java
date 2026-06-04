@@ -30,6 +30,7 @@ import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.batchimport.api.input.PropertySizeCalculator;
 import org.neo4j.configuration.Config;
+import org.neo4j.importer.SchemaCommandSource;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -132,7 +133,7 @@ public class ParallelBatchImporter implements BatchImporter {
 
     @Override
     public void doImport(Input input) throws IOException {
-        if (!input.schemaCommands().isEmpty()) {
+        if (SchemaCommandSource.mayHaveCommands(input.schemaCommandSource())) {
             throw new UnsupportedOperationException("Record format batch import does not support schema changes");
         }
 
