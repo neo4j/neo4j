@@ -1892,11 +1892,26 @@ class AstGenerator(
     labelOrRelType <- _labelOrTypeName
   } yield UsingScanHint(variable, labelOrRelType)(pos)
 
-  def _expandStep: Gen[ExpandStep] = for {
-    from <- _variable
-    to <- _variable
-    mode <- option(oneOf(ExpandHintAll, ExpandHintInto))
-  } yield ExpandStep(from, to, mode)(pos)
+  def _expandStep: Gen[ExpandStep] = oneOf(
+    // Shape 1: endpoints only — FROM x TO y
+    for {
+      from <- _variable
+      to <- _variable
+      mode <- option(oneOf(ExpandHintAll, ExpandHintInto))
+    } yield ExpandStep(Some(from), Some(to), None, mode)(pos),
+    // Shape 2: endpoints + via — FROM x TO y VIA r
+    for {
+      from <- _variable
+      to <- _variable
+      via <- _variable
+      mode <- option(oneOf(ExpandHintAll, ExpandHintInto))
+    } yield ExpandStep(Some(from), Some(to), Some(via), mode)(pos),
+    // Shape 3: via only — VIA r
+    for {
+      via <- _variable
+      mode <- option(oneOf(ExpandHintAll, ExpandHintInto))
+    } yield ExpandStep(None, None, Some(via), mode)(pos)
+  )
 
   def _usingExpandHint: Gen[UsingExpandHint] = for {
     n <- choose(1, 3)

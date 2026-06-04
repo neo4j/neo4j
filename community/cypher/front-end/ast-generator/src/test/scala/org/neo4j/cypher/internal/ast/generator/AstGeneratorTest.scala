@@ -58,4 +58,29 @@ class AstGeneratorTest extends CypherFunSuite with CypherScalaCheckDrivenPropert
       case x => fail(s"Expected Ands(exprs) but was ${x.getClass}")
     }
   }
+
+  test("_expandStep emits only grammar-valid shapes and exercises all three") {
+    // The parser accepts exactly:
+    //   1. endpoint-only:  FROM x TO y
+    //   2. endpoint+via:   FROM x TO y VIA r
+    //   3. via-only:       VIA r
+    // The generator must pick one of these
+    val sample = (1 to 200).flatMap(_ => astGenerator._expandStep.sample).toList
+
+    sample.foreach { step =>
+      val hasEndpoints = step.from.isDefined && step.to.isDefined
+      val isViaOnly = step.from.isEmpty && step.to.isEmpty && step.via.isDefined
+      withClue(s"Invalid ExpandStep shape: $step") {
+        (hasEndpoints || isViaOnly) shouldBe true
+      }
+    }
+
+    // in 200 samples, we should have one of each shape
+    // endpoint-only
+    sample.exists(s => s.from.isDefined && s.to.isDefined && s.via.isEmpty) shouldBe true
+    // endpoint+via
+    sample.exists(s => s.from.isDefined && s.to.isDefined && s.via.isDefined) shouldBe true
+    // via-only
+    sample.exists(s => s.from.isEmpty && s.to.isEmpty && s.via.isDefined) shouldBe true
+  }
 }

@@ -363,6 +363,7 @@ class Cypher5VocabularyTest extends CypherFunSuite {
     Cypher5Parser.USING -> "'USING'",
     Cypher5Parser.VALUE -> "'VALUE'",
     Cypher5Parser.VARCHAR -> "'VARCHAR'",
+    Cypher5Parser.VIA -> "'VIA'",
     Cypher5Parser.VECTOR -> "'VECTOR'",
     Cypher5Parser.VERBOSE -> "'VERBOSE'",
     Cypher5Parser.VERTEX -> "'VERTEX'",

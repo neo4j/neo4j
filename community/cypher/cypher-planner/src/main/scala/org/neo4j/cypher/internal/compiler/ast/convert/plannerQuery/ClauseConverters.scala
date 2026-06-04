@@ -226,6 +226,7 @@ case class ClauseConverters(statementConverters: StatementConverters) extends La
             UsingExpandStepHint(
               from = step.from,
               to = step.to,
+              via = step.via,
               mode = step.mode,
               stepId = stepId,
               mustFollow = stepIds.take(idx).toSet

@@ -1351,11 +1351,16 @@ case class LogicalPlanProducer(
             case h: UsingExpandStepHint => h.stepId
           }
           qg.addPatternRelationship(pattern)
-            .addHints(hints.filter {
-              case UsingExpandStepHint(`from`, `to`, hintMode, _, mustFollow)
-                if LogicalPlanProducer.expandModeMatches(hintMode, mode) &&
-                  mustFollow.subsetOf(alreadySolvedExpandStepIds) => true
-              case _ => false
+            .addHints(hints.collect {
+              case h: UsingExpandStepHint
+                if LogicalPlanProducer.expandHintClaims(
+                  h,
+                  planFrom = from,
+                  planTo = to,
+                  planRelIds = Set(pattern.variable),
+                  planMode = mode,
+                  claimedStepIds = alreadySolvedExpandStepIds
+                ) => h
             })
         }
     annotate(
@@ -1396,11 +1401,16 @@ case class LogicalPlanProducer(
               qg
                 .addPatternRelationship(patternRelationship)
                 .addPredicates(solvedPredicates)
-                .addHints(hints.filter {
-                  case UsingExpandStepHint(`from`, `to`, hintMode, _, mustFollow)
-                    if LogicalPlanProducer.expandModeMatches(hintMode, expansionMode) &&
-                      mustFollow.subsetOf(alreadySolvedExpandStepIds) => true
-                  case _ => false
+                .addHints(hints.collect {
+                  case h: UsingExpandStepHint
+                    if LogicalPlanProducer.expandHintClaims(
+                      h,
+                      planFrom = from,
+                      planTo = to,
+                      planRelIds = Set(patternRelationship.variable),
+                      planMode = expansionMode,
+                      claimedStepIds = alreadySolvedExpandStepIds
+                    ) => h
                 })
             }
 
@@ -1509,7 +1519,8 @@ case class LogicalPlanProducer(
     reverseGroupVariableProjections: Boolean,
     expansionMode: ExpansionMode,
     pathMode: TraversalPathMode,
-    allReduceAccumulators: Set[AllReduceAccumulator]
+    allReduceAccumulators: Set[AllReduceAccumulator],
+    hints: Iterable[IrHint]
   ): LogicalPlan = {
     // Ensure that innerPlan does conform with the pattern contained inside the quantified path pattern before we mark it as solved
     try {
@@ -1529,9 +1540,25 @@ case class LogicalPlanProducer(
         )
     }
 
-    val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
-      .addQuantifiedPathPattern(pattern)
-      .addPredicates(predicates: _*))
+    val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph { qg =>
+      val alreadySolvedExpandStepIds = qg.hints.collect {
+        case h: UsingExpandStepHint => h.stepId
+      }
+      val relationshipGroupVariables = pattern.relationshipVariableGroupings.map(_.group)
+      qg.addQuantifiedPathPattern(pattern)
+        .addPredicates(predicates: _*)
+        .addHints(hints.collect {
+          case h: UsingExpandStepHint
+            if LogicalPlanProducer.expandHintClaims(
+              h,
+              planFrom = startBinding.outer,
+              planTo = endBinding.outer,
+              planRelIds = relationshipGroupVariables,
+              planMode = expansionMode,
+              claimedStepIds = alreadySolvedExpandStepIds
+            ) => h
+        })
+    }
 
     val (rewrittenSourcePlan, rewrittenAllReduceAccumulators) =
       allReduceAccumulators.toVector.sortBy(_.position).foldLeft((source, Set.empty[AllReduceAccumulator])) {
@@ -5213,6 +5240,34 @@ object LogicalPlanProducer {
       case Some(ExpandHintInto) => planMode == ExpandInto
       case None                 => true
     }
+
+  /**
+   * True iff `hint` matches the node connection from `planFrom` to `planTo` via `planRelIds` with expansion mode
+   * `planMode`, given that `claimedStepIds` are already solved.
+   */
+  private def expandHintClaims(
+    hint: UsingExpandStepHint,
+    planFrom: LogicalVariable,
+    planTo: LogicalVariable,
+    planRelIds: Set[LogicalVariable],
+    planMode: ExpansionMode,
+    claimedStepIds: Set[UsingExpandStepId]
+  ): Boolean = {
+    val UsingExpandStepHint(hintFrom, hintTo, hintVia, hintMode, _, mustFollow) = hint
+
+    val endpointsMatch =
+      hintFrom.forall(_ == planFrom) &&
+        hintTo.forall(_ == planTo)
+
+    val viaMatches = hintVia.forall(planRelIds.contains)
+
+    val mustFollowSolved = mustFollow.subsetOf(claimedStepIds)
+
+    endpointsMatch &&
+    viaMatches &&
+    expandModeMatches(hintMode, planMode) &&
+    mustFollowSolved
+  }
 
   /**
    * This method assumes that no invalidation of provided order happens on the RHS.

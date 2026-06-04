@@ -400,6 +400,7 @@ class Cypher25VocabularyTest extends CypherFunSuite {
     Cypher25Parser.UUID -> "'UUID'",
     Cypher25Parser.VALUE -> "'VALUE'",
     Cypher25Parser.VARCHAR -> "'VARCHAR'",
+    Cypher25Parser.VIA -> "'VIA'",
     Cypher25Parser.VECTOR -> "'VECTOR'",
     Cypher25Parser.VECTOR_DISTANCE -> "'VECTOR_DISTANCE'",
     Cypher25Parser.VECTOR_NORM -> "'VECTOR_NORM'",

@@ -180,7 +180,8 @@ hint
    ;
 
 expandHintStep
-   : (ALL | INTO)? FROM variable TO variable
+   : (ALL | INTO)? FROM from=variable TO to=variable (VIA via=variable)?
+   | (ALL | INTO)? VIA via=variable
    ;
 
 mergeClause
@@ -2077,6 +2078,7 @@ unescapedLabelSymbolicNameString_
    | USERS
    | USING
    | VALUE
+   | VIA
    | VECTOR
    | VERBOSE
    | VERTEX

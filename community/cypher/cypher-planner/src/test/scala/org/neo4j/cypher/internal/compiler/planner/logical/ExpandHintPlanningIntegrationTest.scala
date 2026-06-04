@@ -27,6 +27,10 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExpandHints
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.SyntaxException
 
@@ -267,16 +271,39 @@ class ExpandHintPlanningIntegrationTest
   test("should throw HintException when chain ordering is infeasible") {
     // The hint `FROM b TO a, FROM c TO d, FROM b TO c` is impossible to fulfil:
     // step 2 (c→d) requires c in scope, but c is only introduced by step 3 (b→c),
-    // which the chain says must come last. No valid plan can claim all three steps.
+    // which the chain says must come last.
+    // We could only solve this via all nodes scan on c, which we never consider.
     val planner = plannerBuilderWithFeature.build()
 
-    a[HintException] should be thrownBy {
+    val ex = the[HintException] thrownBy {
       planner.plan(
         """MATCH (a)<--(b:A)-->(c)-->(d)
           |USING EXPAND FROM b TO a, FROM c TO d, FROM b TO c
           |RETURN a, b, c, d""".stripMargin
       )
     }
+    ex.getMessage should include("USING EXPAND")
+  }
+
+  test("should throw HintException when VIA chain ordering is infeasible") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    // The same topology as the above "should throw HintException when chain ordering is infeasible"
+    // test, but last hint is a VIA hints.
+    val ex = the[HintException] thrownBy {
+      planner.plan(
+        """MATCH (a)<-[r1]-(b:A)-[r2]->(c)-[r3]->(d)
+          |USING EXPAND FROM b TO a, FROM c TO d, VIA r2
+          |RETURN *""".stripMargin
+      )
+    }
+    ex.getMessage should include("USING EXPAND")
   }
 
   test("should constrain only hinted steps when chain covers a subset of pattern relationships") {
@@ -581,5 +608,250 @@ class ExpandHintPlanningIntegrationTest
       .get(state.logicalPlan.id)
       .allHints
       .collect { case h: UsingExpandStepHint => h } should not be empty
+  }
+
+  test("should disambiguate among multiple rels between same endpoints via VIA") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    val plan = planner.plan(
+      """MATCH (a)-[r]->(b), (a)-[s]->(b)
+        |USING EXPAND FROM a TO b VIA r
+        |RETURN *""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "r", "s")
+        .filter("NOT r = s")
+        .expandInto("(a)-[r]->(b)")
+        .allRelationshipsScan("(a)-[s]->(b)")
+        .build()
+    )
+  }
+
+  test("should treat USING EXPAND VIA as a pure ordering hint without direction enforcement") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    val plan = planner.plan(
+      """MATCH (a)-[r]->(b), (b)-[s]->(c)
+        |USING EXPAND VIA s, VIA r
+        |RETURN *""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "c", "r", "s")
+        .filter("NOT r = s")
+        .expandAll("(b)<-[r]-(a)")
+        .expandAll("(b)-[s]->(c)")
+        .allNodeScan("b")
+        .build()
+    )
+  }
+
+  test("should order a QPP relative to a simple expand sharing endpoints") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    val plan = planner.plan(
+      """MATCH (a)-[r]->(b), (a)-[s]->*(b)
+        |USING EXPAND VIA r, VIA s
+        |RETURN *""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "r", "s")
+        .filter("NOT r IN s")
+        .expand("(a)-[s*0..]->(b)", expandMode = ExpandInto)
+        .expandAll("(a)-[r]->(b)")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should enforce QPP iteration direction via FROM/TO + VIA") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .setLabelCardinality("A", 5)
+      .setRelationshipCardinality("(:A)-[]->()", 5)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    val state = planner.planState(
+      """MATCH (a:A)-[s]->*(b)
+        |USING EXPAND FROM b TO a VIA s
+        |RETURN *""".stripMargin
+    )
+
+    val plan = state.logicalPlan
+
+    val claimedExpandHints =
+      state.planningAttributes.solveds
+        .get(plan.id)
+        .allHints
+        .collect { case h: UsingExpandStepHint => h }
+
+    claimedExpandHints should not be empty
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "s")
+        .filter("a:A")
+        .expand("(b)<-[s*0..]-(a)")
+        .allNodeScan("b")
+        .build()
+    )
+  }
+
+  test("should be able to hint order of fixed length relationship and QPP") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    val trailParameters = TrailParameters(
+      1,
+      Unlimited,
+      "outer_1",
+      "outer_2",
+      "a",
+      "c",
+      Set(("a", "a"), ("b", "b"), ("c", "c")),
+      Set(("r", "r"), ("s", "s")),
+      Set("r", "s"),
+      Set(),
+      Set(),
+      false,
+      ExpandAll,
+      Set()
+    )
+
+    withClue("QPP first") {
+      val plan = planner.plan(
+        """MATCH (outer_1)((a)-[r]-(b)-[s]-(c))+(outer_2), (outer_1)-[t]->(outer_2)
+          |USING EXPAND FROM outer_1 TO outer_2 VIA s, FROM outer_1 TO outer_2 VIA t
+          |RETURN *""".stripMargin
+      )
+
+      plan should equal(
+        planner.planBuilder()
+          .produceResults("a", "b", "c", "outer_1", "outer_2", "r", "s", "t")
+          .filter("NOT t IN r + s")
+          .expandInto("(outer_1)-[t]->(outer_2)")
+          .repeatTrail(trailParameters)
+          .|.filter("NOT s = r", "isRepeatTrailUnique(s)")
+          .|.expandAll("(b)-[s]-(c)")
+          .|.filter("isRepeatTrailUnique(r)")
+          .|.expandAll("(a)-[r]-(b)")
+          .|.argument("a")
+          .allNodeScan("outer_1")
+          .build()
+      )
+    }
+
+    withClue("fixed relationship first") {
+      val plan = planner.plan(
+        """MATCH (outer_1)((a)-[r]-(b)-[s]-(c))+(outer_2), (outer_1)-[t]->(outer_2)
+          |USING EXPAND FROM outer_1 TO outer_2 VIA t, FROM outer_1 TO outer_2 VIA s
+          |RETURN *""".stripMargin
+      )
+
+      plan should equal(
+        planner.planBuilder()
+          .produceResults("a", "b", "c", "outer_1", "outer_2", "r", "s", "t")
+          .repeatTrail(trailParameters.copy(expansionMode = ExpandInto, previouslyBoundRelationships = Set("t")))
+          .|.filter("NOT s = r", "isRepeatTrailUnique(s)")
+          .|.expandAll("(b)-[s]-(c)")
+          .|.filter("isRepeatTrailUnique(r)")
+          .|.expandAll("(a)-[r]-(b)")
+          .|.argument("a")
+          .expandAll("(outer_1)-[t]->(outer_2)")
+          .allNodeScan("outer_1")
+          .build()
+      )
+    }
+  }
+
+  test("should hint same multi-rel QPP via either inner relationship group var") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    val planViaS = planner.plan(
+      """MATCH (outer_1)((a)-[r]-(b)-[s]-(c))+(outer_2)
+        |USING EXPAND FROM outer_1 TO outer_2 VIA s
+        |RETURN *""".stripMargin
+    ).stripProduceResults
+
+    val planViaR = planner.plan(
+      """MATCH (outer_1)((a)-[r]-(b)-[s]-(c))+(outer_2)
+        |USING EXPAND FROM outer_1 TO outer_2 VIA r
+        |RETURN *""".stripMargin
+    ).stripProduceResults
+
+    planViaS shouldEqual planViaR
+  }
+
+  test("should throw HintException when two VIA hints target the same Trail") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    val ex = intercept[HintException] {
+      planner.plan(
+        """MATCH (outer_1)((a)-[r]-(b)-[s]-(c))+(outer_2)
+          |USING EXPAND VIA r, VIA s
+          |RETURN *""".stripMargin
+      )
+    }
+    ex.getMessage should include("USING EXPAND")
+  }
+
+  test("should throw for non-sensical tuples") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(200)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 200)
+      .addSemanticFeature(ExpandHints)
+      .build()
+
+    for (
+      hint <- Seq(
+        // correct: "FROM b TO a VIA r1"
+        "FROM b TO a VIA r2",
+        "FROM b TO d VIA r1",
+        "FROM c TO a VIA r1"
+      )
+    ) {
+      withClue(hint) {
+        val ex = intercept[HintException] {
+          planner.plan(
+            s"""MATCH (a)<-[r1]-(b:A)-[r2]->(c)-[r3]->(d)
+               |USING EXPAND $hint
+               |RETURN *""".stripMargin
+          )
+        }
+        ex.getMessage should include("USING EXPAND")
+      }
+    }
   }
 }

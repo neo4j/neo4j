@@ -23,9 +23,12 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExpandHints
 import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
 import org.neo4j.cypher.internal.ast.semantics.liftSemanticEitherFunc
+import org.neo4j.cypher.internal.ast.semantics.liftSemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -33,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
@@ -130,15 +134,35 @@ case object ExpandHintAll extends ExpandHintMode
 case object ExpandHintInto extends ExpandHintMode
 
 /**
- * One comma-separated step of a `USING EXPAND INTO FROM x TO y, ALL FROM y TO z, ...` chain.
- * A step is a pair of node variables in the desired expand direction, with an optional
- * `ALL`/`INTO` mode qualifier.
+ * One comma-separated step of a `USING EXPAND ...` chain. At least one of
+ *   - `from` + `to`  (direction)
+ *   - `via`          (relationship-name discriminator)
+ * is required. This is enforced by the parser.
  */
 case class ExpandStep(
-  from: Variable,
-  to: Variable,
+  from: Option[Variable],
+  to: Option[Variable],
+  via: Option[Variable],
   mode: Option[ExpandHintMode]
-)(val position: InputPosition) extends ASTNode
+)(val position: InputPosition) extends ASTNode {
+
+  def variablesIterator: Iterator[Variable] =
+    from.iterator ++ to.iterator ++ via.iterator
+}
+
+object ExpandStep {
+
+  def byEndpoints(
+    from: Variable,
+    to: Variable,
+    via: Option[Variable] = None,
+    mode: Option[ExpandHintMode] = None
+  )(position: InputPosition): ExpandStep =
+    ExpandStep(Some(from), Some(to), via, mode)(position)
+
+  def byRelationship(via: Variable, mode: Option[ExpandHintMode] = None)(position: InputPosition): ExpandStep =
+    ExpandStep(from = None, to = None, via = Some(via), mode = mode)(position)
+}
 
 /**
  * [[AstHint]] for a `USING EXPAND ...` clause. One object per `USING` clause, holding
@@ -151,13 +175,23 @@ case class UsingExpandHint(
 )(val position: InputPosition)
     extends AstHint {
 
-  override def variables: NonEmptyList[Variable] = steps.flatMap(s => NonEmptyList(s.from, s.to))
+  override def variables: NonEmptyList[Variable] =
+    NonEmptyList.from(steps.iterator.flatMap(_.variablesIterator))
 
   override def semanticCheck: SemanticCheck = {
     requireFeatureSupport("`USING EXPAND`", ExpandHints, position) ifOkChain
       steps.foldSemanticCheck { step =>
-        ensureDefined(step.from) chain expectType(CTNode.covariant, step.from) chain
-          ensureDefined(step.to) chain expectType(CTNode.covariant, step.to)
+        val endpointTypeCheck =
+          step.from.foldSemanticCheck(v => ensureDefined(v) chain expectType(CTNode.covariant, v)) chain
+            step.to.foldSemanticCheck(v => ensureDefined(v) chain expectType(CTNode.covariant, v))
+
+        val viaTypeCheck =
+          step.via.foldSemanticCheck { v =>
+            ensureDefined(v) chain
+              expectType(CTRelationship.covariant | CTList(CTRelationship).covariant, v)
+          }
+
+        endpointTypeCheck chain viaTypeCheck
       }
   }
 }
@@ -178,14 +212,16 @@ case class UsingExpandStepId(position: InputPosition)
  * @param mustFollow to enforce the order of expands, these expands need to be solved before this
  */
 case class UsingExpandStepHint(
-  from: Variable,
-  to: Variable,
+  from: Option[Variable],
+  to: Option[Variable],
+  via: Option[Variable],
   mode: Option[ExpandHintMode],
   stepId: UsingExpandStepId,
   mustFollow: Set[UsingExpandStepId]
 ) extends IrHint {
 
-  override def variables: NonEmptyList[Variable] = NonEmptyList(from, to)
+  override def variables: NonEmptyList[Variable] =
+    NonEmptyList.from(from.toList ++ to.toList ++ via.toList)
 }
 
 sealed trait UsingStatefulShortestPathHint extends IrHint

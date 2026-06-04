@@ -257,7 +257,8 @@ hint
    ;
 
 expandHintStep
-   : (ALL | INTO)? FROM variable TO variable
+   : (ALL | INTO)? FROM from=variable TO to=variable (VIA via=variable)?
+   | (ALL | INTO)? VIA via=variable
    ;
 
 mergeClause
@@ -2492,6 +2493,7 @@ unescapedSymbolicNameString_
    | USERS
    | USING
    | VALUE
+   | VIA
    | VECTOR
    | VECTOR_DISTANCE
    | VECTOR_NORM

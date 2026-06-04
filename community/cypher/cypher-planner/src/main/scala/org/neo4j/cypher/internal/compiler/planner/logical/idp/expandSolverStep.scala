@@ -478,7 +478,8 @@ object expandSolverStep {
       reverseGroupVariableProjections = !fromLeft,
       expansionMode,
       pathMode,
-      allReduceAccumulators
+      allReduceAccumulators,
+      hints = queryGraph.hints
     )
 
     val bothEndpointsBoundInSourcePlan =

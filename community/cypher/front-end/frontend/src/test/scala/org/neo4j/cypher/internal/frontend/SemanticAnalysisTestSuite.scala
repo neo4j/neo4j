@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.test_helpers.CaretPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.InputPositionFromCaret
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -82,6 +83,38 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite with CypherVersionTestSup
   private val defaultDatabaseName = "mock"
 
   def messageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
+
+  /**
+   * Takes a queryWithCaret and extracts the caret's (^) position via `CaretPosition`.
+   * This way, one can chain this with `hasErrorWithMarkedPosition`.
+   */
+  def runWithCarets(
+    queryWithCaret: String,
+    pipeline: Pipeline = semanticAnalysisTwice(),
+    isComposite: Boolean = false,
+    sessionDatabase: String = defaultDatabaseName,
+    state: BaseState => BaseState = s => s,
+    semanticFeatures: Seq[SemanticFeature] = Seq.empty,
+    disabledVersions: Set[CypherVersion] = Set.empty
+  ) = {
+    val caretPosition = CaretPosition(queryWithCaret)
+    val positions = caretPosition.positions.map {
+      case InputPositionFromCaret.Simple(offset, line, column) =>
+        InputPosition.Simple(offset, line, column)
+      case InputPositionFromCaret.Range(offset, line, column, inputLength) =>
+        InputPosition.Range(offset, line, column, inputLength)
+    }
+    run(
+      caretPosition.cleanInput,
+      Some(positions),
+      pipeline,
+      isComposite,
+      sessionDatabase,
+      state,
+      semanticFeatures,
+      disabledVersions
+    )
+  }
 
   def run(
     query: String,
@@ -320,14 +353,16 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite with CypherVersionTestSup
     def hasError(gql: GqlError, msg: String, pos: Pos): Self = hasErrors(SemanticError(gql, msg, pos))
 
     def hasErrorWithMarkedPosition(gql: InputPosition => GqlError, msg: String): Self = {
-      val pos = analyse.extractedPositions.get.head
+      val pos =
+        analyse.extractedPositions.getOrElse(throw new IllegalStateException("No extracted positions found.")).head
       hasErrors(SemanticError(gql(pos), msg, pos))
     }
 
     def hasAtLeastError(gql: GqlError, msg: String, pos: Pos): Self = hasAtLeastErrors(SemanticError(gql, msg, pos))
 
     def hasAtLeastErrorWithMarkedPosition(gql: InputPosition => GqlError, msg: String): Self = {
-      val pos = analyse.extractedPositions.get.head
+      val pos =
+        analyse.extractedPositions.getOrElse(throw new IllegalStateException("No extracted positions found.")).head
       hasAtLeastErrors(SemanticError(gql(pos), msg, pos))
     }
 

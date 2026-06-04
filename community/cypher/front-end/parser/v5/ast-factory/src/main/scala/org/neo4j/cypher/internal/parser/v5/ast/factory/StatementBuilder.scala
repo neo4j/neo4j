@@ -452,13 +452,14 @@ trait StatementBuilder extends Cypher5ParserListener {
   }
 
   final override def exitExpandHintStep(ctx: Cypher5Parser.ExpandHintStepContext): Unit = {
-    val from: Variable = ctx.variable(0).ast()
-    val to: Variable = ctx.variable(1).ast()
+    val from: Option[Variable] = astOpt[Variable](ctx.from)
+    val to: Option[Variable] = astOpt[Variable](ctx.to)
+    val via: Option[Variable] = astOpt[Variable](ctx.via)
     val mode =
       if (ctx.ALL() != null) Some(ExpandHintAll)
       else if (ctx.INTO() != null) Some(ExpandHintInto)
       else None
-    ctx.ast = ExpandStep(from, to, mode)(pos(ctx))
+    ctx.ast = ExpandStep(from, to, via, mode)(pos(ctx))
   }
 
   final override def exitNonEmptyNameList(ctx: Cypher5Parser.NonEmptyNameListContext): Unit = {

@@ -105,27 +105,35 @@ class HintsParserTest extends AstParsingTestBase {
 
   test("MATCH (a)-->(b) USING EXPAND FROM a TO b") {
     parses[Statements].containing[UsingExpandHint](
-      UsingExpandHint(NonEmptyList(ExpandStep(varFor("a"), varFor("b"), None)(pos)))(pos)
+      UsingExpandHint(NonEmptyList(ExpandStep.byEndpoints(varFor("a"), varFor("b"), mode = None)(pos)))(pos)
     )
   }
 
   test("MATCH (a)-->(b) USING EXPAND ALL FROM a TO b") {
     parses[Statements].containing[UsingExpandHint](
-      UsingExpandHint(NonEmptyList(ExpandStep(varFor("a"), varFor("b"), Some(ExpandHintAll))(pos)))(pos)
+      UsingExpandHint(NonEmptyList(ExpandStep.byEndpoints(
+        varFor("a"),
+        varFor("b"),
+        mode = Some(ExpandHintAll)
+      )(pos)))(pos)
     )
   }
 
   test("MATCH (a)-->(b) USING EXPAND INTO FROM a TO b") {
     parses[Statements].containing[UsingExpandHint](
-      UsingExpandHint(NonEmptyList(ExpandStep(varFor("a"), varFor("b"), Some(ExpandHintInto))(pos)))(pos)
+      UsingExpandHint(NonEmptyList(ExpandStep.byEndpoints(
+        varFor("a"),
+        varFor("b"),
+        mode = Some(ExpandHintInto)
+      )(pos)))(pos)
     )
   }
 
   test("MATCH (a)-->(b)-->(c) USING EXPAND FROM a TO b, FROM b TO c") {
     parses[Statements].containing[UsingExpandHint](
       UsingExpandHint(NonEmptyList(
-        ExpandStep(varFor("a"), varFor("b"), None)(pos),
-        ExpandStep(varFor("b"), varFor("c"), None)(pos)
+        ExpandStep.byEndpoints(varFor("a"), varFor("b"), mode = None)(pos),
+        ExpandStep.byEndpoints(varFor("b"), varFor("c"), mode = None)(pos)
       ))(pos)
     )
   }
@@ -133,6 +141,58 @@ class HintsParserTest extends AstParsingTestBase {
   test("MATCH (expand)-->(into) RETURN expand, into") {
     // accepts expand and into as identifiers
     parses[Statements]
+  }
+
+  test("MATCH (a)-[r]->(b) USING EXPAND FROM a TO b VIA r") {
+    parses[Statements].containing[UsingExpandHint](
+      UsingExpandHint(NonEmptyList(
+        ExpandStep(Some(varFor("a")), Some(varFor("b")), Some(varFor("r")), None)(pos)
+      ))(pos)
+    )
+  }
+
+  test("MATCH (a)-[r]->(b) USING EXPAND VIA r") {
+    parses[Statements].containing[UsingExpandHint](
+      UsingExpandHint(NonEmptyList(
+        ExpandStep(None, None, Some(varFor("r")), None)(pos)
+      ))(pos)
+    )
+  }
+
+  test("MATCH (a)-[r]->(b) USING EXPAND INTO VIA r") {
+    parses[Statements].containing[UsingExpandHint](
+      UsingExpandHint(NonEmptyList(
+        ExpandStep(None, None, Some(varFor("r")), Some(ExpandHintInto))(pos)
+      ))(pos)
+    )
+  }
+
+  test("MATCH (a)-[r]->(b) USING EXPAND ALL VIA r") {
+    parses[Statements].containing[UsingExpandHint](
+      UsingExpandHint(NonEmptyList(
+        ExpandStep(None, None, Some(varFor("r")), Some(ExpandHintAll))(pos)
+      ))(pos)
+    )
+  }
+
+  test("MATCH (a)-[r]->(b)-[s]->(c) USING EXPAND FROM a TO b VIA r, VIA s") {
+    parses[Statements].containing[UsingExpandHint](
+      UsingExpandHint(NonEmptyList(
+        ExpandStep(Some(varFor("a")), Some(varFor("b")), Some(varFor("r")), None)(pos),
+        ExpandStep(None, None, Some(varFor("s")), None)(pos)
+      ))(pos)
+    )
+  }
+
+  test("MATCH (via)-->(a) RETURN via, a") {
+    // VIA is a non-reserved keyword in both Cypher 5 and Cypher 25
+    parses[Statements]
+  }
+
+  test("MATCH (a)-->(b) USING EXPAND ALL RETURN *") {
+    // Grammar requires at least one of FROM/TO or VIA per expandHintStep,
+    // so `USING EXPAND ALL` on its own is rejected at parse time.
+    failsParsing[Statements]
   }
 
   test("can parse multiple hints") {

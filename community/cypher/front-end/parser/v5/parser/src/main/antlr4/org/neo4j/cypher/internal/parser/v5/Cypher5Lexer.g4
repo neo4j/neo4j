@@ -1262,6 +1262,10 @@ VARCHAR
    : V A R C H A R
    ;
 
+VIA
+   : V I A
+   ;
+
 VECTOR
    : V E C T O R
    ;

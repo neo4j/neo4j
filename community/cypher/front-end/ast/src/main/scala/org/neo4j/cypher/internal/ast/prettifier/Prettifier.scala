@@ -1315,28 +1315,12 @@ case class Prettifier(
         // AST-level hint.
         case UsingExpandHint(steps) =>
           val renderedSteps =
-            steps.iterator
-              .map { step =>
-                Seq(
-                  renderExpandMode(step.mode),
-                  "FROM ",
-                  expr(step.from, shouldBacktickEmpty = true),
-                  " TO ",
-                  expr(step.to, shouldBacktickEmpty = true)
-                ).mkString
-              }
-              .mkString(", ")
+            steps.iterator.map(s => renderExpandStep(s.mode, s.from, s.to, s.via)).mkString(", ")
           s"${INDENT}USING EXPAND $renderedSteps"
 
         // IR-level hint. This is what will be reported on in VerifyBestPlan.
-        case UsingExpandStepHint(from, to, mode, _, _) => Seq(
-            s"${INDENT}USING EXPAND ",
-            renderExpandMode(mode),
-            "FROM ",
-            expr(from, shouldBacktickEmpty = true),
-            " TO ",
-            expr(to, shouldBacktickEmpty = true)
-          ).mkString
+        case h: UsingExpandStepHint =>
+          s"${INDENT}USING EXPAND ${renderExpandStep(h.mode, h.from, h.to, h.via)}"
 
         // Note: This hint cannot be written in Cypher.
         case UsingStatefulShortestPathAll(vs) => Seq(
@@ -1352,10 +1336,29 @@ case class Prettifier(
       }
     }
 
-    private def renderExpandMode(mode: Option[ExpandHintMode]): String = mode match {
-      case Some(ExpandHintAll)  => "ALL "
-      case Some(ExpandHintInto) => "INTO "
-      case None                 => ""
+    private def renderExpandMode(mode: ExpandHintMode): String = mode match {
+      case ExpandHintAll  => "ALL"
+      case ExpandHintInto => "INTO"
+    }
+
+    private def renderExpandStep(
+      mode: Option[ExpandHintMode],
+      from: Option[Variable],
+      to: Option[Variable],
+      via: Option[Variable]
+    ): String = {
+      val modeStr = mode.map(renderExpandMode)
+      val endpoints = (from, to) match {
+        case (Some(f), Some(t)) =>
+          Some(s"FROM ${expr(f, shouldBacktickEmpty = true)} TO ${expr(t, shouldBacktickEmpty = true)}")
+        case (None, None) => None
+        case (Some(_), None) | (None, Some(_)) =>
+          throw new IllegalStateException(
+            "ExpandStep with partial endpoint specification (only one of FROM/TO set) — grammar/semantic check should prevent this"
+          )
+      }
+      val viaStr = via.map(v => s"VIA ${expr(v, shouldBacktickEmpty = true)}")
+      Seq(modeStr, endpoints, viaStr).flatten.mkString(" ")
     }
 
     def asString(ma: MergeAction): String = ma match {
