@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ class LongEncoderTest {
         long invalidValue = 0x01ABC123_4567890FL;
 
         // THEN
-        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> encoder.encode(invalidValue));
+        assertThatExceptionOfType(ArithmeticException.class).isThrownBy(() -> encoder.encode(invalidValue));
     }
 
     @Test
@@ -59,6 +60,16 @@ class LongEncoderTest {
         long invalidValue = -1;
 
         // THEN
-        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> encoder.encode(invalidValue));
+        assertThatExceptionOfType(ArithmeticException.class).isThrownBy(() -> encoder.encode(invalidValue));
+    }
+
+    @Test
+    void shouldEncodeMaxUsableIdButRejectFirstReservedId() {
+        // GIVEN
+        Encoder encoder = new LongEncoder();
+
+        // WHEN/THEN the largest value that fits in the id bits encodes, the next one steals a reserved bit
+        assertThatCode(() -> encoder.encode(LongEncoder.ID_BITS)).doesNotThrowAnyException();
+        assertThatExceptionOfType(ArithmeticException.class).isThrownBy(() -> encoder.encode(LongEncoder.ID_BITS + 1));
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import static java.lang.Math.log10;
 import static java.lang.Math.max;
-import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
  * {@link Encoder} that assumes that the entered strings can be parsed to {@link Long} directly.
@@ -34,11 +33,10 @@ public class LongEncoder implements Encoder {
     @Override
     public long encode(Object value) {
         long longValue = convertToLong(value);
-        checkArgument(
-                (longValue & RESERVED_BITS) == 0,
-                "Invalid integer ID %d, it must be %d <= id <= 0",
-                longValue,
-                ID_BITS);
+        if ((longValue & RESERVED_BITS) != 0) {
+            throw new ArithmeticException(
+                    "Invalid integer ID %d, it must be %d <= id <= 0".formatted(longValue, ID_BITS));
+        }
         long length = numberOfDigits(longValue);
         length = length << 57;
         long returnVal = length | longValue;
