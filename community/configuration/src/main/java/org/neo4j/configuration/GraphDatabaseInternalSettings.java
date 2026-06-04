@@ -2125,6 +2125,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(any(min(gibiBytes(1)), is(0L)))
             .build();
 
+    @Internal
+    @Description("Enables use of new and not finalized BackupZstdFormatV3 for testing")
+    public static final Setting<Boolean> use_dev_compress_backup_format = newBuilder(
+                    "internal.db.backup.use_new_compressed_backup_format", BOOL, false)
+            .build();
+
     // Helper method
     public static HeapEstimatorCacheConfig extractCustomHeapEstimatorCacheConfig(Config config) {
         return new HeapEstimatorCacheConfig(

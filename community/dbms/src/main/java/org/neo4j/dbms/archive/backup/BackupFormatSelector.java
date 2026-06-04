@@ -32,10 +32,18 @@ public class BackupFormatSelector {
 
     public static List<BackupCompressionFormat> availableFormats() {
         return List.of(
-                new BackupZstdFormatV1(), new BackupTarFormatV1(), new BackupZstdFormatV2(), new BackupTarFormatV2());
+                new BackupZstdFormatV1(),
+                new BackupTarFormatV1(),
+                new BackupZstdFormatV2(),
+                new BackupTarFormatV2(),
+                new BackupZstdFormatV3());
     }
 
-    public static BackupCompressionFormat selectWriteFormat(boolean compress) {
+    public static BackupCompressionFormat selectWriteFormat(boolean compress, boolean useNewFormat) {
+        // Do remove this check and the added boolean once V3 format is finalized
+        if (useNewFormat && compress) {
+            return new BackupZstdFormatV3();
+        }
         return compress ? new BackupZstdFormatV2() : new BackupTarFormatV2();
     }
 
@@ -58,6 +66,9 @@ public class BackupFormatSelector {
     }
 
     public static BackupCompressionFormat selectReadFormat(byte[] bytes) {
+        if (BackupZstdFormatV3.MAGIC_HEADER.matches(bytes)) {
+            return new BackupZstdFormatV3();
+        }
         if (BackupZstdFormatV2.MAGIC_HEADER.matches(bytes)) {
             return new BackupZstdFormatV2();
         }
