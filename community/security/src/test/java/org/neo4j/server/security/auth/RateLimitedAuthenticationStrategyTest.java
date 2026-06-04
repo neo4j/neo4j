@@ -21,7 +21,6 @@ package org.neo4j.server.security.auth;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_lock_time;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
@@ -182,7 +181,7 @@ class RateLimitedAuthenticationStrategyTest {
 
         int attempts = ThreadLocalRandom.current().nextInt(5, 100);
         for (int i = 0; i < attempts; i++) {
-            assertEquals(AuthenticationResult.FAILURE, authStrategy.authenticate(user, password("wrong")));
+            assertThat(authStrategy.authenticate(user, password("wrong"))).isEqualTo(AuthenticationResult.FAILURE);
         }
     }
 

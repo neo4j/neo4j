@@ -19,9 +19,7 @@
  */
 package org.neo4j.test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -66,15 +64,17 @@ public class AuthTokenUtil {
     }
 
     public static void assertAuthTokenMatches(Map<String, Object> expected, Map<String, Object> actual) {
-        assertFalse(expected == null ^ actual == null);
-        assertEquals(expected.keySet(), actual.keySet());
+        assertThat(expected == null ^ actual == null).isFalse();
+        assertThat(actual).containsOnlyKeys(expected.keySet());
         expected.forEach((key, expectedValue) -> {
             Object actualValue = actual.get(key);
             if (AuthToken.containsSensitiveInformation(key)) {
                 byte[] expectedByteArray = expectedValue != null ? UTF8.encode((String) expectedValue) : null;
-                assertArrayEquals(expectedByteArray, (byte[]) actualValue);
+                assertThat((byte[]) actualValue)
+                        .as("value for sensitive key '%s' ", key)
+                        .isEqualTo(expectedByteArray);
             } else {
-                assertEquals(expectedValue, actualValue);
+                assertThat(actualValue).as("value for key '%s'", key).isEqualTo(expectedValue);
             }
         });
     }

@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
@@ -47,11 +45,11 @@ class ShiroAuthenticationInfoTest {
     void shouldChangeMergeMatrixIfAuthenticationResultEnumChanges() {
         // These are the assumptions made for ShiroAuthenticationInfo.mergeMatrix[][]
         // which have to stay in sync with the enum
-        assertEquals(AuthenticationResult.SUCCESS.ordinal(), 0);
-        assertEquals(AuthenticationResult.FAILURE.ordinal(), 1);
-        assertEquals(AuthenticationResult.TOO_MANY_ATTEMPTS.ordinal(), 2);
-        assertEquals(AuthenticationResult.PASSWORD_CHANGE_REQUIRED.ordinal(), 3);
-        assertEquals(4, AuthenticationResult.values().length);
+        assertThat(AuthenticationResult.SUCCESS.ordinal()).isEqualTo(0);
+        assertThat(AuthenticationResult.FAILURE.ordinal()).isEqualTo(1);
+        assertThat(AuthenticationResult.TOO_MANY_ATTEMPTS.ordinal()).isEqualTo(2);
+        assertThat(AuthenticationResult.PASSWORD_CHANGE_REQUIRED.ordinal()).isEqualTo(3);
+        assertThat(AuthenticationResult.values()).hasSize(4);
     }
 
     @Test
@@ -59,7 +57,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", SUCCESS);
         info.merge(successInfo);
 
-        assertEquals(SUCCESS, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(SUCCESS);
     }
 
     @Test
@@ -67,7 +65,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", FAILURE);
         info.merge(failureInfo);
 
-        assertEquals(FAILURE, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(FAILURE);
     }
 
     @Test
@@ -75,7 +73,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", TOO_MANY_ATTEMPTS);
         info.merge(tooManyAttemptsInfo);
 
-        assertEquals(TOO_MANY_ATTEMPTS, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(TOO_MANY_ATTEMPTS);
     }
 
     @Test
@@ -83,7 +81,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", PASSWORD_CHANGE_REQUIRED);
         info.merge(pwChangeRequiredInfo);
 
-        assertEquals(PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(PASSWORD_CHANGE_REQUIRED);
     }
 
     @Test
@@ -91,7 +89,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", FAILURE);
         info.merge(successInfo);
 
-        assertEquals(SUCCESS, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(SUCCESS);
     }
 
     @Test
@@ -99,7 +97,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", FAILURE);
         info.merge(tooManyAttemptsInfo);
 
-        assertEquals(TOO_MANY_ATTEMPTS, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(TOO_MANY_ATTEMPTS);
     }
 
     @Test
@@ -107,7 +105,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", FAILURE);
         info.merge(pwChangeRequiredInfo);
 
-        assertEquals(PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(PASSWORD_CHANGE_REQUIRED);
     }
 
     @Test
@@ -115,7 +113,7 @@ class ShiroAuthenticationInfoTest {
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", FAILURE);
         info.merge(pwChangeRequiredInfo);
 
-        assertEquals(PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult());
+        assertThat(info.getAuthenticationResult()).isEqualTo(PASSWORD_CHANGE_REQUIRED);
     }
 
     @Test
@@ -138,6 +136,6 @@ class ShiroAuthenticationInfoTest {
         info.merge(info2);
         info.merge(info3);
 
-        assertThat(info.validityChecks, containsInAnyOrder(validityCheck1, validityCheck2));
+        assertThat(info.validityChecks).containsExactlyInAnyOrder(validityCheck1, validityCheck2);
     }
 }

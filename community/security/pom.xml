@@ -32,11 +32,6 @@
       <artifactId>picocli</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <!-- Should be test scope, but intellij do not like that -->
-    </dependency>
-    <dependency>
       <groupId>org.apache.shiro</groupId>
       <artifactId>shiro-core</artifactId>
     </dependency>
@@ -56,21 +51,9 @@
       <version>${shiro.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.collections</groupId>
       <artifactId>eclipse-collections-api</artifactId>
       <version>${eclipse-collections.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -136,6 +119,16 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-resource</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>

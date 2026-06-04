@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.security.auth.LegacyCredential.INACCESSIBLE;
 
 import org.junit.jupiter.api.Test;
@@ -32,17 +29,17 @@ class LegacyCredentialTest {
     @Test
     void testMatchesPassword() {
         LegacyCredential credential = LegacyCredential.forPassword("foo");
-        assertTrue(credential.matchesPassword("foo"));
-        assertFalse(credential.matchesPassword("fooo"));
-        assertFalse(credential.matchesPassword("fo"));
-        assertFalse(credential.matchesPassword("bar"));
+        assertThat(credential.matchesPassword("foo")).isTrue();
+        assertThat(credential.matchesPassword("fooo")).isFalse();
+        assertThat(credential.matchesPassword("fo")).isFalse();
+        assertThat(credential.matchesPassword("bar")).isFalse();
     }
 
     @Test
     void testEquals() {
         LegacyCredential credential = LegacyCredential.forPassword("foo");
         LegacyCredential sameCredential = new LegacyCredential(credential.salt(), credential.passwordHash());
-        assertEquals(credential, sameCredential);
+        assertThat(credential).isEqualTo(sameCredential);
     }
 
     @Test
@@ -50,15 +47,15 @@ class LegacyCredentialTest {
         LegacyCredential credential = new LegacyCredential(INACCESSIBLE.salt(), INACCESSIBLE.passwordHash());
 
         // equals
-        assertEquals(INACCESSIBLE, credential);
-        assertEquals(INACCESSIBLE, credential);
-        assertEquals(INACCESSIBLE, INACCESSIBLE);
-        assertNotEquals(INACCESSIBLE, LegacyCredential.forPassword(""));
-        assertNotEquals(INACCESSIBLE, LegacyCredential.forPassword(""));
+        assertThat(credential).isEqualTo(INACCESSIBLE);
+        assertThat(credential).isEqualTo(INACCESSIBLE);
+        assertThat(INACCESSIBLE).isEqualTo(INACCESSIBLE);
+        assertThat(LegacyCredential.forPassword("")).isNotEqualTo(INACCESSIBLE);
+        assertThat(LegacyCredential.forPassword("")).isNotEqualTo(INACCESSIBLE);
 
         // matchesPassword
-        assertFalse(INACCESSIBLE.matchesPassword(new String(new byte[] {})));
-        assertFalse(INACCESSIBLE.matchesPassword("foo"));
-        assertFalse(INACCESSIBLE.matchesPassword(""));
+        assertThat(INACCESSIBLE.matchesPassword(new String(new byte[] {}))).isFalse();
+        assertThat(INACCESSIBLE.matchesPassword("foo")).isFalse();
+        assertThat(INACCESSIBLE.matchesPassword("")).isFalse();
     }
 }

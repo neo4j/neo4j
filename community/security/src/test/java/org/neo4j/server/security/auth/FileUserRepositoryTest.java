@@ -19,12 +19,9 @@
  */
 package org.neo4j.server.security.auth;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -212,11 +209,12 @@ class FileUserRepositoryTest {
         User user = new User("jake", null, LegacyCredential.INACCESSIBLE, true, false);
 
         // When
-        var e = assertThrows(IOException.class, () -> users.create(user));
-        assertSame(exception, e);
+        assertThatExceptionOfType(IOException.class)
+                .isThrownBy(() -> users.create(user))
+                .isSameAs(exception);
 
         // Then
-        assertFalse(crashingFileSystem.fileExists(authFile));
+        assertThat(crashingFileSystem.fileExists(authFile)).isFalse();
         assertThat(crashingFileSystem.listFiles(authFile.getParent()).length).isEqualTo(0);
     }
 
@@ -267,7 +265,7 @@ class FileUserRepositoryTest {
             latch.startAndWaitForAllToStart();
 
             // Then
-            assertNotNull(users.getUserByName("oskar"));
+            assertThat(users.getUserByName("oskar")).isNotNull();
 
             latch.finish();
             setUsers.get();

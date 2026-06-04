@@ -19,10 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -31,6 +28,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Locale;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -167,13 +165,14 @@ class SetInitialPasswordCommandIT {
 
     private void assertAuthIniFile(String password, boolean passwordChangeRequired) throws Throwable {
         Path authIniFile = getAuthFile("auth.ini");
-        assertTrue(fileSystem.fileExists(authIniFile));
+        assertThat(fileSystem.fileExists(authIniFile)).isTrue();
         FileUserRepository userRepository = new FileUserRepository(
                 fileSystem, authIniFile, NullLogProvider.getInstance(), EmptyMemoryTracker.INSTANCE);
         userRepository.start();
         User neo4j = userRepository.getUserByName(AuthManager.INITIAL_USER_NAME);
-        assertNotNull(neo4j);
-        assertTrue(neo4j.credential().value().matchesPassword(UTF8.encode(password)));
+        assertThat(neo4j).isNotNull();
+        assertThat(neo4j.credential().value().matchesPassword(UTF8.encode(password)))
+                .isTrue();
         assertThat(neo4j.passwordChangeRequired()).isEqualTo(passwordChangeRequired);
     }
 
@@ -189,7 +188,10 @@ class SetInitialPasswordCommandIT {
     }
 
     private void createFile(Path path, String content) throws IOException {
-        String updatedContent = IS_OS_WINDOWS ? content.replace("\\", "/") : content;
+        String updatedContent =
+                System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
+                        ? content.replace("\\", "/")
+                        : content;
         Path tmpFilePath = fileSystem.createTempFile(testDirectory.homePath(), "", "");
         fileSystem.write(tmpFilePath).write(ByteBuffer.wrap(updatedContent.getBytes()));
         fileSystem.copyFile(tmpFilePath, path);

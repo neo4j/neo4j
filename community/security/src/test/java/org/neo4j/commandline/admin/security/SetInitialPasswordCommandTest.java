@@ -20,10 +20,7 @@
 package org.neo4j.commandline.admin.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayOutputStream;
@@ -108,7 +105,7 @@ class SetInitialPasswordCommandTest {
     @Test
     void shouldSetInitialPassword() throws Throwable {
         // Given
-        assertFalse(fileSystem.fileExists(authInitFile));
+        assertThat(fileSystem.fileExists(authInitFile)).isFalse();
 
         // When
         CommandLine.populateCommand(command, "12345678");
@@ -121,43 +118,43 @@ class SetInitialPasswordCommandTest {
     @Test
     void shouldFailToSetShortInitialPassword() {
         // Given
-        assertFalse(fileSystem.fileExists(authInitFile));
+        assertThat(fileSystem.fileExists(authInitFile)).isFalse();
 
         // When
         CommandLine.populateCommand(command, "123");
 
         // Then
-        Exception e = assertThrows(InvalidPasswordException.class, () -> command.execute());
-
-        assertThat(e.getStackTrace().length).isEqualTo(0);
+        assertThatExceptionOfType(InvalidPasswordException.class)
+                .isThrownBy(() -> command.execute())
+                .satisfies(e -> assertThat(e.getStackTrace()).isEmpty());
     }
 
     @Test
     void shouldFailToSetShortInitialPasswordOneCharUseTwoBytes() {
         // Given
-        assertFalse(fileSystem.fileExists(authInitFile));
+        assertThat(fileSystem.fileExists(authInitFile)).isFalse();
 
         // When
         CommandLine.populateCommand(command, "neo4j*£");
 
         // Then
-        Exception e = assertThrows(InvalidPasswordException.class, () -> command.execute());
-
-        assertThat(e.getStackTrace().length).isEqualTo(0);
+        assertThatExceptionOfType(InvalidPasswordException.class)
+                .isThrownBy(() -> command.execute())
+                .satisfies(e -> assertThat(e.getStackTrace()).isEmpty());
     }
 
     @Test
     void shouldFailToSetShortInitialPasswordCharactersUsingFourBytesEach() {
         // Given
-        assertFalse(fileSystem.fileExists(authInitFile));
+        assertThat(fileSystem.fileExists(authInitFile)).isFalse();
 
         // When
         CommandLine.populateCommand(command, "𓃠𓃠𓃠𓃠");
 
         // Then
-        Exception e = assertThrows(InvalidPasswordException.class, () -> command.execute());
-
-        assertThat(e.getStackTrace().length).isEqualTo(0);
+        assertThatExceptionOfType(InvalidPasswordException.class)
+                .isThrownBy(() -> command.execute())
+                .satisfies(e -> assertThat(e.getStackTrace()).isEmpty());
     }
 
     @Test
@@ -179,17 +176,18 @@ class SetInitialPasswordCommandTest {
         CommandLine.populateCommand(command, "neo4j");
 
         // Then
-        assertThrows(InvalidPasswordException.class, () -> command.execute());
+        assertThatExceptionOfType(InvalidPasswordException.class).isThrownBy(() -> command.execute());
     }
 
     private void assertAuthIniFile(String password) throws Throwable {
-        assertTrue(fileSystem.fileExists(authInitFile));
+        assertThat(fileSystem.fileExists(authInitFile)).isTrue();
         FileUserRepository userRepository = new FileUserRepository(
                 fileSystem, authInitFile, NullLogProvider.getInstance(), EmptyMemoryTracker.INSTANCE);
         userRepository.start();
         User neo4j = userRepository.getUserByName(AuthManager.INITIAL_USER_NAME);
-        assertNotNull(neo4j);
-        assertTrue(neo4j.credential().value().matchesPassword(UTF8.encode(password)));
-        assertFalse(neo4j.passwordChangeRequired());
+        assertThat(neo4j).isNotNull();
+        assertThat(neo4j.credential().value().matchesPassword(UTF8.encode(password)))
+                .isTrue();
+        assertThat(neo4j.passwordChangeRequired()).isFalse();
     }
 }

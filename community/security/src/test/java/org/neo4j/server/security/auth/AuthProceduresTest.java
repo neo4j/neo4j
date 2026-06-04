@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.StaticAccessMode;
 import org.neo4j.server.security.auth.AuthProcedures.UserResult;
 
-public class AuthProceduresTest {
+class AuthProceduresTest {
     private AuthProcedures procedures;
 
     @BeforeEach

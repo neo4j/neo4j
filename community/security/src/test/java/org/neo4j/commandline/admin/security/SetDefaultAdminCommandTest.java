@@ -20,8 +20,6 @@
 package org.neo4j.commandline.admin.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.server.security.auth.CommunitySecurityModule.getInitialUserRepositoryFile;
 
@@ -97,7 +95,7 @@ class SetDefaultAdminCommandTest {
     @Test
     void shouldSetDefaultAdmin() throws Throwable {
         // Given
-        assertFalse(fileSystem.fileExists(adminIniFile));
+        assertThat(fileSystem.fileExists(adminIniFile)).isFalse();
 
         // When
         CommandLine.populateCommand(command, "jake");
@@ -110,7 +108,7 @@ class SetDefaultAdminCommandTest {
 
     @SuppressWarnings("SameParameterValue")
     private void assertAdminIniFile(String username) throws Throwable {
-        assertTrue(fileSystem.fileExists(adminIniFile));
+        assertThat(fileSystem.fileExists(adminIniFile)).isTrue();
         FileUserRepository userRepository = new FileUserRepository(
                 fileSystem, adminIniFile, NullLogProvider.getInstance(), EmptyMemoryTracker.INSTANCE);
         userRepository.start();
