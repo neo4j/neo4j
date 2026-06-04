@@ -19,7 +19,7 @@
  */
 package org.neo4j.test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
@@ -61,11 +61,9 @@ class TestDatabaseManagementServiceBuilderTest {
         DependencyResolver resolver = database.getDependencyResolver();
         DatabaseContextProvider<?> databaseContextProvider = resolver.resolveDependency(DatabaseContextProvider.class);
 
-        assertTrue(databaseContextProvider
-                .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
-                .isPresent());
-        assertTrue(databaseContextProvider
-                .getDatabaseContext(DEFAULT_DATABASE_NAME)
-                .isPresent());
+        assertThat(databaseContextProvider.getDatabaseContext(NAMED_SYSTEM_DATABASE_ID))
+                .isPresent();
+        assertThat(databaseContextProvider.getDatabaseContext(DEFAULT_DATABASE_NAME))
+                .isPresent();
     }
 }

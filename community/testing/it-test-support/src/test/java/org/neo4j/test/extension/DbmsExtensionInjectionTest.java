@@ -19,10 +19,7 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,21 +57,21 @@ class DbmsExtensionInjectionTest {
 
     @Test
     void shouldInject() {
-        assertNotNull(fs);
-        assertNotNull(testDirectory);
-        assertNotNull(dbms);
-        assertNotNull(db);
-        assertNotNull(dbApi);
-        assertNotNull(neo4jLayout);
-        assertNotNull(databaseLayout);
+        assertThat(fs).isNotNull();
+        assertThat(testDirectory).isNotNull();
+        assertThat(dbms).isNotNull();
+        assertThat(db).isNotNull();
+        assertThat(dbApi).isNotNull();
+        assertThat(neo4jLayout).isNotNull();
+        assertThat(databaseLayout).isNotNull();
 
-        assertEquals(testDirectory.getFileSystem(), fs);
-        assertInstanceOf(DefaultFileSystemAbstraction.class, fs);
+        assertThat(fs).isEqualTo(testDirectory.getFileSystem());
+        assertThat(fs).isInstanceOf(DefaultFileSystemAbstraction.class);
 
-        assertSame(db, dbApi);
-        assertEquals(testDirectory.homePath(), neo4jLayout.homeDirectory());
-        assertEquals(db.databaseName(), databaseLayout.getDatabaseName());
-        assertEquals(databaseLayout.getNeo4jLayout(), neo4jLayout);
+        assertThat(db).isSameAs(dbApi);
+        assertThat(neo4jLayout.homeDirectory()).isEqualTo(testDirectory.homePath());
+        assertThat(databaseLayout.getDatabaseName()).isEqualTo(db.databaseName());
+        assertThat(neo4jLayout).isEqualTo(databaseLayout.getNeo4jLayout());
     }
 
     @Nested

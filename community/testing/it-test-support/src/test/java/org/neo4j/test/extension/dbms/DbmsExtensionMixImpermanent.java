@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.extension.dbms;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Fail.fail;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.DbmsExtension;

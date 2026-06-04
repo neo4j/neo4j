@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.IOException;
@@ -73,7 +72,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest {
     void shouldKeepDataBetweenStartAndShutdown() {
         createNode();
 
-        assertEquals(1, nodeCount(), "Expected one new node");
+        assertThat(nodeCount()).as("Expected one new node").isEqualTo(1);
     }
 
     @Test
@@ -83,7 +82,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest {
 
         createDb();
 
-        assertEquals(0, nodeCount(), "Should not see anything.");
+        assertThat(nodeCount()).as("Should not see anything").isEqualTo(0);
     }
 
     @Test
@@ -94,7 +93,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest {
         managementService.shutdown();
         createDb(); // Start database up on the crash snapshot.
 
-        assertEquals(0, nodeCount(), "Should not see anything.");
+        assertThat(nodeCount()).as("Should not see anything").isEqualTo(0);
     }
 
     @Test
