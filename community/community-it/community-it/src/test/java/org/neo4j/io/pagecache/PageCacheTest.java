@@ -2774,6 +2774,60 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void readsThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(PageCursor::getLong);
+    }
+
+    @Test
+    void writesThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(cursor -> cursor.putLong(42L));
+    }
+
+    @Test
+    void readsByteThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(PageCursor::getByte);
+    }
+
+    @Test
+    void writesByteThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(cursor -> cursor.putByte((byte) 42));
+    }
+
+    @Test
+    void readsShortThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(PageCursor::getShort);
+    }
+
+    @Test
+    void writesShortThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(cursor -> cursor.putShort((short) 42));
+    }
+
+    @Test
+    void readsIntThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(PageCursor::getInt);
+    }
+
+    @Test
+    void writesIntThroughOverflow() throws IOException {
+        verifyAccessThroughOverflow(cursor -> cursor.putInt(42));
+    }
+
+    private void verifyAccessThroughOverflow(PageCursorAction action) throws IOException {
+        configureStandardPageCache();
+        try (PagedFile pf = map(file("a"), filePageSize);
+                PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            assertDoesNotThrow(() -> {
+                cursor.setOffset(Integer.MAX_VALUE - Long.BYTES);
+                for (int i = 0; i < 20; i++) {
+                    action.apply(cursor);
+                }
+            });
+        }
+    }
+
+    @Test
     void getBytesMustRespectOffsets() throws IOException {
         configureStandardPageCache();
         try (PagedFile pf = map(file("a"), filePageSize);
@@ -3313,6 +3367,126 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         });
     }
 
+    @Test
+    void getByteWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getByte(filePageSize));
+    }
+
+    @Test
+    void putByteWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putByte(filePageSize, (byte) 42));
+    }
+
+    @Test
+    void getShortWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getShort(filePageSize));
+    }
+
+    @Test
+    void putShortWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putShort(filePageSize, (short) 42));
+    }
+
+    @Test
+    void getIntWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getInt(filePageSize));
+    }
+
+    @Test
+    void putIntWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putInt(filePageSize, 42));
+    }
+
+    @Test
+    void getLongWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getLong(filePageSize));
+    }
+
+    @Test
+    void putLongWithOffsetBeyondPageEndMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putLong(filePageSize, 42L));
+    }
+
+    @Test
+    void getByteWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getByte(-1));
+    }
+
+    @Test
+    void putByteWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putByte(-1, (byte) 42));
+    }
+
+    @Test
+    void getShortWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getShort(-1));
+    }
+
+    @Test
+    void putShortWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putShort(-1, (short) 42));
+    }
+
+    @Test
+    void getIntWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getInt(-1));
+    }
+
+    @Test
+    void putIntWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putInt(-1, 42));
+    }
+
+    @Test
+    void getLongWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getLong(-1));
+    }
+
+    @Test
+    void putLongWithNegativeOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putLong(-1, 42L));
+    }
+
+    @Test
+    void getByteWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getByte(Integer.MAX_VALUE));
+    }
+
+    @Test
+    void putByteWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putByte(Integer.MAX_VALUE, (byte) 42));
+    }
+
+    @Test
+    void getShortWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getShort(Integer.MAX_VALUE - 1));
+    }
+
+    @Test
+    void putShortWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putShort(Integer.MAX_VALUE - 1, (short) 42));
+    }
+
+    @Test
+    void getIntWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getInt(Integer.MAX_VALUE - 3));
+    }
+
+    @Test
+    void putIntWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putInt(Integer.MAX_VALUE - 3, 42));
+    }
+
+    @Test
+    void getLongWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.getLong(Integer.MAX_VALUE - 7));
+    }
+
+    @Test
+    void putLongWithOverflowOffsetMustRaiseOutOfBoundsFlag() throws IOException {
+        verifyOffsetPageBoundsCheck(cursor -> cursor.putLong(Integer.MAX_VALUE - 7, 42L));
+    }
+
     private void verifyPageBounds(PageCursorAction action) throws IOException {
         configureStandardPageCache();
 
@@ -3329,6 +3503,17 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     }
                 }
             });
+        }
+    }
+
+    private void verifyOffsetPageBoundsCheck(PageCursorAction action) throws IOException {
+        configureStandardPageCache();
+        generateFileWithRecords(file("a"), 1, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
+        try (PagedFile pagedFile = map(file("a"), filePageSize);
+                PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            cursor.next();
+            action.apply(cursor);
+            assertTrue(cursor.checkAndClearBoundsFlag());
         }
     }
 
@@ -3484,29 +3669,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue(writer.next(3));
 
                 assertTrue(writer.checkAndClearBoundsFlag());
-            }
-        });
-    }
-
-    @Test
-    void settingOutOfBoundsCursorOffsetMustRaiseBoundsFlag() {
-        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
-            configureStandardPageCache();
-
-            generateFileWithRecords(file("a"), 1, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
-            try (PagedFile pagedFile = map(file("a"), filePageSize);
-                    PageCursor cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
-                cursor.setOffset(-1);
-                assertTrue(cursor.checkAndClearBoundsFlag());
-                assertFalse(cursor.checkAndClearBoundsFlag());
-
-                cursor.setOffset(filePageSize + 1);
-                assertTrue(cursor.checkAndClearBoundsFlag());
-                assertFalse(cursor.checkAndClearBoundsFlag());
-
-                cursor.setOffset(pageCachePageSize + 1);
-                assertTrue(cursor.checkAndClearBoundsFlag());
-                assertFalse(cursor.checkAndClearBoundsFlag());
             }
         });
     }
@@ -5442,6 +5604,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertFalse(parentReader.shouldRetry());
             }
         });
+    }
+
+    @Test
+    void checkAndClearBoundsFlagMustClearFlag() throws IOException {
+        configureStandardPageCache();
+        generateFileWithRecords(file("a"), 1, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
+        try (PagedFile pf = map(file("a"), filePageSize);
+                PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            cursor.getByte(-1);
+            assertTrue(cursor.checkAndClearBoundsFlag());
+            assertFalse(cursor.checkAndClearBoundsFlag());
+        }
     }
 
     @Test

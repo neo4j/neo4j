@@ -59,8 +59,6 @@ public abstract class MuninnPageCursor extends PageCursor {
     private static final boolean usePreciseCursorErrorStackTraces =
             flag(MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", false);
 
-    private static final boolean boundsCheck = flag(MuninnPageCursor.class, "boundsCheck", true);
-
     private static final int BYTE_ARRAY_BASE_OFFSET = UnsafeUtil.arrayBaseOffset(byte[].class);
     private static final int BYTE_ARRAY_INDEX_SCALE = UnsafeUtil.arrayIndexScale(byte[].class);
 
@@ -108,7 +106,6 @@ public abstract class MuninnPageCursor extends PageCursor {
     private int offset;
     private int mark;
     private boolean outOfBounds;
-    private boolean markOutOfBounds;
     protected boolean closed;
     protected int versionStamp;
 
@@ -171,7 +168,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     private void openCursor(long pageId) {
         nextPageId = pageId;
-        offset = pageReservedBytes;
+        offset = 0;
         pointer = victimPage;
         tracer.openCursor();
         storeCurrentPageId(UNBOUND_PAGE_ID);
@@ -196,7 +193,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     public final void init(PinEvent pinEvent, long pageRef) {
         this.pinnedPageRef = pageRef;
-        this.offset = pageReservedBytes;
+        this.offset = 0;
         this.pageSize = filePageSize;
         this.payloadSize = filePayloadSize;
         this.pointer = PageMetadata.getAddress(pageRef);
@@ -524,41 +521,18 @@ public abstract class MuninnPageCursor extends PageCursor {
      */
     private long getBoundedPointer(int offset, int size) {
         long p = pointer;
-        long can = p + offset + pageReservedBytes;
-        if (boundsCheck) {
-            if (can + size > p + pageSize || can < p + pageReservedBytes) {
-                outOfBounds = true;
-                // Return the victim page when we are out of bounds, since at this point we can't tell if the pointer
-                // will be used for reading or writing.
-                return victimPage;
-            }
+        int reservedBytes = pageReservedBytes;
+        long result = p + reservedBytes + offset;
+        if (result + size > p + pageSize || result < p + reservedBytes) {
+            outOfBounds = true;
+            return victimPage;
         }
-        return can;
-    }
-
-    /**
-     * Compute a pointer that guarantees (assuming {@code size} is less than or equal to {@link #pageSize}) that the
-     * page access will be within the bounds of the page.
-     * This works just like {@link #getBoundedPointer(int, int)}, except in terms of the current {@link #offset}.
-     * This version is faster when applicable, because it can ignore the <em>page underflow</em> case.
-     */
-    private long nextBoundedPointer(int size) {
-        int offset = this.offset;
-        long can = pointer + offset;
-        if (boundsCheck) {
-            if (offset + size > pageSize) {
-                outOfBounds = true;
-                // Return the victim page when we are out of bounds, since at this point we can't tell if the pointer
-                // will be used for reading or writing.
-                return victimPage;
-            }
-        }
-        return can;
+        return result;
     }
 
     @Override
     public final byte getByte() {
-        long p = nextBoundedPointer(SIZE_OF_BYTE);
+        long p = getBoundedPointer(offset, SIZE_OF_BYTE);
         byte b = UnsafeUtil.getByte(p);
         offset++;
         return b;
@@ -572,7 +546,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public void putByte(byte value) {
-        long p = nextBoundedPointer(SIZE_OF_BYTE);
+        long p = getBoundedPointer(offset, SIZE_OF_BYTE);
         UnsafeUtil.putByte(p, value);
         offset++;
     }
@@ -585,7 +559,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public long getLong() {
-        long p = nextBoundedPointer(SIZE_OF_LONG);
+        long p = getBoundedPointer(offset, SIZE_OF_LONG);
         long value = getLongAt(p, littleEndian);
         offset += SIZE_OF_LONG;
         return value;
@@ -625,7 +599,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public void putLong(long value) {
-        long p = nextBoundedPointer(SIZE_OF_LONG);
+        long p = getBoundedPointer(offset, SIZE_OF_LONG);
         putLongAt(p, value, littleEndian);
         offset += SIZE_OF_LONG;
     }
@@ -669,7 +643,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public int getInt() {
-        long p = nextBoundedPointer(SIZE_OF_INT);
+        long p = getBoundedPointer(offset, SIZE_OF_INT);
         int i = getIntAt(p, littleEndian);
         offset += SIZE_OF_INT;
         return i;
@@ -702,7 +676,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public void putInt(int value) {
-        long p = nextBoundedPointer(SIZE_OF_INT);
+        long p = getBoundedPointer(offset, SIZE_OF_INT);
         putIntAt(p, value, littleEndian);
         offset += SIZE_OF_INT;
     }
@@ -746,7 +720,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         if (arrayOffset + length > data.length) {
             throw new ArrayIndexOutOfBoundsException();
         }
-        long p = nextBoundedPointer(length);
+        long p = getBoundedPointer(offset, length);
         if (!outOfBounds) {
             int inset = UnsafeUtil.arrayOffset(arrayOffset, BYTE_ARRAY_BASE_OFFSET, BYTE_ARRAY_INDEX_SCALE);
             if (length < 16) {
@@ -770,7 +744,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         if (arrayOffset + length > data.length) {
             throw new ArrayIndexOutOfBoundsException();
         }
-        long p = nextBoundedPointer(length);
+        long p = getBoundedPointer(offset, length);
         if (!outOfBounds) {
             int inset = UnsafeUtil.arrayOffset(arrayOffset, BYTE_ARRAY_BASE_OFFSET, BYTE_ARRAY_INDEX_SCALE);
             if (length < 16) {
@@ -786,7 +760,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public void putBytes(int bytes, byte value) {
-        long p = nextBoundedPointer(bytes);
+        long p = getBoundedPointer(offset, bytes);
         if (!outOfBounds) {
             UnsafeUtil.setMemory(p, bytes, value);
         }
@@ -795,7 +769,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public final short getShort() {
-        long p = nextBoundedPointer(SIZE_OF_SHORT);
+        long p = getBoundedPointer(offset, SIZE_OF_SHORT);
         short s = getShortAt(p, littleEndian);
         offset += SIZE_OF_SHORT;
         return s;
@@ -826,7 +800,7 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public void putShort(short value) {
-        long p = nextBoundedPointer(SIZE_OF_SHORT);
+        long p = getBoundedPointer(offset, SIZE_OF_SHORT);
         putShortAt(p, value, littleEndian);
         offset += SIZE_OF_SHORT;
     }
@@ -1006,28 +980,22 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     @Override
     public void setOffset(int logicalOffset) {
-        this.offset = logicalOffset + pageReservedBytes;
-        if (offset < pageReservedBytes || offset > filePageSize) {
-            this.offset = pageReservedBytes;
-            outOfBounds = true;
-        }
+        this.offset = logicalOffset;
     }
 
     @Override
     public final int getOffset() {
-        return offset - pageReservedBytes;
+        return offset;
     }
 
     @Override
     public void mark() {
         this.mark = offset;
-        this.markOutOfBounds = outOfBounds;
     }
 
     @Override
     public void setOffsetToMark() {
         this.offset = mark;
-        this.outOfBounds = markOutOfBounds;
     }
 
     @Override
