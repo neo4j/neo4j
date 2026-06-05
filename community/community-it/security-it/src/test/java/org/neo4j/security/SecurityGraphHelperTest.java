@@ -95,7 +95,7 @@ class SecurityGraphHelperTest {
         verify(securityLog).debug("Looking up user 'alice'");
         verify(securityLog)
                 .debug(
-                        "Found user: User[name=alice, id=userId, credential=*****, passwordChangeRequired=false, suspended=false, auth=[Auth[provider=native, id=userId]], tags=[]]");
+                        "Found user: User[name=alice, id=userId, credential=*****, passwordChangeRequired=false, suspended=false, auth=[Auth[provider=native, id=userId]]]");
         verify(securityLog).isDebugEnabled();
         verifyNoMoreInteractions(securityLog);
     }
@@ -115,7 +115,7 @@ class SecurityGraphHelperTest {
         verify(securityLog).debug("Looking up user 'alice'");
         verify(securityLog)
                 .debug(
-                        "Found user: User[name=alice, id=userId, credential=null, passwordChangeRequired=false, suspended=false, auth=[], tags=[]]");
+                        "Found user: User[name=alice, id=userId, credential=null, passwordChangeRequired=false, suspended=false, auth=[]]");
         verify(securityLog).isDebugEnabled();
         verifyNoMoreInteractions(securityLog);
     }
