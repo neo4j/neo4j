@@ -376,20 +376,20 @@ public final class SettingConstraints {
         };
     }
 
-    public static SettingConstraint<Integer> greaterThanOrEqual(Setting<Integer> other) {
+    public static <T extends Comparable<T>> SettingConstraint<T> greaterThanOrEqual(Setting<T> other) {
         return new SettingConstraint<>() {
             @Override
-            public void validate(Integer value, Configuration config) {
-                var otherValue = config.get(other);
+            public void validate(T value, Configuration config) {
+                T otherValue = config.get(other);
                 if (value == null) {
                     throw new IllegalArgumentException("can not be null");
                 }
                 if (otherValue == null) {
                     throw new IllegalArgumentException(other.name() + " can not be null");
                 }
-                if (value < otherValue) {
+                if (value.compareTo(otherValue) < 0) {
                     throw new IllegalArgumentException(getDescription()
-                            + format("was %d, which is not more than or equal to %d", value, otherValue));
+                            + format("was %s, which is not more than or equal to %s", value, otherValue));
                 }
             }
 
