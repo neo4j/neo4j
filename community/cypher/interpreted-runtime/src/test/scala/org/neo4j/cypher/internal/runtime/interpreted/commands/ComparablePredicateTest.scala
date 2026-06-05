@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.ComparablePredicate
@@ -27,13 +28,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Greater
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.GreaterThanOrEqual
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.LessThan
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.LessThanOrEqual
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-class ComparablePredicateTest extends CypherFunSuite {
+class ComparablePredicateTest extends InterpretedRuntimeTestSuite {
 
   private val numericalValues: Seq[AnyRef] = Seq[Number](
     Double.NegativeInfinity,

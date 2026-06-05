@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CartesianProductPipeTest extends CypherFunSuite {
+class CartesianProductPipeTest extends InterpretedRuntimeTestSuite {
 
   test("closes lhs and rhs on exhaustion") {
     // given

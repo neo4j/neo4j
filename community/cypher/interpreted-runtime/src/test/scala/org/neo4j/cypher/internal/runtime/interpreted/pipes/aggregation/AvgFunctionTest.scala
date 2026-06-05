@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.DurationValue
@@ -29,7 +29,7 @@ import org.neo4j.values.storable.Values.doubleValue
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.storable.Values.longValue
 
-class AvgFunctionTest extends CypherFunSuite with AggregateTest {
+class AvgFunctionTest extends InterpretedRuntimeTestSuite with AggregateTest {
   def createAggregator(inner: Expression) = new AvgFunction(inner)
 
   test("singleOne") {
@@ -118,7 +118,7 @@ class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   test("noOverflowOnLongListOfLargeNumbers") {
     val result = aggregateOn(longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2))
 
-    result should equal(doubleValue(Long.MaxValue / 2))
+    result should equal(doubleValue((Long.MaxValue / 2).toDouble))
   }
 
   test("onEmpty") {

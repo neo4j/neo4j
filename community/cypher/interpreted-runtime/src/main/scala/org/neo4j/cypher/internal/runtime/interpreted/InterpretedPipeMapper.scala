@@ -1344,7 +1344,7 @@ case class InterpretedPipeMapper(
             removeOtherProps
           ))
 
-        case other => throw new IllegalStateException(s"Cannot compile $other")
+        case other @ null => throw new IllegalStateException(s"Cannot compile $other")
       }
     }
 

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
+class SemiApplyPipeTest extends InterpretedRuntimeTestSuite with PipeTestSupport {
 
   test("if lhs is empty, rhs should not be touched regardless if it is negated or not") {
     val rhs = pipeWithResults(_ => fail("should not use this"))

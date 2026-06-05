@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
@@ -34,7 +34,7 @@ import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.Values.stringValue
 
-class SumFunctionTest extends CypherFunSuite with AggregateTest {
+class SumFunctionTest extends InterpretedRuntimeTestSuite with AggregateTest {
   def createAggregator(inner: Expression) = new SumFunction(inner)
 
   test("singleValueReturnsThatNumber") {

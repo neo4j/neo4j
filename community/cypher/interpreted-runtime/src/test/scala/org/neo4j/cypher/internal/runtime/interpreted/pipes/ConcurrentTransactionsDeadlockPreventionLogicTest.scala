@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConcurrentTransactionsDeadlockPreventionLogicTest.seedRandomGenerator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.storable.Values
@@ -41,7 +41,7 @@ object ConcurrentTransactionsDeadlockPreventionLogicTest {
   val seedRandomGenerator = new Random()
 }
 
-class ConcurrentTransactionsDeadlockPreventionLogicTest extends CypherFunSuite {
+class ConcurrentTransactionsDeadlockPreventionLogicTest extends InterpretedRuntimeTestSuite {
   private var _seed: Long = 0L
   private var random: Random = _
 

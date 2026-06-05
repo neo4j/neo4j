@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Null
@@ -27,9 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsTrue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.LiteralRegularExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.RegularExpression
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RegularExpressionPredicateTest extends CypherFunSuite {
+class RegularExpressionPredicateTest extends InterpretedRuntimeTestSuite {
 
   test("LiteralRegEx: should not match if the lhs expression evaluates to null") {
     val expression = LiteralRegularExpression(Null(), literal(".*"))

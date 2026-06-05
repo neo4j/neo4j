@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Subtract
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values.longValue
 
-class SubtractTest extends CypherFunSuite {
+class SubtractTest extends InterpretedRuntimeTestSuite {
 
   val m = CypherRow.empty
   val s = QueryStateHelper.empty

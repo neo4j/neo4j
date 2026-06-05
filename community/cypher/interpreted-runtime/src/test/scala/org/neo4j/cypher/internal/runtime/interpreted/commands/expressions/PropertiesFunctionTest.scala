@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
@@ -34,7 +34,7 @@ import org.neo4j.values.virtual.VirtualValues.map
 
 import java.util
 
-class PropertiesFunctionTest extends CypherFunSuite {
+class PropertiesFunctionTest extends InterpretedRuntimeTestSuite {
 
   private val query = mock[QueryContext]
   private val nodeReadOps = mock[NodeReadOperations]

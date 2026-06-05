@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Ands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsFalse
@@ -30,9 +31,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnkno
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class AndsTest extends CypherFunSuite {
+class AndsTest extends InterpretedRuntimeTestSuite {
   private val state = QueryStateHelper.empty
   private val ctx = CypherRow.empty
 

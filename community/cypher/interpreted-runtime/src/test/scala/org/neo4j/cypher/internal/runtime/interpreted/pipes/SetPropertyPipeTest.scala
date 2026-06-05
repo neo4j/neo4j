@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.cursors.ExpressionCursors
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -49,14 +50,13 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
+class SetPropertyPipeTest extends InterpretedRuntimeTestSuite with PipeTestSupport {
 
   private val pos = DummyPosition(0)
   private val entity1 = varFor("x")

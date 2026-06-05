@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
@@ -36,7 +36,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class ContainerIndexTest extends CypherFunSuite {
+class ContainerIndexTest extends InterpretedRuntimeTestSuite {
 
   val qtx = mock[QueryContext]
   implicit val state: QueryState = QueryStateHelper.empty.withQueryContext(qtx)
@@ -85,8 +85,8 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("handles node lookup") {
-    val node = mock[Node]
-    when(node.getId).thenReturn(0)
+    val node: Node = mock[Node]
+    when(node.getId).thenReturn(0L)
     when(node.getElementId).thenReturn("dummy")
     implicit val expression = literal(node)
     val nodeCursor = state.cursors.nodeCursor
@@ -102,8 +102,8 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("handles relationship lookup") {
-    val rel = mock[Relationship]
-    when(rel.getId).thenReturn(0)
+    val rel: Relationship = mock[Relationship]
+    when(rel.getId).thenReturn(0L)
     implicit val expression = literal(rel)
     val relationshipScanCursor = state.cursors.relationshipScanCursor
     val propertyCursor = state.cursors.propertyCursor

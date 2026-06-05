@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
-class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
+class ApplyPipeTest extends InterpretedRuntimeTestSuite with PipeTestSupport {
 
   test("should work by applying the identity operator on the rhs") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))

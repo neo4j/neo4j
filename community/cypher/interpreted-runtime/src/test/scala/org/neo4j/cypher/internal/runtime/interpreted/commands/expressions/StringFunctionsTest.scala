@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.storable.UTF8StringValue
@@ -34,7 +34,7 @@ import org.neo4j.values.storable.Values.utf8Value
 
 import java.nio.charset.StandardCharsets
 
-class StringFunctionsTest extends CypherFunSuite {
+class StringFunctionsTest extends InterpretedRuntimeTestSuite {
 
   // TODO Move these tests into individual classes, at least for the more complex ones
 

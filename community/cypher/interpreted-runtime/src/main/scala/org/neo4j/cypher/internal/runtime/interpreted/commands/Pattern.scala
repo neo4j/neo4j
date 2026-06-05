@@ -66,7 +66,7 @@ case class SingleNode(
 
   override def relTypes: Seq[String] = Seq.empty
 
-  override def rewrite(f: Expression => Expression) =
+  override def rewrite(f: Expression => Expression): SingleNode =
     SingleNode(name, value.map(_.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), properties.rewrite(f))
 
   override def children: Seq[AstNode[_]] = labels ++ properties.values
@@ -117,7 +117,7 @@ case class ShortestPath(
     info + "]"
   }
 
-  override def rewrite(f: Expression => Expression) =
+  override def rewrite(f: Expression => Expression): ShortestPath =
     ShortestPath(
       pathName,
       left.rewrite(f),

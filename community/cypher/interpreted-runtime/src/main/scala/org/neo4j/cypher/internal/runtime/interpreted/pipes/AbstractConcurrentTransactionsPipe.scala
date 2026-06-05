@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.ControlFlowMacros3.doWhile
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -149,7 +150,7 @@ abstract class AbstractConcurrentTransactionsPipe(
       logMessageWithVerboseStatus("-- PRODUCE NEXT --")
 
       maybeEnqueueTasks()
-      do {
+      doWhile {
         if (!hasAvailableOutputRow) {
           // TODO: Maybe remove the separate awaitPendingRetries method and just enter this if to call pollOutputQueue
           if (pendingTaskCount > 0) {
@@ -177,7 +178,7 @@ abstract class AbstractConcurrentTransactionsPipe(
           }
           maybeEnqueueTasks()
         }
-      } while (!hasAvailableOutputRow)
+      }(!hasAvailableOutputRow)
       logMessage("Outputting row")
       Some(currentOutputIterator.next())
     }
@@ -222,9 +223,9 @@ abstract class AbstractConcurrentTransactionsPipe(
     }
 
     private def maybeEnqueueTasks(): Unit = {
-      do {
+      doWhile {
         ensureActiveTasks()
-      } while (saturateInputQueue())
+      }(saturateInputQueue())
     }
 
     private def saturateInputQueue(): Boolean = {

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LiteralMapTest extends CypherFunSuite {
+class LiteralMapTest extends InterpretedRuntimeTestSuite {
 
   test("should_present_all_child_expressions") {
     val x = Variable("x")

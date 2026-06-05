@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 import org.neo4j.values.virtual.VirtualValues.list
 
-class ListSliceTest extends CypherFunSuite {
+class ListSliceTest extends InterpretedRuntimeTestSuite {
 
   test("tests") {
     implicit val collection = literal(Seq(1, 2, 3, 4))

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.core.RelationshipEntity
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
-class ShortestPathNoDuplicatesTest extends CypherFunSuite {
+class ShortestPathNoDuplicatesTest extends InterpretedRuntimeTestSuite {
 
   test("Should handle empty list") {
     ShortestPathExpression.noDuplicates(List.empty) should be(true)

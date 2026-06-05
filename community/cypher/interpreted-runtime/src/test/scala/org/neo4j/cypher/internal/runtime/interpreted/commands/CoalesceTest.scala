@@ -21,19 +21,20 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CoalesceFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Null
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
 import org.scalatest.Assertions.fail
 
-class CoalesceTest extends CypherFunSuite {
+class CoalesceTest extends InterpretedRuntimeTestSuite {
 
   test("givenANonNullValueThenReturnsTheValue") {
     val func = CoalesceFunction(literal("a"))
@@ -61,7 +62,7 @@ class CoalesceTest extends CypherFunSuite {
 case class BreakingExpression() extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    fail("Coalesce is not lazy")
+    fail("Coalesce is not lazy")(using CypherFunSuiteWithMacroShadowing.defaultPosition)
   }
 
   override def rewrite(f: Expression => Expression): Expression = null

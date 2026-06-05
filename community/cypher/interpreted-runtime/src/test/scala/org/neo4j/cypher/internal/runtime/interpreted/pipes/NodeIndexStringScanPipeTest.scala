@@ -34,19 +34,19 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
-class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
+class NodeIndexStringScanPipeTest extends InterpretedRuntimeTestSuite with ImplicitDummyPos with IndexMockingHelp {
 
   private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))

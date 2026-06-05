@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityCypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.GqlStatusObject
@@ -66,7 +66,7 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.language.implicitConversions
 
-class ShowCommandTestBase extends CypherFunSuite {
+class ShowCommandTestBase extends InterpretedRuntimeTestSuite {
   protected lazy val initialCypherRow: CypherRow = CommunityCypherRowFactory().newRow()
   protected lazy val ctx: QueryContext = mock[QueryContext]
   protected lazy val queryState: QueryState = QueryStateHelper.emptyWith(query = ctx)
@@ -245,5 +245,7 @@ class ShowCommandTestBase extends CypherFunSuite {
 
     override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): Unit =
       ???
+
+    override def remove(): Unit = ???
   }
 }

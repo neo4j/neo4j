@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbsFunction
@@ -51,14 +52,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SinhFu
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SqrtFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TanFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TanhFunction
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values.doubleValue
 import org.neo4j.values.storable.Values.longValue
 
-class MathFunctionsTest extends CypherFunSuite {
+class MathFunctionsTest extends InterpretedRuntimeTestSuite {
 
   test("absTests") {
     calc(AbsFunction(literal(-1))) should equal(longValue(1))

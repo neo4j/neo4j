@@ -25,9 +25,9 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.core.NodeEntity
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -38,7 +38,7 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import scala.collection.Map
 import scala.collection.mutable
 
-class TriadicSelectionPipeTest extends CypherFunSuite {
+class TriadicSelectionPipeTest extends InterpretedRuntimeTestSuite {
 
   test("triadic from input with no cycles") {
     val left = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))

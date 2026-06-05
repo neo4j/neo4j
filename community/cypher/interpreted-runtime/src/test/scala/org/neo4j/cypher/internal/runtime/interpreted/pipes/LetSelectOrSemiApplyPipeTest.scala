@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LetSelectOrSemiApplyPipeTest extends CypherFunSuite {
+class LetSelectOrSemiApplyPipeTest extends InterpretedRuntimeTestSuite {
 
   test("Each row should immediately close RHS. Exhaust should close LHS.") {
     val monitor = QueryStateHelper.trackClosedMonitor

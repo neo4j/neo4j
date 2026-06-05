@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentOrder
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentUnordered
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asDouble
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.values.AnyValue
@@ -57,7 +57,7 @@ trait PercentileTest {
   }
 }
 
-abstract class BasePercentileDiscTest extends CypherFunSuite with PercentileTest {
+abstract class BasePercentileDiscTest extends InterpretedRuntimeTestSuite with PercentileTest {
 
   def createAggregator(inner: Expression, perc: Expression) =
     new PercentileDiscFunction(inner, perc, EmptyMemoryTracker.INSTANCE, order)
@@ -151,7 +151,7 @@ class PercentileDiscDescTest extends BasePercentileDiscTest {
   override def order: ArgumentOrder = ArgumentDesc
 }
 
-abstract class BasePercentileContTest extends CypherFunSuite with PercentileTest {
+abstract class BasePercentileContTest extends InterpretedRuntimeTestSuite with PercentileTest {
 
   def createAggregator(inner: Expression, perc: Expression) =
     new PercentileContFunction(inner, perc, EmptyMemoryTracker.INSTANCE, order)

@@ -17,20 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
+package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
-import org.neo4j.cypher.operations.CypherMath
-import org.neo4j.values.storable.Values.doubleValue
-import org.neo4j.values.storable.Values.longValue
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 
-class ModuloTest extends InterpretedRuntimeTestSuite {
-
-  test("should handle large integers") {
-    CypherMath.modulo(longValue(16000000000000001L), longValue(16000)) should equal(longValue(1L))
-  }
-
-  test("should handle large integers and floating point values") {
-    CypherMath.modulo(longValue(16000000000000001L), doubleValue(16000d)) should equal(doubleValue(0.0))
-  }
-}
+trait InterpretedRuntimeTestSuite extends CypherFunSuiteWithMacroShadowing {}

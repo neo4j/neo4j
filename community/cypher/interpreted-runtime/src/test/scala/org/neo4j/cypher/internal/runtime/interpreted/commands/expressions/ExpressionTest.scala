@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
@@ -30,18 +31,17 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 
 import scala.collection.Map
 
-class ExpressionTest extends CypherFunSuite {
+class ExpressionTest extends InterpretedRuntimeTestSuite {
 
   test("replacePropWithCache") {
     val a = Collect(Property(Variable("r"), PropertyKey("age")))
 
     val b = a.rewrite {
-      case Property(n, p) => literal(n + "." + p.name)
+      case Property(n, p) => literal(n.toString + "." + p.name)
       case x              => x
     }
 

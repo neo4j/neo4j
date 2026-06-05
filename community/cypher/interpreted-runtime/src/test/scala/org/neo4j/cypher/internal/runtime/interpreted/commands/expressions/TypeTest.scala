@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.LongValue
 
-class TypeTest extends CypherFunSuite {
+class TypeTest extends InterpretedRuntimeTestSuite {
 
   test("plus int int") {
     val op = Add(literal(1), literal(2))

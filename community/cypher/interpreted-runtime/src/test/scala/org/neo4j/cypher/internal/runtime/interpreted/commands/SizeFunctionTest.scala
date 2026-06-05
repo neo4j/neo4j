@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toPathValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toStringValue
 import org.neo4j.cypher.internal.runtime.PathImpl
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SizeFunctionCypher25
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.VectorDimensionCountFunction
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
@@ -43,7 +43,7 @@ import org.neo4j.values.storable.Values.int64Vector
 import org.neo4j.values.storable.Values.int8Vector
 import org.neo4j.values.storable.Values.longValue
 
-class SizeFunctionTest extends CypherFunSuite {
+class SizeFunctionTest extends InterpretedRuntimeTestSuite {
 
   test("size can be used on collections") {
     // given

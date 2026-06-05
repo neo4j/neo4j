@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ClosingRelationshipIterator
@@ -662,7 +662,7 @@ private[internal] class TransactionBoundReadQueryContext(
 
     // Create a single-threaded copy of ResourceManager and attach it to the thread-safe resource manager
     val newResourceManager = new ResourceManager(resources.monitor, newTransactionalContext.memoryTracker)
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(resources.isInstanceOf[ThreadSafeResourceManager])
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(resources.isInstanceOf[ThreadSafeResourceManager])
     resources.trace(newResourceManager)
 
     new ParallelTransactionBoundQueryContext(newTransactionalContext, newResourceManager, queryConfig = queryConfig)(

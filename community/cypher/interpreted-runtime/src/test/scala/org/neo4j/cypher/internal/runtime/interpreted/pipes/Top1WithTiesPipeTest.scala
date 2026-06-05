@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class Top1WithTiesPipeTest extends CypherFunSuite {
+class Top1WithTiesPipeTest extends InterpretedRuntimeTestSuite {
 
   test("empty input gives empty output") {
     val source = new FakePipe(List())

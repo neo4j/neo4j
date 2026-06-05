@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CountStar
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
@@ -28,11 +29,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityCypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedAppendMap
 import org.neo4j.values.storable.Values
 
-class GroupingAggTableTest extends CypherFunSuite {
+class GroupingAggTableTest extends InterpretedRuntimeTestSuite {
 
   test("close should close table") {
     // given

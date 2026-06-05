@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 
-class EagerPipeTest extends CypherFunSuite {
+class EagerPipeTest extends InterpretedRuntimeTestSuite {
 
   private val queryState = QueryStateHelper.emptyWithValueSerialization
 
@@ -43,7 +43,7 @@ class EagerPipeTest extends CypherFunSuite {
   test("close should close buffer") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
+    val input = new FakePipe(Seq(Map[String, Any]("a" -> 10), Map[String, Any]("a" -> null)))
     val pipe = EagerPipe(input)()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.close()
@@ -54,7 +54,7 @@ class EagerPipeTest extends CypherFunSuite {
   test("exhaust should close buffer") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
+    val input = new FakePipe(Seq(Map[String, Any]("a" -> 10), Map[String, Any]("a" -> null)))
     val pipe = EagerPipe(input)()
     // exhaust
     pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).toList

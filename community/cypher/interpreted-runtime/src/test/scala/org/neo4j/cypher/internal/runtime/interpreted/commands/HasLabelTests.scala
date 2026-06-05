@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 
-class HasLabelTests extends CypherFunSuite {
+class HasLabelTests extends InterpretedRuntimeTestSuite {
 
   test("should_handle_null_values") {
     // given match n-[?]-m

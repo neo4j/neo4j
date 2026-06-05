@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 
-class TransactionRetryLogicTest extends CypherFunSuite {
+class TransactionRetryLogicTest extends InterpretedRuntimeTestSuite {
 
   test("print delay sequence") {
     val retryLogic = new ExponentialBackoffRetryLogic

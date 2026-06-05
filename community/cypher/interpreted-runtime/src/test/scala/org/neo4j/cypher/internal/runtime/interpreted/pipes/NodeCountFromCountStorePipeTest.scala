@@ -24,16 +24,16 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.longValue
 
-class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyPos {
+class NodeCountFromCountStorePipeTest extends InterpretedRuntimeTestSuite with ImplicitDummyPos {
 
   test("should return a count for nodes with a label") {
-    implicit val table = new SemanticTable(
+    implicit val table: SemanticTable = new SemanticTable(
       resolvedLabelNames = Map("A" -> LabelId(12))
     )
 

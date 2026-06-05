@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues.list
 
-class RangeFunctionTest extends CypherFunSuite {
+class RangeFunctionTest extends InterpretedRuntimeTestSuite {
 
   test("range returns inclusive collection of integers") {
     range(0, 10, 1) should be(seq(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))

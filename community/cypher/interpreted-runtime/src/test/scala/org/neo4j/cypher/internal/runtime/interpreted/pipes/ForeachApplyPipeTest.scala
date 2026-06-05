@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
-class ForeachApplyPipeTest extends CypherFunSuite {
+class ForeachApplyPipeTest extends InterpretedRuntimeTestSuite {
 
   test("Each row should immediately close RHS. Exhaust should close LHS.") {
     val monitor = QueryStateHelper.trackClosedMonitor

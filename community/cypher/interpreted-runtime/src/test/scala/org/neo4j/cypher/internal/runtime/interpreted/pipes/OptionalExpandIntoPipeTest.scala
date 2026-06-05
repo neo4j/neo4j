@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor
@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-class OptionalExpandIntoPipeTest extends CypherFunSuite {
+class OptionalExpandIntoPipeTest extends InterpretedRuntimeTestSuite {
 
   test("exhaust should close cursor and cache") {
     val monitor = QueryStateHelper.trackClosedMonitor

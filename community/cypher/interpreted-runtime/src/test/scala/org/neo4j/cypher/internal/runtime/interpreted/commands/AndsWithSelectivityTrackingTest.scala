@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerStorage
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.AndsWithSelectivityTracking
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsFalse
@@ -31,9 +32,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnkno
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class AndsWithSelectivityTrackingTest extends CypherFunSuite {
+class AndsWithSelectivityTrackingTest extends InterpretedRuntimeTestSuite {
   private val state = QueryStateHelper.emptyWith(selectivityTrackerStorage = new SelectivityTrackerStorage(1))
   private val ctx = CypherRow.empty
 

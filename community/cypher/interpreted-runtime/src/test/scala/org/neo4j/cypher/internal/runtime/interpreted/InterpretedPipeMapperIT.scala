@@ -78,10 +78,9 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
 
-class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSupport {
+class InterpretedPipeMapperIT extends InterpretedRuntimeTestSuite with AstConstructionTestSupport {
   implicit private val idGen: SequentialIdGen = new SequentialIdGen()
 
   private val planContext: PlanContext = mock[PlanContext]

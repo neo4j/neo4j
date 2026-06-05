@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class FilterPipeTest extends CypherFunSuite {
+class FilterPipeTest extends InterpretedRuntimeTestSuite {
 
   test("should be lazy") {
     val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 12), Map("a" -> 13)))

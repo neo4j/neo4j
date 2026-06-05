@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
 
-class PartialSortPipeTest extends CypherFunSuite {
+class PartialSortPipeTest extends InterpretedRuntimeTestSuite {
 
   test("partial sort is lazy") {
     val list = List(

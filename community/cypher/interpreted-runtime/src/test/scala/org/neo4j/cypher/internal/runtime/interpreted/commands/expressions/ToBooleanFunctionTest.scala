@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
@@ -32,7 +32,7 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.TRUE
 import org.scalacheck.Gen
 
-class ToBooleanFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
+class ToBooleanFunctionTest extends InterpretedRuntimeTestSuite with CypherScalaCheckDrivenPropertyChecks {
 
   val tests: Seq[(Any => AnyValue, String)] =
     Seq((toBoolean, "toBoolean"), (toBooleanOrNull, "toBooleanOrNull"))

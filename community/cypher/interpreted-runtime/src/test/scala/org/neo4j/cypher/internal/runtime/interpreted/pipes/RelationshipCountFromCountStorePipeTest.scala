@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId.WILDCARD
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.longValue
 
-class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyPos {
+class RelationshipCountFromCountStorePipeTest extends InterpretedRuntimeTestSuite with ImplicitDummyPos {
 
   test("should return a count for relationships without a type or any labels") {
     val pipe = RelationshipCountFromCountStorePipe("count(r)", None, RelationshipTypes.empty, None)()
@@ -44,7 +44,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
   }
 
   test("should return a count for relationships with a type but no labels") {
-    implicit val table = new SemanticTable(
+    implicit val table: SemanticTable = new SemanticTable(
       resolvedRelTypeNames = Map("X" -> RelTypeId(22))
     )
 
@@ -58,7 +58,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
   }
 
   test("should return a count for relationships with a type and start label") {
-    implicit val table = new SemanticTable(
+    implicit val table: SemanticTable = new SemanticTable(
       resolvedRelTypeNames = Map("X" -> RelTypeId(22)),
       resolvedLabelNames = Map("A" -> LabelId(12))
     )
@@ -77,7 +77,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
   }
 
   test("should return zero if rel-type is missing") {
-    implicit val table = new SemanticTable()
+    implicit val table: SemanticTable = new SemanticTable()
 
     val pipe = RelationshipCountFromCountStorePipe(
       "count(r)",

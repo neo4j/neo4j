@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class OrderedUnionPipeTest extends CypherFunSuite {
+class OrderedUnionPipeTest extends InterpretedRuntimeTestSuite {
 
   test("Close should close RHS and LHS.") {
     val lhs = FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 25)))

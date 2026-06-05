@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.PathImpl
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.graphdb.RelationshipType
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
+class PathImplTest extends InterpretedRuntimeTestSuite with FakeEntityTestSupport {
 
   val typ = RelationshipType.withName("a")
 

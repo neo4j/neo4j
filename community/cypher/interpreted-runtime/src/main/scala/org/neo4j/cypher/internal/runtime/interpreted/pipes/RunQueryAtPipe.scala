@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ParameterMapping
@@ -126,7 +126,7 @@ class RunQueryAtIterator(
       }
     })
 
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       ex.fieldNames().toSet == expectedFields.map(_.name),
       "RunQueryAt received unexpected fields "
         + ex.fieldNames().mkString("[", ", ", "]")

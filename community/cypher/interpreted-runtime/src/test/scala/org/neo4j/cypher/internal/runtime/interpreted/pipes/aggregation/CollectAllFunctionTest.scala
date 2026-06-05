@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 import org.neo4j.values.virtual.VirtualValues.list
 
-class CollectAllFunctionTest extends CypherFunSuite with AggregateTest {
+class CollectAllFunctionTest extends InterpretedRuntimeTestSuite with AggregateTest {
 
   def createAggregator(inner: Expression) = new CollectAllFunction(inner, EmptyMemoryTracker.INSTANCE)
 

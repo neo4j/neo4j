@@ -23,10 +23,10 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
+class RollUpApplyPipeTest extends InterpretedRuntimeTestSuite with PipeTestSupport {
 
   test("should set the QueryState when calling down to the RHS") {
     // given

@@ -24,13 +24,13 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FakePipe.CountingRelationshipIterator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-class OptionalExpandAllPipeTest extends CypherFunSuite {
+class OptionalExpandAllPipeTest extends InterpretedRuntimeTestSuite {
 
   test("exhaust should close relationships iterator") {
     val monitor = QueryStateHelper.trackClosedMonitor

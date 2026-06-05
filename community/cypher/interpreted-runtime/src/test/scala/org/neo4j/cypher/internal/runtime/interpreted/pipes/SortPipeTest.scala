@@ -24,15 +24,15 @@ import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.Descending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.intValue
 
 import scala.collection.mutable
 
-class SortPipeTest extends CypherFunSuite {
+class SortPipeTest extends InterpretedRuntimeTestSuite {
 
   test("empty input gives empty output") {
     val source = new FakePipe(List())

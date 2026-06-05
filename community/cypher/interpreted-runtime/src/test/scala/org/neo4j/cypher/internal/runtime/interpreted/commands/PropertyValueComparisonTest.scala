@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toMapValue
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Property
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 
-class PropertyValueComparisonTest extends CypherFunSuite {
+class PropertyValueComparisonTest extends InterpretedRuntimeTestSuite {
 
   private val expectedNull = NO_VALUE
 

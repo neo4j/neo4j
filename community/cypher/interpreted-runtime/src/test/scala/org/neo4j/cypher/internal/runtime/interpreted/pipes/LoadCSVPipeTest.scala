@@ -28,16 +28,16 @@ import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-class LoadCSVPipeTest extends CypherFunSuite {
+class LoadCSVPipeTest extends InterpretedRuntimeTestSuite {
 
   test("with headers: close should close seeker") {
     val monitor = QueryStateHelper.trackClosedMonitor

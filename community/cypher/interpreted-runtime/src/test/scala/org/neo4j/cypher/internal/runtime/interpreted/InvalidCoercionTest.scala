@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.junit.jupiter.api.Test
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CoerceTo
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.PropertyValueType
 import org.neo4j.cypher.operations.CypherCoercions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.ByteArrayType
-import org.scalatest.Assertions.intercept
-import org.scalatest.matchers.must.Matchers.be
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-class InvalidCoercionTest {
+class InvalidCoercionTest extends InterpretedRuntimeTestSuite {
 
-  @Test
-  def testGqlInfoInInvalidCoerceToNeo4jType(): Unit = {
+  test("testGqlInfoInInvalidCoerceToNeo4jType") {
     val exception = intercept[CypherTypeException] {
       CoerceTo.toNeo4jType(PropertyValueType(isNullable = false)(InputPosition.NONE))
     }
@@ -50,8 +45,7 @@ class InvalidCoercionTest {
     exceptionCause.cause().isEmpty should be(true)
   }
 
-  @Test
-  def testGqlInfoInInvalidCoercionFromType(): Unit = {
+  test("testGqlInfoInInvalidCoercionFromType") {
     val exception = intercept[CypherTypeException] {
       CypherCoercions.coercerFromType(new ByteArrayType())
     }

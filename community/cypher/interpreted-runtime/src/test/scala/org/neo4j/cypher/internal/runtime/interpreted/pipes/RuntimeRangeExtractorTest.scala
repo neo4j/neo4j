@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.runtime.ExtractedRange
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
@@ -32,11 +33,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointB
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PrefixSeekRangeExpression
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.Values
 
-class RuntimeRangeExtractorTest extends CypherFunSuite {
+class RuntimeRangeExtractorTest extends InterpretedRuntimeTestSuite {
 
   private val leaf: Expression = Literal(Values.intValue(1))
 

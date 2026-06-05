@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlException
@@ -37,7 +37,7 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.longValue
 import org.scalacheck.Gen
 
-class ToIntegerFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
+class ToIntegerFunctionTest extends InterpretedRuntimeTestSuite with CypherScalaCheckDrivenPropertyChecks {
 
   val tests: Seq[(Any => AnyValue, String)] =
     Seq((toInteger, "toInteger"), (toIntegerOrNull, "toIntegerOrNull"))

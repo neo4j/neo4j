@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NestedPipeCollectExpression
@@ -38,14 +39,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.values.storable.Values.NO_VALUE
 
-class ProfilerTest extends CypherFunSuite {
+class ProfilerTest extends InterpretedRuntimeTestSuite {
 
   val idGen = new SequentialIdGen
 

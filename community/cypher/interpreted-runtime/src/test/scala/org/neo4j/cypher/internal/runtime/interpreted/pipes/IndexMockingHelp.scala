@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.NodeValueHit
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -54,7 +54,7 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.nodeValue
 
-trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
+trait IndexMockingHelp extends InterpretedRuntimeTestSuite with ImplicitDummyPos {
 
   def propertyKeys: Seq[PropertyKeyToken]
 

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FakePipe
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
-class NestedPipeExistsExpressionTest extends CypherFunSuite {
+class NestedPipeExistsExpressionTest extends InterpretedRuntimeTestSuite {
 
   test("Should not pull. Should close pipe results.") {
     // given

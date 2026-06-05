@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiIncomingRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipWithKnownTargetProjector
@@ -39,9 +40,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Projec
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleNodeProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PathExpressionConversionTest extends CypherFunSuite with AstConstructionTestSupport {
+class PathExpressionConversionTest extends InterpretedRuntimeTestSuite with AstConstructionTestSupport {
 
   val converters =
     new ExpressionConverters(

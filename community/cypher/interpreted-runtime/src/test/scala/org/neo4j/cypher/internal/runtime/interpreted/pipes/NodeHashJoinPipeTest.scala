@@ -27,14 +27,14 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TestableIterator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.collection
 import org.neo4j.values.AnyValue
 
-class NodeHashJoinPipeTest extends CypherFunSuite {
+class NodeHashJoinPipeTest extends InterpretedRuntimeTestSuite {
 
   test("should not fetch results from RHS if LHS is empty") {
     // given
@@ -133,7 +133,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
 
-  private def newMockedNode(id: Int) = {
+  private def newMockedNode(id: Long) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
     when(node.getElementId).thenReturn(id.toString)

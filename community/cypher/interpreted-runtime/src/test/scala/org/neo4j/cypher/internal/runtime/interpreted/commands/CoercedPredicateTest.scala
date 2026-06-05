@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
@@ -28,10 +29,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Coerced
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 
-class CoercedPredicateTest extends CypherFunSuite {
+class CoercedPredicateTest extends InterpretedRuntimeTestSuite {
 
   val ctx: CypherRow = null
   val state: QueryState = QueryStateHelper.empty

@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 
-trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
+trait NodeHashJoinPipeTestSupport extends InterpretedRuntimeTestSuite {
 
   protected val node1 = newMockedNode(1)
   protected val node2 = newMockedNode(2)

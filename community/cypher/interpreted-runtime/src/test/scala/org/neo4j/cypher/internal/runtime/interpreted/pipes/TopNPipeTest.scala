@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.Descending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.util.Random
 
-class TopNPipeTest extends CypherFunSuite {
+class TopNPipeTest extends InterpretedRuntimeTestSuite {
 
   test("returning top 10 from 5 possible should return all") {
     val input = createFakePipeWith(5)
@@ -105,7 +105,7 @@ class TopNPipeTest extends CypherFunSuite {
   }
 
   test("should handle null input") {
-    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
+    val input = new FakePipe(Seq(Map[String, Any]("a" -> 10), Map[String, Any]("a" -> null)))
 
     val pipe = TopNPipe(input, literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
@@ -117,7 +117,7 @@ class TopNPipeTest extends CypherFunSuite {
   // under special circumstances (here: early abort because of limit 0).
   // This test is _not_ repeated for every pipe since the solution was implemented in PipeWithSource.
   test("limit 0 should close input") {
-    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
+    val input = new FakePipe(Seq(Map[String, Any]("a" -> 10), Map[String, Any]("a" -> null)))
     val pipe = TopNPipe(input, literal(0), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a"))
     result.hasNext
@@ -127,7 +127,7 @@ class TopNPipeTest extends CypherFunSuite {
   test("close should close input and table") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
+    val input = new FakePipe(Seq(Map[String, Any]("a" -> 10), Map[String, Any]("a" -> null)))
     val pipe = TopNPipe(input, literal(1), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result =
       pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).map(ctx => ctx.getByName("a"))
@@ -139,7 +139,7 @@ class TopNPipeTest extends CypherFunSuite {
   test("exhaust should close input and table") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
-    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
+    val input = new FakePipe(Seq(Map[String, Any]("a" -> 10), Map[String, Any]("a" -> null)))
     val pipe = TopNPipe(input, literal(1), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     // exhaust
     pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).map(ctx => ctx.getByName("a")).toList

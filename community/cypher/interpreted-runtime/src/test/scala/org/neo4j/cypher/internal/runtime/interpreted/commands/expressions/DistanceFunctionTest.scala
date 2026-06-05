@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.values.storable.CRSCalculator.GeographicCalculator.EARTH_RADIUS_METERS
 import org.neo4j.values.storable.CoordinateReferenceSystem
@@ -33,7 +33,7 @@ import org.scalatest.matchers.Matcher
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.language.implicitConversions
 
-class DistanceFunctionTest extends CypherFunSuite {
+class DistanceFunctionTest extends InterpretedRuntimeTestSuite {
 
   implicit def javaToScalaPair(pair: Pair[PointValue, PointValue]): (PointValue, PointValue) =
     (pair.first(), pair.other())

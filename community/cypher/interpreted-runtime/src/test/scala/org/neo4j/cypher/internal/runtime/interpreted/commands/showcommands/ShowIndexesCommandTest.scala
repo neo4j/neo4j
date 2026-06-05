@@ -365,9 +365,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
 
     // No statistics, most tests won't care about them but don't want null-pointers
     val statistics = mock[IndexUsageStats]
-    when(statistics.trackedSince()).thenReturn(0)
-    when(statistics.lastRead()).thenReturn(0)
-    when(statistics.readCount()).thenReturn(0)
+    when(statistics.trackedSince()).thenReturn(0L)
+    when(statistics.lastRead()).thenReturn(0L)
+    when(statistics.readCount()).thenReturn(0L)
     when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
   }
 
@@ -1009,9 +1009,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
 
     // override statistics to be explicit about what we test (even if it's the default values XD)
     val statistics = mock[IndexUsageStats]
-    when(statistics.trackedSince()).thenReturn(0)
-    when(statistics.lastRead()).thenReturn(0)
-    when(statistics.readCount()).thenReturn(0)
+    when(statistics.trackedSince()).thenReturn(0L)
+    when(statistics.lastRead()).thenReturn(0L)
+    when(statistics.readCount()).thenReturn(0L)
     when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
 
     // When
@@ -1028,11 +1028,11 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     when(ctx.getAllIndexes()).thenReturn(Map(rangeNodeIndexDescriptor -> nodeIndexInfo))
 
     // override as we want other statistics
-    val trackedSinceMs = 1
+    val trackedSinceMs = 1L
     val statistics = mock[IndexUsageStats]
     when(statistics.trackedSince()).thenReturn(trackedSinceMs)
-    when(statistics.lastRead()).thenReturn(0)
-    when(statistics.readCount()).thenReturn(0)
+    when(statistics.lastRead()).thenReturn(0L)
+    when(statistics.readCount()).thenReturn(0L)
     when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
 
     // When
@@ -1054,9 +1054,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     when(ctx.getAllIndexes()).thenReturn(Map(rangeNodeIndexDescriptor -> nodeIndexInfo))
 
     // override as we want other statistics
-    val trackedSinceMs = 1
-    val lastReadMs = 5
-    val readCount = 3
+    val trackedSinceMs = 1L
+    val lastReadMs = 5L
+    val readCount = 3L
     val statistics = mock[IndexUsageStats]
     when(statistics.trackedSince()).thenReturn(trackedSinceMs)
     when(statistics.lastRead()).thenReturn(lastReadMs)
@@ -1082,9 +1082,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     when(ctx.getAllIndexes()).thenReturn(Map(rangeNodeIndexDescriptor -> nodeIndexInfo))
 
     // override as we want other statistics
-    val trackedSinceMs = 1
-    val lastReadMs = 5
-    val readCount = 3
+    val trackedSinceMs = 1L
+    val lastReadMs = 5L
+    val readCount = 3L
     val statistics = mock[IndexUsageStats]
     when(statistics.trackedSince()).thenReturn(trackedSinceMs)
     when(statistics.lastRead()).thenReturn(lastReadMs)

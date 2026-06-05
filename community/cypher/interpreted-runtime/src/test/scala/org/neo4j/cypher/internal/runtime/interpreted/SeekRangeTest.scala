@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering
 import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
-class SeekRangeTest extends CypherFunSuite {
+class SeekRangeTest extends InterpretedRuntimeTestSuite {
 
   implicit private val BY_VALUE: MinMaxOrdering[Value] =
     MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))

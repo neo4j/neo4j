@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.UUID
 
-class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
+class MapCypherRowTest extends InterpretedRuntimeTestSuite with AstConstructionTestSupport {
 
   test("create clone") {
     // given

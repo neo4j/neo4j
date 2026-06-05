@@ -23,9 +23,9 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 
-class LazyTypesTest extends CypherFunSuite {
+class LazyTypesTest extends InterpretedRuntimeTestSuite {
 
   test("should not initialize state when state is complete") {
     // given

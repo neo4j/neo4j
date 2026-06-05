@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ReferenceByName
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
 import org.neo4j.values.AnyValue
@@ -35,7 +35,7 @@ import org.neo4j.values.storable.Values.stringValue
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class ProduceResultsPipeTest extends CypherFunSuite {
+class ProduceResultsPipeTest extends InterpretedRuntimeTestSuite {
 
   test("should project needed columns") {
     val sourcePipe = mock[Pipe]
@@ -65,7 +65,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
       ))
     )
 
-    val pipe = ProduceResultsPipe(sourcePipe, columns.map(ReferenceByName))()
+    val pipe = ProduceResultsPipe(sourcePipe, columns.map(ReferenceByName.apply))()
 
     pipe.createResults(queryState).toList
 
@@ -84,7 +84,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     when(queryState.decorator).thenReturn(NullPipeDecorator)
     when(sourcePipe.createResults(queryState)).thenReturn(ClosingIterator.empty)
 
-    val pipe = ProduceResultsPipe(sourcePipe, Array("a", "b", "c").map(ReferenceByName))()
+    val pipe = ProduceResultsPipe(sourcePipe, Array("a", "b", "c").map(ReferenceByName.apply))()
 
     val result = pipe.createResults(queryState).toList
 

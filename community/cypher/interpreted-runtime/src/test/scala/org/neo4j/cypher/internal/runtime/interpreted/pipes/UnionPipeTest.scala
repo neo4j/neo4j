@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class UnionPipeTest extends CypherFunSuite {
+class UnionPipeTest extends InterpretedRuntimeTestSuite {
 
   test("close should close rhs and lhs when exhausted") {
     val lhs = FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))

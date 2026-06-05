@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TestableIterator
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 
-class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPipeTestSupport {
+class NodeRightOuterHashJoinPipeTest extends InterpretedRuntimeTestSuite with NodeHashJoinPipeTestSupport {
 
   test("should support simple hash join over nodes") {
     // given

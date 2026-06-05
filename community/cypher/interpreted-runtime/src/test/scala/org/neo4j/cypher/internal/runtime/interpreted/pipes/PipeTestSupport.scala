@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.util.ValueUtils
 
 trait PipeTestSupport {
-  self: CypherFunSuite =>
+  self: InterpretedRuntimeTestSuite =>
 
   val query: QueryContext = mock[QueryContext]
 
@@ -47,14 +47,14 @@ trait PipeTestSupport {
   def row(values: (LogicalVariable, Any)*): CypherRow =
     CypherRow.from(values.map(v => (v._1.name, ValueUtils.of(v._2))): _*)
 
-  def newMockedNode(id: Int): Node = {
+  def newMockedNode(id: Long): Node = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
     when(node.getElementId).thenReturn(id.toString)
     node
   }
 
-  def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
+  def newMockedRelationship(id: Long, startNode: Node, endNode: Node): Relationship = {
     val relationship = mock[Relationship]
     val startId = startNode.getId
     val endId = endNode.getId

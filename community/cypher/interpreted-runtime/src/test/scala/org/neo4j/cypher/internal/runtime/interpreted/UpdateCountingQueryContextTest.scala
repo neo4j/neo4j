@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.schema.EndpointType
@@ -44,7 +43,7 @@ import org.neo4j.values.storable.Values
 
 import java.util
 
-class UpdateCountingQueryContextTest extends CypherFunSuite {
+class UpdateCountingQueryContextTest extends InterpretedRuntimeTestSuite {
 
   private val inner = mock[QueryContext]
   private val nodeA = mock[Node]

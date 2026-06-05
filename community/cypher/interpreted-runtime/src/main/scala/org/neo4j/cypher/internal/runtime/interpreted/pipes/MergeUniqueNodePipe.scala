@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
-import org.neo4j.cypher.internal.macros.TranslateExceptionMacros
+import org.neo4j.cypher.internal.macros.TranslateExceptionMacros3
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -106,7 +106,7 @@ object MergeUniqueNodePipe {
     try {
       val index = state.queryIndexes(queryIndexId)
       val context = query.transactionalContext
-      TranslateExceptionMacros.translateException(
+      TranslateExceptionMacros3.translateException(
         context.token,
         context.dataWrite.uniqueNodeMerge(
           index,

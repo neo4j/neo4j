@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.exceptions.CypherTypeException
@@ -42,7 +42,7 @@ import org.neo4j.values.virtual.VirtualValues
 import org.scalacheck.Gen
 import org.scalatest.Inspectors
 
-class ToFloatListFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
+class ToFloatListFunctionTest extends InterpretedRuntimeTestSuite with CypherScalaCheckDrivenPropertyChecks {
 
   test("should return null if argument is null") {
     assert(toFloatList(null) === NO_VALUE)

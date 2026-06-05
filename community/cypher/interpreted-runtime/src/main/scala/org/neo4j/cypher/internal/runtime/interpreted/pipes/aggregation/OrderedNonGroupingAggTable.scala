@@ -53,7 +53,7 @@ class OrderedNonGroupingAggTable(
 
   override def close(): Unit = {
     currentGroupKey = null
-    super.close()
+    super[NonGroupingAggTable].close()
   }
 
   override def clear(): Unit = {

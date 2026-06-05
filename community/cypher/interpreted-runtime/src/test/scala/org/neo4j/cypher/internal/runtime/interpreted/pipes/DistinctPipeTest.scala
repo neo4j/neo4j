@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection.DistinctSet
 
-class DistinctPipeTest extends CypherFunSuite {
+class DistinctPipeTest extends InterpretedRuntimeTestSuite {
 
   test("should be lazy") {
     val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> 11), Map("a" -> 12), Map("a" -> 13)))

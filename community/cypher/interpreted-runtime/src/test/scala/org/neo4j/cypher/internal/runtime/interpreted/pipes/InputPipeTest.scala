@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.runtime.InputCursor
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.IteratorInputCursor
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
 
-class InputPipeTest extends CypherFunSuite {
+class InputPipeTest extends InterpretedRuntimeTestSuite {
 
   private class MyInputCursor(data: Iterator[Array[AnyValue]]) extends IteratorInputCursor(data) {
     private var _wasClosed = false

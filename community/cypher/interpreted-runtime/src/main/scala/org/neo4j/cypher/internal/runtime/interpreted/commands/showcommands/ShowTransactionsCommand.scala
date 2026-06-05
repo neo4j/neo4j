@@ -467,18 +467,18 @@ case class ShowTransactionsCommand(
 
   private def getLongOrNull(long: lang.Long) = long match {
     case l: lang.Long => Values.longValue(l)
-    case _            => Values.NO_VALUE
+    case null         => Values.NO_VALUE
   }
 
   private def getDurationOrNullFromMillis(long: lang.Long) = long match {
     case l: lang.Long => Values.durationValue(Duration.ofMillis(l))
-    case _            => Values.NO_VALUE
+    case null         => Values.NO_VALUE
   }
 
   private def getDurationFromMicro(long: lang.Long) = long match {
-    case l: lang.Long             => Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(l)))
-    case _ if returnCypher5Values => Values.NO_VALUE
-    case _                        => DurationValue.ZERO
+    case l: lang.Long                => Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(l)))
+    case null if returnCypher5Values => Values.NO_VALUE
+    case null                        => DurationValue.ZERO
   }
 
   private def getMapValue(m: util.Map[String, AnyRef]): MapValue = {

@@ -23,7 +23,7 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TestQueryExecution
@@ -37,7 +37,7 @@ import org.neo4j.util.Table
 import org.neo4j.values.storable.IntValue
 
 class RunQueryAtPipeTest
-    extends CypherFunSuite
+    extends InterpretedRuntimeTestSuite
     with PipeTestSupport
     with ImplicitDummyPos
     with AnyValueConversions {

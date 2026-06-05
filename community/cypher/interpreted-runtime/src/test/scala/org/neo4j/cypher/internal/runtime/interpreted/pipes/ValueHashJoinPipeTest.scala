@@ -28,18 +28,18 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toIntValue
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TestableIterator
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.collection
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.doubleArray
 import org.neo4j.values.storable.Values.intArray
 import org.neo4j.values.storable.Values.intValue
 
-class ValueHashJoinPipeTest extends CypherFunSuite {
+class ValueHashJoinPipeTest extends InterpretedRuntimeTestSuite {
 
   test("should support simple hash join between two identifiers") {
     // given

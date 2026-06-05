@@ -27,14 +27,14 @@ import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 import org.neo4j.cypher.internal.runtime.ClosingRelationshipIterator
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.virtual.RelationshipValue
 
-class VarLengthExpandPipeTest extends CypherFunSuite {
+class VarLengthExpandPipeTest extends InterpretedRuntimeTestSuite {
 
   private trait WasClosed {
     def wasClosed: Boolean
@@ -144,7 +144,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     rels.wasClosed shouldBe true
   }
 
-  private def newMockedNode(id: Int): Node = {
+  private def newMockedNode(id: Long): Node = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
     when(node.getElementId).thenReturn(id.toString)

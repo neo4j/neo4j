@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -27,12 +28,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLi
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues
 
-class CachedInTest extends CypherFunSuite {
+class CachedInTest extends InterpretedRuntimeTestSuite {
 
   protected def createPredicate(lhs: Variable, rhs: Expression): Predicate = CachedIn(lhs, rhs, Id.INVALID_ID)
 

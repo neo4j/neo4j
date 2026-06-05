@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.Descending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.util.Random
 
-class Top1PipeTest extends CypherFunSuite {
+class Top1PipeTest extends InterpretedRuntimeTestSuite {
 
   test("returning top 1 from 5 possible should return lowest") {
     val input = createFakePipeWith(5)
@@ -103,7 +103,7 @@ class Top1PipeTest extends CypherFunSuite {
   }
 
   test("top 1 should handle null input") {
-    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)))
+    val input = new FakePipe(Seq(Map[String, Any]("a" -> 10), Map[String, Any]("a" -> null)))
 
     val pipe = TopNPipe(input, literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList

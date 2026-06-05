@@ -65,7 +65,7 @@ class OrderedGroupingAggTable(
 
   override def close(): Unit = {
     currentGroupKey = null
-    super.close()
+    super[GroupingAggTable].close()
   }
 
   override def clear(): Unit = {

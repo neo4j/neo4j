@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue

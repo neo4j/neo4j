@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
 
-class StringJoinFunctionTest extends CypherFunSuite {
+class StringJoinFunctionTest extends InterpretedRuntimeTestSuite {
 
   test("passing null to string.join() returns null") {
     join(null, ",") should be(NO_VALUE)

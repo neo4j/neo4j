@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.FALSE
 import org.neo4j.values.storable.Values.TRUE
 import org.neo4j.values.storable.Values.intValue
 
-class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
+class LetSemiApplyPipeTest extends InterpretedRuntimeTestSuite with PipeTestSupport {
 
   test("should only write let = true for the one that not matches when negated") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))

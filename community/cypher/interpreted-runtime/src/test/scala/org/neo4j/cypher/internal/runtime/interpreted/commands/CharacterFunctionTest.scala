@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toPathValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toStringValue
 import org.neo4j.cypher.internal.runtime.PathImpl
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CharacterLengthFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 
-class CharacterFunctionTest extends CypherFunSuite {
+class CharacterFunctionTest extends InterpretedRuntimeTestSuite {
 
   test("character length can be used on strings") {
     // given

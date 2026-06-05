@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 
 import scala.util.Random
 
-class IndexedInclusiveLongRangeTest extends CypherFunSuite {
+class IndexedInclusiveLongRangeTest extends InterpretedRuntimeTestSuite {
 
   test("single element") {
     IndexedInclusiveLongRange(0L, 0L, 1L) should equal(IndexedSeq(0L))

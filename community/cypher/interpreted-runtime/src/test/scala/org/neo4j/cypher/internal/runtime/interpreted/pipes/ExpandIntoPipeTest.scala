@@ -23,8 +23,8 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.helpers.StubNodeCursor
 import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain
 
-class ExpandIntoPipeTest extends CypherFunSuite {
+class ExpandIntoPipeTest extends InterpretedRuntimeTestSuite {
 
   test("exhaust should close cursor and cache") {
     val monitor = QueryStateHelper.trackClosedMonitor
@@ -75,7 +75,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     monitor.closedResources.collect { case r: CachingExpandInto => r } should have size (1)
   }
 
-  private def newMockedNode(id: Int): Node = {
+  private def newMockedNode(id: Long): Node = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
     when(node.getElementId).thenReturn(id.toString)

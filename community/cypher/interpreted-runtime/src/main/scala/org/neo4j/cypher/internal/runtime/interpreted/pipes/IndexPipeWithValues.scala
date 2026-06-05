@@ -49,7 +49,7 @@ trait IndexPipeWithValues extends Pipe {
   ) extends IndexIteratorBase[CypherRow](cursor) {
 
     private val newRow: NodeValueIndexCursor => CypherRow = ident match {
-      case Some(node) => cursor: NodeValueIndexCursor =>
+      case Some(node) => (cursor: NodeValueIndexCursor) =>
           rowFactory.copyWith(baseContext, node, queryContext.nodeById(cursor.nodeReference()))
       case None => (_: NodeValueIndexCursor) => baseContext
     }

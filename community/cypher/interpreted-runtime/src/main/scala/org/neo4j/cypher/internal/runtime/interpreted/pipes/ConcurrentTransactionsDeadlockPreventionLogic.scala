@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.collection.trackable.HeapTrackingObjectLongHashMap
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
@@ -242,8 +242,8 @@ private[pipes] class DependencyTrackingTransactionBatch(
   var state: BatchState
 ) extends RetryableTransactionBatch with AutoCloseable {
 
-  private[this] var _retryState: RetryState =
-    _ // Used in the retry priority queue to compare batches scheduled for retry
+  // Used in the retry priority queue to compare batches scheduled for retry
+  private[this] var _retryState: RetryState = _
   private[this] var _nextRetryState: RetryState = _ // Used by tasks to see if we shouldRetryAgain on failure
 
   def addRow(row: CypherRow): Unit = {

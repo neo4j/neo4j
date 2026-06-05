@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
 
-class CaseTest extends CypherFunSuite {
+class CaseTest extends InterpretedRuntimeTestSuite {
 
   test("case_with_single_alternative_works") {
     // GIVEN

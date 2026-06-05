@@ -21,16 +21,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ExtractFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SizeFunctionCypher25
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
 
-class ExtractTest extends CypherFunSuite {
+class ExtractTest extends InterpretedRuntimeTestSuite {
 
   test("canReturnSomethingFromAnIterable") {
     val l = Seq("x", "xxx", "xx")

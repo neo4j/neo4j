@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.GQLExceptionsHelper.requireImplicitTransaction
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.notification.AggregationSkippedNull
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.planner.spi.IndexComparatorFactory
@@ -231,7 +231,7 @@ class QueryState(
     val newCursors = newQuery.createExpressionCursors()
 
     // This method is not supported when we run with PERIODIC COMMIT, so we assert that we do not have such resources.
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(resources.isInstanceOf[CSVResources])
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(resources.isInstanceOf[CSVResources])
     val newResources = new CSVResources(newQuery.resources)
 
     // IndexReadSession and TokenReadSession are bound to the outer transaction.

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ErrorPipeTest extends CypherFunSuite {
+class ErrorPipeTest extends InterpretedRuntimeTestSuite {
 
   test("should throw an exception when used") {
     val exception = new RuntimeException("Boom!")

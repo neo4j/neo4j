@@ -76,7 +76,7 @@ object IsMatchResult {
         value.prettyPrint(),
         CypherTypeValueMapper.valueType(value)
       )
-    case other =>
+    case other @ null =>
       throw CypherTypeException.notBool(
         String.valueOf(other),
         String.valueOf(other),
@@ -193,7 +193,7 @@ case class IsNull(expression: Expression) extends Predicate {
     case _           => IsFalse
   }
 
-  override def toString: String = expression + " IS NULL"
+  override def toString: String = expression.toString + " IS NULL"
   override def rewrite(f: Expression => Expression): Expression = f(IsNull(expression.rewrite(f)))
   override def arguments: Seq[Expression] = Seq(expression)
   override def children: Seq[AstNode[_]] = Seq(expression)
@@ -205,7 +205,7 @@ case class IsTyped(expression: Expression, typeName: CypherType) extends Predica
     IsMatchResult(CypherFunctions.isTyped(expression(ctx, state), typeName))
   }
 
-  override def toString: String = expression + " IS :: " + typeName
+  override def toString: String = expression.toString + " IS :: " + typeName
   override def rewrite(f: Expression => Expression): Expression = f(IsTyped(expression.rewrite(f), typeName))
   override def arguments: Seq[Expression] = Seq(expression)
   override def children: Seq[AstNode[_]] = Seq(expression)
@@ -213,7 +213,7 @@ case class IsTyped(expression: Expression, typeName: CypherType) extends Predica
 
 case class IsNormalized(expression: Expression, normalForm: NormalForm) extends Expression {
 
-  override def toString: String = expression + " IS NORMALIZED"
+  override def toString: String = expression.toString + " IS NORMALIZED"
 
   override def rewrite(f: Expression => Expression): Expression = f(IsNormalized(expression.rewrite(f), normalForm))
 

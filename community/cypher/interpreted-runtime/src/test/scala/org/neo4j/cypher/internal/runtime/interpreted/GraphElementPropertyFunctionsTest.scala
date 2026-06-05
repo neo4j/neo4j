@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.ArrayValue
 import org.neo4j.values.storable.Values.byteArray
@@ -30,7 +29,7 @@ import org.neo4j.values.storable.Values.intArray
 import org.neo4j.values.storable.Values.longArray
 import org.neo4j.values.storable.Values.shortArray
 
-class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElementPropertyFunctions {
+class GraphElementPropertyFunctionsTest extends InterpretedRuntimeTestSuite with GraphElementPropertyFunctions {
 
   val byte: Byte = 1
   val short: Short = 1

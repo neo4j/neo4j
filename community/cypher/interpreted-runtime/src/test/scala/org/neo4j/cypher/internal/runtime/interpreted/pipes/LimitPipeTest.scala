@@ -25,12 +25,12 @@ import org.mockito.Mockito.when
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LimitPipeTest extends CypherFunSuite {
+class LimitPipeTest extends InterpretedRuntimeTestSuite {
 
   test("limit 0 should not pull anything from the incoming iterator") {
     // Given

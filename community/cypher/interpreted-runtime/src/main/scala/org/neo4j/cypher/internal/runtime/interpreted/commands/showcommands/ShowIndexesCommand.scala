@@ -303,10 +303,6 @@ object ShowIndexesCommand {
                 createNodeIndexCommand("RANGE", name, labelsOrTypes, properties)
               case EntityType.RELATIONSHIP =>
                 createRelIndexCommand("RANGE", name, labelsOrTypes, properties)
-              case _ => throw InvalidArgumentsException.internalError(
-                  this.getClass.getSimpleName,
-                  s"Did not recognize entity type $entityType"
-                )
             }
         }
       case IndexType.FULLTEXT =>
@@ -333,10 +329,6 @@ object ShowIndexesCommand {
               s"EACH [$escapedRelProperties]",
               Some(optionsString)
             )
-          case _ => throw InvalidArgumentsException.internalError(
-              this.getClass.getSimpleName,
-              s"Did not recognize entity type $entityType"
-            )
         }
       case IndexType.TEXT =>
         entityType match {
@@ -344,10 +336,6 @@ object ShowIndexesCommand {
             createNodeIndexCommand("TEXT", name, labelsOrTypes, properties)
           case EntityType.RELATIONSHIP =>
             createRelIndexCommand("TEXT", name, labelsOrTypes, properties)
-          case _ => throw InvalidArgumentsException.internalError(
-              this.getClass.getSimpleName,
-              s"Did not recognize entity type $entityType"
-            )
         }
       case IndexType.POINT =>
         val pointConfig = configAsString(indexConfig)
@@ -358,10 +346,6 @@ object ShowIndexesCommand {
             createNodeIndexCommand("POINT", name, labelsOrTypes, properties, Some(optionsString))
           case EntityType.RELATIONSHIP =>
             createRelIndexCommand("POINT", name, labelsOrTypes, properties, Some(optionsString))
-          case _ => throw InvalidArgumentsException.internalError(
-              this.getClass.getSimpleName,
-              s"Did not recognize entity type $entityType"
-            )
         }
       case IndexType.VECTOR =>
         if (returnCypher5Values && (labelsOrTypes.size > 1 || properties.size > 1)) null
@@ -402,10 +386,6 @@ object ShowIndexesCommand {
                 s"($escapedRelVectorProperties)$additionalPropertiesString",
                 Some(optionsString)
               )
-            case _ => throw InvalidArgumentsException.internalError(
-                this.getClass.getSimpleName,
-                s"Did not recognize entity type $entityType"
-              )
           }
         }
       case IndexType.LOOKUP =>
@@ -414,15 +394,7 @@ object ShowIndexesCommand {
             createIndexCommand("LOOKUP", name, "(n)", "EACH labels(n)")
           case EntityType.RELATIONSHIP =>
             createIndexCommand("LOOKUP", name, "()-[r]-()", "EACH type(r)")
-          case _ => throw InvalidArgumentsException.internalError(
-              this.getClass.getSimpleName,
-              s"Did not recognize entity type $entityType"
-            )
         }
-      case _ => throw InvalidArgumentsException.internalError(
-          this.getClass.getSimpleName,
-          s"Did not recognize index type $indexType"
-        )
     }
   }
 }

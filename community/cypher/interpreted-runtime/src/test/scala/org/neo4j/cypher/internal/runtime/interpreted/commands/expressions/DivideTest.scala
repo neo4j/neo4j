@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.NumberValue
 
-class DivideTest extends CypherFunSuite {
+class DivideTest extends InterpretedRuntimeTestSuite {
 
   test("should_throw_arithmetic_exception_for_divide_by_zero") {
     val ctx = CypherRow.empty

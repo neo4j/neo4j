@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.Counter
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -40,7 +41,6 @@ import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.PointValue
@@ -61,7 +61,7 @@ import org.neo4j.values.virtual.VirtualValues.relationshipValue
 
 import scala.language.postfixOps
 
-class CoerceToTest extends CypherFunSuite {
+class CoerceToTest extends InterpretedRuntimeTestSuite {
 
   implicit val openCases: Counter = Counter()
   implicit val qtx: QueryContext = mock[QueryContext]
@@ -74,7 +74,7 @@ class CoerceToTest extends CypherFunSuite {
   val level1Types: Set[CypherType] = level0Types.map(CTList).toSet + CTMap
   val level2Types: Set[CypherType] = (level1Types ++ level0Types).map(t => CTList(t))
 
-  val testedTypes: Set[CypherType] = level2Types ++ level1Types ++ level0Types
+  private val testedTypes: RichTypes = new RichTypes(level2Types ++ level1Types ++ level0Types)
 
   test("null") {
     testedTypes
@@ -256,7 +256,7 @@ class CoerceToTest extends CypherFunSuite {
     super.afterEach()
   }
 
-  implicit class RichTypes(allTypes: Set[CypherType]) {
+  private class RichTypes(allTypes: Set[CypherType]) {
 
     case class coerce(actualValue: AnyValue)(implicit counter: Counter) {
       self =>

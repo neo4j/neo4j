@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Add
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.UTF8StringValue
 import org.neo4j.values.storable.Values
@@ -35,7 +35,7 @@ import org.neo4j.values.storable.Values.utf8Value
 
 import java.nio.charset.StandardCharsets
 
-class AddTest extends CypherFunSuite {
+class AddTest extends InterpretedRuntimeTestSuite {
 
   val m = CypherRow.empty
   val s = QueryStateHelper.empty

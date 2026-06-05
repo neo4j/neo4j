@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 
-class StringIndexOfFunctionTest extends CypherFunSuite {
+class StringIndexOfFunctionTest extends InterpretedRuntimeTestSuite {
 
   test("passing null to string.indexOf() returns null") {
     indexOf(null, "a") should be(NO_VALUE)

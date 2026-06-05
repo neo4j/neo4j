@@ -24,11 +24,11 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SkipPipeTest extends CypherFunSuite {
+class SkipPipeTest extends InterpretedRuntimeTestSuite {
 
   test("skip 0 should not actually pull from the input") {
     // Given

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.functionArgumentGqlException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -53,7 +53,7 @@ trait StdevTest {
   }
 }
 
-class StdevSampleTest extends CypherFunSuite with StdevTest {
+class StdevSampleTest extends InterpretedRuntimeTestSuite with StdevTest {
   def createAggregator(inner: Expression) = new StdevFunction(inner, false)
 
   test("empty") {
@@ -126,7 +126,7 @@ class StdevSampleTest extends CypherFunSuite with StdevTest {
   }
 }
 
-class StdevPopulationTest extends CypherFunSuite with StdevTest {
+class StdevPopulationTest extends InterpretedRuntimeTestSuite with StdevTest {
   def createAggregator(inner: Expression) = new StdevFunction(inner, true)
 
   test("empty") {

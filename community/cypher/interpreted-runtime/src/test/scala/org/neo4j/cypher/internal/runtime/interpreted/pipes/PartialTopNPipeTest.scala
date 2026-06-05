@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.IntValue
 
 import java.util.Comparator
 
-class PartialTopNPipeTest extends CypherFunSuite {
+class PartialTopNPipeTest extends InterpretedRuntimeTestSuite {
 
   private val compareX: Comparator[ReadableRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("x")))
   private val compareY: Comparator[ReadableRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("y")))

@@ -23,9 +23,9 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values.stringValue
@@ -35,7 +35,7 @@ import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.collection.mutable
 
-class KeysFunctionTest extends CypherFunSuite {
+class KeysFunctionTest extends InterpretedRuntimeTestSuite {
 
   test("test Property Keys") {
     // GIVEN

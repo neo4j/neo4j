@@ -31,16 +31,16 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 
-class NodeIndexSeekPipeTest extends CypherFunSuite {
+class NodeIndexSeekPipeTest extends InterpretedRuntimeTestSuite {
 
   test("exhaust should close cursor") {
     val monitor = QueryStateHelper.trackClosedMonitor

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.values
 
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedRuntimeTestSuite
 
-class KeyTokenTest extends CypherFunSuite {
+class KeyTokenTest extends InterpretedRuntimeTestSuite {
 
   test("should_resolve_unresolved") {
     // given
