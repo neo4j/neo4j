@@ -55,7 +55,7 @@ object PlanDescriptionBuilder {
     explainScopeOpt: Option[WorkingScope]
   ): PlanDescriptionBuilder = {
     // NOTE: We should not keep a reference to the ExecutionPlan in the PlanDescriptionBuilder since it can end up in long-lived caches, e.g. RecentQueryBuffer
-    val batchSize = executionPlan.batchSize
+    val batchSize = executionPlan.maybeBatchSize
     val runtimeName = executionPlan.runtimeName
     val runtimeMetadata = executionPlan.metadata
     val runtimeOperatorMetadata = executionPlan.operatorMetadata
