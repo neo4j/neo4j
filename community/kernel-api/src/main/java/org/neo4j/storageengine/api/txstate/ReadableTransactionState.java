@@ -24,12 +24,12 @@ import java.util.NavigableMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
-import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.collection.diffset.IntDiffSets;
 import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -145,10 +145,10 @@ public interface ReadableTransactionState extends VisitableTransactionState {
     NavigableMap<ValueTuple, MutableLongSet> getSortedAddedIndexUpdates(IndexDescriptor descriptor);
 
     /**
-     * A readonly view of all entity ids with removals for the provided schema. Returns {@code null}, if the index
-     * updates for this schema have not been initialized.
+     * A snapshot of the current values removed from the index, includes a function that returns if a specific value was removed.
+     * Returns {@code null}, if the index updates for this schema have not been initialized.
      */
-    UnmodifiableLongSet getRemovedIndexEntityIds(IndexDescriptor descriptor);
+    IndexRemovalSnapshot getRemovedFromIndex(IndexDescriptor descriptor);
 
     // OTHER
 

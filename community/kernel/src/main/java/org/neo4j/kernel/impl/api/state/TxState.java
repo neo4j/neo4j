@@ -48,7 +48,6 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
-import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
 import org.neo4j.collection.diffset.ChangeCountingDiffSet;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.collection.diffset.IntDiffSets;
@@ -67,6 +66,7 @@ import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -264,7 +264,7 @@ public class TxState implements TransactionState {
                 indexUpdate
                         .getRemovedValueEntries()
                         .forEachKeyValue((entityId, values) ->
-                                visitor.visitValueIndexUpdate(indexDescriptor, entityId, values, REMOVED));
+                                visitor.visitValueIndexUpdate(indexDescriptor, entityId, values.valueTuple(), REMOVED));
             });
         }
 
@@ -903,9 +903,9 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public UnmodifiableLongSet getRemovedIndexEntityIds(IndexDescriptor indexDescriptor) {
+    public IndexRemovalSnapshot getRemovedFromIndex(IndexDescriptor indexDescriptor) {
         IndexUpdate updates = getIndexUpdate(indexDescriptor);
-        return updates == null ? null : new UnmodifiableLongSet(updates.getRemovedEntityIds());
+        return updates == null ? null : updates.removedSnapshot();
     }
 
     private IndexUpdate getIndexUpdate(IndexDescriptor descriptor) {

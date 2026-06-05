@@ -25,8 +25,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.internal.kernel.api.EntityIndexCursor;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -38,6 +36,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -61,7 +60,7 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
 
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<EntityWithPropertyValues> addedWithValues = Collections.emptyIterator();
-    private LongSet removed = LongSets.immutable.empty();
+    private LongSetContains removed = (value) -> false;
     private boolean needsValues;
     private IndexOrder indexOrder;
     private final SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
@@ -353,7 +352,7 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
             this.accessMode = null;
             this.added = ImmutableEmptyLongIterator.INSTANCE;
             this.addedWithValues = Collections.emptyIterator();
-            this.removed = LongSets.immutable.empty();
+            this.removed = (value) -> false;
             this.numberOfProperties = 0;
         }
         super.closeInternal();
@@ -404,7 +403,7 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
     /**
      * Gets entities removed in the current transaction that are relevant for the index.
      */
-    abstract LongSet removed(TransactionState txState, LongSet removedFromIndex);
+    abstract LongSetContains removed(TransactionState txState, IndexRemovalSnapshot removedFromIndex);
 
     /**
      * Checks if the user is allowed to see the entity and properties the cursor is currently pointing at.
@@ -420,4 +419,9 @@ public abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<
      * Name of the concrete implementation used in {@link #toString()}.
      */
     abstract String implementationName();
+
+    @FunctionalInterface
+    protected interface LongSetContains {
+        boolean contains(long value);
+    }
 }

@@ -61,7 +61,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
-import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -71,6 +70,7 @@ import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
@@ -901,8 +901,10 @@ class TxStateIndexChangesTest {
             // THEN
             assertContains(changes.added(), 42L);
             assertContains(changesWithValues.added(), entityWithPropertyValues(42L, "42value1", "42value2"));
-            assertContains(changes.removed(), 43L, 44L);
-            assertContains(changesWithValues.removed(), 43L, 44L);
+            assertTrue(changes.removed().isRemoved().test(43L));
+            assertTrue(changes.removed().isRemoved().test(44L));
+            assertTrue(changesWithValues.removed().isRemoved().test(43L));
+            assertTrue(changesWithValues.removed().isRemoved().test(44L));
         }
 
         @Test
@@ -932,18 +934,24 @@ class TxStateIndexChangesTest {
 
             // THEN
             assertContains(changes42.added(), 42L);
-            assertContains(changes42.removed(), 43L, 44L);
+            assertTrue(changes42.removed().isRemoved().test(43L));
+            assertTrue(changes42.removed().isRemoved().test(44L));
             assertTrue(changes43.added().isEmpty());
-            assertContains(changes43.removed(), 43L, 44L);
+            assertTrue(changes43.removed().isRemoved().test(43L));
+            assertTrue(changes43.removed().isRemoved().test(44L));
             assertTrue(changes44.added().isEmpty());
-            assertContains(changes44.removed(), 43L, 44L);
+            assertTrue(changes44.removed().isRemoved().test(43L));
+            assertTrue(changes44.removed().isRemoved().test(44L));
 
             assertContains(changesWithValues42.added(), entityWithPropertyValues(42L, "42value1", "42value2"));
-            assertContains(changes42.removed(), 43L, 44L);
+            assertTrue(changes42.removed().isRemoved().test(43L));
+            assertTrue(changes42.removed().isRemoved().test(44L));
             assertFalse(changesWithValues43.added().iterator().hasNext());
-            assertContains(changesWithValues44.removed(), 43L, 44L);
+            assertTrue(changes43.removed().isRemoved().test(43L));
+            assertTrue(changes43.removed().isRemoved().test(44L));
             assertFalse(changesWithValues44.added().iterator().hasNext());
-            assertContains(changesWithValues44.removed(), 43L, 44L);
+            assertTrue(changes44.removed().isRemoved().test(43L));
+            assertTrue(changes44.removed().isRemoved().test(44L));
         }
 
         @Test
@@ -1874,7 +1882,9 @@ class TxStateIndexChangesTest {
             final TreeMap<ValueTuple, MutableLongSet> sortedMap = new TreeMap<>(ValueTuple.COMPARATOR);
             sortedMap.putAll(additions);
             doReturn(sortedMap).when(mock).getSortedAddedIndexUpdates(any(IndexDescriptor.class));
-            doReturn(new UnmodifiableLongSet(removals)).when(mock).getRemovedIndexEntityIds(any(IndexDescriptor.class));
+            doReturn(new IndexRemovalSnapshot(0, (id) -> removals.contains(id), removals.isEmpty()))
+                    .when(mock)
+                    .getRemovedFromIndex(any(IndexDescriptor.class));
             doReturn(additions != null || removals != null).when(mock).hasIndexUpdates(any(IndexDescriptor.class));
             return mock;
         }

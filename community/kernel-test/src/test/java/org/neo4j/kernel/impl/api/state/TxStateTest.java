@@ -60,7 +60,6 @@ import org.eclipse.collections.impl.UnmodifiableMap;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
@@ -83,6 +82,7 @@ import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationships
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -317,7 +317,7 @@ class TxStateTest {
     @Test
     void shouldComputeIndexRemovedIdsOnUninitializedTxState() {
         // WHEN
-        UnmodifiableLongSet removed = state.getRemovedIndexEntityIds(indexOn_1_1);
+        IndexRemovalSnapshot removed = state.getRemovedFromIndex(indexOn_1_1);
 
         // THEN
         assertNull(removed);
@@ -353,7 +353,7 @@ class TxStateTest {
         addNodesToIndex(indexOn_2_1).withDefaultStringProperties(42L);
 
         // WHEN
-        UnmodifiableLongSet removed = state.getRemovedIndexEntityIds(indexOn_1_1);
+        IndexRemovalSnapshot removed = state.getRemovedFromIndex(indexOn_1_1);
 
         // THEN
         assertNull(removed);
@@ -368,7 +368,7 @@ class TxStateTest {
 
         // WHEN
         UnmodifiableMap<ValueTuple, MutableLongSet> added = state.getAddedIndexUpdates(indexOn_1_1);
-        UnmodifiableLongSet removedIds = state.getRemovedIndexEntityIds(indexOn_1_1);
+        IndexRemovalSnapshot removedIds = state.getRemovedFromIndex(indexOn_1_1);
 
         // THEN
         assertNotNull(added);
@@ -383,7 +383,7 @@ class TxStateTest {
         assertThat(added.get(ValueTuple.of(stringValue("value43"))).toArray()).containsExactly(43L);
 
         assertNotNull(removedIds);
-        assertThat(removedIds.toArray()).isEmpty();
+        assertTrue(removedIds.isEmpty());
     }
 
     @Test
@@ -418,7 +418,7 @@ class TxStateTest {
 
         // WHEN
         UnmodifiableMap<ValueTuple, MutableLongSet> added = state.getAddedIndexUpdates(indexOn_1_1);
-        UnmodifiableLongSet removedIds = state.getRemovedIndexEntityIds(indexOn_1_1);
+        IndexRemovalSnapshot removedIds = state.getRemovedFromIndex(indexOn_1_1);
 
         // THEN
         assertNotNull(added);
@@ -430,7 +430,62 @@ class TxStateTest {
         assertThat(added.get(ValueTuple.of(stringValue("value43"))).toArray()).containsExactly(43L);
 
         assertNotNull(removedIds);
-        assertThat(removedIds.toArray()).containsExactlyInAnyOrder(40L, 41L);
+        assertTrue(removedIds.isRemoved().test(40L));
+        assertTrue(removedIds.isRemoved().test(41L));
+    }
+
+    @Test
+    void shouldUpdateRemovalVersionOfIndex() {
+        // WHEN
+        state.indexDoUpdateEntry(indexOn_1_1, 40L, ValueTuple.of(stringValue("value40")), null);
+        IndexRemovalSnapshot r1 = state.getRemovedFromIndex(indexOn_1_1);
+        state.indexDoUpdateEntry(indexOn_1_1, 41L, ValueTuple.of(stringValue("value41")), null);
+        IndexRemovalSnapshot r2 = state.getRemovedFromIndex(indexOn_1_1);
+
+        // THEN
+        assertNotNull(r1);
+        assertNotNull(r2);
+        assertFalse(r1.isEmpty());
+        assertTrue(r1.isRemoved().test(40L));
+        assertFalse(r1.isRemoved().test(41L));
+        assertThat(r1.version()).isEqualTo(0);
+
+        assertFalse(r2.isEmpty());
+        assertTrue(r2.isRemoved().test(40L));
+        assertTrue(r2.isRemoved().test(41L));
+        assertThat(r2.version()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldUpdateIndexRemovalForEachIndexSeparately() {
+        // WHEN
+        state.indexDoUpdateEntry(indexOn_1_1, 40L, ValueTuple.of(stringValue("value40")), null);
+        IndexRemovalSnapshot r1 = state.getRemovedFromIndex(indexOn_1_1);
+        state.indexDoUpdateEntry(indexOn_2_1, 39L, ValueTuple.of(stringValue("value40")), null);
+        IndexRemovalSnapshot rIndex2 = state.getRemovedFromIndex(indexOn_2_1);
+        state.indexDoUpdateEntry(indexOn_1_1, 41L, ValueTuple.of(stringValue("value41")), null);
+        IndexRemovalSnapshot r2 = state.getRemovedFromIndex(indexOn_1_1);
+
+        // THEN
+        assertNotNull(r1);
+        assertFalse(r1.isEmpty());
+        assertFalse(r1.isRemoved().test(39L));
+        assertTrue(r1.isRemoved().test(40L));
+        assertFalse(r1.isRemoved().test(41L));
+        assertThat(r1.version()).isEqualTo(0);
+
+        assertNotNull(r2);
+        assertFalse(r2.isEmpty());
+        assertTrue(r2.isRemoved().test(40L));
+        assertTrue(r2.isRemoved().test(41L));
+        assertThat(r2.version()).isEqualTo(1);
+
+        assertNotNull(rIndex2);
+        assertFalse(rIndex2.isEmpty());
+        assertTrue(rIndex2.isRemoved().test(39L));
+        assertFalse(rIndex2.isRemoved().test(40L));
+        assertFalse(rIndex2.isRemoved().test(41L));
+        assertThat(rIndex2.version()).isEqualTo(0);
     }
 
     @Test

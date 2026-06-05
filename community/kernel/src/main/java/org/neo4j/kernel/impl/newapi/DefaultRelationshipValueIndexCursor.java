@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
-
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -29,6 +26,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -150,9 +148,10 @@ public class DefaultRelationshipValueIndexCursor
     }
 
     @Override
-    protected LongSet removed(TransactionState txState, LongSet removedFromIndex) {
-        return mergeToSet(txState.addedAndRemovedRelationships().getRemoved(), removedFromIndex)
-                .asUnmodifiable();
+    protected LongSetContains removed(TransactionState txState, IndexRemovalSnapshot removedFromIndex) {
+        var removed = txState.addedAndRemovedRelationships().getRemoved().toImmutable();
+        return (value) ->
+                removed.contains(value) || removedFromIndex.isRemoved().test(value);
     }
 
     @Override

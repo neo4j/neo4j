@@ -22,12 +22,17 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.LongPredicate;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
 import org.neo4j.collection.trackable.HeapTrackingUnifiedSet;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -35,10 +40,11 @@ class IndexUpdate {
     private static final ValueTuple NO_VALUE_TUPLE = ValueTuple.of(Values.NO_VALUE);
     private final MemoryTracker memoryTracker;
     protected final HeapTrackingUnifiedSet<ValueTuple> changedValues;
-    protected final HeapTrackingLongObjectHashMap<ValueTuple> removedValueEntries;
+    protected final HeapTrackingLongObjectHashMap<ValueTupleWithVersion> removedValueEntries;
     protected final HeapTrackingLongObjectHashMap<ValueTuple> addedEntriesIds;
     private Map<ValueTuple, MutableLongSet> addedEntriesValues;
     private boolean isSorted = false;
+    protected int removeVersion = 0;
 
     private IndexUpdate(MemoryTracker stateMemoryTracker) {
         this.memoryTracker = stateMemoryTracker;
@@ -70,7 +76,7 @@ class IndexUpdate {
 
     void removeEntry(ValueTuple values, long entityId) {
         removePrevAddedEntry(entityId);
-        removedValueEntries.put(entityId, NO_VALUE_TUPLE);
+        removedValueEntries.getIfAbsentPut(entityId, () -> new EmptyValueWithVersion(removeVersion));
     }
 
     protected void removePrevAddedEntry(long entityId) {
@@ -94,23 +100,41 @@ class IndexUpdate {
         return (TreeMap<ValueTuple, MutableLongSet>) addedEntriesValues;
     }
 
-    HeapTrackingLongObjectHashMap<ValueTuple> getRemovedValueEntries() {
+    HeapTrackingLongObjectHashMap<ValueTupleWithVersion> getRemovedValueEntries() {
         throw new IllegalArgumentException("Must use index commands to get removed entries with values");
     }
 
+    @VisibleForTesting
     MutableLongSet getRemovedEntityIds() {
         return removedValueEntries.keySet();
     }
 
+    IndexRemovalSnapshot removedSnapshot() {
+        int version = removeVersion++;
+        LongPredicate isRemoved = entityId -> {
+            ValueTupleWithVersion removedEntry = removedValueEntries.get(entityId);
+            return removedEntry != null && removedEntry.version() <= version;
+        };
+        return new IndexRemovalSnapshot(version, isRemoved, removedValueEntries.isEmpty());
+    }
+
     private static class IndexUpdateWithIndexCommands extends IndexUpdate {
+        private final HeapTrackingIntObjectHashMap<MutableLongSet> removedInPreviousVersions;
+
         IndexUpdateWithIndexCommands(MemoryTracker stateMemoryTracker) {
             super(stateMemoryTracker);
+            this.removedInPreviousVersions = HeapTrackingCollections.newIntObjectHashMap(stateMemoryTracker);
         }
 
         @Override
         void addEntry(ValueTuple values, long entityId) {
-            var prevRemoved = removedValueEntries.get(entityId);
-            if (Objects.equals(prevRemoved, values)) {
+            ValueTupleWithVersion prevRemoved = removedValueEntries.get(entityId);
+            if (prevRemoved != null && Objects.equals(prevRemoved.valueTuple(), values)) {
+                for (int i = prevRemoved.version(); i < removeVersion; i++) {
+                    removedInPreviousVersions
+                            .getIfAbsentPut(i, LongSets.mutable.empty())
+                            .add(entityId);
+                }
                 removedValueEntries.remove(entityId);
                 return;
             }
@@ -120,7 +144,7 @@ class IndexUpdate {
         @Override
         void removeEntry(ValueTuple values, long entityId) {
             assert values != null;
-            var prevAdded = addedEntriesIds.get(entityId);
+            ValueTuple prevAdded = addedEntriesIds.get(entityId);
             if (Objects.equals(prevAdded, values)) {
                 removePrevAddedEntry(entityId);
                 return;
@@ -129,12 +153,40 @@ class IndexUpdate {
             if (!added) {
                 values = changedValues.get(values);
             }
-            removedValueEntries.put(entityId, values);
+            removedValueEntries.put(entityId, new ValueTupleWithVersionImpl(values, removeVersion));
         }
 
         @Override
-        HeapTrackingLongObjectHashMap<ValueTuple> getRemovedValueEntries() {
+        HeapTrackingLongObjectHashMap<ValueTupleWithVersion> getRemovedValueEntries() {
             return removedValueEntries;
+        }
+
+        @Override
+        IndexRemovalSnapshot removedSnapshot() {
+            int version = removeVersion++;
+            LongPredicate isRemoved = entityId -> {
+                ValueTupleWithVersion removedEntry = removedValueEntries.get(entityId);
+                boolean removedNow = removedEntry != null && removedEntry.version() <= version;
+                MutableLongSet removedPreviously = removedInPreviousVersions.get(version);
+                return removedNow || (removedPreviously != null && removedPreviously.contains(entityId));
+            };
+            return new IndexRemovalSnapshot(version, isRemoved, removedValueEntries.isEmpty());
+        }
+    }
+
+    interface ValueTupleWithVersion {
+        ValueTuple valueTuple();
+
+        int version();
+    }
+
+    record ValueTupleWithVersionImpl(ValueTuple valueTuple, int version) implements ValueTupleWithVersion {}
+
+    record EmptyValueWithVersion(int version) implements ValueTupleWithVersion {
+
+        @Override
+        public ValueTuple valueTuple() {
+            return NO_VALUE_TUPLE;
         }
     }
 }

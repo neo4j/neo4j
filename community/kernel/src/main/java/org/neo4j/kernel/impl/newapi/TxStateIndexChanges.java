@@ -32,7 +32,6 @@ import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 import org.eclipse.collections.impl.factory.Lists;
@@ -42,6 +41,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.internal.schema.IndexRemovalSnapshot;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -55,9 +55,9 @@ import org.neo4j.values.storable.Values;
 public class TxStateIndexChanges {
 
     private static final AddedWithValuesAndRemoved EMPTY_ADDED_AND_REMOVED_WITH_VALUES =
-            new AddedWithValuesAndRemoved(Collections.emptyList(), LongSets.immutable.empty());
+            new AddedWithValuesAndRemoved(Collections.emptyList(), IndexRemovalSnapshot.EMPTY);
     private static final AddedAndRemoved EMPTY_ADDED_AND_REMOVED =
-            new AddedAndRemoved(LongLists.immutable.empty(), LongSets.immutable.empty());
+            new AddedAndRemoved(LongLists.immutable.empty(), IndexRemovalSnapshot.EMPTY);
 
     private interface QueryDispatch<T> {
         T empty();
@@ -336,7 +336,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED;
         }
         UnmodifiableMap<ValueTuple, MutableLongSet> additions = txState.getAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         MutableLongSet added = additions.get(values);
         if (added == null) {
@@ -351,7 +351,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
         }
         UnmodifiableMap<ValueTuple, MutableLongSet> additions = txState.getAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         MutableLongSet added = additions.get(values);
         if (added == null) {
@@ -376,7 +376,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED;
         }
         NavigableMap<ValueTuple, MutableLongSet> sortedAdditions = txState.getSortedAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         int size = descriptor.schema().getPropertyIds().length;
         RangeFilterValues rangeFilter = predicate == null
@@ -411,7 +411,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
         }
         NavigableMap<ValueTuple, MutableLongSet> sortedAdditions = txState.getSortedAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         int size = descriptor.schema().getPropertyIds().length;
         RangeFilterValues rangeFilter = predicate == null
@@ -449,7 +449,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED;
         }
         NavigableMap<ValueTuple, MutableLongSet> sortedAdditions = txState.getSortedAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         int size = descriptor.schema().getPropertyIds().length;
         RangeFilterValues rangeFilter = RangeFilterValues.fromBoundingBox(size, equalityPrefix, predicate);
@@ -479,7 +479,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
         }
         NavigableMap<ValueTuple, MutableLongSet> sortedAdditions = txState.getSortedAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         int size = descriptor.schema().getPropertyIds().length;
         RangeFilterValues rangeFilter = RangeFilterValues.fromBoundingBox(size, equalityPrefix, predicate);
@@ -514,7 +514,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED;
         }
         NavigableMap<ValueTuple, MutableLongSet> sortedAdditions = txState.getSortedAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         int size = descriptor.schema().getPropertyIds().length;
         ValueTuple floor = getCompositeValueTuple(size, equalityPrefix, prefix, true);
@@ -545,7 +545,7 @@ public class TxStateIndexChanges {
             return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
         }
         NavigableMap<ValueTuple, MutableLongSet> sortedAdditions = txState.getSortedAddedIndexUpdates(descriptor);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         int keySize = descriptor.schema().getPropertyIds().length;
         ValueTuple floor = getCompositeValueTuple(keySize, equalityPrefix, prefix, true);
@@ -580,7 +580,7 @@ public class TxStateIndexChanges {
         }
 
         Map<ValueTuple, ? extends MutableLongSet> additions = getAdded(txState, descriptor, indexOrder);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         MutableLongList added = LongLists.mutable.empty();
 
@@ -604,7 +604,7 @@ public class TxStateIndexChanges {
         }
 
         Map<ValueTuple, ? extends MutableLongSet> additions = getAdded(txState, descriptor, indexOrder);
-        LongSet removed = txState.getRemovedIndexEntityIds(descriptor);
+        IndexRemovalSnapshot removed = txState.getRemovedFromIndex(descriptor);
 
         MutableList<EntityWithPropertyValues> added = Lists.mutable.empty();
 
@@ -640,13 +640,13 @@ public class TxStateIndexChanges {
         return ValueTuple.of(values);
     }
 
-    public record AddedAndRemoved(LongIterable added, LongSet removed) {
+    public record AddedAndRemoved(LongIterable added, IndexRemovalSnapshot removed) {
         public boolean isEmpty() {
             return added.isEmpty() && removed.isEmpty();
         }
     }
 
-    public record AddedWithValuesAndRemoved(Iterable<EntityWithPropertyValues> added, LongSet removed) {
+    public record AddedWithValuesAndRemoved(Iterable<EntityWithPropertyValues> added, IndexRemovalSnapshot removed) {
         public boolean isEmpty() {
             return !added.iterator().hasNext() && removed.isEmpty();
         }
