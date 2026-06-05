@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.StrictlyAdditiveProjection
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -841,6 +842,7 @@ trait StatementBuilder extends Cypher25ParserListener {
     val batch = ctx.subqueryInTransactionsBatchParameters()
     val error = ctx.subqueryInTransactionsErrorParameters()
     val report = ctx.subqueryInTransactionsReportParameters()
+    val disjointBy = ctx.subqueryInTransactionsDisjointByParameters()
     val batchParam = if (batch.isEmpty) None else Some(batch.get(0).ast[SubqueryCall.InTransactionsBatchParameters]())
     val concurrencyParam =
       if (ctx.CONCURRENT() != null)
@@ -849,15 +851,41 @@ trait StatementBuilder extends Cypher25ParserListener {
     val errorParam = if (error.isEmpty) None else Some(error.get(0).ast[SubqueryCall.InTransactionsErrorParameters]())
     val reportParam =
       if (report.isEmpty) None else Some(report.get(0).ast[SubqueryCall.InTransactionsReportParameters]())
-    ctx.ast = SubqueryCall.InTransactionsParameters(batchParam, concurrencyParam, errorParam, reportParam)(
-      pos(ctx.TRANSACTIONS().getSymbol)
-    )
+    val disjointByParam =
+      if (disjointBy.isEmpty) None
+      else Some(disjointBy.get(0).ast[SubqueryCall.InTransactionsDisjointByParameters]())
+    ctx.ast =
+      SubqueryCall.InTransactionsParameters(batchParam, concurrencyParam, errorParam, reportParam, disjointByParam)(
+        pos(ctx.TRANSACTIONS().getSymbol)
+      )
   }
 
   final override def exitSubqueryInTransactionsBatchParameters(
     ctx: Cypher25Parser.SubqueryInTransactionsBatchParametersContext
   ): Unit = {
     ctx.ast = SubqueryCall.InTransactionsBatchParameters(ctxChild(ctx, 1).ast())(pos(ctx))
+  }
+
+  final override def exitSubqueryInTransactionsDisjointByParameters(
+    ctx: Cypher25Parser.SubqueryInTransactionsDisjointByParametersContext
+  ): Unit = {
+    val mode: SubqueryCall.InTransactionsDisjointByMode =
+      if (ctx.AUTO() != null) {
+        InTransactionsDisjointByMode.DisjointByAuto
+      } else if (ctx.NONE() != null) {
+        InTransactionsDisjointByMode.DisjointByNone
+      } else {
+        InTransactionsDisjointByMode.DisjointByExpressions(
+          ctx.subqueryInTransactionsDisjointByExpressions().ast[Seq[Expression]]()
+        )
+      }
+    ctx.ast = SubqueryCall.InTransactionsDisjointByParameters(mode)(pos(ctx))
+  }
+
+  final override def exitSubqueryInTransactionsDisjointByExpressions(
+    ctx: Cypher25Parser.SubqueryInTransactionsDisjointByExpressionsContext
+  ): Unit = {
+    ctx.ast = astSeq[Expression](ctx.expression())
   }
 
   final override def exitSubqueryInTransactionsErrorParameters(

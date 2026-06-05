@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 
-class TransactionBatchByRewriterTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport {
+class TransactionDisjointByRewriterTest extends CypherPlannerTestSuite with LogicalPlanningTestSupport {
 
   test("should rewrite concurrent TransactionApply with unique index seek + setNodeProperties") {
     val plan = new LogicalPlanBuilder()
@@ -42,7 +42,7 @@ class TransactionBatchByRewriterTest extends CypherPlannerTestSuite with Logical
       .build()
 
     val rewritten = rewrite(plan)
-    batchByOf(rewritten) should not be empty
+    disjointByOf(rewritten) should not be empty
   }
 
   test("should rewrite concurrent TransactionForeach with MergeUniqueNode") {
@@ -56,7 +56,7 @@ class TransactionBatchByRewriterTest extends CypherPlannerTestSuite with Logical
       .build()
 
     val rewritten = rewrite(plan)
-    batchByOf(rewritten) should not be empty
+    disjointByOf(rewritten) should not be empty
   }
 
   test("should not rewrite serial TransactionApply") {
@@ -144,7 +144,7 @@ class TransactionBatchByRewriterTest extends CypherPlannerTestSuite with Logical
       .build()
 
     val rewritten = rewrite(plan)
-    batchByOf(rewritten) should not be empty
+    disjointByOf(rewritten) should not be empty
   }
 
   test("should rewrite when MergeInto between RAID-identified endpoints is followed by SetRelationshipProperties") {
@@ -175,7 +175,7 @@ class TransactionBatchByRewriterTest extends CypherPlannerTestSuite with Logical
       .build()
 
     val rewritten = rewrite(plan)
-    batchByOf(rewritten) should not be empty
+    disjointByOf(rewritten) should not be empty
   }
 
   test("should not rewrite when updater touches node not identified by a unique seek") {
@@ -200,12 +200,12 @@ class TransactionBatchByRewriterTest extends CypherPlannerTestSuite with Logical
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
-    p.endoRewrite(TransactionBatchByRewriter)
+    p.endoRewrite(TransactionDisjointByRewriter(globalStrategyIsAuto = true))
 
-  private def batchByOf(plan: LogicalPlan): Seq[Expression] = {
+  private def disjointByOf(plan: LogicalPlan): Seq[Expression] = {
     plan.folder.treeCollect {
-      case t: TransactionApply   => t.batchBy
-      case t: TransactionForeach => t.batchBy
+      case t: TransactionApply   => t.effectiveDisjointBy
+      case t: TransactionForeach => t.effectiveDisjointBy
     }.flatten
   }
 }

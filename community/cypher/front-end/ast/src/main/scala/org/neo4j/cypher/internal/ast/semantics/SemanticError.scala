@@ -1885,6 +1885,21 @@ object SemanticError {
     )
   }
 
+  def disjointByRequiresConcurrent(position: InputPosition): SemanticError = {
+    val gql = GqlHelper.getGql42001_42N7A(position.offset, position.line, position.column)
+    SemanticError(gql, "DISJOINT BY can only be used in CALL { ... } IN CONCURRENT TRANSACTIONS", position)
+  }
+
+  def disjointByExpressionNotDeterministic(position: InputPosition): SemanticError = {
+    val gql = GqlHelper.getGql42001_42N7B(position.offset, position.line, position.column)
+    SemanticError(gql, "DISJOINT BY expressions must be deterministic", position)
+  }
+
+  def disjointByExpressionContainsSubquery(position: InputPosition): SemanticError = {
+    val gql = GqlHelper.getGql42001_42N7C(position.offset, position.line, position.column)
+    SemanticError(gql, "DISJOINT BY expressions must not contain subquery expressions", position)
+  }
+
   def matchModesNotSupportedInCypher5(matchMode: String, position: InputPosition): SemanticError = {
     val gql = GqlHelper.getGql42001_42N54(matchMode, position.offset, position.line, position.column)
     SemanticError(

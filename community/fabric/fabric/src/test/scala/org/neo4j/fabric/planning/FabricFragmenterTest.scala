@@ -677,7 +677,7 @@ class FabricFragmenterTest
       )
     }
 
-    val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None)(pos))
+    val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None, None)(pos))
 
     "Call in tx" in {
       fragment(

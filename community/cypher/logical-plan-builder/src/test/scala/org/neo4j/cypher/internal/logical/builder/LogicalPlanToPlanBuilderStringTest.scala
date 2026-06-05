@@ -3126,10 +3126,10 @@ class LogicalPlanToPlanBuilderStringTest
   )
 
   testPlan(
-    "transactionForeach with batchBy",
+    "transactionForeach with disjointBy",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .transactionForeach(batchBy = Seq("x"))
+      .transactionForeach(effectiveDisjointBy = Seq("x"))
       .|.emptyResult()
       .|.create(createNode("y"))
       .|.argument("x")
@@ -3226,10 +3226,55 @@ class LogicalPlanToPlanBuilderStringTest
   )
 
   testPlan(
-    "transactionApply with batchBy",
+    "transactionApply with disjointBy",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .transactionApply(batchBy = Seq("x"))
+      .transactionApply(effectiveDisjointBy = Seq("x"))
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
+    "transactionApply with DISJOINT BY AUTO",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .transactionApply(maybeDisjointByParameters = Some("auto"))
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
+    "transactionApply with DISJOINT BY NONE",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .transactionApply(maybeDisjointByParameters = Some("none"))
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
+    "transactionApply with DISJOINT BY expressions",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .transactionApply(maybeDisjointByParameters = Some("(a.id, b.id)"))
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
+    "transactionForeach with DISJOINT BY expressions",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .transactionForeach(maybeDisjointByParameters = Some("(a.id, b.id)"))
+      .|.emptyResult()
       .|.create(createNode("y"))
       .|.argument("x")
       .allNodeScan("x")

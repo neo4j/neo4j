@@ -183,6 +183,10 @@ AUTH
    : A U T H
    ;
 
+AUTO
+   : A U T O
+   ;
+
 BAR
    : '|'
    ;
@@ -393,6 +397,10 @@ DIFFERENT
 
 DOLLAR
    : '$'
+   ;
+
+DISJOINT
+   : D I S J O I N T
    ;
 
 DISTINCT

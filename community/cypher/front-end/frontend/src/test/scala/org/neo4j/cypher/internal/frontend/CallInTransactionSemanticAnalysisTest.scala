@@ -760,4 +760,151 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         p(63, 5, 3)
       )
   }
+
+  // ============================================================
+  // CIP-260: DISJOINT BY (CYPHER 25 only)
+  // ============================================================
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a)") {
+    val query = "WITH 1 AS a CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a)"
+    run(query, disabledVersions = Set(Cypher5)).hasNoErrors
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY AUTO") {
+    val query = "CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY AUTO"
+    run(query, disabledVersions = Set(Cypher5)).hasNoErrors
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY NONE") {
+    val query = "CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY NONE"
+    run(query, disabledVersions = Set(Cypher5)).hasNoErrors
+  }
+
+  test("CALL (a) { CREATE (n) } IN TRANSACTIONS DISJOINT BY (a) should reject DISJOINT BY without CONCURRENT") {
+    val query = "WITH 1 AS a CALL (a) { CREATE (n) } IN TRANSACTIONS DISJOINT BY (a)"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasError(
+        GqlHelper.getGql42001_42N7A(52, 1, 53),
+        "DISJOINT BY can only be used in CALL { ... } IN CONCURRENT TRANSACTIONS",
+        p(52, 1, 53)
+      )
+  }
+
+  test("CALL { CREATE (n) } IN TRANSACTIONS DISJOINT BY AUTO should reject DISJOINT BY AUTO without CONCURRENT") {
+    val query = "CALL { CREATE (n) } IN TRANSACTIONS DISJOINT BY AUTO"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasError(
+        GqlHelper.getGql42001_42N7A(36, 1, 37),
+        "DISJOINT BY can only be used in CALL { ... } IN CONCURRENT TRANSACTIONS",
+        p(36, 1, 37)
+      )
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (randomUUID()) should reject non-deterministic") {
+    val query = "CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (randomUUID())"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasError(
+        GqlHelper.getGql42001_42N7B(60, 1, 61),
+        "DISJOINT BY expressions must be deterministic",
+        p(60, 1, 61)
+      )
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (rand()) should reject non-deterministic") {
+    val query = "CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (rand())"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasError(
+        GqlHelper.getGql42001_42N7B(60, 1, 61),
+        "DISJOINT BY expressions must be deterministic",
+        p(60, 1, 61)
+      )
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (COUNT { (m) }) should reject subquery expression") {
+    val query = "CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (COUNT { (m) })"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasError(
+        GqlHelper.getGql42001_42N7C(60, 1, 61),
+        "DISJOINT BY expressions must not contain subquery expressions",
+        p(60, 1, 61)
+      )
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a, a + 1) accepts well-typed expressions") {
+    val query = "WITH 1 AS a CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a, a + 1)"
+    run(query, disabledVersions = Set(Cypher5)).hasNoErrors
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a + true) should reject type mismatch") {
+    val query = "WITH 1 AS a CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a + true)"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasErrorMessages("Type mismatch: expected Float, Integer, String or List<T> but was Boolean")
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (count(a)) should reject aggregation") {
+    val query = "WITH 1 AS a CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (count(a))"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasErrorMessages("Invalid use of aggregating function count(...) in this context")
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (undefinedVar) should reject unbound variable") {
+    val query = "CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (undefinedVar)"
+    run(query, disabledVersions = Set(Cypher5))
+      .hasErrorMessages("Variable `undefinedVar` not defined")
+  }
+
+  // DISJOINT BY expressions are evaluated in the CALL subquery's inner scope:
+  // only variables explicitly imported (or all-imported via CALL (*)) are visible.
+
+  test("DISJOINT BY rejects an outer-scope variable that is not imported via the scope clause") {
+    val query =
+      """WITH 10 AS a, 1 AS b
+        |CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (b)
+        |""".stripMargin
+    run(query, disabledVersions = Set(Cypher5))
+      .hasErrorMessages("Variable `b` not defined")
+  }
+
+  test("DISJOINT BY rejects an outer-scope variable that is not imported via legacy importing-with form") {
+    val query =
+      """WITH 10 AS a, 1 AS b
+        |CALL { WITH a CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (b)
+        |RETURN a
+        |""".stripMargin
+    run(query, disabledVersions = Set(Cypher5))
+      .hasErrorMessages("Variable `b` not defined")
+  }
+
+  test("DISJOINT BY rejects a variable declared inside the subquery body") {
+    val query =
+      """WITH 10 AS a
+        |CALL (a) { WITH a, 1 AS local CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (local)
+        |""".stripMargin
+    run(query, disabledVersions = Set(Cypher5))
+      .hasErrorMessages("Variable `local` not defined")
+  }
+
+  test("DISJOINT BY accepts a variable that is explicitly imported via the scope clause") {
+    val query =
+      """WITH 10 AS a
+        |CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a)
+        |""".stripMargin
+    run(query, disabledVersions = Set(Cypher5)).hasNoErrors
+  }
+
+  test("DISJOINT BY accepts an outer-scope variable when all variables are imported via CALL (*)") {
+    val query =
+      """WITH 10 AS a, 1 AS b
+        |CALL (*) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (b)
+        |""".stripMargin
+    run(query, disabledVersions = Set(Cypher5)).hasNoErrors
+  }
+
+  test("DISJOINT BY accepts arithmetic over multiple imported variables") {
+    val query =
+      """WITH 10 AS a, 1 AS b
+        |CALL (a, b) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a + b)
+        |""".stripMargin
+    run(query, disabledVersions = Set(Cypher5)).hasNoErrors
+  }
 }

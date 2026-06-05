@@ -157,6 +157,12 @@ public interface Cypher25ParserListener extends ParseTreeListener {
 
     void exitSubqueryInTransactionsBatchParameters(Cypher25Parser.SubqueryInTransactionsBatchParametersContext ctx);
 
+    void exitSubqueryInTransactionsDisjointByParameters(
+            Cypher25Parser.SubqueryInTransactionsDisjointByParametersContext ctx);
+
+    void exitSubqueryInTransactionsDisjointByExpressions(
+            Cypher25Parser.SubqueryInTransactionsDisjointByExpressionsContext ctx);
+
     void exitSubqueryInTransactionsErrorParameters(Cypher25Parser.SubqueryInTransactionsErrorParametersContext ctx);
 
     void exitSubqueryInTransactionsRetryParameters(Cypher25Parser.SubqueryInTransactionsRetryParametersContext ctx);

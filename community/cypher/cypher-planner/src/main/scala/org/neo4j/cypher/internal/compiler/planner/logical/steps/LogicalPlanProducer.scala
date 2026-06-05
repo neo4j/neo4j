@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenBreak
@@ -1167,6 +1169,14 @@ case class LogicalPlanProducer(
     maybeReportParams.map(_.reportAs)
   }
 
+  private def computeEffectiveDisjointBy(maybeDisjointByParams: Option[InTransactionsDisjointByParameters])
+    : Seq[Expression] = {
+    maybeDisjointByParams.map(_.mode) match {
+      case Some(InTransactionsDisjointByMode.DisjointByExpressions(expressions)) => expressions
+      case _                                                                     => Seq.empty
+    }
+  }
+
   /**
    * Plan a selection on `hiddenSelections` but, in the solveds, pretend to solve only the predicates of the leaf plan and `originalPattern` instead of the leaf plan's pattern.
    *
@@ -1258,7 +1268,13 @@ case class LogicalPlanProducer(
     val plan =
       if (yielding) {
         inTransactionsParameters match {
-          case Some(InTransactionsParameters(batchParams, concurrencyParams, errorParams, reportParams)) =>
+          case Some(InTransactionsParameters(
+              batchParams,
+              concurrencyParams,
+              errorParams,
+              reportParams,
+              disjointByParams
+            )) =>
             val (errorBehaviour, retryParams) = computeErrorBehaviour(errorParams)
             TransactionApply(
               left,
@@ -1267,7 +1283,9 @@ case class LogicalPlanProducer(
               computeConcurrency(concurrencyParams.map(_.concurrency)),
               errorBehaviour,
               computeMaybeReportAs(reportParams),
-              retryParams
+              retryParams,
+              disjointByParams,
+              computeEffectiveDisjointBy(disjointByParams)
             )
           case None =>
             if (!correlated && solvedRight.readOnly) {
@@ -1278,7 +1296,13 @@ case class LogicalPlanProducer(
         }
       } else {
         inTransactionsParameters match {
-          case Some(InTransactionsParameters(batchParams, concurrencyParams, errorParams, reportParams)) =>
+          case Some(InTransactionsParameters(
+              batchParams,
+              concurrencyParams,
+              errorParams,
+              reportParams,
+              disjointByParams
+            )) =>
             val (errorBehaviour, retryParams) = computeErrorBehaviour(errorParams)
             TransactionForeach(
               left,
@@ -1287,7 +1311,9 @@ case class LogicalPlanProducer(
               computeConcurrency(concurrencyParams.map(_.concurrency)),
               errorBehaviour,
               computeMaybeReportAs(reportParams),
-              retryParams
+              retryParams,
+              disjointByParams,
+              computeEffectiveDisjointBy(disjointByParams)
             )
           case None => SubqueryForeach(left, right)
         }

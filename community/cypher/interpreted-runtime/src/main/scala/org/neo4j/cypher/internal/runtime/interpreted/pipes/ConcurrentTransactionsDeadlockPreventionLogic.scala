@@ -125,11 +125,11 @@ object NoopTransactionDeadlockPreventionLogic extends TransactionDeadlockPrevent
  *
  * '''An alternative design: grouped RAID maps'''
  * A more precise approach would be to use separate RAID maps per ''resource group'', where each group
- * tracks expressions that share a lock namespace. The `batchBy` specification would change from a flat
+ * tracks expressions that share a lock namespace. The `disjointBy` specification would change from a flat
  * `Seq[Expression]` to a `Seq[Seq[Expression]]`, where each inner sequence is one resource group.
  * Two batches would be dependent only if they overlap within at least one group, not across groups.
  *
- * For example, `batchBy = Seq(Seq("aid", "bid"), Seq("cid"))` would track `aid` and `bid` together
+ * For example, `disjointBy = Seq(Seq("aid", "bid"), Seq("cid"))` would track `aid` and `bid` together
  * (they share label `N`), while `cid` (referencing label `C`) gets its own independent map. This
  * eliminates false cross-group dependencies while preserving safety within each group.
  *
@@ -180,14 +180,14 @@ object NoopTransactionDeadlockPreventionLogic extends TransactionDeadlockPrevent
  *
  * See https://linear.app/neo4j/issue/RUN-1011 for discussion on revisiting this design with grouped RAID maps.
  *
- * @param batchBy Array of RAID expressions, where the first is the canonical ID expression (CRAID)
+ * @param disjointBy Array of RAID expressions, where the first is the canonical ID expression (CRAID)
  */
-class ConcurrentTransactionsDeadlockPreventionLogic(batchBy: Array[Expression], maxBatchesInFormation: Int = 256)
+class ConcurrentTransactionsDeadlockPreventionLogic(disjointBy: Array[Expression], maxBatchesInFormation: Int = 256)
     extends TransactionDeadlockPreventionLogic {
-  require(batchBy.length >= 1)
+  require(disjointBy.length >= 1)
 
   // The array of Resource Acquisition ID (RAID) expressions
-  private[this] val raidExpressions = batchBy
+  private[this] val raidExpressions = disjointBy
 
   // Reference to the batch iterator (for completion notifications)
   private[this] var _batchIterator: DeadlockPreventingBatchIterator = _

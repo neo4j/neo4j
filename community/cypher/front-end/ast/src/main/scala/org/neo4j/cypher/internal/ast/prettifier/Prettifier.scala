@@ -240,6 +240,7 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -1262,7 +1263,14 @@ case class Prettifier(
         case Some(statusVar) => s" REPORT STATUS AS ${backtickEmpty(statusVar.name)}"
         case None            => ""
       }
-      s" IN$concurrency TRANSACTIONS$ofRows$onError$reportStatus"
+      val disjointBy = ip.disjointByParams.map(_.mode) match {
+        case Some(InTransactionsDisjointByMode.DisjointByAuto) => " DISJOINT BY AUTO"
+        case Some(InTransactionsDisjointByMode.DisjointByNone) => " DISJOINT BY NONE"
+        case Some(InTransactionsDisjointByMode.DisjointByExpressions(expressions)) =>
+          " DISJOINT BY (" + expressions.map(expr(_, shouldBacktickEmpty = true)).mkString(", ") + ")"
+        case None => ""
+      }
+      s" IN$concurrency TRANSACTIONS$ofRows$disjointBy$onError$reportStatus"
     }
 
     def asString(w: Where): String =

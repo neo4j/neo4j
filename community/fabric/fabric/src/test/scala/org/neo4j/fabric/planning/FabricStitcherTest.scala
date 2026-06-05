@@ -353,7 +353,7 @@ class FabricStitcherTest
     }
 
     "call in transactions" - {
-      val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None)(pos))
+      val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None, None)(pos))
 
       "unwind added and with clause not added for literals" in {
         /*
@@ -402,7 +402,7 @@ class FabricStitcherTest
                     scopeClauseSubqueryCallInTransactions(
                       false,
                       Seq.empty,
-                      InTransactionsParameters(None, None, None, None)(pos),
+                      InTransactionsParameters(None, None, None, None, None)(pos),
                       return_(literal(1).as("a"))
                     ),
                     return_(varFor("a").as("a"), varFor(Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID))
@@ -480,7 +480,7 @@ class FabricStitcherTest
                     scopeClauseSubqueryCallInTransactions(
                       false,
                       Seq(varFor("b")),
-                      InTransactionsParameters(None, None, None, None)(pos),
+                      InTransactionsParameters(None, None, None, None, None)(pos),
                       with_(varFor("b").as("b")),
                       return_(varFor("b").as("c"))
                     ),

@@ -63,6 +63,8 @@ import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
@@ -803,7 +805,7 @@ object pegClause {
     val innerQueryScope =
       pegStatement(callClause.innerQuery, innerQueryIncoming, callClause.isInstanceOf[ImportingWithSubqueryCall])
     val (inTransactionsChildren, declaredInTransactionsVariables) =
-      scopeInTransactionParameters(inTransactionsParameters, incoming.constantChildContext())
+      scopeInTransactionParameters(inTransactionsParameters, incoming.constantChildContext(), innerQueryIncoming)
     val (outgoing, declaredVariables) = innerQueryScope.result match {
       case TableResult(columns) => (incoming.amendedWith((columns ++ declaredInTransactionsVariables).toSet), columns)
       case TableResultWithNotYetKnownColumns => (incoming.amendedWith(declaredInTransactionsVariables.toSet), Seq.empty)
@@ -827,12 +829,19 @@ object pegClause {
 
   private def scopeInTransactionParameters(
     inTransactionsParameters: Option[InTransactionsParameters],
-    incoming: RegularContext
+    incoming: RegularContext,
+    innerQueryIncoming: RegularContext
   )(implicit c: PegContext)
     : (Seq[WorkingScope], Seq[LogicalVariable]) = {
     inTransactionsParameters match {
       case None => (Seq.empty, Seq.empty)
-      case Some(InTransactionsParameters(batchParams, concurrencyParams, errorParams, reportParams)) =>
+      case Some(InTransactionsParameters(
+          batchParams,
+          concurrencyParams,
+          errorParams,
+          reportParams,
+          disjointByParams
+        )) =>
         val batchParamsChild = batchParams.toSeq.map {
           case InTransactionsBatchParameters(batchSize) =>
             pegExpression(batchSize, incoming)
@@ -847,10 +856,16 @@ object pegClause {
             Some(pegExpression(timeout, incoming))
           case _ => None
         }
+        // NOTE: DISJOINT BY expressions are evaluated in the inner scope of the CALL subquery, so only imported variables are visible.
+        val disjointByParamsChild = disjointByParams.toSeq.flatMap {
+          case InTransactionsDisjointByParameters(InTransactionsDisjointByMode.DisjointByExpressions(expressions)) =>
+            expressions.map(expr => pegExpression(expr, innerQueryIncoming))
+          case _ => Seq.empty
+        }
         val reportVariable = reportParams.toSeq.map {
           case InTransactionsReportParameters(reportAs) => reportAs
         }
-        (batchParamsChild ++ concurrencyParamsChild ++ errorParamsChild, reportVariable)
+        (batchParamsChild ++ concurrencyParamsChild ++ errorParamsChild ++ disjointByParamsChild, reportVariable)
     }
   }
 

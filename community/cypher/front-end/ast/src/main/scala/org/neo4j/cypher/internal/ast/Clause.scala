@@ -2334,11 +2334,45 @@ object SubqueryCall {
     }
   }
 
+  sealed trait InTransactionsDisjointByMode
+
+  object InTransactionsDisjointByMode {
+    case object DisjointByAuto extends InTransactionsDisjointByMode
+    case object DisjointByNone extends InTransactionsDisjointByMode
+    final case class DisjointByExpressions(expressions: Seq[Expression]) extends InTransactionsDisjointByMode
+  }
+
+  final case class InTransactionsDisjointByParameters(mode: InTransactionsDisjointByMode)(val position: InputPosition)
+      extends ASTNode
+      with SemanticCheckable {
+
+    override def semanticCheck: SemanticCheck = mode match {
+      case InTransactionsDisjointByMode.DisjointByExpressions(expressions) =>
+        expressions.foldSemanticCheck { expression =>
+          val nonDeterministic =
+            if (!expression.isDeterministic) {
+              error(SemanticError.disjointByExpressionNotDeterministic(expression.position))
+            } else {
+              SemanticCheck.success
+            }
+          val containsSubquery =
+            if (expression.folder.treeExists { case _: SubqueryExpression => true }) {
+              error(SemanticError.disjointByExpressionContainsSubquery(expression.position))
+            } else {
+              SemanticCheck.success
+            }
+          nonDeterministic chain containsSubquery
+        }
+      case _ => SemanticCheck.success
+    }
+  }
+
   final case class InTransactionsParameters(
     batchParams: Option[InTransactionsBatchParameters],
     concurrencyParams: Option[InTransactionsConcurrencyParameters],
     errorParams: Option[InTransactionsErrorParameters],
-    reportParams: Option[InTransactionsReportParameters]
+    reportParams: Option[InTransactionsReportParameters],
+    disjointByParams: Option[InTransactionsDisjointByParameters]
   )(val position: InputPosition) extends ASTNode with SemanticCheckable {
 
     override def semanticCheck: SemanticCheck = {
@@ -2346,6 +2380,7 @@ object SubqueryCall {
       val checkConcurrencyParams = concurrencyParams.foldSemanticCheck(_.semanticCheck)
       val checkReportParams = reportParams.foldSemanticCheck(_.semanticCheck)
       val checkRetryParams = errorParams.flatMap(_.retryParameters).foldSemanticCheck(_.semanticCheck)
+      val checkDisjointByParams = disjointByParams.foldSemanticCheck(_.semanticCheck)
 
       val checkErrorReportCombination: SemanticCheck = (errorParams, reportParams) match {
         case (None, Some(reportParams)) =>
@@ -2355,7 +2390,13 @@ object SubqueryCall {
         case _ => SemanticCheck.success
       }
 
-      checkBatchParams chain checkConcurrencyParams chain checkReportParams chain checkRetryParams chain checkErrorReportCombination
+      val checkDisjointByRequiresConcurrent: SemanticCheck = (disjointByParams, concurrencyParams) match {
+        case (Some(bb), None) =>
+          error(SemanticError.disjointByRequiresConcurrent(bb.position))
+        case _ => SemanticCheck.success
+      }
+
+      checkBatchParams chain checkConcurrencyParams chain checkReportParams chain checkRetryParams chain checkDisjointByParams chain checkErrorReportCombination chain checkDisjointByRequiresConcurrent
     }
   }
 
@@ -2389,6 +2430,25 @@ sealed trait SubqueryCall extends HorizonClause with SemanticAnalysisTooling {
   def isCorrelated: Boolean
 
   def checkSubquery(optional: Boolean): SemanticCheck
+
+  /**
+   * Semantically check the DISJOINT BY expressions against the subquery's import scope.
+   *
+   * DISJOINT BY expressions are evaluated in the inner scope of the CALL subquery, so they must be
+   * checked in a state where only the imported variables are visible. This complements the determinism
+   * and subquery-expression checks in [[SubqueryCall.InTransactionsDisjointByParameters.semanticCheck]]
+   * by validating the expression internals (function resolution, arity, types, no aggregations).
+   *
+   * Variable-resolution errors raised here are filtered out downstream (see
+   * VariableChecker.isNotImplementedCode) since the scoping pass owns them, so this does not produce
+   * duplicate "variable not defined" errors.
+   */
+  final protected def checkDisjointByExpressions(importScope: SemanticState): SemanticCheck =
+    inTransactionsParameters.flatMap(_.disjointByParams).map(_.mode) match {
+      case Some(SubqueryCall.InTransactionsDisjointByMode.DisjointByExpressions(expressions)) =>
+        withState(importScope)(expressions.foldSemanticCheck(SemanticExpressionCheck.simple))
+      case _ => SemanticCheck.success
+    }
 
   final protected def returnToOuterScope(outerScopeLocation: SemanticState.ScopeLocation): SemanticCheck =
     SemanticCheck.fromFunction { innerState =>
@@ -2527,6 +2587,8 @@ case class ScopeClauseSubqueryCall(
       current <- SemanticCheck.getState
       // Checks for errors in imported variables and import into new baseScope
       innerWithImports <- importVariables
+      // Check DISJOINT BY expressions against the import scope (only imported variables are visible)
+      disjointByChecked <- checkDisjointByExpressions(innerWithImports.state)
       // Check inner query
       innerChecked <- innerQuery.semanticCheckInSubqueryContext(innerWithImports.state, current.state, optional)
       _ <- recordCurrentScope(this)
@@ -2536,7 +2598,8 @@ case class ScopeClauseSubqueryCall(
       val importingScopeErrors = (innerWithImports.errors ++ innerChecked.errors).distinct
 
       // Avoid double errors if inner has errors
-      val allErrors = if (importingScopeErrors.nonEmpty) importingScopeErrors else merged.errors
+      val allErrors =
+        (if (importingScopeErrors.nonEmpty) importingScopeErrors else merged.errors) ++ disjointByChecked.errors
 
       // Keep errors from inner check and from variable declarations
       SemanticCheckResult(merged.state, allErrors)

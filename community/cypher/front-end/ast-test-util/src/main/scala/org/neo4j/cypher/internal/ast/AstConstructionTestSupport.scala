@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
 import org.neo4j.cypher.internal.expressions.Add
@@ -1351,9 +1352,16 @@ trait AstConstructionTestSupport {
     batchParams: Option[InTransactionsBatchParameters],
     concurrencyParams: Option[InTransactionsConcurrencyParameters],
     errorParams: Option[InTransactionsErrorParameters],
-    reportParams: Option[InTransactionsReportParameters]
+    reportParams: Option[InTransactionsReportParameters],
+    disjointByParams: Option[InTransactionsDisjointByParameters] = None
   ): SubqueryCall.InTransactionsParameters =
-    SubqueryCall.InTransactionsParameters(batchParams, concurrencyParams, errorParams, reportParams)(pos)
+    SubqueryCall.InTransactionsParameters(
+      batchParams,
+      concurrencyParams,
+      errorParams,
+      reportParams,
+      disjointByParams
+    )(pos)
 
   def create(pattern: PatternElement, position: InputPosition = pos): Create =
     Create(Pattern.ForUpdate(Seq(PatternPart(pattern)))(pattern.position))(position)

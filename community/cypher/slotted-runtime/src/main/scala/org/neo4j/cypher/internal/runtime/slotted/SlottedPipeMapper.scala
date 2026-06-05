@@ -2032,6 +2032,7 @@ class SlottedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
+          _,
           _
         ) =>
         TransactionForeachSlottedPipe(
@@ -2055,6 +2056,7 @@ class SlottedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
+          _,
           _
         ) =>
         TransactionApplySlottedPipe(
@@ -2080,7 +2082,8 @@ class SlottedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          _,
+          effectiveDisjointBy
         ) =>
         ConcurrentTransactionForeachSlottedPipe(
           lhs,
@@ -2094,7 +2097,7 @@ class SlottedPipeMapper(
             maybeRetryParameters,
             expressionConverters.toCommandExpression(id, _)
           ),
-          batchBy.map(expressionConverters.toCommandExpression(id, _))
+          effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 
       case TransactionApply(
@@ -2105,7 +2108,8 @@ class SlottedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          _,
+          effectiveDisjointBy
         ) =>
         ConcurrentTransactionApplySlottedPipe(
           lhs,
@@ -2121,7 +2125,7 @@ class SlottedPipeMapper(
             maybeRetryParameters,
             expressionConverters.toCommandExpression(id, _)
           ),
-          batchBy.map(expressionConverters.toCommandExpression(id, _))
+          effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 
       case SelectOrSemiApply(_, _, expression) =>

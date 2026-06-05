@@ -3269,7 +3269,7 @@ case class LogicalPlan2PlanDescription(
     onErrorBehaviour: InTransactionsOnErrorBehaviour,
     maybeReportAs: Option[LogicalVariable],
     maybeRetryParameters: Option[InTransactionsRetryParameters],
-    batchBy: Seq[Expression]
+    disjointBy: Seq[Expression]
   ) = {
     val concurrencyParams = concurrency match {
       case TransactionConcurrency.Concurrent(None)              => "CONCURRENT "
@@ -3289,15 +3289,15 @@ case class LogicalPlan2PlanDescription(
       case Some(timeout) => s"FOR ${asPrettyString(timeout)} SECONDS "
       case _             => ""
     })
-    val prettyBatchBy = if (batchBy.isEmpty) pretty""
+    val prettyDisjointBy = if (disjointBy.isEmpty) pretty""
     else {
-      batchBy.map(asPrettyString(_)).mkPrettyString(" BATCH BY ", ", ", " ")
+      disjointBy.map(asPrettyString(_)).mkPrettyString(" DISJOINT BY (", ", ", ")")
     }
 
     Details(
       pretty"IN ${asPrettyString.raw(concurrencyParams)}TRANSACTIONS OF ${asPrettyString(
           batchSize
-        )} ROWS${asPrettyString.raw(errorParams._1)}${asPrettyString.raw(retryParams)}${asPrettyString.raw(errorParams._2)}${asPrettyString.raw(reportParams)}${prettyBatchBy}"
+        )} ROWS${prettyDisjointBy}${asPrettyString.raw(errorParams._1)}${asPrettyString.raw(retryParams)}${asPrettyString.raw(errorParams._2)}${asPrettyString.raw(reportParams)}"
     )
   }
 
@@ -3512,10 +3512,18 @@ case class LogicalPlan2PlanDescription(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          _,
+          effectiveDisjointBy
         ) =>
         val details =
-          callInTxsDetails(batchSize, concurrency, onErrorBehaviour, maybeReportAs, maybeRetryParameters, batchBy)
+          callInTxsDetails(
+            batchSize,
+            concurrency,
+            onErrorBehaviour,
+            maybeReportAs,
+            maybeRetryParameters,
+            effectiveDisjointBy
+          )
         PlanDescriptionImpl(
           id,
           "TransactionForeach",
@@ -3534,10 +3542,18 @@ case class LogicalPlan2PlanDescription(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          _,
+          effectiveDisjointBy
         ) =>
         val details =
-          callInTxsDetails(batchSize, concurrency, onErrorBehaviour, maybeReportAs, maybeRetryParameters, batchBy)
+          callInTxsDetails(
+            batchSize,
+            concurrency,
+            onErrorBehaviour,
+            maybeReportAs,
+            maybeRetryParameters,
+            effectiveDisjointBy
+          )
         PlanDescriptionImpl(
           id,
           "TransactionApply",

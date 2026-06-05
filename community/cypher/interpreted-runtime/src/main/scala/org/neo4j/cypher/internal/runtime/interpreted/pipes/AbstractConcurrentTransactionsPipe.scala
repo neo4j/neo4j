@@ -50,10 +50,10 @@ abstract class AbstractConcurrentTransactionsPipe(
   concurrency: Option[Expression],
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   retryPolicy: TransactionRetryPolicy,
-  batchBy: Seq[Expression]
+  disjointBy: Seq[Expression]
 ) extends PipeWithSource(source) {
 
-  private[this] val batchByArray = batchBy.toArray
+  private[this] val disjointByArray = disjointBy.toArray
 
   protected def withStatus(output: ClosingIterator[CypherRow], status: TransactionStatus): ClosingIterator[CypherRow]
   protected def nullRows(value: EagerBuffer[CypherRow], state: QueryState): ClosingIterator[CypherRow]
@@ -82,10 +82,10 @@ abstract class AbstractConcurrentTransactionsPipe(
 
     val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
-    val deadlockPreventionLogic: TransactionDeadlockPreventionLogic = if (batchByArray.nonEmpty) {
+    val deadlockPreventionLogic: TransactionDeadlockPreventionLogic = if (disjointByArray.nonEmpty) {
       // Use concurrency times 2 rounded up to the nearest multiple of 64 as the max batches in formation
       val maxBatchesInFormation = ((concurrencyLong.toInt * 2) + 63) & ~63 // TODO: Make this configurable?
-      new ConcurrentTransactionsDeadlockPreventionLogic(batchByArray, maxBatchesInFormation)
+      new ConcurrentTransactionsDeadlockPreventionLogic(disjointByArray, maxBatchesInFormation)
     } else {
       NoopTransactionDeadlockPreventionLogic
     }

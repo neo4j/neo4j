@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.GraphReference
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
@@ -5294,7 +5295,8 @@ case class TransactionApply(
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   maybeReportAs: Option[LogicalVariable],
   maybeRetryParameters: Option[InTransactionsRetryParameters],
-  batchBy: Seq[Expression] = Seq.empty
+  maybeDisjointByParameters: Option[InTransactionsDisjointByParameters],
+  effectiveDisjointBy: Seq[Expression] = Seq.empty
 )(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
@@ -5357,7 +5359,8 @@ case class TransactionForeach(
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   maybeReportAs: Option[LogicalVariable],
   maybeRetryParameters: Option[InTransactionsRetryParameters],
-  batchBy: Seq[Expression] = Seq.empty
+  maybeDisjointByParameters: Option[InTransactionsDisjointByParameters],
+  effectiveDisjointBy: Seq[Expression] = Seq.empty
 )(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {

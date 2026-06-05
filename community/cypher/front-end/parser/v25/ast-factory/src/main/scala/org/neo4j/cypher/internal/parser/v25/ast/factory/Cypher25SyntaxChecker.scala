@@ -138,6 +138,7 @@ final class Cypher25SyntaxChecker(
     errorOnDuplicateRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS", isParam = true)
     errorOnDuplicateRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR", isParam = true)
     errorOnDuplicateRule(ctx.subqueryInTransactionsReportParameters(), "REPORT STATUS", isParam = true)
+    errorOnDuplicateRule(ctx.subqueryInTransactionsDisjointByParameters(), "DISJOINT BY", isParam = true)
   }
 
   private def checkAlterAlias(ctx: Cypher25Parser.AlterAliasContext): Unit = {

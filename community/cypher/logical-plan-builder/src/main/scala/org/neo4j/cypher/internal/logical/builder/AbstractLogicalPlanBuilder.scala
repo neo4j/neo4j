@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorRetryThenFail
@@ -3355,7 +3356,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail,
     maybeReportAs: Option[String] = None,
     maybeRetryParameters: Option[InTransactionsRetryParameters] = None,
-    batchBy: Seq[String] = Seq.empty
+    maybeDisjointByParameters: Option[String] = None,
+    effectiveDisjointBy: Seq[String] = Seq.empty
   ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       TransactionForeach(
@@ -3366,7 +3368,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         onErrorBehaviour,
         maybeReportAs.map(varFor),
         maybeRetryParameters,
-        batchBy.map(parseExpression)
+        maybeDisjointByParameters.map(parseDisjointByParameters),
+        effectiveDisjointBy.map(parseExpression)
       )(_)
     ))
 
@@ -3376,7 +3379,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorRetryThenFail,
     maybeReportAs: Option[String] = None,
     maybeRetryTimeout: Option[FiniteDuration] = None,
-    batchBy: Seq[String] = Seq.empty
+    effectiveDisjointBy: Seq[String] = Seq.empty
   ): IMPL = {
     val maybeDurationExpr = maybeRetryTimeout.map(t => DecimalDoubleLiteral(t.toUnit(SECONDS).toString)(pos.zeroLength))
     transactionForeach(
@@ -3385,7 +3388,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       onErrorBehaviour,
       maybeReportAs,
       Some(InTransactionsRetryParameters(maybeDurationExpr)(pos)),
-      batchBy
+      effectiveDisjointBy = effectiveDisjointBy
     )
   }
 
@@ -3402,7 +3405,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail,
     maybeReportAs: Option[String] = None,
     maybeRetryParameters: Option[InTransactionsRetryParameters] = None,
-    batchBy: Seq[String] = Seq.empty
+    maybeDisjointByParameters: Option[String] = None,
+    effectiveDisjointBy: Seq[String] = Seq.empty
   ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       TransactionApply(
@@ -3413,7 +3417,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         onErrorBehaviour,
         maybeReportAs.map(varFor),
         maybeRetryParameters,
-        batchBy.map(parseExpression)
+        maybeDisjointByParameters.map(parseDisjointByParameters),
+        effectiveDisjointBy.map(parseExpression)
       )(_)
     ))
 
@@ -3423,7 +3428,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorRetryThenFail,
     maybeReportAs: Option[String] = None,
     maybeRetryTimeout: Option[FiniteDuration] = None,
-    batchBy: Seq[String] = Seq.empty
+    effectiveDisjointBy: Seq[String] = Seq.empty
   ): IMPL = {
     val maybeDurationExpr = maybeRetryTimeout.map(t => DecimalDoubleLiteral(t.toUnit(SECONDS).toString)(pos.zeroLength))
     transactionApply(
@@ -3432,7 +3437,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       onErrorBehaviour,
       maybeReportAs,
       Some(InTransactionsRetryParameters(maybeDurationExpr)(pos)),
-      batchBy
+      effectiveDisjointBy = effectiveDisjointBy
     )
   }
 
@@ -3689,6 +3694,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   private def parseExpression(expression: String): Expression = {
     parser.parseExpression(expression).endoRewrite(expressionRewriter)
   }
+
+  /**
+   * Parses the DISJOINT BY mode written as it would appear in Cypher: "auto", "none", or a
+   * parenthesised expression list such as "(a.id, b.id)".
+   */
+  private def parseDisjointByParameters(disjointByString: String): InTransactionsDisjointByParameters =
+    parser.parseDisjointByParameters(disjointByString).endoRewrite(expressionRewriter)
 
   private def parseProjections(projections: String*): Map[LogicalVariable, Expression] = {
     toVarMap(parser.parseProjections(projections: _*)).view.mapValues {

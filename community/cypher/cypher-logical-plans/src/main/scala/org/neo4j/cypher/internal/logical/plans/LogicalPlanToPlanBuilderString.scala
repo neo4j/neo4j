@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.apache.commons.text.StringEscapeUtils
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -1849,9 +1851,18 @@ object LogicalPlanToPlanBuilderString {
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          maybeDisjointByParameters,
+          effectiveDisjointBy
         ) =>
-        callInTxParams(batchSize, concurrency, onErrorBehaviour, maybeReportAs, maybeRetryParameters, batchBy)
+        callInTxParams(
+          batchSize,
+          concurrency,
+          onErrorBehaviour,
+          maybeReportAs,
+          maybeRetryParameters,
+          maybeDisjointByParameters,
+          effectiveDisjointBy
+        )
       case TransactionApply(
           _,
           _,
@@ -1860,9 +1871,18 @@ object LogicalPlanToPlanBuilderString {
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          maybeDisjointByParameters,
+          effectiveDisjointBy
         ) =>
-        callInTxParams(batchSize, concurrency, onErrorBehaviour, maybeReportAs, maybeRetryParameters, batchBy)
+        callInTxParams(
+          batchSize,
+          concurrency,
+          onErrorBehaviour,
+          maybeReportAs,
+          maybeRetryParameters,
+          maybeDisjointByParameters,
+          effectiveDisjointBy
+        )
       case RunQueryAt(_, query, graphReference, parameters, importsAsParameters, columns) =>
         params(
           "query" -> StringEscapeUtils.escapeJava(query).quoted,
@@ -2436,7 +2456,8 @@ object LogicalPlanToPlanBuilderString {
     onErrorBehaviour: InTransactionsOnErrorBehaviour,
     maybeReportAs: Option[LogicalVariable],
     maybeRetryParams: Option[InTransactionsRetryParameters],
-    batchBy: Seq[Expression]
+    maybeDisjointByParameters: Option[InTransactionsDisjointByParameters],
+    effectiveDisjointBy: Seq[Expression]
   ) =
     params(
       batchSize,
@@ -2452,7 +2473,19 @@ object LogicalPlanToPlanBuilderString {
         case _ =>
           "None"
       }),
-      "batchBy" -> batchBy.map(_.quoted)
+      "maybeDisjointByParameters" -> (maybeDisjointByParameters match {
+        case Some(InTransactionsDisjointByParameters(mode)) =>
+          val disjointByString = mode match {
+            case InTransactionsDisjointByMode.DisjointByAuto => "auto"
+            case InTransactionsDisjointByMode.DisjointByNone => "none"
+            case InTransactionsDisjointByMode.DisjointByExpressions(expressions) =>
+              expressions.map(e => expressionStringifier(e)).mkString("(", ", ", ")")
+          }
+          Param(disjointByString).quoted.some
+        case None =>
+          Param("None")
+      }),
+      "effectiveDisjointBy" -> effectiveDisjointBy.map(_.quoted)
     )
 
   /** Typeclass providing a standardised way to encode particular types as parameter strings.

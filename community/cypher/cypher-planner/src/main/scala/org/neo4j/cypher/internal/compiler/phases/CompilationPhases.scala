@@ -48,7 +48,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RemoveUnusedVariables
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.TransactionBatchBy
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.TransactionDisjointBy
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
@@ -146,7 +146,7 @@ object CompilationPhases extends FrontEndCompilationPhases {
         Set(
           QueryPlanner,
           PlanRewriter,
-          TransactionBatchBy,
+          TransactionDisjointBy,
           InsertCachedProperties,
           CardinalityRewriter,
           CompressPlanIDs,

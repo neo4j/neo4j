@@ -24,6 +24,10 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringIn
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode.DisjointByAuto
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode.DisjointByExpressions
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode.DisjointByNone
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -5696,7 +5700,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorContinue,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5720,7 +5725,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorBreak,
           maybeReportAs = Some(varFor("status")),
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5744,7 +5750,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
           onErrorBehaviour = OnErrorContinue,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5768,7 +5775,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Concurrent(None),
           onErrorBehaviour = OnErrorContinue,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5792,7 +5800,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorFail,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5816,7 +5825,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
           onErrorBehaviour = OnErrorFail,
           maybeReportAs = Some(varFor("status")),
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5840,7 +5850,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Concurrent(None),
           onErrorBehaviour = OnErrorFail,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5864,7 +5875,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
           onErrorBehaviour = OnErrorFail,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5888,7 +5900,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorRetryThenFail,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5912,7 +5925,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorRetryThenBreak,
           maybeReportAs = None,
-          maybeRetryParameters = Some(InTransactionsRetryParameters(Some(float("1.5")))(pos))
+          maybeRetryParameters = Some(InTransactionsRetryParameters(Some(float("1.5")))(pos)),
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5936,7 +5950,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorRetryThenFail,
           maybeReportAs = None,
-          maybeRetryParameters = None
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5960,7 +5975,8 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorRetryThenContinue,
           maybeReportAs = Some(varFor("status")),
-          maybeRetryParameters = Some(InTransactionsRetryParameters(Some(float("1.5")))(pos))
+          maybeRetryParameters = Some(InTransactionsRetryParameters(Some(float("1.5")))(pos)),
+          maybeDisjointByParameters = None
         ),
         2345.0
       ),
@@ -5972,6 +5988,164 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           details("IN TRANSACTIONS OF 100 ROWS ON ERROR RETRY FOR 1.5 SECONDS THEN CONTINUE REPORT STATUS AS status")
         ),
         Set("a", "status")
+      )
+    )
+  }
+
+  test("TransactionApply with specific disjoint by expression group") {
+    assertGood(
+      attach(
+        TransactionApply(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = None,
+          maybeRetryParameters = None,
+          maybeDisjointByParameters =
+            Some(InTransactionsDisjointByParameters(DisjointByExpressions(Seq(prop("a", "id"), prop("b", "id"))))(pos)),
+          effectiveDisjointBy = Seq(prop("a", "id"), prop("b", "id"))
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionApply",
+        Seq(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS DISJOINT BY (a.id, b.id) ON ERROR FAIL")),
+        Set("a", "b")
+      )
+    )
+  }
+
+  test("TransactionApply with specific disjoint by auto shows effective disjoint by") {
+    assertGood(
+      attach(
+        TransactionApply(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = None,
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByAuto)(pos)),
+          effectiveDisjointBy = Seq(prop("a", "id"), prop("b", "id"))
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionApply",
+        Seq(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS DISJOINT BY (a.id, b.id) ON ERROR FAIL")),
+        Set("a", "b")
+      )
+    )
+  }
+
+  test("TransactionApply with disjoint by none shows effective disjoint by (nothing)") {
+    assertGood(
+      attach(
+        TransactionApply(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = None,
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByNone)(pos)),
+          effectiveDisjointBy = Seq.empty
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionApply",
+        Seq(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS ON ERROR FAIL")),
+        Set("a", "b")
+      )
+    )
+  }
+
+  test("TransactionForeach with specific disjoint by expression group") {
+    assertGood(
+      attach(
+        TransactionForeach(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorContinue,
+          maybeReportAs = None,
+          maybeRetryParameters = None,
+          maybeDisjointByParameters =
+            Some(InTransactionsDisjointByParameters(DisjointByExpressions(Seq(prop("a", "id"))))(pos)),
+          effectiveDisjointBy = Seq(prop("a", "id"))
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionForeach",
+        Seq(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS DISJOINT BY (a.id) ON ERROR CONTINUE")),
+        Set("a")
+      )
+    )
+  }
+
+  test("TransactionForeach with specific disjoint by auto shows effective disjoint by") {
+    assertGood(
+      attach(
+        TransactionForeach(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorContinue,
+          maybeReportAs = None,
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByAuto)(pos)),
+          effectiveDisjointBy = Seq(prop("a", "id"))
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionForeach",
+        Seq(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS DISJOINT BY (a.id) ON ERROR CONTINUE")),
+        Set("a")
+      )
+    )
+  }
+
+  test("TransactionForeach with disjoint by none shows effective disjoint by (nothing)") {
+    assertGood(
+      attach(
+        TransactionForeach(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = None,
+          maybeRetryParameters = None,
+          maybeDisjointByParameters = Some(InTransactionsDisjointByParameters(DisjointByNone)(pos)),
+          effectiveDisjointBy = Seq.empty
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionForeach",
+        Seq(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS ON ERROR FAIL")),
+        Set("a")
       )
     )
   }

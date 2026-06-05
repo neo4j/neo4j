@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode.DisjointByAuto
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode.DisjointByExpressions
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode.DisjointByNone
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.CreateNode
@@ -55,44 +59,58 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
-import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
-import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenBU
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
+import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.topDown
 
-case object TransactionBatchByRewriter extends Rewriter with TopDownMergeableRewriter {
+case class TransactionDisjointByRewriter(globalStrategyIsAuto: Boolean) extends Rewriter
+    with TopDownMergeableRewriter {
 
   override def apply(input: AnyRef): AnyRef = {
     instance.apply(input)
   }
 
   override val innerRewriter: Rewriter = Rewriter.lift {
-    case t @ TransactionApply(lhs, rhs, _, Concurrent(_), _, _, _, _) =>
+    case t @ TransactionApply(lhs, rhs, _, Concurrent(_), _, _, _, maybeDisjointByParameters, _)
+      if shouldInfer(maybeDisjointByParameters) =>
       val inputVars = lhs.availableSymbols
       val acc = findRaids(rhs, inputVars)
       acc match {
         case Acc(raids, _, Allowed) if raids.nonEmpty =>
-          t.copy(batchBy = raids.toSeq)(SameId(t.id))
+          t.copy(effectiveDisjointBy = raids.toSeq)(SameId(t.id))
         case _ =>
           t
       }
 
-    case t @ TransactionForeach(lhs, rhs, _, Concurrent(_), _, _, _, _) =>
+    case t @ TransactionForeach(lhs, rhs, _, Concurrent(_), _, _, _, maybeDisjointByParameters, _)
+      if shouldInfer(maybeDisjointByParameters) =>
       val inputVars = lhs.availableSymbols
       val acc = findRaids(rhs, inputVars)
       acc match {
         case Acc(raids, _, Allowed) if raids.nonEmpty =>
-          t.copy(batchBy = raids.toSeq)(SameId(t.id))
+          t.copy(effectiveDisjointBy = raids.toSeq)(SameId(t.id))
         case _ =>
           t
       }
   }
 
-  private val instance: Rewriter = topDown(innerRewriter)
+  private def shouldInfer(maybeDisjointByParameters: Option[InTransactionsDisjointByParameters]): Boolean =
+    maybeDisjointByParameters match {
+      case Some(InTransactionsDisjointByParameters(DisjointByAuto))           => true
+      case Some(InTransactionsDisjointByParameters(DisjointByNone))           => false
+      case Some(InTransactionsDisjointByParameters(DisjointByExpressions(_))) => false
+      case None                                                               => globalStrategyIsAuto
+    }
+
+  // TransactionApply/TransactionForeach is only allowed to occur at the top-level, never nested inside
+  // expressions, so there is no need to descend into anything that is not a LogicalPlan.
+  private val stopper: RewriterStopper = !_.isInstanceOf[LogicalPlan]
+
+  private val instance: Rewriter = topDown(innerRewriter, stopper = stopper)
 
   private def findRaids(plan: LogicalPlan, inputVars: Set[LogicalVariable]): Acc = {
     val result = plan.folder.treeFoldBottomUp(Acc.empty) {

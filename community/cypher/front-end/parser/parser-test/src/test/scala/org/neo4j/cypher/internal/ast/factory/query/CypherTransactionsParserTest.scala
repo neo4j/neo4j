@@ -22,6 +22,8 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -32,6 +34,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
@@ -47,7 +50,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase {
             (1, 8, 7)
           ))
         )(defaultPos),
-        Some(InTransactionsParameters(None, None, None, None)((1, 24, 23))),
+        Some(InTransactionsParameters(None, None, None, None, None)((1, 24, 23))),
         optional = false
       )(defaultPos)
     }
@@ -267,15 +270,20 @@ class CypherTransactionsParserTest extends AstParsingTestBase {
       val rowString = "OF 50 ROWS"
       val concurrencyString = "7 CONCURRENT"
       val statusString = "REPORT STATUS AS status"
+      val disjointByString = "DISJOINT BY AUTO"
 
       val errorRowPermutations = List(errorString, rowString).permutations.toList
       val errorStatusPermutations = List(errorString, statusString).permutations.toList
       val errorRowStatusPermutations = List(errorString, rowString, statusString).permutations.toList
+      val errorRowStatusDisjointPermutations =
+        List(errorString, rowString, statusString, disjointByString).permutations.toList
 
       val expectedBatchParams = Some(InTransactionsBatchParameters(literalInt(50))(pos))
       val expectedConcurrencyParams = Some(InTransactionsConcurrencyParameters(Some(literalInt(7)))(pos))
       val expectedErrorParams = Some(InTransactionsErrorParameters(errorBehaviour, retryParams)(pos))
       val expectedStatusParams = Some(InTransactionsReportParameters(varFor("status"))(pos))
+      val expectedDisjointByParams =
+        Some(InTransactionsDisjointByParameters(InTransactionsDisjointByMode.DisjointByAuto)(pos))
 
       test(s"CALL () { CREATE (n) } IN TRANSACTIONS $errorString") {
         val expected =
@@ -379,6 +387,28 @@ class CypherTransactionsParserTest extends AstParsingTestBase {
           parses[SubqueryCall].toAst(expected)
         }
       })
+
+      errorRowStatusDisjointPermutations.foreach(permutation => {
+        test(
+          s"CALL () { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)} ${permutation(2)} ${permutation(3)}"
+        ) {
+          val expected =
+            scopeClauseSubqueryCallInTransactionsNoImports(
+              inTransactionsParameters(
+                expectedBatchParams,
+                expectedConcurrencyParams,
+                expectedErrorParams,
+                expectedStatusParams,
+                expectedDisjointByParams
+              ),
+              create(nodePat(Some("n")))
+            )
+          parsesIn[SubqueryCall] {
+            case Cypher5 => _.withAnyFailure
+            case _       => _.toAst(expected)
+          }
+        }
+      })
   }
 
   // Negative tests
@@ -427,5 +457,255 @@ class CypherTransactionsParserTest extends AstParsingTestBase {
         GqlStatusInfoCodes.STATUS_42N19,
         "error: syntax error or access rule violation - duplicate clause. Duplicate `OF ROWS` clause."
       )
+  }
+
+  // ============================================================
+  // CIP-260: DISJOINT BY (CYPHER 25 only)
+  // ============================================================
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a)") {
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          scopeClauseSubqueryCallInTransactions(
+            isImportingAll = false,
+            importedVariables = Seq(varFor("a")),
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(
+                InTransactionsDisjointByMode.DisjointByExpressions(Seq(varFor("a")))
+              )(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL (a, b) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a, b)") {
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          scopeClauseSubqueryCallInTransactions(
+            isImportingAll = false,
+            importedVariables = Seq(varFor("a"), varFor("b")),
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(
+                InTransactionsDisjointByMode.DisjointByExpressions(Seq(varFor("a"), varFor("b")))
+              )(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL (line) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (line.user, line.movieId)") {
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          scopeClauseSubqueryCallInTransactions(
+            isImportingAll = false,
+            importedVariables = Seq(varFor("line")),
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(
+                InTransactionsDisjointByMode.DisjointByExpressions(Seq(
+                  prop("line", "user"),
+                  prop("line", "movieId")
+                ))
+              )(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY AUTO") {
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          importingWithSubqueryCallInTransactions(
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(InTransactionsDisjointByMode.DisjointByAuto)(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY NONE") {
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          importingWithSubqueryCallInTransactions(
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(InTransactionsDisjointByMode.DisjointByNone)(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (`AUTO`)") {
+    // Backtick-escaped AUTO is parsed as a variable named AUTO (manual mode with one expression).
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          scopeClauseSubqueryCallInTransactions(
+            isImportingAll = false,
+            importedVariables = Seq(varFor("a")),
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(
+                InTransactionsDisjointByMode.DisjointByExpressions(Seq(varFor("AUTO")))
+              )(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (`NONE`)") {
+    // Backtick-escaped NONE is parsed as a variable named NONE (manual mode with one expression).
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          scopeClauseSubqueryCallInTransactions(
+            isImportingAll = false,
+            importedVariables = Seq(varFor("a")),
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(
+                InTransactionsDisjointByMode.DisjointByExpressions(Seq(varFor("NONE")))
+              )(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test(
+    "CALL (a, b, c) { CREATE (n) } IN CONCURRENT TRANSACTIONS OF 5 ROWS DISJOINT BY (a, b, c) ON ERROR RETRY THEN CONTINUE REPORT STATUS AS s"
+  ) {
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          scopeClauseSubqueryCallInTransactions(
+            isImportingAll = false,
+            importedVariables = Seq(varFor("a"), varFor("b"), varFor("c")),
+            inTransactionsParameters(
+              Some(InTransactionsBatchParameters(literalInt(5))(pos)),
+              Some(InTransactionsConcurrencyParameters(None)(pos)),
+              Some(InTransactionsErrorParameters(OnErrorRetryThenContinue, None)(pos)),
+              Some(InTransactionsReportParameters(varFor("s"))(pos)),
+              Some(InTransactionsDisjointByParameters(
+                InTransactionsDisjointByMode.DisjointByExpressions(Seq(varFor("a"), varFor("b"), varFor("c")))
+              )(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY") {
+    // Empty manual list is a parse error.
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withAnyFailure
+    }
+  }
+
+  test("CALL (a) { CREATE (n) } IN TRANSACTIONS DISJOINT BY (a)") {
+    // DISJOINT BY without CONCURRENT parses successfully (semantic error caught later).
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _ => _.toAst {
+          scopeClauseSubqueryCallInTransactions(
+            isImportingAll = false,
+            importedVariables = Seq(varFor("a")),
+            inTransactionsParameters(
+              None,
+              None,
+              None,
+              None,
+              Some(InTransactionsDisjointByParameters(
+                InTransactionsDisjointByMode.DisjointByExpressions(Seq(varFor("a")))
+              )(pos))
+            ),
+            create(nodePat(Some("n")))
+          )
+        }
+    }
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY AUTO DISJOINT BY NONE") {
+    // Duplicate DISJOINT BY parameter (Cypher5 fails earlier with `BATCH` not allowed at all).
+    parsesIn[Statements] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withSyntaxErrorContaining("Duplicated DISJOINT BY parameters")
+    }
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY a") {
+    // CIP amendment: bare expression list without parens is now a parse error.
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withAnyFailure
+    }
+  }
+
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY ()") {
+    // Empty paren list is a parse error.
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withAnyFailure
+    }
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY (a") {
+    // Unterminated parens — parse error.
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withAnyFailure
+    }
+  }
+
+  test("CALL (a) { CREATE (n) } IN CONCURRENT TRANSACTIONS DISJOINT BY a)") {
+    // Missing opening paren — parse error.
+    parsesIn[SubqueryCall] {
+      case Cypher5 => _.withAnyFailure
+      case _       => _.withAnyFailure
+    }
   }
 }

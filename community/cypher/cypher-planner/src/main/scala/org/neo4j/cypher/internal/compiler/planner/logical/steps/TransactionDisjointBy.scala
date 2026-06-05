@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanRewritten
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TransactionBatchByRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TransactionDisjointByRewriter
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -34,9 +35,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 
 /**
- * Identifies plans that can utilize batchBy in TransactionApply or TransactionForeach
+ * Identifies plans that can utilize disjointBy in TransactionApply or TransactionForeach
  */
-case object TransactionBatchBy extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState]
+case object TransactionDisjointBy extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState]
     with StepSequencer.Step
     with DefaultPostCondition
     with PlanPipelineTransformerFactory {
@@ -53,8 +54,12 @@ case object TransactionBatchBy extends Phase[PlannerContext, LogicalPlanState, L
     : Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    if (context.transactionBatchStrategy == CypherTransactionBatchStrategyOption.auto) {
-      from.withMaybeLogicalPlan(Some(from.logicalPlan.endoRewrite(TransactionBatchByRewriter)))
+    val globalStrategyIsAuto = context.transactionBatchStrategy eq CypherTransactionBatchStrategyOption.auto
+    val cypherVersionHasSyntax = context.cypherVersion != CypherVersion.Cypher5
+    if (globalStrategyIsAuto || cypherVersionHasSyntax) {
+      from.withMaybeLogicalPlan(
+        Some(from.logicalPlan.endoRewrite(TransactionDisjointByRewriter(globalStrategyIsAuto)))
+      )
     } else {
       from
     }

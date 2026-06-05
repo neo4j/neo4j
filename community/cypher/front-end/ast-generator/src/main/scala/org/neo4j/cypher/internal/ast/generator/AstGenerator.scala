@@ -393,6 +393,8 @@ import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByMode
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
@@ -1968,6 +1970,7 @@ class AstGenerator(
       ))
       retryParams <- option(_expression)
       reportAs <- option(string)
+      disjointByMode <- option(_inTransactionsDisjointByMode)
     } yield InTransactionsParameters(
       batchSize.map(InTransactionsBatchParameters(_)(pos)),
       concurrency.map(InTransactionsConcurrencyParameters(_)(pos)),
@@ -1979,8 +1982,16 @@ class AstGenerator(
           )(pos)
         case eb => InTransactionsErrorParameters(eb, None)(pos)
       },
-      reportAs.map(v => InTransactionsReportParameters(Variable(s"`$v`")(pos, Variable.isIsolatedDefault))(pos))
+      reportAs.map(v => InTransactionsReportParameters(Variable(s"`$v`")(pos, Variable.isIsolatedDefault))(pos)),
+      if (usesCypher5) None else disjointByMode.map(InTransactionsDisjointByParameters(_)(pos))
     )(pos)
+
+  private def _inTransactionsDisjointByMode: Gen[InTransactionsDisjointByMode] =
+    Gen.frequency(
+      1 -> Gen.const(InTransactionsDisjointByMode.DisjointByAuto),
+      1 -> Gen.const(InTransactionsDisjointByMode.DisjointByNone),
+      3 -> nonEmptyListOf(_expression).map(exprs => InTransactionsDisjointByMode.DisjointByExpressions(exprs))
+    )
 
   private def _anyClause: Gen[Clause] =
     if (usesCypher5) {

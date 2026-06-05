@@ -635,7 +635,7 @@ trait StatementBuilder extends Cypher5ParserListener {
     val errorParam = if (error.isEmpty) None else Some(error.get(0).ast[SubqueryCall.InTransactionsErrorParameters]())
     val reportParam =
       if (report.isEmpty) None else Some(report.get(0).ast[SubqueryCall.InTransactionsReportParameters]())
-    ctx.ast = SubqueryCall.InTransactionsParameters(batchParam, concurrencyParam, errorParam, reportParam)(
+    ctx.ast = SubqueryCall.InTransactionsParameters(batchParam, concurrencyParam, errorParam, reportParam, None)(
       pos(ctx.TRANSACTIONS().getSymbol)
     )
   }

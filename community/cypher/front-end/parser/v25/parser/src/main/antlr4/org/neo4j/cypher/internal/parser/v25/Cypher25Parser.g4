@@ -322,11 +322,21 @@ subqueryScope
    ;
 
 subqueryInTransactionsParameters
-   : IN (expression? CONCURRENT)? TRANSACTIONS (subqueryInTransactionsBatchParameters | subqueryInTransactionsErrorParameters | subqueryInTransactionsReportParameters)*
+   : IN (expression? CONCURRENT)? TRANSACTIONS (subqueryInTransactionsBatchParameters | subqueryInTransactionsDisjointByParameters | subqueryInTransactionsErrorParameters | subqueryInTransactionsReportParameters)*
    ;
 
 subqueryInTransactionsBatchParameters
    : OF expression (ROW | ROWS)
+   ;
+
+subqueryInTransactionsDisjointByParameters
+   : DISJOINT BY AUTO
+   | DISJOINT BY NONE
+   | DISJOINT BY LPAREN subqueryInTransactionsDisjointByExpressions RPAREN
+   ;
+
+subqueryInTransactionsDisjointByExpressions
+   : expression (COMMA expression)*
    ;
 
 subqueryInTransactionsErrorParameters
@@ -2220,6 +2230,7 @@ unescapedSymbolicNameString_
    | ASSIGN
    | AT
    | AUTH
+   | AUTO
    | BINDINGS
    | BOOL
    | BOOLEAN
@@ -2268,6 +2279,7 @@ unescapedSymbolicNameString_
    | DESTROY
    | DETACH
    | DIFFERENT
+   | DISJOINT
    | DISTINCT
    | DRIVER
    | DOT_METRIC

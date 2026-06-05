@@ -2501,6 +2501,18 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             "The USE clause is not required for administration commands. Retry the query without the USE clause, and it will be routed automatically.",
             "invalid USE clause",
             ErrorClassification.CLIENT_ERROR),
+    STATUS_42N7A(
+            "'DISJOINT BY' can only be used in 'CALL { ... } IN CONCURRENT TRANSACTIONS'.",
+            "disjoint by requires concurrent transactions",
+            ErrorClassification.CLIENT_ERROR),
+    STATUS_42N7B(
+            "'DISJOINT BY' expressions must be deterministic.",
+            "non-deterministic disjoint by expression",
+            ErrorClassification.CLIENT_ERROR),
+    STATUS_42N7C(
+            "'DISJOINT BY' expressions must not contain subquery expressions.",
+            "subquery in disjoint by expression",
+            ErrorClassification.CLIENT_ERROR),
     STATUS_42N81(
             "Expected { %s }, but got { %s }.",
             new GqlParams.GqlParam[] {

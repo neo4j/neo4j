@@ -2235,6 +2235,7 @@ case class InterpretedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
+          _,
           _
         ) =>
         TransactionForeachPipe(
@@ -2258,6 +2259,7 @@ case class InterpretedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
+          _,
           _
         ) =>
         TransactionApplyPipe(
@@ -2282,7 +2284,8 @@ case class InterpretedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          _,
+          effectiveDisjointBy
         ) =>
         ConcurrentTransactionForeachLegacyPipe(
           lhs,
@@ -2296,7 +2299,7 @@ case class InterpretedPipeMapper(
             maybeRetryParameters,
             expressionConverters.toCommandExpression(id, _)
           ),
-          batchBy.map(expressionConverters.toCommandExpression(id, _))
+          effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 
       case TransactionApply(
@@ -2307,7 +2310,8 @@ case class InterpretedPipeMapper(
           onErrorBehaviour,
           maybeReportAs,
           maybeRetryParameters,
-          batchBy
+          _,
+          effectiveDisjointBy
         ) =>
         ConcurrentTransactionApplyLegacyPipe(
           lhs,
@@ -2322,7 +2326,7 @@ case class InterpretedPipeMapper(
             maybeRetryParameters,
             expressionConverters.toCommandExpression(id, _)
           ),
-          batchBy.map(expressionConverters.toCommandExpression(id, _))
+          effectiveDisjointBy.map(expressionConverters.toCommandExpression(id, _))
         )(id = id)
 
       case repeat @ RepeatAcyclic(

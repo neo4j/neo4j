@@ -42,7 +42,7 @@ abstract class AbstractConcurrentTransactionsLegacyPipe(
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy,
-  batchBy: Seq[Expression]
+  disjointBy: Seq[Expression]
 ) extends AbstractConcurrentTransactionsPipe(
       source,
       inner,
@@ -50,7 +50,7 @@ abstract class AbstractConcurrentTransactionsLegacyPipe(
       concurrency,
       onErrorBehaviour,
       retryPolicy,
-      batchBy
+      disjointBy
     ) {
 
   override protected def withStatus(
@@ -71,7 +71,7 @@ case class ConcurrentTransactionApplyLegacyPipe(
   nullableVariables: Set[String],
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy,
-  batchBy: Seq[Expression]
+  disjointBy: Seq[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends AbstractConcurrentTransactionsLegacyPipe(
       source,
@@ -81,7 +81,7 @@ case class ConcurrentTransactionApplyLegacyPipe(
       onErrorBehaviour,
       statusVariableOpt,
       retryPolicy,
-      batchBy
+      disjointBy
     ) {
 
   private lazy val nullEntries: Seq[(String, AnyValue)] = {
@@ -124,7 +124,7 @@ case class ConcurrentTransactionForeachLegacyPipe(
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   statusVariableOpt: Option[String],
   retryPolicy: TransactionRetryPolicy,
-  batchBy: Seq[Expression]
+  disjointBy: Seq[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends AbstractConcurrentTransactionsLegacyPipe(
       source,
@@ -134,7 +134,7 @@ case class ConcurrentTransactionForeachLegacyPipe(
       onErrorBehaviour,
       statusVariableOpt,
       retryPolicy,
-      batchBy
+      disjointBy
     ) {
 
   override protected def nullRows(lhs: EagerBuffer[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {

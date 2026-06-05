@@ -259,8 +259,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "a batch formation and scheduling strategy that attempts to prevent deadlocks between concurrent batches. "
             + "When set to `DEFAULT`, the current product default is used "
             + "(currently `NONE`, but may be subject to change in future versions). "
-            + "This setting is only used when no `BATCH BY` option is explicitly specified in the query. "
-            + "E.g. `CALL () { ... } IN CONCURRENT TRANSACTIONS ... BATCH BY AUTO` overrides this setting, "
+            + "This setting is only used when no `DISJOINT BY` option is explicitly specified in the query. "
+            + "E.g. `CALL () { ... } IN CONCURRENT TRANSACTIONS ... DISJOINT BY AUTO` overrides this setting, "
             + "applying the automatic strategy to that query.")
     public static final Setting<CypherTransactionsBatchStrategy> cypher_default_subquery_transaction_batch_strategy =
             newBuilder(

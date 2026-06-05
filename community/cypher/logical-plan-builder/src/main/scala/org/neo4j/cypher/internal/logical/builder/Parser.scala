@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.SortItem
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsDisjointByParameters
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.expressions.And
@@ -129,6 +130,9 @@ trait Parser {
   def parseGraphReference(text: String): GraphReference = astParser.useClause(s"USE $text").graphReference
 
   def parseSortItem(text: String): SortItem = astParser.sortItem(text)
+
+  def parseDisjointByParameters(text: String): InTransactionsDisjointByParameters =
+    cleanup(astParser.disjointByParameters(s"DISJOINT BY $text"))
 }
 
 object Parser {
@@ -146,6 +150,13 @@ object Parser {
     def callClause(cypher: String): ASTNode
     def useClause(cypher: String): UseGraph
     def sortItem(cypher: String): SortItem
+
+    // DISJOINT BY exists only in the Cypher 25 grammar, so always parse it with a Cypher 25
+    // parser regardless of the builder's nominal language (this is version-agnostic test tooling).
+    def disjointByParameters(cypher: String): InTransactionsDisjointByParameters =
+      AstParserFactory(CypherVersion.Cypher25)(cypher, Neo4jCypherExceptionFactory(cypher, None), None, Seq())
+        .asInstanceOf[Cypher25AstParser]
+        .parse(_.subqueryInTransactionsDisjointByParameters())
   }
 
   private object Cypher5 extends Parser {

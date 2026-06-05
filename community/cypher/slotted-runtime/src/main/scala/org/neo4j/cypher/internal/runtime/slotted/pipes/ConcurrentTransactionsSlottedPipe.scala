@@ -53,7 +53,7 @@ abstract class AbstractConcurrentTransactionsSlottedPipe(
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   statusSlot: Option[Slot],
   retryPolicy: TransactionRetryPolicy,
-  batchBy: Seq[Expression]
+  disjointBy: Seq[Expression]
 ) extends AbstractConcurrentTransactionsPipe(
       source,
       inner,
@@ -61,7 +61,7 @@ abstract class AbstractConcurrentTransactionsSlottedPipe(
       concurrency,
       onErrorBehaviour,
       retryPolicy,
-      batchBy
+      disjointBy
     ) {
 
   private[this] val statusMapper = statusSlot.map(_.offset) match {
@@ -89,7 +89,7 @@ case class ConcurrentTransactionApplySlottedPipe(
   statusSlot: Option[Slot],
   argumentSize: SlotConfiguration.Size,
   retryPolicy: TransactionRetryPolicy,
-  batchBy: Seq[Expression]
+  disjointBy: Seq[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends AbstractConcurrentTransactionsSlottedPipe(
       source,
@@ -99,7 +99,7 @@ case class ConcurrentTransactionApplySlottedPipe(
       onErrorBehaviour,
       statusSlot,
       retryPolicy,
-      batchBy
+      disjointBy
     ) {
 
   private[this] val nullableLongOffsets =
@@ -145,7 +145,7 @@ case class ConcurrentTransactionForeachSlottedPipe(
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   statusSlot: Option[Slot],
   retryPolicy: TransactionRetryPolicy,
-  batchBy: Seq[Expression]
+  disjointBy: Seq[Expression]
 )(val id: Id = Id.INVALID_ID)
     extends AbstractConcurrentTransactionsSlottedPipe(
       source,
@@ -155,7 +155,7 @@ case class ConcurrentTransactionForeachSlottedPipe(
       onErrorBehaviour,
       statusSlot,
       retryPolicy,
-      batchBy
+      disjointBy
     ) {
 
   override protected def nullRows(lhs: EagerBuffer[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
