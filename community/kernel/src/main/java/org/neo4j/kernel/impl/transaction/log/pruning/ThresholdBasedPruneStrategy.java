@@ -26,11 +26,11 @@ import org.neo4j.util.VisibleForTesting;
 
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy {
     private final LogFile logFile;
-    private final Threshold threshold;
+    private final LogPruneThreshold threshold;
     private final TransactionLogFileInformation logFileInformation;
 
     public ThresholdBasedPruneStrategy(
-            LogFile logFile, Threshold threshold, TransactionLogFileInformation logFileInformation) {
+            LogFile logFile, LogPruneThreshold threshold, TransactionLogFileInformation logFileInformation) {
         this.logFile = logFile;
         this.logFileInformation = logFileInformation;
         this.threshold = threshold;
@@ -47,10 +47,12 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy {
             return LogPruneStrategy.EMPTY_RANGE;
         }
 
-        threshold.init();
         long lowestLogVersion = logFile.getLogRangeInfo().lowestVersion();
+        long lastEntryAppendIndex = logFile.getLastEntryAppendIndexInLogFiles();
+        PrunePredicate predicate = threshold.forCycle(lastEntryAppendIndex);
+
         for (long version = upToVersion; version >= lowestLogVersion; version--) {
-            if (threshold.reached(logFile.getLogFileForVersion(version), version, logFileInformation)) {
+            if (predicate.isLowestVersionToKeep(logFileInformation.forVersion(version))) {
                 return new VersionRange(lowestLogVersion, version);
             }
         }
@@ -59,7 +61,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy {
     }
 
     @VisibleForTesting
-    public Threshold getThreshold() {
+    public LogPruneThreshold getThreshold() {
         return threshold;
     }
 }

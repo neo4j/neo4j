@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
 import java.time.Clock;
-import java.util.concurrent.TimeUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
@@ -35,7 +32,6 @@ public class LogPruneStrategyFactory {
     static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy() {
         @Override
         public VersionRange findLogVersionsToDelete(long upToLogVersion) {
-            // Never delete anything.
             return LogPruneStrategy.EMPTY_RANGE;
         }
 
@@ -69,13 +65,10 @@ public class LogPruneStrategyFactory {
             String configValue,
             TransactionLogFileInformation transactionLogFileInformation) {
         ThresholdConfigValue value = parse(configValue);
-
         if (value == ThresholdConfigValue.NO_PRUNING) {
             return NO_PRUNING;
         }
-
-        return createStrategy(
-                logFiles, fileSystem, logProvider, clock, configValue, value, transactionLogFileInformation);
+        return createStrategy(logFiles, fileSystem, logProvider, clock, value, transactionLogFileInformation);
     }
 
     protected LogPruneStrategy createStrategy(
@@ -83,61 +76,22 @@ public class LogPruneStrategyFactory {
             FileSystemAbstraction fileSystem,
             InternalLogProvider logProvider,
             Clock clock,
-            String configValue,
             ThresholdConfigValue value,
             TransactionLogFileInformation transactionLogFileInformation) {
-        var threshold = getThresholdByType(fileSystem, logProvider, clock, value, configValue);
+        var threshold = getThresholdByType(fileSystem, logProvider, clock, value);
         return new ThresholdBasedPruneStrategy(logFiles.getLogFile(), threshold, transactionLogFileInformation);
     }
 
     @VisibleForTesting
-    protected static Threshold getThresholdByType(
+    protected static LogPruneThreshold getThresholdByType(
             FileSystemAbstraction fileSystem,
             InternalLogProvider logProvider,
             Clock clock,
-            ThresholdConfigValue configuredThreshold,
-            String originalConfigValue) {
-        long thresholdValue = configuredThreshold.value();
-
-        return switch (configuredThreshold.type()) {
-            case "files" -> new FileCountThreshold(thresholdValue, logProvider);
-            case "size" -> new FileSizeThreshold(fileSystem, thresholdValue, logProvider);
-            // txs and entries are synonyms
-            case "txs", "entries" -> new EntryCountThreshold(logProvider, thresholdValue);
-            case "hours" -> createTimeBasedThreshold(fileSystem, logProvider, clock, configuredThreshold, HOURS);
-            case "days" -> createTimeBasedThreshold(fileSystem, logProvider, clock, configuredThreshold, DAYS);
-            case "backup" ->
-                new BackupThreshold(
-                        logProvider,
-                        configuredThreshold.hasAdditionalRestriction()
-                                ? configuredThreshold.additionalRestriction()
-                                : 0,
-                        new FileSizeThreshold(fileSystem, configuredThreshold.value(), logProvider));
-            default ->
-                throw new IllegalArgumentException(
-                        "Invalid log pruning configuration value '" + originalConfigValue + "'. Invalid type '"
-                                + configuredThreshold.type() + "', valid are files, size, txs, entries, hours, days.");
-        };
+            ThresholdConfigValue configuredThreshold) {
+        return ThresholdFactory.fromKind(fileSystem, logProvider, clock, configuredThreshold);
     }
 
     public boolean skipOnShutdown() {
         return false;
-    }
-
-    private static EntryTimespanThreshold createTimeBasedThreshold(
-            FileSystemAbstraction fileSystem,
-            InternalLogProvider logProvider,
-            Clock clock,
-            ThresholdConfigValue configuredThreshold,
-            TimeUnit timeUnit) {
-        if (configuredThreshold.hasAdditionalRestriction()) {
-            return new EntryTimespanThreshold(
-                    logProvider,
-                    clock,
-                    timeUnit,
-                    configuredThreshold.value(),
-                    new FileSizeThreshold(fileSystem, configuredThreshold.additionalRestriction(), logProvider));
-        }
-        return new EntryTimespanThreshold(logProvider, clock, timeUnit, configuredThreshold.value());
     }
 }

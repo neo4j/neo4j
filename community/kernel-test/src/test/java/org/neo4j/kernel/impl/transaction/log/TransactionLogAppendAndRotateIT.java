@@ -412,7 +412,6 @@ class TransactionLogAppendAndRotateIT {
                 metadataCache,
                 "le db",
                 false,
-                false,
                 false);
     }
 

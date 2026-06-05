@@ -189,7 +189,6 @@ class TransactionAppenderRotationIT {
                 new TransactionMetadataCache(),
                 "le db",
                 false,
-                false,
                 false);
     }
 

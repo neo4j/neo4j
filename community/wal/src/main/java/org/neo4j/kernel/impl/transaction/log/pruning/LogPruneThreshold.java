@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.enveloped;
-
-import java.nio.file.Path;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+package org.neo4j.kernel.impl.transaction.log.pruning;
 
 /**
- * File-level facts for one enveloped log file. {@code lastModifiedMillis} is the filesystem mtime captured when
- * the cursor read this entry — used by time-based pruning since envelopes carry no per-entry timestamp in the
- * header.
+ * Configured pruning policy. {@link #forCycle} builds an immutable {@link PrunePredicate} for one pruning pass;
+ * per-cycle accumulators (size, file count, time cutoff) are captured then so a config change that swaps the
+ * threshold mid-pass cannot mix state across cycles.
  */
-public record LogFileMetadata(LogHeader logHeader, long version, Path path, long lastModifiedMillis) {}
+@FunctionalInterface
+public interface LogPruneThreshold {
+    PrunePredicate forCycle(long lastEntryAppendIndex);
+}

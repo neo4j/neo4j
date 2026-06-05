@@ -74,7 +74,7 @@ class TransactionLogFileInformationTest {
         when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
         when(logFiles.getLogFile().extractHeader(version)).thenReturn(null);
 
-        assertEquals(-1, info.getPreviousAppendIndexFromHeader(version));
+        assertEquals(-1, info.forVersion(version).getPreviousAppendIndexFromHeader());
     }
 
     @Test
@@ -86,7 +86,7 @@ class TransactionLogFileInformationTest {
         when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
         when(logFiles.getLogFile().extractHeader(version)).thenReturn(null);
 
-        assertEquals(-1, info.getFirstStartRecordTimestamp(42));
+        assertEquals(-1, info.forVersion(42).getFirstStartRecordTimestamp());
     }
 
     @Test
@@ -107,7 +107,7 @@ class TransactionLogFileInformationTest {
                 LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(version)).thenReturn(expectedHeader);
 
-        long lastAppendIndexBeforeFile = info.getPreviousAppendIndexFromHeader(version);
+        long lastAppendIndexBeforeFile = info.forVersion(version).getPreviousAppendIndexFromHeader();
         assertEquals(expectedAppendIndex - 1, lastAppendIndexBeforeFile);
     }
 
@@ -140,9 +140,9 @@ class TransactionLogFileInformationTest {
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);
 
-        assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
-        assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
-        assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
+        assertEquals(42, fileInfo.forVersion(1).getFirstStartRecordTimestamp());
+        assertEquals(42, fileInfo.forVersion(1).getFirstStartRecordTimestamp());
+        assertEquals(42, fileInfo.forVersion(1).getFirstStartRecordTimestamp());
 
         verify(logFile, times(1)).getRawReader(any());
     }
@@ -176,11 +176,11 @@ class TransactionLogFileInformationTest {
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);
 
-        fileInfo.getFirstStartRecordTimestamp(1);
-        fileInfo.getFirstStartRecordTimestamp(1);
-        fileInfo.getFirstStartRecordTimestamp(1);
-        fileInfo.getFirstStartRecordTimestamp(1);
-        fileInfo.getFirstStartRecordTimestamp(1);
+        fileInfo.forVersion(1).getFirstStartRecordTimestamp();
+        fileInfo.forVersion(1).getFirstStartRecordTimestamp();
+        fileInfo.forVersion(1).getFirstStartRecordTimestamp();
+        fileInfo.forVersion(1).getFirstStartRecordTimestamp();
+        fileInfo.forVersion(1).getFirstStartRecordTimestamp();
 
         verify(logFile, times(1)).getRawReader(any());
     }
@@ -192,6 +192,6 @@ class TransactionLogFileInformationTest {
 
         var fileInfo = new TransactionLogFileInformation(logFiles, commandReaderFactory, BINARY_VERSIONS, INSTANCE);
 
-        assertEquals(-1, fileInfo.getFirstStartRecordTimestamp(version));
+        assertEquals(-1, fileInfo.forVersion(version).getFirstStartRecordTimestamp());
     }
 }

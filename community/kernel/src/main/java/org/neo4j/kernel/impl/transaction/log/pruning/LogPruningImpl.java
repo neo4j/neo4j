@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.util.concurrent.locks.Lock;
 import java.util.function.LongConsumer;
@@ -53,7 +50,7 @@ public class LogPruningImpl implements LogPruning {
     private final LogPruneStrategyFactory strategyFactory;
     private final Clock clock;
     private final InternalLogProvider logProvider;
-    private final int checkpointFilesToKeep;
+    private final CheckpointLogFilePruner checkpointLogFilePruner;
     private final TransactionLogFileInformation logFileInformation;
     private volatile LogPruneStrategy pruneStrategy;
 
@@ -81,7 +78,7 @@ public class LogPruningImpl implements LogPruning {
                 logFiles, commandReaderFactory, binarySupportedKernelVersions, memoryTracker);
         this.pruneStrategy = strategyFactory.strategyFromConfigValue(
                 fs, logFiles, logProvider, clock, config.get(keep_logical_logs), logFileInformation);
-        this.checkpointFilesToKeep = config.get(checkpoint_logical_log_keep_threshold);
+        this.checkpointLogFilePruner = new CheckpointLogFilePruner(fs, logFiles, logProvider, config);
 
         // Register listener for updates
         config.addListener(keep_logical_logs, (prev, update) -> updateConfiguration(update));
@@ -115,26 +112,9 @@ public class LogPruningImpl implements LogPruning {
             }
             log.info(deleter.describeResult(strategy));
 
-            cleanupCheckpointLogFiles();
+            checkpointLogFilePruner.prune();
         } finally {
             pruneLock.unlock();
-        }
-    }
-
-    private void cleanupCheckpointLogFiles() throws IOException {
-        var checkpointFile = logFiles.getCheckpointFile();
-        var checkpointFiles = checkpointFile.getMatchedFiles();
-        if (isNotEmpty(checkpointFiles) && checkpointFiles.length > checkpointFilesToKeep) {
-            long highestVersionToRemove = checkpointFile.getCurrentLogVersion() - checkpointFilesToKeep;
-            int filesDeleted = 0;
-            for (Path file : checkpointFiles) {
-                if (checkpointFile.getLogVersion(file) <= highestVersionToRemove) {
-                    fs.deleteFile(file);
-                    filesDeleted++;
-                }
-            }
-            log.info("Pruned " + filesDeleted + " checkpoint log files. Lowest preserved version: "
-                    + (highestVersionToRemove + 1));
         }
     }
 
@@ -191,7 +171,7 @@ public class LogPruningImpl implements LogPruning {
         long highestDeletedAppendIndex() {
             assert toVersion != NO_VERSION;
             try {
-                return logFileInformation.getPreviousAppendIndexFromHeader(toVersion + 1);
+                return logFileInformation.forVersion(toVersion + 1).getPreviousAppendIndexFromHeader();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

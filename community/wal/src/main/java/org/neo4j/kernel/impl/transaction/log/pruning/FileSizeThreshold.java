@@ -20,18 +20,15 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public final class FileSizeThreshold implements Threshold {
+public final class FileSizeThreshold implements LogPruneThreshold {
     private final FileSystemAbstraction fileSystem;
     private final long maxSize;
     private final InternalLog log;
-
-    private long currentSize;
 
     FileSizeThreshold(FileSystemAbstraction fileSystem, long maxSize, InternalLogProvider logProvider) {
         this.fileSystem = fileSystem;
@@ -40,26 +37,33 @@ public final class FileSizeThreshold implements Threshold {
     }
 
     @Override
-    public void init() {
-        currentSize = 0;
-    }
-
-    @Override
-    public boolean reached(Path file, long version, LogFileInformation source) {
-        try {
-            currentSize += fileSystem.getFileSize(file);
-        } catch (IOException e) {
-            log.warn("Error on attempt to get file size from transaction log files. Checked version: " + version, e);
-        }
-        return currentSize >= maxSize;
-    }
-
-    public long getCurrentSize() {
-        return currentSize;
+    public Predicate forCycle(long lastEntryAppendIndex) {
+        return new Predicate();
     }
 
     @Override
     public String toString() {
         return maxSize + " size";
+    }
+
+    final class Predicate implements PrunePredicate {
+        private long currentSize;
+
+        @Override
+        public boolean isLowestVersionToKeep(LogFileInformation current) {
+            try {
+                currentSize += fileSystem.getFileSize(current.path());
+            } catch (IOException e) {
+                log.warn(
+                        "Error on attempt to get file size from transaction log files. Checked version: "
+                                + current.version(),
+                        e);
+            }
+            return currentSize >= maxSize;
+        }
+
+        long currentSize() {
+            return currentSize;
+        }
     }
 }

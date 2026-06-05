@@ -20,45 +20,56 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import java.io.IOException;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
 
 class LogFilesPruner {
     private final LogsRepository logsRepository;
-    private final PruneStrategy pruneStrategy;
+    // setThreshold may be called concurrently with a running pruneUpTo. The cycle captures its predicate at the
+    // top, so a swap mid-cycle only takes effect on the next call.
+    private volatile LogPruneThreshold threshold;
 
-    public LogFilesPruner(LogsRepository logsRepository, PruneStrategy pruneStrategy) {
+    LogFilesPruner(LogsRepository logsRepository, LogPruneThreshold threshold) {
         this.logsRepository = logsRepository;
-        this.pruneStrategy = pruneStrategy;
+        this.threshold = threshold;
+    }
+
+    void setThreshold(LogPruneThreshold threshold) {
+        this.threshold = threshold;
     }
 
     /**
-     * Pruned files if they are below or equal to the desired index and it is allowed by the prune strategy. The first file
-     * that fulfills the strategy is never pruned otherwise the contract with the strategy is broken.
-     * @param desiredVersionToPrune will prune all files up to this version if strategy allows it
-     * @param currentIndex last append index in the log currently
-     * @param currentOffset current tail position in the last log file.
-     * @param version log version for the log tail file (due to pre-allocation we cannot assume that the last existing
-     *               file is the tail)
-     * @return the actual highest pruned version
+     * @param desiredVersionToPrune the highest version the caller is willing to delete; anything strictly
+     *                              greater is kept regardless of threshold.
+     * @param currentIndex          the live append index, snapshotted before iteration begins.
+     * @return the highest version actually deleted, or {@code -1} when nothing was pruned.
      */
-    long pruneUpTo(long desiredVersionToPrune, long currentIndex, long currentOffset, long version) throws IOException {
-        long allowedVersion = -1;
+    long pruneUpTo(long desiredVersionToPrune, long currentIndex) throws IOException {
+        var prunePredicate = threshold.forCycle(currentIndex);
 
-        var pruneConstraint =
-                this.pruneStrategy.newConstraint(currentIndex, currentOffset, logsRepository.pathFor(version));
-
-        var logVersions = logsRepository.logVersions(true);
-        // start at 1 since the context of the first file is passed in
-        for (var i = 1; i < logVersions.length; i++) {
-            var v = logVersions[i];
-            var shouldPrune = pruneConstraint.shouldPrune(logsRepository.pathFor(v));
-            if (desiredVersionToPrune >= v && shouldPrune) {
-                allowedVersion = v;
-                break;
+        var upToVersion = desiredVersionToPrune + 1;
+        long boundaryVersion = -1;
+        try (var cursor = new LogFilesMetadata(logsRepository, true)) {
+            while (cursor.next()) {
+                var logFileMetadata = cursor.get();
+                var logFileInformation = new EnvelopedLogFileInformation(logFileMetadata);
+                // Predicate runs on every file so size/time thresholds accumulate state across the whole
+                // log; the horizon only gates whether we accept this version as the boundary.
+                if (prunePredicate.isLowestVersionToKeep(logFileInformation)
+                        && logFileMetadata.version() <= upToVersion) {
+                    boundaryVersion = logFileMetadata.version();
+                    break;
+                }
             }
         }
-        if (allowedVersion != -1) {
-            logsRepository.deleteLogFilesTo(allowedVersion);
+
+        if (boundaryVersion == -1) {
+            return -1;
         }
-        return allowedVersion;
+        var highestToPrune = boundaryVersion - 1;
+        if (highestToPrune < logsRepository.logVersionsRange().from()) {
+            return -1;
+        }
+        logsRepository.deleteLogFilesTo(highestToPrune);
+        return highestToPrune;
     }
 }

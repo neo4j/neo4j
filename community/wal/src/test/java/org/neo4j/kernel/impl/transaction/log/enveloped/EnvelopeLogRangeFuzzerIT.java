@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.StoreChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
+import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StoreIdentifier;
@@ -226,7 +227,7 @@ class EnvelopeLogRangeFuzzerIT {
                 4,
                 8,
                 EmptyMemoryTracker.INSTANCE,
-                PruneStrategy.ALWAYS_PRUNE,
+                ThresholdFactory.PRUNE_ALL,
                 new StoreChannelNativeAccessor(
                         fs, NativeAccessProvider.getNativeAccess(), NullLogProvider.getInstance(), s -> {}),
                 NullLogProvider.getInstance());

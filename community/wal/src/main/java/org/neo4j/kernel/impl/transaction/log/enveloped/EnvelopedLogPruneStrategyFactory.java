@@ -19,23 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
+import java.time.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
+import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory;
+import org.neo4j.logging.InternalLogProvider;
 
-public class LogPruningStrategies {
+public class EnvelopedLogPruneStrategyFactory {
 
     private final FileSystemAbstraction fs;
+    private final InternalLogProvider logProvider;
+    private final Clock clock;
 
-    public LogPruningStrategies(FileSystemAbstraction fs) {
+    public EnvelopedLogPruneStrategyFactory(FileSystemAbstraction fs, InternalLogProvider logProvider, Clock clock) {
         this.fs = fs;
+        this.logProvider = logProvider;
+        this.clock = clock;
     }
 
-    public PruneStrategy fromKey(String key, long value) {
-        return switch (key) {
-            case "size" -> new LogPruningBySizeStrategy(fs, value);
-            case "txs", "entries" -> // txs and entries are synonyms
-                new LogPruningByEntryStrategy(fs, value);
-            case "false" -> PruneStrategy.NEVER_PRUNE;
-            default -> throw new IllegalArgumentException("Unknown pruning strategy key: " + key);
-        };
+    public LogPruneThreshold fromConfigValue(String configValue) {
+        return ThresholdFactory.fromConfigValue(fs, logProvider, clock, configValue);
     }
 }

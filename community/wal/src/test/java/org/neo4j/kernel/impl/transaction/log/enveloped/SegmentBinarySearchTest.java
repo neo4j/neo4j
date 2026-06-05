@@ -37,6 +37,8 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.StoreChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
+import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StoreIdentifier;
@@ -52,7 +54,7 @@ class SegmentBinarySearchTest {
     public static final int writeBufferedBlocks = 2;
     private final int segmentBlockSize = 256;
     private final int totalSegments = 14;
-    private final PruneStrategy pruneStrategy = PruneStrategy.ALWAYS_PRUNE;
+    private final LogPruneThreshold pruneStrategy = ThresholdFactory.KEEP_ALL;
 
     @Inject
     TestDirectory testDirectory;

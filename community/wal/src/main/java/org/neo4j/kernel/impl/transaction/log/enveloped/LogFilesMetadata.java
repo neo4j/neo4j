@@ -69,11 +69,10 @@ public class LogFilesMetadata implements RawCursor<LogFileMetadata, IOException>
                 var currentPath = logChannel.path();
                 var logHeader = readLogHeader(logChannel.channel(), true, null, EmptyMemoryTracker.INSTANCE);
                 if (logHeader != null) {
-                    nextMetadata = new LogFileMetadata(logHeader, version, currentPath);
-                } else {
-                    if (reversed) {
-                        setNext(); // keep iterating until we find non-preallocated file
-                    }
+                    nextMetadata = new LogFileMetadata(
+                            logHeader, version, currentPath, logsRepository.lastModifiedTime(version));
+                } else if (reversed) {
+                    setNext(); // skip pre-allocated empty file
                 }
             }
         }

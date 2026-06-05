@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.io.fs.ReadPastEndException;
@@ -38,9 +39,13 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.VisibleForTesting;
 
-public class TransactionLogFileInformation implements LogFileInformation {
+/**
+ * Builder of per-version {@link LogFileInformation} views over a {@link LogFiles}. Each {@link #forVersion} call
+ * returns a thin handle that delegates back into the shared LFU timestamp cache and the log file's header reader.
+ */
+public class TransactionLogFileInformation {
     private final LogFiles logFiles;
-    private final TransactionLogFileTimestampMapper logFileTimestampMapper;
+    private final TimestampMapper timestampMapper;
 
     TransactionLogFileInformation(
             LogFiles logFiles,
@@ -56,40 +61,57 @@ public class TransactionLogFileInformation implements LogFileInformation {
     @VisibleForTesting
     TransactionLogFileInformation(LogFiles logFiles, Supplier<LogEntryReader> logEntryReaderFactory) {
         this.logFiles = logFiles;
-        this.logFileTimestampMapper = new TransactionLogFileTimestampMapper(logFiles, logEntryReaderFactory);
+        this.timestampMapper = new TimestampMapper(logFiles, logEntryReaderFactory);
     }
 
-    @Override
-    public long getPreviousAppendIndexFromHeader(long version) throws IOException {
-        LogHeader logHeader = logFiles.getLogFile().extractHeader(version);
-        return logHeader != null ? logHeader.getLastAppendIndex() : -1;
+    public LogFileInformation forVersion(long version) {
+        return new VersionView(version);
     }
 
-    @Override
-    public long getLastEntryAppendIndex() {
-        return logFiles.getLogFile().getLastEntryAppendIndexInLogFiles();
+    private final class VersionView implements LogFileInformation {
+        private final long version;
+
+        private VersionView(long version) {
+            this.version = version;
+        }
+
+        @Override
+        public long version() {
+            return version;
+        }
+
+        @Override
+        public Path path() {
+            return logFiles.getLogFile().getLogFileForVersion(version);
+        }
+
+        @Override
+        public long getPreviousAppendIndexFromHeader() throws IOException {
+            LogHeader header = logFiles.getLogFile().extractHeader(version);
+            return header != null ? header.getLastAppendIndex() : -1;
+        }
+
+        @Override
+        public long getFirstStartRecordTimestamp() throws IOException {
+            return timestampMapper.getTimestampForVersion(version);
+        }
     }
 
-    @Override
-    public long getFirstStartRecordTimestamp(long version) throws IOException {
-        return logFileTimestampMapper.getTimestampForVersion(version);
-    }
-
-    private static class TransactionLogFileTimestampMapper {
+    private static class TimestampMapper {
         private static final String FIRST_TRANSACTION_TIME = "First Transaction Time";
         private final LogFiles logFiles;
         private final Supplier<LogEntryReader> logEntryReaderFactory;
         private final LfuCache<Long, Long> logFileTimeStamp = new LfuCache<>(FIRST_TRANSACTION_TIME, 10_000);
 
-        TransactionLogFileTimestampMapper(LogFiles logFiles, Supplier<LogEntryReader> logEntryReaderFactory) {
+        TimestampMapper(LogFiles logFiles, Supplier<LogEntryReader> logEntryReaderFactory) {
             this.logFiles = logFiles;
             this.logEntryReaderFactory = logEntryReaderFactory;
         }
 
         long getTimestampForVersion(long version) throws IOException {
-            var cachedTimeStamp = logFileTimeStamp.get(version);
-            if (cachedTimeStamp != null) {
-                return cachedTimeStamp;
+            var cached = logFileTimeStamp.get(version);
+            if (cached != null) {
+                return cached;
             }
             var logFile = logFiles.getLogFile();
             if (logFile.versionExists(version)) {

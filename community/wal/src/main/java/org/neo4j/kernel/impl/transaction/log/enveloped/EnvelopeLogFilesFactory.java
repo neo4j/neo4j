@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 import org.neo4j.kernel.impl.transaction.log.StoreChannelNativeAccessor;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
@@ -31,7 +32,7 @@ public class EnvelopeLogFilesFactory {
     private final int writeBufferBlocks;
     private final int segments;
     private final MemoryTracker memoryTracker;
-    private final PruneStrategy pruneStrategy;
+    private final LogPruneThreshold pruneThreshold;
     private final StoreChannelNativeAccessor storeChannelNativeAccessor;
     private final InternalLogProvider logProvider;
 
@@ -41,7 +42,7 @@ public class EnvelopeLogFilesFactory {
             int writeBufferBlocks,
             int segments,
             MemoryTracker memoryTracker,
-            PruneStrategy pruneStrategy,
+            LogPruneThreshold pruneThreshold,
             StoreChannelNativeAccessor storeChannelNativeAccessor,
             InternalLogProvider logProvider) {
         this.fileSystem = fileSystem;
@@ -49,7 +50,7 @@ public class EnvelopeLogFilesFactory {
         this.writeBufferBlocks = writeBufferBlocks;
         this.segments = segments;
         this.memoryTracker = memoryTracker;
-        this.pruneStrategy = pruneStrategy;
+        this.pruneThreshold = pruneThreshold;
         this.storeChannelNativeAccessor = storeChannelNativeAccessor;
         this.logProvider = logProvider;
     }
@@ -62,7 +63,7 @@ public class EnvelopeLogFilesFactory {
                 writeBufferBlocks,
                 segments,
                 memoryTracker,
-                pruneStrategy,
+                pruneThreshold,
                 storeChannelNativeAccessor,
                 logProvider);
     }

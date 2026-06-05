@@ -161,7 +161,7 @@ class TestLogPruning {
 
         LogPruningImpl prunning = (LogPruningImpl) db.getDependencyResolver().resolveDependency(LogPruning.class);
         LogPruneStrategy pruneStrategy = prunning.getPruneStrategy();
-        Threshold threshold = ((ThresholdBasedPruneStrategy) pruneStrategy).getThreshold();
+        LogPruneThreshold threshold = ((ThresholdBasedPruneStrategy) pruneStrategy).getThreshold();
         ((BackupThreshold) threshold).setBackupAppendIndex(100);
 
         // When
@@ -183,7 +183,7 @@ class TestLogPruning {
 
         LogPruningImpl prunning = (LogPruningImpl) db.getDependencyResolver().resolveDependency(LogPruning.class);
         LogPruneStrategy pruneStrategy = prunning.getPruneStrategy();
-        Threshold threshold = ((ThresholdBasedPruneStrategy) pruneStrategy).getThreshold();
+        LogPruneThreshold threshold = ((ThresholdBasedPruneStrategy) pruneStrategy).getThreshold();
         ((BackupThreshold) threshold).setBackupAppendIndex(150);
 
         // When

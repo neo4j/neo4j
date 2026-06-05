@@ -24,13 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.IOUtils.uncheckedLongConsumer;
-import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -49,7 +47,7 @@ import org.neo4j.logging.LogAssertions;
 class ThresholdBasedPruneConstraintTest {
     private final FileSystemAbstraction fileSystem = mock(FileSystemAbstraction.class);
     private final LogFile logFile = mock(TransactionLogFile.class);
-    private final Threshold threshold = mock(Threshold.class);
+    private final TransactionLogFileInformation logFileInformation = mock(TransactionLogFileInformation.class);
 
     @BeforeEach
     void setUp() {
@@ -57,54 +55,27 @@ class ThresholdBasedPruneConstraintTest {
             long version = invocationOnMock.getArgument(0, Long.class);
             return logFileForVersion(version);
         });
+        when(logFileInformation.forVersion(anyLong())).thenAnswer(inv -> {
+            long version = inv.getArgument(0, Long.class);
+            return new StubLogFileInformation(version);
+        });
     }
 
     @Test
     void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws IOException {
-        // Given
-        Path fileName0 = logFileForVersion(0);
-        Path fileName1 = logFileForVersion(1);
-        Path fileName2 = logFileForVersion(2);
-        Path fileName3 = logFileForVersion(3);
-        Path fileName4 = logFileForVersion(4);
-        Path fileName5 = logFileForVersion(5);
-        Path fileName6 = logFileForVersion(6);
-
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(0L, null, 6L, null));
 
-        when(fileSystem.fileExists(fileName6)).thenReturn(true);
-        when(fileSystem.fileExists(fileName5)).thenReturn(true);
-        when(fileSystem.fileExists(fileName4)).thenReturn(true);
-        when(fileSystem.fileExists(fileName3)).thenReturn(true);
-        when(fileSystem.fileExists(fileName2)).thenReturn(true);
-        when(fileSystem.fileExists(fileName1)).thenReturn(true);
-        when(fileSystem.fileExists(fileName0)).thenReturn(true);
+        LogPruneThreshold threshold = state -> current -> false;
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold, logFileInformation);
 
-        when(fileSystem.getFileSize(any(Path.class))).thenReturn(LATEST_LOG_FORMAT.getHeaderSize() + 1L);
+        strategy.findLogVersionsToDelete(7L)
+                .forEachOrdered(uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
 
-        when(threshold.reached(any(), anyLong(), any())).thenReturn(false);
-
-        ThresholdBasedPruneStrategy strategy =
-                new ThresholdBasedPruneStrategy(logFile, threshold, mock(TransactionLogFileInformation.class));
-
-        // When
-        var versionsToDelete = strategy.findLogVersionsToDelete(7L);
-        versionsToDelete.forEachOrdered(
-                uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
-
-        // Then
-        verify(threshold).init();
         verify(fileSystem, never()).deleteFile(any(Path.class));
     }
 
     @Test
     void shouldDeleteJustWhatTheThresholdSays() throws IOException {
-        // Given
-        when(threshold.reached(any(), eq(6L), any())).thenReturn(false);
-        when(threshold.reached(any(), eq(5L), any())).thenReturn(false);
-        when(threshold.reached(any(), eq(4L), any())).thenReturn(false);
-        when(threshold.reached(any(), eq(3L), any())).thenReturn(true);
-
         Path fileName1 = logFileForVersion(1);
         Path fileName2 = logFileForVersion(2);
         Path fileName3 = logFileForVersion(3);
@@ -114,18 +85,12 @@ class ThresholdBasedPruneConstraintTest {
 
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(1L, null, 6L, null));
 
-        when(fileSystem.getFileSize(any(Path.class))).thenReturn(LATEST_LOG_FORMAT.getHeaderSize() + 1L);
+        LogPruneThreshold threshold = state -> current -> current.version() <= 3L;
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold, logFileInformation);
 
-        ThresholdBasedPruneStrategy strategy =
-                new ThresholdBasedPruneStrategy(logFile, threshold, mock(TransactionLogFileInformation.class));
+        strategy.findLogVersionsToDelete(7L)
+                .forEachOrdered(uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
 
-        // When
-        var versionsToDelete = strategy.findLogVersionsToDelete(7L);
-        versionsToDelete.forEachOrdered(
-                uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
-
-        // Then
-        verify(threshold).init();
         verify(fileSystem).deleteFile(fileName1);
         verify(fileSystem).deleteFile(fileName2);
         verify(fileSystem, never()).deleteFile(fileName3);
@@ -137,25 +102,22 @@ class ThresholdBasedPruneConstraintTest {
     @Test
     void minimalAvailableVersionHigherThanRequested() {
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(10L, null, 10L, null));
-        when(threshold.reached(any(), anyLong(), any())).thenReturn(true);
+        LogPruneThreshold threshold = state -> current -> true;
 
-        ThresholdBasedPruneStrategy strategy =
-                new ThresholdBasedPruneStrategy(logFile, threshold, mock(TransactionLogFileInformation.class));
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold, logFileInformation);
 
-        var versionsToDelete = strategy.findLogVersionsToDelete(5);
         var anyFound = new MutableBoolean();
-        versionsToDelete.forEachOrdered(value -> anyFound.setTrue());
+        strategy.findLogVersionsToDelete(5).forEachOrdered(value -> anyFound.setTrue());
         assertFalse(anyFound.getValue());
     }
 
     @Test
     void rangeWithMissingFilesCanBeProduced() {
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(10L, null, 20L, null));
-        when(threshold.reached(any(), anyLong(), any())).thenReturn(true);
         when(fileSystem.fileExists(any(Path.class))).thenReturn(false);
 
-        ThresholdBasedPruneStrategy strategy =
-                new ThresholdBasedPruneStrategy(logFile, threshold, mock(TransactionLogFileInformation.class));
+        LogPruneThreshold threshold = state -> current -> true;
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold, logFileInformation);
 
         var versionsToDelete = strategy.findLogVersionsToDelete(15);
         assertThat(versionsToDelete.fromInclusive()).isEqualTo(10);
@@ -164,13 +126,10 @@ class ThresholdBasedPruneConstraintTest {
 
     @Test
     void mustHaveToStringOfThreshold() {
-        Threshold threshold = new Threshold() {
+        LogPruneThreshold threshold = new LogPruneThreshold() {
             @Override
-            public void init() {}
-
-            @Override
-            public boolean reached(Path file, long version, LogFileInformation source) {
-                return false;
+            public PrunePredicate forCycle(long lastEntryAppendIndex) {
+                return current -> false;
             }
 
             @Override
@@ -178,41 +137,49 @@ class ThresholdBasedPruneConstraintTest {
                 return "Super-duper threshold";
             }
         };
-        ThresholdBasedPruneStrategy strategy =
-                new ThresholdBasedPruneStrategy(logFile, threshold, mock(TransactionLogFileInformation.class));
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold, logFileInformation);
         assertEquals("Super-duper threshold", strategy.toString());
     }
 
     @Test
     void shouldHandleSizeThresholdForMissingFile() throws IOException {
-        // given
         when(logFile.getLogRangeInfo()).thenReturn(new LogRangeInfo(0L, null, 3L, null));
         when(fileSystem.getFileSize(logFileForVersion(0)))
                 .thenThrow(new NoSuchFileException(logFileForVersion(0).toString()));
-        setUpFileSizeForLogVersion(1, 25);
-        setUpFileSizeForLogVersion(2, 10);
-        setUpFileSizeForLogVersion(3, 20);
+        when(fileSystem.getFileSize(logFileForVersion(1))).thenReturn(25L);
+        when(fileSystem.getFileSize(logFileForVersion(2))).thenReturn(10L);
+        when(fileSystem.getFileSize(logFileForVersion(3))).thenReturn(20L);
+
         try (var logProvider = new AssertableLogProvider()) {
             var threshold = new FileSizeThreshold(fileSystem, 100, logProvider);
-            var strategy =
-                    new ThresholdBasedPruneStrategy(logFile, threshold, mock(TransactionLogFileInformation.class));
+            var strategy = new ThresholdBasedPruneStrategy(logFile, threshold, logFileInformation);
 
-            // when
             var versionRange = strategy.findLogVersionsToDelete(3);
 
-            // then it didn't reach the limit...
             assertThat(versionRange.fromInclusive()).isEqualTo(-1);
             assertThat(versionRange.toExclusive()).isEqualTo(-1);
-            // ... however it didn't fail when reaching v0, merely logged a warning
             LogAssertions.assertThat(logProvider).containsMessages("Error on attempt to get file size");
         }
     }
 
-    private void setUpFileSizeForLogVersion(long version, long size) throws IOException {
-        when(fileSystem.getFileSize(logFileForVersion(version))).thenReturn(size);
+    private static Path logFileForVersion(long version) {
+        return Path.of("logical-log.v" + version);
     }
 
-    private Path logFileForVersion(long version) {
-        return Path.of("logical-log.v" + version);
+    private record StubLogFileInformation(long version) implements LogFileInformation {
+        @Override
+        public Path path() {
+            return logFileForVersion(version);
+        }
+
+        @Override
+        public long getPreviousAppendIndexFromHeader() {
+            return -1;
+        }
+
+        @Override
+        public long getFirstStartRecordTimestamp() {
+            return -1;
+        }
     }
 }

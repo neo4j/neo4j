@@ -20,23 +20,20 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
+/**
+ * Facts about a single log file, viewed from a pruning decision's point of view. Instances are constructed per
+ * visited version during a pruning cycle and live only for that visit.
+ */
 public interface LogFileInformation {
-    /**
-     * @param version the log version to get previous last append index for.
-     * @return the last append index from the header of log with {@code version}.
-     * If that log doesn't exist -1 is returned.
-     */
-    long getPreviousAppendIndexFromHeader(long version) throws IOException;
+    long version();
 
-    /**
-     * @return the last committed entry append index for this log.
-     */
-    long getLastEntryAppendIndex();
+    Path path();
 
-    /**
-     * @param version the log version to get first entry timestamp for.
-     * @return the timestamp for the start record for the first encountered entry in the log {@code version}.
-     */
-    long getFirstStartRecordTimestamp(long version) throws IOException;
+    /** Last append index recorded in this file's header (i.e. the previous file's last append index). */
+    long getPreviousAppendIndexFromHeader() throws IOException;
+
+    /** Timestamp of the first start record in this file. */
+    long getFirstStartRecordTimestamp() throws IOException;
 }

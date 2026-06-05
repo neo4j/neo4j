@@ -19,23 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.nio.file.Path;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 /**
- * Determines transaction log pruning point below which it should be safe to prune log files.
+ * Per-cycle decision: callers iterate log files newest → oldest and ask this predicate at each version. The first
+ * file for which the predicate returns true is kept; everything strictly older becomes deletable.
+ * <p>
+ * The predicate instance lives for the whole cycle, so implementations that care about the previous iteration
+ * (e.g. time-based pruning that looks at the next-newer file's timestamp) keep that reference internally.
+ * <p>
+ * Implementations should not throw to signal "couldn't decide" — return false instead.
  */
-public interface Threshold {
-    void init();
-
-    /**
-     * Check if threshold is reached for provided version of transaction log file.
-     * Even if file can't be read or some condition can't be evaluated threshold should not throw exception and make any assumptions about presence or
-     * absence of file, correctness of information, etc. Instead threshold should not be reached as result.
-     * @param path transaction log file
-     * @param version version of log file
-     * @param source meta information about particular transaction file
-     * @return true if reached, false otherwise
-     */
-    boolean reached(Path path, long version, LogFileInformation source);
+@FunctionalInterface
+public interface PrunePredicate {
+    boolean isLowestVersionToKeep(LogFileInformation current);
 }

@@ -63,6 +63,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
+import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.logging.NullLogProvider;
@@ -87,7 +89,7 @@ class EnvelopedLogFilesTest {
     private final int segmentBlockSize = 256;
     private final int totalSegments = 3;
     private final int totalFileDataSize = segmentBlockSize * (totalSegments - 1);
-    private PruneStrategy pruneStrategy = PruneStrategy.ALWAYS_PRUNE;
+    private LogPruneThreshold pruneStrategy = ThresholdFactory.PRUNE_ALL;
 
     @Inject
     TestDirectory testDirectory;
@@ -137,8 +139,7 @@ class EnvelopedLogFilesTest {
                 writeBufferedBlocks,
                 totalSegments,
                 EmptyMemoryTracker.INSTANCE,
-                (currentEntry, currentOffset, currentLogFile) ->
-                        pruneStrategy.newConstraint(currentEntry, currentOffset, currentLogFile),
+                pruneStrategy,
                 new StoreChannelNativeAccessor(
                         fs, NativeAccessProvider.getNativeAccess(), NullLogProvider.getInstance(), s -> {}),
                 NullLogProvider.getInstance(),
@@ -599,7 +600,7 @@ class EnvelopedLogFilesTest {
 
     @Test
     void shouldNotPruneFilesIfStrategyDoesNotAllow() throws IOException {
-        pruneStrategy = PruneStrategy.NEVER_PRUNE;
+        envelopedLogFiles.setPruneThreshold(ThresholdFactory.KEEP_ALL);
         assertThat(mirroringRepository.isEmpty()).isTrue();
 
         envelopedLogFiles.initialise();
@@ -621,7 +622,7 @@ class EnvelopedLogFilesTest {
 
     @Test
     void shouldPruneFileIfStrategyDoesAllow() throws IOException {
-        pruneStrategy = PruneStrategy.ALWAYS_PRUNE;
+        envelopedLogFiles.setPruneThreshold(ThresholdFactory.PRUNE_ALL);
         assertThat(mirroringRepository.isEmpty()).isTrue();
 
         envelopedLogFiles.initialise();

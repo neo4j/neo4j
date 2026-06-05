@@ -20,12 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public final class EntryCountThreshold implements Threshold {
+public final class EntryCountThreshold implements LogPruneThreshold {
     private final long maxLogEntries;
     private final InternalLog log;
 
@@ -35,30 +33,25 @@ public final class EntryCountThreshold implements Threshold {
     }
 
     @Override
-    public void init() {
-        // nothing to do here
-    }
-
-    @Override
-    public boolean reached(Path ignored, long version, LogFileInformation source) {
-        try {
-            long lastAppendIndex = source.getPreviousAppendIndexFromHeader(version);
-            if (lastAppendIndex == -1) {
+    public PrunePredicate forCycle(long lastEntryAppendIndex) {
+        return current -> {
+            try {
+                long lastAppendIndex = current.getPreviousAppendIndexFromHeader();
+                if (lastAppendIndex == -1) {
+                    log.warn(
+                            "Failed to get append index of the first entry in the transaction log file. Requested version: "
+                                    + current.version());
+                    return false;
+                }
+                return lastEntryAppendIndex - lastAppendIndex >= maxLogEntries;
+            } catch (IOException e) {
                 log.warn(
-                        "Failed to get append index of the first entry in the transaction log file. Requested version: "
-                                + version);
+                        "Error on attempt to get entry append indexes from transaction log files. Checked version: "
+                                + current.version(),
+                        e);
                 return false;
             }
-
-            long highestAppendIndex = source.getLastEntryAppendIndex();
-            return highestAppendIndex - lastAppendIndex >= maxLogEntries;
-        } catch (IOException e) {
-            log.warn(
-                    "Error on attempt to get entry append indexes from transaction log files. Checked version: "
-                            + version,
-                    e);
-            return false;
-        }
+        };
     }
 
     @Override

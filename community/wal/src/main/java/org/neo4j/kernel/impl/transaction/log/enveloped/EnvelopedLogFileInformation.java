@@ -17,37 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.pruning;
+package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import java.nio.file.Path;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.logging.InternalLogProvider;
 
-public final class FileCountThreshold implements Threshold {
-    private final long maxNonEmptyLogs;
-    private final EntryCountThreshold entryCountThreshold;
+/**
+ * Adapts a {@link LogFileMetadata} entry into the {@link LogFileInformation} view consumed by threshold
+ * predicates. Mtime substitutes for the legacy "first start record timestamp" because envelopes don't carry
+ * per-entry timestamps in their header.
+ */
+record EnvelopedLogFileInformation(LogFileMetadata metadata) implements LogFileInformation {
 
-    private long nonEmptyLogCount;
-
-    FileCountThreshold(long maxNonEmptyLogs, InternalLogProvider logProvider) {
-        this.maxNonEmptyLogs = maxNonEmptyLogs;
-        this.entryCountThreshold = new EntryCountThreshold(logProvider, 1);
+    @Override
+    public long version() {
+        return metadata.version();
     }
 
     @Override
-    public void init() {
-        nonEmptyLogCount = 0;
-        entryCountThreshold.init();
+    public Path path() {
+        return metadata.path();
     }
 
     @Override
-    public boolean reached(Path file, long version, LogFileInformation source) {
-        // Always save at the very least one whole chunk
-        return ++nonEmptyLogCount >= maxNonEmptyLogs && entryCountThreshold.reached(file, version, source);
+    public long getPreviousAppendIndexFromHeader() {
+        return metadata.logHeader().getLastAppendIndex();
     }
 
     @Override
-    public String toString() {
-        return maxNonEmptyLogs + " files";
+    public long getFirstStartRecordTimestamp() {
+        // TODO MERGELOGS: not desired behaviour consider how we want time stamps to work
+        return metadata.lastModifiedMillis();
     }
 }

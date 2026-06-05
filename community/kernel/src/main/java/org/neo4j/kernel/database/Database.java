@@ -158,6 +158,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.pruning.CheckpointOnlyLogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
@@ -611,6 +612,8 @@ public class Database extends AbstractDatabase {
 
         CheckPointerImpl.ForceOperation forceOperation =
                 new DefaultForceOperation(indexingService, storageEngine, databasePageCache);
+        boolean isMergeLog =
+                databaseConfig.get(GraphDatabaseInternalSettings.merged_log) && !namedDatabaseId.isSystemDatabase();
         DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs(
                 logFiles,
                 databaseConfig,
@@ -622,7 +625,8 @@ public class Database extends AbstractDatabase {
                 databaseDependencies,
                 cursorContextFactory,
                 storageEngineFactory.commandReaderFactory(),
-                otherDatabaseMemoryTracker);
+                otherDatabaseMemoryTracker,
+                isMergeLog);
         commitmentFactory = new TransactionCommitmentFactory(logMetadataProvider);
 
         databaseTransactionEventListeners =
@@ -1014,25 +1018,29 @@ public class Database extends AbstractDatabase {
             Dependencies databaseDependencies,
             CursorContextFactory cursorContextFactory,
             CommandReaderFactory commandReaderFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean isMergedLog) {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
         databaseDependencies.satisfyDependencies(transactionMetadataCache);
 
         BinarySupportedKernelVersions binarySupportedKernelVersions =
                 databaseDependencies.resolveDependency(BinarySupportedKernelVersions.class);
         Lock pruneLock = new ReentrantLock();
-        final LogPruning logPruning = new LogPruningImpl(
-                fs,
-                logFiles,
-                logProvider,
-                logPruneStrategyFactory,
-                clock,
-                databaseConfig,
-                pruneLock,
-                logMetadataProvider,
-                commandReaderFactory,
-                binarySupportedKernelVersions,
-                memoryTracker);
+        // secondaries comes later
+        final LogPruning logPruning = isMergedLog && mode == HostedOnMode.RAFT
+                ? new CheckpointOnlyLogPruning(fs, logFiles, logProvider, databaseConfig, pruneLock)
+                : new LogPruningImpl(
+                        fs,
+                        logFiles,
+                        logProvider,
+                        logPruneStrategyFactory,
+                        clock,
+                        databaseConfig,
+                        pruneLock,
+                        logMetadataProvider,
+                        commandReaderFactory,
+                        binarySupportedKernelVersions,
+                        memoryTracker);
 
         var transactionAppender = createTransactionAppender(
                 logFiles,
@@ -1044,9 +1052,8 @@ public class Database extends AbstractDatabase {
                 logProvider,
                 transactionMetadataCache,
                 namedDatabaseId.name(),
-                namedDatabaseId.isSystemDatabase(),
                 storageEngineFactory.multiVersioned(),
-                mode == HostedOnMode.RAFT || mode == HostedOnMode.REPLICA);
+                isMergedLog && (mode == HostedOnMode.RAFT || mode == HostedOnMode.REPLICA));
         life.add(transactionAppender);
 
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore(

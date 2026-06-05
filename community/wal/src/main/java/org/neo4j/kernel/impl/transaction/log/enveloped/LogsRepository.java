@@ -121,6 +121,10 @@ public class LogsRepository {
         return sequentialFilesHelper.getFileForVersion(version);
     }
 
+    long lastModifiedTime(long version) throws IOException {
+        return fs.lastModifiedTime(pathFor(version));
+    }
+
     void initialise() throws IOException {
         if (!fs.fileExists(sequentialFilesHelper.directory())) {
             fs.mkdir(sequentialFilesHelper.directory());

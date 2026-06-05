@@ -20,18 +20,23 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.neo4j.kernel.impl.transaction.log.enveloped.PruneStrategy.ALWAYS_PRUNE;
-import static org.neo4j.kernel.impl.transaction.log.enveloped.PruneStrategy.NEVER_PRUNE;
+import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory.KEEP_ALL;
+import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory.PRUNE_ALL;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
-import org.neo4j.kernel.impl.transaction.log.enveloped.PruneStrategy.PruneConstraint;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
+import org.neo4j.kernel.impl.transaction.log.pruning.PrunePredicate;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.StoreIdentifier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -44,15 +49,6 @@ class LogFilesPrunerTest {
     @Inject
     FileSystemAbstraction fs;
 
-    private final PruneStrategy pruneOnTwo =
-            (long currentEntry, long currentOffset, Path currentLogFile) -> new PruneConstraint() {
-                int count = 0;
-
-                @Override
-                public boolean shouldPrune(Path path) {
-                    return ++count >= 2;
-                }
-            };
     private LogsRepository logsRepository;
 
     @BeforeEach
@@ -62,99 +58,101 @@ class LogFilesPrunerTest {
     }
 
     @Test
-    void shouldNotExceedDesiredVersion() throws IOException {
-        createFile(0);
-        createFile(1);
+    void shouldReturnMinusOneOnEmptyRepository() throws IOException {
+        long pruned = new LogFilesPruner(logsRepository, PRUNE_ALL).pruneUpTo(0, 0);
 
-        var prunedVersion = new LogFilesPruner(logsRepository, ALWAYS_PRUNE).pruneUpTo(0, 0, 0, 0);
-
-        assertThat(prunedVersion).isZero();
-        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(1, 1));
+        assertThat(pruned).isEqualTo(-1);
+        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.EMPTY_RANGE);
     }
 
     @Test
-    void shouldNotPruneIfDesiredVersionIsBelow() throws IOException {
-        createFile(3);
-        createFile(4);
+    void shouldNotPruneIfThresholdNeverReached() throws IOException {
+        createFileWithHeader(3, 0);
+        createFileWithHeader(4, 0);
+        createFileWithHeader(5, 0);
 
-        var prunedVersion = new LogFilesPruner(logsRepository, ALWAYS_PRUNE).pruneUpTo(2, 0, 0, 0);
+        long pruned = new LogFilesPruner(logsRepository, KEEP_ALL).pruneUpTo(4, 0);
 
-        assertThat(prunedVersion).isEqualTo(-1);
-        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(3, 4));
+        assertThat(pruned).isEqualTo(-1);
+        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(3, 5));
     }
 
     @Test
-    void shouldNeverPruneLastFileEvenIfConstraintAllowsIt() throws IOException {
-        createFile(3);
-        createFile(4);
+    void shouldPruneEverythingBelowReachedFile() throws IOException {
+        createFileWithHeader(1, 0);
+        createFileWithHeader(2, 5);
+        createFileWithHeader(3, 10);
+        createFileWithHeader(4, 15);
 
-        var prunedVersion = new LogFilesPruner(logsRepository, ALWAYS_PRUNE).pruneUpTo(5, 0, 0, 0);
+        // desired=3 → iteration capped at upToVersion=4 (i.e. include the tail). PRUNE_ALL hits v=4 first;
+        // boundary=4, prune everything strictly older within the caller's willing range: files 1, 2, 3.
+        long pruned = new LogFilesPruner(logsRepository, PRUNE_ALL).pruneUpTo(3, 0);
 
-        assertThat(prunedVersion).isEqualTo(3L);
+        assertThat(pruned).isEqualTo(3);
         assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(4, 4));
     }
 
     @Test
-    void shouldNotPruneIfStrategyDoesNotAllowIt() throws IOException {
-        createFile(3);
-        createFile(4);
+    void shouldNotPruneWhenDesiredVersionIsBelowLowest() throws IOException {
+        createFileWithHeader(3, 0);
+        createFileWithHeader(4, 5);
 
-        var prunedVersion = new LogFilesPruner(logsRepository, NEVER_PRUNE).pruneUpTo(2, 0, 0, 0);
+        // desired=2, upToVersion=3; iterate v=3 (≤ 3, considered). PRUNE_ALL → boundary=3, highestToPrune=2 <
+        // lowest=3 → no prune.
+        long pruned = new LogFilesPruner(logsRepository, PRUNE_ALL).pruneUpTo(2, 0);
 
-        assertThat(prunedVersion).isEqualTo(-1);
+        assertThat(pruned).isEqualTo(-1);
         assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(3, 4));
     }
 
     @Test
-    void shouldOnlyPruneIfStrategyAllowsIt() throws IOException {
-        createFile(1);
-        createFile(2);
-        createFile(3);
-        createFile(4);
+    void shouldNeverPruneLastFileEvenWhenDesiredVersionExceedsHighest() throws IOException {
+        createFileWithHeader(3, 0);
+        createFileWithHeader(4, 5);
 
-        var prunedVersion = new LogFilesPruner(logsRepository, pruneOnTwo).pruneUpTo(3, 0, 0, 0);
+        // Caller asks to prune up to v=5, but v=5 doesn't exist. Boundary lands on v=4
+        // (newest existing); we still keep it and only delete strictly older.
+        long pruned = new LogFilesPruner(logsRepository, PRUNE_ALL).pruneUpTo(5, 0);
 
-        assertThat(prunedVersion).isEqualTo(2);
-        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(3, 4));
+        assertThat(pruned).isEqualTo(3);
+        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(4, 4));
     }
 
     @Test
-    void shouldCallConstraintEventWhenDesiredVersionIsNotMet() throws IOException {
-        createFile(1);
-        createFile(2);
-        createFile(3);
-        createFile(4);
-        createFile(5);
-        createFile(6);
+    void shouldStopAtFirstReachedBoundary() throws IOException {
+        createFileWithHeader(1, 0);
+        createFileWithHeader(2, 5);
+        createFileWithHeader(3, 10);
+        createFileWithHeader(4, 15);
+        createFileWithHeader(5, 20);
 
-        var prunedVersion = new LogFilesPruner(logsRepository, pruneOnTwo).pruneUpTo(3, 0, 0, 0);
+        // desired=3 → upToVersion=4. Predicate sees every file (newest-first, including v=5 even though it's
+        // above the prune horizon). Reaches on the 3rd call: v=5, v=4, v=3 → boundary at v=3, prune files 1, 2.
+        long pruned = new LogFilesPruner(logsRepository, reachedOnNthCall(3)).pruneUpTo(3, 0);
 
-        assertThat(prunedVersion).isEqualTo(3);
-        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(4, 6));
+        assertThat(pruned).isEqualTo(2);
+        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(3, 5));
     }
 
-    @Test
-    void shouldPruneDesiredVersion() throws IOException {
-        createFile(1);
-        createFile(2);
-        createFile(3);
-        createFile(4);
-
-        var prunedVersion = new LogFilesPruner(logsRepository, ALWAYS_PRUNE).pruneUpTo(2, 0, 0, 0);
-
-        assertThat(prunedVersion).isEqualTo(2);
-        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.range(3, 4));
+    private void createFileWithHeader(long version, long prevAppendIndex) throws IOException {
+        try (LogChannelContext<StoreChannel> channel = logsRepository.createWriteChannel(version)) {
+            LogFormat.writeLogHeader(
+                    channel.channel(),
+                    LogFormat.V11.newHeader(
+                            version, prevAppendIndex, 0, StoreIdentifier.UNKNOWN, 246, 1, KernelVersion.V2026_01),
+                    EmptyMemoryTracker.INSTANCE);
+            channel.channel().flush();
+        }
     }
 
-    @Test
-    void shouldHandleEmptyRepository() throws IOException {
-        var prunedVersion = new LogFilesPruner(logsRepository, ALWAYS_PRUNE).pruneUpTo(0, 0, 0, 0);
+    private static LogPruneThreshold reachedOnNthCall(int targetCall) {
+        return state -> new PrunePredicate() {
+            private int count;
 
-        assertThat(prunedVersion).isEqualTo(-1);
-        assertThat(logsRepository.logVersionsRange()).isEqualTo(LongRange.EMPTY_RANGE);
-    }
-
-    private void createFile(long version) throws IOException {
-        try (LogChannelContext<StoreChannel> ignored = logsRepository.createWriteChannel(version)) {}
+            @Override
+            public boolean isLowestVersionToKeep(LogFileInformation current) {
+                return ++count >= targetCall;
+            }
+        };
     }
 }

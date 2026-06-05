@@ -120,7 +120,6 @@ public class Runner implements Callable<Long> {
                 new TransactionMetadataCache(),
                 "le db",
                 false,
-                false,
                 false);
     }
 

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +28,12 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public final class EntryTimespanThreshold implements Threshold {
+public final class EntryTimespanThreshold implements LogPruneThreshold {
     private final long timeToKeepInMillis;
     private final Clock clock;
     private final TimeUnit timeUnit;
     private final FileSizeThreshold fileSizeThreshold;
     private final InternalLog log;
-    private long lowerLimit;
 
     EntryTimespanThreshold(InternalLogProvider logProvider, Clock clock, TimeUnit timeUnit, long timeToKeep) {
         this(logProvider, clock, timeUnit, timeToKeep, null);
@@ -55,25 +53,37 @@ public final class EntryTimespanThreshold implements Threshold {
     }
 
     @Override
-    public void init() {
-        if (fileSizeThreshold != null) {
-            fileSizeThreshold.init();
-        }
-        lowerLimit = clock.millis() - timeToKeepInMillis;
-    }
+    public PrunePredicate forCycle(long lastEntryAppendIndex) {
+        long lowerLimit = clock.millis() - timeToKeepInMillis;
+        PrunePredicate sizeGuard = fileSizeThreshold == null ? null : fileSizeThreshold.forCycle(lastEntryAppendIndex);
+        return new PrunePredicate() {
+            // Time-based pruning needs the next-newer file (which was the predicate's previous call) to compare
+            // its first-entry timestamp against the cutoff. Captured here so the predicate signature can stay
+            // simple for every other threshold.
+            private LogFileInformation previous;
 
-    @Override
-    public boolean reached(Path file, long version, LogFileInformation source) {
-        try {
-            if (fileSizeThreshold != null && fileSizeThreshold.reached(file, version, source)) {
-                return true;
+            @Override
+            public boolean isLowestVersionToKeep(LogFileInformation current) {
+                try {
+                    if (sizeGuard != null && sizeGuard.isLowestVersionToKeep(current)) {
+                        return true;
+                    }
+                    if (previous == null) {
+                        previous = current;
+                        return false;
+                    }
+                    long ts = previous.getFirstStartRecordTimestamp();
+                    boolean tripped = ts >= 0 && ts < lowerLimit;
+                    previous = current;
+                    return tripped;
+                } catch (IOException e) {
+                    long versionInError = previous == null ? -1 : previous.version();
+                    log.warn("Fail to get timestamp info from transaction log file " + versionInError, e);
+                    previous = current;
+                    return false;
+                }
             }
-            long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp(version + 1);
-            return firstStartRecordTimestamp >= 0 && firstStartRecordTimestamp < lowerLimit;
-        } catch (IOException e) {
-            log.warn("Fail to get timestamp info from transaction log file " + (version + 1), e);
-            return false;
-        }
+        };
     }
 
     @Override

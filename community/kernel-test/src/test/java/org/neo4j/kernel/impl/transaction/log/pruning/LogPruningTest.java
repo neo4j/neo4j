@@ -219,7 +219,7 @@ class LogPruningTest {
         verify(fs).deleteFile(checkpointFiles[1]);
         LogAssertions.assertThat(logProvider)
                 .forLevel(INFO)
-                .forClass(LogPruningImpl.class)
+                .forClass(CheckpointLogFilePruner.class)
                 .containsMessages("Pruned 2 checkpoint log files. Lowest preserved version: 2");
     }
 }

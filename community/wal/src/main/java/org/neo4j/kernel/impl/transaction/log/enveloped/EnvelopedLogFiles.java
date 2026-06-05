@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotateEvents;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.logging.InternalLog;
@@ -69,7 +70,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             int writerBufferedBlocks,
             int totalSegments,
             MemoryTracker memoryTracker,
-            PruneStrategy pruneStrategy,
+            LogPruneThreshold pruneThreshold,
             ChannelNativeAccessor channelNativeAccessor,
             InternalLogProvider logProvider,
             LogTracers logTracers) {
@@ -85,7 +86,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         this.memoryTracker = memoryTracker;
         this.maxFileSize = totalSegments * (long) segmentBlockSize;
         this.logRotation = new EnvelopedLogRotation(this, maxFileSize);
-        this.logFilesPruner = new LogFilesPruner(logsRepository, pruneStrategy);
+        this.logFilesPruner = new LogFilesPruner(logsRepository, pruneThreshold);
         this.logProvider = logProvider;
         this.log = logProvider.getLog(EnvelopedLogFiles.class);
         this.logTracers = logTracers;
@@ -98,7 +99,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             int writerBufferedBlocks,
             int totalSegments,
             MemoryTracker memoryTracker,
-            PruneStrategy pruneStrategy,
+            LogPruneThreshold pruneThreshold,
             ChannelNativeAccessor channelNativeAccessor,
             InternalLogProvider logProvider) {
         this(
@@ -108,7 +109,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 writerBufferedBlocks,
                 totalSegments,
                 memoryTracker,
-                pruneStrategy,
+                pruneThreshold,
                 channelNativeAccessor,
                 logProvider,
                 LogTracers.NULL); // TODO MERGELOGS LogTracers currently only used in tests
@@ -119,6 +120,10 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             throw new IllegalStateException("Writer channel has not been initialised");
         }
         return appendingChannel;
+    }
+
+    public void setPruneThreshold(LogPruneThreshold threshold) {
+        logFilesPruner.setThreshold(threshold);
     }
 
     @Override
@@ -370,23 +375,16 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
      * @return the highest index that was removed after the prune event, or -1 if there is nothing to prune
      */
     public long prune(long index) throws IOException {
-        long versionToPrune;
-        try (var reader = openReadChannel(index)) {
-            if (reader == null) {
-                return -1; // index already pruned
-            }
-            var logVersion = reader.getLogVersion();
-            versionToPrune = logVersion - 1;
-            if (!logsRepository.logVersionsRange().isWithinRange(versionToPrune)) {
-                return -1;
-            }
+        long fileVersion = getFileVersion(index);
+        if (fileVersion == -1) {
+            return -1; // index already pruned
+        }
+        long versionToPrune = fileVersion - 1;
+        if (!logsRepository.logVersionsRange().isWithinRange(versionToPrune)) {
+            return -1;
         }
         var envelopeWriteChannel = currentWriteChannel();
-        var prunedVersion = logFilesPruner.pruneUpTo(
-                versionToPrune,
-                envelopeWriteChannel.currentIndex(),
-                envelopeWriteChannel.position(),
-                currentWriteChannel.version());
+        var prunedVersion = logFilesPruner.pruneUpTo(versionToPrune, envelopeWriteChannel.currentIndex());
         if (prunedVersion == -1) {
             return -1;
         }

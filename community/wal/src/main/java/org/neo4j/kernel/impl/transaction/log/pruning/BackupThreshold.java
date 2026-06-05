@@ -22,14 +22,11 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
-import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public final class BackupThreshold implements Threshold {
-
+public final class BackupThreshold implements LogPruneThreshold {
     private final long minSize;
     private final FileSizeThreshold sizeThreshold;
     private final InternalLog log;
@@ -41,42 +38,40 @@ public final class BackupThreshold implements Threshold {
         this.sizeThreshold = sizeThreshold;
     }
 
-    @Override
-    public void init() {
-        sizeThreshold.init();
-    }
-
-    @Override
-    public boolean reached(Path path, long version, LogFileInformation source) {
-        long appendIndex = backupAppendIndex;
-        if (appendIndex == UNKNOWN_APPEND_INDEX) {
-            return sizeThreshold.reached(path, version, source);
-        }
-        try {
-            if (sizeThreshold.reached(path, version, source)) {
-                return true;
-            }
-
-            long previousFileLastAppendIndex = source.getPreviousAppendIndexFromHeader(version);
-            if (previousFileLastAppendIndex == -1) {
-                log.warn(
-                        "Failed to get append index of the first entry in the transaction log file. Requested version: "
-                                + version);
-                return false;
-            }
-            long currentSize = sizeThreshold.getCurrentSize();
-            return currentSize > minSize && previousFileLastAppendIndex < backupAppendIndex;
-        } catch (IOException e) {
-            log.warn(
-                    "Error on attempt to calculate reachability threshold from transaction log files. Checked version: "
-                            + version,
-                    e);
-            return false;
-        }
-    }
-
     public void setBackupAppendIndex(long backupAppendIndex) {
         this.backupAppendIndex = backupAppendIndex;
+    }
+
+    @Override
+    public PrunePredicate forCycle(long lastEntryAppendIndex) {
+        long capturedBackupIndex = backupAppendIndex;
+        FileSizeThreshold.Predicate sizePredicate = sizeThreshold.forCycle(lastEntryAppendIndex);
+        long minSizeSnapshot = minSize;
+        return current -> {
+            if (capturedBackupIndex == UNKNOWN_APPEND_INDEX) {
+                return sizePredicate.isLowestVersionToKeep(current);
+            }
+            try {
+                if (sizePredicate.isLowestVersionToKeep(current)) {
+                    return true;
+                }
+                long previousFileLastAppendIndex = current.getPreviousAppendIndexFromHeader();
+                if (previousFileLastAppendIndex == -1) {
+                    log.warn(
+                            "Failed to get append index of the first entry in the transaction log file. Requested version: "
+                                    + current.version());
+                    return false;
+                }
+                return sizePredicate.currentSize() > minSizeSnapshot
+                        && previousFileLastAppendIndex < capturedBackupIndex;
+            } catch (IOException e) {
+                log.warn(
+                        "Error on attempt to calculate reachability threshold from transaction log files. Checked version: "
+                                + current.version(),
+                        e);
+                return false;
+            }
+        };
     }
 
     @Override
