@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.admin.topology
 
 import org.neo4j.cypher.internal.ast.ShowDatabase.PROPERTY_SHARD_REPLICA_ROLE
 import org.neo4j.dbms.database.DatabaseDetails
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -113,7 +114,7 @@ case class ShowDatabaseResult(
       Values.NO_VALUE
     } else {
       val valueOptions =
-        details.options().asScala.view.mapValues(v => Values.stringValue(v)).toMap[String, AnyValue].asJava
+        details.options().asScala.view.mapValues(v => ValueUtils.of(v)).toMap[String, AnyValue].asJava
       VirtualValues.fromMap(valueOptions, valueOptions.size, 0)
     }
 

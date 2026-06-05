@@ -48,7 +48,7 @@ public record DatabaseDetails(
         NamedDatabaseId namedDatabaseId,
         String requestedStatus,
         String type,
-        Map<String, String> options,
+        Map<String, Object> options,
         Optional<StoreId> storeId,
         Optional<ExternalStoreId> externalStoreId,
         Integer requestedPrimariesCount,
