@@ -19,9 +19,8 @@
  */
 package org.neo4j.gqlstatus;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,43 +35,47 @@ class GqlStatusTest {
         paramList.add("param2");
         paramList.add("param3");
         String message = statusCode.getMessage(paramList.toArray());
-        assertEquals("Execution of the procedure param1() timed out after param2 param3.", message);
+        assertThat(message).isEqualTo("Execution of the procedure param1() timed out after param2 param3.");
     }
 
     @Test
     void shouldFailOnEmptyGqlStatus() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> new GqlStatus(""), hint);
-        assertEquals(errorMessageStart + "got an empty string.", e.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new GqlStatus(""))
+                .withMessage(errorMessageStart + "got an empty string.");
     }
 
     @Test
     void shouldFailOnTooShortGqlStatus() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> new GqlStatus("125A"), hint);
-        assertEquals(errorMessageStart + "got: 125A.", e.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new GqlStatus("125A"))
+                .withMessage(errorMessageStart + "got: 125A.");
     }
 
     @Test
     void shouldFailOnTooLongGqlStatus() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> new GqlStatus("125ABC"), hint);
-        assertEquals(errorMessageStart + "got: 125ABC.", e.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new GqlStatus("125ABC"))
+                .withMessage(errorMessageStart + "got: 125ABC.");
     }
 
     @Test
     void shouldFailOnSpecialCharactersInGqlStatus() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> new GqlStatus("12_AB"), hint);
-        assertEquals(errorMessageStart + "got: 12_AB.", e.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> new GqlStatus("12_AB"))
+                .withMessage(errorMessageStart + "got: 12_AB.");
     }
 
     @Test
     void shouldAcceptValidGqlStatus() {
-        GqlStatus gqlStatus = assertDoesNotThrow(() -> new GqlStatus("01N12"));
-        assertEquals("01N12", gqlStatus.gqlStatusString());
+        var gqlStatus = new GqlStatus("01N12");
+        assertThat(gqlStatus.gqlStatusString()).isEqualTo("01N12");
     }
 
     @Test
     void shouldAcceptLowercaseGqlStatusAndSaveItAsUppercase() {
-        GqlStatus gqlStatus = assertDoesNotThrow(() -> new GqlStatus("abcde"));
-        assertEquals("ABCDE", gqlStatus.gqlStatusString());
+        var gqlStatus = new GqlStatus("abcde");
+        assertThat(gqlStatus.gqlStatusString()).isEqualTo("ABCDE");
     }
 
     @Test
@@ -80,9 +83,8 @@ class GqlStatusTest {
         GqlStatus gqlStatusLower = new GqlStatus("abcde");
         GqlStatus gqlStatusUpper = new GqlStatus("ABCDE");
 
-        assertEquals(gqlStatusLower, gqlStatusUpper);
+        assertThat(gqlStatusLower).isEqualTo(gqlStatusUpper);
     }
 
-    private final String hint = "Expected GqlStatus() to throw an IllegalArgumentException, but it didn't.";
     private final String errorMessageStart = "GQLSTATUS must be 5 characters and alphanumeric, ";
 }

@@ -20,13 +20,9 @@
 package org.neo4j.gqlstatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 abstract class GqlExceptionTestBase {
@@ -43,7 +39,7 @@ abstract class GqlExceptionTestBase {
                 .build();
         Throwable cause = new RuntimeException();
         ErrorGqlStatusObject errorWithJavaExceptionCause = testException(gqlObject, "message", cause);
-        assertEquals(Optional.empty(), errorWithJavaExceptionCause.cause());
+        assertThat(errorWithJavaExceptionCause.cause()).isEmpty();
     }
 
     @Test
@@ -56,11 +52,11 @@ abstract class GqlExceptionTestBase {
                 .build();
         Throwable cause = testException(causeGqlObject, "inner message");
         ErrorGqlStatusObject errorWithGqlExceptionCause = testException(gqlObject, "message", cause);
-        assertTrue(errorWithGqlExceptionCause.cause().isPresent());
+        assertThat(errorWithGqlExceptionCause.cause()).isPresent();
         ErrorGqlStatusObject firstCause = errorWithGqlExceptionCause.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N08.getStatusString(), firstCause.gqlStatus());
+        assertThat(firstCause.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N08.getStatusString());
         assertThat(firstCause.statusDescription()).contains("cannot combine 'myOption' with 'yourOption'");
-        assertFalse(firstCause.cause().isPresent());
+        assertThat(firstCause.cause()).isNotPresent();
     }
 
     @Test
@@ -69,10 +65,10 @@ abstract class GqlExceptionTestBase {
                 .build();
         Throwable cause = testException(null, "inner message");
         ErrorGqlStatusObject errorWithGqlExceptionCause = testException(gqlObject, "message", cause);
-        assertTrue(errorWithGqlExceptionCause.cause().isPresent());
+        assertThat(errorWithGqlExceptionCause.cause()).isPresent();
         ErrorGqlStatusObject firstCause = errorWithGqlExceptionCause.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_50N42.getStatusString(), firstCause.gqlStatus());
-        assertFalse(firstCause.cause().isPresent());
+        assertThat(firstCause.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_50N42.getStatusString());
+        assertThat(firstCause.cause()).isNotPresent();
     }
 
     @Test
@@ -96,18 +92,18 @@ abstract class GqlExceptionTestBase {
         Throwable cause = testException(exceptionCauseGqlObject, "inner message");
         ErrorGqlStatusObject errorWithGqlExceptionCause = testException(gqlObject, "message", cause);
 
-        assertTrue(errorWithGqlExceptionCause.cause().isPresent());
+        assertThat(errorWithGqlExceptionCause.cause()).isPresent();
         ErrorGqlStatusObject firstCause = errorWithGqlExceptionCause.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N09.getStatusString(), firstCause.gqlStatus());
+        assertThat(firstCause.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N09.getStatusString());
         assertThat(firstCause.statusDescription()).contains("conflicting values for 'option'.");
         Object position = firstCause.diagnosticRecord().get("_position");
-        assertEquals(Map.of("offset", 7, "line", 2, "column", 3), position);
+        assertThat(position).isEqualTo(Map.of("offset", 7, "line", 2, "column", 3));
 
-        assertTrue(firstCause.cause().isPresent());
+        assertThat(firstCause.cause()).isPresent();
         ErrorGqlStatusObject secondCause = firstCause.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N08.getStatusString(), secondCause.gqlStatus());
+        assertThat(secondCause.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N08.getStatusString());
         assertThat(secondCause.statusDescription()).contains("cannot combine 'myOption' with 'yourOption'");
-        assertFalse(secondCause.cause().isPresent());
+        assertThat(secondCause.cause()).isNotPresent();
     }
 
     @Test
@@ -128,17 +124,17 @@ abstract class GqlExceptionTestBase {
 
         ErrorGqlStatusObject errorWithGqlExceptionCause = testException(gqlObject, "message", cause);
 
-        assertTrue(errorWithGqlExceptionCause.cause().isPresent());
+        assertThat(errorWithGqlExceptionCause.cause()).isPresent();
         ErrorGqlStatusObject firstCause = errorWithGqlExceptionCause.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N09.getStatusString(), firstCause.gqlStatus());
+        assertThat(firstCause.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N09.getStatusString());
         assertThat(firstCause.statusDescription()).contains("conflicting values for 'option'.");
 
-        assertTrue(firstCause.cause().isPresent());
+        assertThat(firstCause.cause()).isPresent();
         ErrorGqlStatusObject secondCause = firstCause.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N08.getStatusString(), secondCause.gqlStatus());
+        assertThat(secondCause.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N08.getStatusString());
         assertThat(secondCause.statusDescription()).contains("cannot combine 'myOption' with 'yourOption'");
 
-        assertTrue(secondCause.cause().isEmpty());
+        assertThat(secondCause.cause()).isEmpty();
     }
 
     @Test
@@ -169,27 +165,27 @@ abstract class GqlExceptionTestBase {
         Throwable almostIdenticalCause = testException(almostIdenticalExceptionCauseGqlObject, "inner message");
         ErrorGqlStatusObject errorWithGqlExceptionCause = testException(gqlObject, "message", almostIdenticalCause);
 
-        assertTrue(errorWithGqlExceptionCause.cause().isPresent());
+        assertThat(errorWithGqlExceptionCause.cause()).isPresent();
         ErrorGqlStatusObject cause1 = errorWithGqlExceptionCause.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N09.getStatusString(), cause1.gqlStatus());
+        assertThat(cause1.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N09.getStatusString());
         assertThat(cause1.statusDescription()).contains("conflicting values for 'option'.");
 
-        assertTrue(cause1.cause().isPresent());
+        assertThat(cause1.cause()).isPresent();
         ErrorGqlStatusObject cause2 = cause1.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N08.getStatusString(), cause2.gqlStatus());
+        assertThat(cause2.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N08.getStatusString());
         assertThat(cause2.statusDescription()).contains("cannot combine 'myOption' with 'yourOption'");
 
-        assertTrue(cause2.cause().isPresent());
+        assertThat(cause2.cause()).isPresent();
         ErrorGqlStatusObject cause3 = cause2.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N09.getStatusString(), cause3.gqlStatus());
+        assertThat(cause3.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N09.getStatusString());
         assertThat(cause3.statusDescription()).contains("conflicting values for 'option'.");
 
-        assertTrue(cause3.cause().isPresent());
+        assertThat(cause3.cause()).isPresent();
         ErrorGqlStatusObject cause4 = cause3.cause().get();
-        assertEquals(GqlStatusInfoCodes.STATUS_22N08.getStatusString(), cause4.gqlStatus());
+        assertThat(cause4.gqlStatus()).isEqualTo(GqlStatusInfoCodes.STATUS_22N08.getStatusString());
         assertThat(cause4.statusDescription()).contains("cannot combine 'myOption' with 'your-Option'");
 
-        assertTrue(cause4.cause().isEmpty());
+        assertThat(cause4.cause()).isEmpty();
     }
 
     @Test
@@ -198,8 +194,8 @@ abstract class GqlExceptionTestBase {
                 .build();
         var exception = testException(gql, "legacy message");
 
-        assertEquals("legacy message", exception.getMessage());
-        assertEquals("22012", exception.gqlStatusObject().getMessage());
+        assertThat(exception.getMessage()).isEqualTo("legacy message");
+        assertThat(exception.gqlStatusObject().getMessage()).isEqualTo("22012");
     }
 
     @Test
@@ -209,8 +205,8 @@ abstract class GqlExceptionTestBase {
                 .build();
         var exception = testException(gql, "legacy message");
 
-        assertEquals("22012", exception.getMessage());
-        assertEquals("22012", exception.gqlStatusObject().getMessage());
+        assertThat(exception.getMessage()).isEqualTo("22012");
+        assertThat(exception.gqlStatusObject().getMessage()).isEqualTo("22012");
         ErrorMessageHolder.USE_NEW_ERROR_MESSAGES = false;
     }
 
@@ -221,17 +217,17 @@ abstract class GqlExceptionTestBase {
                 .build();
         var exception = testException(gql, "legacy message");
 
-        assertEquals("legacy message", exception.getMessage());
-        assertEquals(
-                "22N09: Invalid pre-parser option, cannot specify multiple conflicting values for 'myOption'.",
-                exception.gqlStatusObject().getMessage());
+        assertThat(exception.getMessage()).isEqualTo("legacy message");
+        assertThat(exception.gqlStatusObject().getMessage())
+                .isEqualTo(
+                        "22N09: Invalid pre-parser option, cannot specify multiple conflicting values for 'myOption'.");
     }
 
     @Test
     void getMessageForTopLevelExceptionWithoutGql() {
         var exception = testException(null, "legacy message");
 
-        assertEquals("legacy message", exception.getMessage());
+        assertThat(exception.getMessage()).isEqualTo("legacy message");
     }
 
     @Test
@@ -242,10 +238,10 @@ abstract class GqlExceptionTestBase {
                 .build();
         var exception = testException(gql, "legacy message");
 
-        assertEquals("legacy message", exception.getMessage());
-        assertEquals("22000", exception.gqlStatusObject().getMessage());
-        assertTrue(exception.cause().isPresent());
-        assertEquals("22012", exception.cause().get().getMessage());
+        assertThat(exception.getMessage()).isEqualTo("legacy message");
+        assertThat(exception.gqlStatusObject().getMessage()).isEqualTo("22000");
+        assertThat(exception.cause()).isPresent();
+        assertThat(exception.cause().get().getMessage()).isEqualTo("22012");
     }
 
     @Test
@@ -257,12 +253,12 @@ abstract class GqlExceptionTestBase {
                 .build();
         var exception = testException(gql, "legacy message");
 
-        assertEquals("legacy message", exception.getMessage());
-        assertEquals("22000", exception.gqlStatusObject().getMessage());
-        assertTrue(exception.cause().isPresent());
-        assertEquals(
-                "22N09: Invalid pre-parser option, cannot specify multiple conflicting values for 'myOption'.",
-                exception.cause().get().getMessage());
+        assertThat(exception.getMessage()).isEqualTo("legacy message");
+        assertThat(exception.gqlStatusObject().getMessage()).isEqualTo("22000");
+        assertThat(exception.cause()).isPresent();
+        assertThat(exception.cause().get().getMessage())
+                .isEqualTo(
+                        "22N09: Invalid pre-parser option, cannot specify multiple conflicting values for 'myOption'.");
     }
 
     @Test
@@ -275,12 +271,12 @@ abstract class GqlExceptionTestBase {
         var innerException = testException(gql2, "legacy message 2");
         var exception = testException(gql1, "legacy message", innerException);
 
-        assertEquals("legacy message", exception.getMessage());
-        assertEquals("22000", exception.gqlStatusObject().getMessage());
-        assertTrue(exception.cause().isPresent());
-        assertEquals(
-                "22N09: Invalid pre-parser option, cannot specify multiple conflicting values for 'myOption'.",
-                exception.cause().get().getMessage());
+        assertThat(exception.getMessage()).isEqualTo("legacy message");
+        assertThat(exception.gqlStatusObject().getMessage()).isEqualTo("22000");
+        assertThat(exception.cause()).isPresent();
+        assertThat(exception.cause().get().getMessage())
+                .isEqualTo(
+                        "22N09: Invalid pre-parser option, cannot specify multiple conflicting values for 'myOption'.");
     }
 
     @Test
@@ -292,12 +288,11 @@ abstract class GqlExceptionTestBase {
         var innerException = testException(null, "legacy message 2");
         var exception = testException(gql, "legacy message", innerException);
 
-        assertEquals("legacy message", exception.getMessage());
-        assertEquals("22000", exception.gqlStatusObject().getMessage());
-        assertTrue(exception.cause().isPresent());
-        assertEquals(
-                "50N42: Unexpected error has occurred. See debug log for details.",
-                exception.cause().get().getMessage());
+        assertThat(exception.getMessage()).isEqualTo("legacy message");
+        assertThat(exception.gqlStatusObject().getMessage()).isEqualTo("22000");
+        assertThat(exception.cause()).isPresent();
+        assertThat(exception.cause().get().getMessage())
+                .isEqualTo("50N42: Unexpected error has occurred. See debug log for details.");
     }
 
     @Test
@@ -323,7 +318,7 @@ abstract class GqlExceptionTestBase {
         var unknownError = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08000)
                 .build();
         var unknownException = testException(unknownError, "legacy message");
-        assertFalse(unknownException.diagnosticRecord().containsKey("_classification"));
+        assertThat(unknownException.diagnosticRecord()).doesNotContainKey("_classification");
     }
 
     @Test
@@ -332,9 +327,9 @@ abstract class GqlExceptionTestBase {
                 .withParam(GqlParams.StringParam.value, "{key: secret}")
                 .build();
         var exception = testException(errorGqlStatusObject, "legacy message");
-        assertEquals(
-                "error: data exception - unsupported property value type. Value ****** cannot be stored in properties.",
-                exception.obfuscatedStatusDescription());
+        assertThat(exception.obfuscatedStatusDescription())
+                .isEqualTo(
+                        "error: data exception - unsupported property value type. Value ****** cannot be stored in properties.");
     }
 
     @Test
@@ -342,7 +337,7 @@ abstract class GqlExceptionTestBase {
         var errorGqlStatusObject = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22012)
                 .build();
         var exception = testException(errorGqlStatusObject, "legacy message");
-        assertEquals("error: data exception - division by zero", exception.obfuscatedStatusDescription());
+        assertThat(exception.obfuscatedStatusDescription()).isEqualTo("error: data exception - division by zero");
     }
 
     @Test
@@ -352,9 +347,9 @@ abstract class GqlExceptionTestBase {
                 .withParam(GqlParams.StringParam.cfgSetting, "db.cfgSetting")
                 .build();
         var exception = testException(errorGqlStatusObject, "legacy message");
-        assertEquals(
-                "error: connection exception - unable to write to database. Unable to write to database `my_db` on this server. Server-side routing is disabled. Either connect to the database leader directly or enable server-side routing by setting 'db.cfgSetting=true'.",
-                exception.obfuscatedStatusDescription());
+        assertThat(exception.obfuscatedStatusDescription())
+                .isEqualTo(
+                        "error: connection exception - unable to write to database. Unable to write to database `my_db` on this server. Server-side routing is disabled. Either connect to the database leader directly or enable server-side routing by setting 'db.cfgSetting=true'.");
     }
 
     @Test
@@ -367,8 +362,8 @@ abstract class GqlExceptionTestBase {
                 .build();
 
         var exception = testException(errorGqlStatusObject, "legacy message");
-        assertEquals(
-                "error: data exception - invalid entity type. Invalid input '******' for some context. Expected to be STRING, INTEGER or FLOAT. hint",
-                exception.obfuscatedStatusDescription());
+        assertThat(exception.obfuscatedStatusDescription())
+                .isEqualTo(
+                        "error: data exception - invalid entity type. Invalid input '******' for some context. Expected to be STRING, INTEGER or FLOAT. hint");
     }
 }

@@ -19,9 +19,7 @@
  */
 package org.neo4j.gqlstatus;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.Optional;
@@ -44,44 +42,44 @@ class DiagnosticRecordTest {
                 // TODO: enable this line again when re-introducing status parameters
                 );
 
-        assertEquals(expectedKeys, diagnosticRecordMap.keySet());
+        assertThat(diagnosticRecordMap).containsOnlyKeys(expectedKeys);
     }
 
     @Test
     void shouldHaveExpectedDefaultValues() {
         Map<String, Object> diagnosticRecordMap =
                 new DiagnosticRecord("", ErrorClassification.CLIENT_ERROR, 0, 0, 0, Map.of()).asMap();
-        assertEquals("/", diagnosticRecordMap.get("CURRENT_SCHEMA"));
-        assertEquals("", diagnosticRecordMap.get("OPERATION"));
-        assertEquals("0", diagnosticRecordMap.get("OPERATION_CODE"));
+        assertThat(diagnosticRecordMap.get("CURRENT_SCHEMA")).isEqualTo("/");
+        assertThat(diagnosticRecordMap.get("OPERATION")).isEqualTo("");
+        assertThat(diagnosticRecordMap.get("OPERATION_CODE")).isEqualTo("0");
     }
 
     @Test
     void shouldConstructProperPositionMap() {
         Map<String, Object> diagnosticRecordMap =
                 new DiagnosticRecord("", ErrorClassification.CLIENT_ERROR, 1, 2, 3, Map.of()).asMap();
-        assertInstanceOf(Map.class, diagnosticRecordMap.get("_position"));
+        assertThat(diagnosticRecordMap.get("_position")).isInstanceOf(Map.class);
 
         @SuppressWarnings("unchecked")
         Map<String, Object> position = (Map<String, Object>) diagnosticRecordMap.get("_position");
 
-        assertEquals(1, position.get("offset"));
-        assertEquals(2, position.get("line"));
-        assertEquals(3, position.get("column"));
+        assertThat(position).containsEntry("offset", 1);
+        assertThat(position).containsEntry("line", 2);
+        assertThat(position).containsEntry("column", 3);
     }
 
     @Test
     void shouldNotStoreUnknownErrorClassificationFromConstructor() {
         Map<String, Object> diagnosticRecordMap =
                 new DiagnosticRecord("", ErrorClassification.UNKNOWN, 0, 0, 0, Map.of()).asMap();
-        assertFalse(diagnosticRecordMap.containsKey("_classification"));
+        assertThat(diagnosticRecordMap).doesNotContainKey("_classification");
     }
 
     @Test
     void shouldNotStoreUnknownNotificationClassificationFromConstructor() {
         Map<String, Object> diagnosticRecordMap =
                 new DiagnosticRecord("", NotificationClassification.UNKNOWN, 0, 0, 0, Map.of()).asMap();
-        assertFalse(diagnosticRecordMap.containsKey("_classification"));
+        assertThat(diagnosticRecordMap).doesNotContainKey("_classification");
     }
 
     @Test
@@ -90,7 +88,7 @@ class DiagnosticRecordTest {
         diagnosticRecordBuilder.withClassification(ErrorClassification.UNKNOWN);
         Map<String, Object> diagnosticRecordMap =
                 diagnosticRecordBuilder.build().asMap();
-        assertFalse(diagnosticRecordMap.containsKey("_classification"));
+        assertThat(diagnosticRecordMap).doesNotContainKey("_classification");
     }
 
     @Test
@@ -99,7 +97,7 @@ class DiagnosticRecordTest {
         diagnosticRecordBuilder.withClassification(NotificationClassification.UNKNOWN);
         Map<String, Object> diagnosticRecordMap =
                 diagnosticRecordBuilder.build().asMap();
-        assertFalse(diagnosticRecordMap.containsKey("_classification"));
+        assertThat(diagnosticRecordMap).doesNotContainKey("_classification");
     }
 
     @ParameterizedTest
@@ -111,8 +109,11 @@ class DiagnosticRecordTest {
 
         var map = diagnosticRecord.asMap();
 
-        assertEquals(expectedValue.isPresent(), map.containsKey(property.key()));
-        assertEquals(expectedValue.orElse(null), map.get(property.key()));
+        if (expectedValue.isPresent()) {
+            assertThat(map).containsEntry(property.key(), expectedValue.get());
+        } else {
+            assertThat(map).doesNotContainKey(property.key());
+        }
     }
 
     @ParameterizedTest
@@ -124,8 +125,11 @@ class DiagnosticRecordTest {
 
         var map = diagnosticRecord.asMap();
 
-        assertEquals(expectedValue.isPresent(), map.containsKey(property.key()));
-        assertEquals(expectedValue.orElse(null), map.get(property.key()));
+        if (expectedValue.isPresent()) {
+            assertThat(map).containsEntry(property.key(), expectedValue.get());
+        } else {
+            assertThat(map).doesNotContainKey(property.key());
+        }
     }
 
     private static Stream<Arguments> propertyFixture() {

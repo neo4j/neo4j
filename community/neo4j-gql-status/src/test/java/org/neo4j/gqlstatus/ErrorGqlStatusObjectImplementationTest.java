@@ -20,10 +20,8 @@
 package org.neo4j.gqlstatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.Map;
 import org.apache.commons.lang3.SerializationUtils;
@@ -86,7 +84,7 @@ class ErrorGqlStatusObjectImplementationTest {
 
         ErrorGqlStatusObjectImplementation deserialized = SerializationUtils.deserialize(data);
 
-        assertEquals(error, deserialized);
+        assertThat(deserialized).isEqualTo(error);
     }
 
     @Test
@@ -94,19 +92,19 @@ class ErrorGqlStatusObjectImplementationTest {
         var errorBuilder = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N02);
 
         // Default/test positions with line -1 or 0
-        assertDoesNotThrow(() -> errorBuilder.atPosition(0, 0, 0));
-        assertDoesNotThrow(() -> errorBuilder.atPosition(1, 0, 1));
-        assertDoesNotThrow(() -> errorBuilder.atPosition(42, 0, 37));
-        assertDoesNotThrow(() -> errorBuilder.atPosition(-1, -1, -1));
+        assertThatCode(() -> errorBuilder.atPosition(0, 0, 0)).doesNotThrowAnyException();
+        assertThatCode(() -> errorBuilder.atPosition(1, 0, 1)).doesNotThrowAnyException();
+        assertThatCode(() -> errorBuilder.atPosition(42, 0, 37)).doesNotThrowAnyException();
+        assertThatCode(() -> errorBuilder.atPosition(-1, -1, -1)).doesNotThrowAnyException();
 
         // On line 1, column is always offset + 1
-        assertDoesNotThrow(() -> errorBuilder.atPosition(0, 1, 1));
-        assertDoesNotThrow(() -> errorBuilder.atPosition(10, 1, 11));
+        assertThatCode(() -> errorBuilder.atPosition(0, 1, 1)).doesNotThrowAnyException();
+        assertThatCode(() -> errorBuilder.atPosition(10, 1, 11)).doesNotThrowAnyException();
 
         // On line > 1, offset must be at least as big as column
-        assertDoesNotThrow(() -> errorBuilder.atPosition(7, 2, 7));
-        assertDoesNotThrow(() -> errorBuilder.atPosition(47, 2, 37));
-        assertDoesNotThrow(() -> errorBuilder.atPosition(23, 5, 1));
+        assertThatCode(() -> errorBuilder.atPosition(7, 2, 7)).doesNotThrowAnyException();
+        assertThatCode(() -> errorBuilder.atPosition(47, 2, 37)).doesNotThrowAnyException();
+        assertThatCode(() -> errorBuilder.atPosition(23, 5, 1)).doesNotThrowAnyException();
     }
 
     @Test
@@ -114,12 +112,12 @@ class ErrorGqlStatusObjectImplementationTest {
         var errorBuilder = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N02);
 
         // On line 1, column is always offset + 1
-        assertThrows(AssertionError.class, () -> errorBuilder.atPosition(2, 1, 2));
-        assertThrows(AssertionError.class, () -> errorBuilder.atPosition(2, 1, 1));
+        assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> errorBuilder.atPosition(2, 1, 2));
+        assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> errorBuilder.atPosition(2, 1, 1));
 
         // On line > 1, offset must be at least as big as column
-        assertThrows(AssertionError.class, () -> errorBuilder.atPosition(6, 2, 7));
-        assertThrows(AssertionError.class, () -> errorBuilder.atPosition(0, 5, 1));
+        assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> errorBuilder.atPosition(6, 2, 7));
+        assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> errorBuilder.atPosition(0, 5, 1));
     }
 
     @Test
@@ -136,9 +134,10 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause = (ErrorGqlStatusObjectImplementation) error.cause().get();
         var innerCause = (ErrorGqlStatusObjectImplementation) cause.cause().get();
 
-        assertEquals(expectedPosition, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, innerCause.diagnosticRecord.getPositionMap());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition);
+        assertThat(cause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(innerCause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
     }
 
     @Test
@@ -155,9 +154,10 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause = (ErrorGqlStatusObjectImplementation) error.cause().get();
         var innerCause = (ErrorGqlStatusObjectImplementation) cause.cause().get();
 
-        assertEquals(expectedPosition, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, innerCause.diagnosticRecord.getPositionMap());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition);
+        assertThat(cause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(innerCause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
     }
 
     @Test
@@ -184,11 +184,12 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause3 = (ErrorGqlStatusObjectImplementation) cause2.cause().get();
         var cause4 = (ErrorGqlStatusObjectImplementation) cause3.cause().get();
 
-        assertEquals(expectedPosition1, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition1, cause1.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition2, cause2.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition2, cause3.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition2, cause4.diagnosticRecord.getPositionMap());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition1);
+        assertThat(cause1.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition1);
+        assertThat(cause2.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition2);
+        assertThat(cause3.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition2);
+        assertThat(cause4.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition2);
     }
 
     @Test
@@ -207,9 +208,10 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause = (ErrorGqlStatusObjectImplementation) error.cause().get();
         var innerCause = (ErrorGqlStatusObjectImplementation) cause.cause().get();
 
-        assertEquals(expectedPosition, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, innerCause.diagnosticRecord.getPositionMap());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition);
+        assertThat(cause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(innerCause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
     }
 
     @Test
@@ -228,9 +230,10 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause = (ErrorGqlStatusObjectImplementation) error.cause().get();
         var innerCause = (ErrorGqlStatusObjectImplementation) cause.cause().get();
 
-        assertEquals(expectedPosition, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, innerCause.diagnosticRecord.getPositionMap());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition);
+        assertThat(cause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(innerCause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
     }
 
     @Test
@@ -249,9 +252,10 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause = (ErrorGqlStatusObjectImplementation) error.cause().get();
         var innerCause = (ErrorGqlStatusObjectImplementation) cause.cause().get();
 
-        assertEquals(expectedPosition, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, innerCause.diagnosticRecord.getPositionMap());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition);
+        assertThat(cause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(innerCause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
     }
 
     @Test
@@ -270,9 +274,10 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause = (ErrorGqlStatusObjectImplementation) error.cause().get();
         var innerCause = (ErrorGqlStatusObjectImplementation) cause.cause().get();
 
-        assertEquals(expectedPosition, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, innerCause.diagnosticRecord.getPositionMap());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition);
+        assertThat(cause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(innerCause.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
     }
 
     @Test
@@ -297,10 +302,11 @@ class ErrorGqlStatusObjectImplementationTest {
         var cause2 = (ErrorGqlStatusObjectImplementation) cause1.cause().get();
         var cause3 = (ErrorGqlStatusObjectImplementation) cause2.cause().get();
 
-        assertEquals(expectedPosition, ((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause1.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause2.diagnosticRecord.getPositionMap());
-        assertEquals(expectedPosition, cause3.diagnosticRecord.getPositionMap());
-        assertTrue(cause3.cause().isEmpty());
+        assertThat(((ErrorGqlStatusObjectImplementation) error).diagnosticRecord.getPositionMap())
+                .isEqualTo(expectedPosition);
+        assertThat(cause1.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(cause2.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(cause3.diagnosticRecord.getPositionMap()).isEqualTo(expectedPosition);
+        assertThat(cause3.cause()).isEmpty();
     }
 }

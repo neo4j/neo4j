@@ -19,7 +19,7 @@
  */
 package org.neo4j.gqlstatus;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,13 +27,8 @@ class ConditionTest {
 
     @Test
     void testCorrectNaming() {
-        for (Condition cond : Condition.values()) {
-            String name = cond.name();
-            for (char c : name.toCharArray()) {
-                assertTrue(
-                        c == '_' || Character.isUpperCase(c),
-                        String.format("Expected character to be uppercase or underscore.but got %s.", c));
-            }
-        }
+        assertThat(Condition.values()).extracting(Condition::name).allSatisfy(name -> assertThat(name)
+                .as("Condition enum name should only contain uppercase letters and underscores")
+                .matches("[A-Z_]+"));
     }
 }

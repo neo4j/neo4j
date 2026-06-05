@@ -22,10 +22,8 @@ package org.neo4j.gqlstatus;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +37,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.reflections.Reflections;
@@ -342,9 +339,9 @@ class GqlStatusInfoCodesTest {
     void verifyGetMessageHandlesFaultyParameters() {
         String[] badParam = {"AA", "BBB", "CCC", "DDD", "EEE"};
         for (var gqlCode : GqlStatusInfoCodes.values()) {
-            assertDoesNotThrow(
-                    () -> gqlCode.getMessage((Object[]) badParam),
-                    "The code " + gqlCode + " throws an exception when passed String parameters.");
+            assertThatCode(() -> gqlCode.getMessage((Object[]) badParam))
+                    .as("The code %s throws an exception when passed String parameters.", gqlCode)
+                    .doesNotThrowAnyException();
         }
     }
 
@@ -362,11 +359,9 @@ class GqlStatusInfoCodesTest {
         };
         for (int i = 0; i < gqlCodes.length; i++) {
             Object[] param = {params[i]};
-            assertEquals(
-                    gqlCodes[i].getMessage(param),
-                    expectedMessages[i],
-                    "GqlStatusInfoCode " + gqlCodes[i] + " is incorrectly formatted by getMessage(). \nExpected: '"
-                            + expectedMessages[i] + "' got: '" + gqlCodes[i].getMessage(param) + "'");
+            assertThat(gqlCodes[i].getMessage(param))
+                    .as("GqlStatusInfoCode %s is incorrectly formatted by getMessage()", gqlCodes[i])
+                    .isEqualTo(expectedMessages[i]);
         }
     }
 
@@ -375,10 +370,9 @@ class GqlStatusInfoCodesTest {
         for (var gqlCode : GqlStatusInfoCodes.values()) {
             if (gqlCode.getJoinStyles() != null) {
                 for (var joinStyle : gqlCode.getJoinStyles().keySet()) {
-                    assertTrue(
-                            gqlCode.getStatusParameterKeys().contains(joinStyle),
-                            "The code " + gqlCode + " has JoinStyle key " + joinStyle
-                                    + " but no matching parameter key");
+                    assertThat(gqlCode.getStatusParameterKeys())
+                            .as("The code %s has JoinStyle key %s but no matching parameter key", gqlCode, joinStyle)
+                            .contains(joinStyle);
                 }
             }
         }
@@ -411,12 +405,10 @@ class GqlStatusInfoCodesTest {
                     "(?:(['`]?)|(\\$)(`))A(\\1|\\3), (\\1|\\2\\3)B(\\1|\\3)%s (\\1|\\2\\3)C(\\1|\\3)",
                     Pattern.quote(joinWord)); // Might need to update the %s here if GqlParams.substitution changes
             Pattern pattern = Pattern.compile(expected);
-            Matcher matcher = pattern.matcher(gqlCode.getMessage(msgParams));
             var msg = gqlCode.getMessage(msgParams);
-            assertTrue(
-                    matcher.find(),
-                    "The expected list-joinstyle was not inserted into the message string for code " + gqlCode
-                            + ". Got: " + msg);
+            assertThat(msg)
+                    .as("The expected list-joinstyle was not inserted into the message string for code %s", gqlCode)
+                    .containsPattern(pattern);
         }
     }
 

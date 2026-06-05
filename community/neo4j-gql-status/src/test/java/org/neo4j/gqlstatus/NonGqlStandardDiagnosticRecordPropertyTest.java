@@ -19,11 +19,8 @@
  */
 package org.neo4j.gqlstatus;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,19 +47,19 @@ class NonGqlStandardDiagnosticRecordPropertyTest {
                     NonGqlStandardDiagnosticRecordProperty.Builder.fromKey(key).build();
             var value = "Value";
 
-            assertEquals(key, property.key());
-            assertFalse(property.disabled());
-            assertSame(value, property.serializeValue(value));
-            assertFalse(property.isValueOmitted(value));
-            assertFalse(property.defaultEntry().isPresent());
-            assertFalse(property.defaultValue().isPresent());
+            assertThat(property.key()).isEqualTo(key);
+            assertThat(property.disabled()).isFalse();
+            assertThat(property.serializeValue(value)).isSameAs(value);
+            assertThat(property.isValueOmitted(value)).isFalse();
+            assertThat(property.defaultEntry()).isNotPresent();
+            assertThat(property.defaultValue()).isNotPresent();
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"key", " __double_underscore_key"})
         void shouldFailToBuildPropertyKeyNotStartingWithUnderscore(String key) {
-            assertThrows(
-                    IllegalArgumentException.class, () -> NonGqlStandardDiagnosticRecordProperty.Builder.fromKey(key));
+            assertThatExceptionOfType(IllegalArgumentException.class)
+                    .isThrownBy(() -> NonGqlStandardDiagnosticRecordProperty.Builder.fromKey(key));
         }
 
         @Test
@@ -71,7 +68,7 @@ class NonGqlStandardDiagnosticRecordPropertyTest {
                     .disabled()
                     .build();
 
-            assertTrue(property.disabled());
+            assertThat(property.disabled()).isTrue();
         }
 
         @Test
@@ -82,8 +79,8 @@ class NonGqlStandardDiagnosticRecordPropertyTest {
             var value = "Value";
             var omittedValue = "omitted";
 
-            assertFalse(property.isValueOmitted(value));
-            assertTrue(property.isValueOmitted(omittedValue));
+            assertThat(property.isValueOmitted(value)).isFalse();
+            assertThat(property.isValueOmitted(omittedValue)).isTrue();
         }
 
         @Test
@@ -94,7 +91,7 @@ class NonGqlStandardDiagnosticRecordPropertyTest {
 
             var value = "the value";
 
-            assertEquals("Value: the value", property.serializeValue(value));
+            assertThat(property.serializeValue(value)).isEqualTo("Value: the value");
         }
     }
 }
