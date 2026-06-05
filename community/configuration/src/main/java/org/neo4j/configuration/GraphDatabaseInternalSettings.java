@@ -2131,7 +2131,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.db.backup.use_new_compressed_backup_format", BOOL, false)
             .build();
 
-    // Helper method
+    @Internal
+    @Description("Total in-memory byte budget for the cache in versioned relationship degree store.")
+    public static final Setting<Long> versioned_degrees_cache_max_size = newBuilder(
+                    "internal.db.block.versioned_degrees_cache_max_size", BYTES, mebiBytes(10))
+            .addConstraint(min(kibiBytes(8)))
+            .build();
+
     public static HeapEstimatorCacheConfig extractCustomHeapEstimatorCacheConfig(Config config) {
         return new HeapEstimatorCacheConfig(
                 config.get(GraphDatabaseInternalSettings.heap_estimator_cache_size_limit),

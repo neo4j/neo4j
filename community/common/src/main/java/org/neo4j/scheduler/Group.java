@@ -93,6 +93,7 @@ public enum Group {
      */
     INDEX_UPDATING("IndexUpdating"),
     INDEX_REFRESHING("IndexRefreshing"),
+    DEGREE_WRITER("DegreeWriter", true),
     /**
      * Thread pool for anyone who want some help doing file IO in parallel.
      */

@@ -691,6 +691,7 @@ public final class Recovery {
                 new DefaultIdGeneratorFactory(
                         fs, recoveryCleanupCollector, tracers.getPageCacheTracer(), databaseLayout.getDatabaseName()),
                 databaseHealth,
+                scheduler,
                 logService.getInternalLogProvider(),
                 logService.getUserLogProvider(),
                 recoveryCleanupCollector,

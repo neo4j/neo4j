@@ -265,6 +265,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             LockService lockService,
             IdGeneratorFactory idGeneratorFactory,
             DatabaseHealth databaseHealth,
+            JobScheduler jobScheduler,
             InternalLogProvider internalLogProvider,
             InternalLogProvider userLogProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,

@@ -535,6 +535,7 @@ public class Database extends AbstractDatabase {
                 lockService,
                 idGeneratorFactory,
                 databaseHealth,
+                scheduler,
                 internalLogProvider,
                 userLogProvider,
                 recoveryCleanupWorkCollector,
