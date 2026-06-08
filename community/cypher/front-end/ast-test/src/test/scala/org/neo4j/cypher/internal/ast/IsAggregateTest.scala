@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.IsAggregate
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
+class IsAggregateTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("count(*) is an aggregate expression") {
     val expr = CountStar()(pos)

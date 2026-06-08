@@ -67,25 +67,23 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers3.gqlStatus
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
 import org.neo4j.gqlstatus.GqlHelper
 import org.neo4j.gqlstatus.GqlParams
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
+import org.reflections.Reflections
 import org.scalactic.Equality
 
+import java.lang.reflect.Modifier
 import java.nio.charset.StandardCharsets
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
-import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.ClassSymbol
-import scala.reflect.runtime.universe.Type
-import scala.reflect.runtime.universe.termNames
-import scala.reflect.runtime.universe.typeOf
 
-class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestSupport {
+class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   implicit val seqSemanticErrorEquality: Equality[Seq[SemanticErrorDef]] =
     (a: Seq[SemanticErrorDef], b: Any) =>
@@ -237,42 +235,32 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
   object attrLoader {
 
     def loadAuthAttributes(): List[AuthAttribute] = {
-      val discovered = loadSubClassesRec(typeOf[AuthAttribute])
-      // Scala 3 does not reliably populate knownDirectSubclasses for this hierarchy in tests.
-      if (discovered.nonEmpty) discovered
-      else List(Password(null, false)(null), PasswordChange(false)(null), AuthId(null)(null))
-    }
-
-    def loadSubClassesRec(tpe: Type): List[AuthAttribute] = {
-      val clazz = tpe.typeSymbol.asClass
-      clazz.knownDirectSubclasses
-
-      val subclasses: List[AuthAttribute] = clazz.knownDirectSubclasses.collect {
-        case subclass if subclass.isClass && subclass.asClass.isTrait => loadSubClassesRec(subclass.typeSignature)
-        case subclass if subclass.isClass && !subclass.asClass.isTrait && !subclass.isAbstract =>
-          val classMirror = currentMirror.reflectClass(subclass.asClass)
-
-          val constructorSymbol = subclass.asClass.primaryConstructor.asMethod
-          val constructorMirror = classMirror.reflectConstructor(constructorSymbol)
-          val mockedParams = mockParams(subclass.asClass)
-          Set(constructorMirror(mockedParams: _*).asInstanceOf[AuthAttribute])
-      }.toList.flatten
-      subclasses
-    }
-
-    def mockParams(sub: ClassSymbol): List[Any] = {
-      sub.typeSignature.decl(termNames.CONSTRUCTOR).asMethod.paramLists.flatten.map { param =>
-        param.typeSignature match {
-          case t if t =:= typeOf[Int]     => 0
-          case t if t =:= typeOf[Boolean] => false
-          case t if t =:= typeOf[Double]  => 0.0
-          case t if t =:= typeOf[Long]    => 0L
-          case t if t =:= typeOf[String]  => null
-          case t if t <:< typeOf[AnyRef]  => null // For reference types, pass null
-          case _                          => null // Fallback for any unexpected types
+      val discovered = new Reflections("org.neo4j.cypher.internal.ast")
+        .getSubTypesOf(classOf[AuthAttribute])
+        .asScala
+        .iterator
+        .filter(c => !c.isInterface && !Modifier.isAbstract(c.getModifiers))
+        .map { clazz =>
+          val constructor = clazz.getDeclaredConstructors.minBy(_.getParameterCount)
+          constructor.newInstance(mockParams(constructor.getParameterTypes): _*).asInstanceOf[AuthAttribute]
         }
-      }
+        .toList
+      require(
+        discovered.nonEmpty,
+        "Failed to discover AuthAttribute subclasses via classpath scanning"
+      )
+      discovered
     }
+
+    def mockParams(paramTypes: Array[Class[_]]): Array[AnyRef] =
+      paramTypes.map {
+        case java.lang.Integer.TYPE    => Integer.valueOf(0)
+        case java.lang.Boolean.TYPE    => java.lang.Boolean.FALSE
+        case java.lang.Double.TYPE     => java.lang.Double.valueOf(0.0)
+        case java.lang.Long.TYPE       => java.lang.Long.valueOf(0L)
+        case t if t == classOf[String] => null
+        case _                         => null
+      }
   }
 
   def getGql42N97_missingMandatoryAuthClause(

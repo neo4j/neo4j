@@ -20,10 +20,10 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class PatternStringifierTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
+class PatternStringifierTest extends CypherFunSuite3 with TestName with AstConstructionTestSupport {
 
   private val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
   private val patternStringifier = PatternStringifier(expressionStringifier)

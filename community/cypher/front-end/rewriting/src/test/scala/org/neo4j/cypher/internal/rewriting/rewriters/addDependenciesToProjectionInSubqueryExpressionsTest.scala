@@ -536,7 +536,7 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
     val checkResult =
       normalizedWithAndReturnClauses.semanticCheck.run(
         SemanticState.clean,
-        CypherVersionHelpers.arbitrarySemanticContext
+        CypherVersionHelpers.arbitrarySemanticContext()
       )
     val rewriter =
       inSequence(

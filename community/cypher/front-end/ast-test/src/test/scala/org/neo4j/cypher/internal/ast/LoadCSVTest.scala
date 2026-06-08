@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
-class LoadCSVTest extends CypherFunSuite {
+class LoadCSVTest extends CypherFunSuite3 {
 
   val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4).withInputLength(1))
   val variable = Variable("a")(DummyPosition(4), Variable.isIsolatedDefault)

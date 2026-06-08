@@ -23,6 +23,7 @@
   <properties>
     <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.cypher.internal.ast</moduleName>
+    <scala.binary.version>3</scala.binary.version>
   </properties>
 
   <dependencies>
@@ -61,6 +62,24 @@
       <artifactId>neo4j-ast-test-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scalatest</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalatestplus</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalacheck</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalactic</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -98,12 +117,45 @@
       <artifactId>neo4j-test-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scalatest</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalatestplus</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalacheck</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalactic</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.lihaoyi</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-test-util-scala3</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-util</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -115,7 +167,7 @@
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
+      <artifactId>scala3-library_3</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -154,6 +206,54 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>${scala-maven-plugin.version}</version>
+        <configuration>
+          <scalaVersion>${scala3.version}</scalaVersion>
+          <scalaCompatVersion>3</scalaCompatVersion>
+          <recompileMode>${scala.plugin.recompileMode}</recompileMode>
+          <args combine.self="override">
+            <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
+            <arg>-nowarn</arg>
+          </args>
+          <jvmArgs>
+            <jvmArg>-Xms256m</jvmArg>
+            <jvmArg>-Xmx1024m</jvmArg>
+            <jvmArg>-Xss4M</jvmArg>
+          </jvmArgs>
+          <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>analyze</id>
+            <goals>
+              <goal>analyze-only</goal>
+            </goals>
+            <configuration>
+              <failOnWarning>true</failOnWarning>
+              <ignoredUnusedDeclaredDependencies>
+                <dependency>org.scala-lang:scala3-library_3</dependency>
+                <dependency>co.helmethair:scalatest-junit-runner</dependency>
+                <dependency>org.scalatest:scalatest_3</dependency>
+                <dependency>org.neo4j:neo4j-test-util-scala3</dependency>
+                <dependency>org.neo4j:neo4j-test-util</dependency>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
   <profiles>
     <profile>
       <id>skip-open-cypher-ast</id>
@@ -177,6 +277,30 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>scala-fatal-warnings</id>
+      <activation>
+        <property>
+          <name>scalaFatalWarnings</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>net.alchim31.maven</groupId>
+            <artifactId>scala-maven-plugin</artifactId>
+            <configuration>
+              <args combine.self="override">
+                <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
+                <arg>-Xfatal-warnings</arg>
+                <arg>-feature</arg>
+              </args>
             </configuration>
           </plugin>
         </plugins>

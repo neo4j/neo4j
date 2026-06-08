@@ -125,7 +125,7 @@ class NormalizeSargablePredicatesTest extends CypherFunSuite with AstRewritingTe
     val original = parse(originalQuery, Neo4jCypherExceptionFactory(originalQuery, None))
     val expected = parse(expectedQuery, Neo4jCypherExceptionFactory(expectedQuery, None))
 
-    val checkResult = original.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext)
+    val checkResult = original.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext())
     val semanticTable = SemanticTable(types = checkResult.state.typeTable)
     val rewriter = normalizeSargablePredicatesRewriter(semanticTable)
 

@@ -11328,5 +11328,5 @@ object GraphTypeTestCase extends AstGraphTypeConstructionTestSupport {
     )
   )
 
-  val testcases: Seq[GraphTypeTestCase] = re ++ snt ++ mnt ++ set ++ met ++ udc ++ idc
+  val testcases: Seq[GraphTypeTestCase] = re() ++ snt() ++ mnt() ++ set() ++ met() ++ udc() ++ idc()
 }

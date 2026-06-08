@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.util.Ref
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
+class ExpressionTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("should compute dependencies of simple expressions") {
     varFor("a").dependencies should equal(Set(varFor("a")))

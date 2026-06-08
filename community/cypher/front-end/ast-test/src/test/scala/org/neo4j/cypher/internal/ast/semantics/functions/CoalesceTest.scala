@@ -39,10 +39,10 @@ import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks3
 import org.scalacheck.Gen
 
-class CoalesceTest extends FunctionTestBase("coalesce") with CypherScalaCheckDrivenPropertyChecks {
+class CoalesceTest extends FunctionTestBase("coalesce") with CypherScalaCheckDrivenPropertyChecks3 {
 
   test("n: CTNode, r: CTRelationship => coalesce(n, r): CTNode | CTRelationship") {
     testValidTypes(CTString, CTBoolean, CTString)(TypeSpec.union(CTBoolean, CTString))

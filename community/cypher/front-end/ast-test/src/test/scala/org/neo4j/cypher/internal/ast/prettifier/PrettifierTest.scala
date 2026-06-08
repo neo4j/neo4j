@@ -34,11 +34,11 @@ import org.neo4j.cypher.internal.ast.ParsedAsSkip
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
 import scala.collection.immutable.ArraySeq
 
-class PrettifierTest extends CypherFunSuite with AstConstructionTestSupport {
+class PrettifierTest extends CypherFunSuite3 with AstConstructionTestSupport {
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
   test("stringify deny privilege") {

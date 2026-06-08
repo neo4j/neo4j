@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class WorkingScopeHelpersTest extends CypherFunSuite with AstConstructionTestSupport {
+class WorkingScopeHelpersTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("normalizeReferences collapses a chain a → b → c → d to a = d, b = d, c = d") {
     val a = refFor("a", 1); val b = refFor("b", 2); val c = refFor("c", 3); val d = refFor("d", 4)

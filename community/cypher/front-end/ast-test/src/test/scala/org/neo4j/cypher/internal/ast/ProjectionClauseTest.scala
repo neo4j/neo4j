@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.gqlstatus.GqlHelper.getGql42001_42N07
 
-class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSupport {
+class ProjectionClauseTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("should introduce variables into scope") {
     // GIVEN WITH "a" as n

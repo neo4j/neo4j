@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.PositionedNode
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ASTAnnotationMapTest extends CypherFunSuite {
+class ASTAnnotationMapTest extends CypherFunSuite3 {
 
   case class Exp(id: String)(val position: InputPosition) extends ASTNode
 

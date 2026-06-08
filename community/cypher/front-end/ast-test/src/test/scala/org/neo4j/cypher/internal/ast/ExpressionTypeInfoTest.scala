@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ExpressionTypeInfoTest extends CypherFunSuite {
+class ExpressionTypeInfoTest extends CypherFunSuite3 {
 
   test("Should reuse ExpressionTypeInfo") {
     val a = ExpressionTypeInfo(TypeSpec.exact(CTBoolean), None)

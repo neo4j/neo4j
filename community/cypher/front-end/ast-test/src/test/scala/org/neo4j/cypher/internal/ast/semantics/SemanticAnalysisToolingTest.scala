@@ -31,9 +31,9 @@ import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTestSupport {
+class SemanticAnalysisToolingTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   val expression: Expression = DummyExpression(CTAny)
 

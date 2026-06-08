@@ -271,7 +271,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with AstRewritingTestSupport
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
     val exceptionFactory = Neo4jCypherExceptionFactory(originalQuery, None)
     val original = parse("RETURN " + originalQuery, exceptionFactory)
-    val checkResult = original.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext)
+    val checkResult = original.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext())
     val rewriter =
       flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen simplifyPredicates(
         checkResult.state,

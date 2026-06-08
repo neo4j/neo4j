@@ -20,9 +20,9 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
+class ClauseTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("containsLabelOrRelTypePredicate with label in where clause") {
     // MATCH (n) WHERE n:N

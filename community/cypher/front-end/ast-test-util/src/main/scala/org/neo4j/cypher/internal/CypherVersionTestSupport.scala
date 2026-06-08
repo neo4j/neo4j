@@ -18,9 +18,10 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Assertions
 import org.scalatest.Assertions.withClue
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
 
 import scala.util.Random
 
@@ -42,12 +43,12 @@ object CypherVersionHelpers {
       case (baseline, `baselineVersion`) => baseline
       case (baseline, version) =>
         val result = f(version)
-        withClue(
+        val clue =
           s"""Expected the same value but got:
              |CYPHER $baselineVersion: $baseline
              |CYPHER $version: $result
              |""".stripMargin
-        )(result shouldBe baseline)
+        if (!(result == baseline)) throw new AssertionError(clue)
         baseline
     }
   }
@@ -56,7 +57,8 @@ object CypherVersionHelpers {
 }
 
 trait CypherVersionTestSupport {
-  self: CypherFunSuite =>
+  // CypherFunSuite (2.13) and CypherFunSuite3 both satisfy this while front-end is still on 2.13.
+  self: AnyFunSuiteLike with Assertions with Matchers =>
 
   def testVersions(testName: String)(f: CypherVersion => Any)(implicit pos: org.scalactic.source.Position): Unit =
     test(testName) {
@@ -78,5 +80,3 @@ trait CypherVersionTestSupport {
     CypherVersion.values().filter(version => version != CypherVersion.Cypher5)
   }
 }
-
-class CypherFunSuiteWithVersionTestSupport extends CypherFunSuite with CypherVersionTestSupport

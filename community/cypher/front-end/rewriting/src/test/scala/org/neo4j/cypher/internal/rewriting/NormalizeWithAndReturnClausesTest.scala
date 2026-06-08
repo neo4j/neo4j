@@ -1803,7 +1803,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite3 with RewriteTest
     )
     result.semanticCheck.run(
       SemanticState.clean.withFeature(MultipleDatabases),
-      CypherVersionHelpers.arbitrarySemanticContext
+      CypherVersionHelpers.arbitrarySemanticContext()
     )
   }
 
@@ -1826,7 +1826,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite3 with RewriteTest
     )
     result.semanticCheck.run(
       SemanticState.clean.withFeatures((MultipleDatabases +: semanticFeature)),
-      CypherVersionHelpers.arbitrarySemanticContext
+      CypherVersionHelpers.arbitrarySemanticContext()
     )
   }
 

@@ -153,7 +153,7 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstRewri
     val original = parse(originalQuery, Neo4jCypherExceptionFactory(originalQuery, None))
     val expected = parse(expectedQuery, Neo4jCypherExceptionFactory(expectedQuery, None))
 
-    val checkResult = original.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext)
+    val checkResult = original.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext())
     val rewriter =
       inSequence(
         computeDependenciesForExpressions(checkResult.state),

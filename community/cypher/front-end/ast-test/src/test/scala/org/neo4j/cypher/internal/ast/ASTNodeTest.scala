@@ -21,10 +21,10 @@ import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.cypher.internal.util.topDown
 
-class ASTNodeTest extends CypherFunSuite {
+class ASTNodeTest extends CypherFunSuite3 {
 
   trait Exp extends ASTNode {
     override val position: InputPosition.Range = DummyPosition(0)

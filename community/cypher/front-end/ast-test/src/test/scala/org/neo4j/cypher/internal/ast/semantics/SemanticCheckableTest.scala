@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.kernel.database.DatabaseReference
 
-class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
+class SemanticCheckableTest extends CypherFunSuite3 with SemanticAnalysisTooling with AstConstructionTestSupport {
 
   test("shouldChainSemanticCheckableFunctions") {
     val state1 = SemanticState.clean

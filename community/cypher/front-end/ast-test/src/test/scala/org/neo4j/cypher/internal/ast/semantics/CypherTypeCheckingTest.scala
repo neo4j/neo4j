@@ -45,7 +45,7 @@ import org.neo4j.cypher.internal.util.symbols.PropertyValueCypher5Type
 import org.neo4j.cypher.internal.util.symbols.PropertyValueType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.VectorType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
 import org.neo4j.gqlstatus.GqlParams
@@ -53,7 +53,7 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
 import scala.collection.immutable.ArraySeq
 
-class CypherTypeCheckingTest extends CypherFunSuite with AstConstructionTestSupport {
+class CypherTypeCheckingTest extends CypherFunSuite3 with AstConstructionTestSupport {
   private val pos1 = InputPosition(2, 1, 3)
   private val pos2 = InputPosition(16, 5, 4)
   private val pos3 = InputPosition(23, 7, 6)

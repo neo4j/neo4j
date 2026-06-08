@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ScopeTreeVerifierTest extends CypherFunSuite with AstConstructionTestSupport {
+class ScopeTreeVerifierTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("should reject scopes mapping the wrong name to a symbol") {
     val x = intSymbol("x", varFor("x"))

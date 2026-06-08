@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.containsAggregate
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class ContainsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
+class ContainsAggregateTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("finds nested aggregate expressions") {
     val expr = add(literalInt(1), CountStar() _)

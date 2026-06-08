@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
 //noinspection ZeroIndexToHead
-class FindRepeatedRelationshipsTest extends CypherFunSuite {
+class FindRepeatedRelationshipsTest extends CypherFunSuite3 {
 
   private val pos = DummyPosition(0)
   private val pos2 = DummyPosition(1)

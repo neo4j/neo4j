@@ -82,7 +82,7 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite3 with AstRewritin
         val sequence: Rewriter = inSequence(NormalizeWithAndReturnClauses(exceptionFactory))
         val originalAst = parse(q, exceptionFactory).endoRewrite(sequence)
         val semanticCheckResult =
-          originalAst.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext)
+          originalAst.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext())
         val withScopes = originalAst.endoRewrite(computeDependenciesForExpressions(semanticCheckResult.state))
 
         withScopes.endoRewrite(DesugarMapProjection.instance)

@@ -223,11 +223,7 @@
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-test-util</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scalactic</groupId>
-          <artifactId>*</artifactId>
+          <artifactId>neo4j-test-util-scala3</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.scalatest</groupId>
@@ -235,6 +231,14 @@
         </exclusion>
         <exclusion>
           <groupId>org.scalatestplus</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalacheck</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalactic</groupId>
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
@@ -299,6 +303,9 @@
                 <!-- Required on the classpath for Scala 3; analyze-only does not attribute stdlib references here. -->
                 <ignoredUnusedDeclaredDependency>org.scala-lang:scala3-library_3</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
+              <ignoredNonTestScopedDependencies combine.children="append">
+                <ignoredNonTestScopedDependency>org.scala-lang:scala3-library_3</ignoredNonTestScopedDependency>
+              </ignoredNonTestScopedDependencies>
             </configuration>
           </execution>
         </executions>

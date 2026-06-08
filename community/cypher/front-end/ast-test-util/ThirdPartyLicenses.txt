@@ -16,27 +16,25 @@ Apache Software License, Version 2.0
   Java Native Access
   Jettison
   JSpecify annotations
-  mockito-4.6
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
-  Scala Reflect
   scala-xml
   scala3-library-bootstrapped
-  scalactic
-  scalatest
+  scalacticDotty
   scalatest-compatible
-  scalatest-core
-  scalatest-diagrams
-  scalatest-featurespec
-  scalatest-flatspec
-  scalatest-freespec
-  scalatest-funspec
-  scalatest-funsuite
-  scalatest-matchers-core
-  scalatest-propspec
-  scalatest-refspec
-  scalatest-shouldmatchers
-  scalatest-wordspec
+  scalatestCoreDotty
+  scalatestDiagramsDotty
+  scalatestDotty
+  scalatestFeatureSpecDotty
+  scalatestFlatSpecDotty
+  scalatestFreeSpecDotty
+  scalatestFunSpecDotty
+  scalatestFunSuiteDotty
+  scalatestMatchersCoreDotty
+  scalatestPropSpecDotty
+  scalatestRefSpecDotty
+  scalatestShouldMatchersDotty
+  scalatestWordSpecDotty
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -676,6 +674,7 @@ version(s), and exceptions or additional permissions here}."
 
 ------------------------------------------------------------------------------
 MIT License
+  co.helmethair:scalatest-junit-runner
   mockito-core
 ------------------------------------------------------------------------------
 

@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
+class SemanticTableTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   private val position123 = InputPosition(1, 2, 3)
   private val position000 = InputPosition(0, 0, 0)

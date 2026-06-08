@@ -261,7 +261,10 @@ class CallClauseTest extends CypherPlannerTestSuite with AstConstructionTestSupp
     val resolved = ResolvedNonLocalCall(_ => signature)(unresolved)
 
     val toList: List[String] =
-      errorTexts(resolved.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext)).toList
+      errorTexts(resolved.semanticCheck.run(
+        SemanticState.clean,
+        CypherVersionHelpers.arbitrarySemanticContext()
+      )).toList
     toList should equal(List(
       """Procedure call does not provide the required number of arguments: got 0 expected at least 1 (total: 1, 0 of which have default values).
         |
@@ -287,7 +290,7 @@ class CallClauseTest extends CypherPlannerTestSuite with AstConstructionTestSupp
 
     errorTexts(resolved.semanticCheck.run(
       SemanticState.clean,
-      CypherVersionHelpers.arbitrarySemanticContext
+      CypherVersionHelpers.arbitrarySemanticContext()
     )) should equal(Seq(
       "Variable `x` already declared (line 0, column 0 (offset: 0))"
     ))
@@ -307,7 +310,7 @@ class CallClauseTest extends CypherPlannerTestSuite with AstConstructionTestSupp
       UnresolvedCall(name, Some(callArguments), Some(ProcedureResult(callResults)(pos)), isStandalone = true)(pos)
     val resolved = ResolvedNonLocalCall(_ => signature)(unresolved)
 
-    val result = resolved.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext)
+    val result = resolved.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext())
     errorTexts(result) should equal(Seq(
       "Unknown procedure output: `p` (line 0, column 0 (offset: 0))"
     ))
@@ -332,7 +335,7 @@ class CallClauseTest extends CypherPlannerTestSuite with AstConstructionTestSupp
 
     errorTexts(resolved.semanticCheck.run(
       SemanticState.clean,
-      CypherVersionHelpers.arbitrarySemanticContext
+      CypherVersionHelpers.arbitrarySemanticContext()
     )) should equal(Seq(
       "Type mismatch: expected Integer but was String (line 0, column 0 (offset: 0))"
     ))

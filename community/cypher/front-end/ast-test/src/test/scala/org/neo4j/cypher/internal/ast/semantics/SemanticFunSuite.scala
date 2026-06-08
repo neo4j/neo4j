@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-trait SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
+trait SemanticFunSuite extends CypherFunSuite3 with SemanticAnalysisTooling with AstConstructionTestSupport {
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

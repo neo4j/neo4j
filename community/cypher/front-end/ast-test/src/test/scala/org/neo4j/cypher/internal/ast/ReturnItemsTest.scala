@@ -19,10 +19,10 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 import org.neo4j.gqlstatus.GqlHelper
 
-class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
+class ReturnItemsTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("should forbid aliased projections collisions, e.g., projecting more than one value to the same id") {
     val item1 = AliasedReturnItem(literalString("a"), varFor("n"))(pos)

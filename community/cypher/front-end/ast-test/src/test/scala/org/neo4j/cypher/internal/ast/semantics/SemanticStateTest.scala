@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 
-class SemanticStateTest extends CypherFunSuite with AstConstructionTestSupport {
+class SemanticStateTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   test("should declare variable once") {
     val variable1 = varFor("foo", DummyPosition(0))
