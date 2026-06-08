@@ -96,4 +96,9 @@ public class BackupZstdFormatV2 implements BackupCompressionFormat {
                         String.format("Unsupported metadata version %d found in backup", metadataVersion));
         };
     }
+
+    @Override
+    public String toString() {
+        return "BackupZstdFormatV2{metadata=" + metadata + '}';
+    }
 }

@@ -75,4 +75,9 @@ public class BackupTarFormatV2 implements BackupCompressionFormat {
                         String.format("Unsupported metadata version %d found in backup", metadataVersion));
         };
     }
+
+    @Override
+    public String toString() {
+        return "BackupTarFormatV2{metadata=" + metadata + '}';
+    }
 }
