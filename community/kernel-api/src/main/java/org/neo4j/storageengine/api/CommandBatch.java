@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+
 import org.neo4j.common.Subject;
 import org.neo4j.kernel.KernelVersionProvider;
 
@@ -105,6 +107,13 @@ public interface CommandBatch extends CommandStream, KernelVersionProvider {
      * Get command batch append index
      */
     long appendIndex();
+
+    /**
+     * Get append index of previous transaction in multi-chunked series.
+     */
+    default long previousBatchAppendIndex() {
+        return UNKNOWN_APPEND_INDEX;
+    }
 
     /**
      * Get command batch chunk id

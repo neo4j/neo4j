@@ -163,7 +163,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
      */
     @Override
     public long previousBatchAppendIndex() {
-        return chunk.chunkMetadata().previousBatchAppendIndex();
+        return chunk.previousBatchAppendIndex();
     }
 
     @Override
