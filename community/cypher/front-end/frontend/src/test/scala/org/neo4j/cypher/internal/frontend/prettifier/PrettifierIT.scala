@@ -3084,6 +3084,39 @@ class PrettifierIT extends AbstractPrettifierTest {
         |    LIMIT 1
         |    WHERE authRule = "role"""".stripMargin
     ),
+    FailsInCypher5(
+      "show roles as commands",
+      "SHOW ALL ROLES AS COMMANDS"
+    ),
+    FailsInCypher5(
+      "show populated roles as commands",
+      "SHOW POPULATED ROLES AS COMMANDS"
+    ),
+    FailsInCypher5(
+      "show roles with users as commands",
+      "SHOW ALL ROLES WITH USERS AS COMMANDS"
+    ),
+    FailsInCypher5(
+      "show populated roles with user as commands",
+      "SHOW POPULATED ROLES WITH USERS AS COMMANDS"
+    ),
+    FailsInCypher5(
+      "show roles with auth rule as commands",
+      "SHOW ALL ROLES WITH AUTH RULES AS COMMANDS"
+    ),
+    FailsInCypher5(
+      "show populated roles with auth rules as commands",
+      "SHOW POPULATED ROLES WITH AUTH RULES AS COMMANDS"
+    ),
+    FailsInCypher5(
+      "show Populated roles with auth rules as commands yield command, authRule order by authRule skip 1 limit 1 where authRule='role'",
+      """SHOW POPULATED ROLES WITH AUTH RULES AS COMMANDS
+        |  YIELD command, authRule
+        |    ORDER BY authRule ASCENDING
+        |    SKIP 1
+        |    LIMIT 1
+        |    WHERE authRule = "role"""".stripMargin
+    ),
     "create role abc" ->
       "CREATE ROLE abc",
     "create role $abc" ->

@@ -50,7 +50,7 @@ case object ExpandShowWhere extends Step with DefaultPostCondition with Preparat
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
     // move freestanding WHERE to YIELD * WHERE and add default columns to the YIELD
-    case s @ ShowRoles(_, _, _, Some(Right(where)), _) =>
+    case s @ ShowRoles(_, _, _, _, Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowPrivileges(_, Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
@@ -70,7 +70,7 @@ case object ExpandShowWhere extends Step with DefaultPostCondition with Preparat
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
 
     // add default columns to explicit YIELD/RETURN * as well
-    case s @ ShowRoles(_, _, _, Some(Left((yieldClause, returnClause))), _)
+    case s @ ShowRoles(_, _, _, _, Some(Left((yieldClause, returnClause))), _)
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
     case s @ ShowPrivileges(_, Some(Left((yieldClause, returnClause))), _)

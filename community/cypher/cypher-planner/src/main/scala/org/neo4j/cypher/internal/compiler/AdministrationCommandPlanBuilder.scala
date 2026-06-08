@@ -560,6 +560,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           withUsers = sr.withUsers,
           withAuthRules = sr.withAuthRules,
           showAll = sr.showAll,
+          asCommands = sr.asCommands,
           sr.defaultColumnNames.map(varFor),
           sr.yields,
           sr.returns

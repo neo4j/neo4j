@@ -725,11 +725,18 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
   }
 
   test("SHOW ALL ROLE role PRIVILEGES") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'role': expected 'WHERE', 'WITH', 'YIELD' or <EOF> (line 1, column 15 (offset: 14))
-        |"SHOW ALL ROLE role PRIVILEGES"
-        |               ^""".stripMargin
-    )
+    failsParsing[Statements].in {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'role': expected 'WHERE', 'WITH', 'YIELD' or <EOF> (line 1, column 15 (offset: 14))
+            |"SHOW ALL ROLE role PRIVILEGES"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'role': expected 'AS', 'WHERE', 'WITH', 'YIELD' or <EOF> (line 1, column 15 (offset: 14))
+            |"SHOW ALL ROLE role PRIVILEGES"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW ROLE ro%le PRIVILEGES") {

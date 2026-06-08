@@ -456,7 +456,19 @@ class AdminLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
 
   test("Role commands") {
     assertGood(
-      attach(ShowRoles(privLhsLP, withUsers = false, withAuthRules = false, showAll = true, List(), None, None), 1.0),
+      attach(
+        ShowRoles(
+          privLhsLP,
+          withUsers = false,
+          withAuthRules = false,
+          showAll = true,
+          asCommands = false,
+          List(),
+          None,
+          None
+        ),
+        1.0
+      ),
       adminPlanDescription
     )
 

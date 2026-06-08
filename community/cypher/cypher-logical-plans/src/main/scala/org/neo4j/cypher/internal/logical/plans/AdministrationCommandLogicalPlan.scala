@@ -152,6 +152,7 @@ case class ShowRoles(
   source: PrivilegePlan,
   extensionType: ShowRoles.ShowRolesExtensionType,
   showAll: Boolean,
+  asCommands: Boolean,
   override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]
@@ -164,6 +165,7 @@ object ShowRoles {
     withUsers: Boolean,
     withAuthRules: Boolean,
     showAll: Boolean,
+    asCommands: Boolean,
     returnColumns: List[LogicalVariable],
     yields: Option[Yield],
     returns: Option[Return]
@@ -178,7 +180,7 @@ object ShowRoles {
           "Cannot show both users and auth rules in the same command"
         )
     }
-    ShowRoles(source, extensionType, showAll, returnColumns, yields, returns)(idGen)
+    ShowRoles(source, extensionType, showAll, asCommands, returnColumns, yields, returns)(idGen)
   }
 
   sealed trait ShowRolesExtensionType

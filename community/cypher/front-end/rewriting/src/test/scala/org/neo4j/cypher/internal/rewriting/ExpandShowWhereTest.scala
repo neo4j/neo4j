@@ -91,6 +91,7 @@ class ExpandShowWhereTest extends CypherFunSuite3 with RewriteTest {
           false,
           false,
           true,
+          false,
           Some(Left((
             Yield(
               ReturnItems(AdditiveProjection, _, Some(columns)),

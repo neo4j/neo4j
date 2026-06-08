@@ -1442,6 +1442,11 @@ authRuleKeywords
     : AUTH (RULE | RULES)
     ;
 
+commandToken
+    : COMMAND
+    | COMMANDS
+    ;
+
 // Server commands
 
 enableServerCommand
@@ -1491,7 +1496,7 @@ renameRole
    ;
 
 showRoles
-   : (ALL | POPULATED)? roleToken (WITH (USER | USERS | authRuleKeywords))? showCommandYield?
+   : (ALL | POPULATED)? roleToken (WITH (USER | USERS | authRuleKeywords))? (AS commandToken)? showCommandYield?
    ;
 
 grantRole
@@ -1637,7 +1642,7 @@ showUserPrivileges
    ;
 
 privilegeAsCommand
-   : AS REVOKE? (COMMAND | COMMANDS)
+   : AS REVOKE? commandToken
    ;
 
 privilegeToken
@@ -1942,7 +1947,7 @@ dropAuthRule
     ;
 
 showAuthRules
-    : authRuleKeywords (AS (COMMAND | COMMANDS))? showCommandYield?
+    : authRuleKeywords (AS commandToken)? showCommandYield?
     ;
 
 // Database commands

@@ -443,6 +443,7 @@ public abstract class AbstractCypher25AstBuilder implements Cypher25ParserListen
             case Cypher25Parser.RULE_tagToken -> exitTagToken((Cypher25Parser.TagTokenContext) ctx);
             case Cypher25Parser.RULE_authRuleKeywords ->
                 exitAuthRuleKeywords((Cypher25Parser.AuthRuleKeywordsContext) ctx);
+            case Cypher25Parser.RULE_commandToken -> exitCommandToken((Cypher25Parser.CommandTokenContext) ctx);
             case Cypher25Parser.RULE_enableServerCommand ->
                 exitEnableServerCommand((Cypher25Parser.EnableServerCommandContext) ctx);
             case Cypher25Parser.RULE_alterServer -> exitAlterServer((Cypher25Parser.AlterServerContext) ctx);

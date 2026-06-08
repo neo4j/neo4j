@@ -122,6 +122,8 @@ import scala.collection.immutable.ArraySeq
 trait DdlShowBuilder extends Cypher25ParserListener {
   def semanticFeatures: Seq[SemanticFeature]
 
+  def exitCommandToken(ctx: Cypher25Parser.CommandTokenContext): Unit = {}
+
   final override def exitShowAdminCommand(
     ctx: Cypher25Parser.ShowAdminCommandContext
   ): Unit = {
@@ -484,6 +486,7 @@ trait DdlShowBuilder extends Cypher25ParserListener {
       withUsers,
       withAuthRules,
       ctx.POPULATED() == null,
+      ctx.commandToken() != null,
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
     )(pos(ctx))
   }

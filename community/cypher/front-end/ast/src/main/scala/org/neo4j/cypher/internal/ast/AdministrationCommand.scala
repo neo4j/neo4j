@@ -916,6 +916,7 @@ final case class ShowRoles(
   withUsers: Boolean,
   withAuthRules: Boolean,
   showAll: Boolean,
+  asCommands: Boolean,
   override val yieldOrWhere: YieldOrWhere,
   override val defaultColumnSet: List[ShowColumn]
 )(val position: InputPosition) extends ReadAdministrationCommand {
@@ -936,25 +937,29 @@ object ShowRoles {
     withUsers: Boolean,
     withAuthRules: Boolean,
     showAll: Boolean,
+    asCommands: Boolean,
     yieldOrWhere: YieldOrWhere
   )(position: InputPosition): ShowRoles = {
-    val allColumns =
+    val commandColumn = if (asCommands)
+      List((ShowColumn(Variable("command")(position, Variable.isIsolatedDefault), CTString, "command"), true))
+    else List.empty
+    val roleColumn =
+      List((ShowColumn(Variable("role")(position, Variable.isIsolatedDefault), CTString, "role"), !asCommands))
+    val extraColumn = {
       if (withUsers) List(
-        (ShowColumn(Variable("role")(position, Variable.isIsolatedDefault), CTString, "role"), true),
-        (ShowColumn(Variable("member")(position, Variable.isIsolatedDefault), CTString, "member"), true),
-        (ShowColumn(Variable("immutable")(position, Variable.isIsolatedDefault), CTBoolean, "immutable"), false)
+        (ShowColumn(Variable("member")(position, Variable.isIsolatedDefault), CTString, "member"), true)
       )
       else if (withAuthRules) List(
-        (ShowColumn(Variable("role")(position, Variable.isIsolatedDefault), CTString, "role"), true),
-        (ShowColumn(Variable("authRule")(position, Variable.isIsolatedDefault), CTString, "authRule"), true),
-        (ShowColumn(Variable("immutable")(position, Variable.isIsolatedDefault), CTBoolean, "immutable"), false)
+        (ShowColumn(Variable("authRule")(position, Variable.isIsolatedDefault), CTString, "authRule"), true)
       )
-      else List(
-        (ShowColumn(Variable("role")(position, Variable.isIsolatedDefault), CTString, "role"), true),
-        (ShowColumn(Variable("immutable")(position, Variable.isIsolatedDefault), CTBoolean, "immutable"), false)
-      )
+      else List.empty
+    }
+    val allColumns = commandColumn ++ roleColumn ++ extraColumn ++ List((
+      ShowColumn(Variable("immutable")(position, Variable.isIsolatedDefault), CTBoolean, "immutable"),
+      false
+    ))
     val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
-    ShowRoles(withUsers, withAuthRules, showAll, yieldOrWhere, columns)(position)
+    ShowRoles(withUsers, withAuthRules, showAll, asCommands, yieldOrWhere, columns)(position)
   }
 }
 

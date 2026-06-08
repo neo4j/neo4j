@@ -43,28 +43,64 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   Seq("ROLES", "ROLE").foreach(roleKeyword => {
     test(s"SHOW $roleKeyword") {
-      parsesTo[Statements](ShowRoles(withUsers = false, withAuthRules = false, showAll = true, None)(pos))
+      parsesTo[Statements](ShowRoles(
+        withUsers = false,
+        withAuthRules = false,
+        showAll = true,
+        asCommands = false,
+        None
+      )(pos))
     }
 
     test(s"SHOW ALL $roleKeyword") {
-      parsesTo[Statements](ShowRoles(withUsers = false, withAuthRules = false, showAll = true, None)(pos))
+      parsesTo[Statements](ShowRoles(
+        withUsers = false,
+        withAuthRules = false,
+        showAll = true,
+        asCommands = false,
+        None
+      )(pos))
     }
 
     test(s"SHOW POPULATED $roleKeyword") {
-      parsesTo[Statements](ShowRoles(withUsers = false, withAuthRules = false, showAll = false, None)(pos))
+      parsesTo[Statements](ShowRoles(
+        withUsers = false,
+        withAuthRules = false,
+        showAll = false,
+        asCommands = false,
+        None
+      )(pos))
     }
 
     Seq("USERS", "USER").foreach(userKeyword => {
       test(s"SHOW $roleKeyword WITH $userKeyword") {
-        parsesTo[Statements](ShowRoles(withUsers = true, withAuthRules = false, showAll = true, None)(pos))
+        parsesTo[Statements](ShowRoles(
+          withUsers = true,
+          withAuthRules = false,
+          showAll = true,
+          asCommands = false,
+          None
+        )(pos))
       }
 
       test(s"SHOW ALL $roleKeyword WITH $userKeyword") {
-        parsesTo[Statements](ShowRoles(withUsers = true, withAuthRules = false, showAll = true, None)(pos))
+        parsesTo[Statements](ShowRoles(
+          withUsers = true,
+          withAuthRules = false,
+          showAll = true,
+          asCommands = false,
+          None
+        )(pos))
       }
 
       test(s"SHOW POPULATED $roleKeyword WITH $userKeyword") {
-        parsesTo[Statements](ShowRoles(withUsers = true, withAuthRules = false, showAll = false, None)(pos))
+        parsesTo[Statements](ShowRoles(
+          withUsers = true,
+          withAuthRules = false,
+          showAll = false,
+          asCommands = false,
+          None
+        )(pos))
       }
     })
 
@@ -72,21 +108,39 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       test(s"SHOW $roleKeyword WITH $authRuleKeyword") {
         parsesIn[Statements] {
           case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AUTH':")
-          case _ => _.toAstPositioned(ShowRoles(withUsers = false, withAuthRules = true, showAll = true, None)(pos))
+          case _ => _.toAstPositioned(ShowRoles(
+              withUsers = false,
+              withAuthRules = true,
+              showAll = true,
+              asCommands = false,
+              None
+            )(pos))
         }
       }
 
       test(s"SHOW ALL $roleKeyword WITH $authRuleKeyword") {
         parsesIn[Statements] {
           case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AUTH':")
-          case _ => _.toAstPositioned(ShowRoles(withUsers = false, withAuthRules = true, showAll = true, None)(pos))
+          case _ => _.toAstPositioned(ShowRoles(
+              withUsers = false,
+              withAuthRules = true,
+              showAll = true,
+              asCommands = false,
+              None
+            )(pos))
         }
       }
 
       test(s"SHOW POPULATED $roleKeyword WITH $authRuleKeyword") {
         parsesIn[Statements] {
           case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AUTH':")
-          case _ => _.toAstPositioned(ShowRoles(withUsers = false, withAuthRules = true, showAll = false, None)(pos))
+          case _ => _.toAstPositioned(ShowRoles(
+              withUsers = false,
+              withAuthRules = true,
+              showAll = false,
+              asCommands = false,
+              None
+            )(pos))
         }
       }
 
@@ -106,13 +160,87 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
             case _       => _.withSyntaxErrorContaining("Invalid input 'WITH':")
           }
         }
+
+        // Should not allow both with user and with auth rule when using AS COMMANDS
+        test(s"SHOW $roleKeyword WITH $userKeyword WITH $authRuleKeyword AS COMMANDS") {
+          failsParsing[Statements].withSyntaxErrorContaining("Invalid input 'WITH':")
+        }
+
+        test(s"SHOW ALL $roleKeyword WITH $userKeyword WITH $authRuleKeyword AS COMMANDS") {
+          failsParsing[Statements].withSyntaxErrorContaining("Invalid input 'WITH':")
+        }
+
+        test(s"SHOW POPULATED $roleKeyword WITH $authRuleKeyword WITH $userKeyword AS COMMANDS") {
+          parsesIn[Statements] {
+            case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AUTH':")
+            case _       => _.withSyntaxErrorContaining("Invalid input 'WITH':")
+          }
+        }
+      })
+    })
+
+    Seq("COMMAND", "COMMANDS").foreach(commandKeyword => {
+      test(s"SHOW $roleKeyword AS $commandKeyword") {
+        parsesIn[Statements] {
+          case Cypher5 => _.withSyntaxErrorContaining(s"Invalid input '$commandKeyword':")
+          case _ => _.toAstPositioned(ShowRoles(
+              withUsers = false,
+              withAuthRules = false,
+              showAll = true,
+              asCommands = true,
+              None
+            )(pos))
+        }
+      }
+
+      test(s"SHOW POPULATED $roleKeyword AS $commandKeyword") {
+        parsesIn[Statements] {
+          case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AS':")
+          case _ => _.toAstPositioned(ShowRoles(
+              withUsers = false,
+              withAuthRules = false,
+              showAll = false,
+              asCommands = true,
+              None
+            )(pos))
+        }
+      }
+
+      Seq("USERS", "USER").foreach(userKeyword => {
+        test(s"SHOW $roleKeyword WITH $userKeyword AS $commandKeyword") {
+          parsesIn[Statements] {
+            case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AS':")
+            case _ => _.toAstPositioned(ShowRoles(
+                withUsers = true,
+                withAuthRules = false,
+                showAll = true,
+                asCommands = true,
+                None
+              )(pos))
+          }
+        }
+      })
+
+      Seq("AUTH RULES", "AUTH RULE").foreach(authRuleKeyword => {
+        test(s"SHOW $roleKeyword WITH $authRuleKeyword AS $commandKeyword") {
+          parsesIn[Statements] {
+            case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AUTH':")
+            case _ => _.toAstPositioned(ShowRoles(
+                withUsers = false,
+                withAuthRules = true,
+                showAll = true,
+                asCommands = true,
+                None
+              )(pos))
+          }
+        }
       })
     })
   })
 
   test("USE neo4j SHOW ROLES") {
     def expected(resolveStrictly: Boolean) = {
-      ShowRoles(withUsers = false, withAuthRules = false, showAll = true, None)(pos)
+      ShowRoles(withUsers = false, withAuthRules = false, showAll = true, asCommands = false, None)(pos)
         .withGraph(Some(use(List("neo4j"), resolveStrictly)))
     }
 
@@ -124,7 +252,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("USE GRAPH SYSTEM SHOW ROLES") {
     def expected(resolveStrictly: Boolean) = {
-      ShowRoles(withUsers = false, withAuthRules = false, showAll = true, None)(pos)
+      ShowRoles(withUsers = false, withAuthRules = false, showAll = true, asCommands = false, None)(pos)
         .withGraph(Some(use(List("SYSTEM"), resolveStrictly)))
     }
 
@@ -140,6 +268,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         withUsers = false,
         withAuthRules = false,
         showAll = true,
+        asCommands = false,
         Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))
       )(pos)
     )
@@ -151,9 +280,23 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         withUsers = false,
         withAuthRules = false,
         showAll = true,
+        asCommands = false,
         Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))
       )(pos)
     )
+  }
+
+  test("SHOW ALL ROLE AS COMMAND YIELD command") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AS':")
+      case _ => _.toAstPositioned(ShowRoles(
+          withUsers = false,
+          withAuthRules = false,
+          showAll = true,
+          asCommands = true,
+          Some(Left((yieldClause(returnItems(variableReturnItem("command"))), None)))
+        )(pos))
+    }
   }
 
   test("SHOW ALL ROLES WHERE role='PUBLIC'") {
@@ -162,6 +305,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         withUsers = false,
         withAuthRules = false,
         showAll = true,
+        asCommands = false,
         Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))
       )(pos)
     )
@@ -173,6 +317,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         withUsers = false,
         withAuthRules = false,
         showAll = true,
+        asCommands = false,
         Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))
       )(pos)
     )
@@ -185,6 +330,20 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           withUsers = false,
           withAuthRules = true,
           showAll = true,
+          asCommands = false,
+          Some(Right(where(equals(varFor("authRule"), literalString("rule")))))
+        )(pos))
+    }
+  }
+
+  test("SHOW ALL ROLES WITH AUTH RULES AS COMMANDS WHERE authRule='rule'") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AUTH':")
+      case _ => _.toAstPositioned(ShowRoles(
+          withUsers = false,
+          withAuthRules = true,
+          showAll = true,
+          asCommands = true,
           Some(Right(where(equals(varFor("authRule"), literalString("rule")))))
         )(pos))
     }
@@ -195,6 +354,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       withUsers = false,
       withAuthRules = false,
       showAll = true,
+      asCommands = false,
       Some(Left((
         yieldClause(returnItems(variableReturnItem(roleString))),
         Some(returnClause(returnItems(variableReturnItem(roleString))))
@@ -207,6 +367,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       withUsers = false,
       withAuthRules = false,
       showAll = true,
+      asCommands = false,
       Some(Left((
         yieldClause(returnItems(variableReturnItem("return"), variableReturnItem("return"))),
         Some(returnClause(returnItems(variableReturnItem("return"))))
@@ -219,6 +380,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       withUsers = false,
       withAuthRules = false,
       showAll = false,
+      asCommands = false,
       Some(Left((
         yieldClause(
           returnItems(variableReturnItem(roleString)),
@@ -229,11 +391,31 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     )(pos))
   }
 
+  test("SHOW POPULATED ROLES AS COMMANDS YIELD command, role WHERE role='ADMIN' RETURN command") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxErrorContaining("Invalid input 'AS':")
+      case _ => _.toAstPositioned(ShowRoles(
+          withUsers = false,
+          withAuthRules = false,
+          showAll = false,
+          asCommands = true,
+          Some(Left((
+            yieldClause(
+              returnItems(variableReturnItem("command"), variableReturnItem(roleString)),
+              where = Some(where(equals(varFor(roleString), literalString("ADMIN"))))
+            ),
+            Some(returnClause(returnItems(variableReturnItem("command"))))
+          )))
+        )(pos))
+    }
+  }
+
   test("SHOW POPULATED ROLES YIELD * RETURN *") {
     parsesTo[Statements](ShowRoles(
       withUsers = false,
       withAuthRules = false,
       showAll = false,
+      asCommands = false,
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
     )(pos))
   }
@@ -243,6 +425,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       withUsers = true,
       withAuthRules = false,
       showAll = false,
+      asCommands = false,
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
     )(pos))
   }
@@ -252,6 +435,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       withUsers = true,
       withAuthRules = false,
       showAll = true,
+      asCommands = false,
       Some(Left((
         yieldClause(
           returnAllItems,
@@ -273,6 +457,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           withUsers = false,
           withAuthRules = true,
           showAll = false,
+          asCommands = false,
           Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
         )(pos))
     }
@@ -285,6 +470,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           withUsers = false,
           withAuthRules = true,
           showAll = true,
+          asCommands = false,
           Some(Left((
             yieldClause(
               returnAllItems,
@@ -307,6 +493,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           withUsers = false,
           withAuthRules = true,
           showAll = true,
+          asCommands = false,
           Some(Left((
             yieldClause(
               returnItems(variableReturnItem("authRule"), variableReturnItem(roleString)),
@@ -328,6 +515,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         withUsers = false,
         withAuthRules = false,
         showAll = false,
+        asCommands = false,
         Some(Left((
           yieldClause(
             returnItems(variableReturnItem(roleString)),
@@ -346,6 +534,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         withUsers = false,
         withAuthRules = false,
         showAll = false,
+        asCommands = false,
         Some(Left((
           yieldClause(
             returnItems(variableReturnItem(roleString)),
@@ -364,6 +553,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         withUsers = false,
         withAuthRules = false,
         showAll = false,
+        asCommands = false,
         Some(Left((
           yieldClause(
             returnItems(variableReturnItem(roleString)),
@@ -412,11 +602,18 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ROLES WITH USER user") {
-    failsParsing[Statements].withSyntaxError(
-      """Invalid input 'user': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 22 (offset: 21))
-        |"SHOW ROLES WITH USER user"
-        |                      ^""".stripMargin
-    )
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'user': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 22 (offset: 21))
+            |"SHOW ROLES WITH USER user"
+            |                      ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'user': expected 'AS', 'WHERE', 'YIELD' or <EOF> (line 1, column 22 (offset: 21))
+            |"SHOW ROLES WITH USER user"
+            |                      ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
@@ -453,6 +650,36 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           """Invalid input 'RULE': expected ',', 'AUTH', 'PRIVILEGE', 'PRIVILEGES', 'USER' or 'USERS' (line 1, column 17 (offset: 16))
             |"SHOW ROLES WITH RULE"
             |                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("SHOW ROLES AS COMMANDS WITH USERS") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'COMMANDS': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 15 (offset: 14))
+            |"SHOW ROLES AS COMMANDS WITH USERS"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 24 (offset: 23))
+            |"SHOW ROLES AS COMMANDS WITH USERS"
+            |                        ^""".stripMargin
+        )
+    }
+  }
+
+  test("SHOW ROLES AS COMMANDS WITH AUTH RULES") {
+    parsesIn[Statements] {
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'COMMANDS': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 15 (offset: 14))
+            |"SHOW ROLES AS COMMANDS WITH AUTH RULES"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'WITH': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 24 (offset: 23))
+            |"SHOW ROLES AS COMMANDS WITH AUTH RULES"
+            |                        ^""".stripMargin
         )
     }
   }

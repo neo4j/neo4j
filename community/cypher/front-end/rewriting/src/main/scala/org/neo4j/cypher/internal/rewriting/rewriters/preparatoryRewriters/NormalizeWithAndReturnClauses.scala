@@ -119,7 +119,7 @@ case class NormalizeWithAndReturnClauses(
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
-    case s @ ShowRoles(_, _, _, Some(Left((yields, returns))), _) =>
+    case s @ ShowRoles(_, _, _, _, Some(Left((yields, returns))), _) =>
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 

@@ -3568,12 +3568,14 @@ class AstGenerator(
   def _showRoles: Gen[ShowRoles] = for {
     withUsers <- boolean
     withAuthRules <- boolean
+    asCommands <- boolean
     showAll <- boolean
     yields <- _eitherYieldOrWhere
   } yield ShowRoles(
     withUsers,
     if (withUsers || usesCypher5) false else withAuthRules,
     showAll,
+    if (usesCypher5) false else asCommands,
     yields
   )(pos)
 

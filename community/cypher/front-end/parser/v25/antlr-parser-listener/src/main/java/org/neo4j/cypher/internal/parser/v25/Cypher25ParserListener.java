@@ -559,6 +559,8 @@ public interface Cypher25ParserListener extends ParseTreeListener {
 
     void exitAuthRuleKeywords(Cypher25Parser.AuthRuleKeywordsContext ctx);
 
+    void exitCommandToken(Cypher25Parser.CommandTokenContext ctx);
+
     void exitEnableServerCommand(Cypher25Parser.EnableServerCommandContext ctx);
 
     void exitAlterServer(Cypher25Parser.AlterServerContext ctx);

@@ -695,9 +695,10 @@ case class Prettifier(
 
       // Role commands
 
-      case x @ ShowRoles(withUsers, withAuthRules, _, yields, _) =>
+      case x @ ShowRoles(withUsers, withAuthRules, _, asCommands, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
-        s"${x.name}${if (withUsers) " WITH USERS" else ""}${if (withAuthRules) " WITH AUTH RULES" else ""}$y$r"
+        val asCommandString = if (asCommands) " AS COMMANDS" else ""
+        s"${x.name}${if (withUsers) " WITH USERS" else ""}${if (withAuthRules) " WITH AUTH RULES" else ""}$asCommandString$y$r"
 
       case x @ CreateRole(roleName, _, None, ifExistsDo) =>
         ifExistsDo match {
