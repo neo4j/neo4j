@@ -121,10 +121,6 @@ public interface SchemaMonitor extends AutoCloseable {
      */
     boolean checkUniqueness(EagerValueIndexEntryUpdate[] checks);
 
-    default boolean checkNodeLabelExistence(Entity node, IntSet nodeLabels, ViolationVisitor violationVisitor) {
-        return true;
-    }
-
     @Override
     void close();
 
