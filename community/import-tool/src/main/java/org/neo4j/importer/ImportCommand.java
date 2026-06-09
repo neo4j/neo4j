@@ -53,6 +53,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
+import org.neo4j.batchimport.api.BatchImporter.HardwareValidation;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.IndexConfig;
 import org.neo4j.batchimport.api.Monitor;
@@ -1260,7 +1261,8 @@ public class ImportCommand {
                     indexProvidersAccess,
                     shardingArguments == null ? 0 : shardingArguments.numShards(),
                     shardingArguments == null ? null : shardingArguments.additionalArguments(),
-                    DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
+                    DatabaseCreationOptions.EMPTY_CREATION_OPTIONS,
+                    HardwareValidation.INFORMATION);
             batchImporter.doDryRun(input, stdOut);
         }
 
@@ -1312,7 +1314,8 @@ public class ImportCommand {
                             indexProvidersAccess,
                             shardingArguments == null ? 0 : shardingArguments.numShards,
                             shardingArguments == null ? null : shardingArguments.additionalArguments,
-                            DatabaseCreationOptions.EMPTY_CREATION_OPTIONS)
+                            DatabaseCreationOptions.EMPTY_CREATION_OPTIONS,
+                            HardwareValidation.WARNING)
                     .doSuperFastImport(input, encoding, nodeFileGroupsByAdditionalLabels);
         }
 
@@ -1362,7 +1365,8 @@ public class ImportCommand {
                             indexProvidersAccess,
                             shardingArguments == null ? 0 : shardingArguments.numShards,
                             shardingArguments == null ? null : shardingArguments.additionalArguments,
-                            DatabaseCreationOptions.EMPTY_CREATION_OPTIONS)
+                            DatabaseCreationOptions.EMPTY_CREATION_OPTIONS,
+                            HardwareValidation.WARNING)
                     .doImport(input);
         }
 

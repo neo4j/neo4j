@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE_INCLUDING_DIRS;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
@@ -32,6 +31,7 @@ import java.util.Collection;
 import org.apache.logging.log4j.core.util.NullOutputStream;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.BatchImporter.HardwareValidation;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.IndexConfig;
 import org.neo4j.batchimport.api.IndexImporterFactory;
@@ -67,7 +67,7 @@ import org.neo4j.storageengine.migration.TokenIndexMigrator;
 
 /**
  * Migrates a store from one storage engine to another by doing something close to what store copy does
- *
+ * <br>
  * All tokens aren't necessarily migrated, only the ones referenced in the data will be included.
  */
 public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationParticipant {
@@ -211,7 +211,8 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 indexProviders,
                 0,
                 null,
-                DatabaseCreationOptions.EMPTY_CREATION_OPTIONS);
+                DatabaseCreationOptions.EMPTY_CREATION_OPTIONS,
+                HardwareValidation.NONE);
 
         // Do the copy
         try (Input fromInput = srcStorageEngine.asBatchImporterInput(

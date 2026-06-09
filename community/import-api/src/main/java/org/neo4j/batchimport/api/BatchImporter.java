@@ -34,6 +34,16 @@ import org.neo4j.batchimport.api.input.Input;
  */
 public interface BatchImporter extends Closeable {
 
+    /**
+     * Levels of hardware validation that the importer should perform
+     */
+    enum HardwareValidation {
+        NONE,
+        INFORMATION,
+        WARNING,
+        STRICT
+    }
+
     void doDryRun(Input input, PrintStream output) throws IOException;
 
     void doImport(Input input) throws IOException;

@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.ImportValidationException;
 import org.neo4j.batchimport.api.Monitor;
 import org.neo4j.batchimport.api.UnsupportedFormatException;
 import org.neo4j.batchimport.api.input.Collector;
@@ -412,6 +413,8 @@ public class FileImporter {
             return new CsvImportException(message, ie);
         } else if (e instanceof UnsupportedFormatException ufe) {
             return ufe;
+        } else if (e instanceof ImportValidationException ive) {
+            return new CsvImportException("The import failed some validation.", ive);
         }
         return new CsvImportException(e); // throw in order to have process exit with !0
     }

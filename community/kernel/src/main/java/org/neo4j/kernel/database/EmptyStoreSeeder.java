@@ -41,6 +41,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.BatchImporter.HardwareValidation;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.IndexConfig;
 import org.neo4j.batchimport.api.InputIterable;
@@ -294,7 +295,8 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
                 indexProvidersAccess,
                 numShards,
                 null,
-                databaseCreationOptions);
+                databaseCreationOptions,
+                HardwareValidation.NONE);
     }
 
     private DefaultIndexProvidersAccess indexProviders(StorageEngineFactory storageEngineFactory, Config dbConfig) {

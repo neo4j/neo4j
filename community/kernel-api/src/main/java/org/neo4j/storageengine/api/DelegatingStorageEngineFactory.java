@@ -33,6 +33,7 @@ import java.util.function.Function;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.BatchImporter.HardwareValidation;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.IncrementalBatchImporter;
 import org.neo4j.batchimport.api.IndexImporterFactory;
@@ -397,7 +398,8 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             IndexProvidersAccess indexProvidersAccess,
             int numShards,
             DependencyResolver storageSpecificArguments,
-            DatabaseCreationOptions databaseCreationOptions) {
+            DatabaseCreationOptions databaseCreationOptions,
+            HardwareValidation hardwareValidation) {
         return delegate.batchImporter(
                 databaseLayout,
                 fileSystem,
@@ -420,7 +422,8 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
                 indexProvidersAccess,
                 numShards,
                 storageSpecificArguments,
-                databaseCreationOptions);
+                databaseCreationOptions,
+                hardwareValidation);
     }
 
     @Override

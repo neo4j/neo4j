@@ -36,6 +36,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.BatchImporter.HardwareValidation;
 import org.neo4j.batchimport.api.IncrementalBatchImporter;
 import org.neo4j.batchimport.api.IndexImporterFactory;
 import org.neo4j.batchimport.api.Monitor;
@@ -424,7 +425,8 @@ public interface StorageEngineFactory {
             IndexProvidersAccess indexProvidersAccess,
             int numShards,
             DependencyResolver storageSpecificArguments,
-            DatabaseCreationOptions databaseCreationOptions);
+            DatabaseCreationOptions databaseCreationOptions,
+            HardwareValidation hardwareValidation);
 
     Input asBatchImporterInput(
             DatabaseLayout databaseLayout,
