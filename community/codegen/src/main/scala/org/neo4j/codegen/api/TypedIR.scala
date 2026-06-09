@@ -399,7 +399,7 @@ class TypedIR(namer: VariableNamer) extends NoDependencyTypedIR {
     $arr: $IR[Array[T]],
     indexName: String = "i",
     arrayName: String = "mappedArray"
-  )(f: $IR[T] => $IR[U]): $IR[Array[U]] = {
+  )(f: $IR[T] => $IR[U])(using arrayManifest: Manifest[Array[U]]): $IR[Array[U]] = {
     val $mappedArray = $variable(arrayName, $newArray[U]($arrayLength($arr)))
     $block(
       $mappedArray.declareAndAssign,

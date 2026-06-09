@@ -61,7 +61,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.function.Consumer
 
-import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.language.existentials
@@ -181,12 +180,10 @@ class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMod
     }
     val declaredFields = clazz.getDeclaredFields
 
-    @nowarn("msg=return statement")
     def findField(fields: Array[java.lang.reflect.Field], name: String): java.lang.reflect.Field = {
-      for (field <- fields) {
-        if (field.getName == name) return field
-      }
-      throw new NoSuchFieldException(name)
+      fields
+        .find(field => field.getName == name)
+        .getOrElse(throw new NoSuchFieldException(name))
     }
 
     fields.distinct.foreach {

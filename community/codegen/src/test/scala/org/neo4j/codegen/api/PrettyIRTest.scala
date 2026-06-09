@@ -46,13 +46,12 @@ import org.neo4j.codegen.api.IntermediateRepresentation.subtract
 import org.neo4j.codegen.api.IntermediateRepresentation.ternary
 import org.neo4j.codegen.api.IntermediateRepresentation.tryCatch
 import org.neo4j.codegen.api.IntermediateRepresentation.typeRefOf
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values
 
-class PrettyIRTest extends CypherFunSuite {
+class PrettyIRTest extends CodegenTestSuite {
 
   val indent: String = " " * PrettyIR.indentSize
 

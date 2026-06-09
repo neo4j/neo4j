@@ -35,9 +35,8 @@ import org.neo4j.codegen.api.IntermediateRepresentation.print
 import org.neo4j.codegen.api.IntermediateRepresentation.typeRefOf
 import org.neo4j.codegen.api.TypedWrapper.$IR
 import org.neo4j.codegen.api.TypedWrapper.TypedWrapperConversion
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class TypedWrapperTest extends CypherFunSuite {
+class TypedWrapperTest extends CodegenTestSuite {
 
   private val typedIr = new TypedIR(new VariableNamer {
     def nextVariableName(suffix: String*): String = suffix.mkString + "_named"
@@ -49,7 +48,7 @@ class TypedWrapperTest extends CypherFunSuite {
     val method = TypedMethod.on[Foo].named("test").returning[String]
     val $foo = $constant(new Foo)
 
-    val invocation = $foo.invoke(method)()
+    val invocation = $foo.invoke(method)(())
 
     invocation.inner shouldEqual Invoke(
       $foo.inner,
@@ -588,7 +587,7 @@ class TypedWrapperTest extends CypherFunSuite {
     val method = TypedMethod.on[Foo].named("test").returning[Unit]
     val $foo = $constant(new Foo)
 
-    val invocation = $foo.invoke(method)()
+    val invocation = $foo.invoke(method)(())
 
     invocation.inner shouldEqual InvokeSideEffect(
       $foo.inner,
@@ -600,7 +599,7 @@ class TypedWrapperTest extends CypherFunSuite {
   test("static method invocation with void return type") {
     val method = TypedMethod.on[Foo].named("test").returning[Unit].asStatic
 
-    val invocation = method.invoke()
+    val invocation = method.invoke(())
 
     invocation.inner shouldEqual InvokeStaticSideEffect(
       Method(typeRefOf[Foo], typeRefOf[Unit], "test", Seq.empty),
@@ -611,7 +610,7 @@ class TypedWrapperTest extends CypherFunSuite {
   test("private method invocation with void return type") {
     val method = TypedMethod.named("test").returning[Unit].asPrivate
 
-    val invocation = method.invoke()
+    val invocation = method.invoke(())
 
     invocation.inner shouldEqual InvokeLocalSideEffect(
       PrivateMethod(typeRefOf[Unit], "test", Seq.empty),
@@ -626,7 +625,7 @@ class TypedWrapperTest extends CypherFunSuite {
 
     val result = foo.invoke(`Foo.self`)($constant(1))
       .invoke(`Foo.self`)($constant(2))
-      .invoke(`Foo.toString`)()
+      .invoke(`Foo.toString`)(())
 
     result.inner shouldEqual
       Invoke(
@@ -668,7 +667,7 @@ class TypedWrapperTest extends CypherFunSuite {
     val $array = $arrayOf($constant("one"), $constant("two"))
 
     val $result = $arrayMap($array) { str =>
-      str.invoke(TypedMethod[String, Int, Unit]("length"))()
+      str.invoke(TypedMethod[String, Int, Unit]("length"))(())
     }
 
     $result.inner shouldEqual

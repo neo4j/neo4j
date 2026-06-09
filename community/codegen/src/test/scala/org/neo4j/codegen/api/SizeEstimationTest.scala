@@ -69,7 +69,6 @@ import org.neo4j.codegen.api.IntermediateRepresentation.tryCatch
 import org.neo4j.codegen.api.IntermediateRepresentation.typeRefOf
 import org.neo4j.codegen.api.IntermediateRepresentation.unbox
 import org.neo4j.codegen.api.SizeEstimationTest.arrayField
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.Measurable
 import org.neo4j.values.storable.LongValue
 import org.objectweb.asm.Opcodes
@@ -78,7 +77,7 @@ import java.nio.ByteBuffer
 
 import scala.util.Random
 
-class SizeEstimationTest extends CypherFunSuite {
+class SizeEstimationTest extends CodegenTestSuite {
   private val codeGeneration = CodeGeneration.codeGeneration(new CodeGenerator.Stats)
   private val sizeComputer = new ByteSizeComputer
   val generator = codeGeneration.createGenerator()

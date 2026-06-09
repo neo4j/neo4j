@@ -46,12 +46,11 @@ import org.neo4j.codegen.api.IntermediateRepresentation.ternary
 import org.neo4j.codegen.api.IntermediateRepresentation.trueValue
 import org.neo4j.codegen.api.IntermediateRepresentation.tryCatchIfNecessary
 import org.neo4j.codegen.api.IntermediateRepresentation.typeRefOf
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values
 
-class IntermediateRepresentationTest extends CypherFunSuite {
+class IntermediateRepresentationTest extends CodegenTestSuite {
 
   test("isEmpty") {
     isEmpty(noop()) shouldBe true
