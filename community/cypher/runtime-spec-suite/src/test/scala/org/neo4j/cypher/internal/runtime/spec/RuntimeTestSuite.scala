@@ -147,7 +147,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   def supportFastExpandInto(): Boolean = {
-    tx.kernelTransaction().storageEngineCostCharacteristics().supportsFastExpandInto()
+    tx.kernelTransaction().storageEngineCharacteristics().supportsFastExpandInto()
   }
 
   def canFuse: Boolean = {

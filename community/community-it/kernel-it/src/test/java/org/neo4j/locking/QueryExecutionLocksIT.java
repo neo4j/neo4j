@@ -100,7 +100,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.HeapEstimatorCacheConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.ExceptionHandlerService;
-import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
+import org.neo4j.storageengine.api.StorageEngineCharacteristics;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -847,8 +847,8 @@ class QueryExecutionLocksIT {
         }
 
         @Override
-        public StorageEngineCostCharacteristics storageEngineCostCharacteristics() {
-            return internal.storageEngineCostCharacteristics();
+        public StorageEngineCharacteristics storageEngineCharacteristics() {
+            return internal.storageEngineCharacteristics();
         }
 
         @Override

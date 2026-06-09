@@ -372,6 +372,10 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
 
     case object Aligned extends DatabaseFormat
 
+    case object Mvcc extends DatabaseFormat {
+      override def settingValue: String = "multiversion_block"
+    }
+
     def default: DatabaseFormat = Block
   }
 }
@@ -1484,9 +1488,13 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
       override def databaseMode: DatabaseMode = dbMode
 
-      override def storageHasPropertyColocation: Boolean = dbFormatFromSettings == DatabaseFormat.Block
+      override def storageHasPropertyColocation: Boolean =
+        Set[DatabaseFormat](DatabaseFormat.Block, DatabaseFormat.Mvcc).contains(dbFormatFromSettings)
 
-      override def storageSupportsFastExpandInto: Boolean = dbFormatFromSettings == DatabaseFormat.Block
+      override def storageSupportsFastExpandInto: Boolean =
+        Set[DatabaseFormat](DatabaseFormat.Block, DatabaseFormat.Mvcc).contains(dbFormatFromSettings)
+
+      override def storageIsMvcc: Boolean = dbFormatFromSettings == DatabaseFormat.Mvcc
 
       override def statistics: InstrumentedGraphStatistics =
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
@@ -1816,7 +1824,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
   private def dbFormatFromSettings: DatabaseFormat = {
     allSettings.get(GraphDatabaseSettings.db_format).fold(DatabaseFormat.default) { dbFormatSetting =>
-      Seq(DatabaseFormat.Block, DatabaseFormat.Aligned)
+      Seq(DatabaseFormat.Block, DatabaseFormat.Aligned, DatabaseFormat.Mvcc)
         .find(_.settingValue == dbFormatSetting)
         .getOrElse(throw new IllegalArgumentException(s"Unknown database format: $dbFormatSetting"))
     }

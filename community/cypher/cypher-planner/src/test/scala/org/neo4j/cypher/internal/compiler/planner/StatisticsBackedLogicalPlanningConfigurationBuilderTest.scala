@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.graphcounts.GraphCountsJson
 import org.neo4j.cypher.internal.compiler.CypherPlannerTestSuite
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.DatabaseFormat
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
@@ -35,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPl
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.internal.schema.AllIndexProviderDescriptors
 import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.IndexCapability
@@ -676,5 +678,21 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherPlan
     noException should be thrownBy {
       planner.plan(q).stripProduceResults
     }
+  }
+
+  test("storageIsMvcc should be true only for the Mvcc database format") {
+    def planContextFromDatabaseFormat(format: DatabaseFormat): PlanContext =
+      plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setDatabaseFormat(format)
+        .build()
+        .planContext
+
+    planContextFromDatabaseFormat(DatabaseFormat.Mvcc)
+      .storageIsMvcc shouldEqual true
+    planContextFromDatabaseFormat(DatabaseFormat.Block)
+      .storageIsMvcc shouldEqual false
+    planContextFromDatabaseFormat(DatabaseFormat.Aligned)
+      .storageIsMvcc shouldEqual false
   }
 }

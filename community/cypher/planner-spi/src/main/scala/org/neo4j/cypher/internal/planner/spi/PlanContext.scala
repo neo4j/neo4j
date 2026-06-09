@@ -230,4 +230,6 @@ trait PlanContext extends ReadTokenContext with ScopedProcedureSignatureResolver
   def storageHasPropertyColocation: Boolean
 
   def storageSupportsFastExpandInto: Boolean
+
+  def storageIsMvcc: Boolean
 }

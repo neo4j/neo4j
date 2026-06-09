@@ -264,6 +264,8 @@ class CypherQueryObfuscatorFactory {
 
     override def storageSupportsFastExpandInto: Boolean = fail()
 
+    override def storageIsMvcc: Boolean = fail()
+
     override def queryLanguage: QueryLanguage = QueryLanguage.from(version)
 
     override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = {

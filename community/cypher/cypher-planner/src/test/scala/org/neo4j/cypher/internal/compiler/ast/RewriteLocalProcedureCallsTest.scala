@@ -1475,6 +1475,7 @@ object PlanContextMock extends PlanContext {
   override def databaseMode: DatabaseMode = ???
   override def storageHasPropertyColocation: Boolean = ???
   override def storageSupportsFastExpandInto: Boolean = ???
+  override def storageIsMvcc: Boolean = ???
   override def getLabelName(id: Int): String = ???
   override def getOptLabelId(labelName: String): Option[Int] = ???
   override def getLabelId(labelName: String): Int = ???

@@ -23,7 +23,7 @@ package org.neo4j.storageengine.api;
  * A way for a {@link ReadableStorageEngine} to communicate aspects of its storage characteristics
  * and the cost associated with accessing its data.
  */
-public interface StorageEngineCostCharacteristics {
+public interface StorageEngineCharacteristics {
     /**
      * @return whether the storage generally has property values co-located with each node and relationship.
      */
@@ -33,4 +33,11 @@ public interface StorageEngineCostCharacteristics {
      * @return whether the storage supports fast look-up of the relationships connecting two given nodes.
      */
     boolean supportsFastExpandInto();
+
+    /**
+     * @return whether the storage is multi-versioned (MVCC).
+     */
+    default boolean isMultiVersioned() {
+        return false;
+    }
 }

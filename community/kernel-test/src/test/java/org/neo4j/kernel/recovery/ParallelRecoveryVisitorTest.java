@@ -73,7 +73,7 @@ import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
+import org.neo4j.storageengine.api.StorageEngineCharacteristics;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageFileSelection;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -359,7 +359,7 @@ class ParallelRecoveryVisitorTest {
         private final long[] applyOrder = new long[100];
         private final AtomicInteger lockOrderCursor = new AtomicInteger();
         private final AtomicInteger applyOrderCursor = new AtomicInteger();
-        private final StorageEngineCostCharacteristics costCharacteristics = new StorageEngineCostCharacteristics() {
+        private final StorageEngineCharacteristics characteristics = new StorageEngineCharacteristics() {
             @Override
             public boolean hasPropertyColocation() {
                 return false;
@@ -516,8 +516,8 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public StorageEngineCostCharacteristics costCharacteristics() {
-            return costCharacteristics;
+        public StorageEngineCharacteristics characteristics() {
+            return characteristics;
         }
 
         @Override

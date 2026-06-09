@@ -268,6 +268,7 @@ class CypherPlannerTest extends CommunityCypherTestSuite {
 
       override def storageHasPropertyColocation: Boolean = true
       override def storageSupportsFastExpandInto: Boolean = true
+      override def storageIsMvcc: Boolean = false
       override def txStateHasChanges(): Boolean = false
     }
 

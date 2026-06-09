@@ -692,18 +692,26 @@ class TransactionBoundPlanContext(
 
   override def storageHasPropertyColocation: Boolean = {
     try {
-      tc.kernelTransaction.storageEngineCostCharacteristics().hasPropertyColocation
+      tc.kernelTransaction.storageEngineCharacteristics().hasPropertyColocation
     } catch {
-      // VirtualKernelTransaction.storageEngineCostCharacteristics throws
+      // VirtualKernelTransaction.storageEngineCharacteristics throws
       case _: Neo4jException => false
     }
   }
 
   override def storageSupportsFastExpandInto: Boolean =
     try {
-      tc.kernelTransaction.storageEngineCostCharacteristics().supportsFastExpandInto()
+      tc.kernelTransaction.storageEngineCharacteristics().supportsFastExpandInto()
     } catch {
-      // VirtualKernelTransaction.storageEngineCostCharacteristics throws
+      // VirtualKernelTransaction.storageEngineCharacteristics throws
+      case _: Neo4jException => false
+    }
+
+  override def storageIsMvcc: Boolean =
+    try {
+      tc.kernelTransaction.storageEngineCharacteristics().isMultiVersioned()
+    } catch {
+      // VirtualKernelTransaction.storageEngineCharacteristics throws
       case _: Neo4jException => false
     }
 

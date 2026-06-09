@@ -286,6 +286,8 @@ class InferSchemaPartsUsageMetricsTest extends CommunityCypherTestSuite with Cyp
 
       override def storageSupportsFastExpandInto: Boolean = true
 
+      override def storageIsMvcc: Boolean = false
+
       override def txStateHasChanges(): Boolean = false
     }
 

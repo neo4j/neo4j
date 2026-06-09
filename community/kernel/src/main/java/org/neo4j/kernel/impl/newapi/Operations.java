@@ -607,7 +607,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throws EntityNotFoundException {
         ktx.assertOpen();
         Preconditions.checkArgument(
-                ktx.storageEngineCostCharacteristics().supportsFastExpandInto(),
+                ktx.storageEngineCharacteristics().supportsFastExpandInto(),
                 "Should only ever be called when running on block format");
         ensureCursors();
         long sourceNode = leftNode;

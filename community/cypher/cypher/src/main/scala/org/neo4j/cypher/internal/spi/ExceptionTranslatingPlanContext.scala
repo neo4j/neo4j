@@ -259,6 +259,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def storageSupportsFastExpandInto: Boolean =
     translateException(tokenNameLookup, inner.storageSupportsFastExpandInto)
 
+  override def storageIsMvcc: Boolean =
+    translateException(tokenNameLookup, inner.storageIsMvcc)
+
   override def queryLanguage: QueryLanguage = inner.queryLanguage
 
   override def functionSignatureInOtherVersion(name: FunctionName): Option[UserFunctionSignature] = None

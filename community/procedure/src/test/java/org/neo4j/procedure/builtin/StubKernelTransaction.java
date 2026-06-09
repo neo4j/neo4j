@@ -65,7 +65,7 @@ import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.memory.HeapEstimatorCacheConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.ExceptionHandlerService;
-import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
+import org.neo4j.storageengine.api.StorageEngineCharacteristics;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class StubKernelTransaction implements KernelTransaction {
@@ -163,7 +163,7 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
-    public StorageEngineCostCharacteristics storageEngineCostCharacteristics() {
+    public StorageEngineCharacteristics storageEngineCharacteristics() {
         throw new UnsupportedOperationException("not implemented");
     }
 

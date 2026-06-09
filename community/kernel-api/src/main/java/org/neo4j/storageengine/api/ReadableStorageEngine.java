@@ -61,7 +61,7 @@ public interface ReadableStorageEngine {
     }
 
     /**
-     * @return cost characteristics for accessing data in this storage engine.
+     * @return characteristics of this storage engine.
      */
-    StorageEngineCostCharacteristics costCharacteristics();
+    StorageEngineCharacteristics characteristics();
 }

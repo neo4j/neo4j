@@ -119,7 +119,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
+import org.neo4j.storageengine.api.StorageEngineCharacteristics;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageFileSelection;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -177,7 +177,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             new EnumMap<>(TransactionApplicationMode.class);
     private final RecordDatabaseEntityCounters storeEntityCounters;
     private final RecordStorageIndexingBehaviour indexingBehaviour;
-    private final RecordStorageCostCharacteristics costCharacteristics;
+    private final RecordStorageCharacteristics characteristics;
     private final TransactionStateBehaviour txStateBehaviour;
 
     // installed later
@@ -240,7 +240,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.indexingBehaviour = new RecordStorageIndexingBehaviour(
                 neoStores.getNodeStore().getRecordsPerPage(),
                 neoStores.getRelationshipStore().getRecordsPerPage());
-        this.costCharacteristics = new RecordStorageCostCharacteristics();
+        this.characteristics = new RecordStorageCharacteristics();
         txStateBehaviour = new RecordTransactionStateBehaviour();
         try {
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
@@ -753,8 +753,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public StorageEngineCostCharacteristics costCharacteristics() {
-        return costCharacteristics;
+    public StorageEngineCharacteristics characteristics() {
+        return characteristics;
     }
 
     @Override

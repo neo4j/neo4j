@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
+import org.neo4j.storageengine.api.StorageEngineCharacteristics;
 
-public class RecordStorageCostCharacteristics implements StorageEngineCostCharacteristics {
+public class RecordStorageCharacteristics implements StorageEngineCharacteristics {
     @Override
     public boolean hasPropertyColocation() {
         return false;
