@@ -1398,9 +1398,20 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
             Ast("""round(toFloat(a) / b, x, "UP")"""),
             Incoming(constants = Set("x", "a", "b")),
             Referenced(Set("x", "a", "b")),
-            ExpectedWorkingScope.varExp("a", Set("x", "a", "b")),
-            ExpectedWorkingScope.varExp("b", Set("x", "a", "b")),
-            ExpectedWorkingScope.varExp("x", Set("x", "a", "b"))
+            ExpectedWorkingScope(
+              Ast("toFloat(a) / b"),
+              Incoming(constants = Set("x", "a", "b")),
+              Referenced(Set("a", "b")),
+              ExpectedWorkingScope(
+                Ast("toFloat(a)"),
+                Incoming(constants = Set("x", "a", "b")),
+                Referenced(Set("a")),
+                ExpectedWorkingScope.varExp("a", Set("x", "a", "b"))
+              ),
+              ExpectedWorkingScope.varExp("b", Set("x", "a", "b"))
+            ),
+            ExpectedWorkingScope.varExp("x", Set("x", "a", "b")),
+            ExpectedWorkingScope.constExp("\"UP\"", Set("x", "a", "b"))
           )
         )
       )
@@ -5670,11 +5681,17 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
                 Referenced(Set("gn1")),
                 Outgoing(variables = outer),
                 ExpectedWorkingScope(
-                  Ast("graph.byName(gn1)"),
+                  Ast("graph.byName(gn1)"), // graph reference
                   Incoming(constants = outer),
                   Referenced(Set("gn1")),
                   ExpectedResult.ExpressionResult,
-                  ExpectedWorkingScope.varExp("gn1", outer)
+                  ExpectedWorkingScope(
+                    Ast("graph.byName(gn1)"), // function invocation
+                    Incoming(constants = outer),
+                    Referenced(Set("gn1")),
+                    ExpectedResult.ExpressionResult,
+                    ExpectedWorkingScope.varExp("gn1", outer)
+                  )
                 )
               ),
               ExpectedWorkingScope(
@@ -5715,11 +5732,17 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
                   Referenced(Set("gn2")),
                   Outgoing(variables = Set("x", "gn2")),
                   ExpectedWorkingScope(
-                    Ast("graph.byName(gn2)"),
+                    Ast("graph.byName(gn2)"), // graph reference
                     Incoming(constants = Set("x", "gn2")),
                     Referenced(Set("gn2")),
                     ExpectedResult.ExpressionResult,
-                    ExpectedWorkingScope.varExp("gn2", Set("x", "gn2"))
+                    ExpectedWorkingScope(
+                      Ast("graph.byName(gn2)"), // function invocation
+                      Incoming(constants = Set("x", "gn2")),
+                      Referenced(Set("gn2")),
+                      ExpectedResult.ExpressionResult,
+                      ExpectedWorkingScope.varExp("gn2", Set("x", "gn2"))
+                    )
                   )
                 ),
                 ExpectedWorkingScope(

@@ -653,7 +653,11 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
               Incoming(localCallables = Set(callableTwice)),
               Outgoing(variables = Set("four")),
               ExpectedResult.TableResult("four"),
-              ExpectedWorkingScope.constExp("twice(2)", incomingCallables = Set(callableTwice))
+              ExpectedWorkingScope(
+                Ast("""twice(2)""".stripMargin),
+                Incoming(localCallables = Set(callableTwice)),
+                ExpectedWorkingScope.constExp("2", incomingCallables = Set(callableTwice))
+              )
             )
           )
         )
@@ -713,7 +717,16 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                 Incoming(localCallables = localCallables),
                 Outgoing(variables = Set("four")),
                 ExpectedResult.TableResult("four"),
-                ExpectedWorkingScope.constExp("twice(add(1, 1))", incomingCallables = localCallables)
+                ExpectedWorkingScope(
+                  Ast("""twice(add(1, 1))""".stripMargin),
+                  Incoming(localCallables = localCallables),
+                  ExpectedWorkingScope(
+                    Ast("""add(1, 1)""".stripMargin),
+                    Incoming(localCallables = localCallables),
+                    ExpectedWorkingScope.constExp("1", incomingCallables = localCallables),
+                    ExpectedWorkingScope.constExp("1", incomingCallables = localCallables)
+                  )
+                )
               )
             )
           }
@@ -791,7 +804,12 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                   Incoming(localCallables = localCallables),
                   Outgoing(variables = Set("four")),
                   ExpectedResult.TableResult("four"),
-                  ExpectedWorkingScope.constExp("add(2, 2)", incomingCallables = localCallables)
+                  ExpectedWorkingScope(
+                    Ast("""add(2, 2)""".stripMargin),
+                    Incoming(localCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables)
+                  )
                 )
               ),
               ExpectedWorkingScope(
@@ -891,7 +909,12 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                   Incoming(localCallables = localCallables),
                   Outgoing(variables = Set("x")),
                   ExpectedResult.TableResult("x"),
-                  ExpectedWorkingScope.constExp("add(2, 2)", incomingCallables = localCallables)
+                  ExpectedWorkingScope(
+                    Ast("""add(2, 2)""".stripMargin),
+                    Incoming(localCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables)
+                  )
                 )
               ),
               ExpectedWorkingScope(
@@ -904,7 +927,11 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                   Incoming(localCallables = localCallables),
                   Outgoing(variables = Set("x")),
                   ExpectedResult.TableResult("x"),
-                  ExpectedWorkingScope.constExp("twice(3)", incomingCallables = localCallables)
+                  ExpectedWorkingScope(
+                    Ast("""twice(3)""".stripMargin),
+                    Incoming(localCallables = localCallables),
+                    ExpectedWorkingScope.constExp("3", incomingCallables = localCallables)
+                  )
                 )
               )
             )
@@ -982,7 +1009,12 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                   Declared(variables = Seq("four")),
                   Outgoing(variables = Set("four"), localCallables = localCallables),
                   ExpectedResult.NoResult,
-                  ExpectedWorkingScope.constExp("add(2, 2)", incomingCallables = localCallables)
+                  ExpectedWorkingScope(
+                    Ast("""add(2, 2)""".stripMargin),
+                    Incoming(localCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables)
+                  )
                 ),
                 ExpectedWorkingScope(
                   Ast("""RETURN twice(four) AS eight""".stripMargin),
@@ -1063,7 +1095,16 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                 Incoming(localCallables = localCallables),
                 Outgoing(variables = Set("x")),
                 ExpectedResult.TableResult("x"),
-                ExpectedWorkingScope.constExp("add(2, 2) = 4", incomingCallables = localCallables),
+                ExpectedWorkingScope(
+                  Ast("""add(2, 2) = 4""".stripMargin),
+                  Incoming(localCallables = localCallables),
+                  ExpectedWorkingScope(
+                    Ast("""add(2, 2)""".stripMargin),
+                    Incoming(localCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables),
+                    ExpectedWorkingScope.constExp("2", incomingCallables = localCallables)
+                  )
+                ),
                 ExpectedWorkingScope(
                   Ast("""RETURN twice(4) AS x""".stripMargin), // query level
                   Incoming(localCallables = localCallables),
@@ -1074,7 +1115,11 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                     Incoming(localCallables = localCallables),
                     Outgoing(variables = Set("x")),
                     ExpectedResult.TableResult("x"),
-                    ExpectedWorkingScope.constExp("twice(4)", incomingCallables = localCallables)
+                    ExpectedWorkingScope(
+                      Ast("""twice(4)""".stripMargin),
+                      Incoming(localCallables = localCallables),
+                      ExpectedWorkingScope.constExp("4", incomingCallables = localCallables)
+                    )
                   )
                 )
               ),
@@ -1083,7 +1128,15 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                 Incoming(localCallables = localCallables),
                 Outgoing(variables = Set("x")),
                 ExpectedResult.TableResult("x"),
-                ExpectedWorkingScope.constExp("twice(4) = 8", incomingCallables = localCallables),
+                ExpectedWorkingScope(
+                  Ast("""twice(4) = 8""".stripMargin),
+                  Incoming(localCallables = localCallables),
+                  ExpectedWorkingScope(
+                    Ast("""twice(4)""".stripMargin),
+                    Incoming(localCallables = localCallables),
+                    ExpectedWorkingScope.constExp("4", incomingCallables = localCallables)
+                  )
+                ),
                 ExpectedWorkingScope(
                   Ast("""RETURN add(4, 4) AS x""".stripMargin), // query level
                   Incoming(localCallables = localCallables),
@@ -1094,7 +1147,12 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                     Incoming(localCallables = localCallables),
                     Outgoing(variables = Set("x")),
                     ExpectedResult.TableResult("x"),
-                    ExpectedWorkingScope.constExp("add(4, 4)", incomingCallables = localCallables)
+                    ExpectedWorkingScope(
+                      Ast("""add(4, 4)""".stripMargin),
+                      Incoming(localCallables = localCallables),
+                      ExpectedWorkingScope.constExp("4", incomingCallables = localCallables),
+                      ExpectedWorkingScope.constExp("4", incomingCallables = localCallables)
+                    )
                   )
                 )
               ),
@@ -1113,7 +1171,16 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
                     Incoming(localCallables = localCallables),
                     Outgoing(variables = Set("x")),
                     ExpectedResult.TableResult("x"),
-                    ExpectedWorkingScope.constExp("twice(add(2, 2))", incomingCallables = localCallables)
+                    ExpectedWorkingScope(
+                      Ast("""twice(add(2, 2))""".stripMargin),
+                      Incoming(localCallables = localCallables),
+                      ExpectedWorkingScope(
+                        Ast("""add(2, 2)""".stripMargin),
+                        Incoming(localCallables = localCallables),
+                        ExpectedWorkingScope.constExp("2", incomingCallables = localCallables),
+                        ExpectedWorkingScope.constExp("2", incomingCallables = localCallables)
+                      )
+                    )
                   )
                 )
               )
@@ -1177,7 +1244,11 @@ class LocalCallablesScopeSurveyorTest extends VariableCheckingTestSuite {
               Incoming(localCallables = Set(callableTwice)),
               Declared(variables = Seq("two")),
               Outgoing(variables = Set("two"), localCallables = Set(callableTwice)),
-              ExpectedWorkingScope.constExp("twice(1)", incomingCallables = Set(callableTwice))
+              ExpectedWorkingScope(
+                Ast("""twice(1)""".stripMargin),
+                Incoming(localCallables = Set(callableTwice)),
+                ExpectedWorkingScope.constExp("1", incomingCallables = Set(callableTwice))
+              )
             ),
             ExpectedWorkingScope(
               Ast("""CALL (two) {

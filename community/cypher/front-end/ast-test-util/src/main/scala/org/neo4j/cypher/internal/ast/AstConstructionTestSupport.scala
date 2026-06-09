@@ -175,6 +175,7 @@ import org.neo4j.cypher.internal.expressions.functions.EndNode
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Id
 import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.expressions.functions.LocalFunction
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Nodes
@@ -196,6 +197,7 @@ import org.neo4j.cypher.internal.util.ProcedureOutput
 import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.UnknownSize
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
@@ -485,6 +487,38 @@ trait AstConstructionTestSupport {
 
   def function(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(Namespace(ns.toList)(pos), name)(pos), distinct = false, args.toIndexedSeq)(pos)
+
+  def localFunctionSignatureBased(
+    name: String,
+    paramsAndArgs: Seq[(LocalFieldSignature, Option[Expression])],
+    outputSignature: Option[CypherType] = None
+  ): FunctionInvocation = {
+    localFunction(
+      name,
+      paramsAndArgs.map {
+        case (LocalFieldSignature(f, typ, default), arg) => ((f, typ.getOrElse(CTAny), default, arg))
+      },
+      outputSignature
+    )
+  }
+
+  def localFunction(
+    name: String,
+    paramsAndArgs: Seq[(String, CypherType, Option[Expression], Option[Expression])] = Seq.empty,
+    outputSignature: Option[CypherType] = None
+  ): FunctionInvocation = {
+    val fn = FunctionName(name)(pos)
+    val args = paramsAndArgs.collect { case (_, _, _, Some(exp)) => exp }.toIndexedSeq
+    val params = paramsAndArgs.collect { case (f, typ, None, _) => (f, typ) }.toIndexedSeq
+    val optionalParams = paramsAndArgs.collect { case (f, typ, Some(_), _) => (f, typ) }.toIndexedSeq
+    val defaultArgs = paramsAndArgs.collect { case (_, _, Some(exp), _) => exp }.toIndexedSeq
+    FunctionInvocation(
+      fn,
+      distinct = false,
+      args,
+      maybeLocalFunction = Some(LocalFunction(fn, params, optionalParams, defaultArgs, outputSignature))
+    )(pos)
+  }
 
   def useClauseFunction(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(

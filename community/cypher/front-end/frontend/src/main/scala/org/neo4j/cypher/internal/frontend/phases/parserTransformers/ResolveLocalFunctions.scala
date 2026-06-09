@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
-import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.topDown
 
 case object LocalFunctionsResolved extends Condition
 
@@ -42,7 +42,7 @@ case object ResolveLocalFunctions extends StatementRewriter with StepSequencer.S
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = {
     val recordedScopes = from.scopeState().recordedScopes
-    bottomUp(
+    topDown(
       Rewriter.lift {
         case fi: FunctionInvocation if fi.maybeLocalFunction.isEmpty =>
           recordedScopes.get(Ref(fi)).flatMap(ws =>

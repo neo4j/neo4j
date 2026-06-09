@@ -111,6 +111,13 @@ object pegExpression {
         collect(incoming.expressionResultScope(variable, children, referenced))
 
       /**
+       * Regular function
+       */
+      case fi: FunctionInvocationLike if !fi.isAggregate =>
+        val children = fi.callArguments.map(arg => apply(arg, incoming))
+        collect(incoming.expressionResultScope(fi, children))
+
+      /**
        * Aggregation function
        */
       case cntStar: CountStar =>

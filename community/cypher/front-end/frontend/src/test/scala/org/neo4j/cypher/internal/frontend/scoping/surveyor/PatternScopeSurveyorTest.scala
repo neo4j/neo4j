@@ -132,7 +132,12 @@ class PatternScopeSurveyorTest extends VariableCheckingTestSuite {
                   Incoming(constants = Set("n", "x")),
                   Referenced(Set("n", "x")),
                   ExpectedWorkingScope.varExp("n", Set("n", "x")),
-                  ExpectedWorkingScope.varExp("x", Set("n", "x"))
+                  ExpectedWorkingScope(
+                    Ast("toString(x)"),
+                    Incoming(constants = Set("n", "x")),
+                    Referenced(Set("x")),
+                    ExpectedWorkingScope.varExp("x", Set("n", "x"))
+                  )
                 )
               )
             )
