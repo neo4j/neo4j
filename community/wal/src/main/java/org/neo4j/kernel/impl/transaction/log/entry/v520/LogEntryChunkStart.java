@@ -24,7 +24,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUN
 import java.util.Arrays;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.string.Mask;
 
 public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
@@ -34,8 +33,6 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
     private final long transactionSequenceNumber;
     private final byte[] additionalHeader;
     private final long appendIndex;
-    private final int leaseId;
-    private final Leases leases;
 
     public LogEntryChunkStart(
             KernelVersion kernelVersion,
@@ -44,8 +41,6 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
             long appendIndex,
             long previousBatchAppendIndex,
             long transactionSequenceNumber,
-            int leaseId,
-            Leases leases,
             byte[] additionalHeader) {
         super(kernelVersion, CHUNK_START);
         this.timeWritten = timeWritten;
@@ -54,8 +49,6 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
         this.transactionSequenceNumber = transactionSequenceNumber;
         this.additionalHeader = additionalHeader;
         this.appendIndex = appendIndex;
-        this.leaseId = leaseId;
-        this.leases = leases;
     }
 
     public long getTimeWritten() {
@@ -78,14 +71,6 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
         return transactionSequenceNumber;
     }
 
-    public int getLeaseId() {
-        return leaseId;
-    }
-
-    public Leases getLeases() {
-        return leases;
-    }
-
     public byte[] getAdditionalHeader() {
         return additionalHeader;
     }
@@ -99,7 +84,6 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
                 + Arrays.toString(additionalHeader) + ", appendIndex="
                 + appendIndex + ", transactionSequenceNumber="
                 + transactionSequenceNumber + ", leaseId="
-                + leaseId + ", leases="
-                + leases + '}';
+                + '}';
     }
 }

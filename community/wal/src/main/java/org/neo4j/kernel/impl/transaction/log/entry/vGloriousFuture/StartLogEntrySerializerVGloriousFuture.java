@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.Leases;
 
 public class StartLogEntrySerializerVGloriousFuture extends LogEntrySerializer<LogEntryStartVGloriousFuture> {
     public StartLogEntrySerializerVGloriousFuture() {
@@ -52,8 +51,6 @@ public class StartLogEntrySerializerVGloriousFuture extends LogEntrySerializer<L
         long latestCommittedTxWhenStarted = channel.getLong();
         long appendIndex = channel.getAppendIndex();
         long transactionSequenceNumber = channel.getLong();
-        int leaseId = channel.getInt();
-        Leases leases = LeasesSerializerVGloriousFuture.parse(channel);
         int additionalHeaderLength = channel.getInt();
         if (additionalHeaderLength > LogEntryStart.MAX_ADDITIONAL_HEADER_SIZE) {
             throw new BadLogEntryException("Additional header length limit(" + LogEntryStart.MAX_ADDITIONAL_HEADER_SIZE
@@ -67,8 +64,6 @@ public class StartLogEntrySerializerVGloriousFuture extends LogEntrySerializer<L
                 latestCommittedTxWhenStarted,
                 appendIndex,
                 transactionSequenceNumber,
-                leaseId,
-                leases,
                 additionalHeader);
     }
 
@@ -80,9 +75,7 @@ public class StartLogEntrySerializerVGloriousFuture extends LogEntrySerializer<L
         channel.putLong(logEntry.getTimeWritten())
                 .putLong(logEntry.getLastCommittedTxWhenTransactionStarted())
                 .putAppendIndex(logEntry.getAppendIndex())
-                .putLong(logEntry.getTransactionSequenceNumber())
-                .putInt(logEntry.getLeaseId());
-        LeasesSerializerVGloriousFuture.write(channel, logEntry.getLeases());
+                .putLong(logEntry.getTransactionSequenceNumber());
         channel.putInt(additionalHeaderData.length).put(additionalHeaderData, additionalHeaderData.length);
         return NO_RETURN_VALUE;
     }

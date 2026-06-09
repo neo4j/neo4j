@@ -632,8 +632,6 @@ class ReversedEnvelopedCommandBatchCursorTest {
                 long appendIndex,
                 long transactionSequenceNumber,
                 int previousChecksum,
-                int leaseId,
-                Leases leases,
                 byte[] additionalHeaderData)
                 throws IOException {
             channel.putVersion(kernelVersion.version()).put(TX_START);

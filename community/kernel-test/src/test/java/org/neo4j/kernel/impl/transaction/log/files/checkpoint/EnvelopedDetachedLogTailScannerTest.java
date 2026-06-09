@@ -131,15 +131,7 @@ public class EnvelopedDetachedLogTailScannerTest {
             throws IOException {
         byte[] emptyArray = new byte[0];
         entryWriter.writeStartEntry(
-                kernelVersion,
-                0,
-                txId,
-                appendIndex,
-                UNKNOWN_TX_SEQUENCE_NUMBER,
-                previousChecksum,
-                NO_LEASE,
-                Leases.NO_LEASES,
-                emptyArray);
+                kernelVersion, 0, txId, appendIndex, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, emptyArray);
         CompleteCommandBatch commands = new CompleteCommandBatch(
                 List.of(new TestCommand(kernelVersion)),
                 UNKNOWN_CONSENSUS_INDEX,

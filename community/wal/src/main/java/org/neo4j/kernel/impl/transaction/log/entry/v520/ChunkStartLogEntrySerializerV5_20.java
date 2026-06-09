@@ -30,10 +30,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.BadLogEntryException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
-import org.neo4j.kernel.impl.transaction.log.entry.vGloriousFuture.LeasesSerializerVGloriousFuture;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.Leases;
 
 public class ChunkStartLogEntrySerializerV5_20 extends LogEntrySerializer<LogEntryChunkStart> {
     public ChunkStartLogEntrySerializerV5_20() {
@@ -53,8 +51,6 @@ public class ChunkStartLogEntrySerializerV5_20 extends LogEntrySerializer<LogEnt
         long previousBatchAppendIndex = channel.getLong();
         long appendIndex = channel.getAppendIndex();
         long transactionSequenceNumber = channel.getLong();
-        int leaseId = channel.getInt();
-        Leases leases = LeasesSerializerVGloriousFuture.parse(channel);
         int additionalHeaderLength = channel.getInt();
         if (additionalHeaderLength > LogEntryStart.MAX_ADDITIONAL_HEADER_SIZE) {
             throw new BadLogEntryException("Additional header length limit(" + LogEntryStart.MAX_ADDITIONAL_HEADER_SIZE
@@ -69,8 +65,6 @@ public class ChunkStartLogEntrySerializerV5_20 extends LogEntrySerializer<LogEnt
                 appendIndex,
                 previousBatchAppendIndex,
                 transactionSequenceNumber,
-                leaseId,
-                leases,
                 additionalHeader);
     }
 
@@ -83,9 +77,7 @@ public class ChunkStartLogEntrySerializerV5_20 extends LogEntrySerializer<LogEnt
                 .putLong(logEntry.getChunkId())
                 .putLong(logEntry.getPreviousBatchAppendIndex())
                 .putAppendIndex(logEntry.getAppendIndex())
-                .putLong(logEntry.getTransactionSequenceNumber())
-                .putInt(logEntry.getLeaseId());
-        LeasesSerializerVGloriousFuture.write(channel, logEntry.getLeases());
+                .putLong(logEntry.getTransactionSequenceNumber());
         channel.putInt(additionalHeaderData.length).put(additionalHeaderData, additionalHeaderData.length);
         return NO_RETURN_VALUE;
     }

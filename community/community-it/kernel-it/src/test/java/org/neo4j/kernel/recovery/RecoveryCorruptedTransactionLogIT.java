@@ -1716,8 +1716,6 @@ class RecoveryCorruptedTransactionLogIT {
                 long appendIndex,
                 long transactionSequenceNumber,
                 int previousChecksum,
-                int leaseId,
-                Leases leases,
                 byte[] additionalHeaderData)
                 throws IOException {
             channel.beginChecksumForWriting();
@@ -1732,7 +1730,7 @@ class RecoveryCorruptedTransactionLogIT {
 
         /**
          * Use a non-existing log entry version. Implementation stolen from
-         * {@link LogEntryWriter#writeStartEntry(KernelVersion, long, long, long, long, int, int, Leases, byte[])}.
+         * {@link LogEntryWriter#writeStartEntry(KernelVersion, long, long, long, long, int, byte[])}.
          */
         @Override
         public void writeStartEntry(
@@ -1742,8 +1740,6 @@ class RecoveryCorruptedTransactionLogIT {
                 long appendIndex,
                 long transactionSequenceNumber,
                 int previousChecksum,
-                int leaseId,
-                Leases leases,
                 byte[] additionalHeaderData)
                 throws IOException {
             byte nonExistingLogEntryVersion = (byte) (LATEST_KERNEL_VERSION.version() + 10);

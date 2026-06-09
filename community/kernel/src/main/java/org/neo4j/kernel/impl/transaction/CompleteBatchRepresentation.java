@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.decodeLogIndex;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
@@ -48,7 +49,7 @@ public record CompleteBatchRepresentation(
 
     public CompleteBatchRepresentation(
             LogEntryStart startEntry, List<StorageCommand> commands, LogEntryCommit commitEntry, int previousChecksum) {
-        this(startEntry, commands, commitEntry, previousChecksum, startEntry.getLeaseId(), startEntry.getLeases());
+        this(startEntry, commands, commitEntry, previousChecksum, NO_LEASE, Leases.NO_LEASES);
     }
 
     public CompleteBatchRepresentation(

@@ -113,7 +113,7 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
                 current = new CompleteBatchRepresentation(entryStart, entries, commitEntry, previousChecksum);
             } else {
                 current = ChunkedBatchRepresentation.createChunkRepresentation(
-                        startEntry, entries, endEntry, previousChecksum, -1);
+                        startEntry, entries, endEntry, previousChecksum);
             }
         } else if (entry instanceof LogEntryEmpty empty) {
             current = new EmptyBatchRepresentation(empty.kernelVersion(), empty.getAppendIndex());

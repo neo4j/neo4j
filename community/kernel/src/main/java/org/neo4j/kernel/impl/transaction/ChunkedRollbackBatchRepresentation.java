@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 
@@ -60,7 +61,7 @@ public record ChunkedRollbackBatchRepresentation(
                         timeWritten,
                         UNKNOWN_TX_ID,
                         timeWritten,
-                        -1,
+                        NO_LEASE,
                         kernelVersion,
                         Subject.AUTH_DISABLED));
     }

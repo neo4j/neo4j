@@ -50,7 +50,6 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
-import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.BIGGEST_HEADER;
 import static org.neo4j.kernel.recovery.IncompleteTransactionAction.STOP;
 import static org.neo4j.kernel.recovery.Recovery.context;
@@ -173,7 +172,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -2564,8 +2562,6 @@ class RecoveryIT {
                         latestCheckpointInfo.appendIndex() + 1L,
                         UNKNOWN_TX_SEQUENCE_NUMBER,
                         0,
-                        NO_LEASE,
-                        Leases.NO_LEASES,
                         new byte[0]));
         txWriter.getWriter()
                 .writeCommitEntry(

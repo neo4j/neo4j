@@ -47,6 +47,11 @@ public record ChunkedBatchRepresentation(
         implements CommittedCommandBatchRepresentation {
 
     public static ChunkedBatchRepresentation createChunkRepresentation(
+            LogEntry start, List<StorageCommand> commands, LogEntry end, int previousChecksum) {
+        return createChunkRepresentation(start, commands, end, previousChecksum, NO_LEASE);
+    }
+
+    public static ChunkedBatchRepresentation createChunkRepresentation(
             LogEntry start, List<StorageCommand> commands, LogEntry end, int previousChecksum, int leaseId) {
         LogEntryChunkStart logEntryChunkStart = createChunkStart(start);
         LogEntryChunkEnd logEntryChunkEnd = createChunkEnd(end, logEntryChunkStart);
@@ -61,7 +66,7 @@ public record ChunkedBatchRepresentation(
                 logEntryChunkStart.getTimeWritten(),
                 (start instanceof LogEntryStart es) ? es.getLastCommittedTxWhenTransactionStarted() : UNKNOWN_TX_ID,
                 (end instanceof LogEntryCommit ec) ? ec.getTimeWritten() : logEntryChunkStart.getTimeWritten(),
-                (logEntryChunkStart.getLeaseId() != NO_LEASE) ? logEntryChunkStart.getLeaseId() : leaseId,
+                leaseId,
                 logEntryChunkStart.kernelVersion(),
                 Subject.AUTH_DISABLED);
         return new ChunkedBatchRepresentation(
@@ -81,8 +86,6 @@ public record ChunkedBatchRepresentation(
                 chunkStart.getAppendIndex(),
                 chunkStart.getPreviousBatchAppendIndex(),
                 chunkStart.getTransactionSequenceNumber(),
-                chunkStart.getLeaseId(),
-                chunkStart.getLeases(),
                 chunkStart.getAdditionalHeader());
         writer.serialize(commandBatch);
         if (commandBatch.isLast()) {
@@ -138,8 +141,6 @@ public record ChunkedBatchRepresentation(
                     entryStart.getAppendIndex(),
                     UNKNOWN_APPEND_INDEX,
                     entryStart.getTransactionSequenceNumber(),
-                    entryStart.getLeaseId(),
-                    entryStart.getLeases(),
                     entryStart.getAdditionalHeader());
         } else {
             throw new IllegalArgumentException("Was expecting start record. Actual entry: " + start);

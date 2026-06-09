@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.neo4j.kernel.KernelVersion.V2025_05;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
-import static org.neo4j.kernel.KernelVersion.VERSION_LEASES_IN_START_ENTRIES;
+import static org.neo4j.kernel.KernelVersion.VERSION_MERGED_LOG_INFO_IN_START_ENTRIES;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.v202505.LogEntryStartV2025_05;
@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryChunkStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryRollback;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryStartV5_20;
 import org.neo4j.kernel.impl.transaction.log.entry.vGloriousFuture.LogEntryStartVGloriousFuture;
-import org.neo4j.storageengine.api.Leases;
 
 public final class LogEntryFactory {
     private LogEntryFactory() {}
@@ -43,18 +42,14 @@ public final class LogEntryFactory {
             long appendIndex,
             long transactionSequenceNumber,
             int previousChecksum,
-            int leaseId,
-            Leases leases,
             byte[] additionalHeader) {
-        if (version.isAtLeast(VERSION_LEASES_IN_START_ENTRIES)) {
+        if (version.isAtLeast(VERSION_MERGED_LOG_INFO_IN_START_ENTRIES)) {
             return new LogEntryStartVGloriousFuture(
                     version,
                     timeWritten,
                     lastCommittedTxWhenTransactionStarted,
                     appendIndex,
                     transactionSequenceNumber,
-                    leaseId,
-                    leases,
                     additionalHeader);
         }
         if (version.isAtLeast(V2025_05)) {
@@ -104,8 +99,6 @@ public final class LogEntryFactory {
             long appendIndex,
             long previousBatchAppendIndex,
             long transactionSequenceNumber,
-            int leaseId,
-            Leases leases,
             byte[] additionalHeader) {
         return new LogEntryChunkStart(
                 kernelVersion,
@@ -114,8 +107,6 @@ public final class LogEntryFactory {
                 appendIndex,
                 previousBatchAppendIndex,
                 transactionSequenceNumber,
-                leaseId,
-                leases,
                 additionalHeader);
     }
 }

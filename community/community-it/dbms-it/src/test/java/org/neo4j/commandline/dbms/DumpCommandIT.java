@@ -39,7 +39,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_SEQUENCE_NUMBER;
 
@@ -84,7 +83,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -258,8 +256,6 @@ class DumpCommandIT {
                     4,
                     UNKNOWN_TX_SEQUENCE_NUMBER,
                     BASE_TX_CHECKSUM,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
                     new byte[] {0});
             // Required to push envelopes to stream
             writer.getChannel().putChecksum();

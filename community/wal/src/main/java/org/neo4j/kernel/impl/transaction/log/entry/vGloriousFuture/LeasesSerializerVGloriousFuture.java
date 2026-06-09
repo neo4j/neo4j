@@ -48,6 +48,18 @@ public class LeasesSerializerVGloriousFuture {
         return new PropertyShardLeases(leaseMap);
     }
 
+    public static int byteSize(Leases leases) {
+        int size = Integer.BYTES;
+        for (Leases.Lease lease : leases) {
+            size += UUIDLogSerializer.nullableByteSize(
+                    (lease.databaseId() != null) ? lease.databaseId().uuid() : null);
+            size += UUIDLogSerializer.nullableByteSize(
+                    (lease.serverId() != null) ? lease.serverId().uuid() : null);
+            size += Long.BYTES;
+        }
+        return size;
+    }
+
     public static void write(WritableChannel channel, Leases leases) throws IOException {
         channel.putInt(leases.size());
         for (Leases.Lease lease : leases) {

@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_GUARANTEED;
-import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
@@ -51,7 +50,6 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
@@ -70,16 +68,8 @@ class VersionAwareLogEntryReaderTest {
     @KernelVersionSource(atLeast = "5.0")
     void shouldReadAStartLogEntry(KernelVersion kernelVersion) throws IOException {
         // given
-        final LogEntryStart start = newStartEntry(
-                kernelVersion,
-                1,
-                2,
-                3,
-                UNKNOWN_TX_SEQUENCE_NUMBER,
-                BASE_TX_CHECKSUM,
-                NO_LEASE,
-                Leases.NO_LEASES,
-                new byte[] {4});
+        final LogEntryStart start =
+                newStartEntry(kernelVersion, 1, 2, 3, UNKNOWN_TX_SEQUENCE_NUMBER, BASE_TX_CHECKSUM, new byte[] {4});
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
         writeEntry(channel, start, serializationSet(kernelVersion, BINARY_VERSIONS));
@@ -93,16 +83,8 @@ class VersionAwareLogEntryReaderTest {
     }
 
     static String additionalDebugInfo(KernelVersion kernelVersion, LogEntry start) {
-        final LogEntryStart recreatedStart = newStartEntry(
-                kernelVersion,
-                1,
-                2,
-                3,
-                UNKNOWN_TX_SEQUENCE_NUMBER,
-                BASE_TX_CHECKSUM,
-                NO_LEASE,
-                Leases.NO_LEASES,
-                new byte[] {4});
+        final LogEntryStart recreatedStart =
+                newStartEntry(kernelVersion, 1, 2, 3, UNKNOWN_TX_SEQUENCE_NUMBER, BASE_TX_CHECKSUM, new byte[] {4});
         return String.format(
                 """
 Additional debug information:

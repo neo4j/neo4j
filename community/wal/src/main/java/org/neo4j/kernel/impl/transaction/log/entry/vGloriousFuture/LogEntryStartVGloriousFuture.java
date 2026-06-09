@@ -23,13 +23,10 @@ import java.util.Arrays;
 import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.v202505.LogEntryStartV2025_05;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.string.Mask;
 
 public class LogEntryStartVGloriousFuture extends LogEntryStartV2025_05 {
     private final long transactionSequenceNumber;
-    private final int leaseId;
-    private final Leases leases;
 
     public LogEntryStartVGloriousFuture(
             KernelVersion kernelVersion,
@@ -37,28 +34,14 @@ public class LogEntryStartVGloriousFuture extends LogEntryStartV2025_05 {
             long lastCommittedTxWhenTransactionStarted,
             long appendIndex,
             long transactionSequenceNumber,
-            int leaseId,
-            Leases leases,
             byte[] additionalHeader) {
         super(kernelVersion, timeWritten, lastCommittedTxWhenTransactionStarted, appendIndex, additionalHeader);
         this.transactionSequenceNumber = transactionSequenceNumber;
-        this.leaseId = leaseId;
-        this.leases = leases;
     }
 
     @Override
     public long getTransactionSequenceNumber() {
         return transactionSequenceNumber;
-    }
-
-    @Override
-    public int getLeaseId() {
-        return leaseId;
-    }
-
-    @Override
-    public Leases getLeases() {
-        return leases;
     }
 
     @Override
@@ -69,8 +52,7 @@ public class LogEntryStartVGloriousFuture extends LogEntryStartV2025_05 {
                 + (additionalHeader == null ? "" : Arrays.toString(additionalHeader))
                 + ", appendIndex=" + appendIndex
                 + ", transactionSequenceNumber=" + transactionSequenceNumber
-                + ", leaseId=" + leaseId
-                + ", leases=" + leases + "]";
+                + "]";
     }
 
     @Override
@@ -79,14 +61,12 @@ public class LogEntryStartVGloriousFuture extends LogEntryStartV2025_05 {
             return false;
         }
         LogEntryStartVGloriousFuture start = (LogEntryStartVGloriousFuture) o;
-        return transactionSequenceNumber == start.transactionSequenceNumber
-                && leaseId == start.leaseId
-                && leases.equals(start.leases);
+        return transactionSequenceNumber == start.transactionSequenceNumber;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        return Objects.hash(result, transactionSequenceNumber, leaseId, leases);
+        return Objects.hash(result, transactionSequenceNumber);
     }
 }

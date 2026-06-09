@@ -39,7 +39,6 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryChunkEnd;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.util.VisibleForTesting;
 
@@ -61,8 +60,6 @@ public class LogEntryWriter<T extends WritableChannel> {
             long appendIndex,
             long transactionSequenceNumber,
             int previousChecksum,
-            int leaseId,
-            Leases leases,
             byte[] additionalHeaderData)
             throws IOException {
         updateSerializationSet(kernelVersion);
@@ -78,8 +75,6 @@ public class LogEntryWriter<T extends WritableChannel> {
                                 appendIndex,
                                 transactionSequenceNumber,
                                 previousChecksum,
-                                leaseId,
-                                leases,
                                 additionalHeaderData));
     }
 
@@ -96,8 +91,6 @@ public class LogEntryWriter<T extends WritableChannel> {
             long appendIndex,
             long previousBatchAppendIndex,
             long transactionSequenceNumber,
-            int leaseId,
-            Leases leases,
             byte[] additionalHeader)
             throws IOException {
         updateSerializationSet(kernelVersion);
@@ -113,8 +106,6 @@ public class LogEntryWriter<T extends WritableChannel> {
                                 appendIndex,
                                 previousBatchAppendIndex,
                                 transactionSequenceNumber,
-                                leaseId,
-                                leases,
                                 additionalHeader));
     }
 
@@ -188,9 +179,7 @@ public class LogEntryWriter<T extends WritableChannel> {
             long appendIndex,
             int previousChecksum,
             long previousBatchAppendIndex,
-            long transactionSequenceNumber,
-            int leaseId,
-            Leases leases)
+            long transactionSequenceNumber)
             throws IOException {
         if (batch.isFirst()) {
             writeStartEntry(
@@ -200,8 +189,6 @@ public class LogEntryWriter<T extends WritableChannel> {
                     appendIndex,
                     transactionSequenceNumber,
                     previousChecksum,
-                    leaseId,
-                    leases,
                     encodeLogIndex(batch.consensusIndex()));
         } else {
             writeChunkStartEntry(
@@ -211,8 +198,6 @@ public class LogEntryWriter<T extends WritableChannel> {
                     appendIndex,
                     previousBatchAppendIndex,
                     transactionSequenceNumber,
-                    leaseId,
-                    leases,
                     encodeLogIndex(batch.consensusIndex()));
         }
     }

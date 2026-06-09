@@ -26,7 +26,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -49,7 +48,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdentifier;
 import org.neo4j.test.LatestVersions;
@@ -123,8 +121,6 @@ class TransactionLogFileInformationTest {
                         UNKNOWN_APPEND_INDEX,
                         UNKNOWN_APPEND_INDEX,
                         UNKNOWN_TX_SEQUENCE_NUMBER,
-                        NO_LEASE,
-                        Leases.NO_LEASES,
                         encodeLogIndex(42)));
         var fileInfo = new TransactionLogFileInformation(logFiles, () -> logEntryReader);
 
@@ -153,15 +149,7 @@ class TransactionLogFileInformationTest {
         var readableLogChannel = mock(ReadableLogChannel.class);
         when(logEntryReader.readLogEntry(readableLogChannel))
                 .thenReturn(newStartEntry(
-                        LatestVersions.LATEST_KERNEL_VERSION,
-                        1,
-                        1,
-                        1,
-                        UNKNOWN_TX_SEQUENCE_NUMBER,
-                        1,
-                        NO_LEASE,
-                        Leases.NO_LEASES,
-                        new byte[] {}));
+                        LatestVersions.LATEST_KERNEL_VERSION, 1, 1, 1, UNKNOWN_TX_SEQUENCE_NUMBER, 1, new byte[] {}));
         var fileInfo = new TransactionLogFileInformation(logFiles, () -> logEntryReader);
 
         var expectedHeader = LATEST_LOG_FORMAT.newHeader(

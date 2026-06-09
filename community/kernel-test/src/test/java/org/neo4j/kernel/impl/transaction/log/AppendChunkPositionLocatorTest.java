@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryChunkStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryRollback;
-import org.neo4j.storageengine.api.Leases;
 
 class AppendChunkPositionLocatorTest {
 
@@ -54,8 +52,8 @@ class AppendChunkPositionLocatorTest {
     private static final LogPosition AFTER_COMMIT = new LogPosition(1L, 666L);
     private static final LogPosition INVALID_POSITION = new LogPosition(99L, 99L);
 
-    private static final LogEntryStart START = newStartEntry(
-            LATEST_KERNEL_VERSION, 0, 0, APPEND_INDEX, UNKNOWN_TX_SEQUENCE_NUMBER, 1, NO_LEASE, Leases.NO_LEASES, null);
+    private static final LogEntryStart START =
+            newStartEntry(LATEST_KERNEL_VERSION, 0, 0, APPEND_INDEX, UNKNOWN_TX_SEQUENCE_NUMBER, 1, null);
     private static final LogEntryChunkStart CHUNK_START = new LogEntryChunkStart(
             LATEST_KERNEL_VERSION,
             0,
@@ -63,8 +61,6 @@ class AppendChunkPositionLocatorTest {
             APPEND_INDEX,
             UNKNOWN_APPEND_INDEX,
             UNKNOWN_TX_SEQUENCE_NUMBER,
-            NO_LEASE,
-            Leases.NO_LEASES,
             encodeLogIndex(42));
     private static final LogEntryRollback ROLLBACK = new LogEntryRollback(
             LATEST_KERNEL_VERSION, 0, APPEND_INDEX, 2, 17, 7896, UNKNOWN_TX_SEQUENCE_NUMBER, UNKNOWN_APPEND_INDEX);

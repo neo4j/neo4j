@@ -38,7 +38,6 @@ import static org.neo4j.io.fs.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointLogSerializationHelper.getExpectedPositionAfterOneCheckpoint;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
@@ -108,7 +107,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.Leases;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageFilesState;
 import org.neo4j.storageengine.api.StoreId;
@@ -182,25 +180,9 @@ class TransactionLogsRecoveryTest {
             LogPosition lastCommittedTxPosition = marker.newPosition();
             byte[] headerData = encodeLogIndex(1);
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
             lastCommittedTxStartEntry = newStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
             lastCommittedTxCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
 
@@ -220,25 +202,9 @@ class TransactionLogsRecoveryTest {
             // tx committed after checkpoint
             channel.getCurrentLogPosition(marker);
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    6L,
-                    4L,
-                    5L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 6L, 4L, 5L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
             expectedStartEntry = newStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    6L,
-                    4L,
-                    5L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 6L, 4L, 5L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
 
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L);
             expectedCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L, previousChecksum);
@@ -364,15 +330,7 @@ class TransactionLogsRecoveryTest {
             // last committed tx
             channel.getCurrentLogPosition(marker);
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    BASE_TX_CHECKSUM,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
 
             // check point
@@ -469,25 +427,9 @@ class TransactionLogsRecoveryTest {
             LogPosition lastCommittedTxPosition = marker.newPosition();
             byte[] headerData = encodeLogIndex(1);
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
             lastCommittedTxStartEntry = newStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
             lastCommittedTxCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
 
@@ -507,25 +449,9 @@ class TransactionLogsRecoveryTest {
             // tx committed after checkpoint
             channel.getCurrentLogPosition(marker);
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    6L,
-                    4L,
-                    5L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 6L, 4L, 5L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
             expectedStartEntry = newStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    6L,
-                    4L,
-                    5L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    headerData);
+                    LATEST_KERNEL_VERSION, 6L, 4L, 5L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, headerData);
 
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L);
             expectedCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L, previousChecksum);
@@ -618,15 +544,7 @@ class TransactionLogsRecoveryTest {
             // last committed tx
             channel.getCurrentLogPosition(marker);
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    BASE_TX_CHECKSUM,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
 
             // check point
@@ -714,16 +632,7 @@ class TransactionLogsRecoveryTest {
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
-            writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    5L,
-                    4L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    9,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, 9, EMPTY_BYTE_ARRAY);
             channel.putChecksum();
 
             return true;
@@ -745,15 +654,7 @@ class TransactionLogsRecoveryTest {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    1L,
-                    1L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    BASE_TX_CHECKSUM,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+                    LATEST_KERNEL_VERSION, 1L, 1L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             TransactionId transactionId = new TransactionId(1L, 5L, LATEST_KERNEL_VERSION, BASE_TX_CHECKSUM, 2L, 4L);
 
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
@@ -771,16 +672,7 @@ class TransactionLogsRecoveryTest {
                     "test");
 
             // write incomplete tx to trigger recovery
-            writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    5L,
-                    4L,
-                    5L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    2,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 5L, UNKNOWN_TX_SEQUENCE_NUMBER, 2, EMPTY_BYTE_ARRAY);
             writer.getChannel().putChecksum();
             return true;
         });
@@ -811,15 +703,7 @@ class TransactionLogsRecoveryTest {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    1L,
-                    1L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    BASE_TX_CHECKSUM,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+                    LATEST_KERNEL_VERSION, 1L, 1L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
             TransactionId transactionId = new TransactionId(1L, 4L, LATEST_KERNEL_VERSION, BASE_TX_CHECKSUM, 2L, 3L);
 
@@ -846,16 +730,7 @@ class TransactionLogsRecoveryTest {
                     "invalid checkpoint");
 
             // incomplete tx
-            writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    5L,
-                    4L,
-                    5L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    1,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 5L, UNKNOWN_TX_SEQUENCE_NUMBER, 1, EMPTY_BYTE_ARRAY);
             writer.getChannel().putChecksum();
             return true;
         });
@@ -880,29 +755,13 @@ class TransactionLogsRecoveryTest {
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, EMPTY_BYTE_ARRAY);
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    5L,
-                    4L,
-                    5L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    previousChecksum,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+                    LATEST_KERNEL_VERSION, 5L, 4L, 5L, UNKNOWN_TX_SEQUENCE_NUMBER, previousChecksum, EMPTY_BYTE_ARRAY);
             writer.getChannel().putChecksum();
 
             return true;
@@ -937,8 +796,6 @@ class TransactionLogsRecoveryTest {
                     4L,
                     UNKNOWN_TX_SEQUENCE_NUMBER,
                     BASE_TX_CHECKSUM,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
                     additionalHeaderData);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, transactionId, commitTimestamp);
             channel.getCurrentLogPosition(marker);
@@ -1012,15 +869,7 @@ class TransactionLogsRecoveryTest {
 
             // last committed tx
             writer.writeStartEntry(
-                    LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    4L,
-                    UNKNOWN_TX_SEQUENCE_NUMBER,
-                    BASE_TX_CHECKSUM,
-                    NO_LEASE,
-                    Leases.NO_LEASES,
-                    EMPTY_BYTE_ARRAY);
+                    LATEST_KERNEL_VERSION, 2L, 3L, 4L, UNKNOWN_TX_SEQUENCE_NUMBER, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, transactionId, commitTimestamp);
             channel.getCurrentLogPosition(marker);
 

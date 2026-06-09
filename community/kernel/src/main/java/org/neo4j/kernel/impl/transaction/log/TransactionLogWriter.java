@@ -126,9 +126,7 @@ public class TransactionLogWriter {
                 appendIndex,
                 previousChecksum,
                 previousBatchAppendIndex,
-                UNKNOWN_TX_SEQUENCE_NUMBER,
-                batch.getLeaseId(),
-                batch.leases());
+                UNKNOWN_TX_SEQUENCE_NUMBER);
 
         // Write all the commands to the log channel
         writer.serialize(batch, kernelVersion);
