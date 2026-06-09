@@ -34,13 +34,13 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
-class ShiroAuthTokenTest {
+class NeoAuthTokenTest {
     private static final String USERNAME = "myuser";
     private static final String PASSWORD = "mypw123";
 
     @Test
     void shouldSupportBasicAuthToken() throws Exception {
-        ShiroAuthToken token = new ShiroAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD));
+        NeoAuthToken token = new NeoAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
         var expected = map(PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME);
         assertThat(token.getAuthTokenMap())
@@ -51,7 +51,7 @@ class ShiroAuthTokenTest {
 
     @Test
     void shouldSupportBasicAuthTokenWithEmptyRealm() throws Exception {
-        ShiroAuthToken token = new ShiroAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, ""));
+        NeoAuthToken token = new NeoAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, ""));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
         var expected = map(PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "");
         assertThat(token.getAuthTokenMap())
@@ -62,7 +62,7 @@ class ShiroAuthTokenTest {
 
     @Test
     void shouldSupportBasicAuthTokenWithNullRealm() throws Exception {
-        ShiroAuthToken token = new ShiroAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, null));
+        NeoAuthToken token = new NeoAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, null));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
         var expected = map(PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, null);
         assertThat(token.getAuthTokenMap())
@@ -73,7 +73,7 @@ class ShiroAuthTokenTest {
 
     @Test
     void shouldSupportBasicAuthTokenWithWildcardRealm() throws Exception {
-        ShiroAuthToken token = new ShiroAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, "*"));
+        NeoAuthToken token = new NeoAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, "*"));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
         var expected = map(PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "*");
         assertThat(token.getAuthTokenMap())
@@ -85,7 +85,7 @@ class ShiroAuthTokenTest {
     @Test
     void shouldSupportBasicAuthTokenWithSpecificRealm() throws Exception {
         String realm = "ldap";
-        ShiroAuthToken token = new ShiroAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, realm));
+        NeoAuthToken token = new NeoAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, realm));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
         var expected = map(PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "ldap");
         assertThat(token.getAuthTokenMap())
@@ -98,8 +98,7 @@ class ShiroAuthTokenTest {
     @Test
     void shouldSupportCustomAuthTokenWithSpecificRealm() throws Exception {
         String realm = "ldap";
-        ShiroAuthToken token =
-                new ShiroAuthToken(AuthToken.newCustomAuthToken(USERNAME, PASSWORD, realm, BASIC_SCHEME));
+        NeoAuthToken token = new NeoAuthToken(AuthToken.newCustomAuthToken(USERNAME, PASSWORD, realm, BASIC_SCHEME));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
         var expected = map(PRINCIPAL, USERNAME, CREDENTIALS, PASSWORD, SCHEME_KEY, BASIC_SCHEME, REALM_KEY, "ldap");
         assertThat(token.getAuthTokenMap())
@@ -113,8 +112,8 @@ class ShiroAuthTokenTest {
     void shouldSupportCustomAuthTokenWithSpecificRealmAndParameters() throws Exception {
         String realm = "ldap";
         Map<String, Object> params = map("a", "A", "b", "B");
-        ShiroAuthToken token =
-                new ShiroAuthToken(AuthToken.newCustomAuthToken(USERNAME, PASSWORD, realm, BASIC_SCHEME, params));
+        NeoAuthToken token =
+                new NeoAuthToken(AuthToken.newCustomAuthToken(USERNAME, PASSWORD, realm, BASIC_SCHEME, params));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
         var expected = map(
                 PRINCIPAL,
@@ -136,14 +135,14 @@ class ShiroAuthTokenTest {
 
     @Test
     void shouldHaveStringRepresentationWithNullRealm() throws Exception {
-        ShiroAuthToken token = new ShiroAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, null));
+        NeoAuthToken token = new NeoAuthToken(AuthToken.newBasicAuthToken(USERNAME, PASSWORD, null));
         testBasicAuthToken(token, USERNAME, PASSWORD, BASIC_SCHEME);
 
         String stringRepresentation = token.toString();
         assertThat(stringRepresentation).contains("realm='null'");
     }
 
-    private static void testTokenSupportsRealm(ShiroAuthToken token, boolean supports, String... realms) {
+    private static void testTokenSupportsRealm(NeoAuthToken token, boolean supports, String... realms) {
         for (String realm : realms) {
             assertThat(token.supportsRealm(realm))
                     .as("Token should support '" + realm + "' realm")
@@ -151,7 +150,7 @@ class ShiroAuthTokenTest {
         }
     }
 
-    private static void testBasicAuthToken(ShiroAuthToken token, String username, String password, String scheme)
+    private static void testBasicAuthToken(NeoAuthToken token, String username, String password, String scheme)
             throws InvalidAuthTokenException {
         assertThat(token.getScheme()).as("Token should have basic scheme").isEqualTo(scheme);
         assertThat(token.getPrincipal()).as("Token have correct principal").isEqualTo(username);

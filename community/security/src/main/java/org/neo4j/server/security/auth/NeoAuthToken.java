@@ -28,14 +28,14 @@ import org.apache.shiro.authc.AuthenticationToken;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
-public class ShiroAuthToken implements AuthenticationToken {
+public class NeoAuthToken implements AuthenticationToken {
     private static final String VALUE_DELIMITER = "'";
     private static final String PAIR_DELIMITER = ", ";
     private static final String KEY_VALUE_DELIMITER = "=";
 
     private final Map<String, Object> authToken;
 
-    public ShiroAuthToken(Map<String, Object> authToken) {
+    public NeoAuthToken(Map<String, Object> authToken) {
         this.authToken = authToken;
     }
 
