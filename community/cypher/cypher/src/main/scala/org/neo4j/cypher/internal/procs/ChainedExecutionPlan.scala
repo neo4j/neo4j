@@ -199,8 +199,9 @@ object AdministrationChainedExecutionPlan {
   // To avoid code generation for administration commands
   // also set the runtime to not rely on default (to avoid being blocked if default is set to parallel runtime as it doesn't allow updates)
   // Slotted is picked as it is available in both Community and Enterprise, and handles all kinds of commands.
+  // interpretedPipesFallback is pinned to default; non-default values would be rejected against runtime=slotted.
   final private val codeGenerationPreParserOptions: String =
-    "operatorEngine=interpreted expressionEngine=interpreted runtime=slotted"
+    "operatorEngine=interpreted expressionEngine=interpreted runtime=slotted interpretedPipesFallback=default"
 
   def formatQuery(cypher: String, cypherVersion: CypherVersion): String = {
     s"CYPHER $cypherVersion $codeGenerationPreParserOptions $cypher"
