@@ -36,6 +36,15 @@ public interface QueryExecutionMonitor {
 
     default void beforeEnd(ExecutingQuery query, boolean success) {}
 
+    /**
+     * Called when a new execution plan is computed and inserted into the execution plan cache.
+     *
+     * @param executionPlanCacheKeyHash the hash of the execution plan cache key, as an 8-character hex string
+     * @param queryId the id of the query that introduced the execution plan
+     * @param planDescription the tree table rendered query plan description
+     */
+    default void planComputed(String executionPlanCacheKeyHash, String queryId, String planDescription) {}
+
     QueryExecutionMonitor NO_OP = new QueryExecutionMonitor() {
         @Override
         public void startProcessing(ExecutingQuery query) {}

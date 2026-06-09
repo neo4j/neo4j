@@ -336,8 +336,13 @@ object CypherQueryCaches {
     type Key = ExecutionPlanCacheKey
     type Value = CachedExecutionPlan
 
+    /**
+     * Result of a cache lookup, indicating whether the value was freshly computed.
+     */
+    case class CacheResult(value: Value, isNewEntry: Boolean)
+
     abstract class Cache extends CacheCommon {
-      def computeIfAbsent(cacheWhen: => Boolean, key: => Key, compute: => Value): Value
+      def computeIfAbsent(cacheWhen: => Boolean, key: => Key, compute: => Value): CacheResult
 
       override def companion: CacheCompanion = ExecutionPlanCache
     }
@@ -709,13 +714,15 @@ class CypherQueryCaches(
       cacheWhen: => Boolean,
       key: => ExecutionPlanCache.Key,
       compute: => ExecutionPlanCache.Value
-    ): ExecutionPlanCache.Value =
+    ): ExecutionPlanCache.CacheResult =
       maybeCache match {
         case Some(cache) if cacheWhen =>
-          cache.computeIfAbsent(key, compute)
+          var isNew = false
+          val value = cache.computeIfAbsent(key, { isNew = true; compute })
+          ExecutionPlanCache.CacheResult(value, isNew)
 
         case _ =>
-          compute
+          ExecutionPlanCache.CacheResult(compute, isNewEntry = false)
       }
 
     def clear(): Long = maybeCache match {

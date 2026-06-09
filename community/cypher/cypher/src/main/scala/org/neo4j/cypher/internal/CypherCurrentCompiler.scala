@@ -94,6 +94,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.DeprecationNotificationsProvider
+import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage
@@ -133,6 +134,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   kernelMonitors: Monitors,
   queryCaches: CypherQueryCaches
 ) extends org.neo4j.cypher.internal.Compiler {
+
+  private val queryExecutionMonitor: QueryExecutionMonitor =
+    kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   /**
    * Compile [[InputQuery]] into [[ExecutableQuery]].
@@ -185,7 +189,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       query.resolvedLanguage
     )
     val executionPlanCacheKeyHash = executionPlanCacheKey.hashCode()
-    val cachedExecutionPlan =
+    val cacheResult =
       queryCaches.executionPlanCache.computeIfAbsent(
         cacheWhen = logicalPlanResult.cacheStrategy.executionPlanShouldBeCached,
         key = executionPlanCacheKey,
@@ -200,6 +204,18 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
             executionPlanCacheKeyHash
           )
       )
+    val cachedExecutionPlan = cacheResult.value
+
+    if (cacheResult.isNewEntry) {
+      logQueryPlan(
+        transactionalContext.executingQuery(),
+        executionPlanCacheKeyHash,
+        cachedExecutionPlan,
+        logicalPlan,
+        planState,
+        query
+      )
+    }
 
     new CypherExecutableQuery(
       logicalPlan,
@@ -300,6 +316,38 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         val planInfo = InternalException.internalError(this.getClass.getSimpleName, "Failed with plan:\n" + lpStr)
         e.addSuppressed(planInfo)
         throw e
+    }
+  }
+
+  private def logQueryPlan(
+    executingQuery: ExecutingQuery,
+    executionPlanCacheKeyHash: Int,
+    cachedExecutionPlan: CachedExecutionPlan,
+    logicalPlan: LogicalPlan,
+    planState: CachableLogicalPlanState,
+    query: InputQuery
+  ): Unit = {
+    try {
+      val planDescriptionBuilder = PlanDescriptionBuilder(
+        cachedExecutionPlan.executionPlan.rewrittenPlan.getOrElse(logicalPlan),
+        planState.plannerName,
+        planState.planningAttributes.readOnly,
+        cachedExecutionPlan.effectiveCardinalities,
+        withRawCardinalities = true,
+        withDistinctness = true,
+        renderNestedPlanExpressions = false,
+        cachedExecutionPlan.providedOrders,
+        cachedExecutionPlan.executionPlan,
+        renderPlanDescription = true,
+        query.resolvedLanguage,
+        planState.maybeExplainScope
+      )
+      val cacheKeyHashHex = String.format("%08X", executionPlanCacheKeyHash)
+      val queryId = executingQuery.id()
+      val planDescription = planDescriptionBuilder.explain().toString
+      queryExecutionMonitor.planComputed(cacheKeyHashHex, queryId, planDescription)
+    } catch {
+      case _: Exception => // Best effort logging, don't fail the query
     }
   }
 

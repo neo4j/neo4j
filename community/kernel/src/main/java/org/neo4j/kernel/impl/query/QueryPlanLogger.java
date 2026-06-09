@@ -17,23 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging.log4j;
+package org.neo4j.kernel.impl.query;
 
-public enum LoggerTarget {
-    ROOT_LOGGER(""),
-    QUERY_LOGGER("QueryLogger"),
-    PLAN_LOGGER("PlanLogger"),
-    HTTP_LOGGER("HttpLogger"),
-    SECURITY_LOGGER("SecurityLogger"),
-    VIRTUAL_GRAPH_LOGGER("VirtualGraphLogger");
+/**
+ * Logger for query plan cache events.
+ * Called when a new execution plan is computed and inserted into the execution plan cache.
+ */
+public interface QueryPlanLogger {
 
-    private final String target;
+    QueryPlanLogger NO_LOG = (executionPlanCacheKeyHash, queryId, planDescription) -> {};
 
-    public String getTarget() {
-        return target;
-    }
-
-    LoggerTarget(String target) {
-        this.target = target;
-    }
+    /**
+     * Log a newly computed query plan.
+     *
+     * @param executionPlanCacheKeyHash the hash of the execution plan cache key, as an 8-character hex string
+     * @param queryId the id of the query that introduced the execution plan
+     * @param planDescription the tree table rendered query plan description
+     */
+    void planComputed(String executionPlanCacheKeyHash, String queryId, String planDescription);
 }

@@ -1701,6 +1701,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description(
+            "Log query plans to a separate plan log file whenever a new plan is computed and inserted into the execution plan cache.")
+    public static final Setting<Boolean> log_query_plan_enabled = newBuilder(
+                    "internal.dbms.logs.query.plan_log_enabled", BOOL, false)
+            .dynamic()
+            .build();
+
+    @Internal
     @Description("Log whether the query plan served from one of the query caches.")
     public static final Setting<Boolean> log_query_cache_usage = newBuilder(
                     "internal.dbms.logs.query.query_cache_usage", BOOL, false)
