@@ -171,6 +171,24 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
         }
     }
 
+    @Test
+    void shouldSplitCorrectlyWhenUpdatingEntryAtPosZeroFollowedByLargeEntry() throws Exception {
+        initialize();
+        insert(key(0L), new RawBytes(new byte[1]));
+        insert(key(1L), new RawBytes(new byte[70]));
+        insert(key(2L), new RawBytes(new byte[46]));
+        insert(key(3L), new RawBytes(new byte[0]));
+        assertEquals(0, leaf.availableSpace(cursor, 4), "leaf must be fully packed before update");
+
+        var newValA = new RawBytes(new byte[16]);
+        insert(key(0L), newValA);
+
+        assertEquals(1, numberOfRootSplits);
+        root.goTo(readCursor);
+        long leftChild = childAt(readCursor, 0, stableGeneration, unstableGeneration);
+        assertEqualsValue(newValA, valueAt(leftChild, 0));
+    }
+
     @ParameterizedTest
     @MethodSource("generators")
     void shouldCreateNewVersionWhenInsertInStableInternal(

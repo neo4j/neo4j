@@ -910,7 +910,11 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
             if (currentPos == pos && !includedNew) {
                 currentSpace = newKeyValueSpace;
                 includedNew = true;
-                currentPos--;
+                // For INSERT (oldKeyValueSpace == 0) the old entry at pos shifts right, so we re-read it.
+                // For UPDATE the old entry is replaced, not shifted, so advance normally.
+                if (oldKeyValueSpace == 0) {
+                    currentPos--;
+                }
             } else {
                 currentSpace = totalSpaceOfKeyValue(cursor, currentPos);
             }
