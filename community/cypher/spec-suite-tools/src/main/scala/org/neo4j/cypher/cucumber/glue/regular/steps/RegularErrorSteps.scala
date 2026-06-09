@@ -35,6 +35,7 @@ import org.neo4j.cypher.cucumber.glue.regular.steps.RegularErrorSteps.describeEr
 import org.neo4j.cypher.cucumber.glue.regular.steps.RegularErrorSteps.describeWarnings
 import org.neo4j.cypher.cucumber.glue.regular.steps.RegularErrorSteps.errorHierarchy
 import org.neo4j.cypher.cucumber.glue.regular.steps.RegularErrorSteps.errorsMatch
+import org.neo4j.cypher.cucumber.glue.regular.steps.RegularErrorSteps.keptForComparison
 import org.neo4j.cypher.cucumber.glue.regular.steps.RegularErrorSteps.warningsMatch
 import org.neo4j.cypher.cucumber.steps.CypherCucumberSteps
 import org.neo4j.cypher.cucumber.steps.CypherCucumberSteps.ExpectedGqlError
@@ -81,7 +82,7 @@ trait RegularErrorSteps { this: CypherCucumberSteps =>
       if (!warningsMatch(actual, expected)) {
         fail(
           s"""Actual warnings (ignored codes: ${IgnoredWarnings.mkString(", ")}):
-             >${describeWarnings(actual.filter(w => !IgnoredWarnings.contains(w.code)))}
+             >${describeWarnings(actual.filter(keptForComparison(expected, _)))}
              >
              >Did not match expected warnings:
              >${expected.table}
@@ -110,6 +111,13 @@ object RegularErrorSteps {
     "01N52",
     "01N50"
   )
+
+  // Ignored codes are filtered out by default, but a code that a scenario explicitly expects is kept so the scenario
+  // can assert on it (e.g. a missing-label warning that is otherwise ignored).
+  private def keptForComparison(expected: ExpectedGqlNotification, warning: GqlNotification): Boolean = {
+    val expectedCodes = expected.warnings.map(_.code).toSet
+    expectedCodes.contains(warning.code) || !IgnoredWarnings.contains(warning.code)
+  }
 
   @tailrec
   def errorHierarchy(throwable: AnyRef, acc: Seq[GqlFailure] = Seq.empty): Seq[GqlFailure] = throwable match {
@@ -147,7 +155,7 @@ object RegularErrorSteps {
   }
 
   private def warningsMatch(actual: Seq[GqlNotification], allExpected: ExpectedGqlNotification): Boolean = {
-    val actualInteresting = actual.filter(warn => !IgnoredWarnings.contains(warn.code))
+    val actualInteresting = actual.filter(keptForComparison(allExpected, _))
     val (optionalExpected, expected) = allExpected.warnings.partition(_.optional)
 
     // Filter out optional warnings
