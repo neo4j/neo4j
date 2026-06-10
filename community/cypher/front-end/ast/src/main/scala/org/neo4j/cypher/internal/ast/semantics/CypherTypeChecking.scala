@@ -45,6 +45,8 @@ import org.neo4j.values.storable.VectorValue
 import org.neo4j.values.storable.VectorValue.MAX_VECTOR_DIMENSIONS
 import org.neo4j.values.storable.VectorValue.MIN_VECTOR_DIMENSIONS
 
+import scala.jdk.OptionConverters.RichOptional
+
 object CypherTypeChecking extends SemanticAnalysisTooling {
 
   // Note: vectors are handled separately below, as there is one CypherType for each dimension and coordinate combo
@@ -215,10 +217,26 @@ object CypherTypeChecking extends SemanticAnalysisTooling {
       } else SemanticCheck.success
     }
 
-    // We want run the semantic checks for the types themselves, but the error messages might not make sense in this context
-    // There isn't much point telling users to make all their union types NOT NULL if that is not accepted here.
+    // We want run the semantic checks for the types themselves, but the error messages might not make sense for independent constraints,
+    // there isn't much point telling users to make all their union types NOT NULL if that is not accepted.
+    // Since property types in element types accept NOT NULL as well, they should keep the error as a cause for their failure.
+    // Can't use `isNotNullContaining` on the CypherType as that looks at the inner types of the lists
+    // which, since they have NOT NULL, makes the check always evaluate to true
+    val keepTypeErrorCause = allowedTypes.exists(!_.isNullable)
     CypherTypeName(originalPropertyType).semanticCheck.map {
       case r @ SemanticCheckResult(_, Nil) => r
+      // Catch the case where we have a single cause and set that as cause for why we failed
+      // If we have multiple errors we won't know which is the true cause so then we skip adding the cause
+      case SemanticCheckResult(state, cause :: Nil) if keepTypeErrorCause =>
+        val innerCause =
+          if (cause.gqlStatusObject.gqlStatus().equals(GqlStatusInfoCodes.STATUS_42001.getStatusString))
+            cause.gqlStatusObject.cause().toScala
+          else Some(cause.gqlStatusObject)
+
+        SemanticCheckResult(
+          state,
+          Seq(errorFn(originalPropertyType, "", innerCause))
+        )
       case SemanticCheckResult(state, _) => SemanticCheckResult(
           state,
           Seq(errorFn(originalPropertyType, "", None))
