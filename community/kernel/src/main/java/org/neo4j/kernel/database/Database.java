@@ -1027,8 +1027,7 @@ public class Database extends AbstractDatabase {
         BinarySupportedKernelVersions binarySupportedKernelVersions =
                 databaseDependencies.resolveDependency(BinarySupportedKernelVersions.class);
         Lock pruneLock = new ReentrantLock();
-        // secondaries comes later
-        final LogPruning logPruning = isMergedLog && mode == HostedOnMode.RAFT
+        final LogPruning logPruning = isMergedLog && (mode == HostedOnMode.RAFT || mode == HostedOnMode.REPLICA)
                 ? new CheckpointOnlyLogPruning(fs, logFiles, logProvider, databaseConfig, pruneLock)
                 : new LogPruningImpl(
                         fs,
