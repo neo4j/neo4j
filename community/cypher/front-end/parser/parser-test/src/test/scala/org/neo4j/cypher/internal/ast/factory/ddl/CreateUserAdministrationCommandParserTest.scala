@@ -1376,6 +1376,21 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
     )
   }
 
+  test("CREATE USER foo SET PASSWORD 'password' SET TAGS []") {
+    assertAst(
+      CreateUser(
+        literalFoo,
+        UserOptions(None, None),
+        IfExistsThrowError,
+        List(),
+        Some(Auth("native", List(password(password)))(pos)),
+        Some(SetTags(listOf())(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
   test("CREATE USER foo SET PASSWORD 'password' SET TAGS $param") {
     assertAst(
       CreateUser(

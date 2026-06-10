@@ -215,22 +215,30 @@ object AdministrationCommand extends SemanticAnalysisTooling {
     }
 
   /**
-   * Validate that {@code expr} is a non-empty StringLiteral, a non-empty ListLiteral of non-empty
+   * Validate that {@code expr} is a non-empty StringLiteral, a ListLiteral of non-empty
    * StringLiterals, or a Parameter. On failure produces a {@code 22N04} error tagged with the
    * given {@code context} (e.g. "REMOVE AUTH", "SET TAGS").
+   *
+   * When {@code allowEmptyList} is true an empty ListLiteral is also accepted; the tag clauses use
+   * this to let {@code SET TAGS []} clear all tags (and {@code ADD}/{@code REMOVE TAGS []} be no-ops).
    */
-  private[ast] def checkIsStringOrStringListOrParameter(context: String, expr: Expression): SemanticCheck =
+  private[ast] def checkIsStringOrStringListOrParameter(
+    context: String,
+    expr: Expression,
+    allowEmptyList: Boolean = false
+  ): SemanticCheck =
     expr match {
       case s: StringLiteral if s.value.nonEmpty => success
       case _: Parameter                         => success
       case list: ListLiteral
-        if list.expressions.nonEmpty &&
+        if (allowEmptyList || list.expressions.nonEmpty) &&
           list.expressions.forall(e =>
             e.isInstanceOf[StringLiteral] && e.asInstanceOf[StringLiteral].value.nonEmpty
           ) =>
         success
       case _ =>
         val stringifier = ExpressionStringifier()
+        val listForm = if (allowEmptyList) "List of non-empty Strings" else "non-empty List of non-empty Strings"
         val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N04)
           .atPosition(expr.position.offset, expr.position.line, expr.position.column)
           .withParam(GqlParams.StringParam.input, stringifier(expr))
@@ -239,12 +247,12 @@ object AdministrationCommand extends SemanticAnalysisTooling {
             GqlParams.ListParam.inputList,
             List(
               "non-empty String",
-              "non-empty List of non-empty Strings",
+              listForm,
               "Parameter"
             ).asJava
           )
           .build()
-        error(gql, "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.", expr.position)
+        error(gql, s"Expected a non-empty String, $listForm, or Parameter.", expr.position)
     }
 }
 
@@ -570,14 +578,14 @@ object UserTagsAction extends SemanticAnalysisTooling {
 
   /**
    * Validate the expressions carried by SET/ADD/REMOVE TAGS clauses: each must be a non-empty
-   * StringLiteral, a non-empty ListLiteral of non-empty StringLiterals, or a Parameter.
+   * StringLiteral, a ListLiteral of non-empty StringLiterals, or a Parameter.
    */
   def checkValues(tags: Seq[UserTagsAction]): SemanticCheck =
     tags.foldSemanticCheck {
       case _: RemoveAllTags => success
-      case SetTags(expr)    => checkIsStringOrStringListOrParameter("SET TAGS", expr)
-      case AddTags(expr)    => checkIsStringOrStringListOrParameter("ADD TAGS", expr)
-      case RemoveTags(expr) => checkIsStringOrStringListOrParameter("REMOVE TAGS", expr)
+      case SetTags(expr)    => checkIsStringOrStringListOrParameter("SET TAGS", expr, allowEmptyList = true)
+      case AddTags(expr)    => checkIsStringOrStringListOrParameter("ADD TAGS", expr, allowEmptyList = true)
+      case RemoveTags(expr) => checkIsStringOrStringListOrParameter("REMOVE TAGS", expr, allowEmptyList = true)
     }
 }
 

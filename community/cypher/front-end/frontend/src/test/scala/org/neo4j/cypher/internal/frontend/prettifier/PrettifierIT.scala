@@ -2624,6 +2624,10 @@ class PrettifierIT extends AbstractPrettifierTest {
       """CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET TAGS ["a", "b"]"""
     ),
     FailsInCypher5(
+      "create user abc set password 'foo' set tags []",
+      "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET TAGS []"
+    ),
+    FailsInCypher5(
       "create user abc set password 'foo' set tags $tags",
       "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET TAGS $tags"
     ),
@@ -2838,6 +2842,10 @@ class PrettifierIT extends AbstractPrettifierTest {
       """ALTER USER $abc ADD TAGS "x""""
     ),
     FailsInCypher5(
+      "alter user abc add tags []",
+      "ALTER USER abc ADD TAGS []"
+    ),
+    FailsInCypher5(
       "alter user abc remove tags 'x'",
       """ALTER USER abc REMOVE TAGS "x""""
     ),
@@ -2850,6 +2858,10 @@ class PrettifierIT extends AbstractPrettifierTest {
       "ALTER USER abc REMOVE TAGS $tags"
     ),
     FailsInCypher5(
+      "alter user abc remove tags []",
+      "ALTER USER abc REMOVE TAGS []"
+    ),
+    FailsInCypher5(
       "alter user abc remove all tags",
       "ALTER USER abc REMOVE ALL TAGS"
     ),
@@ -2860,6 +2872,10 @@ class PrettifierIT extends AbstractPrettifierTest {
     FailsInCypher5(
       "alter user abc set tags ['a', 'b']",
       """ALTER USER abc SET TAGS ["a", "b"]"""
+    ),
+    FailsInCypher5(
+      "alter user abc set tags []",
+      "ALTER USER abc SET TAGS []"
     ),
     FailsInCypher5(
       "alter user abc set tags $tags",
@@ -2916,6 +2932,10 @@ class PrettifierIT extends AbstractPrettifierTest {
     FailsInCypher5(
       "alter users alice set tags ['a', 'b']",
       """ALTER USERS alice SET TAGS ["a", "b"]"""
+    ),
+    FailsInCypher5(
+      "alter users alice set tags []",
+      "ALTER USERS alice SET TAGS []"
     ),
     FailsInCypher5(
       "alter users alice set tags $tags",

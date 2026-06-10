@@ -1841,6 +1841,22 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
     )
   }
 
+  test("ALTER USER foo ADD TAGS []") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(AddTags(listOf())(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
   test("ALTER USER foo ADD TAGS $param") {
     assertAst(
       AlterUser(
@@ -1872,6 +1888,22 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
     )
   }
 
+  test("ALTER USER foo SET TAGS []") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(SetTags(listOf())(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
   test("ALTER USER foo SET TAGS $param") {
     assertAst(
       AlterUser(
@@ -1897,6 +1929,22 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
         None,
         RemoveAuth(all = false, List.empty),
         Seq(RemoveTags(listOf(literalString("x")))(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USER foo REMOVE TAGS []") {
+    assertAst(
+      AlterUser(
+        literalFoo,
+        UserOptions(None, None),
+        ifExists = false,
+        List(),
+        None,
+        RemoveAuth(all = false, List.empty),
+        Seq(RemoveTags(listOf())(pos))
       )(pos),
       supportedInCypher5 = false,
       obfuscator = false // Obfuscation check does not support this query

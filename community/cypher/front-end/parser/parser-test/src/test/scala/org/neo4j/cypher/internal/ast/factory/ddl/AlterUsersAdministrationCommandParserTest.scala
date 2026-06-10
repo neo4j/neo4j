@@ -77,6 +77,42 @@ class AlterUsersAdministrationCommandParserTest extends UserAdministrationComman
     )
   }
 
+  test("ALTER USERS alice SET TAGS []") {
+    assertAst(
+      AlterUsers(
+        Seq(literalString("alice")),
+        ifExists = false,
+        Seq(SetTags(listOf())(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USERS alice ADD TAGS []") {
+    assertAst(
+      AlterUsers(
+        Seq(literalString("alice")),
+        ifExists = false,
+        Seq(AddTags(listOf())(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
+  test("ALTER USERS alice REMOVE TAGS []") {
+    assertAst(
+      AlterUsers(
+        Seq(literalString("alice")),
+        ifExists = false,
+        Seq(RemoveTags(listOf())(pos))
+      )(pos),
+      supportedInCypher5 = false,
+      obfuscator = false // Obfuscation check does not support this query
+    )
+  }
+
   test("ALTER USERS alice SET TAGS $param") {
     assertAst(
       AlterUsers(Seq(literalString("alice")), ifExists = false, Seq(SetTags(anyParam("param"))(pos)))(pos),

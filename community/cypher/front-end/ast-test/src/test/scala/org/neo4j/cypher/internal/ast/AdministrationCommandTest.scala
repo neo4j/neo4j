@@ -129,16 +129,23 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       .atPosition(pos.offset, pos.line, pos.column)
       .build()
 
-  private def gqlStringOrStringListWrongType(expr: String, context: String, pos: InputPosition) =
+  private def gqlStringOrStringListWrongType(
+    expr: String,
+    context: String,
+    pos: InputPosition,
+    allowEmptyList: Boolean = false
+  ) = {
+    val listForm = if (allowEmptyList) "List of non-empty Strings" else "non-empty List of non-empty Strings"
     ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N04)
       .withParam(GqlParams.StringParam.input, expr)
       .withParam(GqlParams.StringParam.context, context)
       .withParam(
         GqlParams.ListParam.inputList,
-        List("non-empty String", "non-empty List of non-empty Strings", "Parameter").asJava
+        List("non-empty String", listForm, "Parameter").asJava
       )
       .atPosition(pos.offset, pos.line, pos.column)
       .build()
+  }
 
   private def gqlWrongType(expr: String, context: String, expectedTypes: Seq[String], pos: InputPosition) =
     ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22G03)
@@ -5052,6 +5059,36 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
     alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
+  test("ALTER USERS alice ADD TAGS [] — empty list passes") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(AddTags(listOfWithPosition(pos1))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USERS alice SET TAGS [] — empty list passes") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(SetTags(listOfWithPosition(pos1))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USERS alice REMOVE TAGS [] — empty list passes") {
+    val alterUsers = AlterUsers(
+      Seq(literalString("alice")),
+      ifExists = false,
+      Seq(RemoveTags(listOfWithPosition(pos1))(pos2))
+    )(p)
+
+    alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
   test("ALTER USERS alice (no tag clause) — requires at least one tag clause") {
     val alterUsers = AlterUsers(
       Seq(literalString("alice")),
@@ -5185,9 +5222,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("\"\"", "ADD TAGS", pos1),
+        gqlStringOrStringListWrongType("\"\"", "ADD TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5205,9 +5242,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("\"\"", "SET TAGS", pos1),
+        gqlStringOrStringListWrongType("\"\"", "SET TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5225,9 +5262,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("\"\"", "REMOVE TAGS", pos1),
+        gqlStringOrStringListWrongType("\"\"", "REMOVE TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5245,14 +5282,14 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("""["x", ""]""", "ADD TAGS", pos1),
+        gqlStringOrStringListWrongType("""["x", ""]""", "ADD TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
 
-  test("ALTER USER foo ADD TAGS [] — empty list rejected") {
+  test("ALTER USER foo ADD TAGS [] — empty list passes") {
     val alterUser = AlterUser(
       literalString("foo"),
       UserOptions(None, None),
@@ -5263,11 +5300,53 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       Seq(AddTags(listOfWithPosition(pos1))(pos2))
     )(p)
 
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USER foo SET TAGS [] — empty list passes") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(SetTags(listOfWithPosition(pos1))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USER foo REMOVE TAGS [] — empty list passes") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(RemoveTags(listOfWithPosition(pos1))(pos2))
+    )(p)
+
+    alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
+  }
+
+  test("ALTER USER foo SET TAGS [''] — list of only empty string still rejected") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty),
+      Seq(SetTags(listOfWithPosition(pos1, literalString("")))(pos2))
+    )(p)
+
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("[]", "ADD TAGS", pos1),
+        gqlStringOrStringListWrongType("""[""]""", "SET TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5285,9 +5364,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("42", "ADD TAGS", pos1),
+        gqlStringOrStringListWrongType("42", "ADD TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5305,9 +5384,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("[1, 2, 3]", "ADD TAGS", pos1),
+        gqlStringOrStringListWrongType("[1, 2, 3]", "ADD TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5325,9 +5404,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "ADD TAGS", pos1),
+        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "ADD TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5345,9 +5424,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("[1, 2, 3]", "SET TAGS", pos1),
+        gqlStringOrStringListWrongType("[1, 2, 3]", "SET TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5365,9 +5444,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "SET TAGS", pos1),
+        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "SET TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5385,9 +5464,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("[1, 2, 3]", "REMOVE TAGS", pos1),
+        gqlStringOrStringListWrongType("[1, 2, 3]", "REMOVE TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5410,9 +5489,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "REMOVE TAGS", pos1),
+        gqlStringOrStringListWrongType("""[0, "hello", "world"]""", "REMOVE TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5440,9 +5519,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     alterUsers.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("\"\"", "ADD TAGS", pos1),
+        gqlStringOrStringListWrongType("\"\"", "ADD TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
@@ -5459,14 +5538,14 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
 
     createUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
       SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("\"\"", "SET TAGS", pos1),
+        gqlStringOrStringListWrongType("\"\"", "SET TAGS", pos1, allowEmptyList = true),
         initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        "Expected a non-empty String, List of non-empty Strings, or Parameter.",
         pos1
       ).errors
   }
 
-  test("CREATE USER foo SET TAGS [] — empty list rejected") {
+  test("CREATE USER foo SET TAGS [] — empty list passes") {
     val createUser = CreateUser(
       literalString("foo"),
       UserOptions(None, None),
@@ -5476,13 +5555,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
       Some(SetTags(listOfWithPosition(pos1))(pos2))
     )(p)
 
-    createUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe
-      SemanticCheckResult.error(
-        gqlStringOrStringListWrongType("[]", "SET TAGS", pos1),
-        initialStateWithFeatureFlags,
-        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
-        pos1
-      ).errors
+    createUser.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER USER foo ADD TAGS ['a', 'b'] — non-empty list of non-empty strings passes") {

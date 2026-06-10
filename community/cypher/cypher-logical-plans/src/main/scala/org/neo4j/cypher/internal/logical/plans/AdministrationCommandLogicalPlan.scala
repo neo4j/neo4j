@@ -131,7 +131,11 @@ case class AlterUser(
   externalAuths: Seq[ExternalAuth],
   removeAuth: RemoveAuth,
   tags: Seq[UserTagsAction]
-)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source)) {
+
+  val isTagsOnly: Boolean =
+    suspended.isEmpty && defaultDatabase.isEmpty && nativeAuth.isEmpty && externalAuths.isEmpty && removeAuth.isEmpty && tags.nonEmpty
+}
 
 case class AlterUsers(
   source: SecurityAdministrationLogicalPlan,

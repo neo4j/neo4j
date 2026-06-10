@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.notification.InternalNotification
+import org.neo4j.cypher.internal.procs.SystemGraphWriteExecutionPlan.Writer
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Transaction
@@ -34,11 +35,21 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.util.Using
 
+/**
+ * Execution plan for system-graph writes performed directly through the kernel API (rather than via an
+ * inner Cypher query). The `effect` decides how the write function contributes to `systemUpdates` count:
+ *
+ * - [[WriteEffect.Counted]]: the number of system updates returned by the writer is added to the
+ *   context and reported to the subscriber, so that it surfaces in the query statistics.
+ * - [[WriteEffect.Subsumed]]: a counting source plan already accounts for the work; the writer runs purely
+ *   as a side effect without adding to the system update count. For example, use when layering a kernel
+ *   API write on top of an [[UpdatingSystemCommandExecutionPlan]].
+ */
 case class SystemGraphWriteExecutionPlan(
   name: String,
   securityAuthorizationHandler: SecurityAuthorizationHandler,
   source: Option[ExecutionPlan],
-  write: (Transaction, SecurityContext, MapValue) => Unit,
+  effect: WriteEffect,
   parameterTransformer: ParameterTransformer = ParameterTransformer(),
   checkCredentialsExpired: Boolean = true
 ) extends AdministrationChainedExecutionPlan(source) {
@@ -57,13 +68,24 @@ case class SystemGraphWriteExecutionPlan(
     if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
     Using.resource(tc.kernelTransaction().overrideWith(securityContext.withMode(StaticAccessMode.FULL))) { _ =>
       val tx = tc.transaction()
-      val (updatedParams, notifications) =
-        parameterTransformer.transform(tx, securityContext, MapValue.EMPTY, params)
-      write(tx, securityContext, updatedParams)
-      ctx.systemUpdates.increase()
+      val (updatedParams, notifications) = parameterTransformer.transform(tx, securityContext, MapValue.EMPTY, params)
+      effect match {
+        case WriteEffect.Counted(write)  => ctx.systemUpdates.increase(write(tx, securityContext, updatedParams))
+        case WriteEffect.Subsumed(write) => write(tx, securityContext, updatedParams)
+      }
+      subscriber.onResultCompleted(ctx.getStatistics)
       UpdatingSystemCommandRuntimeResult(ctx, None, previousNotifications ++ notifications)
     }
   }
 
   override def runtimeName: RuntimeName = RuntimeName.SYSTEM
+}
+
+object SystemGraphWriteExecutionPlan {
+  type Writer[A] = (Transaction, SecurityContext, MapValue) => A
+}
+
+enum WriteEffect {
+  case Counted(write: Writer[Int])
+  case Subsumed(write: Writer[Unit])
 }

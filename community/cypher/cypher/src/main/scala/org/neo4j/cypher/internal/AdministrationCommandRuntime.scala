@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.procs.QueryHandlerResult
 import org.neo4j.cypher.internal.procs.SystemGraphWriteExecutionPlan
 import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
+import org.neo4j.cypher.internal.procs.WriteEffect
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.dbms.systemgraph.SecurityGraphDbmsModel.AUTH
@@ -247,7 +248,7 @@ object AdministrationCommandRuntime {
     nativeAuth: Option[NativeAuth],
     externalAuths: Seq[ExternalAuth],
     validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue,
-    tagWriter: Option[(Transaction, String, MapValue) => Unit] = None
+    tagWriter: Option[(Transaction, String, MapValue) => Boolean] = None
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
@@ -376,7 +377,7 @@ object AdministrationCommandRuntime {
         "CreateUserSetTags",
         securityAuthorizationHandler,
         Some(createUserPlan),
-        (tx, _, params) => fn(tx, runtimeStringValue(userName, params), params)
+        WriteEffect.Subsumed((tx, _, params) => fn(tx, runtimeStringValue(userName, params), params))
       )
     )
   }
@@ -389,7 +390,7 @@ object AdministrationCommandRuntime {
     externalAuths: Seq[ExternalAuth],
     removeAuths: RemoveAuth,
     validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue,
-    tagWriter: Option[(Transaction, String, MapValue) => Unit] = None
+    tagWriter: Option[(Transaction, String, MapValue) => Boolean] = None
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
@@ -635,7 +636,7 @@ object AdministrationCommandRuntime {
         "AlterUserSetTags",
         securityAuthorizationHandler,
         Some(alterUserPlan),
-        (tx, _, params) => fn(tx, runtimeStringValue(userName, params), params)
+        WriteEffect.Subsumed((tx, _, params) => fn(tx, runtimeStringValue(userName, params), params))
       )
     )
   }
@@ -875,12 +876,16 @@ object AdministrationCommandRuntime {
     }
   }
 
-  def runtimeStringListValue(field: Expression, params: MapValue): List[String] = field match {
+  def runtimeStringListValue(
+    field: Expression,
+    params: MapValue,
+    allowEmptyList: Boolean = false
+  ): List[String] = field match {
     case StringLiteral(s) if s.nonEmpty => List(s)
     case l: ListLiteral
       if l.expressions.forall(e =>
         e.isInstanceOf[StringLiteral] && e.asInstanceOf[StringLiteral].value.nonEmpty
-      ) && l.expressions.nonEmpty =>
+      ) && (allowEmptyList || l.expressions.nonEmpty) =>
       l.expressions.map(_.asInstanceOf[StringLiteral].value).toList
     case p: Parameter =>
       val value: AnyValue =
@@ -892,7 +897,7 @@ object AdministrationCommandRuntime {
       val pp = new PrettyPrinter()
       value match {
         case tv: TextValue if tv.stringValue().nonEmpty => List(tv.stringValue())
-        case lv: ListValue if lv.nonEmpty =>
+        case lv: ListValue if allowEmptyList || lv.nonEmpty =>
           lv.iterator().asScala.map {
             case tv: TextValue if tv.stringValue().nonEmpty => tv.stringValue()
             case v =>
@@ -908,9 +913,12 @@ object AdministrationCommandRuntime {
       }
     case _ =>
       // this fails in parsing or semantic checking, but is needed for scala warnings
+      val listDescription =
+        if (allowEmptyList) "List of non-empty Strings"
+        else "non-empty List of non-empty Strings"
       throw CypherExecutionException.internalError(
         this.getClass.getSimpleName,
-        s"Expected non-empty String or non-empty List of non-empty Strings but was `${field.asCanonicalStringVal}`."
+        s"Expected non-empty String or $listDescription but was `${field.asCanonicalStringVal}`."
       )
   }
 

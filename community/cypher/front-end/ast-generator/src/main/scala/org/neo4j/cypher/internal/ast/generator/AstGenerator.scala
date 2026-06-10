@@ -3395,7 +3395,7 @@ class AstGenerator(
     suspended <- option(boolean)
     homeDatabase <- option(_setHomeDatabaseAction)
     ifExistsDo <- _ifExistsDo
-    tags <- if (usesCypher5) const(None) else option(_stringLiteralOrParameter.map(SetTags(_)(pos)))
+    tags <- if (usesCypher5) const(None) else option(_tagsValue.map(SetTags(_)(pos)))
   } yield CreateUser(userName, UserOptions(suspended, homeDatabase), ifExistsDo, newAuths, oldNativeAuth, tags)(pos)
 
   def _renameUser: Gen[RenameUser] = for {
@@ -3432,15 +3432,21 @@ class AstGenerator(
     tags
   )(pos)
 
+  def _tagsValue: Gen[Expression] = oneOf(
+    _stringLit,
+    _stringParameter,
+    _listOf(_stringLit)
+  )
+
   def _alterUsersTags: Gen[Seq[UserTagsAction]] = oneOf(
-    _stringLiteralOrParameter.map(expr => Seq(SetTags(expr)(pos))),
-    _stringLiteralOrParameter.map(expr => Seq(AddTags(expr)(pos))),
+    _tagsValue.map(expr => Seq(SetTags(expr)(pos))),
+    _tagsValue.map(expr => Seq(AddTags(expr)(pos))),
     for {
       remove <- oneOf(
-        _stringLiteralOrParameter.map(expr => RemoveTags(expr)(pos): UserTagsAction),
+        _tagsValue.map(expr => RemoveTags(expr)(pos): UserTagsAction),
         const(RemoveAllTags()(pos): UserTagsAction)
       )
-      maybeAdd <- option(_stringLiteralOrParameter.map(expr => AddTags(expr)(pos)))
+      maybeAdd <- option(_tagsValue.map(expr => AddTags(expr)(pos)))
     } yield Seq(remove) ++ maybeAdd
   )
 
