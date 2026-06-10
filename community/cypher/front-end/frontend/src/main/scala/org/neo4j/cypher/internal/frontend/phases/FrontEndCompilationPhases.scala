@@ -76,7 +76,8 @@ trait FrontEndCompilationPhases {
     RelationshipPropertyValueAccessRules.productPrefix,
     AttributeBasedAccessControl.productPrefix,
     ComposableCommands.productPrefix,
-    EnableWorkingScopeNamespacer.productPrefix
+    EnableWorkingScopeNamespacer.productPrefix,
+    UserTags.productPrefix
   )
 
   def enabledSemanticFeatures(features: Set[String]): Seq[SemanticFeature] =
