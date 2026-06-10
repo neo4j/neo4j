@@ -81,6 +81,15 @@ public class SequentialFileNameHelper {
         }
     }
 
+    public static String getBaseName(Path path) {
+        String filename = path.getFileName().toString();
+        int index = filename.lastIndexOf(VERSION_SUFFIX);
+        if (index == -1) {
+            throw new IllegalArgumentException("Invalid sequential file '" + filename + "'");
+        }
+        return filename.substring(0, index);
+    }
+
     public Path[] getFiles(FileSystemAbstraction fs) throws IOException {
         Path[] files = fs.listFiles(directory, filenameFilter);
         if (files.length == 0) {
