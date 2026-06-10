@@ -547,6 +547,46 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite with CypherVersionTes
     stats.getSyntaxUsageCount(SyntaxUsageMetricKey.SHOW_AUTH_RULES) should be(1)
   }
 
+  testVersionsExcept5("should find CREATE USER with tags") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE USER foo SET PASSWORD 'password' SET TAGS 'label'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.CREATE_USER_TAGS) should be(1)
+  }
+
+  testVersionsExcept5("should not find CREATE USER with tags when no tags are set") { version =>
+    val stats = runPipeline(
+      version,
+      "CREATE USER foo SET PASSWORD 'password'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.CREATE_USER_TAGS) should be(0)
+  }
+
+  testVersionsExcept5("should find ALTER USER with tags") { version =>
+    val stats = runPipeline(
+      version,
+      "ALTER USER foo ADD TAGS 'tag'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.ALTER_USER_TAGS) should be(1)
+  }
+
+  testVersionsExcept5("should not find ALTER USER with tags when no tags are altered") { version =>
+    val stats = runPipeline(
+      version,
+      "ALTER USER foo SET PASSWORD 'password'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.ALTER_USER_TAGS) should be(0)
+  }
+
+  testVersionsExcept5("should find ALTER USERS with tags") { version =>
+    val stats = runPipeline(
+      version,
+      "ALTER USERS alice, bob ADD TAGS 'x'"
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.ALTER_USERS_TAGS) should be(1)
+  }
+
   private def runPipeline(
     version: CypherVersion,
     query: String,

@@ -18,10 +18,13 @@ package org.neo4j.cypher.internal.frontend.phases.parserTransformers
 
 import org.neo4j.cypher.internal.ast.AlterAuthRule
 import org.neo4j.cypher.internal.ast.AlterCurrentGraphType
+import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AlterUsers
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.CreateAuthRule
+import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.DropAuthRule
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
@@ -144,6 +147,12 @@ case object CollectSyntaxUsageMetrics
         increaseMetric(SyntaxUsageMetricKey.DROP_AUTH_RULE)
       case _: ShowAuthRules =>
         increaseMetric(SyntaxUsageMetricKey.SHOW_AUTH_RULES)
+      case c: CreateUser if c.tags.isDefined =>
+        increaseMetric(SyntaxUsageMetricKey.CREATE_USER_TAGS)
+      case a: AlterUser if a.tags.nonEmpty =>
+        increaseMetric(SyntaxUsageMetricKey.ALTER_USER_TAGS)
+      case a: AlterUsers if a.tags.nonEmpty =>
+        increaseMetric(SyntaxUsageMetricKey.ALTER_USERS_TAGS)
     }
 
     if (isLoadCsvQuery) {
