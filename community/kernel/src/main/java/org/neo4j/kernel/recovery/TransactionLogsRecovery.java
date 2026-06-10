@@ -467,6 +467,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         for (PartialLastTransactionChunk partialLastTransactionChunk : notCompletedTransactionChunks) {
             chunkedTransactionTracker.registerChunkedTransaction(
                     partialLastTransactionChunk.transactionId(),
+                    UNKNOWN_APPEND_INDEX,
                     partialLastTransactionChunk.appendIndex(),
                     partialLastTransactionChunk.chunkId(),
                     kernelVersion,

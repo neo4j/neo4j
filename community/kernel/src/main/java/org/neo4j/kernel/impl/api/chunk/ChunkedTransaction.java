@@ -121,6 +121,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
 
     public ChunkedTransaction(
             long transactionId,
+            long firstBatchAppendIndex,
             long lastBatchAppendIndex,
             long transactionSequenceNumber,
             LogPositionMetadata logPositionMetadata,
@@ -129,6 +130,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
             Commitment commitment) {
         this(cursorContext, transactionSequenceNumber, storeCursors, commitment, TransactionIdGenerator.EXTERNAL_ID);
         this.transactionId = transactionId;
+        this.firstAppendIndex = firstBatchAppendIndex;
         this.lastBatchAppendIndex = lastBatchAppendIndex;
         this.logPositionMetadata = logPositionMetadata;
         this.idGenerated = true;
@@ -219,6 +221,10 @@ public class ChunkedTransaction implements StorageEngineTransaction {
      */
     public long lastBatchAppendIndex() {
         return lastBatchAppendIndex;
+    }
+
+    public long firstBatchAppendIndex() {
+        return firstAppendIndex;
     }
 
     @Override

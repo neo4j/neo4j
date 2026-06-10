@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.KernelVersion;
@@ -30,10 +32,21 @@ public class ChunkedTransactionTracker {
         return registry.values();
     }
 
+    public long firstBatchAppendIndex(long transactionId) {
+        var firstBatchAppendIndex = registry.get(transactionId).firstBatchAppendIndex;
+        assert firstBatchAppendIndex != UNKNOWN_APPEND_INDEX : "First batch append index isn't set properly.";
+        return firstBatchAppendIndex;
+    }
+
     public void registerChunkedTransaction(
-            long transactionId, long lastBatchAppendIndex, long chunkId, KernelVersion kernelVersion, long leaseId) {
-        TransactionInfo txInfo =
-                new TransactionInfo(transactionId, lastBatchAppendIndex, chunkId, kernelVersion, leaseId);
+            long transactionId,
+            long firstBatchAppendIndex,
+            long lastBatchAppendIndex,
+            long chunkId,
+            KernelVersion kernelVersion,
+            long leaseId) {
+        TransactionInfo txInfo = new TransactionInfo(
+                transactionId, firstBatchAppendIndex, lastBatchAppendIndex, chunkId, kernelVersion, leaseId);
         registry.put(transactionId, txInfo);
     }
 
@@ -46,5 +59,10 @@ public class ChunkedTransactionTracker {
     }
 
     public record TransactionInfo(
-            long transactionId, long lastBatchAppendIndex, long chunkId, KernelVersion kernelVersion, long leaseId) {}
+            long transactionId,
+            long firstBatchAppendIndex,
+            long lastBatchAppendIndex,
+            long chunkId,
+            KernelVersion kernelVersion,
+            long leaseId) {}
 }
