@@ -102,6 +102,7 @@ import org.neo4j.util.concurrent.IdSpaceParallelExecution.Partition;
  *       input ids will be encoded into the same eId. These are called collisions.
  */
 public class EncodingIdMapper implements IdMapper.WithHighId {
+
     public interface Monitor {
         /**
          * Called when mapper is starting to prepare, including the sorting.
@@ -251,6 +252,11 @@ public class EncodingIdMapper implements IdMapper.WithHighId {
             candidateHighestSetIndex.offer(nodeId);
             radix.preRegisterRadixOf(eId);
         };
+    }
+
+    @Override
+    public Getter newGetter() {
+        return newGetter(WORKER_ID_AGNOSTIC);
     }
 
     @Override

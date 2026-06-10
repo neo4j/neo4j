@@ -74,6 +74,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.Futures;
 
 /**
@@ -557,6 +558,16 @@ public class CsvInput implements Input {
         return sample;
     }
 
+    /**
+     * Whether {@link #validateAndEstimate} reads sample rows to estimate sizes. Header parsing and structural
+     * validation run regardless. Test seam: a subclass returning {@code false} validates the input and sets up state
+     * without parsing data-row values, so malformed values don't fail estimation.
+     */
+    @VisibleForTesting
+    protected boolean shouldSampleData() {
+        return true;
+    }
+
     private void sample(
             Configuration sampleConfig,
             CharReadable source,
@@ -567,6 +578,10 @@ public class CsvInput implements Input {
             ToIntFunction<InputEntity> additionalCalculator,
             Sample sample)
             throws IOException {
+        if (!shouldSampleData()) {
+            source.close();
+            return;
+        }
         // When sampling, we can set delimitIds=false,
         // since there is no checking of duplicates in this visitor.
         try (source;

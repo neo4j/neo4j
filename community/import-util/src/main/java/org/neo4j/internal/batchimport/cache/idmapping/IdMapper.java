@@ -37,6 +37,7 @@ import org.neo4j.internal.id.IdGenerator;
  */
 public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
     long ID_NOT_FOUND = -1;
+    int WORKER_ID_AGNOSTIC = -1;
 
     /**
      * Removes an existing mapping from {@code inputId} to {@code actualId}.
@@ -83,6 +84,15 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
     Getter newGetter(int workerId);
 
     Setter newSetter(int workerId);
+
+    /**
+     * A workerid agnostic newGetter.
+     * @return a {@link Getter} for the current thread to do lookups in
+     */
+    default Getter newGetter() {
+        throw new UnsupportedOperationException(
+                "workerId agnostic idMapperGetters are only supported in SuperFastImporter");
+    }
 
     /**
      * Releases all resources used by this {@link IdMapper}.
