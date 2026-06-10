@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.vGloriousFuture;
+package org.neo4j.kernel.impl.transaction.log.entry.v202606;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -25,10 +25,10 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.v202505.LogEntryStartV2025_05;
 import org.neo4j.string.Mask;
 
-public class LogEntryStartVGloriousFuture extends LogEntryStartV2025_05 {
+public class LogEntryStartV2026_06 extends LogEntryStartV2025_05 {
     private final long transactionSequenceNumber;
 
-    public LogEntryStartVGloriousFuture(
+    public LogEntryStartV2026_06(
             KernelVersion kernelVersion,
             long timeWritten,
             long lastCommittedTxWhenTransactionStarted,
@@ -46,7 +46,7 @@ public class LogEntryStartVGloriousFuture extends LogEntryStartV2025_05 {
 
     @Override
     public String toString(Mask mask) {
-        return "LogEntryStartVGloriousFuture[" + "kernelVersion=" + kernelVersion() + ",time=" + timestamp(timeWritten)
+        return "LogEntryStartV2026_06[" + "kernelVersion=" + kernelVersion() + ",time=" + timestamp(timeWritten)
                 + ",lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted
                 + ",additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + ","
                 + (additionalHeader == null ? "" : Arrays.toString(additionalHeader))
@@ -60,7 +60,7 @@ public class LogEntryStartVGloriousFuture extends LogEntryStartV2025_05 {
         if (!super.equals(o)) {
             return false;
         }
-        LogEntryStartVGloriousFuture start = (LogEntryStartVGloriousFuture) o;
+        LogEntryStartV2026_06 start = (LogEntryStartV2026_06) o;
         return transactionSequenceNumber == start.transactionSequenceNumber;
     }
 

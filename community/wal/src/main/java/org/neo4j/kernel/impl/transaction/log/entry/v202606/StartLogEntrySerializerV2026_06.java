@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.vGloriousFuture;
+package org.neo4j.kernel.impl.transaction.log.entry.v202606;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
@@ -33,13 +33,13 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-public class StartLogEntrySerializerVGloriousFuture extends LogEntrySerializer<LogEntryStartVGloriousFuture> {
-    public StartLogEntrySerializerVGloriousFuture() {
+public class StartLogEntrySerializerV2026_06 extends LogEntrySerializer<LogEntryStartV2026_06> {
+    public StartLogEntrySerializerV2026_06() {
         super(LogEntryTypeCodes.TX_START);
     }
 
     @Override
-    public LogEntryStartVGloriousFuture parse(
+    public LogEntryStartV2026_06 parse(
             KernelVersion version,
             ReadableChannel channel,
             LogPositionMarker marker,
@@ -58,7 +58,7 @@ public class StartLogEntrySerializerVGloriousFuture extends LogEntrySerializer<L
         }
         byte[] additionalHeader = new byte[additionalHeaderLength];
         channel.get(additionalHeader, additionalHeaderLength);
-        return new LogEntryStartVGloriousFuture(
+        return new LogEntryStartV2026_06(
                 version,
                 timeWritten,
                 latestCommittedTxWhenStarted,
@@ -68,7 +68,7 @@ public class StartLogEntrySerializerVGloriousFuture extends LogEntrySerializer<L
     }
 
     @Override
-    public int write(WritableChannel channel, LogEntryStartVGloriousFuture logEntry) throws IOException {
+    public int write(WritableChannel channel, LogEntryStartV2026_06 logEntry) throws IOException {
         channel.beginChecksumForWriting();
         writeLogEntryHeader(logEntry.kernelVersion(), TX_START, channel);
         byte[] additionalHeaderData = logEntry.getAdditionalHeader();

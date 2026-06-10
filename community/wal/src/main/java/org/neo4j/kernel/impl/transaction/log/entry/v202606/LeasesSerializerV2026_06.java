@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.vGloriousFuture;
+package org.neo4j.kernel.impl.transaction.log.entry.v202606;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,8 +31,8 @@ import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.transaction.log.distributed.UUIDLogSerializer;
 import org.neo4j.storageengine.api.Leases;
 
-public class LeasesSerializerVGloriousFuture {
-    private LeasesSerializerVGloriousFuture() {}
+public class LeasesSerializerV2026_06 {
+    private LeasesSerializerV2026_06() {}
 
     public static Leases parse(ReadableChannel channel) throws IOException {
         int leaseCount = channel.getInt();

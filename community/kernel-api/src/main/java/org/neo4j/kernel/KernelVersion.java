@@ -72,7 +72,7 @@ public enum KernelVersion {
     V2025_11(27), // 2025_11. Before state serialization for block commands
     V2026_01(28), // 2026_01. Introduce label existence and endpoint constraints
     V2026_02(29), // 2026_02. SPD property shards keeps only relevant commands in tx log
-    V2026_06(30), // 2026_05. Binary quantization for vector indexes
+    V2026_06(30), // 2026_06. Binary quantization for vector indexes
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -134,7 +134,7 @@ public enum KernelVersion {
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database
     public static final KernelVersion DEFAULT_BOOTSTRAP_VERSION = V5_0;
 
-    public static final KernelVersion VERSION_MERGED_LOG_INFO_IN_START_ENTRIES = GLORIOUS_FUTURE;
+    public static final KernelVersion VERSION_MERGED_LOG_INFO_IN_START_ENTRIES = V2026_06;
 
     public static final List<KernelVersion> VERSIONS = List.of(values());
     private static final ByteToEnum<KernelVersion> VERSION_MAP =

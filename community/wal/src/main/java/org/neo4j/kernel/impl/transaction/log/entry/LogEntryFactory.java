@@ -25,12 +25,12 @@ import static org.neo4j.kernel.KernelVersion.VERSION_MERGED_LOG_INFO_IN_START_EN
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.v202505.LogEntryStartV2025_05;
+import org.neo4j.kernel.impl.transaction.log.entry.v202606.LogEntryStartV2026_06;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryCommitV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryStartV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryChunkStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryRollback;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryStartV5_20;
-import org.neo4j.kernel.impl.transaction.log.entry.vGloriousFuture.LogEntryStartVGloriousFuture;
 
 public final class LogEntryFactory {
     private LogEntryFactory() {}
@@ -44,7 +44,7 @@ public final class LogEntryFactory {
             int previousChecksum,
             byte[] additionalHeader) {
         if (version.isAtLeast(VERSION_MERGED_LOG_INFO_IN_START_ENTRIES)) {
-            return new LogEntryStartVGloriousFuture(
+            return new LogEntryStartV2026_06(
                     version,
                     timeWritten,
                     lastCommittedTxWhenTransactionStarted,

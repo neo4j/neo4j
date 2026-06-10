@@ -149,6 +149,9 @@ class LogEntrySerializerDispatcherTest {
         if (version.isAtLeast(KernelVersion.VERSION_APPEND_INDEX_INTRODUCED)) {
             channel.putLong(start.getAppendIndex());
         }
+        if (version.isAtLeast(KernelVersion.VERSION_MERGED_LOG_INFO_IN_START_ENTRIES)) {
+            channel.putLong(UNKNOWN_TX_SEQUENCE_NUMBER);
+        }
         channel.putInt(start.getAdditionalHeader().length);
         channel.put(start.getAdditionalHeader(), start.getAdditionalHeader().length);
 

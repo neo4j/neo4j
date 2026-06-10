@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
+package org.neo4j.kernel.impl.transaction.log.entry.v202606;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
@@ -25,11 +25,14 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryEmpty;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-public class EmptyLogEntrySerializerGloriousFuture extends LogEntrySerializer<LogEntryEmpty> {
-    public EmptyLogEntrySerializerGloriousFuture() {
+public class EmptyLogEntrySerializerV2026_06 extends LogEntrySerializer<LogEntryEmpty> {
+    public EmptyLogEntrySerializerV2026_06() {
         super(LogEntryTypeCodes.EMPTY_TX);
     }
 
