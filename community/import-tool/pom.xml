@@ -44,6 +44,10 @@
       <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jul</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
     </dependency>
@@ -184,18 +188,20 @@
       <artifactId>neo4j-util</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <!-- scala -->
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
     </dependency>
+
+    <!-- Runtime dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-record-storage-engine</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
+
+    <!-- Test dependencies -->
     <dependency>
       <groupId>blue.strategic.parquet</groupId>
       <artifactId>parquet-floor</artifactId>
@@ -211,8 +217,6 @@
       <artifactId>parquet-column</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>io-test-utils</artifactId>
@@ -263,6 +267,7 @@
             <configuration>
               <failOnWarning>true</failOnWarning>
               <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-jul</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-record-storage-engine</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
             </configuration>

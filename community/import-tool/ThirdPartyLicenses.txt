@@ -13,6 +13,7 @@ Apache Software License, Version 2.0
   Apache Log4j API
   Apache Log4j Core
   Apache Log4j JSON Template Layout
+  Apache Log4j JUL Adapter
   Apache Lucene (module: backward-codecs)
   Apache Lucene (module: common)
   Apache Lucene (module: core)
