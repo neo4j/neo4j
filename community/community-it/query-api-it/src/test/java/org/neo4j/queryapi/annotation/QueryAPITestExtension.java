@@ -49,7 +49,9 @@ public @interface QueryAPITestExtension {
     /**
      * The list of types used for transport Bolt messages
      */
-    BoltTransportType[] boltTransports() default {BoltTransportType.LOCAL_CHANNEL_PACKSTREAM};
+    BoltTransportType[] boltTransports() default {
+        BoltTransportType.LOCAL_CHANNEL_PACKSTREAM, BoltTransportType.LOCAL_CHANNEL_POJO
+    };
 
     /**
      * When true, enables the authentication in the dbms.

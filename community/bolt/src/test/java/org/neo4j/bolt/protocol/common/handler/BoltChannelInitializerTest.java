@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.protocol.common.handler;
 
+import static org.mockito.ArgumentMatchers.any;
+
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -102,8 +104,8 @@ class BoltChannelInitializerTest {
                         + TransportSelectionHandler.SHALLOW_SIZE
                         + TrafficAccountantHandler.SHALLOW_SIZE);
 
-        inOrder.verify(pipeline).addLast(ArgumentMatchers.any(TrafficAccountantHandler.class));
-        inOrder.verify(pipeline).addLast(ArgumentMatchers.any(TransportSelectionHandler.class));
+        inOrder.verify(pipeline).addLast(any(TrafficAccountantHandler.class));
+        inOrder.verify(pipeline).addLast(any(TransportSelectionHandler.class));
         inOrder.verifyNoMoreInteractions();
         verifyProtocolNotSelected(pipeline);
     }
@@ -197,12 +199,12 @@ class BoltChannelInitializerTest {
         Mockito.doReturn(connectionConfiguration).when(connector).configuration();
         Mockito.doReturn(true).when(connectionConfiguration).enableJavaObjectMessages();
         Mockito.doReturn(protocolRegistry).when(connector).protocolRegistry();
-        Mockito.doReturn(Optional.of(expectedProtocol)).when(protocolRegistry).getLatest();
+        Mockito.doReturn(Optional.of(expectedProtocol)).when(protocolRegistry).get(any());
 
         this.initializer.initChannel(channel);
 
         Mockito.verify(connection).selectProtocol(expectedProtocol, Set.of());
-        Mockito.verify(pipeline).addLast(Mockito.eq("requestHandler"), Mockito.any(RequestHandler.class));
+        Mockito.verify(pipeline).addLast(Mockito.eq("requestHandler"), any(RequestHandler.class));
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         ArgumentCaptor<Consumer<ConnectionListener>> captor = (ArgumentCaptor) ArgumentCaptor.forClass(Consumer.class);
@@ -217,9 +219,8 @@ class BoltChannelInitializerTest {
     }
 
     private void verifyProtocolNotSelected(ChannelPipeline pipeline) {
-        Mockito.verify(connection, Mockito.never()).selectProtocol(Mockito.any(), Mockito.any());
-        Mockito.verify(pipeline, Mockito.never())
-                .addLast(Mockito.eq("requestHandler"), Mockito.any(RequestHandler.class));
+        Mockito.verify(connection, Mockito.never()).selectProtocol(any(), any());
+        Mockito.verify(pipeline, Mockito.never()).addLast(Mockito.eq("requestHandler"), any(RequestHandler.class));
     }
 
     @Test
@@ -242,6 +243,6 @@ class BoltChannelInitializerTest {
 
         // Verify that no separate PROXY protocol detector handler is added
         // PROXY protocol detection happens dynamically in TransportSelectionHandler
-        Mockito.verify(pipeline, Mockito.never()).addLast(Mockito.eq("haproxyDetector"), Mockito.any());
+        Mockito.verify(pipeline, Mockito.never()).addLast(Mockito.eq("haproxyDetector"), any());
     }
 }

@@ -43,7 +43,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -825,23 +824,14 @@ public class BoltServer extends LifecycleAdapter {
         var config = LocalConnectorConfiguration.factory()
                 .fromConfig(this.config)
                 .enableJavaObjectMessages(
-                        this.config.get(BoltConnectorInternalSettings.enable_object_messages_local_connector))
-                .build();
+                        this.config.get(BoltConnectorInternalSettings.enable_object_messages_local_connector));
+
+        Optional.ofNullable(this.config.get(
+                        BoltConnectorInternalSettings.enable_object_messages_protocol_version_local_connector))
+                .map(protocolVer -> new ProtocolVersion(protocolVer.major(), protocolVer.minor()))
+                .ifPresent(config::withJavaObjectProtocolVersion);
 
         var bindAddress = new LocalAddress(this.config.get(BoltConnectorInternalSettings.local_channel_address));
-
-        var localConnectorProtocolRegistry = config.enableJavaObjectMessages()
-                ? Optional.ofNullable(this.config.get(
-                                BoltConnectorInternalSettings.enable_object_messages_protocol_version_local_connector))
-                        .map(version -> new ProtocolVersion(version.major(), version.minor()))
-                        .flatMap(version -> BoltProtocol.installed().stream()
-                                .filter(it -> version.matches(it.version()))
-                                .max(Comparator.comparing(BoltProtocol::version)))
-                        .map(protocolVersion -> BoltProtocolRegistry.builder()
-                                .register(protocolVersion)
-                                .build())
-                        .orElse(protocolRegistry)
-                : protocolRegistry;
 
         return new LocalNettyConnector(
                 BoltConnectorInternalSettings.LOCAL_NAME,
@@ -853,7 +843,7 @@ public class BoltServer extends LifecycleAdapter {
                 localWorkerEventLoopGroup,
                 connectionFactory,
                 connectionTracker,
-                localConnectorProtocolRegistry,
+                protocolRegistry,
                 authentication,
                 authConfigProvider,
                 defaultDatabaseResolver,
@@ -865,7 +855,7 @@ public class BoltServer extends LifecycleAdapter {
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider(),
                 transport,
-                config);
+                config.build());
     }
 
     private void createAndRegisterDiscoveryConnector(ConnectorTransport transport) {

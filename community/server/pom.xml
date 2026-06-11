@@ -59,6 +59,10 @@
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
+      <artifactId>netty-codec-base</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
     </dependency>
     <dependency>
@@ -201,18 +205,14 @@
       <artifactId>server-api</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.neo4j.bolt</groupId>
       <artifactId>neo4j-bolt-connection</artifactId>
-      <version>${neo4j.bolt.connection.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j.bolt</groupId>
       <artifactId>neo4j-bolt-connection-netty</artifactId>
-      <version>${neo4j.bolt.connection.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.neo4j.driver</groupId>
       <artifactId>neo4j-java-driver</artifactId>

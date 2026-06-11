@@ -142,6 +142,14 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.neo4j.bolt</groupId>
+      <artifactId>neo4j-bolt-connection</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.bolt</groupId>
+      <artifactId>neo4j-bolt-connection-netty</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.driver</groupId>
       <artifactId>neo4j-java-driver</artifactId>
       <scope>compile</scope>
@@ -353,6 +361,7 @@
                 <ignoredUnusedDeclaredDependency>org.jline:jline-terminal-jansi</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.hamcrest:hamcrest</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:cypher-shell-base</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.neo4j.bolt:neo4j-bolt-connection-netty</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>

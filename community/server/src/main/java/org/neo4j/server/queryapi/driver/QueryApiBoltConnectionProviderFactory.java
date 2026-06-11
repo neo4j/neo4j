@@ -19,18 +19,24 @@
  */
 package org.neo4j.server.queryapi.driver;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.bolt.connection.BoltConnectionProvider;
 import org.neo4j.bolt.connection.BoltConnectionProviderFactory;
+import org.neo4j.bolt.connection.BoltProtocolVersion;
 import org.neo4j.bolt.connection.LoggingProvider;
 import org.neo4j.bolt.connection.netty.NettyBoltConnectionProviderFactory;
 import org.neo4j.bolt.connection.observation.ObservationProvider;
 import org.neo4j.bolt.connection.values.ValueFactory;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.server.queryapi.driver.boltmessage.BoltMessageBuilderProvider;
 
 public final class QueryApiBoltConnectionProviderFactory implements BoltConnectionProviderFactory {
     public static final String SCHEME = "queryapi";
 
     private static final BoltConnectionProviderFactory DELEGATE = new NettyBoltConnectionProviderFactory();
+    private static boolean useJavaObjects;
+    private static BoltProtocolVersion preconfiguredProtocolVersion;
 
     @Override
     public boolean supports(String scheme) {
@@ -43,7 +49,24 @@ public final class QueryApiBoltConnectionProviderFactory implements BoltConnecti
             ValueFactory valueFactory,
             ObservationProvider observationProvider,
             Map<String, ?> additionalConfig) {
-        var delegate = DELEGATE.create(loggingProvider, valueFactory, observationProvider, additionalConfig);
+        Map<String, Object> config = new HashMap<>(additionalConfig);
+
+        if (useJavaObjects) {
+            config.put("channelPipelineBuilderProvider", new BoltMessageBuilderProvider());
+            config.put("boltProtocolVersion", preconfiguredProtocolVersion);
+        }
+
+        var delegate = DELEGATE.create(loggingProvider, valueFactory, observationProvider, config);
         return new QueryApiBoltConnectionProvider(delegate);
+    }
+
+    public static void setUseJavaObjects(boolean useJavaObjects) {
+        QueryApiBoltConnectionProviderFactory.useJavaObjects = useJavaObjects;
+    }
+
+    public static void setPreconfiguredProtocolVersion(
+            BoltConnectorInternalSettings.ConfiguredProtocolVersion version) {
+        var rawBytesVersion = version.major() + (version.minor() << 8);
+        preconfiguredProtocolVersion = BoltProtocolVersion.fromRawBytes(rawBytesVersion);
     }
 }

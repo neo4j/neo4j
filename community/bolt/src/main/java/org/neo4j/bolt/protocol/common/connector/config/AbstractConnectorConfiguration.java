@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.common.connector.config;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
@@ -47,6 +48,7 @@ public abstract class AbstractConnectorConfiguration implements ConnectorConfigu
     private final Duration threadBindingTimeout;
     private final boolean isInternalConnector;
     private final boolean enableJavaObjectMessages;
+    private final ProtocolVersion javaObjectProtocolVersion;
 
     protected AbstractConnectorConfiguration(AbstractFactory<?> builder) {
         this.enableProtocolCapture = builder.enableProtocolCapture;
@@ -69,6 +71,7 @@ public abstract class AbstractConnectorConfiguration implements ConnectorConfigu
         this.threadBindingTimeout = builder.threadBindingTimeout;
         this.isInternalConnector = builder.isInternalConnector;
         this.enableJavaObjectMessages = builder.enableJavaObjectMessages;
+        this.javaObjectProtocolVersion = builder.javaObjectProtocolVersion;
     }
 
     @Override
@@ -171,6 +174,11 @@ public abstract class AbstractConnectorConfiguration implements ConnectorConfigu
         return this.enableJavaObjectMessages;
     }
 
+    @Override
+    public ProtocolVersion javaObjectProtocolVersion() {
+        return this.javaObjectProtocolVersion;
+    }
+
     @SuppressWarnings("unchecked")
     public abstract static class AbstractFactory<SELF extends AbstractFactory<SELF>>
             implements ConnectorConfiguration.Factory<SELF> {
@@ -195,6 +203,7 @@ public abstract class AbstractConnectorConfiguration implements ConnectorConfigu
         private Duration threadBindingTimeout = Duration.ofMillis(100);
         private boolean isInternalConnector = false;
         private boolean enableJavaObjectMessages = false;
+        private ProtocolVersion javaObjectProtocolVersion = null;
 
         @Override
         public SELF fromConfig(Config config) {
@@ -350,6 +359,12 @@ public abstract class AbstractConnectorConfiguration implements ConnectorConfigu
         @Override
         public SELF enableJavaObjectMessages(boolean value) {
             this.enableJavaObjectMessages = value;
+            return (SELF) this;
+        }
+
+        @Override
+        public SELF withJavaObjectProtocolVersion(ProtocolVersion protocolVersion) {
+            this.javaObjectProtocolVersion = protocolVersion;
             return (SELF) this;
         }
     }

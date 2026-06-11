@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.common.connector.config;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 
@@ -232,6 +233,13 @@ public interface ConnectorConfiguration {
      */
     boolean enableJavaObjectMessages();
 
+    /**
+     * Returns the protocol version that has been selected for use in conjunction
+     * with Java Object Message implementation of local channel.
+     * @return the ProtocolVersio that is configured
+     */
+    ProtocolVersion javaObjectProtocolVersion();
+
     interface Factory<SELF extends Factory<SELF>> {
 
         ConnectorConfiguration build();
@@ -286,5 +294,7 @@ public interface ConnectorConfiguration {
         SELF isInternalConnector(boolean value);
 
         SELF enableJavaObjectMessages(boolean embeddedMessages);
+
+        SELF withJavaObjectProtocolVersion(ProtocolVersion protocolVersion);
     }
 }

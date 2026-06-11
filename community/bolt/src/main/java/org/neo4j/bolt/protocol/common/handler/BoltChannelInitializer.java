@@ -125,7 +125,9 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
 
     private BoltProtocol initializeProtocolPipeline(Channel ch, Connection connection) {
         if (this.connector.configuration().enableJavaObjectMessages()) {
-            var protocol = this.connector.protocolRegistry().getLatest().orElseThrow();
+            var preconfiguredVersion = this.connector.configuration().javaObjectProtocolVersion();
+            var protocol =
+                    this.connector.protocolRegistry().get(preconfiguredVersion).orElseThrow();
             connection.selectProtocol(protocol, Set.of());
 
             ch.pipeline()

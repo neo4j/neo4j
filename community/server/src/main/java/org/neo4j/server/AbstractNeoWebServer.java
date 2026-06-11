@@ -74,6 +74,7 @@ import org.neo4j.server.http.cypher.TransactionRegistry;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.queryapi.QueryController;
 import org.neo4j.server.queryapi.driver.LocalChannelDriverFactory;
+import org.neo4j.server.queryapi.driver.QueryApiBoltConnectionProviderFactory;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.web.RotatingRequestLog;
@@ -202,6 +203,10 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
             synchronized (this) {
                 availableController = this.queryController;
                 if (availableController == null) {
+                    QueryApiBoltConnectionProviderFactory.setUseJavaObjects(
+                            config.get(BoltConnectorInternalSettings.enable_object_messages_local_connector));
+                    QueryApiBoltConnectionProviderFactory.setPreconfiguredProtocolVersion(config.get(
+                            BoltConnectorInternalSettings.enable_object_messages_protocol_version_local_connector));
                     driverFactory = new LocalChannelDriverFactory(
                             new LocalAddress(config.get(BoltConnectorInternalSettings.local_channel_address)),
                             internalLogProvider,
