@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.TestClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.TestSupplier
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.forever
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.values
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.LocalMemoryTracker
@@ -34,27 +34,27 @@ import org.neo4j.memory.Measurable
 import scala.collection.convert.ImplicitConversions.`iterator asScala`
 import scala.language.reflectiveCalls
 
-class ClosingIteratorTest extends CypherFunSuite {
+class ClosingIteratorTest extends RuntimeUtilTestSuite {
 
   test("closes resources when depleted") {
+    var closed = false
     val resource = new AutoCloseable {
-      var closed = false
       override def close(): Unit = closed = true
     }
     val iter = ClosingIterator.empty.closing(resource)
     iter.hasNext shouldBe false
-    resource.closed shouldBe true
+    closed shouldBe true
   }
 
   test("closeMore when depleted") {
+    var closed = false
     val iter = new ClosingIterator[Int] {
-      var closed = false
       override protected[this] def innerHasNext: Boolean = false
       override def closeMore(): Unit = closed = true
       override def next(): Int = 0
     }
     iter.hasNext shouldBe false
-    iter.closed shouldBe true
+    closed shouldBe true
   }
 
   // It is uttermost important to close resources only once:
@@ -63,20 +63,20 @@ class ClosingIteratorTest extends CypherFunSuite {
   // If the same resource gets then closed again, while it is already in reuse from a different location,
   // things break. This can happen even in a single-threaded environment.
   test("closes resources only once") {
+    var closeCount = 0
     val resource = new AutoCloseable {
-      var closeCount = 0
       override def close(): Unit = closeCount += 1
     }
     val iter = ClosingIterator.empty.closing(resource)
     iter.hasNext shouldBe false
     iter.close()
     iter.close()
-    resource.closeCount shouldBe 1
+    closeCount shouldBe 1
   }
 
   test("closeMore only once") {
+    var closeCount = 0
     val iter = new ClosingIterator[Int] {
-      var closeCount = 0
       override protected[this] def innerHasNext: Boolean = false
       override def closeMore(): Unit = closeCount += 1
       override def next(): Int = 0
@@ -84,7 +84,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     iter.hasNext shouldBe false
     iter.close()
     iter.close()
-    iter.closeCount shouldBe 1
+    closeCount shouldBe 1
   }
 
   test("flatMap explicit close closes current inner") {
@@ -420,7 +420,7 @@ class ClosingIteratorTest extends CypherFunSuite {
   }
 }
 
-class GroupedClosingIteratorTest extends CypherFunSuite {
+class GroupedClosingIteratorTest extends RuntimeUtilTestSuite {
   private val tracker = EmptyMemoryTracker.INSTANCE
 
   test("should fail for batch size -1") {

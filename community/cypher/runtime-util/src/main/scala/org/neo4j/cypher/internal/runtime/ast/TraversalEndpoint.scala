@@ -69,7 +69,7 @@ object TraversalEndpoint {
       case TraversalEndpoint(_, direction) => direction match {
           case TraversalEndpoint.Endpoint.From => "FROM"
           case TraversalEndpoint.Endpoint.To   => "TO"
-          case _                               => ""
+          case null                            => ""
         }
       case e => e.asCanonicalStringVal
     }

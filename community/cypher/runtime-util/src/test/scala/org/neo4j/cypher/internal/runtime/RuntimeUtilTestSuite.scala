@@ -19,22 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
-import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.IntValue
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 
-class CastSupportTest extends RuntimeUtilTestSuite {
-
-  test("downcastAppMatchTest") {
-    val one: AnyValue = Values.intValue(1)
-    CastSupport.castOrFail[IntValue](one) should equal(one)
-  }
-
-  test("downcastAppMismatchTest") {
-    val seqOne: AnyValue = VirtualValues.list(Values.intValue(1))
-    intercept[CypherTypeException](CastSupport.castOrFail[IntValue](seqOne))
-  }
-}
+trait RuntimeUtilTestSuite extends CypherFunSuiteWithMacroShadowing {}

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.values
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 
-class PeekingIteratorTest extends CypherFunSuite {
+class PeekingIteratorTest extends RuntimeUtilTestSuite {
 
   test("peek on empty iterator throws") {
     a[NoSuchElementException] should be thrownBy new PeekingIterator(ClosingIterator.empty).peek()

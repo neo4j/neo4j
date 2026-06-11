@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.debug
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 
-class DebugSupportTest extends CypherFunSuite {
+class DebugSupportTest extends RuntimeUtilTestSuite {
 
   test("I think you forgot to disable DebugSupport after debugging...") {
     DebugSupport.DEBUG_ENABLED shouldBe false

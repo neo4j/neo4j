@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.RelationshipTraversalEntities
@@ -182,7 +182,7 @@ object NfaDsl {
             case _                        => rept.solvedString
           }
           s"($defn)$r"
-        case Juxtaposition(first, second) => first + " " + second
+        case Juxtaposition(first, second) => s"$first $second"
         case RelExpansion(from, dir, pred, to) =>
           val body = (pred.name, pred.types, pred.pred) match {
             case (None, null, None) => ""
@@ -327,7 +327,7 @@ object NfaDsl {
 
 }
 
-class NfaDslTests extends CypherFunSuite {
+class NfaDslTests extends RuntimeUtilTestSuite {
   import NfaDsl.Implicits._
 
   private val nodePredicate: LongPredicate = Predicates.ALWAYS_TRUE_LONG
@@ -336,7 +336,7 @@ class NfaDslTests extends CypherFunSuite {
   Seq(
     // format: off
     (() |> ())                       -> "() ()",
-    ("s" |> ("a"--"b"*) |> "t")      -> "(s) ((a)--(b))* (t)",
+    ("s" |> ("a"--"b").* |> "t")     -> "(s) ((a)--(b))* (t)",
     ("s" where nodePredicate)        -> "(s WHERE ...)",
     (()-("r":|1)-())                 -> "()-[r:1]-()",
     (()-1->())                       -> "()-[:1]->()",
@@ -346,7 +346,7 @@ class NfaDslTests extends CypherFunSuite {
     (()--())                         -> "()--()",
     (()-->())                        -> "()-->()",
     ("a"-->"b"<--"c")                -> "(a)-->(b)<--(c)",
-    ("a"-->"b"<--"c"*)               -> "((a)-->(b)<--(c))*",
+    (("a"-->"b"<--"c").*)            -> "((a)-->(b)<--(c))*",
     ("a"-->"b"<--"c"+)               -> "((a)-->(b)<--(c))+",
     ("a"-->"b" rep (1, 5))           -> "((a)-->(b)){1, 5}",
     ("a"--"b"--"c" rep (1, 5))       -> "((a)--(b)--(c)){1, 5}",
@@ -407,7 +407,7 @@ class NfaDslTests extends CypherFunSuite {
     a.addRelationshipExpansion(b, relPredicate = relPredicate, name = VarName("", isGroup = false))
   }
 
-  testEqual("s" |> ("a" -- "b" *) |> "t") { sb =>
+  testEqual("s" |> ("a" -- "b").* |> "t") { sb =>
     val s = sb.newState("s", isStartState = true)
     val a = sb.newState("a")
     val b = sb.newState("b")

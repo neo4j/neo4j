@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.memory
 
 import org.neo4j.cypher.internal.runtime.GrowingArray
 import org.neo4j.cypher.internal.runtime.GrowingArray.DEFAULT_SIZE
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTrackerTest.DEFAULT_SIZE_OF_GROWING_ARRAY
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryLimitExceededException
@@ -33,7 +33,7 @@ object TrackingQueryMemoryTrackerTest {
   val DEFAULT_SIZE_OF_GROWING_ARRAY: Long = shallowSizeOfObjectArray(DEFAULT_SIZE) + GrowingArray.SHALLOW_SIZE
 }
 
-class TrackingQueryMemoryTrackerTest extends CypherFunSuite {
+class TrackingQueryMemoryTrackerTest extends RuntimeUtilTestSuite {
 
   case class TestMemoryTracker(maxBytes: Long = Long.MaxValue)
       extends LocalMemoryTracker(MemoryPools.NO_TRACKING, maxBytes, 0, null)

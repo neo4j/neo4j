@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 
 import java.util
 import java.util.Arrays.asList
@@ -27,7 +27,7 @@ import java.util.Collections.emptyList
 import java.util.Collections.emptyMap
 import java.util.Collections.singletonMap
 
-class RuntimeScalaValueConverterTest extends CypherFunSuite {
+class RuntimeScalaValueConverterTest extends RuntimeUtilTestSuite {
 
   val converter = new RuntimeScalaValueConverter(_ => false)
 

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 
-class GrowingArrayTest extends CypherFunSuite {
+class GrowingArrayTest extends RuntimeUtilTestSuite {
 
   test("empty") {
     val x = new GrowingArray[String](EmptyMemoryTracker.INSTANCE)

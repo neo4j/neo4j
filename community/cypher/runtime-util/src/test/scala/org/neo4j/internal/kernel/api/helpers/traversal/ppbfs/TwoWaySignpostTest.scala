@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
 import org.github.jamm.MemoryMeter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
@@ -32,9 +32,11 @@ import org.neo4j.memory.LocalMemoryTracker
 
 import scala.collection.immutable.ArraySeq
 
-class TwoWaySignpostTest extends CypherFunSuite {
+class TwoWaySignpostTest extends RuntimeUtilTestSuite {
   private val meter = MemoryMeter.builder.build
-  private def deduplicatedSize(o: AnyRef*) = meter.measureDeep(o) - meter.measureDeep(ArraySeq.fill(o.size)(null))
+
+  private def deduplicatedSize(o: AnyRef*) =
+    meter.measureDeep(o) - meter.measureDeep(ArraySeq.fill[AnyRef](o.size)(null))
   private def ls = Lengths.trailMode()
 
   test("memory allocation on construction of node signpost") {

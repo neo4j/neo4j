@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Column
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSupport {
+class SlottedParametersTest extends RuntimeUtilTestSuite with AstConstructionTestSupport {
   implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
   test("should rewrite plan") {

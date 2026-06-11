@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.InMemoryGraph
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.InMemoryRelationshipCursor.TraversedRel
@@ -45,7 +45,7 @@ import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.postfixOps
 
-trait PGPathPropagatingBFSTestBase { self: CypherFunSuite =>
+trait PGPathPropagatingBFSTestBase { self: RuntimeUtilTestSuite =>
 
   /** Recursively compares groups of paths until we reach an expected group that is smaller than the remaining k */
   @tailrec
@@ -230,7 +230,7 @@ trait PGPathPropagatingBFSTestBase { self: CypherFunSuite =>
               case RelationshipDirection.OUTGOING => rel.target
               case RelationshipDirection.INCOMING => rel.source
               case RelationshipDirection.LOOP     => node
-              case _                              => fail("inexhaustive match")
+              case null                           => fail("inexhaustive match")
             }
             matchesDirection = dir.matches(re.direction)
             matchesRelFilter = re.testRelationship(TraversedRel(rel, node), TraversalDirection.FORWARD)
@@ -321,7 +321,7 @@ trait PGPathPropagatingBFSTestBase { self: CypherFunSuite =>
   }
 
   import NfaDsl.Implicits._
-  protected val `(s) ((a)-->(b))* (t)`: Nfa = nfa("s" |> ("a" --> "b" *) |> "t")
+  protected val `(s) ((a)-->(b))* (t)`: Nfa = nfa("s" |> ("a" --> "b"*) |> "t")
   protected val `(s) ((a)-->(b))+ (t)`: Nfa = nfa("s" |> ("a" --> "b" +) |> "t")
   protected val `(s) ((a)--(b))+ (t)`: Nfa = nfa("s" |> ("a" -- "b" +) |> "t")
 

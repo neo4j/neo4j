@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 
-class ArrayBackedMapTest extends CypherFunSuite {
+class ArrayBackedMapTest extends RuntimeUtilTestSuite {
 
   test("updating and getting") {
     val map = ArrayBackedMap.apply[String, String]("name", "id")()

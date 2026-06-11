@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.runtime.cursors.CompositeValueIndexCursor.ascending
 import org.neo4j.cypher.internal.runtime.cursors.CompositeValueIndexCursor.descending
 import org.neo4j.cypher.internal.runtime.cursors.CompositeValueIndexCursor.unordered
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 import org.neo4j.values.storable.Values
@@ -34,7 +34,7 @@ import org.neo4j.values.storable.Values
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
-class CompositeValueIndexCursorTest extends CypherFunSuite {
+class CompositeValueIndexCursorTest extends RuntimeUtilTestSuite {
 
   test("should create unordered cursor") {
     // given

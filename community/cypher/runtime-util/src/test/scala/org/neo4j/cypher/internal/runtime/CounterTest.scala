@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 
-class CounterTest extends CypherFunSuite {
+class CounterTest extends RuntimeUtilTestSuite {
 
   test("counts up") {
     (Counter(0) += 1) should equal(1L)
@@ -58,7 +58,9 @@ class CounterTest extends CypherFunSuite {
 
   test("limits tracked iterators") {
     an[Exception] should be thrownBy {
-      Counter().track(1.to(5).iterator).limit(2) { counted => counted shouldBe 3; fail("Limit reached") }.toList
+      Counter().track(1.to(5).iterator).limit(2) { counted =>
+        counted shouldBe 3; fail("Limit reached")
+      }.toList
     }
   }
 }

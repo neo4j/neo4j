@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.parser.AstParserFactory
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
@@ -57,7 +58,6 @@ import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
@@ -65,7 +65,7 @@ import scala.util.Success
 import scala.util.Try
 
 //noinspection NameBooleanParameters
-class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructionTestSupport {
+class ExpressionVariableAllocationTest extends RuntimeUtilTestSuite with AstConstructionTestSupport {
 
   implicit private val idGen: IdGen = new SequentialIdGen()
 

@@ -24,7 +24,7 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.internal.runtime.DummyResource.verifyClose
 import org.neo4j.cypher.internal.runtime.DummyResource.verifyMonitorClose
 import org.neo4j.cypher.internal.runtime.DummyResource.verifyTrace
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.lang.AutoCloseablePlus.UNTRACKED
 import org.neo4j.memory.EmptyMemoryTracker
@@ -32,7 +32,7 @@ import org.neo4j.memory.MemoryTracker
 
 import scala.util.Try
 
-class ResourceManagerTest extends CypherFunSuite {
+class ResourceManagerTest extends RuntimeUtilTestSuite {
 
   test("should be able to trace and release a resource") {
     val resource = new DummyResource
@@ -276,7 +276,7 @@ class DummyResource extends DefaultCloseListenable {
   override def isClosed: Boolean = closed
 }
 
-object DummyResource extends CypherFunSuite {
+object DummyResource extends RuntimeUtilTestSuite {
 
   def verifyTrace(resource: DummyResource, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
     resources.trace(resource)

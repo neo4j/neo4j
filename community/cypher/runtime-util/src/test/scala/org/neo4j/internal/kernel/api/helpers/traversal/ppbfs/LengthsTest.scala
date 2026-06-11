@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 
-class LengthsTest extends CypherFunSuite {
+class LengthsTest extends RuntimeUtilTestSuite {
 
   test("seen and validated in trail-mode") {
     val lengths = Lengths.trailMode()

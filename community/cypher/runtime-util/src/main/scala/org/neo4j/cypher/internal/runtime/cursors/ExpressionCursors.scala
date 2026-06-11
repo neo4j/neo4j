@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.cursors
 
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.runtime.ResourceManagedCursorPool
 import org.neo4j.internal.kernel.api.Cursor
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -55,7 +55,7 @@ class ExpressionCursors(
     if (_nodeCursor == null) {
       _nodeCursor = cursorFactory.allocateNodeCursor(cursorContext, memoryTracker)
     }
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_nodeCursor))
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_nodeCursor))
     _nodeCursor
   }
 
@@ -63,7 +63,7 @@ class ExpressionCursors(
     if (_relationshipScanCursor == null) {
       _relationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext, memoryTracker)
     }
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_relationshipScanCursor))
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_relationshipScanCursor))
     _relationshipScanCursor
   }
 
@@ -71,7 +71,7 @@ class ExpressionCursors(
     if (_propertyCursor == null) {
       _propertyCursor = cursorFactory.allocatePropertyCursor(cursorContext, memoryTracker)
     }
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_propertyCursor))
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_propertyCursor))
     _propertyCursor
   }
 

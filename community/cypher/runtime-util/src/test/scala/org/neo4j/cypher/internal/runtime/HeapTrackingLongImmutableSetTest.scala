@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.memory.EmptyMemoryTracker
 
 import scala.util.Random
 
-class HeapTrackingLongImmutableSetTest extends CypherFunSuite {
+class HeapTrackingLongImmutableSetTest extends RuntimeUtilTestSuite {
 
   test("empty set should be empty") {
     val emptySet = HeapTrackingLongImmutableSet.emptySet(EmptyMemoryTracker.INSTANCE)

@@ -107,7 +107,7 @@ class VisualizingPPBSHooks(compress: Boolean) extends PPBFSHooks {
             sb.append("style=dotted penwidth=1 ")
           case signpost: TwoWaySignpost.RelSignpost =>
             sb.append("label=\"[").append(signpost.relId).append("]\" ")
-          case _ => ()
+          case null => ()
         }
 
         if (!rel.lengths.isEmpty) {
@@ -173,7 +173,7 @@ class VisualizingPPBSHooks(compress: Boolean) extends PPBFSHooks {
           sb.append("style=dotted penwidth=1 ")
         case signpost: TwoWaySignpost.RelSignpost =>
           sb.append("label=\"[").append(signpost.relId).append("]\" ")
-        case _ => ()
+        case null => ()
       }
 
       if (!rel.lengths.isEmpty) {

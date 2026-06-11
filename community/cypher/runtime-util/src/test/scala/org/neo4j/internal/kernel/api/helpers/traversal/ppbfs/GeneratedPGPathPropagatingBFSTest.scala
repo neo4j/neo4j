@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.GraphOperations
 import org.neo4j.cypher.internal.util.test_helpers.InMemoryGraph
 import org.neo4j.cypher.internal.util.test_helpers.InMemoryGraph.StringMapped.GraphOps
@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBF
 import scala.language.postfixOps
 import scala.util.Random
 
-class GeneratedPGPathPropagatingBFSTest extends CypherFunSuite with PGPathPropagatingBFSTestBase {
+class GeneratedPGPathPropagatingBFSTest extends RuntimeUtilTestSuite with PGPathPropagatingBFSTestBase {
 
   test(
     s"running the algorithm gives the same results as naive search"
@@ -337,12 +337,12 @@ object GeneratedPGPathPropagatingBFSTest {
         Query(
           nfa(`(s:S)` |> (() - OUT - () +) |> () - RANDOM - () |> (() - OUT - () +) |> ("mid" where graph.hasLabel(
             "T"
-          )) |> (() - DEW_DROP - () *) |> "t"),
+          )) |> (() - DEW_DROP - ()*) |> "t"),
           3
         ),
         Query(
           nfa(
-            `(s:S)` |> (() - OUT - () +) |> () - RANDOM - () |> (() - OUT - () +) |> (() - DEW_DROP - () *) |> `(t:T)`
+            `(s:S)` |> (() - OUT - () +) |> () - RANDOM - () |> (() - OUT - () +) |> (() - DEW_DROP - ()*) |> `(t:T)`
           ),
           3
         ),
@@ -440,11 +440,11 @@ object GeneratedPGPathPropagatingBFSTest {
           2
         ),
         Query(
-          nfa(`(s:S)` |> (() - INTRA -> () - INTER - () -<- INTRA - () *) |> `(t:T)`),
+          nfa(`(s:S)` |> (() - INTRA -> () - INTER - () -<- INTRA - ()*) |> `(t:T)`),
           2
         ),
         Query(
-          nfa(`(s:S)` |> (() - INTER -> () - INTRA - () -<- INTER - () *) |> `(t:T)`),
+          nfa(`(s:S)` |> (() - INTER -> () - INTRA - () -<- INTER - ()*) |> `(t:T)`),
           2
         ),
         Query(
@@ -455,7 +455,7 @@ object GeneratedPGPathPropagatingBFSTest {
           3
         ),
         Query(
-          nfa(`(s:S)` |> (() - INTRA - () rep (0, 1)) |> (() - INTER - () *) |> (() - INTRA - () rep (
+          nfa(`(s:S)` |> (() - INTRA - () rep (0, 1)) |> (() - INTER - ()*) |> (() - INTRA - () rep (
             0,
             1
           )) |> `(t:T)`),

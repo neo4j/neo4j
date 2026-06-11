@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.profiling
 
 import org.mockito.Answers
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptors
@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 
-class ProfilingTracerTest extends CypherFunSuite {
+class ProfilingTracerTest extends RuntimeUtilTestSuite {
 
   class Clock extends ProfilingTracer.Clock {
     var nanoTime: Long = 0L
@@ -207,8 +207,8 @@ class ProfilingTracerTest extends CypherFunSuite {
     tracer.executeOperator(operatorId).close() // no profiling sent
 
     val information = tracer.operatorProfile(operatorId.x)
-    information.indexesUsed() should equal(Array.empty)
-    information.indexUseCount() should equal(Array.empty)
+    information.indexesUsed() shouldBe empty
+    information.indexUseCount() shouldBe empty
   }
 
   class DelegatingKernelStatisticProvider(tracer: DefaultPageCursorTracer) extends StatisticProvider {

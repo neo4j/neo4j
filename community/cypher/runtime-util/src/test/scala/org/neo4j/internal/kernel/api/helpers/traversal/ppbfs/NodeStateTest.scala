@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
 import org.github.jamm.MemoryMeter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.Lengths.trailMode
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder
@@ -31,9 +31,11 @@ import org.neo4j.memory.MemoryTracker
 
 import scala.collection.immutable.ArraySeq
 
-class NodeStateTest extends CypherFunSuite {
+class NodeStateTest extends RuntimeUtilTestSuite {
   private val meter = MemoryMeter.builder.build
-  private def deduplicatedSize(o: AnyRef*) = meter.measureDeep(o) - meter.measureDeep(ArraySeq.fill(o.size)(null))
+
+  private def deduplicatedSize(o: AnyRef*) =
+    meter.measureDeep(o) - meter.measureDeep(ArraySeq.fill[AnyRef](o.size)(null))
 
   test("isTarget() returns true for a final state if there is no intoTarget") {
     val stateBuilder = new PGStateBuilder

@@ -19,17 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.scalatest.BeforeAndAfterEach
+import org.neo4j.cypher.internal.util.test_helpers.StackableBeforeAndAfterEach
+import org.scalatest.Suite
 
-trait CreateTempFileTestSupport extends TempFileCreator with BeforeAndAfterEach {
-  self: CypherFunSuite =>
+trait CreateTempFileTestSupport extends TempFileCreator with StackableBeforeAndAfterEach {
+  self: Suite =>
 
-  override protected def afterEach(): Unit = {
-    try {
-      deleteTemporaryFiles()
-    } finally {
-      super.afterEach()
-    }
+  registerAfterEach {
+    deleteTemporaryFiles()
   }
 }

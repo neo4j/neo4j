@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 
-class SelectivityTrackerTest extends CypherFunSuite {
+class SelectivityTrackerTest extends RuntimeUtilTestSuite {
 
   test("should not sort before minimum number of rows finished") {
     val st = new SelectivityTracker(3)

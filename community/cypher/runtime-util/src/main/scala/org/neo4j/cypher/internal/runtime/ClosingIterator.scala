@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.ResourceRawIterator
+import org.neo4j.cypher.internal.macros.ControlFlowMacros3.doWhile
 import org.neo4j.cypher.internal.runtime.ClosingIterator.MemoryTrackingEagerBatchingIterator.INIT_CHUNK_SIZE
 import org.neo4j.function.Suppliers
 import org.neo4j.io.IOUtils
@@ -188,7 +189,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
       self.close()
       cur match {
         case closingIterator: ClosingIterator[_] => closingIterator.close()
-        case _                                   =>
+        case null                                =>
       }
     }
   }
@@ -201,10 +202,10 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     private var hdDefined: Boolean = false
 
     override protected[this] def innerHasNext: Boolean = hdDefined || {
-      do {
+      doWhile {
         if (!self.hasNext) return false
         hd = self.next()
-      } while (!p(hd))
+      }(!p(hd))
       hdDefined = true
       true
     }

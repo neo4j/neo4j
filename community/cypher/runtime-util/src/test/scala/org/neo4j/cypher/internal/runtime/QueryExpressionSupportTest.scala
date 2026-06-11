@@ -39,9 +39,9 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.runtime.QueryExpressionSupport.CompiledQueryExpression
 import org.neo4j.cypher.internal.runtime.QueryExpressionSupport.ValueResolver
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
@@ -53,7 +53,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util.concurrent.atomic.AtomicInteger
 
-class QueryExpressionSupportTest extends CypherFunSuite {
+class QueryExpressionSupportTest extends RuntimeUtilTestSuite {
 
   // ----- Test leaf ADT + extractor + resolver ------------------------------
 

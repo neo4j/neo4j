@@ -126,7 +126,7 @@ class PlanDescriptionBuilder(
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.toTextOutput))
 
-    val withMetaData = (runtimeMetadata ++ batchSize.map(BatchSize)).foldLeft(description)((plan, metadata) =>
+    val withMetaData = (runtimeMetadata ++ batchSize.map(BatchSize.apply)).foldLeft(description)((plan, metadata) =>
       plan.addArgument(metadata)
     )
 
@@ -140,25 +140,25 @@ class PlanDescriptionBuilder(
   def profile(queryProfile: QueryProfile): InternalPlanDescription = {
 
     val planDescription = BuildPlanDescription(explain())
-      .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())
-      .addArgument(Arguments.AvailableWorkers, queryProfile.numberOfAvailableWorkers())
-      .addArgument(Arguments.AvailableProcessors, queryProfile.numberOfAvailableProcessors())
+      .addArgument(Arguments.GlobalMemory.apply, queryProfile.maxAllocatedMemory())
+      .addArgument(Arguments.AvailableWorkers.apply, queryProfile.numberOfAvailableWorkers())
+      .addArgument(Arguments.AvailableProcessors.apply, queryProfile.numberOfAvailableProcessors())
       .plan
       .map { (input: InternalPlanDescription) =>
         val data = queryProfile.operatorProfile(input.id.x)
 
         BuildPlanDescription(input)
-          .addArgument(Arguments.Rows, data.rows)
-          .addArgument(Arguments.DbHits, data.dbHits)
-          .addArgument(Arguments.PageCacheHits, data.pageCacheHits)
-          .addArgument(Arguments.PageCacheMisses, data.pageCacheMisses)
-          .addArgument(Time, data.time())
-          .addArgument(Arguments.Memory, data.maxAllocatedMemory())
+          .addArgument(Arguments.Rows.apply, data.rows)
+          .addArgument(Arguments.DbHits.apply, data.dbHits)
+          .addArgument(Arguments.PageCacheHits.apply, data.pageCacheHits)
+          .addArgument(Arguments.PageCacheMisses.apply, data.pageCacheMisses)
+          .addArgument(Time.apply, data.time())
+          .addArgument(Arguments.Memory.apply, data.maxAllocatedMemory())
           .pipe { plan =>
             val indexes = data.indexesUsed().zip(data.indexUseCount())
             if (indexes.nonEmpty) {
               plan.addArgument(
-                Arguments.UsedIndexes,
+                Arguments.UsedIndexes.apply,
                 indexes.map { case (idx, count) => idx.getName -> count }.toMap
               )
             } else plan

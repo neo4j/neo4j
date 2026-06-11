@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.kernel.api.query.ExtendedQueryStatistics
 
-import scala.beans.BeanProperty
-
 // Whenever you add a field here, please also update
 // org.neo4j.graphdb.QueryStatistics
 // org.neo4j.bolt.runtime.AbstractCypherAdapterStream#queryStats (team drivers does that)
@@ -36,8 +34,8 @@ case class QueryStatistics(
   relationshipsDeleted: Long = 0,
   labelsAdded: Long = 0,
   labelsRemoved: Long = 0,
-  @BeanProperty indexesAdded: Int = 0,
-  @BeanProperty indexesRemoved: Int = 0,
+  indexesAdded: Int = 0,
+  indexesRemoved: Int = 0,
   nodePropUniquenessConstraintsAdded: Int = 0,
   relPropUniquenessConstraintsAdded: Int = 0,
   nodePropExistenceConstraintsAdded: Int = 0,
@@ -49,15 +47,14 @@ case class QueryStatistics(
   nodeLabelExistenceConstraintsAdded: Int = 0,
   relSourceLabelConstraintsAdded: Int = 0,
   relTargetLabelConstraintsAdded: Int = 0,
-  @BeanProperty constraintsRemoved: Int = 0,
-  @BeanProperty transactionsStarted: Long = 0,
-  @BeanProperty transactionsCommitted: Long = 0,
-  @BeanProperty transactionsRolledBack: Long = 0,
-  @BeanProperty fileLinesRead: Long = 0,
-  @BeanProperty systemUpdates: Int = 0
+  constraintsRemoved: Int = 0,
+  transactionsStarted: Long = 0,
+  transactionsCommitted: Long = 0,
+  transactionsRolledBack: Long = 0,
+  fileLinesRead: Long = 0,
+  systemUpdates: Int = 0
 ) extends org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics {
 
-  @BeanProperty
   val constraintsAdded: Int = nodePropUniquenessConstraintsAdded + relPropUniquenessConstraintsAdded +
     nodePropExistenceConstraintsAdded + relPropExistenceConstraintsAdded +
     nodekeyConstraintsAdded + relkeyConstraintsAdded +
@@ -93,6 +90,24 @@ case class QueryStatistics(
   override def getLabelsAdded: Int = Math.min(labelsAdded, Integer.MAX_VALUE).toInt
 
   override def getLabelsRemoved: Int = Math.min(labelsRemoved, Integer.MAX_VALUE).toInt
+
+  override def getIndexesAdded: Int = indexesAdded
+
+  override def getIndexesRemoved: Int = indexesRemoved
+
+  override def getConstraintsAdded: Int = constraintsAdded
+
+  override def getConstraintsRemoved: Int = constraintsRemoved
+
+  override def getSystemUpdates: Int = systemUpdates
+
+  override def getTransactionsStarted: Long = transactionsStarted
+
+  override def getTransactionsCommitted: Long = transactionsCommitted
+
+  override def getTransactionsRolledBack: Long = transactionsRolledBack
+
+  override def getFileLinesRead: Long = fileLinesRead
 
   override def toString: String = {
     val builder = new StringBuilder

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.booleanArray
@@ -43,7 +43,7 @@ import scala.Array.emptyIntArray
 import scala.Array.emptyLongArray
 import scala.Array.emptyShortArray
 
-class MakeValuesNeoSafeTest extends CypherFunSuite {
+class MakeValuesNeoSafeTest extends RuntimeUtilTestSuite {
 
   test("string collection turns into string array") {
     makeValueNeoSafe(list(stringValue("a"), stringValue("b"))) should equal(stringArray("a", "b"))

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.debug
 
 import org.neo4j.codegen.api.CodeGeneration.GENERATED_SOURCE_LOCATION_PROPERTY
-import org.scalatest.BeforeAndAfterEach
+import org.neo4j.cypher.internal.util.test_helpers.StackableBeforeAndAfterEach
 import org.scalatest.Suite
 
 import java.io.File
@@ -50,7 +50,7 @@ import java.nio.file.attribute.BasicFileAttributes
  * 7. Note that every time you re-run your test, you will have to repeat steps 4 to 6, since new code will be
  *    generated each time.
  */
-trait SaveGeneratedSource extends BeforeAndAfterEach {
+trait SaveGeneratedSource extends StackableBeforeAndAfterEach {
   self: Suite =>
   val saveGeneratedSourceEnabled: Boolean
   val keepSourceFilesAfterTestFinishes: Boolean = false
@@ -58,8 +58,7 @@ trait SaveGeneratedSource extends BeforeAndAfterEach {
 
   private var generatedSources: Option[Path] = None
 
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
+  registerBeforeEach {
     if (saveGeneratedSourceEnabled) {
       // Resolve the generated source location relative to classpath of the test class that mixes in this trait.
       val classPathUrl = getClass.getProtectionDomain.getCodeSource.getLocation
@@ -88,7 +87,7 @@ trait SaveGeneratedSource extends BeforeAndAfterEach {
     System.setProperty(GENERATED_SOURCE_LOCATION_PROPERTY, location.toString)
   }
 
-  override protected def afterEach(): Unit = {
+  registerAfterEach {
     if (saveGeneratedSourceEnabled) {
       System.clearProperty("org.neo4j.cypher.DEBUG.generated_source_location")
       if (!keepSourceFilesAfterTestFinishes) {
@@ -105,6 +104,5 @@ trait SaveGeneratedSource extends BeforeAndAfterEach {
         }
       }
     }
-    super.afterEach()
   }
 }

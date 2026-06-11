@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
 import org.neo4j.cypher.internal.logical.plans.TraversalPathMode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.RuntimeUtilTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.InMemoryGraph
 import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
@@ -45,7 +45,7 @@ import java.util.function.LongPredicate
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.postfixOps
 
-class PGPathPropagatingBFSTest extends CypherFunSuite with PGPathPropagatingBFSTestBase {
+class PGPathPropagatingBFSTest extends RuntimeUtilTestSuite with PGPathPropagatingBFSTestBase {
 
   /*************************************
    * simple tests on the nfa traversal *
@@ -1145,7 +1145,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite with PGPathPropagatingBFST
         .|> ("a"-(DUP:|R1:|R3)->"b"+)
         .|> ("c"-PROBLEM->"d")
         .|> ("e"-(DUP:|R2)->"f"+)
-        .|> ("g"-REST->"h"*)
+        .|> (("g"-REST->"h").*)
         .|> ("t" where graph.hasLabel("T"))
       // format: on
     }

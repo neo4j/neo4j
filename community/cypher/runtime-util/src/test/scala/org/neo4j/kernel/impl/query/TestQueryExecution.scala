@@ -92,7 +92,7 @@ object TestQueryExecution {
   case class Error(err: Throwable) extends Event
 
   implicit def fromTable(table: Table): TestQueryExecution =
-    new TestQueryExecution(table.header.toArray, table.rows.map(Row))
+    new TestQueryExecution(table.header.toArray, table.rows.map(Row.apply))
 
   def fromThrowable(header: Seq[String], err: Throwable): TestQueryExecution =
     new TestQueryExecution(header.toArray, Seq(Error(err)))

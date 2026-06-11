@@ -32,7 +32,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.IterableHasAsJava
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-case class PathImpl(pathEntities: Entity*)
+class PathImpl(val pathEntities: Seq[Entity])
     extends org.neo4j.graphdb.Path {
 
   val sz = pathEntities.size
@@ -85,7 +85,7 @@ case class PathImpl(pathEntities: Entity*)
 
   override def toString: String = Paths.defaultPathToString(this)
 
-  override def canEqual(that: Any): Boolean = that != null && that.isInstanceOf[Path]
+  def canEqual(that: Any): Boolean = that != null && that.isInstanceOf[Path]
 
   override def equals(p1: Any): Boolean = {
     if (!canEqual(p1)) return false
@@ -95,7 +95,13 @@ case class PathImpl(pathEntities: Entity*)
     that.asScala.toList == pathEntities.toList
   }
 
+  override def hashCode(): Int = pathEntities.hashCode()
+
   def reverseNodes(): lang.Iterable[Node] = nodeList.reverse.asJava
 
   def reverseRelationships(): lang.Iterable[Relationship] = relList.reverse.asJava
+}
+
+object PathImpl {
+  def apply(pathEntities: Entity*): PathImpl = new PathImpl(pathEntities)
 }

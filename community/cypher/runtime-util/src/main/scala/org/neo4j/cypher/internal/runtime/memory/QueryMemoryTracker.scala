@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.config.CUSTOM_MEMORY_TRACKING
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING
 import org.neo4j.cypher.internal.config.MemoryTracking
 import org.neo4j.cypher.internal.config.NO_TRACKING
+import org.neo4j.cypher.internal.macros.ControlFlowMacros3.doWhile
 import org.neo4j.cypher.internal.runtime.GrowingArray
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport.DEBUG_MEMORY_TRACKING
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.MemoryTrackerPerOperator
@@ -481,13 +482,13 @@ private class ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(
   private def computeNewHighWaterMark(): Unit = {
     var current = -1L
     var newValue = -1L
-    do {
+    doWhile {
       newValue = heapUsage.sum()
       current = highWaterMark.get()
       if (current >= newValue) {
         return
       }
-    } while (!highWaterMark.weakCompareAndSetVolatile(current, newValue))
+    }(!highWaterMark.weakCompareAndSetVolatile(current, newValue))
   }
 
   override def heapHighWaterMark(): Long = {
