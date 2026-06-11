@@ -1623,15 +1623,17 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                 @Override
                 public void validate(Boolean value, Configuration config) {
                     if (value) {
-                        if (config.get(GraphDatabaseInternalSettings.latest_kernel_version) != (byte) 254) {
-                            throw new IllegalArgumentException("Merged log can only be enabled when '"
-                                    + GraphDatabaseInternalSettings.latest_kernel_version.name()
-                                    + "' is set to GLORIOUS_FUTURE (254)");
-                        }
-                        if (config.get(GraphDatabaseInternalSettings.latest_runtime_version) != Integer.MAX_VALUE) {
-                            throw new IllegalArgumentException("Merged log can only be enabled when '"
-                                    + GraphDatabaseInternalSettings.latest_runtime_version.name()
-                                    + "' is set to GLORIOUS_FUTURE (Integer.MAX_VALUE)");
+                        if (!config.get(GraphDatabaseInternalSettings.merge_log_on_latest)) {
+                            if (config.get(GraphDatabaseInternalSettings.latest_kernel_version) != (byte) 254) {
+                                throw new IllegalArgumentException("Merged log can only be enabled when '"
+                                        + GraphDatabaseInternalSettings.latest_kernel_version.name()
+                                        + "' is set to GLORIOUS_FUTURE (254)");
+                            }
+                            if (config.get(GraphDatabaseInternalSettings.latest_runtime_version) != Integer.MAX_VALUE) {
+                                throw new IllegalArgumentException("Merged log can only be enabled when '"
+                                        + GraphDatabaseInternalSettings.latest_runtime_version.name()
+                                        + "' is set to GLORIOUS_FUTURE (Integer.MAX_VALUE)");
+                            }
                         }
                         if (!config.get(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create)) {
                             throw new IllegalArgumentException("Merged log can only be enabled when '"
@@ -1647,6 +1649,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                 }
             })
             .build();
+
+    @Internal
+    @Description(
+            "Enables merge log entries and marshalling on KernelVersion.LATEST rather than requiring KernelVersion.GLORIOUS_FUTURE")
+    public static final Setting<Boolean> merge_log_on_latest =
+            newBuilder("internal.dbms.merged_log_on_latest", BOOL, false).build();
 
     @Internal
     @Description("""

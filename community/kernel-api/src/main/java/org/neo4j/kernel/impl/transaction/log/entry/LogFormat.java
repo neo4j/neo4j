@@ -650,6 +650,9 @@ public enum LogFormat {
                 return logFormat.getVersionByte() < V10.getVersionByte() ? V10 : logFormat;
             }
             if (config.get(GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create)) {
+                if (config.get(GraphDatabaseInternalSettings.merge_log_on_latest)) {
+                    return V11;
+                }
                 return logFormat.getVersionByte() < V10.getVersionByte() ? V10 : logFormat;
             }
             return V9;
