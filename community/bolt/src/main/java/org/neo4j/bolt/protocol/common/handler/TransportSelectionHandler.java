@@ -144,7 +144,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
                 log.debug("[%s] PROXY protocol header detected, installing decoder", connection.id());
                 installProxyProtocolHandlers(ctx);
                 ctx.channel().attr(PROXY_PROTOCOL_PROCESSING).set(Boolean.TRUE);
-                log.info("Proxy Protocol detection: true");
+                log.debug("Proxy Protocol detection: true");
                 // Pass all bytes to the next handler (HAProxyMessageDecoder) so it can decode the header
                 ByteBuf toFire = in.retainedDuplicate();
                 in.readerIndex(in.writerIndex());
@@ -167,7 +167,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
 
             // No PROXY protocol detected - mark as checked and continue with normal transport selection
             ctx.channel().attr(PROXY_PROTOCOL_PROCESSING).set(Boolean.FALSE);
-            log.info("Proxy Protocol detection: false");
+            log.debug("Proxy Protocol detection: false");
             // Continue to normal transport selection below
         } else if (Boolean.TRUE.equals(proxyProcessing)) {
             // PROXY protocol is being processed - wait for it to complete
