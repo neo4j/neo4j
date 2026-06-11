@@ -22,7 +22,6 @@
   </scm>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.cypher.internal.runtime.util</moduleName>
   </properties>
 

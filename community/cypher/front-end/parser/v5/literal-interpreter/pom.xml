@@ -22,7 +22,6 @@
   </scm>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <license-text.header>license/neo4j_gpl_v3/header.txt</license-text.header>
     <license.id>neo4j_gpl_v3</license.id>
     <licensing.prepend.text>license/neo4j_gpl_v3/notice.txt</licensing.prepend.text>

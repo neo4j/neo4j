@@ -23,7 +23,6 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <!-- forceCreation because otherwise the jar plugin and shade plugin don't play well together. From the jar plugin docs: "This plugin can not detect the
          post-processing, and so leaves the post-processed jar in place. This can lead to failures when those plugins do not expect to find their own output as
           an input."-->

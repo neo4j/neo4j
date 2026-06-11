@@ -16,7 +16,6 @@
   <description>Neo4j Stored Procedure compile-time annotation processor</description>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.tooling.procedure</moduleName>
   </properties>
 

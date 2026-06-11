@@ -15,7 +15,6 @@
   <description>Cypher pre-parser</description>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.cypher.internal.preparser</moduleName>
     <spotless.check.skip>true</spotless.check.skip>
   </properties>

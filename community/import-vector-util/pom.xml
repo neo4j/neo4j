@@ -22,7 +22,6 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.util.importer.vector</moduleName>
     <test.runner.jvm.settings.additional>--add-modules jdk.incubator.vector</test.runner.jvm.settings.additional>
     <vm.target.version>25</vm.target.version>

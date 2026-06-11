@@ -22,7 +22,6 @@
   </scm>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <maven.compiler.release>8</maven.compiler.release>
     <moduleName>org.neo4j.bootcheck.base</moduleName>
   </properties>

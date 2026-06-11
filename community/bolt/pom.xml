@@ -17,7 +17,6 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.bolt</moduleName>
     <test.vm.netty.leakDetection.level>DISABLED</test.vm.netty.leakDetection.level>
   </properties>

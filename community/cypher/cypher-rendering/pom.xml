@@ -21,7 +21,6 @@
   </scm>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.cypher.rendering</moduleName>
   </properties>
 

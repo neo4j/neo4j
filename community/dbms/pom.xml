@@ -20,7 +20,6 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.dbms</moduleName>
     <test.runner.jvm.settings.additional>-Djdk.attach.allowAttachSelf=true</test.runner.jvm.settings.additional>
   </properties>

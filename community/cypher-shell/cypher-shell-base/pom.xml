@@ -18,7 +18,6 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <maven.compiler.release>8</maven.compiler.release>
     <moduleName>org.neo4j.shell.base</moduleName>
   </properties>

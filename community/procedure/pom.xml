@@ -22,7 +22,6 @@
   </scm>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.procedure</moduleName>
     <test.runner.jvm.settings.additional>-javaagent:${settings.localRepository}/com/github/jbellis/jamm/${jamm.version}/jamm-${jamm.version}.jar</test.runner.jvm.settings.additional>
   </properties>

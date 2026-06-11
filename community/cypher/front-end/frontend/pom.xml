@@ -33,7 +33,6 @@
 
   <properties>
     <dependency.analyse.strict>true</dependency.analyse.strict>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.cypher.internal.frontend</moduleName>
   </properties>
 

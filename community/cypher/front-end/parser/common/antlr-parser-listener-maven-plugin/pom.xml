@@ -21,7 +21,6 @@
   </scm>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <maven-plugin-tools.version>3.15.1</maven-plugin-tools.version>
     <moduleName>org.neo4j.cypher.internal.parser.antlr4</moduleName>
   </properties>

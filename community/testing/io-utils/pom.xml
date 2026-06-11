@@ -23,7 +23,6 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.io.test.utils</moduleName>
   </properties>
 

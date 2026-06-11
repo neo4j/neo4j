@@ -25,7 +25,6 @@
   <properties>
     <appassembler-maven-plugin.version>2.1.0</appassembler-maven-plugin.version>
     <assembly-suffix />
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <executable-suffix />
     <jline.version>3.21.0</jline.version>
     <moduleName>org.neo4j.shell</moduleName>

@@ -94,7 +94,7 @@
     <cypherdsl.version>2025.2.7</cypherdsl.version>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
-    <dependency.analyze.failOnWarning>false</dependency.analyze.failOnWarning>
+    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <dependency.analyze.skip>false</dependency.analyze.skip>
     <!-- there is a non-standard behaviour of map merge in the 13.0 version can't upgrade for now-->
     <eclipse-collections.version>11.1.0</eclipse-collections.version>

@@ -23,7 +23,6 @@
   <properties>
     <cypher.shell.zip.dir>${project.build.directory}/cypher-shell/dist</cypher.shell.zip.dir>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.shell.it</moduleName>
     <test.runner.jvm.settings.additional>-Dorg.neo4j.cypher.shell.zip=${cypher.shell.zip.dir}/cypher-shell.zip</test.runner.jvm.settings.additional>
   </properties>

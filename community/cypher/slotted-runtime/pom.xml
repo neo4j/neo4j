@@ -22,8 +22,6 @@
   </scm>
 
   <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
     <moduleName>org.neo4j.cypher.internal.compatibility.runtime.slotted</moduleName>
     <scala.binary.version>3</scala.binary.version>
   </properties>

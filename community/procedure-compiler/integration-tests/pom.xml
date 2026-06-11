@@ -13,9 +13,7 @@
 
   <name>Neo4j - Procedure Compiler Integration Tests</name>
 
-  <properties>
-    <dependency.analyze.failOnWarning>true</dependency.analyze.failOnWarning>
-  </properties>
+  <properties />
 
   <dependencies>
     <dependency>
