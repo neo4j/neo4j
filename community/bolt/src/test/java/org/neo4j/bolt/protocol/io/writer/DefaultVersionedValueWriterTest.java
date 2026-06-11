@@ -32,6 +32,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -39,9 +40,11 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.mockito.Mockito;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
 import org.neo4j.packstream.error.reader.LimitExceededException;
+import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.TypeMarker;
@@ -545,6 +548,33 @@ class DefaultVersionedValueWriterTest {
 
                     assertThat(coordinates.isReadable()).isFalse();
                 }));
+    }
+
+    @Test
+    void shouldWriteUnsupportedType() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var ctx = Mockito.mock(WriterContext.class);
+
+        Mockito.doReturn(buf).when(ctx).buffer();
+
+        DefaultVersionedValueWriter.getInstance()
+                .writeUnsupportedType(ctx, "NewFangledType", new ProtocolVersion(43, 12));
+
+        var header = buf.readStructHeader();
+        var typeName = buf.readString();
+        var majorVersion = buf.readInt();
+        var minorVersion = buf.readInt();
+        var map = buf.readMap(PackstreamBuf::readString);
+
+        assertThat(header.length()).isEqualTo(4);
+        assertThat(header.tag()).isEqualTo(StructType.UNSUPPORTED.getTag());
+
+        assertThat(typeName).isEqualTo("NewFangledType");
+        assertThat(majorVersion).isEqualTo(43);
+        assertThat(minorVersion).isEqualTo(12);
+        assertThat(map).isEqualTo(Map.of());
+
+        assertThat(buf.raw().isReadable()).isFalse();
     }
 
     private record VectorSpecification<N>(int dimensions, N[] coordinates) {

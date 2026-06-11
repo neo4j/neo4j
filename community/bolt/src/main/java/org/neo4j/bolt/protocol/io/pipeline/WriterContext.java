@@ -25,6 +25,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -80,4 +81,6 @@ public interface WriterContext extends PipelineContext {
     void fireVector(double[] values);
 
     void fireUUID(long msb, long lsb);
+
+    void fireUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion);
 }

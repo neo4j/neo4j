@@ -41,7 +41,8 @@ public enum StructType {
     DURATION('E', 4),
     POINT_2D('X', 3),
     POINT_3D('Y', 4),
-    VECTOR('V', 2);
+    VECTOR('V', 2),
+    UNSUPPORTED('?', 4);
 
     private final short tag;
     private final short defaultSize;

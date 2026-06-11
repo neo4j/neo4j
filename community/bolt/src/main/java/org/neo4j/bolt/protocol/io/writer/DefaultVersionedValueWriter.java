@@ -32,6 +32,7 @@ import static org.neo4j.bolt.protocol.io.StructType.POINT_3D;
 import static org.neo4j.bolt.protocol.io.StructType.RELATIONSHIP;
 import static org.neo4j.bolt.protocol.io.StructType.TIME;
 import static org.neo4j.bolt.protocol.io.StructType.UNBOUND_RELATIONSHIP;
+import static org.neo4j.bolt.protocol.io.StructType.UNSUPPORTED;
 import static org.neo4j.bolt.protocol.io.StructType.VECTOR;
 import static org.neo4j.packstream.io.TypeMarker.BYTES_TYPES;
 
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -431,5 +433,15 @@ public final class DefaultVersionedValueWriter extends UtcVersionedValueWriter i
     @Override
     public void writeUUID(WriterContext ctx, long msb, long lsb) {
         ctx.buffer().writeUUID(msb, lsb);
+    }
+
+    @Override
+    public void writeUnsupportedType(WriterContext ctx, String typeName, ProtocolVersion supportedSinceVersion) {
+        UNSUPPORTED.writeHeader(ctx);
+
+        ctx.buffer().writeString(typeName);
+        ctx.buffer().writeInt(supportedSinceVersion.major());
+        ctx.buffer().writeInt(supportedSinceVersion.minor());
+        ctx.buffer().writeMapHeader(0);
     }
 }

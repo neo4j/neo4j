@@ -27,6 +27,7 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.io.writer.VersionedValueWriter;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -469,6 +470,11 @@ public class WriterPipeline {
         @Override
         public void fireUUID(long msb, long lsb) {
             this.fire("uuid", writer -> writer.writeUUID(this, msb, lsb));
+        }
+
+        @Override
+        public void fireUnsupportedType(String typeName, ProtocolVersion supportedSinceVersion) {
+            this.fire("unsupported_type", writer -> writer.writeUnsupportedType(this, typeName, supportedSinceVersion));
         }
     }
 }

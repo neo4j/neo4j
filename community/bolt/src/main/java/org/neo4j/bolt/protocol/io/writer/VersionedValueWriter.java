@@ -25,6 +25,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
@@ -135,5 +136,9 @@ public interface VersionedValueWriter {
 
     default void writeUUID(WriterContext ctx, long msb, long lsb) {
         ctx.fireUUID(msb, lsb);
+    }
+
+    default void writeUnsupportedType(WriterContext ctx, String typeName, ProtocolVersion supportedSinceVersion) {
+        ctx.fireUnsupportedType(typeName, supportedSinceVersion);
     }
 }

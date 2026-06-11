@@ -22,7 +22,7 @@ package org.neo4j.bolt.protocol.v60;
 import org.neo4j.bolt.negotiation.version.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
-import org.neo4j.bolt.protocol.io.writer.UUIDUnknownTypeVersionedValueWriter;
+import org.neo4j.bolt.protocol.io.writer.UnsupportedUUIDTypeVersionedValueWriter;
 import org.neo4j.packstream.io.Type;
 
 public final class BoltProtocolV60 extends AbstractBoltProtocol {
@@ -44,7 +44,7 @@ public final class BoltProtocolV60 extends AbstractBoltProtocol {
 
     @Override
     public void registerStructWriters(WriterPipeline pipeline) {
-        pipeline.addLast(UUIDUnknownTypeVersionedValueWriter.getInstance());
+        pipeline.addLast(UnsupportedUUIDTypeVersionedValueWriter.getInstance());
         super.registerStructWriters(pipeline);
     }
 
