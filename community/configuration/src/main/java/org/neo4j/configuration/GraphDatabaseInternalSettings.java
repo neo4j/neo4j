@@ -1530,7 +1530,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("A feature toggle behind which local user tags are developed")
+    @Description("A feature toggle behind which native user tags are developed")
     public static final Setting<Boolean> user_tags =
             newBuilder("internal.dbms.feature_flag.user_tags", BOOL, true).build();
 

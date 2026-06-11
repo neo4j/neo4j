@@ -3858,7 +3858,7 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
   test("CREATE AUTH RULE authRule SET CONDITION accepts every allow-listed function") {
     val allowListed = Seq(
       "abac.oidc.user_attribute",
-      "abac.local.user_tags",
+      "abac.native.user_tags",
       "range",
       "reduce",
       "reverse",

@@ -121,8 +121,8 @@ object AdministrationCommand extends SemanticAnalysisTooling {
   val authRuleAllowListedFunctions: Seq[String] = Seq(
     // ABAC oidc user attributes function
     "abac.oidc.user_attribute",
-    // ABAC local user tags function
-    "abac.local.user_tags",
+    // ABAC native user tags function
+    "abac.native.user_tags",
     // List functions
     "range",
     "reduce",
@@ -1140,7 +1140,7 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
     val name = functionInvocation.functionName.fullName
     // TODO: once function resolution runs before this semantic check, also verify the resolved
     //  identity, not just the name. Unlike the property-rule check, builtIn=true is not enough
-    //  here: abac.oidc.user_attribute and abac.local.user_tags are registered CallableUserFunctions,
+    //  here: abac.oidc.user_attribute and abac.native.user_tags are registered CallableUserFunctions,
     //  not compiler built-ins, so they must be allowed to resolve to the genuine abac functions.
     if (authRuleAllowListedFunctions.contains(name.toLowerCase))
       SemanticCheck.success
