@@ -48,6 +48,7 @@ import org.neo4j.exceptions.TemporalParseException;
 import org.neo4j.graphdb.Vector;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.InputException;
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -288,13 +289,26 @@ class ParquetDataInputChunk implements ParquetInputChunk {
                     }
                 }
                 case DURATION -> DurationValue.parse(object.toString());
-                case INT -> Integer.valueOf(object.toString());
-                case SHORT -> Short.valueOf(object.toString());
+                case INT ->
+                    object instanceof Number number
+                            ? Numbers.safeCastLongToInt(number.longValue())
+                            : Integer.valueOf(object.toString());
+                case SHORT ->
+                    object instanceof Number number
+                            ? Numbers.safeCastLongToShort(number.longValue())
+                            : Short.valueOf(object.toString());
                 case STRING -> object.toString();
-                case LONG -> Long.valueOf(object.toString());
-                case BYTE -> Byte.parseByte(object.toString());
-                case DOUBLE -> Double.parseDouble(object.toString());
-                case FLOAT -> Float.parseFloat(object.toString());
+                case LONG -> object instanceof Number number ? number.longValue() : Long.valueOf(object.toString());
+                case BYTE ->
+                    object instanceof Number number
+                            ? Numbers.safeCastLongToByte(number.longValue())
+                            : Byte.parseByte(object.toString());
+                // FLOAT/DOUBLE only short-circuit on the matching Java type. Cross-type widening (Float -> :double)
+                // goes through the toString roundtrip so the decimal representation is preserved
+                // (1.01f -> "1.01" -> 1.01d, not (double) 1.01f = 1.00999999...).
+                case DOUBLE ->
+                    object instanceof Double doubleValue ? doubleValue : Double.parseDouble(object.toString());
+                case FLOAT -> object instanceof Float floatValue ? floatValue : Float.parseFloat(object.toString());
                 default -> object;
             };
         } catch (RuntimeException e) {
@@ -391,15 +405,17 @@ class ParquetDataInputChunk implements ParquetInputChunk {
     }
 
     private VectorValue convertVectorType(Object object, ParquetColumn parquetColumn) {
-        final String[] parts = object.toString().split(vectorDelimiter);
+        final List<?> parts = object instanceof List<?> listValue
+                ? listValue
+                : Arrays.asList(object.toString().split(vectorDelimiter));
 
         final var headerInformation = VectorExtractor.parseHeaderInformation(parquetColumn.configuration());
         final var dimensions = headerInformation.getDimensions();
         final var coordinateType = headerInformation.getCoordinateType();
 
-        if (dimensions != parts.length) {
+        if (dimensions != parts.size()) {
             throw new IllegalArgumentException("Header specified %d dimensions, but vector has %d dimensions: %s"
-                    .formatted(dimensions, parts.length, object));
+                    .formatted(dimensions, parts.size(), object));
         }
 
         return switch (coordinateType) {
@@ -407,7 +423,7 @@ class ParquetDataInputChunk implements ParquetInputChunk {
                 final var innerColumn = parquetColumn.withColumnType(ParquetColumnType.resolve("byte"));
                 final byte[] values = new byte[dimensions];
                 for (int i = 0; i < dimensions; i++) {
-                    values[i] = (byte) convertType(parts[i], innerColumn);
+                    values[i] = (byte) convertType(parts.get(i), innerColumn);
                 }
                 yield Values.int8Vector(values);
             }
@@ -415,15 +431,15 @@ class ParquetDataInputChunk implements ParquetInputChunk {
                 final var innerColumn = parquetColumn.withColumnType(ParquetColumnType.resolve("short"));
                 short[] values = new short[dimensions];
                 for (int i = 0; i < dimensions; i++) {
-                    values[i] = (short) convertType(parts[i], innerColumn);
+                    values[i] = (short) convertType(parts.get(i), innerColumn);
                 }
                 yield Values.int16Vector(values);
             }
             case Vector.CoordinateType.INTEGER32 -> {
                 final var innerColumn = parquetColumn.withColumnType(ParquetColumnType.resolve("int"));
-                int[] values = new int[parts.length];
-                for (int i = 0; i < parts.length; i++) {
-                    values[i] = (int) convertType(parts[i], innerColumn);
+                int[] values = new int[dimensions];
+                for (int i = 0; i < dimensions; i++) {
+                    values[i] = (int) convertType(parts.get(i), innerColumn);
                 }
                 yield Values.int32Vector(values);
             }
@@ -431,7 +447,7 @@ class ParquetDataInputChunk implements ParquetInputChunk {
                 final var innerColumn = parquetColumn.withColumnType(ParquetColumnType.resolve("long"));
                 long[] values = new long[dimensions];
                 for (int i = 0; i < dimensions; i++) {
-                    values[i] = (long) convertType(parts[i], innerColumn);
+                    values[i] = (long) convertType(parts.get(i), innerColumn);
                 }
                 yield Values.int64Vector(values);
             }
@@ -439,7 +455,7 @@ class ParquetDataInputChunk implements ParquetInputChunk {
                 final var innerColumn = parquetColumn.withColumnType(ParquetColumnType.resolve("float"));
                 float[] values = new float[dimensions];
                 for (int i = 0; i < dimensions; i++) {
-                    values[i] = (float) convertType(parts[i], innerColumn);
+                    values[i] = (float) convertType(parts.get(i), innerColumn);
                 }
                 yield Values.float32Vector(values);
             }
@@ -447,7 +463,7 @@ class ParquetDataInputChunk implements ParquetInputChunk {
                 final var innerColumn = parquetColumn.withColumnType(ParquetColumnType.resolve("double"));
                 double[] values = new double[dimensions];
                 for (int i = 0; i < dimensions; i++) {
-                    values[i] = (double) convertType(parts[i], innerColumn);
+                    values[i] = (double) convertType(parts.get(i), innerColumn);
                 }
                 yield Values.float64Vector(values);
             }

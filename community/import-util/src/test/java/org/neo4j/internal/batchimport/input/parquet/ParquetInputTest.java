@@ -3446,6 +3446,242 @@ class ParquetInputTest {
         }
     }
 
+    static Stream<Arguments> shouldImportVectorsFromListColumn() {
+        return Stream.of(
+                Arguments.of(
+                        "list_int32.parquet",
+                        "vector{coordinateType:short,dimensions:3}",
+                        Values.int16Vector((short) 123, (short) 234, (short) 345)),
+                Arguments.of(
+                        "list_int32.parquet",
+                        "vector{coordinateType:int,dimensions:3}",
+                        Values.int32Vector(123, 234, 345)),
+                Arguments.of(
+                        "list_int32.parquet",
+                        "vector{coordinateType:long,dimensions:3}",
+                        Values.int64Vector(123L, 234L, 345L)),
+                Arguments.of(
+                        "list_int32.parquet",
+                        "vector{coordinateType:float,dimensions:3}",
+                        Values.float32Vector(123f, 234f, 345f)),
+                Arguments.of(
+                        "list_int32.parquet",
+                        "vector{coordinateType:double,dimensions:3}",
+                        Values.float64Vector(123d, 234d, 345d)),
+                Arguments.of(
+                        "list_int64.parquet",
+                        "vector{coordinateType:long,dimensions:3}",
+                        Values.int64Vector(123L, 234L, 345L)),
+                Arguments.of(
+                        "list_float.parquet",
+                        "vector{coordinateType:float,dimensions:3}",
+                        Values.float32Vector(1.01f, 2.21f, 3.23f)),
+                Arguments.of(
+                        "list_double.parquet",
+                        "vector{coordinateType:double,dimensions:3}",
+                        Values.float64Vector(1.01d, 2.21d, 3.23d)));
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void shouldImportVectorsFromListColumn(String fileName, String header, VectorValue expectedValue) throws Exception {
+        var fileUrl = getClass().getResource("/parquet/" + fileName);
+        var nodeFile = Path.of(fileUrl.toURI());
+        // The vector header contains commas (which clash with the CSV delimiter), so the field is quoted.
+        Path headerFile = createHeaderFile(
+                List.of(":ID", "name:string", "\"aList:%s\"".formatted(header), ":Label"),
+                List.of(":ID", "name", "aList", ":Label"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        assertThat(input.containsVectorData()).isTrue();
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(
+                    nodes, 123L, properties("aList", expectedValue, "name", "Mattias Persson"), labels("HACKER"));
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldFailImportOnVectorDataDimensionMismatchFromListColumn() throws Exception {
+        // list_int32.parquet has 3 elements; the header asserts 5 dimensions.
+        var fileUrl = getClass().getResource("/parquet/list_int32.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(":ID", "name:string", "\"aList:vector{coordinateType:int,dimensions:5}\"", ":Label"),
+                List.of(":ID", "name", "aList", ":Label"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        assertThat(input.containsVectorData()).isTrue();
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThatThrownBy(() -> readNext(nodes))
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining("Header specified 5 dimensions, but vector has 3 dimensions");
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldConvertInRangeIntegerColumnToByteProperty() throws Exception {
+        // A native parquet INT32 column with an explicit ':byte' header forces convertType through
+        // the BYTE switch arm with a real Number, exercising the safeCastLongToByte happy path.
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named("byteProp:byte")),
+                Collections.singletonList(new Object[] {1, 42}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 1L, properties("byteProp", (byte) 42), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    static Stream<Arguments> shouldConvertNativeNumericColumnViaNumberPath() {
+        return Stream.of(
+                Arguments.of(PrimitiveType.PrimitiveTypeName.INT32, "int", 42, 42),
+                Arguments.of(PrimitiveType.PrimitiveTypeName.INT64, "int", 42L, 42),
+                Arguments.of(PrimitiveType.PrimitiveTypeName.INT32, "short", 42, (short) 42),
+                Arguments.of(PrimitiveType.PrimitiveTypeName.INT32, "long", 42, 42L),
+                Arguments.of(PrimitiveType.PrimitiveTypeName.INT64, "long", 42L, 42L),
+                Arguments.of(PrimitiveType.PrimitiveTypeName.FLOAT, "float", 1.5f, 1.5f),
+                Arguments.of(PrimitiveType.PrimitiveTypeName.DOUBLE, "double", 1.5d, 1.5d));
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void shouldConvertNativeNumericColumnViaNumberPath(
+            PrimitiveType.PrimitiveTypeName parquetType, String headerType, Object sourceValue, Object expectedValue)
+            throws Exception {
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(":ID"),
+                        Types.required(parquetType).named("prop:" + headerType)),
+                Collections.singletonList(new Object[] {1, sourceValue}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 1L, properties("prop", expectedValue), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    static Stream<Arguments> shouldReportOverflowWhenNarrowingNativeNumericColumn() {
+        return Stream.of(
+                Arguments.of("int", Long.MAX_VALUE, "Value " + Long.MAX_VALUE + " is too big to be represented as int"),
+                Arguments.of("short", 100_000L, "Value 100000 is too big to be represented as short"));
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void shouldReportOverflowWhenNarrowingNativeNumericColumn(
+            String headerType, long sourceValue, String expectedMessageFragment) throws Exception {
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT32).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named("prop:" + headerType)),
+                Collections.singletonList(new Object[] {1, sourceValue}));
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThatThrownBy(() -> readNext(nodes))
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining(expectedMessageFragment);
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldReportOverflowWhenNarrowingListColumnToByteVector() throws Exception {
+        // list_int32.parquet contains Integer 234, which does not fit a signed byte.
+        // The Number short-circuit in convertType must surface a clear overflow error.
+        var fileUrl = getClass().getResource("/parquet/list_int32.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(":ID", "name:string", "\"aList:vector{coordinateType:byte,dimensions:3}\"", ":Label"),
+                List.of(":ID", "name", "aList", ":Label"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        assertThat(input.containsVectorData()).isTrue();
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThatThrownBy(() -> readNext(nodes))
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining("Value 234 is too big to be represented as byte");
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldFailImportOnVectorWithNonNumericValueFromListColumn() throws Exception {
+        // list.parquet stores a List<String> ["a", "b", "c"]; mapping it to a numeric vector must fail.
+        var fileUrl = getClass().getResource("/parquet/list.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(":ID", "name:string", "\"aList:vector{coordinateType:int,dimensions:3}\"", ":Label"),
+                List.of(":ID", "name", "aList", ":Label"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        assertThat(input.containsVectorData()).isTrue();
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThatThrownBy(() -> readNext(nodes))
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining("could not convert")
+                    .hasMessageContaining("VECTOR");
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
     private static Stream<Arguments> dimensionMismatchedVectors() {
         return Stream.of(
                 Arguments.of("vector{coordinateType:byte,dimensions:3}", "123;-2"),

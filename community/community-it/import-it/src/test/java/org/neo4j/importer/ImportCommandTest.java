@@ -3128,10 +3128,10 @@ class ImportCommandTest {
 
             // Verify c_list_float property
             var c_list_float = importedNode.getProperty("c_list_float");
-            assertThat(c_list_float).isInstanceOf(double[].class);
-            double[] floatArray = (double[]) c_list_float;
+            assertThat(c_list_float).isInstanceOf(float[].class);
+            float[] floatArray = (float[]) c_list_float;
             assertThat(floatArray).hasSize(3);
-            assertThat(floatArray).containsExactly(1.01, 2.21, 3.23);
+            assertThat(floatArray).containsExactly(1.01f, 2.21f, 3.23f);
 
             // Verify c_list_double property
             var c_list_double = importedNode.getProperty("c_list_double");
