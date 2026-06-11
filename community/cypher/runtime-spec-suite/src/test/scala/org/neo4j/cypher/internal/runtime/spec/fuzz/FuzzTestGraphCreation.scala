@@ -92,8 +92,11 @@ object FuzzTestGraphCreation {
     s"""
        |// Copy this test case to FuzzTestFailuresTestBase
        |// Morsel size: $morselSize
-       |// Seed: $seed
-       |test("please reproduce me 🤞${config.seed}") {
+       |// Self-contained repro: the plan is inlined below and the graph is rebuilt from
+       |// its graph-type seed in randomGraph, so no ScalaCheck seed is needed to replay.
+       |// Plan seed (provenance only - does not reproduce on its own, as the plan and
+       |// graph-property seeds are independent): $seed
+       |test("Fuzz Test Reproduction: ${config.seed}") {
        |  givenGraph(randomGraph(GraphType.${config.graphType}, ${config.seed}L))
        |
        |  val params = $params
