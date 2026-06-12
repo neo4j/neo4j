@@ -108,11 +108,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
         return new SingleFilePageSwapperFactory(fileSystem, new DefaultPageCacheTracer(), EmptyMemoryTracker.INSTANCE);
     }
 
-    @Override
-    protected void mkdirs(Path dir) throws IOException {
-        getFs().mkdirs(dir);
-    }
-
     protected Path getPath() {
         return path;
     }

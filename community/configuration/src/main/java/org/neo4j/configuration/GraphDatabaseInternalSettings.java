@@ -2154,6 +2154,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(min(kibiBytes(8)))
             .build();
 
+    @Internal
+    @Description(
+            "Target size of one segment for the segmented store files. When set to 0, every "
+                    + "store is a single file (classical behaviour). When set the store file is split into segment files of configured size. "
+                    + " Segment 0 keeps the original file name (block.x1.db), additional segments use numeric suffixes (e.g. block.x1.db.1).")
+    public static final Setting<Long> store_segment_size = newBuilder("internal.db.store.segment_size", BYTES, 0L)
+            .addConstraint(any(is(0L), min(mebiBytes(16))))
+            .build();
+
     public static HeapEstimatorCacheConfig extractCustomHeapEstimatorCacheConfig(Config config) {
         return new HeapEstimatorCacheConfig(
                 config.get(GraphDatabaseInternalSettings.heap_estimator_cache_size_limit),

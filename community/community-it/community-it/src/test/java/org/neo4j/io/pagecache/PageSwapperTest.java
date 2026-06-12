@@ -87,8 +87,6 @@ public abstract class PageSwapperTest {
 
     protected abstract PageSwapperFactory swapperFactory(FileSystemAbstraction fileSystem);
 
-    protected abstract void mkdirs(Path dir) throws IOException;
-
     @BeforeAll
     static void beforeAll() {
         RESERVED_BYTES = 0;
@@ -775,7 +773,8 @@ public abstract class PageSwapperTest {
     }
 
     @Test
-    void positionedVectoredReadWhereLastPageExtendBeyondEndOfFileMustHaveRemainderZeroFilled() throws Exception {
+    protected void positionedVectoredReadWhereLastPageExtendBeyondEndOfFileMustHaveRemainderZeroFilled()
+            throws Exception {
         assumeThat(RESERVED_BYTES).isEqualTo(0);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
@@ -1111,6 +1110,7 @@ public abstract class PageSwapperTest {
                 callback,
                 createIfNotExist,
                 useDirectIO,
+                pagesPerSegment(),
                 DISABLED,
                 ALWAYS_ALLOW,
                 swapperSet);
@@ -1133,11 +1133,20 @@ public abstract class PageSwapperTest {
                 callback,
                 createIfNotExist,
                 useDirectIO,
+                pagesPerSegment(),
                 controller,
                 ALWAYS_ALLOW,
                 swapperSet);
         openedSwappers.add(swapper);
         return swapper;
+    }
+
+    protected long pagesPerSegment() {
+        return 0;
+    }
+
+    private void mkdirs(Path dir) throws IOException {
+        getFs().mkdirs(dir);
     }
 
     protected static int sizeOfAsInt(long address) {
@@ -1197,7 +1206,7 @@ public abstract class PageSwapperTest {
         return createPage(cachePageSize());
     }
 
-    private PageSwapper createSwapperAndFile(PageSwapperFactory factory, Path path) throws IOException {
+    protected PageSwapper createSwapperAndFile(PageSwapperFactory factory, Path path) throws IOException {
         return createSwapperAndFile(factory, path, PAYLOAD_SIZE);
     }
 
@@ -1216,7 +1225,7 @@ public abstract class PageSwapperTest {
         return createSwapper(factory, path, filePageSize, NO_CALLBACK, true, false);
     }
 
-    private Path file(String filename) throws IOException {
+    protected Path file(String filename) throws IOException {
         Path file = testDir.file(filename);
         mkdirs(file.getParent());
         return file;

@@ -149,6 +149,7 @@ class MuninnPageCacheExplicitPreallocateTest {
                                 onEviction,
                                 createIfNotExist,
                                 useDirectIO,
+                                pagesPerSegment,
                                 ioController,
                                 evictionGuard,
                                 swappers) -> {

@@ -4686,6 +4686,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     PageEvictionCallback onEviction,
                     boolean createIfNotExist,
                     boolean useDirectIO,
+                    long pagesPerSegment,
                     IOController ioController,
                     EvictionBouncer evictionBouncer,
                     SwapperSet swappers)
@@ -4696,6 +4697,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         onEviction,
                         createIfNotExist,
                         useDirectIO,
+                        pagesPerSegment,
                         ioController,
                         evictionBouncer,
                         swappers);

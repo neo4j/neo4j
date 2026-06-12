@@ -185,6 +185,7 @@ class MuninnPageCursorTest {
                     PageEvictionCallback onEviction,
                     boolean createIfNotExist,
                     boolean useDirectIO,
+                    long pagesPerSegment,
                     IOController ioController,
                     EvictionBouncer evictionBouncer,
                     SwapperSet swappers)
@@ -195,6 +196,7 @@ class MuninnPageCursorTest {
                         onEviction,
                         createIfNotExist,
                         useDirectIO,
+                        pagesPerSegment,
                         ioController,
                         evictionBouncer,
                         swappers);

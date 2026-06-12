@@ -42,23 +42,24 @@ public interface PageSwapperFactory {
     /**
      * Create a PageSwapper for the given file.
      *
-     * @param path The file that the PageSwapper will move file pages in and
-     * out of.
-     * @param filePageSize The size of the pages in the file. Presumably a
-     * multiple of some record size.
-     * @param onEviction The PageSwapper will be told about evictions, and has
-     * the responsibility of informing the PagedFile via this callback.
+     * @param path             The file that the PageSwapper will move file pages in and
+     *                         out of.
+     * @param filePageSize     The size of the pages in the file. Presumably a
+     *                         multiple of some record size.
+     * @param onEviction       The PageSwapper will be told about evictions, and has
+     *                         the responsibility of informing the PagedFile via this callback.
      * @param createIfNotExist When true, creates the given file if it does not exist, instead of throwing an
-     * exception.
-     * @param useDirectIO When true, direct io open open will gonna be used for underlying channel.
-     * Option supported only on Linux with certain limitations.
-     * @param ioController controller to report swapper io's
-     * @param evictionBouncer eviction bouncer to check if flushing for the dirty page is still required or can be skipped
-     * @param swappers set of already registered swappers
+     *                         exception.
+     * @param useDirectIO      When true, direct io open open will gonna be used for underlying channel.
+     *                         Option supported only on Linux with certain limitations.
+     * @param pagesPerSegment  Number of pages per file segment. 0 if segmentation is disabled
+     * @param ioController     controller to report swapper io's
+     * @param evictionBouncer  eviction bouncer to check if flushing for the dirty page is still required or can be skipped
+     * @param swappers         set of already registered swappers
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
-     * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
-     * false.
+     *                     instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
+     *                     false.
      */
     PageSwapper createPageSwapper(
             Path path,
@@ -66,6 +67,7 @@ public interface PageSwapperFactory {
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
             boolean useDirectIO,
+            long pagesPerSegment,
             IOController ioController,
             EvictionBouncer evictionBouncer,
             SwapperSet swappers)

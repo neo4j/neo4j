@@ -197,4 +197,32 @@ public interface PageCacheCounters {
     default long prefetchedPagesWithFaults() {
         return 0L;
     }
+
+    /**
+     * @return Total number of segment files created.
+     */
+    default long segmentsCreated() {
+        return 0L;
+    }
+
+    /**
+     * @return Total number of existing segment files loaded.
+     */
+    default long segmentsLoaded() {
+        return 0L;
+    }
+
+    /**
+     * @return Total number of segment files unloaded.
+     */
+    default long segmentsUnloaded() {
+        return 0L;
+    }
+
+    /**
+     * @return Total number of segment files deleted.
+     */
+    default long segmentsDeleted() {
+        return 0L;
+    }
 }

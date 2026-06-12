@@ -64,6 +64,7 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.swapper.SegmentedPageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.swapper.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
@@ -440,10 +441,13 @@ public class MuninnPageCache implements PageCache {
     private static PageSwapperFactory getSwapperFactory(
             FileSystemAbstraction fileSystemAbstraction, Configuration configuration) {
         var configuredFactory = configuration.swapperFactory;
-        return configuredFactory != null
-                ? configuredFactory
-                : new SingleFilePageSwapperFactory(
-                        fileSystemAbstraction, configuration.pageCacheTracer, configuration.memoryTracker);
+        if (configuredFactory != null) {
+            return configuredFactory;
+        }
+        var pageSwapperFactory = new SingleFilePageSwapperFactory(
+                fileSystemAbstraction, configuration.pageCacheTracer, configuration.memoryTracker);
+        return new SegmentedPageSwapperFactory(
+                pageSwapperFactory, fileSystemAbstraction, configuration.pageCacheTracer);
     }
 
     /**
@@ -514,6 +518,7 @@ public class MuninnPageCache implements PageCache {
         boolean singleMvccWriter = true;
         boolean preallocation = preallocateStoreFiles;
         boolean contextVersionUpdates = false;
+        long pagesPerSegment = 0;
         for (OpenOption option : openOptions) {
             if (option.equals(StandardOpenOption.CREATE)) {
                 createIfNotExists = true;
@@ -535,6 +540,8 @@ public class MuninnPageCache implements PageCache {
                 preallocation = false;
             } else if (option.equals(PageCacheOpenOptions.CONTEXT_VERSION_UPDATES)) {
                 contextVersionUpdates = true;
+            } else if (option instanceof PageCacheOpenOptions.SegmentedOpenOption soo) {
+                pagesPerSegment = soo.pagesPerSegment();
             } else if (!ignoredOpenOptions.contains(option)) {
                 throw new UnsupportedOperationException("Unsupported OpenOption: " + option);
             }
@@ -597,6 +604,7 @@ public class MuninnPageCache implements PageCache {
                 singleMvccWriter,
                 contextVersionUpdates,
                 multiVersioned ? pageReservedBytes : 0,
+                pagesPerSegment,
                 versionStorage,
                 littleEndian,
                 victimPage);

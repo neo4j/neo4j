@@ -3022,6 +3022,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 PageEvictionCallback onEviction,
                 boolean createIfNotExist,
                 boolean useDirectIO,
+                long pagesPerSegment,
                 IOController ioController,
                 EvictionBouncer evictionBouncer,
                 SwapperSet swappers)
@@ -3032,6 +3033,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     onEviction,
                     createIfNotExist,
                     useDirectIO,
+                    pagesPerSegment,
                     ioController,
                     evictionBouncer,
                     swappers)) {
@@ -3547,6 +3549,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 PageEvictionCallback onEviction,
                 boolean createIfNotExist,
                 boolean useDirectIO,
+                long pagesPerSegment,
                 IOController ioController,
                 EvictionBouncer evictionBouncer,
                 SwapperSet swappers)
@@ -3557,6 +3560,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     onEviction,
                     createIfNotExist,
                     useDirectIO,
+                    pagesPerSegment,
                     ioController,
                     evictionBouncer,
                     swappers)) {

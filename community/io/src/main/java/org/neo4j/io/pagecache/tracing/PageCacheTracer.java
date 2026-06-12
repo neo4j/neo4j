@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
+import java.nio.file.Path;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
@@ -592,4 +593,32 @@ public interface PageCacheTracer extends PageCacheCounters, FileFlushEventProvid
      * called during page file unmap for testing purposes
      */
     default void beforePageExclusiveLock() {}
+
+    /**
+     * New segment of segmented store is created
+     */
+    default SegmentEvent createSegment(Path basePath, int segmentIndex) {
+        return SegmentEvent.NULL;
+    }
+
+    /**
+     * An existing segment file opened.
+     */
+    default SegmentEvent loadSegment(Path basePath, int segmentIndex) {
+        return SegmentEvent.NULL;
+    }
+
+    /**
+     * Unload segment of segmented store.
+     */
+    default SegmentEvent unloadSegment(Path basePath, int segmentIndex) {
+        return SegmentEvent.NULL;
+    }
+
+    /**
+     * Delete segment of segment store.
+     */
+    default SegmentEvent deleteSegment(Path basePath, int segmentIndex) {
+        return SegmentEvent.NULL;
+    }
 }

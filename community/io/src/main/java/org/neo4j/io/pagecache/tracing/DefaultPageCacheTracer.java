@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.tracing;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.internal.helpers.MathUtil;
@@ -75,6 +76,10 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     protected final LongAdder prefetchedPages = new LongAdder();
     protected final LongAdder prefetchedPagesWithFaults = new LongAdder();
     protected final LongAdder snapshotsLoaded = new LongAdder();
+    protected final LongAdder segmentsCreated = new LongAdder();
+    protected final LongAdder segmentsLoaded = new LongAdder();
+    protected final LongAdder segmentsUnloaded = new LongAdder();
+    protected final LongAdder segmentsDeleted = new LongAdder();
     protected final AtomicLong maxPages = new AtomicLong();
 
     private final boolean tracePageFileIndividually;
@@ -329,6 +334,59 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public long prefetchedPagesWithFaults() {
         return prefetchedPagesWithFaults.sum();
+    }
+
+    @Override
+    public long segmentsCreated() {
+        return segmentsCreated.sum();
+    }
+
+    @Override
+    public long segmentsLoaded() {
+        return segmentsLoaded.sum();
+    }
+
+    @Override
+    public long segmentsUnloaded() {
+        return segmentsUnloaded.sum();
+    }
+
+    @Override
+    public long segmentsDeleted() {
+        return segmentsDeleted.sum();
+    }
+
+    @Override
+    public SegmentEvent createSegment(Path basePath, int segmentIndex) {
+        return new CountingSegmentEvent(segmentsCreated);
+    }
+
+    @Override
+    public SegmentEvent loadSegment(Path basePath, int segmentIndex) {
+        return new CountingSegmentEvent(segmentsLoaded);
+    }
+
+    @Override
+    public SegmentEvent unloadSegment(Path basePath, int segmentIndex) {
+        return new CountingSegmentEvent(segmentsUnloaded);
+    }
+
+    @Override
+    public SegmentEvent deleteSegment(Path basePath, int segmentIndex) {
+        return new CountingSegmentEvent(segmentsDeleted);
+    }
+
+    private static final class CountingSegmentEvent implements SegmentEvent {
+        private final LongAdder counter;
+
+        CountingSegmentEvent(LongAdder counter) {
+            this.counter = counter;
+        }
+
+        @Override
+        public void close() {
+            counter.increment();
+        }
     }
 
     @Override

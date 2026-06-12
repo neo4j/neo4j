@@ -163,7 +163,7 @@ final class MuninnPagedFile implements PagedFile, Flushable {
      *
      * @param path              original file
      * @param pageCache         page cache
-     * @param pageMetadata          page list
+     * @param pageMetadata      page list
      * @param filePageSize      file page size
      * @param swapperFactory    page cache swapper factory
      * @param pageCacheTracer   global page cache tracer
@@ -175,6 +175,7 @@ final class MuninnPagedFile implements PagedFile, Flushable {
      *                          This information is currently used only for monitoring purposes.
      * @param ioController      io controller to report page file io operations
      * @param multiVersioned    if file is mutli versioned
+     * @param pagesPerSegment   pages per segment, 0 if segmentation is disabled
      * @param versionStorage    page file old versioned pages storage
      * @param littleEndian      page file endianess
      * @param victimPage        victim page pointer
@@ -200,6 +201,7 @@ final class MuninnPagedFile implements PagedFile, Flushable {
             boolean singleWriter,
             boolean contextVersionUpdates,
             int reservedBytes,
+            long pagesPerSegment,
             VersionStorage versionStorage,
             boolean littleEndian,
             long victimPage)
@@ -245,6 +247,7 @@ final class MuninnPagedFile implements PagedFile, Flushable {
                 onEviction,
                 createIfNotExists,
                 useDirectIo,
+                pagesPerSegment,
                 ioController,
                 evictionBouncer,
                 swapperSet);
