@@ -23,8 +23,6 @@ import java.nio.file.Path;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 /**
- * File-level facts for one enveloped log file. {@code lastModifiedMillis} is the filesystem mtime captured when
- * the cursor read this entry — used by time-based pruning since envelopes carry no per-entry timestamp in the
- * header.
+ * File-level facts for one enveloped log file.
  */
-public record LogFileMetadata(LogHeader logHeader, long version, Path path, long lastModifiedMillis) {}
+public record LogFileMetadata(LogHeader logHeader, long version, Path path) {}

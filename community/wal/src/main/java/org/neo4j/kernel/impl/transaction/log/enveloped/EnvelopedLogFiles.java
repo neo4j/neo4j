@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.ChannelNativeAccessor;
@@ -54,6 +55,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     private final LogRotation logRotation;
     private final LogTracers logTracers;
     private final LogsRepository logsRepository;
+    private final EnvelopedLogHeaderCache logHeaderCache;
     private final long maxFileSize;
     private final LogHeaderFactory logHeaderFactory;
     private final LogFilesPruner logFilesPruner;
@@ -81,6 +83,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         this.channelNativeAccessor = channelNativeAccessor;
         this.logHeaderFactory = logHeaderFactory;
         this.logsRepository = logsRepository;
+        this.logHeaderCache = new EnvelopedLogHeaderCache();
         this.segmentBlockSize = segmentBlockSize;
         this.writerBufferedBlocks = writerBufferedBlocks;
         this.memoryTracker = memoryTracker;
@@ -128,11 +131,11 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
 
     @Override
     public EnvelopeReadChannel openReadChannel() throws IOException {
-        if (logsRepository.isEmpty()) {
+        var longRange = logsRepository.logVersionsRange();
+        if (longRange.isEmpty()) {
             throw new IllegalStateException("No log files found " + logsRepository);
         }
-        var version = logsRepository.logVersions(false)[0];
-        return envelopedReadChannel(logsRepository.openReadChannel(version), false);
+        return envelopedReadChannel(logsRepository.openReadChannel(longRange.from()), false);
     }
 
     @Override
@@ -149,18 +152,36 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     }
 
     private long getFileVersion(long entryIndex) throws IOException {
-        var longRange = logsRepository.logVersionsRange();
-        if (!longRange.isEmpty()) {
+        if (logHeaderCache.isEmpty()) {
+            var longRange = logsRepository.logVersionsRange();
+            if (longRange.isEmpty()) {
+                return -1;
+            }
             var logFileBinarySearch = new LogFileBinarySearch(
                     logsRepository, longRange.from(), longRange.to() - longRange.from() + 1, memoryTracker);
             return LogBinarySearch.binarySearch(logFileBinarySearch, entryIndex);
         }
-        return -1;
+        return LogBinarySearch.binarySearch(logHeaderCache.binarySearchReader(), entryIndex);
     }
 
     public long initialise() throws IOException {
         logsRepository.initialise();
-        return recoverLogTail(0);
+        return recoverLogTail(0, true);
+    }
+
+    public void populateCache() throws IOException {
+        try (var metadata = new LogFilesMetadata(logsRepository)) {
+            while (metadata.next()) {
+                var logHeader = metadata.get().logHeader();
+                logHeaderCache.cache(logHeader);
+            }
+        }
+        log.info("Populated log header cache");
+    }
+
+    public void clearCache() {
+        logHeaderCache.clear();
+        log.info("Log header cache cleared");
     }
 
     /**
@@ -169,10 +190,10 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
      * chance that the log is corrupt.
      */
     public long resetWriteChannelToLatestIndex() throws IOException {
-        return recoverLogTail(logsRepository.latestVersion());
+        return recoverLogTail(logsRepository.latestVersion(), false);
     }
 
-    private long recoverLogTail(long fromVersion) throws IOException {
+    private long recoverLogTail(long fromVersion, boolean populateCache) throws IOException {
         var tailChecker = new EnvelopedLogTailChecker(
                 logsRepository,
                 logFileVersion -> envelopedReadChannel(logsRepository.openReadChannel(logFileVersion), false),
@@ -182,7 +203,10 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         if (tailInfo.createInitial()) {
             log.info("No previous enveloped raft log files found. Creating new log file. " + tailInfo);
             long startVersion = tailInfo.lastValidatedPosition().getLogVersion();
-            logsRepository.deleteLogFilesFrom(startVersion);
+            deleteLogFilesFrom(startVersion);
+            if (populateCache) {
+                populateCache();
+            }
             var logChannelCtx = createNewStoreChannel(
                     startVersion,
                     logHeaderFactory.createLogHeader(
@@ -206,7 +230,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                     tailInfo.lastValidChecksum(),
                     tailInfo.lastValidAppendIndex(),
                     tailInfo.lastValidTerm());
-            logsRepository.deleteLogFilesFrom(lastValidVersion + 1L);
+            deleteLogFilesFrom(lastValidVersion + 1L);
             appendingChannel.truncateToPosition(
                     tailInfo.lastValidatedPosition().getByteOffset(),
                     tailInfo.lastValidChecksum(),
@@ -216,12 +240,18 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 appendingChannel.insertStartOffset(tailInfo.segmentOffset());
             }
             appendingChannel.prepareForFlush().flush();
+            if (populateCache) {
+                populateCache();
+            }
         } else {
             log.info("Reopen previous enveloped raft log file. " + tailInfo);
             // stop updateState throwing if for some reason we call initialise twice
             if (appendingChannel != null) {
                 appendingChannel.close();
                 appendingChannel = null;
+            }
+            if (populateCache) {
+                populateCache();
             }
             var logChannelCtx = openWriteChannel(
                     tailInfo.lastValidatedPosition().getLogVersion(),
@@ -309,13 +339,13 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             appendingChannel = null;
             currentWriteChannel.channel().close();
             currentWriteChannel = null;
-            logsRepository.deleteLogFilesFrom(version + 1);
+            deleteLogFilesFrom(version + 1);
             currentWriteChannel = openWriteChannel(version, position);
             appendingChannel = envelopedWriteChannel(currentWriteChannel, -1, Integer.MAX_VALUE, prevTerm);
         } else {
             // delete any (empty) trailing files before trimming
             // so that we don't create a broken checksum chain due to the stale headers
-            logsRepository.deleteLogFilesFrom(version + 1);
+            deleteLogFilesFrom(version + 1);
         }
         appendingChannel.truncateToPosition(position, prevChecksum, fromIndex - 1, prevTerm);
         if (offset > 0) {
@@ -355,7 +385,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     public void skip(long index, int checksum, int offset, long term) throws IOException {
         if (index > appendingChannel.currentIndex()) {
             var prunedVersion = logsRepository.logVersionsRange().to();
-            logsRepository.deleteLogFilesTo(prunedVersion);
+            deleteLogFilesTo(prunedVersion);
             long nextVersion = prunedVersion + 1;
             var newStoreChannel = createNewStoreChannel(
                     nextVersion,
@@ -388,6 +418,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         if (prunedVersion == -1) {
             return -1;
         }
+        logHeaderCache.deleteTo(prunedVersion);
         assert !logsRepository.isEmpty();
         var logFilesMetadata = logFilesMetadata();
         logFilesMetadata.next();
@@ -419,6 +450,18 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             appendingChannel.close();
             currentWriteChannel = null;
         }
+    }
+
+    @VisibleForTesting
+    void deleteLogFilesFrom(long version) throws IOException {
+        logHeaderCache.deleteFrom(version);
+        logsRepository.deleteLogFilesFrom(version);
+    }
+
+    @VisibleForTesting
+    void deleteLogFilesTo(long version) throws IOException {
+        logHeaderCache.deleteTo(version);
+        logsRepository.deleteLogFilesTo(version);
     }
 
     /**
@@ -497,7 +540,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
      */
     public void truncateToLastSafeEntry(long knownSafeIndex) throws IOException {
         closeCurrentWriteChannel();
-        recoverLogTail(getFileVersion(knownSafeIndex));
+        recoverLogTail(getFileVersion(knownSafeIndex), false);
     }
 
     private void updateState(
@@ -526,6 +569,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         LogFormat.writeLogHeader(logChannelCtx.channel(), logHeader, memoryTracker);
         logChannelCtx.channel().flush(); // ensure header and metadata is flushed to disk
         logChannelCtx.channel().position(segmentBlockSize);
+        logHeaderCache.cache(logHeader);
         return logChannelCtx;
     }
 
@@ -607,11 +651,12 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     }
 
     public LogFilesMetadata logFilesMetadata(boolean reversed) throws IOException {
-        return new LogFilesMetadata(logsRepository, reversed);
+        return new LogFilesMetadata(logsRepository, logHeaderCache, reversed);
     }
 
     public void remove() throws IOException {
         close();
+        clearCache();
         logsRepository.deleteLogFilesFrom(0);
     }
 
@@ -623,7 +668,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
 
         long toFileVersion = getFileVersion(toIndex + 1);
         if (toFileVersion == -1) {
-            throw new IllegalArgumentException(
+            throw new NoSuchFileException(
                     "No log files containing toIndex " + toIndex + " found because they have been pruned.");
         }
 
@@ -656,7 +701,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             // Find and position the start channel
             var fromVersion = getFileVersion(fromIndex);
             if (fromVersion == -1) {
-                throw new IllegalArgumentException("No log file found for from index " + fromIndex);
+                throw new NoSuchFileException("No log file found for from index " + fromIndex);
             }
 
             var fromChannelCtx = logsRepository.openReadChannel(fromVersion);

@@ -24,10 +24,10 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 /**
  * Adapts a {@link LogFileMetadata} entry into the {@link LogFileInformation} view consumed by threshold
- * predicates. Mtime substitutes for the legacy "first start record timestamp" because envelopes don't carry
- * per-entry timestamps in their header.
+ * predicates. Mtime captured at the point of construction substitutes for the legacy "first start record timestamp"
+ * because envelopes don't carry per-entry timestamps in their header.
  */
-record EnvelopedLogFileInformation(LogFileMetadata metadata) implements LogFileInformation {
+record EnvelopedLogFileInformation(LogFileMetadata metadata, long lastModifiedMillis) implements LogFileInformation {
 
     @Override
     public long version() {
@@ -47,6 +47,6 @@ record EnvelopedLogFileInformation(LogFileMetadata metadata) implements LogFileI
     @Override
     public long getFirstStartRecordTimestamp() {
         // TODO MERGELOGS: not desired behaviour consider how we want time stamps to work
-        return metadata.lastModifiedMillis();
+        return lastModifiedMillis;
     }
 }

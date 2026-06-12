@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneThreshold;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdFactory;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -89,7 +88,6 @@ class EnvelopedLogFilesTest {
     private final int segmentBlockSize = 256;
     private final int totalSegments = 3;
     private final int totalFileDataSize = segmentBlockSize * (totalSegments - 1);
-    private LogPruneThreshold pruneStrategy = ThresholdFactory.PRUNE_ALL;
 
     @Inject
     TestDirectory testDirectory;
@@ -139,7 +137,7 @@ class EnvelopedLogFilesTest {
                 writeBufferedBlocks,
                 totalSegments,
                 EmptyMemoryTracker.INSTANCE,
-                pruneStrategy,
+                ThresholdFactory.PRUNE_ALL,
                 new StoreChannelNativeAccessor(
                         fs, NativeAccessProvider.getNativeAccess(), NullLogProvider.getInstance(), s -> {}),
                 NullLogProvider.getInstance(),
@@ -529,7 +527,7 @@ class EnvelopedLogFilesTest {
             assertThat(envelopeReadChannel.getLogVersion()).isZero();
         }
 
-        mirroringRepository.deleteLogFilesTo(2);
+        envelopedLogFiles.deleteLogFilesTo(2);
 
         try (var envelopeReadChannel = envelopedLogFiles.openReadChannel()) {
             assertThat(envelopeReadChannel.getLogVersion()).isEqualTo(3);
@@ -848,7 +846,7 @@ class EnvelopedLogFilesTest {
         writeData(writeChannel, largeMessage);
         writeChannel.prepareForFlush().flush();
 
-        mirroringRepository.deleteLogFilesTo(1);
+        envelopedLogFiles.deleteLogFilesTo(1);
 
         assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> envelopedLogFiles.truncate(1));
     }
@@ -1034,8 +1032,7 @@ class EnvelopedLogFilesTest {
         }
 
         // recreate the log
-        envelopedLogFiles.close();
-        mirroringRepository.deleteLogFilesTo(Long.MAX_VALUE);
+        envelopedLogFiles.remove();
         setUp();
         envelopedLogFiles.initialise();
 

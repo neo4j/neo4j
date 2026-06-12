@@ -77,7 +77,7 @@ class EnvelopeLogRangeFuzzerIT {
     void setUp() throws IOException {
         envelopedLogFiles = envelopedLogFiles();
         envelopedLogFiles.initialise();
-        envelopeLogFilesRangeReader = new EnvelopeLogFilesRangeReader(envelopedLogFiles);
+        envelopeLogFilesRangeReader = new EnvelopeLogFilesRangeReader(envelopedLogFiles, NullLogProvider.getInstance());
     }
 
     @AfterEach

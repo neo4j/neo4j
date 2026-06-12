@@ -24,7 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 import org.neo4j.kernel.KernelVersion;
@@ -46,22 +47,27 @@ class LogFilesMetadataTest {
     TestDirectory testDirectory;
 
     LogsRepository logsRepository;
+    EnvelopedLogHeaderCache logHeaderCache;
 
     @BeforeEach
     void setUp() {
         var baseFile = testDirectory.directory("logsFolder");
         logsRepository = new LogsRepository(fs, new SequentialFileNameHelper(baseFile.getParent(), "raftLog"));
+        logHeaderCache = new EnvelopedLogHeaderCache();
     }
 
-    @Test
-    void shouldHandleEmpty() throws IOException {
-        var logFilesMetadata = new LogFilesMetadata(logsRepository);
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldHandleEmpty(boolean useCache) throws IOException {
+        var logFilesMetadata =
+                useCache ? new LogFilesMetadata(logsRepository, logHeaderCache) : new LogFilesMetadata(logsRepository);
         assertThat(logFilesMetadata.next()).isFalse();
         assertThat(logFilesMetadata.get()).isNull();
     }
 
-    @Test
-    void shouldReadHeaders() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldReadHeaders(boolean useCache) throws IOException {
         var logHeader1 =
                 LogFormat.V10.newHeader(4, 1, 1, StoreIdentifier.UNKNOWN, 512, 1, KernelVersion.GLORIOUS_FUTURE);
         var logHeader2 =
@@ -74,10 +80,14 @@ class LogFilesMetadataTest {
             LogFormat.writeLogHeader(writeChannel.channel(), logHeader, EmptyMemoryTracker.INSTANCE);
             writeChannel.channel().flush();
             writeChannel.channel().close();
+            if (useCache) {
+                logHeaderCache.cache(logHeader);
+            }
         }
 
         // reading forwards
-        var logFilesMetadata = new LogFilesMetadata(logsRepository);
+        var logFilesMetadata =
+                useCache ? new LogFilesMetadata(logsRepository, logHeaderCache) : new LogFilesMetadata(logsRepository);
         for (var logHeader : logHeaders) {
             assertThat(logFilesMetadata.next()).isTrue();
             var metadata = logFilesMetadata.get();
@@ -88,7 +98,9 @@ class LogFilesMetadataTest {
         assertThat(logFilesMetadata.get()).isNull();
 
         // reading backwards
-        logFilesMetadata = new LogFilesMetadata(logsRepository, true);
+        logFilesMetadata = useCache
+                ? new LogFilesMetadata(logsRepository, logHeaderCache, true)
+                : new LogFilesMetadata(logsRepository, true);
         for (int i = logHeaders.length - 1; i >= 0; i--) {
             var logHeader = logHeaders[i];
             assertThat(logFilesMetadata.next()).isTrue();
@@ -100,8 +112,9 @@ class LogFilesMetadataTest {
         assertThat(logFilesMetadata.get()).isNull();
     }
 
-    @Test
-    void shouldIgnorePreAllocatedFiles() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldIgnorePreAllocatedFiles(boolean useCache) throws IOException {
         var logHeader1 =
                 LogFormat.V10.newHeader(0, 1, 1, StoreIdentifier.UNKNOWN, 512, 1, KernelVersion.GLORIOUS_FUTURE);
         var logHeader2 =
@@ -115,6 +128,9 @@ class LogFilesMetadataTest {
             LogFormat.writeLogHeader(writeChannel.channel(), logHeaders[i], EmptyMemoryTracker.INSTANCE);
             writeChannel.channel().flush();
             writeChannel.channel().close();
+            if (useCache) {
+                logHeaderCache.cache(logHeaders[i]);
+            }
         }
 
         var zeroes = new byte[128];
@@ -126,7 +142,8 @@ class LogFilesMetadataTest {
         }
 
         // reading forwards
-        var logFilesMetadata = new LogFilesMetadata(logsRepository);
+        var logFilesMetadata =
+                useCache ? new LogFilesMetadata(logsRepository, logHeaderCache) : new LogFilesMetadata(logsRepository);
         for (int i = 0; i < logHeaders.length; i++) {
             assertThat(logFilesMetadata.next()).isTrue();
             var metadata = logFilesMetadata.get();
@@ -137,7 +154,9 @@ class LogFilesMetadataTest {
         assertThat(logFilesMetadata.get()).isNull();
 
         // reading backwards
-        logFilesMetadata = new LogFilesMetadata(logsRepository, true);
+        logFilesMetadata = useCache
+                ? new LogFilesMetadata(logsRepository, logHeaderCache, true)
+                : new LogFilesMetadata(logsRepository, true);
         for (int i = logHeaders.length - 1; i >= 0; i--) {
             assertThat(logFilesMetadata.next()).isTrue();
             var metadata = logFilesMetadata.get();
@@ -148,8 +167,9 @@ class LogFilesMetadataTest {
         assertThat(logFilesMetadata.get()).isNull();
     }
 
-    @Test
-    void hasNextShouldReturnFalseForPreallocatedFiles() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void hasNextShouldReturnFalseForPreallocatedFiles(boolean useCache) throws IOException {
         var zeroes = new byte[128];
         for (int i = 0; i < 2; i++) {
             var writeChannel = logsRepository.createWriteChannel(i);
@@ -158,11 +178,14 @@ class LogFilesMetadataTest {
             writeChannel.channel().close();
         }
 
-        var logFilesMetadata = new LogFilesMetadata(logsRepository);
+        var logFilesMetadata =
+                useCache ? new LogFilesMetadata(logsRepository, logHeaderCache) : new LogFilesMetadata(logsRepository);
         assertThat(logFilesMetadata.next()).isFalse();
         assertThat(logFilesMetadata.get()).isNull();
 
-        logFilesMetadata = new LogFilesMetadata(logsRepository, true);
+        logFilesMetadata = useCache
+                ? new LogFilesMetadata(logsRepository, logHeaderCache, true)
+                : new LogFilesMetadata(logsRepository, true);
         assertThat(logFilesMetadata.next()).isFalse();
         assertThat(logFilesMetadata.get()).isNull();
     }

@@ -51,12 +51,13 @@ class LogFilesPruner {
         try (var cursor = new LogFilesMetadata(logsRepository, true)) {
             while (cursor.next()) {
                 var logFileMetadata = cursor.get();
-                var logFileInformation = new EnvelopedLogFileInformation(logFileMetadata);
+                long logFileVersion = logFileMetadata.version();
+                var logFileInformation = new EnvelopedLogFileInformation(
+                        logFileMetadata, logsRepository.lastModifiedTime(logFileVersion));
                 // Predicate runs on every file so size/time thresholds accumulate state across the whole
                 // log; the horizon only gates whether we accept this version as the boundary.
-                if (prunePredicate.isLowestVersionToKeep(logFileInformation)
-                        && logFileMetadata.version() <= upToVersion) {
-                    boundaryVersion = logFileMetadata.version();
+                if (prunePredicate.isLowestVersionToKeep(logFileInformation) && logFileVersion <= upToVersion) {
+                    boundaryVersion = logFileVersion;
                     break;
                 }
             }

@@ -22,29 +22,52 @@ package org.neo4j.kernel.impl.transaction.log.enveloped;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 import java.io.IOException;
+import java.util.List;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.memory.EmptyMemoryTracker;
 
+/**
+ * Allows iteration over metadata for all log files that exist at the time of construction.
+ * If a populated cache is provided, it will be used to avoid reading any log headers from disk. If no cache is
+ * provided, or if the cache is empty at the time of construction, all required log headers will be read from disk.
+ */
 public class LogFilesMetadata implements RawCursor<LogFileMetadata, IOException> {
     private final LogsRepository logsRepository;
+    private final List<LogHeader> cachedLogHeaders;
     private final long[] versions;
+    private final boolean reversed;
     private int currentVersionIndex = -1;
     private LogFileMetadata nextMetadata = null;
-    private final boolean reversed;
 
     LogFilesMetadata(LogsRepository logsRepository) throws IOException {
         this(logsRepository, false);
     }
 
     LogFilesMetadata(LogsRepository logsRepository, boolean reversed) throws IOException {
+        this(logsRepository, List.of(), reversed);
+    }
+
+    LogFilesMetadata(LogsRepository logsRepository, EnvelopedLogHeaderCache logHeaderCache) throws IOException {
+        this(logsRepository, logHeaderCache, false);
+    }
+
+    LogFilesMetadata(LogsRepository logsRepository, EnvelopedLogHeaderCache logHeaderCache, boolean reversed)
+            throws IOException {
+        this(logsRepository, logHeaderCache.currentLogHeaders(reversed), reversed);
+    }
+
+    private LogFilesMetadata(LogsRepository logsRepository, List<LogHeader> cachedLogHeaders, boolean reversed)
+            throws IOException {
         this.logsRepository = logsRepository;
-        this.versions = logsRepository.logVersions(reversed);
+        this.cachedLogHeaders = cachedLogHeaders;
+        this.versions = cachedLogHeaders.isEmpty() ? logsRepository.logVersions(reversed) : null;
         this.reversed = reversed;
     }
 
     @Override
     public boolean next() throws IOException {
-        if (versions.length != 0 && currentVersionIndex < versions.length) {
+        if (hasNext()) {
             setNext();
             return nextMetadata != null;
         }
@@ -57,24 +80,46 @@ public class LogFilesMetadata implements RawCursor<LogFileMetadata, IOException>
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         // ignored
+    }
+
+    private boolean hasNext() {
+        if (cachedLogHeaders.isEmpty()) {
+            return versions.length != 0 && currentVersionIndex < versions.length;
+        }
+        return currentVersionIndex < cachedLogHeaders.size();
     }
 
     private void setNext() throws IOException {
         nextMetadata = null;
-        if (++currentVersionIndex != versions.length) {
-            var version = versions[currentVersionIndex];
-            try (var logChannel = logsRepository.openReadChannel(version)) {
-                var currentPath = logChannel.path();
-                var logHeader = readLogHeader(logChannel.channel(), true, null, EmptyMemoryTracker.INSTANCE);
-                if (logHeader != null) {
-                    nextMetadata = new LogFileMetadata(
-                            logHeader, version, currentPath, logsRepository.lastModifiedTime(version));
-                } else if (reversed) {
-                    setNext(); // skip pre-allocated empty file
+        currentVersionIndex++;
+        if (hasNext()) {
+            if (cachedLogHeaders.isEmpty()) {
+                setNextByReading();
+            } else {
+                setNextFromCache();
+            }
+        }
+    }
+
+    private void setNextByReading() throws IOException {
+        var version = versions[currentVersionIndex];
+        try (var logChannel = logsRepository.openReadChannel(version)) {
+            var logHeader = readLogHeader(logChannel.channel(), true, null, EmptyMemoryTracker.INSTANCE);
+            if (logHeader != null) {
+                nextMetadata = new LogFileMetadata(logHeader, version, logChannel.path());
+            } else {
+                if (reversed) {
+                    setNext(); // keep iterating until we find non-preallocated file
                 }
             }
         }
+    }
+
+    private void setNextFromCache() {
+        var logHeader = cachedLogHeaders.get(currentVersionIndex);
+        long currentVersion = logHeader.getLogVersion();
+        nextMetadata = new LogFileMetadata(logHeader, currentVersion, logsRepository.pathFor(currentVersion));
     }
 }

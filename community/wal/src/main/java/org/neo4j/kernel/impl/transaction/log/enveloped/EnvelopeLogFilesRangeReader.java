@@ -20,20 +20,47 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
+import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
-    private final EnvelopedLogFiles envelopedLogFiles;
+    private static final int MAX_RETRIES = 2;
 
-    public EnvelopeLogFilesRangeReader(EnvelopedLogFiles envelopedLogFiles) {
+    private final EnvelopedLogFiles envelopedLogFiles;
+    private final InternalLog log;
+
+    public EnvelopeLogFilesRangeReader(EnvelopedLogFiles envelopedLogFiles, InternalLogProvider logProvider) {
         this.envelopedLogFiles = envelopedLogFiles;
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
     public StoreChannelsForTransfer storeChannels(long fromIndex, long desiredToIndex) throws IOException {
-        var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
-        logFilesMetadata.next();
-        long availableFromIndex = logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
-        return storeChannelsIfAvailable(fromIndex, availableFromIndex, desiredToIndex);
+        return retryOnNoSuchFileException(() -> {
+            var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
+            logFilesMetadata.next();
+            long availableFromIndex = logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
+            return storeChannelsIfAvailable(fromIndex, availableFromIndex, desiredToIndex);
+        });
+    }
+
+    protected StoreChannelsForTransfer retryOnNoSuchFileException(
+            ThrowingSupplier<StoreChannelsForTransfer, IOException> supplier) throws IOException {
+        NoSuchFileException lastException = null;
+        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return supplier.get();
+            } catch (NoSuchFileException e) {
+                // This means a log file has been deleted concurrently with us calculating the availableFromIndex.
+                // We need to retry.
+                lastException = e;
+            }
+        }
+        log.warn(
+                "Failed to obtain store channels for transfer after " + (MAX_RETRIES + 1) + " attempts", lastException);
+        throw lastException;
     }
 
     protected StoreChannelsForTransfer storeChannelsIfAvailable(long fromIndex, long availableFromIndex, long toIndex)
