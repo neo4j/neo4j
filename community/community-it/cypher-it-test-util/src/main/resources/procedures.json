@@ -202,16 +202,22 @@
   },
   {
     "name": "db.cdc.current",
-    "description": "Returns the current change identifier that can be used to stream changes from.",
+    "description": "Returns the current change identifier and commit time that can be used to stream changes from.",
     "mode": "READ",
     "worksOnSystem": false,
-    "signature": "db.cdc.current() :: (id :: STRING)",
+    "signature": "db.cdc.current() :: (id :: STRING, txCommitTime :: ZONED DATETIME)",
     "argumentDescription": [],
     "returnDescription" : [
       {
         "name": "id",
         "description": "The change identifier.",
         "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "txCommitTime",
+        "description": "The commit time of the last committed transaction.",
+        "type": "ZONED DATETIME",
         "isDeprecated": false
       }
     ],
@@ -3316,6 +3322,43 @@
     },
     "enterpriseOnly": true,
     "cypherVersionScope": [5, 25]
+  },
+  {
+    "name": "dbms.promoteReplicaDatabase",
+    "description": "Convert a replica database to a standard database while keeping the data currently has. Optionally modify its topology.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.promoteReplicaDatabase(database :: STRING, options :: MAP)",
+    "argumentDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "options",
+        "description": "Topology options for the promoted database",
+        "type": "MAP",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true,
+    "cypherVersionScope": [25]
   },
   {
     "name": "dbms.quarantineDatabase",
