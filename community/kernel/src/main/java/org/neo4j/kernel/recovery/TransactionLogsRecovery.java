@@ -164,7 +164,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private void performRecovery(RecoveryStartInformation recoveryStartInformation)
             throws DatabaseStartAbortedException, RecoveryPredicateException, IOException {
         try {
-            var recoveryStartPosition = recoveryStartInformation.transactionLogPosition();
+            var recoveryStartPosition = recoveryStartInformation.oldestNotVisibleTransactionLogPosition();
             var recoveryContextTracker = new RecoveryContextTracker(
                     recoveryStartPosition, recoveryStartInformation.checkpointInfo(), incompleteTransactionAction);
             var transactionIdTracker = new TransactionIdTracker(incompleteTransactionAction);

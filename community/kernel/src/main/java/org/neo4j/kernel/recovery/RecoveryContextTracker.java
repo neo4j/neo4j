@@ -20,6 +20,8 @@
 package org.neo4j.kernel.recovery;
 
 import static org.neo4j.kernel.recovery.IncompleteTransactionAction.APPLY;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 
 import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
@@ -42,6 +44,7 @@ class RecoveryContextTracker {
     private long recoveredBatches;
     private ArrayQueueOutOfOrderSequence closedTxTracker;
     private final MutableLongLongMap transactionIdFirstAppendIndexMap = LongLongMaps.mutable.empty();
+    private final long initialTransactionId;
 
     RecoveryContextTracker(
             LogPosition recoveryStartPosition,
@@ -51,6 +54,8 @@ class RecoveryContextTracker {
         updatePositions(recoveryStartPosition);
         initInitialInfo(checkpointInfo);
         closedTxTracker = initClosedTxTracker(checkpointInfo, incompleteTransactionAction);
+        initialTransactionId =
+                checkpointInfo != null ? checkpointInfo.transactionId().id() : UNKNOWN_TX_ID;
     }
 
     private ArrayQueueOutOfOrderSequence initClosedTxTracker(
@@ -104,9 +109,11 @@ class RecoveryContextTracker {
         if (nextCommandBatch.commandBatch().isFirst()) {
             transactionIdFirstAppendIndexMap.put(nextCommandBatch.txId(), nextCommandBatch.appendIndex());
         }
-        if (nextCommandBatch.commandBatch().isLast()) {
-            long firstAppendIndex = transactionIdFirstAppendIndexMap.removeKeyIfAbsent(nextCommandBatch.txId(), -1);
-            if (firstAppendIndex == -1) {
+        if ((nextCommandBatch.txId() > initialTransactionId)
+                && nextCommandBatch.commandBatch().isLast()) {
+            long firstAppendIndex =
+                    transactionIdFirstAppendIndexMap.removeKeyIfAbsent(nextCommandBatch.txId(), UNKNOWN_APPEND_INDEX);
+            if (firstAppendIndex == UNKNOWN_APPEND_INDEX) {
                 throw new IllegalStateException(
                         "Transaction " + nextCommandBatch.txId() + " first append index is missing.");
             }
