@@ -59,7 +59,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
         this.aheadBuffer.position(aheadBuffer.capacity());
         this.channel = channel;
         this.readAheadSize = aheadBuffer.capacity();
-        this.checksumView = aheadBuffer.duplicate();
+        this.checksumView = aheadBuffer.duplicate().order(aheadBuffer.order());
         this.checksum = CHECKSUM_FACTORY.get();
         this.scopedBuffer = scopedBuffer;
     }
