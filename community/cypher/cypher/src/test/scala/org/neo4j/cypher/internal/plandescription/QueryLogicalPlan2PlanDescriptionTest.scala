@@ -121,6 +121,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
@@ -169,6 +170,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekSingleLabelLeafPlan
@@ -248,6 +250,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
@@ -1284,6 +1287,157 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           )
         ),
         Set("r", "a", "b", "sc")
+      )
+    )
+  }
+
+  test("NodeFulltextIndexSearch") {
+    assertGood(
+      attach(
+        NodeFulltextIndexSearch(
+          idName = varFor("n"),
+          labels = Seq(LabelToken("Label", LabelId(0))),
+          properties = Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
+          score = None,
+          indexName = "fulltextIndex",
+          queryString = literalString("hello"),
+          analyzer = None,
+          skip = None,
+          limit = literalInt(5),
+          entityFilter = MatchAllQueryExpression,
+          maybePropertyFilter = None,
+          argumentIds = Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "NodeFulltextIndexSearch",
+        Seq.empty,
+        Seq(details("SEARCH n IN (FULLTEXT INDEX fulltextIndex FOR \"hello\" LIMIT 5)")),
+        Set("n")
+      )
+    )
+
+    assertGood(
+      attach(
+        NodeFulltextIndexSearch(
+          idName = varFor("n"),
+          labels = Seq(LabelToken("Label", LabelId(0))),
+          properties = Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
+          score = Some(v"sc"),
+          indexName = "fulltextIndex",
+          queryString = literalString("hello"),
+          analyzer = Some(literalString("english")),
+          skip = Some(literalInt(2)),
+          limit = literalInt(5),
+          entityFilter = MatchAllQueryExpression,
+          maybePropertyFilter = None,
+          argumentIds = Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "NodeFulltextIndexSearch",
+        Seq.empty,
+        Seq(details(
+          "SEARCH n IN (FULLTEXT INDEX fulltextIndex FOR \"hello\" WITH ANALYZER \"english\" SKIP 2 LIMIT 5) SCORE AS sc"
+        )),
+        Set("n", "sc")
+      )
+    )
+  }
+
+  test("DirectedRelationshipFulltextIndexSearch") {
+    assertGood(
+      attach(
+        DirectedRelationshipFulltextIndexSearch(
+          idName = Some(varFor("r")),
+          startNode = Some(varFor("a")),
+          endNode = Some(varFor("b")),
+          typeTokens = Seq(RelationshipTypeToken("R1", RelTypeId(0)), RelationshipTypeToken("R2", RelTypeId(1))),
+          properties = Seq(IndexedProperty(PropertyKeyToken("p1", PropertyKeyId(0)), DoNotGetValue, RELATIONSHIP_TYPE)),
+          score = None,
+          indexName = "fulltextIndex",
+          queryString = literalString("hello"),
+          limit = literalInt(5),
+          analyzer = None,
+          skip = None,
+          entityFilter = MatchAllQueryExpression,
+          maybePropertyFilter = None,
+          argumentIds = Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipFulltextIndexSearch",
+        Seq.empty,
+        Seq(details("SEARCH (a)-[r:R1|R2]->(b) IN (FULLTEXT INDEX fulltextIndex FOR \"hello\" LIMIT 5)")),
+        Set("r", "a", "b")
+      )
+    )
+
+    assertGood(
+      attach(
+        DirectedRelationshipFulltextIndexSearch(
+          idName = Some(varFor("r")),
+          startNode = Some(varFor("a")),
+          endNode = Some(varFor("b")),
+          typeTokens = Seq(RelationshipTypeToken("R1", RelTypeId(0)), RelationshipTypeToken("R2", RelTypeId(1))),
+          properties = Seq(IndexedProperty(PropertyKeyToken("p1", PropertyKeyId(0)), DoNotGetValue, RELATIONSHIP_TYPE)),
+          score = Some(v"sc"),
+          indexName = "fulltextIndex",
+          queryString = literalString("hello"),
+          limit = literalInt(5),
+          analyzer = Some(literalString("english")),
+          skip = Some(literalInt(2)),
+          entityFilter = MatchAllQueryExpression,
+          maybePropertyFilter = None,
+          argumentIds = Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipFulltextIndexSearch",
+        Seq.empty,
+        Seq(details(
+          "SEARCH (a)-[r:R1|R2]->(b) IN (FULLTEXT INDEX fulltextIndex FOR \"hello\" WITH ANALYZER \"english\" SKIP 2 LIMIT 5) SCORE AS sc"
+        )),
+        Set("r", "a", "b", "sc")
+      )
+    )
+  }
+
+  test("UndirectedRelationshipFulltextIndexSearch") {
+    assertGood(
+      attach(
+        UndirectedRelationshipFulltextIndexSearch(
+          idName = Some(varFor("r")),
+          startNode = Some(varFor("a")),
+          endNode = Some(varFor("b")),
+          typeTokens = Seq(RelationshipTypeToken("R1", RelTypeId(0)), RelationshipTypeToken("R2", RelTypeId(1))),
+          properties = Seq(IndexedProperty(PropertyKeyToken("p1", PropertyKeyId(0)), DoNotGetValue, RELATIONSHIP_TYPE)),
+          score = None,
+          indexName = "fulltextIndex",
+          queryString = literalString("hello"),
+          limit = literalInt(5),
+          analyzer = None,
+          skip = None,
+          entityFilter = MatchAllQueryExpression,
+          maybePropertyFilter = None,
+          argumentIds = Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "UndirectedRelationshipFulltextIndexSearch",
+        Seq.empty,
+        Seq(details("SEARCH (a)-[r:R1|R2]-(b) IN (FULLTEXT INDEX fulltextIndex FOR \"hello\" LIMIT 5)")),
+        Set("r", "a", "b")
       )
     )
   }

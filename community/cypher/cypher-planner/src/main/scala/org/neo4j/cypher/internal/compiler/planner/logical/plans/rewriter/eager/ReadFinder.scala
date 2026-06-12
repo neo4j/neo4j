@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
@@ -137,6 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
@@ -199,6 +201,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
@@ -510,6 +513,9 @@ object ReadFinder {
       case search: NodeVectorIndexSearch =>
         processNodeIndexPlan(search.idName, search.labels.map(_.name), search.properties)
 
+      case search: NodeFulltextIndexSearch =>
+        processNodeIndexPlan(search.idName, search.labels.map(_.name), search.properties)
+
       case NodeByIdSeek(varName, _, _) =>
         // We could avoid eagerness when we have IdSeeks with a single ID.
         // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
@@ -775,6 +781,54 @@ object ReadFinder {
           rightNode,
           types,
           properties,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(
+          relationshipVariable(relationship),
+          types.map(_.name),
+          properties,
+          leftNode,
+          rightNode
+        )
+
+      case UndirectedRelationshipFulltextIndexSearch(
+          relationship,
+          leftNode,
+          rightNode,
+          types,
+          properties,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(
+          relationshipVariable(relationship),
+          types.map(_.name),
+          properties,
+          leftNode,
+          rightNode
+        )
+
+      case DirectedRelationshipFulltextIndexSearch(
+          relationship,
+          leftNode,
+          rightNode,
+          types,
+          properties,
+          _,
+          _,
           _,
           _,
           _,

@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
@@ -195,6 +196,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
@@ -290,6 +292,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
@@ -2406,6 +2409,145 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             indexName,
             toExpression(vector),
             toExpression(limit),
+            entityFilter,
+            propertyFilter,
+            argumentIds.map(varFor)
+          )(_)
+        ))
+    }
+  }
+
+  def nodeFulltextIndexSearch(
+    node: String,
+    labelNames: Seq[String],
+    properties: Seq[String],
+    indexName: String,
+    queryString: ToExpression,
+    limit: ToExpression = literalInt(Int.MaxValue),
+    analyzer: Option[ToExpression] = None,
+    skip: Option[ToExpression] = None,
+    score: String = "",
+    argumentIds: Set[String] = Set.empty,
+    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    entityFilter: EntityFilterQueryExpression[Expression] = MatchAllQueryExpression,
+    propertyFilter: Option[QueryExpression[Expression]] = None
+  ): IMPL = {
+    val labels = labelNames.map(labelName => LabelToken(labelName, LabelId(resolver.getLabelId(labelName))))
+    val propIDs = properties
+      .map(p =>
+        IndexedProperty(
+          PropertyKeyToken(PropertyKeyName(p)(NONE), PropertyKeyId(resolver.getPropertyKeyId(p))),
+          getValueFromIndex(p),
+          NODE_TYPE
+        )
+      )
+
+    val nodeVariable = varFor(node)
+    newNode(nodeVariable)
+
+    val planBuilder = (idGen: IdGen) => {
+      NodeFulltextIndexSearch(
+        nodeVariable,
+        labels,
+        propIDs,
+        if (score.isEmpty) None else Some(varFor(score)),
+        indexName,
+        toExpression(queryString),
+        analyzer.map(a => toExpression(a)),
+        skip.map(s => toExpression(s)),
+        toExpression(limit),
+        entityFilter,
+        propertyFilter,
+        argumentIds.map(varFor)
+      )(idGen)
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def relationshipFulltextIndexSearch(
+    pattern: String,
+    typeNames: Seq[String],
+    properties: Seq[String],
+    indexName: String,
+    queryString: ToExpression,
+    limit: ToExpression = literalInt(Int.MaxValue),
+    analyzer: Option[ToExpression] = None,
+    skip: Option[ToExpression] = None,
+    score: String = "",
+    argumentIds: Set[String] = Set.empty,
+    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    entityFilter: EntityFilterQueryExpression[Expression] = MatchAllQueryExpression,
+    propertyFilter: Option[QueryExpression[Expression]] = None
+  ): IMPL = {
+
+    val p = patternParser.parse(pattern)
+    newRelationship(varFor(p.maybeRelName))
+    newNode(varFor(p.maybeFrom))
+    newNode(varFor(p.maybeTo))
+    if (!p.length.isSimple) throw new UnsupportedOperationException("Cannot do a search from a variable pattern")
+    val types = typeNames.map(typeName => RelationshipTypeToken(typeName, RelTypeId(resolver.getRelTypeId(typeName))))
+    val propIDs = properties
+      .map(p =>
+        IndexedProperty(
+          PropertyKeyToken(PropertyKeyName(p)(NONE), PropertyKeyId(resolver.getPropertyKeyId(p))),
+          getValueFromIndex(p),
+          RELATIONSHIP_TYPE
+        )
+      )
+
+    p.dir match {
+      case SemanticDirection.OUTGOING =>
+        appendAtCurrentIndent(LeafOperator(
+          DirectedRelationshipFulltextIndexSearch(
+            varFor(p.maybeRelName),
+            varFor(p.maybeFrom),
+            varFor(p.maybeTo),
+            types,
+            propIDs,
+            if (score.isEmpty) None else Some(varFor(score)),
+            indexName,
+            toExpression(queryString),
+            toExpression(limit),
+            analyzer.map(a => toExpression(a)),
+            skip.map(s => toExpression(s)),
+            entityFilter,
+            propertyFilter,
+            argumentIds.map(varFor)
+          )(_)
+        ))
+      case SemanticDirection.INCOMING =>
+        appendAtCurrentIndent(LeafOperator(
+          DirectedRelationshipFulltextIndexSearch(
+            varFor(p.maybeRelName),
+            varFor(p.maybeTo),
+            varFor(p.maybeFrom),
+            types,
+            propIDs,
+            if (score.isEmpty) None else Some(varFor(score)),
+            indexName,
+            toExpression(queryString),
+            toExpression(limit),
+            analyzer.map(a => toExpression(a)),
+            skip.map(s => toExpression(s)),
+            entityFilter,
+            propertyFilter,
+            argumentIds.map(varFor)
+          )(_)
+        ))
+      case SemanticDirection.BOTH =>
+        appendAtCurrentIndent(LeafOperator(
+          UndirectedRelationshipFulltextIndexSearch(
+            varFor(p.maybeRelName),
+            varFor(p.maybeFrom),
+            varFor(p.maybeTo),
+            types,
+            propIDs,
+            if (score.isEmpty) None else Some(varFor(score)),
+            indexName,
+            toExpression(queryString),
+            toExpression(limit),
+            analyzer.map(a => toExpression(a)),
+            skip.map(s => toExpression(s)),
             entityFilter,
             propertyFilter,
             argumentIds.map(varFor)

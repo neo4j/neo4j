@@ -346,6 +346,8 @@ object LogicalPlanToPlanBuilderString {
       case _: UndirectedRelationshipByElementIdSeek           => "relationshipByElementIdSeek"
       case _: DirectedRelationshipVectorIndexSearch           => "relationshipVectorIndexSearch"
       case _: UndirectedRelationshipVectorIndexSearch         => "relationshipVectorIndexSearch"
+      case _: DirectedRelationshipFulltextIndexSearch         => "relationshipFulltextIndexSearch"
+      case _: UndirectedRelationshipFulltextIndexSearch       => "relationshipFulltextIndexSearch"
       case RemoteBatchPropertiesWithPushdownOperators(_, _, NODE_TYPE, _, _, _, _, _, _, _) =>
         "remoteBatchPropertiesWithPushdownOperatorsOnNode"
       case RemoteBatchPropertiesWithPushdownOperators(
@@ -1799,6 +1801,100 @@ object LogicalPlanToPlanBuilderString {
           indexName.quoted,
           vector.quoted,
           limit.quoted,
+          score.map(_.name.quoted).getOrElse("".quoted),
+          argumentIds,
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
+          entityFilter,
+          maybePropertyFilter
+        )
+
+      case NodeFulltextIndexSearch(
+          idName,
+          labelTokens,
+          properties,
+          score,
+          indexName,
+          queryString,
+          analyzer,
+          skip,
+          limit,
+          entityFilter,
+          maybePropertyFilter,
+          argumentIds
+        ) =>
+        params(
+          idName,
+          seqParam(labelTokens.map(_.name.quoted)),
+          seqParam(properties.map(_.propertyKeyToken.name.quoted)),
+          indexName.quoted,
+          queryString.quoted,
+          limit.quoted,
+          analyzer.map(_.quoted.some).getOrElse(Param("None")),
+          skip.map(_.quoted.some).getOrElse(Param("None")),
+          score.map(_.name.quoted).getOrElse("".quoted),
+          argumentIds,
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
+          entityFilter,
+          maybePropertyFilter
+        )
+
+      case DirectedRelationshipFulltextIndexSearch(
+          idName,
+          start,
+          end,
+          labelTokens,
+          properties,
+          score,
+          indexName,
+          queryString,
+          limit,
+          analyzer,
+          skip,
+          entityFilter,
+          maybePropertyFilter,
+          argumentIds
+        ) =>
+        params(
+          renderSimplePath(idName, start, Seq.empty, end),
+          seqParam(labelTokens.map(_.name.quoted)),
+          seqParam(properties.map(_.propertyKeyToken.name.quoted)),
+          indexName.quoted,
+          queryString.quoted,
+          limit.quoted,
+          analyzer.map(_.quoted.some).getOrElse(Param("None")),
+          skip.map(_.quoted.some).getOrElse(Param("None")),
+          score.map(_.name.quoted).getOrElse("".quoted),
+          argumentIds,
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
+          entityFilter,
+          maybePropertyFilter
+        )
+
+      case UndirectedRelationshipFulltextIndexSearch(
+          idName,
+          start,
+          end,
+          labelTokens,
+          properties,
+          score,
+          indexName,
+          queryString,
+          limit,
+          analyzer,
+          skip,
+          entityFilter,
+          maybePropertyFilter,
+          argumentIds
+        ) =>
+        params(
+          renderSimplePath(idName, start, Seq.empty, end, BOTH),
+          seqParam(labelTokens.map(_.name.quoted)),
+          seqParam(properties.map(_.propertyKeyToken.name.quoted)),
+          indexName.quoted,
+          queryString.quoted,
+          limit.quoted,
+          analyzer.map(_.quoted.some).getOrElse(Param("None")),
+          skip.map(_.quoted.some).getOrElse(Param("None")),
           score.map(_.name.quoted).getOrElse("".quoted),
           argumentIds,
           mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),

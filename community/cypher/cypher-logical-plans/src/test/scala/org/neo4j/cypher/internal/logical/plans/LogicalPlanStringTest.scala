@@ -232,7 +232,10 @@ object LogicalPlanStringTest {
       classOf[plans.NodeVectorIndexSearch] -> "indexName",
       classOf[plans.DirectedRelationshipVectorIndexSearch] -> "indexName",
       classOf[plans.UndirectedRelationshipVectorIndexSearch] -> "indexName",
-      classOf[ir.VectorSearchClause] -> "indexName"
+      classOf[ir.VectorSearchClause] -> "indexName",
+      classOf[plans.NodeFulltextIndexSearch] -> "indexName",
+      classOf[plans.DirectedRelationshipFulltextIndexSearch] -> "indexName",
+      classOf[plans.UndirectedRelationshipFulltextIndexSearch] -> "indexName"
     )
 
     val whiteListedClasses: Set[Class[_]] = Set[Class[_]](

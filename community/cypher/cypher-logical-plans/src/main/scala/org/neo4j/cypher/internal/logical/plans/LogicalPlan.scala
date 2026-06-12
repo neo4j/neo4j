@@ -372,6 +372,52 @@ sealed abstract class LogicalPlan(idGen: IdGen)
             entityTypes,
             properties.map(_.propertyKeyToken)
           )
+      case NodeFulltextIndexSearch(idName, entityTypes, properties, _, _, _, _, _, _, _, _, _) =>
+        acc => acc :+ SchemaSemanticNodeIndexUsage(idName, entityTypes, properties.map(_.propertyKeyToken))
+      case UndirectedRelationshipFulltextIndexSearch(
+          maybeIdName,
+          _,
+          _,
+          entityTypes,
+          properties,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        acc =>
+          acc :+ SchemaSemanticRelationshipIndexUsage(
+            maybeIdName.getOrElse(Variable("UNKNOWN")(InputPosition.NONE, isIsolated = false)),
+            entityTypes,
+            properties.map(_.propertyKeyToken)
+          )
+      case DirectedRelationshipFulltextIndexSearch(
+          maybeIdName,
+          _,
+          _,
+          entityTypes,
+          properties,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        acc =>
+          acc :+ SchemaSemanticRelationshipIndexUsage(
+            maybeIdName.getOrElse(Variable("UNKNOWN")(InputPosition.NONE, isIsolated = false)),
+            entityTypes,
+            properties.map(_.propertyKeyToken)
+          )
       case relIndexScan: RelationshipIndexLeafPlan if relIndexScan.idName.isDefined =>
         acc =>
           acc :+
@@ -2273,6 +2319,126 @@ case class UndirectedRelationshipVectorIndexSearch(
   override def indexOrder: IndexOrder = IndexOrderNone
 }
 
+case class DirectedRelationshipFulltextIndexSearch(
+  idName: Option[LogicalVariable],
+  startNode: Option[LogicalVariable],
+  endNode: Option[LogicalVariable],
+  override val typeTokens: Seq[RelationshipTypeToken],
+  properties: Seq[IndexedProperty],
+  score: Option[LogicalVariable],
+  indexName: String,
+  queryString: Expression,
+  limit: Expression,
+  analyzer: Option[Expression],
+  skip: Option[Expression],
+  entityFilter: EntityFilterQueryExpression[Expression],
+  maybePropertyFilter: Option[QueryExpression[Expression]],
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
+
+  override val localAvailableSymbols: Set[LogicalVariable] = argumentIds ++ idName ++ leftNode ++ rightNode ++ score
+
+  override def usedVariables: Set[LogicalVariable] =
+    queryString.dependencies ++
+      analyzer.map(_.dependencies).getOrElse(Set.empty) ++
+      skip.map(_.dependencies).getOrElse(Set.empty) ++
+      limit.dependencies ++
+      entityFilter.expressions.flatMap(_.dependencies) ++
+      maybePropertyFilter.map(_.expressions.flatMap(_.dependencies)).getOrElse(Set.empty)
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipFulltextIndexSearch =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): DirectedRelationshipFulltextIndexSearch =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
+  override def copyWithoutGettingValues: DirectedRelationshipFulltextIndexSearch =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipFulltextIndexSearch =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def leftNode: Option[LogicalVariable] = startNode
+
+  override def rightNode: Option[LogicalVariable] = endNode
+
+  override def directed: Boolean = true
+
+  override def updateVariables(
+    idName: Option[LogicalVariable],
+    leftNode: Option[LogicalVariable],
+    rightNode: Option[LogicalVariable]
+  ): DirectedRelationshipFulltextIndexSearch =
+    copy(idName = idName, startNode = leftNode, endNode = rightNode)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
+  override def indexType: IndexType = IndexType.FULLTEXT
+
+  override def indexOrder: IndexOrder = IndexOrderNone
+}
+
+case class UndirectedRelationshipFulltextIndexSearch(
+  idName: Option[LogicalVariable],
+  startNode: Option[LogicalVariable],
+  endNode: Option[LogicalVariable],
+  override val typeTokens: Seq[RelationshipTypeToken],
+  properties: Seq[IndexedProperty],
+  score: Option[LogicalVariable],
+  indexName: String,
+  queryString: Expression,
+  limit: Expression,
+  analyzer: Option[Expression],
+  skip: Option[Expression],
+  entityFilter: EntityFilterQueryExpression[Expression],
+  maybePropertyFilter: Option[QueryExpression[Expression]],
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
+
+  override val localAvailableSymbols: Set[LogicalVariable] = argumentIds ++ idName ++ leftNode ++ rightNode ++ score
+
+  override def usedVariables: Set[LogicalVariable] =
+    queryString.dependencies ++
+      analyzer.map(_.dependencies).getOrElse(Set.empty) ++
+      skip.map(_.dependencies).getOrElse(Set.empty) ++
+      limit.dependencies ++
+      entityFilter.expressions.flatMap(_.dependencies) ++
+      maybePropertyFilter.map(_.expressions.flatMap(_.dependencies)).getOrElse(Set.empty)
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipFulltextIndexSearch =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): UndirectedRelationshipFulltextIndexSearch =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
+  override def copyWithoutGettingValues: UndirectedRelationshipFulltextIndexSearch =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): UndirectedRelationshipFulltextIndexSearch =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def leftNode: Option[LogicalVariable] = startNode
+
+  override def rightNode: Option[LogicalVariable] = endNode
+
+  override def directed: Boolean = false
+
+  override def updateVariables(
+    idName: Option[LogicalVariable],
+    leftNode: Option[LogicalVariable],
+    rightNode: Option[LogicalVariable]
+  ): UndirectedRelationshipFulltextIndexSearch =
+    copy(idName = idName, startNode = leftNode, endNode = rightNode)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
+  override def indexType: IndexType = IndexType.FULLTEXT
+
+  override def indexOrder: IndexOrder = IndexOrderNone
+}
+
 /**
  * Scans the relationship by type and produces one row for each relationship it finds.
  *
@@ -3894,6 +4060,50 @@ case class NodeVectorIndexSearch(
     copy(properties = properties.map(f))(SameId(this.id))
 
   override def indexType: IndexType = IndexType.VECTOR
+
+  override def indexOrder: IndexOrder = IndexOrderNone
+}
+
+case class NodeFulltextIndexSearch(
+  idName: LogicalVariable,
+  labels: Seq[LabelToken],
+  properties: Seq[IndexedProperty],
+  score: Option[LogicalVariable],
+  indexName: String,
+  queryString: Expression,
+  analyzer: Option[Expression],
+  skip: Option[Expression],
+  limit: Expression,
+  entityFilter: EntityFilterQueryExpression[Expression],
+  maybePropertyFilter: Option[QueryExpression[Expression]],
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen) extends NodeIndexLeafPlan(idGen) with StableLeafPlan {
+  override val localAvailableSymbols: Set[LogicalVariable] = argumentIds + idName ++ score
+
+  override def usedVariables: Set[LogicalVariable] =
+    queryString.dependencies ++
+      analyzer.map(_.dependencies).getOrElse(Set.empty) ++
+      skip.map(_.dependencies).getOrElse(Set.empty) ++
+      limit.dependencies ++
+      entityFilter.expressions.flatMap(_.dependencies) ++
+      maybePropertyFilter.map(_.expressions.flatMap(_.dependencies)).getOrElse(Set.empty)
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeFulltextIndexSearch =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): NodeFulltextIndexSearch =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
+  override def copyWithoutGettingValues: NodeFulltextIndexSearch =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeFulltextIndexSearch =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def indexType: IndexType = IndexType.FULLTEXT
 
   override def indexOrder: IndexOrder = IndexOrderNone
 }

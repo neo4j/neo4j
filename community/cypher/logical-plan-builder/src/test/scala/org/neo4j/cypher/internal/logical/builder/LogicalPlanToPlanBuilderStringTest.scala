@@ -1978,6 +1978,63 @@ class LogicalPlanToPlanBuilderStringTest
   )
 
   testPlan(
+    "nodeFulltextIndexSearch",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.nodeFulltextIndexSearch(
+        "y",
+        Seq("L"),
+        Seq("prop", "prop2"),
+        "'rhsIndex'",
+        "'hello'",
+        limit = "10",
+        analyzer = Some("'standard'"),
+        skip = Some("5"),
+        score = "score",
+        argumentIds = Set("x"),
+        getValueFromIndex = Map("prop" -> GetValue, "prop2" -> DoNotGetValue),
+        propertyFilter = Some(rangeExpression(gte(5)))
+      )
+      .nodeFulltextIndexSearch(
+        "x",
+        Seq("L"),
+        Seq("prop"),
+        "'lhsIndex'",
+        "'world'",
+        getValueFromIndex = Map("prop" -> GetValue)
+      )
+      .build()
+  )
+
+  testPlan(
+    "relationshipFulltextIndexSearch",
+    new TestPlanBuilder()
+      .produceResults("r1", "r2")
+      .apply()
+      .|.relationshipFulltextIndexSearch(
+        "(x1)-[r1]->()",
+        Seq("L"),
+        Seq("prop"),
+        "'rhsIndex'",
+        "'hello'",
+        limit = "10",
+        analyzer = Some("'standard'"),
+        skip = Some("5"),
+        score = "score",
+        argumentIds = Set("x1", "r1", "y1")
+      )
+      .relationshipFulltextIndexSearch(
+        "(x1)-[r1]-(y1)",
+        Seq("R1", "R2"),
+        Seq("prop", "prop2"),
+        "'lhsIndex'",
+        "'world'"
+      )
+      .build()
+  )
+
+  testPlan(
     "pointBoundingBoxNodeIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
