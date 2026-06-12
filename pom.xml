@@ -81,10 +81,10 @@
     <amazon-sdk.version>1.12.791</amazon-sdk.version>
     <antlr.version>4.13.2</antlr.version>
     <apache.directory.server.version>2.0.0.AM27</apache.directory.server.version>
-    <asm.version>9.9.1</asm.version>
+    <asm.version>9.10.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
-    <awssdk-crt.version>0.45.2</awssdk-crt.version>
-    <awssdk.version>2.44.3</awssdk.version>
+    <awssdk-crt.version>0.47.0</awssdk-crt.version>
+    <awssdk.version>2.46.6</awssdk.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <build-resources.version>2026.02.5</build-resources.version>
     <caffeine.version>3.2.4</caffeine.version>
@@ -107,8 +107,8 @@
     <gson.version>2.14.0</gson.version>
     <guava.version>33.6.0-jre</guava.version>
     <!-- no more patch releases for jackson-annotations so different versioning from jackson -->
-    <jackson.annotations.version>2.21</jackson.annotations.version>
-    <jackson.version>2.21.3</jackson.version>
+    <jackson.annotations.version>2.22</jackson.annotations.version>
+    <jackson.version>2.22.0</jackson.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.inject.version>2.0.1</jakarta.inject.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
@@ -127,22 +127,22 @@
     <jersey.version>2.46</jersey.version>
     <jetty.toolchain.version>4.0.9</jetty.toolchain.version>
     <jetty.version>12.1.8</jetty.version>
-    <json-unit.version>5.1.1</json-unit.version>
+    <json-unit.version>5.1.2</json-unit.version>
     <json4s.version>4.1.0</json4s.version>
     <jsr305.version>3.0.2</jsr305.version>
-    <junit.version>6.0.3</junit.version>
+    <junit.version>6.1.0</junit.version>
     <license-text.header>license/neo4j_gpl_v3/header.txt</license-text.header>
 
     <license.id>neo4j_gpl_v3</license.id>
     <licensing.prepend.text>license/neo4j_gpl_v3/notice.txt</licensing.prepend.text>
     <log4j.version>2.25.4</log4j.version>
-    <logback.version>1.5.32</logback.version>
+    <logback.version>1.5.34</logback.version>
     <lucene.version>10.4.0</lucene.version>
     <lucene9.version>9.12.2</lucene9.version>
     <lz4.version>1.11.0</lz4.version>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
     <maven.compiler.release>${vm.target.version}</maven.compiler.release>
-    <metrics.version>4.2.38</metrics.version>
+    <metrics.version>4.2.39</metrics.version>
     <mockito.version>5.23.0</mockito.version>
     <neo4j-java-driver.version>6.1.0</neo4j-java-driver.version>
     <neo4j.bolt.connection.version>11.1.0</neo4j.bolt.connection.version>
@@ -152,13 +152,13 @@
      -->
     <netty.version>4.2.15.Final</netty.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
-    <oshi-common.version>7.1.0</oshi-common.version>
+    <oshi-common.version>7.3.0</oshi-common.version>
     <parallel.tests>false</parallel.tests>
-    <parquet-floor.version>1.65</parquet-floor.version>
+    <parquet-floor.version>2.1</parquet-floor.version>
     <parquet.version>1.17.1</parquet.version>
     <picocli.version>4.7.7</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <protobuf.version>4.34.1</protobuf.version>
+    <protobuf.version>4.35.0</protobuf.version>
     <required.maven.version>3.9.11</required.maven.version>
     <s3mock.version>5.0.0</s3mock.version>
     <scala-maven-plugin.version>4.9.9</scala-maven-plugin.version>
@@ -171,8 +171,8 @@
     <shiro.version>2.1.0</shiro.version>
     <skip-scalastyle>false</skip-scalastyle>
     <slf4j.version>2.0.17</slf4j.version>
-    <sqlite-jdbc.version>3.53.1.0</sqlite-jdbc.version>
-    <teavm.version>0.14.0</teavm.version>
+    <sqlite-jdbc.version>3.53.2.0</sqlite-jdbc.version>
+    <teavm.version>0.14.1</teavm.version>
     <test.runner.jvm />
     <test.runner.jvm.settings>${test.runner.mockito.agent}
       -Xmx${test.vm.heap.size}
@@ -256,7 +256,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2025.0.4</version>
+        <version>2025.0.6</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -339,7 +339,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.7-8</version>
+        <version>1.5.7-10</version>
       </dependency>
       <dependency>
         <groupId>com.github.seancfoley</groupId>
@@ -547,12 +547,12 @@
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
-        <version>1.18.8</version>
+        <version>1.18.10</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.18.1</version>
+        <version>5.19.0</version>
       </dependency>
       <dependency>
         <groupId>net.javacrumbs.json-unit</groupId>
@@ -578,7 +578,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-configuration2</artifactId>
-        <version>2.15.0</version>
+        <version>2.15.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
