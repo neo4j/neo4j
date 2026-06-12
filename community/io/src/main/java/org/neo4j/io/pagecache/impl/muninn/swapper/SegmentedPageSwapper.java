@@ -29,14 +29,12 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.file.Path;
 import java.util.Arrays;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
@@ -102,40 +100,6 @@ public final class SegmentedPageSwapper implements PageSwapper {
     @Override
     public long read(long filePageId, long bufferAddress) throws IOException {
         return segmentAt(segmentIndexFor(filePageId)).read(pageWithinSegment(filePageId), bufferAddress);
-    }
-
-    @Override
-    public long read(long filePageId, long bufferAddress, int bufferLength) throws IOException {
-        if (filePageId < 0) {
-            throw new IOException("Invalid page id: " + filePageId);
-        }
-
-        long totalRead = 0;
-        long bytesToRead = bufferLength;
-        long readPageId = filePageId;
-        long readAddress = bufferAddress;
-
-        while (bytesToRead > 0) {
-            int segmentIndex = segmentIndexFor(readPageId);
-            long pagesLeftInSegment = pagesLeftInSegment(readPageId);
-            int readLength = Math.toIntExact(Math.min(pagesLeftInSegment * filePageSize, bytesToRead));
-            long readBytes = segmentAt(segmentIndex).read(pageWithinSegment(readPageId), readAddress, readLength);
-
-            if (readBytes > 0) {
-                totalRead += readBytes;
-                bytesToRead -= readBytes;
-                readAddress += readBytes;
-                readPageId += pagesLeftInSegment;
-            } else {
-                bytesToRead = 0;
-            }
-        }
-
-        int rest = Math.toIntExact(bufferLength - totalRead);
-        if (rest > 0) {
-            UnsafeUtil.setMemory(readAddress, rest, MuninnPageCache.ZERO_BYTE);
-        }
-        return totalRead;
     }
 
     @Override

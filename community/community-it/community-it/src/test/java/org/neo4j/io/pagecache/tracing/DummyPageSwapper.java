@@ -45,11 +45,6 @@ public class DummyPageSwapper implements PageSwapper {
     }
 
     @Override
-    public long read(long filePageId, long bufferAddress, int bufferLength) throws IOException {
-        return bufferLength;
-    }
-
-    @Override
     public long write(long filePageId, long bufferAddress) throws IOException {
         return filePageSize;
     }

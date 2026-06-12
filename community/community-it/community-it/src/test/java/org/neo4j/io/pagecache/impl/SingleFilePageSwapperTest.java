@@ -151,25 +151,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
     }
 
     @Test
-    void reportExternalIoOnSwapInWithLength() throws IOException {
-        byte[] bytes = new byte[] {1, 2, 3, 4};
-        try (StoreChannel channel = getFs().write(getPath())) {
-            channel.writeAll(wrap(bytes));
-        }
-
-        PageSwapperFactory factory = createSwapperFactory(getFs());
-        CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, controller)) {
-            long target = createPage(4);
-            int numberOfReads = 12;
-            for (int i = 0; i < numberOfReads; i++) {
-                assertEquals(4 + RESERVED_BYTES, swapper.read(0, target, 4 + RESERVED_BYTES));
-            }
-            assertEquals(numberOfReads, controller.getExternalIOCounter());
-        }
-    }
-
-    @Test
     void reportExternalIoOnSwapInWithMultipleBuffers() throws IOException {
         byte[] bytes1 = new byte[] {1, 2, 3, 4};
         byte[] bytes2 = new byte[] {5, 6, 7, 8};

@@ -1037,7 +1037,7 @@ class SegmentedPageSwapperIT {
         try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
             long buffer = allocateFilled(PAGE_SIZE, (byte) 0);
             try {
-                assertThrows(IOException.class, () -> swapper.read(-1, buffer, PAGE_SIZE));
+                assertThrows(IOException.class, () -> swapper.read(-1, buffer));
             } finally {
                 freeBuffer(buffer, PAGE_SIZE);
             }
@@ -1051,52 +1051,12 @@ class SegmentedPageSwapperIT {
         try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
             writeRangeViaSwapper(swapper, 0, pages);
 
-            int length = pages * PAGE_SIZE;
-            long buffer = allocateFilled(length, (byte) 0xFF);
+            long buffer = allocateFilled(PAGE_SIZE, (byte) 0xFF);
             try {
-                assertThat(swapper.read(0, buffer, length)).isEqualTo(length);
-                assertPageMarkers(buffer, 0, pages);
+                assertThat(swapper.read(0, buffer)).isEqualTo(PAGE_SIZE);
+                assertPageMarkers(buffer, 0, 1);
             } finally {
-                freeBuffer(buffer, length);
-            }
-        }
-    }
-
-    @Test
-    void readOverSegmentBoundary() throws IOException {
-        Path baseFile = directory.file("read-over-boundary");
-        int startPage = PAGES_PER_SEGMENT - 2;
-        int pages = PAGES_PER_SEGMENT;
-        try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
-            writeRangeViaSwapper(swapper, startPage, pages);
-
-            int length = pages * PAGE_SIZE;
-            long buffer = allocateFilled(length, (byte) 0xFF);
-            try {
-                assertThat(swapper.read(startPage, buffer, length)).isEqualTo(length);
-                assertPageMarkers(buffer, startPage, pages);
-            } finally {
-                freeBuffer(buffer, length);
-            }
-        }
-        assertThat(fs.fileExists(segment(baseFile, 0))).isTrue();
-        assertThat(fs.fileExists(segment(baseFile, 1))).isTrue();
-    }
-
-    @Test
-    void readSpanningMultipleSegments() throws IOException {
-        Path baseFile = directory.file("read-span-many");
-        int pages = 3 * PAGES_PER_SEGMENT;
-        try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
-            writeRangeViaSwapper(swapper, 0, pages);
-
-            int length = pages * PAGE_SIZE;
-            long buffer = allocateFilled(length, (byte) 0xFF);
-            try {
-                assertThat(swapper.read(0, buffer, length)).isEqualTo(length);
-                assertPageMarkers(buffer, 0, pages);
-            } finally {
-                freeBuffer(buffer, length);
+                freeBuffer(buffer, PAGE_SIZE);
             }
         }
     }
@@ -1106,17 +1066,15 @@ class SegmentedPageSwapperIT {
         Path baseFile = directory.file("read-later-segment");
         int totalPages = 3 * PAGES_PER_SEGMENT;
         int startPage = 2 * PAGES_PER_SEGMENT + 1;
-        int pages = 2;
         try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
             writeRangeViaSwapper(swapper, 0, totalPages);
 
-            int length = pages * PAGE_SIZE;
-            long buffer = allocateFilled(length, (byte) 0xFF);
+            long buffer = allocateFilled(PAGE_SIZE, (byte) 0xFF);
             try {
-                assertThat(swapper.read(startPage, buffer, length)).isEqualTo(length);
-                assertPageMarkers(buffer, startPage, pages);
+                assertThat(swapper.read(startPage, buffer)).isEqualTo(PAGE_SIZE);
+                assertPageMarkers(buffer, startPage, 1);
             } finally {
-                freeBuffer(buffer, length);
+                freeBuffer(buffer, PAGE_SIZE);
             }
         }
     }
@@ -1130,32 +1088,10 @@ class SegmentedPageSwapperIT {
 
             long buffer = allocateFilled(PAGE_SIZE * 2, (byte) 0xFF);
             try {
-                assertThat(swapper.read(pageBeyondData, buffer, PAGE_SIZE * 2)).isZero();
+                assertThat(swapper.read(pageBeyondData, buffer)).isZero();
                 assertPageIsZero(buffer, 0);
             } finally {
                 freeBuffer(buffer, PAGE_SIZE);
-            }
-        }
-    }
-
-    @Test
-    void readPartiallyPastEndOfFileZeroFillsTail() throws IOException {
-        Path baseFile = directory.file("read-partial-eof");
-        int writtenPages = 2;
-        int readPages = PAGES_PER_SEGMENT;
-        try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
-            writeRangeViaSwapper(swapper, 0, writtenPages);
-
-            int length = readPages * PAGE_SIZE;
-            long buffer = allocateFilled(length, (byte) 0xFF);
-            try {
-                assertThat(swapper.read(0, buffer, length)).isEqualTo((long) writtenPages * PAGE_SIZE);
-                assertPageMarkers(buffer, 0, writtenPages);
-                for (int p = writtenPages; p < readPages; p++) {
-                    assertPageIsZero(buffer, p);
-                }
-            } finally {
-                freeBuffer(buffer, length);
             }
         }
     }
@@ -1363,7 +1299,7 @@ class SegmentedPageSwapperIT {
                 new SwapperSet())) {
             long buffer = allocateFilled(PAGE_SIZE, (byte) 0xFF);
             try {
-                swapper.read(physicalPage, buffer, PAGE_SIZE);
+                swapper.read(physicalPage, buffer);
                 assertThat(UnsafeUtil.getLong(buffer))
                         .as("segment %d physical page %d marker", segmentIndex, physicalPage)
                         .isEqualTo(expectedMarker);

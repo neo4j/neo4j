@@ -208,8 +208,7 @@ class SingleFilePageSwapper implements PageSwapper {
         return read(filePageId, bufferAddress, filePageSize);
     }
 
-    @Override
-    public long read(long filePageId, long bufferAddress, int bufferLength) throws IOException {
+    private long read(long filePageId, long bufferAddress, int bufferLength) throws IOException {
         try (Retry retry = new Retry()) {
             do {
                 try {
