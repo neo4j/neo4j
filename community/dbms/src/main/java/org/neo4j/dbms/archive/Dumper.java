@@ -40,8 +40,6 @@ import java.util.function.Predicate;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.Util;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.graphdb.Resource;
@@ -58,7 +56,6 @@ public class Dumper {
     private final FileSystemAbstraction fs;
     private final ArchiveProgressPrinter progressPrinter;
     private final boolean deleteAfterCopy;
-    private final long maxBytesPerChunk;
 
     public Dumper(FileSystemAbstraction fs) {
         this(fs, ProgressPrinters.emptyPrinter(), false);
@@ -88,7 +85,6 @@ public class Dumper {
         this.fs = requireNonNull(fs);
         this.progressPrinter = requireNonNull(progressPrinter);
         this.deleteAfterCopy = deleteAfterCopy;
-        this.maxBytesPerChunk = Config.defaults().get(GraphDatabaseInternalSettings.split_archive_file_size);
     }
 
     /**
@@ -126,10 +122,6 @@ public class Dumper {
         for (Manifest.ManifestRecord record : mf.files()) {
             progressPrinter.maxBytes(progressPrinter.maxBytes() + fs.getFileSize(record.source()));
             progressPrinter.maxFiles(progressPrinter.maxFiles() + (record instanceof Manifest.FileRecord ? 1 : 0));
-        }
-
-        if (maxBytesPerChunk != 0 && dot instanceof FileOutput(FileSystemAbstraction fileSystem, Path path)) {
-            dot = new SplitFileOutput(fileSystem, path, maxBytesPerChunk);
         }
 
         try (OutputStream compress = format.compress(dot.stream())) {
@@ -209,6 +201,10 @@ public class Dumper {
     public record SplitFileOutput(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize)
             implements DumpOutput {
         public static final MagicSignature MAGIC_HEADER = MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "FV1");
+
+        public static SplitFileOutput of(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize) {
+            return new SplitFileOutput(fs, baseArtifact, maxArtifactSize);
+        }
 
         @Override
         public OutputStream stream() throws IOException {

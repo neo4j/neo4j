@@ -45,6 +45,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.DumpFormatSelector;
@@ -55,6 +56,7 @@ import org.neo4j.dbms.archive.Dumper.StdoutOutput;
 import org.neo4j.dbms.archive.Manifest;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -76,6 +78,7 @@ import org.neo4j.storageengine.api.DeprecatedFormatWarning;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Help.Visibility;
 import picocli.CommandLine.Parameters;
 
 @Command(
@@ -121,6 +124,18 @@ public class DumpCommand extends AbstractAdminCommand {
             description = "Overwrite any existing dump file in the destination folder.")
     private boolean overwriteDestination;
 
+    @Option(
+            names = "--experimental-split-size",
+            arity = "1",
+            paramLabel = "<splitsize>",
+            hidden = true,
+            showDefaultValue = Visibility.NEVER,
+            description = "Split archive at certain size intervals",
+            converter = Converters.ByteUnitConverter.class)
+    private long overrideArchiveSplitSize = 0;
+
+    private InternalLog log;
+
     public DumpCommand(ExecutionContext ctx) {
         super(ctx);
     }
@@ -158,7 +173,7 @@ public class DumpCommand extends AbstractAdminCommand {
                 storagePath = createDefaultDumpsDir(fs, config);
             }
 
-            InternalLog log = logProvider.getLog(getClass());
+            log = logProvider.getLog(getClass());
 
             List<FailedDump> failedDumps = new ArrayList<>();
 
@@ -185,7 +200,7 @@ public class DumpCommand extends AbstractAdminCommand {
                     try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
                         checkDbState(fs, databaseLayout, config, memoryTracker, databaseName, log);
                         logFormatDeprecationWarning(log, databaseLayout, config, fs);
-                        dump(dumper, databaseLayout, databaseName, storagePath, fs);
+                        dump(dumper, config, databaseLayout, databaseName, storagePath, fs);
                     } catch (FileLockException e) {
                         throw new CommandFailedException(
                                 "The database is in use. Stop database '" + databaseName + "' and try again.", e);
@@ -270,13 +285,33 @@ public class DumpCommand extends AbstractAdminCommand {
 
     record FailedDump(String dbName, Exception e) {}
 
-    private DumpOutput openDumpStream(FileSystemAbstraction fs, String databaseName, Path storagePath)
-            throws IOException {
+    private long determineArchiveSplittingSize(Config config) {
+        long defaultArchiveSplitSize = config.get(GraphDatabaseInternalSettings.split_archive_file_size);
+        if (overrideArchiveSplitSize > 0) {
+            log.warn(
+                    "You are overriding the default archive split size %s with %s - use at your own peril",
+                    ByteUnit.bytesToString(defaultArchiveSplitSize), ByteUnit.bytesToString(overrideArchiveSplitSize));
+            return overrideArchiveSplitSize;
+        }
+
+        return defaultArchiveSplitSize;
+    }
+
+    private DumpOutput openDumpStream(
+            SchemeFileSystemAbstraction fs, Config config, String databaseName, Path storagePath) throws IOException {
         if (storagePath == null) {
             return new StdoutOutput(ctx);
         }
 
         final var archive = storagePath.resolve(databaseName + DUMP_EXTENSION).toAbsolutePath();
+        long splitSize = determineArchiveSplittingSize(config);
+
+        if (splitSize > 0) {
+            // TODO(split-backups): Do pruning of archives
+            // TODO(split-backups): Validate split size
+            return new Dumper.SplitFileOutput(fs, archive, determineArchiveSplittingSize(config));
+        }
+
         // Allow "overwriting" of existing dumps.
         if (fs.fileExists(archive) && overwriteDestination) {
             fs.delete(archive);
@@ -286,10 +321,11 @@ public class DumpCommand extends AbstractAdminCommand {
 
     private void dump(
             Dumper dumper,
+            Config config,
             DatabaseLayout databaseLayout,
             String databaseName,
             Path storagePath,
-            FileSystemAbstraction fs) {
+            SchemeFileSystemAbstraction fs) {
         Path databasePath = databaseLayout.databaseDirectory();
         try {
             var format = DumpFormatSelector.selectWriteFormat(ctx.err());
@@ -301,7 +337,7 @@ public class DumpCommand extends AbstractAdminCommand {
                     databasePath,
                     databaseLayout.getTransactionLogsDirectory(),
                     path -> oneOf(path, lockFile, quarantineMarkerFile));
-            dumper.dump(openDumpStream(fs, databaseName, storagePath), format, mf);
+            dumper.dump(openDumpStream(fs, config, databaseName, storagePath), format, mf);
         } catch (FileAlreadyExistsException e) {
             throw new CommandFailedException(format("Archive already exists: %s", e.getMessage()), e);
         } catch (NoSuchFileException e) {

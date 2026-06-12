@@ -52,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.archive.Dumper;
@@ -71,6 +73,7 @@ import org.neo4j.dbms.archive.Dumper.FileOutput;
 import org.neo4j.dbms.archive.Dumper.StdoutOutput;
 import org.neo4j.dbms.archive.Manifest;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -458,11 +461,50 @@ class DumpCommandIT {
                 .hasMessageContaining("'some nonsense' is not a valid size");
     }
 
+    @Test
+    void shouldNotSelectSplitBackupsByDefault() throws IOException {
+        execute("foo", dumpDir);
+        var outputCaptor = ArgumentCaptor.forClass(Dumper.DumpOutput.class);
+        verify(dumper).dump(outputCaptor.capture(), any(), any());
+        assertThat(outputCaptor.getValue()).isInstanceOfSatisfying(Dumper.FileOutput.class, output -> {
+            assertThat(output.fs()).isInstanceOf(SchemeFileSystemAbstraction.class);
+            assertThat(output.path()).isEqualTo(dumpDir.resolve("foo.dump"));
+        });
+    }
+
+    @Test
+    void shouldSelectSplitBackupsWhenRequestedFromCli() throws IOException {
+        execute("foo", dumpDir, "--experimental-split-size=5gb");
+        var outputCaptor = ArgumentCaptor.forClass(Dumper.DumpOutput.class);
+        verify(dumper).dump(outputCaptor.capture(), any(), any());
+        assertThat(outputCaptor.getValue()).isInstanceOfSatisfying(Dumper.SplitFileOutput.class, output -> {
+            assertThat(output.fs()).isInstanceOf(SchemeFileSystemAbstraction.class);
+            assertThat(output.baseArtifact()).isEqualTo(dumpDir.resolve("foo.dump"));
+            assertThat(output.maxArtifactSize()).isEqualTo(ByteUnit.gibiBytes(5));
+        });
+    }
+
+    @Test
+    void shouldOverrideSplitBackupSizeWhenRequestedFromConfig() throws IOException {
+        Files.write(
+                configDir.resolve(Config.DEFAULT_CONFIG_FILE_NAME),
+                List.of(GraphDatabaseInternalSettings.split_archive_file_size.name() + "=5gb"));
+        putStoreInDirectory(buildConfig(), databaseDirectory);
+        execute("foo", dumpDir);
+        var outputCaptor = ArgumentCaptor.forClass(Dumper.DumpOutput.class);
+        verify(dumper).dump(outputCaptor.capture(), any(), any());
+        assertThat(outputCaptor.getValue()).isInstanceOfSatisfying(Dumper.SplitFileOutput.class, output -> {
+            assertThat(output.fs()).isInstanceOf(SchemeFileSystemAbstraction.class);
+            assertThat(output.baseArtifact()).isEqualTo(dumpDir.resolve("foo.dump"));
+            assertThat(output.maxArtifactSize()).isEqualTo(ByteUnit.gibiBytes(5));
+        });
+    }
+
     private void execute(String database) {
         execute(database, dumpDir);
     }
 
-    private void execute(String database, Path to) {
+    private void execute(String database, Path to, String... args) {
         final ExecutionContext ctx = new ExecutionContext(
                 homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
         final var command = new DumpCommand(ctx) {
@@ -471,8 +513,13 @@ class DumpCommandIT {
                 return dumper;
             }
         };
-
-        CommandLine.populateCommand(command, database, "--to-path=" + to.toAbsolutePath());
+        String[] options = new String[args.length + 2];
+        options[0] = database;
+        options[1] = "--to-path=" + to.toAbsolutePath();
+        for (int i = 0; i < args.length; ++i) {
+            options[2 + i] = args[i];
+        }
+        CommandLine.populateCommand(command, options);
 
         command.execute();
     }
