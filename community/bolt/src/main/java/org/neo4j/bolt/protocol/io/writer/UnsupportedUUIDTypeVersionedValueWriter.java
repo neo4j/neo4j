@@ -20,7 +20,7 @@
 package org.neo4j.bolt.protocol.io.writer;
 
 import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
-import org.neo4j.bolt.protocol.v60.BoltProtocolV60;
+import org.neo4j.bolt.protocol.v61.BoltProtocolV61;
 
 public class UnsupportedUUIDTypeVersionedValueWriter extends AbstractUnknownTypeVersionedValueWriter {
 
@@ -38,6 +38,6 @@ public class UnsupportedUUIDTypeVersionedValueWriter extends AbstractUnknownType
 
     @Override
     public void writeUUID(WriterContext ctx, long msb, long lsb) {
-        ctx.fireUnsupportedType(typeName(), BoltProtocolV60.VERSION);
+        ctx.fireUnsupportedType(typeName(), BoltProtocolV61.VERSION);
     }
 }
