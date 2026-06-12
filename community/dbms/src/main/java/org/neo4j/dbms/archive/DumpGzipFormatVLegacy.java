@@ -36,4 +36,9 @@ public class DumpGzipFormatVLegacy implements Dumper.DumpFormat {
     public InputStream decompress(InputStream stream) throws IOException {
         return StandardCompressionFormat.GZIP.decompress(stream);
     }
+
+    @Override
+    public String toString() {
+        return "DumpGzipFormatVLegacy";
+    }
 }

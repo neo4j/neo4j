@@ -21,9 +21,13 @@ package org.neo4j.dbms.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 @FunctionalInterface
 public interface DecompressionSelector {
-    InputStream decompress(ThrowingSupplier<InputStream, IOException> streamSupplier) throws IOException;
+    InputStream decompress(
+            Path path, FileSystemAbstraction fs, ThrowingSupplier<InputStream, IOException> streamSupplier)
+            throws IOException;
 }

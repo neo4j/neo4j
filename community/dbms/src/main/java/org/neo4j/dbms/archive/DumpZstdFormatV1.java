@@ -37,4 +37,9 @@ public class DumpZstdFormatV1 implements DumpFormat {
     public InputStream decompress(InputStream stream) throws IOException {
         return StandardCompressionFormat.ZSTD.decompress(stream);
     }
+
+    @Override
+    public String toString() {
+        return "DumpZstdFormatV1";
+    }
 }

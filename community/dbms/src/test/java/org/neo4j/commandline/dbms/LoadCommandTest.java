@@ -210,7 +210,8 @@ class LoadCommandTest {
     @Test
     void infoMustPrintArchiveMetaData() throws IOException {
         createDummyDump("foo", archive);
-        when(loader.getMetaData(any(), any())).thenReturn(new Loader.DumpMetaData(true, new SizeMeta(42, 1337)));
+        when(loader.getMetaData(any(), any(), any(), any()))
+                .thenReturn(new Loader.DumpMetaData(true, new SizeMeta(42, 1337)));
         var baos = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(baos)) {
             var command =

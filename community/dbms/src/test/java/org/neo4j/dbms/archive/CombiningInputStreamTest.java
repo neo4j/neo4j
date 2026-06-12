@@ -98,7 +98,7 @@ class CombiningInputStreamTest {
         assertThatThrownBy(() -> open(firstPart))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(
-                        "All parts for artifact test.dump.0 are not present in the same location. Expected: 5 files, actual: 4");
+                        "All parts for artifact test.dump are not present in the same location. Expected: 5 files, actual: 4");
     }
 
     @Test
@@ -120,7 +120,8 @@ class CombiningInputStreamTest {
         Path secondPart = firstPart.resolveSibling("test.dump.1");
         assertThatThrownBy(() -> open(secondPart))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("First artifact in split archive should have version 0, but was: test.dump.1");
+                .hasMessage(
+                        "First artifact in split archive must be base part ending with .backup or .dump, but was: test.dump.1");
     }
 
     @Test
@@ -128,11 +129,12 @@ class CombiningInputStreamTest {
         Path base = testDirectory.file("test.dump");
         writeSplitArchive("test.dump", new byte[250]);
 
-        fileSystem.renameFile(base.resolveSibling("test.dump.0"), base.resolveSibling("test.dump"));
-        Path file = base.resolveSibling("test.dump");
+        fileSystem.renameFile(base, base.resolveSibling("test.testing"));
+        Path file = base.resolveSibling("test.testing");
         assertThatThrownBy(() -> open(file))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("The file 'test.dump' does not have a valid version suffix");
+                .hasMessage(
+                        "First artifact in split archive must be base part ending with .backup or .dump, but was: test.testing");
     }
 
     @Test
@@ -303,18 +305,81 @@ class CombiningInputStreamTest {
         }
     }
 
+    @Test
+    void shouldReadDataFromSinglePartArchiveUsingPartSupplier() throws IOException {
+        byte[] expected = new byte[50];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = (byte) i;
+        }
+
+        Path firstPart = writeSplitArchive("test.dump", expected);
+        try (CombiningInputStream in = openWithSupplier(firstPart)) {
+            assertThat(in.readAllBytes()).isEqualTo(expected);
+        }
+    }
+
+    @Test
+    void shouldReadDataFromMultiplePartArchiveUsingPartSupplier() throws IOException {
+        byte[] expected = new byte[250];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = (byte) i;
+        }
+
+        Path firstPart = writeSplitArchive("test.dump", expected);
+        try (CombiningInputStream in = openWithSupplier(firstPart)) {
+            assertThat(in.readAllBytes()).isEqualTo(expected);
+        }
+    }
+
+    @Test
+    void shouldReadRandomDataFromMultiplePartArchiveUsingPartSupplier() throws IOException {
+        int parts = random.nextInt(100, 1000);
+        byte[] expected = random.nextBytes(parts * PART_SIZE);
+
+        Path firstPart = writeSplitArchive("test.dump", expected);
+        try (CombiningInputStream in = openWithSupplier(firstPart)) {
+            assertThat(in.readAllBytes()).isEqualTo(expected);
+        }
+    }
+
+    @Test
+    void shouldThrowWhenSupplierReturnsPartWithUnexpectedIndex() throws IOException {
+        Path firstPart = writeSplitArchive("test.dump", new byte[250]);
+        Path dir = firstPart.getParent();
+
+        CombiningInputStream.PartSupplier parts = version -> fileSystem.openAsInputStream(dir.resolve("test.dump.1"));
+        InputStream stream = fileSystem.openAsInputStream(firstPart);
+        stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+        try (CombiningInputStream in = CombiningInputStream.forParts(stream, parts)) {
+            assertThatThrownBy(in::readAllBytes)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Unexpected part index in split archive");
+        }
+    }
+
     private Path writeSplitArchive(String name, byte[] data) throws IOException {
         Path base = testDirectory.file(name);
         try (OutputStream out = new Dumper.SplitFileOutput(fileSystem, base, PART_SIZE).stream()) {
             out.write(data);
         }
-        return base.resolveSibling(base.getFileName() + ".0");
+        return base;
     }
 
     private CombiningInputStream open(Path firstPart) throws IOException {
-        try (InputStream stream = fileSystem.openAsInputStream(firstPart)) {
-            stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
-            return CombiningInputStream.forArtifact(firstPart, stream, fileSystem);
-        }
+        InputStream stream = fileSystem.openAsInputStream(firstPart);
+        stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+        return CombiningInputStream.forArtifact(firstPart, stream, fileSystem);
+    }
+
+    private CombiningInputStream openWithSupplier(Path firstPart) throws IOException {
+        // Resolves the data parts the same way a remote caller would: by swapping the trailing ".<version>" of the
+        // metadata file (version 0) for the requested version.
+        String baseName = firstPart.getFileName().toString();
+        CombiningInputStream.PartSupplier parts =
+                version -> fileSystem.openAsInputStream(firstPart.getParent().resolve(baseName + "." + version));
+
+        InputStream stream = fileSystem.openAsInputStream(firstPart);
+        stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+        return CombiningInputStream.forParts(stream, parts);
     }
 }

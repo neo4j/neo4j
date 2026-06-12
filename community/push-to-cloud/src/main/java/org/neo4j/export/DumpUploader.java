@@ -172,12 +172,11 @@ public class DumpUploader extends Uploader {
             var pattern = new DatabaseNamePattern(database);
             for (Path file : ctx.fs().listFiles(archivePath)) {
                 if (file.toString().endsWith(BACKUP_EXTENSION)) {
-                    try (var inputStream = ctx.fs().openAsInputStream(file)) {
-                        BackupDescription backupDescription = BackupFormatSelector.readDescription(inputStream);
-                        String dbName = backupDescription.getDatabaseName();
-                        if (pattern.matches(dbName) && backupDescription.isFull()) {
-                            result.add(file);
-                        }
+                    BackupDescription backupDescription = BackupFormatSelector.readDescription(
+                            file, ctx.fs(), () -> ctx.fs().openAsInputStream(file));
+                    String dbName = backupDescription.getDatabaseName();
+                    if (pattern.matches(dbName) && backupDescription.isFull()) {
+                        result.add(file);
                     }
                 }
             }

@@ -108,7 +108,8 @@ public class CheckDump implements CheckDatabase {
             return; // implies the usable space cannot be obtained
         }
 
-        final var dumpMeta = loader.getMetaData(() -> fs.openAsInputStream(dump), DumpFormatSelector::decompress);
+        final var dumpMeta =
+                loader.getMetaData(dump, fs, () -> fs.openAsInputStream(dump), DumpFormatSelector::decompress);
         SizeMeta sizeMeta = dumpMeta.sizeMeta();
         if (sizeMeta == null) {
             return;

@@ -37,4 +37,9 @@ public class DumpGzipFormatV1 implements DumpFormat {
     public InputStream decompress(InputStream stream) throws IOException {
         return StandardCompressionFormat.GZIP.decompress(stream);
     }
+
+    @Override
+    public String toString() {
+        return "DumpGzipFormatV1";
+    }
 }

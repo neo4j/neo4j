@@ -114,7 +114,7 @@ public class Loader {
 
         checkDatabasePresence(filesystem, databaseLayout);
 
-        try (var stream = openArchiveIn(selector, input.streamSupplier(), input.description());
+        try (var stream = openArchiveIn(selector, input);
                 Resource ignore = progressPrinter.startPrinting()) {
             ArchiveEntry entry;
             while ((entry = nextEntry(stream, input.description())) != null) {
@@ -135,9 +135,12 @@ public class Loader {
     }
 
     public DumpMetaData getMetaData(
-            ThrowingSupplier<InputStream, IOException> streamSupplier, DecompressionSelector selector)
+            Path path,
+            FileSystemAbstraction fs,
+            ThrowingSupplier<InputStream, IOException> streamSupplier,
+            DecompressionSelector selector)
             throws IOException {
-        try (InputStream decompressor = selector.decompress(streamSupplier)) {
+        try (InputStream decompressor = selector.decompress(path, fs, streamSupplier)) {
             return readDumpMetadata(decompressor);
         }
     }
@@ -208,11 +211,15 @@ public class Loader {
         }
     }
 
-    private ArchiveInputStream<?> openArchiveIn(
-            DecompressionSelector selector, ThrowingSupplier<InputStream, IOException> streamSupplier, String inputName)
+    private ArchiveInputStream<?> openArchiveIn(DecompressionSelector selector, DumpInput input)
             throws IOException, IncorrectFormat {
+        InputStream decompressor = null;
         try {
-            InputStream decompressor = selector.decompress(streamSupplier);
+            if (input instanceof FileInput(FileSystemAbstraction fs, Path path)) {
+                decompressor = selector.decompress(path, fs, input.streamSupplier());
+            } else {
+                decompressor = selector.decompress(null, filesystem, input.streamSupplier());
+            }
 
             if (StandardCompressionFormat.ZSTD.isFormat(decompressor)) {
                 // Important: Only the ZSTD compressed archives have any archive metadata.
@@ -222,12 +229,21 @@ public class Loader {
             }
 
             return new TarArchiveInputStream(decompressor, UTF_8.name());
-        } catch (NoSuchFileException ioe) {
-            throw ioe;
-        } catch (IllegalArgumentException e) {
-            throw new IncorrectFormat(inputName, new IOException(e.getMessage(), e));
-        } catch (IOException e) {
-            throw new IncorrectFormat(inputName, e);
+        } catch (Exception e) {
+            if (decompressor != null) {
+                try {
+                    decompressor.close();
+                } catch (IOException closeException) {
+                    e.addSuppressed(closeException);
+                }
+            }
+            switch (e) {
+                case NoSuchFileException nsfe -> throw nsfe;
+                case IllegalArgumentException iae ->
+                    throw new IncorrectFormat(input.description(), new IOException(iae.getMessage(), iae));
+                case IOException ioe -> throw new IncorrectFormat(input.description(), ioe);
+                default -> throw e;
+            }
         }
     }
 

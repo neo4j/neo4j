@@ -187,26 +187,39 @@ public class LoadCommand extends AbstractAdminCommand {
         List<FailedLoad> failedLoads = new ArrayList<>();
         for (DumpInfo dumpInfo : dbNames) {
             if (source.stdIn) {
-                inspectOne(dumpInfo.dbName, new StdinInput(ctx), loader, failedLoads);
+                inspectOne(dumpInfo.dbName, new StdinInput(ctx), fs, loader, failedLoads);
             } else {
                 for (Path path : dumpInfo.archives) {
-                    inspectOne(dumpInfo.dbName, new FileInput(fs, path), loader, failedLoads);
+                    inspectOne(dumpInfo.dbName, new FileInput(fs, path), fs, loader, failedLoads);
                 }
             }
         }
         checkFailure(failedLoads, "Print metadata failed for databases: '");
     }
 
-    private void inspectOne(String dbName, Loader.DumpInput input, Loader loader, List<FailedLoad> failedLoads) {
+    private void inspectOne(
+            String dbName,
+            Loader.DumpInput input,
+            FileSystemAbstraction fileSystem,
+            Loader loader,
+            List<FailedLoad> failedLoads) {
         try {
             MutableBoolean backup = new MutableBoolean(false);
             MutableBoolean fullBackup = new MutableBoolean(false);
+            Path path = null;
+            if (input instanceof FileInput(FileSystemAbstraction fs, Path p)) {
+                path = p;
+                fileSystem = fs;
+            }
             Loader.DumpMetaData metaData = loader.getMetaData(
+                    path,
+                    fileSystem,
                     input.streamSupplier(),
-                    streamSupplier -> DumpFormatSelector.decompressWithBackupSupport(streamSupplier, bd -> {
-                        backup.setTrue();
-                        fullBackup.setValue(bd.isFull());
-                    }));
+                    (p, fs, streamSupplier) ->
+                            DumpFormatSelector.decompressWithBackupSupport(p, fs, streamSupplier, bd -> {
+                                backup.setTrue();
+                                fullBackup.setValue(bd.isFull());
+                            }));
             String archiveFormat =
                     getArchiveFormat(backup.booleanValue(), fullBackup.booleanValue(), metaData.compressed());
             SizeMeta sizeMeta = metaData.sizeMeta();
@@ -339,19 +352,18 @@ public class LoadCommand extends AbstractAdminCommand {
                                     .add(path);
                         }
                     } else if (fileName.endsWith(BACKUP_EXTENSION)) {
-                        try (var inputStream = fs.openAsInputStream(path)) {
-                            BackupDescription backupDescription = BackupFormatSelector.readDescription(inputStream);
-                            String dbName = backupDescription.getDatabaseName();
-                            if (pattern.matches(dbName) && (includeDiff || backupDescription.isFull())) {
-                                result.computeIfAbsent(dbName, name -> new ArrayList<>())
-                                        .add(path);
-                            }
+                        BackupDescription backupDescription =
+                                BackupFormatSelector.readDescription(path, fs, () -> fs.openAsInputStream(path));
+                        String dbName = backupDescription.getDatabaseName();
+                        if (pattern.matches(dbName) && (includeDiff || backupDescription.isFull())) {
+                            result.computeIfAbsent(dbName, name -> new ArrayList<>())
+                                    .add(path);
                         }
                     }
                 }
             }
             return result;
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             throw new CommandFailedException("Failed to list archive files", e);
         }
     }
@@ -360,9 +372,10 @@ public class LoadCommand extends AbstractAdminCommand {
         return createPrefilledConfigBuilder().build();
     }
 
-    private static InputStream decompress(ThrowingSupplier<InputStream, IOException> streamSupplier)
+    private static InputStream decompress(
+            Path path, FileSystemAbstraction fs, ThrowingSupplier<InputStream, IOException> streamSupplier)
             throws IOException {
-        return DumpFormatSelector.decompressWithBackupSupport(streamSupplier, bd -> {
+        return DumpFormatSelector.decompressWithBackupSupport(path, fs, streamSupplier, bd -> {
             if (!bd.isFull()) {
                 throw new CommandFailedException(
                         "Loading of differential Neo4j backup is not supported. Use restore database instead.");

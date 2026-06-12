@@ -61,8 +61,8 @@ class SplitFileOutputTest {
             stream.write(new byte[250]); // 3 parts
         }
 
-        assertThat(Files.exists(base)).isFalse();
-        assertThat(Files.exists(base.resolveSibling("test.dump.0"))).isTrue(); // header file
+        assertThat(Files.exists(base)).isTrue(); // header file
+        assertThat(Files.exists(base.resolveSibling("test.dump.0"))).isFalse();
         assertThat(Files.exists(base.resolveSibling("test.dump.1"))).isTrue();
         assertThat(Files.exists(base.resolveSibling("test.dump.2"))).isTrue();
         assertThat(Files.exists(base.resolveSibling("test.dump.3"))).isTrue();
@@ -76,7 +76,7 @@ class SplitFileOutputTest {
             stream.write(new byte[250]); // 3 parts
         }
 
-        byte[] part1 = Files.readAllBytes(base.resolveSibling("test.dump.0"));
+        byte[] part1 = Files.readAllBytes(base);
         // First part: 4 byte magic + 4 byte total part count + 16 bytes UUID + data
         assertThat(Arrays.copyOfRange(part1, 0, 4)).isEqualTo(Dumper.SplitFileOutput.MAGIC_HEADER.getBytes());
         assertThat(intFromBytes(Arrays.copyOfRange(part1, 4, 8))).isEqualTo(3);
@@ -91,7 +91,12 @@ class SplitFileOutputTest {
         }
 
         for (int i = 0; i <= 3; i++) {
-            byte[] bytes = Files.readAllBytes(base.resolveSibling("test.dump." + i));
+            byte[] bytes;
+            if (i == 0) {
+                bytes = Files.readAllBytes(base);
+            } else {
+                bytes = Files.readAllBytes(base.resolveSibling("test.dump." + i));
+            }
             assertThat(Arrays.copyOfRange(bytes, 0, 4)).isEqualTo(Dumper.SplitFileOutput.MAGIC_HEADER.getBytes());
         }
     }
@@ -104,7 +109,7 @@ class SplitFileOutputTest {
             stream.write(new byte[250]); // 3 parts
         }
 
-        byte[] part0 = Files.readAllBytes(base.resolveSibling("test.dump.0"));
+        byte[] part0 = Files.readAllBytes(base);
         byte[] part1 = Files.readAllBytes(base.resolveSibling("test.dump.1"));
         byte[] part2 = Files.readAllBytes(base.resolveSibling("test.dump.2"));
         byte[] part3 = Files.readAllBytes(base.resolveSibling("test.dump.3"));
@@ -174,12 +179,13 @@ class SplitFileOutputTest {
 
         var actual = new ByteArrayOutputStream();
         for (int i = 0; i <= parts; i++) {
-            byte[] partBytes = Files.readAllBytes(base.resolveSibling("test.dump." + i));
             if (i == 0) {
                 // First part has a 24-bytes (4 magic + 4 total count + 16 UUID)
+                byte[] partBytes = Files.readAllBytes(base);
                 assertThat(intFromBytes(Arrays.copyOfRange(partBytes, 4, 8))).isEqualTo(parts);
             } else {
                 // All other part files has a 24-byte header (4 magic + 4 index + 16 UUID) + data
+                byte[] partBytes = Files.readAllBytes(base.resolveSibling("test.dump." + i));
                 assertThat(intFromBytes(Arrays.copyOfRange(partBytes, 4, 8))).isEqualTo(i);
                 actual.write(partBytes, 24, partBytes.length - 24);
             }
@@ -191,14 +197,14 @@ class SplitFileOutputTest {
     @Test
     void shouldFailIfPartFileAlreadyExists() throws IOException {
         Path base = testDirectory.file("test.dump");
-        Files.createFile(base.resolveSibling("test.dump.0"));
+        Files.createFile(base.resolveSibling("test.dump"));
 
         assertThatThrownBy(() -> {
                     try (OutputStream stream = new Dumper.SplitFileOutput(fileSystem, base, FILE_SIZE).stream()) {
                         stream.write(new byte[50]);
                     }
                 })
-                .hasMessageContaining("test.dump.0")
+                .hasMessageContaining("test.dump")
                 .isInstanceOf(UncheckedIOException.class)
                 .hasCauseInstanceOf(FileAlreadyExistsException.class);
     }

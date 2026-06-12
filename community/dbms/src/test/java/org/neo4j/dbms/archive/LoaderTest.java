@@ -21,6 +21,7 @@ package org.neo4j.dbms.archive;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptySet;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,6 +33,8 @@ import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -39,21 +42,29 @@ import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.backup.BackupDescription;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.RandomSupportExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @Neo4jLayoutExtension
+@RandomSupportExtension
 class LoaderTest {
     @Inject
     private TestDirectory testDirectory;
@@ -63,6 +74,9 @@ class LoaderTest {
 
     @Inject
     private DatabaseLayout databaseLayout;
+
+    @Inject
+    private RandomSupport random;
 
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveDoesntExist() throws IOException {
@@ -217,8 +231,64 @@ class LoaderTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource(value = "formats")
+    void decompressShouldReadSplitDump(Dumper.DumpFormat format) throws IOException {
+        Path base = testDirectory.file("split.dump");
+        byte[] expected = new byte[500];
+        random.nextBytes(expected);
+
+        try (OutputStream compressed = format.compress(new Dumper.SplitFileOutput(fileSystem, base, 200).stream())) {
+            compressed.write(expected);
+        }
+
+        try (InputStream in =
+                DumpFormatSelector.decompress(base, fileSystem, () -> fileSystem.openAsInputStream(base))) {
+            assertThat(in.readAllBytes()).isEqualTo(expected);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "formats")
+    void decompressShouldReadNonSplitDump(Dumper.DumpFormat format) throws IOException {
+        Path archive = testDirectory.file("non-split.dump");
+        byte[] expected = new byte[500];
+        random.nextBytes(expected);
+        try (OutputStream compressed = format.compress(fileSystem.openAsOutputStream(archive, false))) {
+            compressed.write(expected);
+        }
+
+        try (InputStream in =
+                DumpFormatSelector.decompress(null, fileSystem, () -> fileSystem.openAsInputStream(archive))) {
+            assertThat(in.readAllBytes()).isEqualTo(expected);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "formats")
+    void decompressWithBackupSupportShouldReadSplitDump(Dumper.DumpFormat format) throws IOException {
+        Path base = testDirectory.file("split-backup.dump");
+        byte[] expected = new byte[500];
+        random.nextBytes(expected);
+
+        try (OutputStream compressed = format.compress(new Dumper.SplitFileOutput(fileSystem, base, 200).stream())) {
+            compressed.write(expected);
+        }
+
+        AtomicReference<BackupDescription> captured = new AtomicReference<>();
+        try (InputStream in = DumpFormatSelector.decompressWithBackupSupport(
+                base, fileSystem, () -> fileSystem.openAsInputStream(base), captured::set)) {
+            assertThat(in.readAllBytes()).isEqualTo(expected);
+        }
+        assertThat(captured.get()).isNull();
+    }
+
     private void deleteLayoutFolders(DatabaseLayout databaseLayout) throws IOException {
         fileSystem.deleteRecursively(databaseLayout.databaseDirectory());
         fileSystem.deleteRecursively(databaseLayout.getTransactionLogsDirectory());
+    }
+
+    private static List<Dumper.DumpFormat> formats() {
+        return DumpFormatSelector.availableFormats();
     }
 }

@@ -21,10 +21,14 @@ package org.neo4j.dbms.archive.backup;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.List;
 import org.neo4j.dbms.archive.ArchiveFormat;
+import org.neo4j.dbms.archive.CombiningInputStream;
 import org.neo4j.dbms.archive.DumpFormatSelector;
+import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class BackupFormatSelector {
 
@@ -47,22 +51,65 @@ public class BackupFormatSelector {
         return compress ? new BackupZstdFormatV2() : new BackupTarFormatV2();
     }
 
-    public static BackupDescription readDescription(InputStream inputStream) throws IOException {
-        return selectReadFormat(inputStream).readMetadata(inputStream);
+    public static BackupDescription readDescription(
+            Path path, FileSystemAbstraction fs, ThrowingSupplier<InputStream, IOException> streamSupplier)
+            throws IOException {
+        InputStream stream = streamSupplier.get();
+        try {
+            InputStream input = stream;
+            FormatAndStream record = getFormat(path, input, () -> CombiningInputStream.forArtifact(path, input, fs));
+            stream = record.inputStream;
+            return record.format.readMetadata(stream);
+        } finally {
+            stream.close();
+        }
     }
 
-    public static InputStream decompress(ThrowingSupplier<InputStream, IOException> streamSupplier) throws IOException {
-        InputStream inputStream = streamSupplier.get();
-        return selectReadFormat(inputStream).decompress(inputStream);
+    public static BackupDescription readDescription(
+            CombiningInputStream.PartSupplier parts, ThrowingSupplier<InputStream, Exception> streamSupplier)
+            throws Exception {
+        InputStream stream = streamSupplier.get();
+        try {
+            InputStream input = stream;
+            FormatAndStream record = getFormat(parts, input, () -> CombiningInputStream.forParts(input, parts));
+            stream = record.inputStream;
+            return record.format.readMetadata(stream);
+        } finally {
+            stream.close();
+        }
     }
 
-    private static BackupCompressionFormat selectReadFormat(InputStream inputStream) throws IOException {
-        byte[] magicPrefix = inputStream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
-        var format = selectReadFormat(magicPrefix);
+    public static InputStream decompress(
+            Path path, FileSystemAbstraction fs, ThrowingSupplier<InputStream, IOException> streamSupplier)
+            throws IOException {
+        InputStream stream = streamSupplier.get();
+        try {
+            InputStream input = stream;
+            FormatAndStream record = getFormat(path, input, () -> CombiningInputStream.forArtifact(path, input, fs));
+            stream = record.inputStream;
+            return record.format.decompress(stream);
+        } catch (Exception e) {
+            stream.close();
+            throw e;
+        }
+    }
+
+    private static FormatAndStream getFormat(
+            Object artifact, InputStream stream, ThrowingSupplier<CombiningInputStream, IOException> combiningSupplier)
+            throws IOException {
+        byte[] magicPrefix = stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+        if (Dumper.SplitFileOutput.MAGIC_HEADER.matches(magicPrefix)) {
+            if (artifact == null) {
+                throw new IllegalArgumentException("Found split file format, but not supplied in split files");
+            }
+            stream = combiningSupplier.get();
+            magicPrefix = stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+        }
+        BackupCompressionFormat format = selectReadFormat(magicPrefix);
         if (format == null) {
             DumpFormatSelector.throwUnsupported(magicPrefix);
         }
-        return format;
+        return new FormatAndStream(format, stream);
     }
 
     public static BackupCompressionFormat selectReadFormat(byte[] bytes) {
@@ -84,4 +131,6 @@ public class BackupFormatSelector {
 
         return null;
     }
+
+    private record FormatAndStream(BackupCompressionFormat format, InputStream inputStream) {}
 }

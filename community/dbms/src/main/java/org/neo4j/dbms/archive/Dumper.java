@@ -208,7 +208,7 @@ public class Dumper {
 
     public record SplitFileOutput(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize)
             implements DumpOutput {
-        static final MagicSignature MAGIC_HEADER = MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "FV1");
+        public static final MagicSignature MAGIC_HEADER = MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "FV1");
 
         @Override
         public OutputStream stream() throws IOException {
@@ -217,7 +217,6 @@ public class Dumper {
             Runnable onClose = () -> {
                 try {
                     fileGenerator.writeCountToFirstFile();
-                    fs.deleteFile(baseArtifact);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -233,6 +232,7 @@ public class Dumper {
         private static final class SplitFileGenerator implements Iterator<OutputStream> {
             private final FileSystemAbstraction fs;
             private final SequentialFileNameHelper fileNameHelper;
+            private final Path baseArtifact;
             private final UUID id;
             private int count = 0;
 
@@ -240,6 +240,7 @@ public class Dumper {
                 this.fs = fs;
                 this.fileNameHelper = new SequentialFileNameHelper(
                         basePath.getParent(), basePath.getFileName().toString());
+                this.baseArtifact = basePath;
                 this.id = UUID.randomUUID();
             }
 
@@ -284,8 +285,7 @@ public class Dumper {
 
             void writeCountToFirstFile() throws IOException {
                 // The first file contains header, total artifact count and uuid
-                try (var stream =
-                        fs.openAsOutputStream(fileNameHelper.getFileForVersion(0), Set.of(WRITE, CREATE_NEW))) {
+                try (var stream = fs.openAsOutputStream(baseArtifact, Set.of(WRITE, CREATE_NEW))) {
                     stream.write(MAGIC_HEADER.getBytes());
                     stream.write(intToByteArray(count));
                     stream.write(uuidBytes());
