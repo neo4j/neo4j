@@ -277,6 +277,6 @@ public class LuceneSettings implements SettingsDeclaration {
     public static final Setting<PostPopulationCompaction> vector_post_population_compaction = newBuilder(
                     "internal.dbms.index.vector.post_population_compaction",
                     ofEnum(PostPopulationCompaction.class),
-                    PostPopulationCompaction.AUTO)
+                    PostPopulationCompaction.NONE)
             .build();
 }
