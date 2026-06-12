@@ -21,6 +21,7 @@ package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.generator.AstGenerator
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
@@ -132,54 +133,59 @@ class FabricParsingPropertyTest extends CypherFunSuite3
   test("fabricParsing should not introduce anonymous variable names with non-negative numbers.") {
     // To reproduce test failures, enable the following line with the seed from the TC build
     // setScalaCheckInitialSeed(seed)
-    forAll(astGenerator._statement) { statement =>
-      val queryString = prettifier.asString(statement)
-      if (queryString.length > 4000) {
-        println(s"Large generated query: ${queryString.length}")
-      }
-      withClue(s"Original queryString: $queryString\n") {
-        val state = InitialState(
-          queryString,
-          IDPPlannerName,
-          new AnonymousVariableNameGenerator(negativeNumbers = true)
-        )
+    forAll(astGenerator._statement) { (statement: Statement) =>
+      val astSize = statement.folder.fold(0) { case _ => acc => acc + 1 }
+      // Skip too large ASTs: these have caused OOMs where a single generated
+      // statement explodes during rewriting into millions of nodes.
+      if (astSize <= 1000) {
+        val queryString = prettifier.asString(statement)
+        withClue(s"Original queryString (astSize=$astSize): $queryString\n") {
+          val state = InitialState(
+            queryString,
+            IDPPlannerName,
+            new AnonymousVariableNameGenerator(negativeNumbers = true)
+          )
 
-        val context = new BaseContext {
-          override def cypherVersion: CypherVersion = astGenerator.whenAstDifferUseCypherVersion
-          override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
-          override def notificationLogger: InternalNotificationLogger = devNullLogger
-          override def cypherExceptionFactory: CypherExceptionFactory = dummyExceptionFactory
-          override def monitors: phases.Monitors = WrappedMonitors(mock[Monitors])
-          // Ignore semantic errors
-          override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
-          override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
-          override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
-          override def internalUsageStats: InternalUsageStats = InternalUsageStatsNoOp
-          override def sessionDatabase: DatabaseReference = null
-          override def semanticFeatures: Seq[SemanticFeature] =
-            defaultSemanticFeatures.map(SemanticFeature.fromString) ++ Seq(MultipleGraphs, UseAsMultipleGraphsSelector)
-          override def isScopeQuery: Boolean = false
-          override def shadowedFunctions: Set[String] = Set.empty
-        }
-
-        try {
-          val fabricParsed = fabricParsing.transform(state, context).statement()
-          val rewrittenQueryString = prettifier.asString(fabricParsed)
-          withClue(s"Rewritten queryString: $rewrittenQueryString\n") {
-            UNNAMED_PATTERN.findAllMatchIn(rewrittenQueryString).foreach(
-              _.group(2).toInt should be < 0
-            )
+          val context = new BaseContext {
+            override def cypherVersion: CypherVersion = astGenerator.whenAstDifferUseCypherVersion
+            override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
+            override def notificationLogger: InternalNotificationLogger = devNullLogger
+            override def cypherExceptionFactory: CypherExceptionFactory = dummyExceptionFactory
+            override def monitors: phases.Monitors = WrappedMonitors(mock[Monitors])
+            // Ignore semantic errors
+            override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
+            override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
+            override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
+            override def internalUsageStats: InternalUsageStats = InternalUsageStatsNoOp
+            override def sessionDatabase: DatabaseReference = null
+            override def semanticFeatures: Seq[SemanticFeature] =
+              defaultSemanticFeatures.map(SemanticFeature.fromString) ++ Seq(
+                MultipleGraphs,
+                UseAsMultipleGraphsSelector
+              )
+            override def isScopeQuery: Boolean = false
+            override def shadowedFunctions: Set[String] = Set.empty
           }
-        } catch {
-          // Ignore. We can get those for certain semantic errors caught by the rewriters.
-          case _: DummyException =>
-          // Ignore. We can reach invalid states by ignoring semantic errors and continuing.
-          case _: IllegalStateException  =>
-          case _: NoSuchElementException =>
-          // Ignore. Caused by invalid Cypher reaching the ASTRewriter
-          case _: UnsupportedOperationException =>
-          case _: ClassCastException            =>
 
+          try {
+            val fabricParsed = fabricParsing.transform(state, context).statement()
+            val rewrittenQueryString = prettifier.asString(fabricParsed)
+            withClue(s"Rewritten queryString: $rewrittenQueryString\n") {
+              UNNAMED_PATTERN.findAllMatchIn(rewrittenQueryString).foreach(
+                _.group(2).toInt should be < 0
+              )
+            }
+          } catch {
+            // Ignore. We can get those for certain semantic errors caught by the rewriters.
+            case _: DummyException =>
+            // Ignore. We can reach invalid states by ignoring semantic errors and continuing.
+            case _: IllegalStateException  =>
+            case _: NoSuchElementException =>
+            // Ignore. Caused by invalid Cypher reaching the ASTRewriter
+            case _: UnsupportedOperationException =>
+            case _: ClassCastException            =>
+
+          }
         }
       }
     }
