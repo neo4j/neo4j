@@ -83,7 +83,6 @@
     <apache.directory.server.version>2.0.0.AM27</apache.directory.server.version>
     <asm.version>9.10.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
-    <awssdk-crt.version>0.47.0</awssdk-crt.version>
     <awssdk.version>2.46.6</awssdk.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <build-resources.version>2026.02.5</build-resources.version>
