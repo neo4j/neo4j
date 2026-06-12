@@ -22,6 +22,7 @@ package org.neo4j.io.layout.block;
 import org.neo4j.io.layout.DatabaseFile;
 
 public class BlockDatabaseExistMarker implements DatabaseFile {
+    // This file exists, to allow the storage engine factory to check if a block database exists in community.
     public static final BlockDatabaseExistMarker INSTANCE = new BlockDatabaseExistMarker();
     public static final String NAME = "block.metadata.db";
 

@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -205,6 +207,32 @@ class RecordStorageEngineTest {
             inOrder.verify(nodeLock).release();
             inOrder.verifyNoMoreInteractions();
         }
+    }
+
+    @Test
+    void listStorageFilesContainsUniqueEntries() throws IOException {
+        // Populate the layout
+        var engine = buildRecordStorageEngine();
+        engine.shutdown();
+
+        RecordStorageEngineFactory engineFactory = new RecordStorageEngineFactory();
+        var files = engineFactory.listStorageFiles(fs, databaseLayout);
+        assertThat(files).isEqualTo(files.stream().distinct().toList());
+    }
+
+    @Test
+    void listStorageFilesContainsExistsMarker() throws IOException {
+        // Populate the layout
+        var engine = buildRecordStorageEngine();
+        engine.shutdown();
+
+        RecordStorageEngineFactory engineFactory = new RecordStorageEngineFactory();
+        var files = engineFactory.listStorageFiles(fs, databaseLayout);
+
+        Function<Path, String> stringify =
+                (pth) -> databaseLayout.databaseDirectory().relativize(pth).toString();
+
+        assertThat(files.stream().map(stringify)).contains(RecordDatabaseFile.EXISTS_MARKER.getName());
     }
 
     private RecordStorageEngine buildRecordStorageEngine() {

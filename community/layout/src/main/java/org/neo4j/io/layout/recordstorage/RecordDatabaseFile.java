@@ -22,7 +22,6 @@ package org.neo4j.io.layout.recordstorage;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -72,9 +71,9 @@ public enum RecordDatabaseFile implements DatabaseFile {
 
     INDEX_STATISTICS_STORE(RecordDatabaseFileNames.INDEX_STATISTICS_STORE, false),
 
-    METADATA_STORE(RecordDatabaseFileNames.METADATA_STORE, false),
+    METADATA_STORE(RecordDatabaseFileNames.METADATA_STORE, false);
 
-    EXISTS_MARKER(METADATA_STORE);
+    public static final RecordDatabaseFile EXISTS_MARKER = METADATA_STORE;
 
     private final String name;
     private final boolean hasIdFile;
@@ -86,12 +85,6 @@ public enum RecordDatabaseFile implements DatabaseFile {
     RecordDatabaseFile(String name, boolean hasIdFile) {
         this.name = name;
         this.hasIdFile = hasIdFile;
-    }
-
-    // used for marker
-    RecordDatabaseFile(RecordDatabaseFile file) {
-        this.name = file.getName();
-        this.hasIdFile = false;
     }
 
     @Override
@@ -113,11 +106,7 @@ public enum RecordDatabaseFile implements DatabaseFile {
      */
     public static Optional<RecordDatabaseFile> fileOf(String name) {
         Objects.requireNonNull(name);
-        return ALL_FILES.stream()
-                .filter(file -> file.getName().equals(name))
-                // EXISTS_MARKER currently shares a name with METADATA_STORE, most likely user wants the METADATA_STORE
-                .filter(Predicate.not(EXISTS_MARKER::equals))
-                .findFirst();
+        return ALL_FILES.stream().filter(file -> file.getName().equals(name)).findFirst();
     }
 
     private static final Set<RecordDatabaseFile> ALL_FILES = Set.of(values());
