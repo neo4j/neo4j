@@ -88,6 +88,10 @@
                 <!-- Mixed Scala 2.13 / Scala 3: stdlib is on the classpath transitively; analyzer often reports it as used-undeclared. -->
                 <ignoredUsedUndeclaredDependency>org.scala-lang:scala3-library_3</ignoredUsedUndeclaredDependency>
               </ignoredUsedUndeclaredDependencies>
+              <ignoredUnusedDeclaredDependencies combine.children="append">
+                <!-- pprint exposes a root-level Scala package object — used without an import statement; analyzer cannot detect this pattern. -->
+                <ignoredUnusedDeclaredDependency>com.lihaoyi:pprint_${scala.binary.version}</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>
         </executions>

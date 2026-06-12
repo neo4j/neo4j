@@ -1982,7 +1982,6 @@
                 <ignoredDependency>org.neo4j.licensing-proxy:zstd-proxy</ignoredDependency>
               </ignoredDependencies>
               <ignoredUnusedDeclaredDependencies>
-                <ignoredUnusedDeclaredDependency>com.lihaoyi:pprint_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.scala-lang:scala-reflect</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>io.github.json4s:json4s-native_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros</ignoredUnusedDeclaredDependency>
