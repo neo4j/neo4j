@@ -87,6 +87,7 @@ case class LogicalPlanState(
         ImmutablePlanningAttributes.EffectiveCardinalities(planningAttributes.effectiveCardinalities),
         ImmutablePlanningAttributes.ProvidedOrders(planningAttributes.providedOrders),
         ImmutablePlanningAttributes.LeveragedOrders(planningAttributes.leveragedOrders),
+        ImmutablePlanningAttributes.StableLeafPlans(planningAttributes.stableLeafPlans),
         planningAttributes.labelAndRelTypeInfos,
         planningAttributes.cachedPropertiesPerPlan,
         planningAttributes.solveds.getOption(logicalPlan.id).exists(_.readOnly)
@@ -171,6 +172,7 @@ case class CachablePlanningAttributes(
   effectiveCardinalities: ImmutablePlanningAttributes.EffectiveCardinalities,
   providedOrders: ImmutablePlanningAttributes.ProvidedOrders,
   leveragedOrders: ImmutablePlanningAttributes.LeveragedOrders,
+  stableLeafPlans: ImmutablePlanningAttributes.StableLeafPlans,
   labelAndRelTypeInfos: LabelAndRelTypeInfos,
   cachedPropertiesPerPlan: CachedPropertiesPerPlan,
   readOnly: Boolean
@@ -180,7 +182,8 @@ case class CachablePlanningAttributes(
     PlanningAttributesCacheKey(
       effectiveCardinalities,
       providedOrders,
-      leveragedOrders
+      leveragedOrders,
+      stableLeafPlans
     )
 
   // Let's not override the copy method of case classes
@@ -189,6 +192,7 @@ case class CachablePlanningAttributes(
       effectiveCardinalities, // Immutable
       providedOrders, // Immutable
       leveragedOrders, // Immutable
+      stableLeafPlans, // Immutable
       labelAndRelTypeInfos.clone[LabelAndRelTypeInfos],
       cachedPropertiesPerPlan.clone[CachedPropertiesPerPlan],
       readOnly

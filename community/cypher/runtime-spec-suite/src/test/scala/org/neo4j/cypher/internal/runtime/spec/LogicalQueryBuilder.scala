@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder.randomErrorBehaviour
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
@@ -69,6 +70,8 @@ class LogicalQueryBuilder(
     }
 
   private val leveragedOrders: LeveragedOrders = new LeveragedOrders
+
+  private val stableLeafPlans: StableLeafPlans = new StableLeafPlans
 
   private var executionModel: Option[ExecutionModel] = None
 
@@ -103,6 +106,7 @@ class LogicalQueryBuilder(
       effectiveCardinalities,
       providedOrders,
       leveragedOrders,
+      stableLeafPlans,
       hasLoadCsv,
       idGen,
       doProfile = false,

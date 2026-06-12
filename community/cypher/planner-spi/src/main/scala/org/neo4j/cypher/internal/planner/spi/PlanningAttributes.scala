@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LabelAndRelTypeI
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attribute
@@ -50,6 +51,7 @@ object PlanningAttributes {
   class EffectiveCardinalities extends Attribute[LogicalPlan, EffectiveCardinality]
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder]
   class LeveragedOrders extends PartialAttribute[LogicalPlan, Boolean](false)
+  class StableLeafPlans extends PartialAttribute[LogicalPlan, LeafStability](LeafStability.NonMvcc)
   class LabelAndRelTypeInfos extends PartialAttribute[LogicalPlan, Option[LabelAndRelTypeInfo]](None)
   class CachedPropertiesPerPlan extends PartialAttribute[LogicalPlan, CachedProperties](CachedProperties.empty)
 
@@ -59,6 +61,7 @@ object PlanningAttributes {
     new EffectiveCardinalities,
     new ProvidedOrders,
     new LeveragedOrders,
+    new StableLeafPlans,
     new LabelAndRelTypeInfos,
     new CachedPropertiesPerPlan
   )
@@ -71,6 +74,7 @@ object PlanningAttributes {
  * @param effectiveCardinalities effective cardinality estimation (taking LIMIT into account) for each plan.
  * @param providedOrders provided order for each plan
  * @param leveragedOrders a boolean flag if the plan leverages order of rows.
+ * @param stableLeafPlans the stable-iterator classification of a leaf plan (defaults to NonMvcc).
  * @param labelAndRelTypeInfos label and reltype info that is valid at the location of the plan.
  *                             Currently, this is only set for Selection plans.
  */
@@ -80,6 +84,7 @@ case class PlanningAttributes(
   effectiveCardinalities: EffectiveCardinalities,
   providedOrders: ProvidedOrders,
   leveragedOrders: LeveragedOrders,
+  stableLeafPlans: StableLeafPlans,
   labelAndRelTypeInfos: LabelAndRelTypeInfos,
   cachedPropertiesPerPlan: CachedPropertiesPerPlan
 ) {
@@ -96,7 +101,8 @@ case class PlanningAttributes(
 case class PlanningAttributesCacheKey(
   effectiveCardinalities: ImmutablePlanningAttributes.EffectiveCardinalities,
   providedOrders: ImmutablePlanningAttributes.ProvidedOrders,
-  leveragedOrders: ImmutablePlanningAttributes.LeveragedOrders
+  leveragedOrders: ImmutablePlanningAttributes.LeveragedOrders,
+  stableLeafPlans: ImmutablePlanningAttributes.StableLeafPlans
 )
 
 trait ImmutablePlanningAttribute[T] {
@@ -223,6 +229,28 @@ object ImmutablePlanningAttributes {
       val builder = BitSet.newBuilder
       mutable.iterator.foreach { case (Id(id), l) => if (l) builder.addOne(id) }
       new LeveragedOrders(builder.result())
+    }
+  }
+
+  final case class StableLeafPlans private (private val stability: Map[Int, LeafStability]) {
+
+    def toMutable: PlanningAttributes.StableLeafPlans = {
+      val mutable = new PlanningAttributes.StableLeafPlans
+      stability.keysIterator.maxOption.foreach(max => mutable.sizeHint(max))
+      stability.foreach { case (id, value) => mutable.set(Id(id), value) }
+      mutable
+    }
+  }
+
+  object StableLeafPlans {
+
+    def apply(mutable: PlanningAttributes.StableLeafPlans): StableLeafPlans = {
+      val builder = Map.newBuilder[Int, LeafStability]
+      mutable.iterator.foreach {
+        case (Id(id), stability) if stability != LeafStability.NonMvcc => builder.addOne(id -> stability)
+        case _                                                         =>
+      }
+      new StableLeafPlans(builder.result())
     }
   }
 }

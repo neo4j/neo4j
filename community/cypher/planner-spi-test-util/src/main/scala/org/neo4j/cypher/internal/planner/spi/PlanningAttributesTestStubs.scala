@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LabelAndRelTypeI
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Default
@@ -69,6 +70,8 @@ trait PlanningAttributesTestStubs {
 
   class StubLeveragedOrders extends LeveragedOrders with StubAttribute[LogicalPlan, Boolean]
 
+  class StubStableLeafPlans extends StableLeafPlans with StubAttribute[LogicalPlan, LeafStability]
+
   class StubLabelAndRelTypeInfos extends LabelAndRelTypeInfos
       with StubAttribute[LogicalPlan, Option[LabelAndRelTypeInfo]]
 
@@ -80,6 +83,7 @@ trait PlanningAttributesTestStubs {
     new StubEffectiveCardinalities,
     new StubProvidedOrders,
     new StubLeveragedOrders,
+    new StubStableLeafPlans,
     new StubLabelAndRelTypeInfos,
     new StubCachedPropertiesPerPlan
   )

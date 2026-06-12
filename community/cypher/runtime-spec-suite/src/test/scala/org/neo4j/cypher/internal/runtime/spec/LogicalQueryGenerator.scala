@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.Cost
@@ -56,6 +57,7 @@ object LogicalQueryGenerator {
       override val defaultValue: ProvidedOrder = ProvidedOrder.empty
     }
     val leveragedOrders = new LeveragedOrders
+    val stableLeafPlans = new StableLeafPlans
 
     val tokenRead = txContext.kernelTransaction().tokenRead()
     val log = NullLog.getInstance()
@@ -88,6 +90,7 @@ object LogicalQueryGenerator {
             effectiveCardinalities,
             providedOrders,
             leveragedOrders,
+            stableLeafPlans,
             hasLoadCSV = false,
             state.idGen,
             doProfile = false,

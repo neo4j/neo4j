@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.MarkStableLeafPlans
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -132,7 +133,10 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     // The rewriter operates on the LogicalPlan
     CompilationContains[LogicalPlan](),
     // In order to release as much memory as possible before the phase
-    CompressPlanIDs.completed
+    CompressPlanIDs.completed,
+    // We need to MarkStableLeafPlans before eagerness analysis due to the leaf plan stability.
+    // Do not remove it without a replacement ordering.
+    MarkStableLeafPlans.completed
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

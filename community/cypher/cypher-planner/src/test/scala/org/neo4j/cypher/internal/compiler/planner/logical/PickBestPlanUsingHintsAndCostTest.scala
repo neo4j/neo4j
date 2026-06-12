@@ -85,6 +85,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherPlannerTestSuite with Logi
         new StubEffectiveCardinalities,
         new StubProvidedOrders,
         new StubLeveragedOrders,
+        new StubStableLeafPlans,
         new StubLabelAndRelTypeInfos,
         new StubCachedPropertiesPerPlan
       ),
@@ -107,6 +108,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherPlannerTestSuite with Logi
         new StubEffectiveCardinalities,
         new StubProvidedOrders,
         new StubLeveragedOrders,
+        new StubStableLeafPlans,
         new StubLabelAndRelTypeInfos,
         new StubCachedPropertiesPerPlan
       ),
@@ -132,6 +134,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherPlannerTestSuite with Logi
         new StubEffectiveCardinalities,
         new StubProvidedOrders,
         new StubLeveragedOrders,
+        new StubStableLeafPlans,
         new StubLabelAndRelTypeInfos,
         new StubCachedPropertiesPerPlan
       ),

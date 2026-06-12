@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexComparatorFactory
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -86,6 +87,7 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
  * @param effectiveCardinalities effective cardinalities (estimated rows when considering selectivity imposed by a limit) of all operators in the logical plan tree
  * @param providedOrders provided order of all operators in the logical plan tree
  * @param leveragedOrders leveragedOrder of all operators in the logical plan tree
+ * @param stableLeafPlans the stable-iterator classification of each leaf plan (defaults to NonMvcc)
  * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
  * @param doProfile `true` if a profiling query otherwise `false`
  * @param executionPlanCacheKeyHash The 32-bit hash of the cache key used to cache the execution plan
@@ -100,6 +102,7 @@ case class LogicalQuery(
   effectiveCardinalities: EffectiveCardinalities,
   providedOrders: ProvidedOrders,
   leveragedOrders: LeveragedOrders,
+  stableLeafPlans: StableLeafPlans,
   hasLoadCSV: Boolean,
   idGen: IdGen,
   doProfile: Boolean,

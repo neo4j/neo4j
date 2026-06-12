@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRew
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.MarkStableLeafPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RemoveUnusedVariables
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.TransactionDisjointBy
@@ -150,6 +151,7 @@ object CompilationPhases extends FrontEndCompilationPhases {
           InsertCachedProperties,
           CardinalityRewriter,
           CompressPlanIDs,
+          MarkStableLeafPlans,
           EagerRewriter,
           RemoveUnusedVariables,
           SortPredicatesBySelectivity,
@@ -159,6 +161,8 @@ object CompilationPhases extends FrontEndCompilationPhases {
       )
 
   val getAstPlanPipelineSteps: Seq[StepSequencer.Step with PlanPipelineTransformerFactory] = astPlanPipelineSteps
+
+  val getLpPlanPipelineSteps: Seq[StepSequencer.Step with PlanPipelineTransformerFactory] = lpPlanPipelineSteps
 
   private val orderedPlanPipelineSteps = astPlanPipelineSteps ++ irPlanPipelineSteps ++ lpPlanPipelineSteps
 
