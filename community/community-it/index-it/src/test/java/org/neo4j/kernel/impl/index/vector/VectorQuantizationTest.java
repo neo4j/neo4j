@@ -20,20 +20,27 @@
 package org.neo4j.kernel.impl.index.vector;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.assertj.core.data.Offset;
+import java.util.SequencedCollection;
+import org.assertj.core.util.FloatComparator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorQuantizationType;
+import org.neo4j.test.extension.SkipOnSpd;
+import org.neo4j.test.extension.SkipOnSpd.Note;
+import org.neo4j.values.storable.Values;
 
 public class VectorQuantizationTest extends VectorSSFTestBase {
     public static final int DIMENSION = 8;
 
+    @SkipOnSpd(
+            notes = Note.irrelevant,
+            reason = "Quantization depends on the vectors within the segment, "
+                    + "SPD distributes the nodes over the shards.")
     @ParameterizedTest
     @EnumSource(VectorQuantizationType.class)
     void testQuantizationImpact(VectorQuantizationType quantizationType) throws Exception {
@@ -73,35 +80,42 @@ public class VectorQuantizationTest extends VectorSSFTestBase {
             tx.commit();
         }
 
-        float[] queryVector = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f};
+        float[] queryVector = SIMILARITY_FUNCTION.toValidVector(
+                Values.floatArray(new float[] {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f}));
         List<VectorSSFQueryResult> allResults = queryNodeIndex(queryVector, 4);
 
-        Object[] expected =
+        SequencedCollection<IdScore> expected = // rescoring uses unquantized vector thus will be same NONE
                 switch (withRescoring ? VectorQuantizationType.NONE : quantizationType) {
-                    case NONE -> new Object[] {4L, 1.146f, 3L, 0.990f, 2L, 0.872f, 1L, 0.777f};
-                    case SCALAR -> new Object[] {4L, 1.0f, 3L, 0.990f, 2L, 0.872f, 1L, 0.777f};
-                    case BINARY -> new Object[] {4L, 1.0f, 3L, 1.0f, 2L, 0.817f, 1L, 0.754f};
+                    case NONE ->
+                        List.of(
+                                new IdScore(4L, 0.952f),
+                                new IdScore(3L, 0.843f),
+                                new IdScore(2L, 0.760f),
+                                new IdScore(1L, 0.694f));
+                    case SCALAR ->
+                        List.of(
+                                new IdScore(4L, 0.952f),
+                                new IdScore(3L, 0.843f),
+                                new IdScore(2L, 0.760f),
+                                new IdScore(1L, 0.694f));
+                    case BINARY ->
+                        List.of(
+                                new IdScore(3L, 0.992f),
+                                new IdScore(4L, 0.978f),
+                                new IdScore(2L, 0.715f),
+                                new IdScore(1L, 0.680f));
                 };
 
         assertThat(allResults)
-                .flatExtracting(EXTRACT_ID, VectorSSFQueryResult::score)
-                .usingElementComparator(new CloseToComparator(within(0.001f)))
-                .containsExactly(expected);
+                .map(IdScore::new)
+                .usingElementComparator(Comparator.comparingLong(IdScore::id)
+                        .thenComparing(IdScore::score, new FloatComparator(0.001f)))
+                .containsExactlyElementsOf(expected);
     }
 
-    record CloseToComparator(Offset<Float> offset) implements Comparator<Object> {
-        @Override
-        public int compare(Object o1, Object o2) {
-            if (o1 instanceof Float lhs && o2 instanceof Number rhs) {
-                if (Float.compare(Math.abs(lhs - rhs.floatValue()), this.offset.value) <= 0) {
-                    return 0;
-                }
-                return Float.compare(lhs, rhs.floatValue());
-            }
-            if (o1 instanceof Number lhs && o2 instanceof Number rhs) {
-                return Integer.compare(lhs.intValue(), rhs.intValue());
-            }
-            return -1;
+    private record IdScore(long id, float score) {
+        IdScore(VectorSSFQueryResult result) {
+            this(EXTRACT_ID.apply(result), result.score());
         }
     }
 }

@@ -56,9 +56,11 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.vector.VectorSSFQueryResult.ResultList;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -94,7 +96,8 @@ abstract class VectorSSFTestBase {
 
     private static final int EF_CONSTRUCTION = 1000;
     private static final int K_NEAREST_NEIGHBORS = 10;
-    private static final String SIMILARITY_FUNCTION = "COSINE";
+    protected static final VectorSimilarityFunction SIMILARITY_FUNCTION =
+            LatestVersions.LATEST_VECTOR_INDEX_VERSION.similarityFunction("COSINE");
 
     static final String EMBEDDING_NAME = "abstract_embedding";
     static final Label LABEL_NODE_1 = Label.label("NodeLabel1");

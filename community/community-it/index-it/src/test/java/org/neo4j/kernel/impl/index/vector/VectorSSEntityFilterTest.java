@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.EntityFilterPredicate;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
-import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
@@ -47,12 +46,8 @@ import org.neo4j.values.storable.Values;
 @SkipOnSpd(notes = temporary, reason = "Entity filtering not supported via CYPHER")
 @RandomSupportExtension
 class VectorSSEntityFilterTest extends VectorSSFTestBase {
-
     private static final int NUM_ENTITIES = 1000;
     private static final int ITERATIONS = 100;
-
-    private static final VectorSimilarityFunction SIMILARITY_FUNCTION =
-            LatestVersions.LATEST_VECTOR_INDEX_VERSION.similarityFunction("COSINE");
 
     @Inject
     private RandomSupport random;
