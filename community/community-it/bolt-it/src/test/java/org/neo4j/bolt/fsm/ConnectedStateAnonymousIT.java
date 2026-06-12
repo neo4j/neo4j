@@ -40,9 +40,10 @@ class ConnectedStateAnonymousIT {
         fsm.process(messages.hello(), recorder);
 
         // Then
-        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
-                .containsEntry("server", stringValue("Neo4j/" + Version.getNeo4jVersion()))
-                .containsEntry("connection_id", stringValue("bolt-test")));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsEntry("server", stringValue("Neo4j/" + Version.getNeo4jVersion()))
+                        .containsEntry("connection_id", stringValue("bolt-test")));
 
         assertThat(fsm).isInState(States.READY);
     }

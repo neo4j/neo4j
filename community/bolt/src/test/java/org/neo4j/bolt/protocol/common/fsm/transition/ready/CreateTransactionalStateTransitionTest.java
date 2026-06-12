@@ -65,19 +65,20 @@ class CreateTransactionalStateTransitionTest
     @TestFactory
     Stream<DynamicTest> shouldProcessMessage() {
         return Stream.of(TransactionType.values())
-                .flatMap(type -> Stream.of(null, "neo4j", "somedb").flatMap(db -> Stream.of(
-                                AccessMode.READ, AccessMode.WRITE)
-                        .flatMap(accessMode -> Stream.of(Collections.<String>emptyList(), List.of("bookmark-1234"))
-                                .flatMap(bookmarks -> Stream.of(null, Duration.ofSeconds(42))
-                                        .flatMap(timeout -> Stream.of(null, "bob", "alice")
-                                                .map(impersonatedUser -> new TestParameters(
-                                                        type,
-                                                        db,
-                                                        accessMode,
-                                                        bookmarks,
-                                                        timeout,
-                                                        impersonatedUser,
-                                                        Collections.emptyMap())))))))
+                .flatMap(type -> Stream.of(null, "neo4j", "somedb")
+                        .flatMap(db -> Stream.of(AccessMode.READ, AccessMode.WRITE)
+                                .flatMap(accessMode -> Stream.of(
+                                                Collections.<String>emptyList(), List.of("bookmark-1234"))
+                                        .flatMap(bookmarks -> Stream.of(null, Duration.ofSeconds(42))
+                                                .flatMap(timeout -> Stream.of(null, "bob", "alice")
+                                                        .map(impersonatedUser -> new TestParameters(
+                                                                type,
+                                                                db,
+                                                                accessMode,
+                                                                bookmarks,
+                                                                timeout,
+                                                                impersonatedUser,
+                                                                Collections.emptyMap())))))))
                 .map(parameters -> DynamicTest.dynamicTest(parameters.toString(), () -> {
                     this.prepareContext();
                     this.prepareDefaultDatabase();

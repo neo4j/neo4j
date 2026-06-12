@@ -57,8 +57,9 @@ public enum CypherTypes {
 
     String(s -> s, Value::asString),
 
-    Base64(v -> java.util.Base64.getDecoder().decode(v), v -> java.util.Base64.getEncoder()
-            .encodeToString(v.asByteArray())),
+    Base64(
+            v -> java.util.Base64.getDecoder().decode(v),
+            v -> java.util.Base64.getEncoder().encodeToString(v.asByteArray())),
 
     Date(
             v -> LocalDate.parse(v, DateTimeFormatter.ISO_LOCAL_DATE),

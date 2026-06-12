@@ -45,8 +45,9 @@ public record UserMessagesHandler(Connector connector) {
             message.append(" as user ").bold(connector.username());
         }
 
-        connector.impersonatedUser().ifPresent(impersonated -> message.orange(" impersonating ")
-                .bold(impersonated));
+        connector
+                .impersonatedUser()
+                .ifPresent(impersonated -> message.orange(" impersonating ").bold(impersonated));
 
         return message.append(".\nType ")
                 .bold(":help")

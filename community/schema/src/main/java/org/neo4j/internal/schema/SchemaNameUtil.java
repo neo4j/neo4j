@@ -104,17 +104,20 @@ public class SchemaNameUtil {
                         schema.schemaPatternMatchingType(), propertyKeyIds));
         key = switch (schema.entityType()) {
             case NODE ->
-                hf.updateWithArray(key, entityTokenIds, id -> tokenNameLookup
-                        .labelGetName(id)
-                        .hashCode());
+                hf.updateWithArray(
+                        key,
+                        entityTokenIds,
+                        id -> tokenNameLookup.labelGetName(id).hashCode());
             case RELATIONSHIP ->
-                hf.updateWithArray(key, entityTokenIds, id -> tokenNameLookup
-                        .relationshipTypeGetName(id)
-                        .hashCode());
+                hf.updateWithArray(
+                        key,
+                        entityTokenIds,
+                        id -> tokenNameLookup.relationshipTypeGetName(id).hashCode());
         };
-        key = hf.updateWithArray(key, propertyKeyIds, id -> tokenNameLookup
-                .propertyKeyGetName(id)
-                .hashCode());
+        key = hf.updateWithArray(
+                key,
+                propertyKeyIds,
+                id -> tokenNameLookup.propertyKeyGetName(id).hashCode());
 
         key = hf.update(key, Boolean.hashCode(rule instanceof ConstraintDescriptor));
         return switch (rule) {

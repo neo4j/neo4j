@@ -548,10 +548,12 @@ class ConfigTest {
                 .set(TestSettings.intSetting, 3)
                 .build();
 
-        assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
-                .fromConfig(fromConfig)
-                .fromConfig(fromConfig)
-                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Config.newBuilder()
+                        .fromConfig(fromConfig)
+                        .fromConfig(fromConfig)
+                        .build());
     }
 
     @Test
@@ -1218,8 +1220,10 @@ class ConfigTest {
 
         // Then
         // we would expect that the created file has all the permissions that we asked for...
-        assertThrows(AssertionError.class, () -> assertThat(Files.getPosixFilePermissions(confFile))
-                .containsExactlyInAnyOrderElementsOf(permissions));
+        assertThrows(
+                AssertionError.class,
+                () -> assertThat(Files.getPosixFilePermissions(confFile))
+                        .containsExactlyInAnyOrderElementsOf(permissions));
         // why would you do this to us java ?!
     }
 

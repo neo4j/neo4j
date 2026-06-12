@@ -211,9 +211,10 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 
         if (connector.isConnected()) {
             prompt.bold(connector.username());
-            connector.impersonatedUser().ifPresent(impersonated -> prompt.append("(")
-                    .bold(impersonated)
-                    .append(")"));
+            connector
+                    .impersonatedUser()
+                    .ifPresent(impersonated ->
+                            prompt.append("(").bold(impersonated).append(")"));
             prompt.bold("@" + databaseName);
         } else {
             prompt.append("Disconnected");

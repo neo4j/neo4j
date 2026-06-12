@@ -164,8 +164,10 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure {
 
     static boolean getVirtualGraphEnabledSetting(Configuration configuration) {
         // Use service loader to not compile time depend on enterprise settings (safe)
-        var settings = Services.load(SettingsDeclaration.class, "EnterpriseEditionInternalSettings", p -> p.getClass()
-                .getSimpleName());
+        var settings = Services.load(
+                SettingsDeclaration.class,
+                "EnterpriseEditionInternalSettings",
+                p -> p.getClass().getSimpleName());
         if (settings.isEmpty()) {
             return false;
         }

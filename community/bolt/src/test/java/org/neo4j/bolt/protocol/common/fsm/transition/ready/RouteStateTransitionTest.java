@@ -100,8 +100,9 @@ class RouteStateTransitionTest extends AbstractStateTransitionTest<RouteMessage,
     @TestFactory
     Stream<DynamicTest> shouldProcessMessage() {
         return Stream.of(Collections.<String>emptyList(), List.of("bookmark-1234"))
-                .flatMap(bookmarks -> Stream.of(null, "neo4j", "foo").flatMap(db -> Stream.of(null, "bob")
-                        .map(impersonatedUser -> new TestParameters(bookmarks, db, impersonatedUser))))
+                .flatMap(bookmarks -> Stream.of(null, "neo4j", "foo")
+                        .flatMap(db -> Stream.of(null, "bob")
+                                .map(impersonatedUser -> new TestParameters(bookmarks, db, impersonatedUser))))
                 .map(parameters -> DynamicTest.dynamicTest(parameters.toString(), () -> {
                     this.prepareContext();
 

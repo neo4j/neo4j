@@ -171,11 +171,13 @@ public final class BoltConnectionAssertions
                 .containsEntry("title", title)
                 .containsEntry("description", description)
                 .containsEntry("severity", severity.toString())
-                .hasEntrySatisfying("position", position -> Assertions.assertThat(position)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .containsEntry("offset", (long) offset)
-                        .containsEntry("line", (long) line)
-                        .containsEntry("column", (long) column))));
+                .hasEntrySatisfying(
+                        "position",
+                        position -> Assertions.assertThat(position)
+                                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                                .containsEntry("offset", (long) offset)
+                                .containsEntry("line", (long) line)
+                                .containsEntry("column", (long) column))));
     }
 
     public BoltConnectionAssertions receivesSuccessWithNotification(
@@ -204,11 +206,13 @@ public final class BoltConnectionAssertions
                 .containsEntry("description", description)
                 .containsEntry("severity", severity.toString())
                 .containsEntry("category", category.toString())
-                .hasEntrySatisfying("position", position -> Assertions.assertThat(position)
-                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                        .containsEntry("offset", (long) offset)
-                        .containsEntry("line", (long) line)
-                        .containsEntry("column", (long) column))));
+                .hasEntrySatisfying(
+                        "position",
+                        position -> Assertions.assertThat(position)
+                                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                                .containsEntry("offset", (long) offset)
+                                .containsEntry("line", (long) line)
+                                .containsEntry("column", (long) column))));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -428,13 +432,14 @@ public final class BoltConnectionAssertions
     }
 
     public BoltConnectionAssertions receivesResponse() {
-        this.asInstanceOf(packstreamConnection()).receivesMessage().containsStruct(struct -> Assertions.assertThat(
-                        struct.tag())
-                .isIn(
-                        (short) 0x70, // Success
-                        (short) 0x7E, // Failure
-                        (short) 0x7F // Ignored
-                        ));
+        this.asInstanceOf(packstreamConnection())
+                .receivesMessage()
+                .containsStruct(struct -> Assertions.assertThat(struct.tag())
+                        .isIn(
+                                (short) 0x70, // Success
+                                (short) 0x7E, // Failure
+                                (short) 0x7F // Ignored
+                                ));
 
         return this;
     }

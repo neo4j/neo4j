@@ -96,11 +96,13 @@ public class ProtocolViolationIT {
 
     @ProtocolTest
     void shouldFailWhenDuplicateKeyIsSent(@Authenticated BoltTestConnection connection) {
-        sendRun(connection, buf -> buf.writeMapHeader(2)
-                .writeString("foo")
-                .writeString("bar")
-                .writeString("foo")
-                .writeString("changed_my_mind"));
+        sendRun(
+                connection,
+                buf -> buf.writeMapHeader(2)
+                        .writeString("foo")
+                        .writeString("bar")
+                        .writeString("foo")
+                        .writeString("changed_my_mind"));
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailure(FailureMetadataAssertions.create()

@@ -36,9 +36,13 @@ public abstract class AbstractNegotiatingConnectionInitializer implements Connec
             return;
         }
 
-        assertThat(meta).hasEntrySatisfying("patch_bolt", features -> assertThat(features)
-                .asInstanceOf(InstanceOfAssertFactories.list(String.class))
-                .containsAll(
-                        wire.getEnabledFeatures().stream().map(Feature::getId).collect(Collectors.toSet())));
+        assertThat(meta)
+                .hasEntrySatisfying(
+                        "patch_bolt",
+                        features -> assertThat(features)
+                                .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+                                .containsAll(wire.getEnabledFeatures().stream()
+                                        .map(Feature::getId)
+                                        .collect(Collectors.toSet())));
     }
 }

@@ -61,9 +61,13 @@ public final class DiagnosticsReportSources {
     public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile(
             String destinationFolder, FileSystemAbstraction fs, Path file) {
 
-        return newDiagnosticsMatchingFiles(destinationFolder, fs, file.getParent(), path -> path.getFileName()
-                .toString()
-                .startsWith(file.getFileName().toString()));
+        return newDiagnosticsMatchingFiles(
+                destinationFolder,
+                fs,
+                file.getParent(),
+                path -> path.getFileName()
+                        .toString()
+                        .startsWith(file.getFileName().toString()));
     }
 
     /**

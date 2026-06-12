@@ -224,7 +224,8 @@ class PackstreamBufReadTest {
         return Stream.of(TypeMarker.values())
                 .filter(marker -> marker != TypeMarker.RESERVED)
                 .map(expected -> dynamicTest(
-                        expected.name(), () -> getVariations(expected).forEach(valid -> {
+                        expected.name(),
+                        () -> getVariations(expected).forEach(valid -> {
                             var buf = prepareBuffer(b -> b.writeByte(valid));
 
                             try {
@@ -248,9 +249,11 @@ class PackstreamBufReadTest {
     @TestFactory
     Stream<DynamicTest> readExpectedTypeMarkerShouldFailWithUnexpectedTypeMarker() {
         return getValidMarkers()
-                .map(expected -> dynamicTest(expected.name(), () -> getValidMarkers(expected)
-                        .forEach(invalid -> assertThrowsUnexpectedTypeMarker(
-                                expected, invalid, buf -> buf.readExpectedMarker(expected)))));
+                .map(expected -> dynamicTest(
+                        expected.name(),
+                        () -> getValidMarkers(expected)
+                                .forEach(invalid -> assertThrowsUnexpectedTypeMarker(
+                                        expected, invalid, buf -> buf.readExpectedMarker(expected)))));
     }
 
     @TestFactory
@@ -275,9 +278,11 @@ class PackstreamBufReadTest {
     @TestFactory
     Stream<DynamicTest> readLengthPrefixMarkerShouldFailWithUnexpectedType() {
         return getValidTypes()
-                .map(expected -> dynamicTest(expected.name(), () -> getValidMarkers(expected)
-                        .forEach(invalid -> assertThrowsUnexpectedType(
-                                expected, invalid, buf -> buf.readLengthPrefixMarker(expected, -1)))));
+                .map(expected -> dynamicTest(
+                        expected.name(),
+                        () -> getValidMarkers(expected)
+                                .forEach(invalid -> assertThrowsUnexpectedType(
+                                        expected, invalid, buf -> buf.readLengthPrefixMarker(expected, -1)))));
     }
 
     @TestFactory

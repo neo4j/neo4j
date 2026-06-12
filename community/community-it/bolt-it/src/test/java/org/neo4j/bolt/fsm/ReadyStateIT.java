@@ -95,10 +95,11 @@ class ReadyStateIT {
         fsm.process(messages.run("CREATE (n {k:'k'}) RETURN n.k"), recorder);
 
         // Then
-        assertThat(recorder).hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
-                .containsKey("fields")
-                .containsKey("t_first")
-                .doesNotContainKey("db"));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
+                        .containsKey("fields")
+                        .containsKey("t_first")
+                        .doesNotContainKey("db"));
 
         StateMachineHandleAssertions.assertThat(fsm).isInState(States.AUTO_COMMIT);
     }
@@ -133,10 +134,11 @@ class ReadyStateIT {
         fsm.process(messages.run("CREATE (n {k:'k'}) RETURN n.k"), recorder);
 
         // Then
-        assertThat(recorder).hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
-                .containsKey("fields")
-                .containsKey("t_first")
-                .containsEntry("db", Values.of(expectedHomeDb)));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
+                        .containsKey("fields")
+                        .containsKey("t_first")
+                        .containsEntry("db", Values.of(expectedHomeDb)));
 
         Mockito.verify(fsm.connection()).resolveDefaultDatabase();
 
@@ -153,10 +155,11 @@ class ReadyStateIT {
         fsm.process(messages.run("CREATE (n {k:'k'}) RETURN n.k", "neo5j"), recorder);
 
         // Then
-        assertThat(recorder).hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
-                .containsKey("fields")
-                .containsKey("t_first")
-                .doesNotContainKey("db"));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
+                        .containsKey("fields")
+                        .containsKey("t_first")
+                        .doesNotContainKey("db"));
 
         Mockito.verify(fsm.connection(), Mockito.never()).resolveDefaultDatabase();
 
@@ -185,8 +188,9 @@ class ReadyStateIT {
         fsm.process(messages.begin(), recorder);
 
         // Then
-        assertThat(recorder).hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
-                .containsEntry("db", Values.of(fsm.connection().selectedDefaultDatabase())));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
+                        .containsEntry("db", Values.of(fsm.connection().selectedDefaultDatabase())));
 
         Mockito.verify(fsm.connection()).resolveDefaultDatabase();
 

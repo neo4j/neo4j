@@ -158,8 +158,9 @@ public class NodeConstraintTest extends ConstraintTestBase<WriteTestSupport> {
             // This is ok, since it will satisfy constraint
             tx.dataWrite().nodeSetProperty(nodeNotConflicting, property, intValue(1337));
 
-            assertThrows(ConstraintValidationException.class, () -> tx.dataWrite()
-                    .nodeSetProperty(nodeConflicting, property, intValue(1337)));
+            assertThrows(
+                    ConstraintValidationException.class,
+                    () -> tx.dataWrite().nodeSetProperty(nodeConflicting, property, intValue(1337)));
             tx.commit();
         }
 
@@ -201,8 +202,9 @@ public class NodeConstraintTest extends ConstraintTestBase<WriteTestSupport> {
                 new int[] {propId});
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            RepeatedLabelInSchemaException e = assertThrows(RepeatedLabelInSchemaException.class, () -> tx.schemaWrite()
-                    .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
+            RepeatedLabelInSchemaException e = assertThrows(
+                    RepeatedLabelInSchemaException.class,
+                    () -> tx.schemaWrite().uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
                     .isEqualTo(
@@ -230,9 +232,9 @@ public class NodeConstraintTest extends ConstraintTestBase<WriteTestSupport> {
                 });
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            RepeatedPropertyInSchemaException e =
-                    assertThrows(RepeatedPropertyInSchemaException.class, () -> tx.schemaWrite()
-                            .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
+            RepeatedPropertyInSchemaException e = assertThrows(
+                    RepeatedPropertyInSchemaException.class,
+                    () -> tx.schemaWrite().uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
                     .isEqualTo(

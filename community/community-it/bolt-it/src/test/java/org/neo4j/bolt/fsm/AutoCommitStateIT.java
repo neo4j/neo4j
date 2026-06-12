@@ -47,11 +47,13 @@ class AutoCommitStateIT {
             @Autocommit StateMachineHandle fsm, ResponseRecorder recorder, BoltMessages messages) throws Throwable {
         fsm.process(messages.pull(1), recorder);
 
-        assertThat(recorder).hasRecord().hasSuccessResponse(meta -> assertThat(meta)
-                .containsKey("type")
-                .containsKey("t_last")
-                .containsKey("bookmark")
-                .containsKey("db"));
+        assertThat(recorder)
+                .hasRecord()
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsKey("type")
+                        .containsKey("t_last")
+                        .containsKey("bookmark")
+                        .containsKey("db"));
 
         assertThat(fsm).isInState(States.READY);
     }
@@ -68,18 +70,23 @@ class AutoCommitStateIT {
             throws Throwable {
         fsm.process(messages.pull(2), recorder);
 
-        assertThat(recorder).hasRecord(longValue(1)).hasRecord(longValue(2)).hasSuccessResponse(meta -> assertThat(meta)
-                .containsEntry("has_more", TRUE)
-                .doesNotContainKey("db")
-                .doesNotContainKey("bookmark"));
+        assertThat(recorder)
+                .hasRecord(longValue(1))
+                .hasRecord(longValue(2))
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsEntry("has_more", TRUE)
+                        .doesNotContainKey("db")
+                        .doesNotContainKey("bookmark"));
 
         fsm.process(messages.pull(2), recorder);
 
-        assertThat(recorder).hasRecord(longValue(3)).hasSuccessResponse(meta -> assertThat(meta)
-                .containsKey("type")
-                .containsKey("t_last")
-                .containsKey("bookmark")
-                .containsKey("db"));
+        assertThat(recorder)
+                .hasRecord(longValue(3))
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsKey("type")
+                        .containsKey("t_last")
+                        .containsKey("bookmark")
+                        .containsKey("db"));
 
         assertThat(fsm).isInState(States.READY);
     }
@@ -112,18 +119,20 @@ class AutoCommitStateIT {
             throws Throwable {
         fsm.process(messages.discard(2), recorder);
 
-        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
-                .containsEntry("has_more", TRUE)
-                .doesNotContainKey("db")
-                .doesNotContainKey("bookmark"));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsEntry("has_more", TRUE)
+                        .doesNotContainKey("db")
+                        .doesNotContainKey("bookmark"));
 
         fsm.process(messages.discard(2), recorder);
 
-        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
-                .containsKey("type")
-                .containsKey("t_last")
-                .containsKey("bookmark")
-                .containsKey("db"));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsKey("type")
+                        .containsKey("t_last")
+                        .containsKey("bookmark")
+                        .containsKey("db"));
 
         assertThat(fsm).isInState(States.READY);
     }

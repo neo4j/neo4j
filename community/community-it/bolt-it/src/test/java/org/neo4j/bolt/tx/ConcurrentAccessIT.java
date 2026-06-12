@@ -110,9 +110,11 @@ public class ConcurrentAccessIT {
                     .receivesSuccess()
                     .receivesSuccess(meta -> Assertions.assertThat(meta)
                             .containsKeys("t_first", "qid")
-                            .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
-                                    .asInstanceOf(list(String.class))
-                                    .isEmpty()))
+                            .hasEntrySatisfying(
+                                    "fields",
+                                    fields -> Assertions.assertThat(fields)
+                                            .asInstanceOf(list(String.class))
+                                            .isEmpty()))
                     .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("t_last", "db"))
                     .receivesSuccess();
 
@@ -121,9 +123,11 @@ public class ConcurrentAccessIT {
             assertThat(connection)
                     .receivesSuccess(meta -> Assertions.assertThat(meta)
                             .containsKeys("t_first")
-                            .hasEntrySatisfying("fields", fields -> Assertions.assertThat(fields)
-                                    .asInstanceOf(list(String.class))
-                                    .containsExactly("n")))
+                            .hasEntrySatisfying(
+                                    "fields",
+                                    fields -> Assertions.assertThat(fields)
+                                            .asInstanceOf(list(String.class))
+                                            .containsExactly("n")))
                     .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("t_last", "db"));
         });
     }

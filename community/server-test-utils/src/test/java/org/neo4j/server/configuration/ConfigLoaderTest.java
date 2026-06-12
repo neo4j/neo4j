@@ -221,10 +221,11 @@ class ConfigLoaderTest {
         Path nonExistentConfigFile = Path.of("/tmp/" + System.currentTimeMillis());
 
         // When
-        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Config.newBuilder()
-                .fromFile(nonExistentConfigFile)
-                .set(neo4j_home, testDirectory.homePath())
-                .build());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> Config.newBuilder()
+                        .fromFile(nonExistentConfigFile)
+                        .set(neo4j_home, testDirectory.homePath())
+                        .build());
     }
 
     @Test

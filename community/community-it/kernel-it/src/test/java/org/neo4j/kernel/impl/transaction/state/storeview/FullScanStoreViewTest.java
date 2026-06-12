@@ -378,8 +378,10 @@ class FullScanStoreViewTest {
             int[] tokensAfter = update.tokens();
             assertThat(tokensAfter.length).isEqualTo(1);
             assertThat(tokensAfter[0]).isEqualTo(0);
-            assertThat(update.entityId()).satisfiesAnyOf(id -> assertThat(id).isEqualTo(0), id -> assertThat(id)
-                    .isEqualTo(1));
+            assertThat(update.entityId())
+                    .satisfiesAnyOf(
+                            id -> assertThat(id).isEqualTo(0),
+                            id -> assertThat(id).isEqualTo(1));
         }
     }
 

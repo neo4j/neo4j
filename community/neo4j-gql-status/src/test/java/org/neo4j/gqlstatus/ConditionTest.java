@@ -27,8 +27,10 @@ class ConditionTest {
 
     @Test
     void testCorrectNaming() {
-        assertThat(Condition.values()).extracting(Condition::name).allSatisfy(name -> assertThat(name)
-                .as("Condition enum name should only contain uppercase letters and underscores")
-                .matches("[A-Z_]+"));
+        assertThat(Condition.values())
+                .extracting(Condition::name)
+                .allSatisfy(name -> assertThat(name)
+                        .as("Condition enum name should only contain uppercase letters and underscores")
+                        .matches("[A-Z_]+"));
     }
 }

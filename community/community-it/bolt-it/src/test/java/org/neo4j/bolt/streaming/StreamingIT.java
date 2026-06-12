@@ -341,9 +341,11 @@ public class StreamingIT {
                 .packstreamSatisfies(stream -> stream.receivesMessage()
                         .containsStruct(0x71, 1)
                         .containsListHeader(1)
-                        .satisfies(buf -> assertElementIdNode(buf, 0, "Movie", properties -> assertThat(properties)
-                                .hasSize(1)
-                                .containsEntry("title", "The Matrix")))
+                        .satisfies(buf -> assertElementIdNode(
+                                buf,
+                                0,
+                                "Movie",
+                                properties -> assertThat(properties).hasSize(1).containsEntry("title", "The Matrix")))
                         .asBuffer()
                         .hasNoRemainingReadableBytes())
                 .receivesSuccess();
@@ -408,12 +410,16 @@ public class StreamingIT {
                         .containsListHeader(1)
                         .containsStruct(0x50, 3)
                         .containsListHeader(2)
-                        .satisfies(buf -> assertElementIdNode(buf, 0, "Actor", properties -> assertThat(properties)
-                                .hasSize(1)
-                                .containsEntry("name", "Greg")))
-                        .satisfies(buf -> assertElementIdNode(buf, 1, "Movie", properties -> assertThat(properties)
-                                .hasSize(1)
-                                .containsEntry("title", "The Matrix")))
+                        .satisfies(buf -> assertElementIdNode(
+                                buf,
+                                0,
+                                "Actor",
+                                properties -> assertThat(properties).hasSize(1).containsEntry("name", "Greg")))
+                        .satisfies(buf -> assertElementIdNode(
+                                buf,
+                                1,
+                                "Movie",
+                                properties -> assertThat(properties).hasSize(1).containsEntry("title", "The Matrix")))
                         .containsListHeader(1)
                         .containsStruct(0x72, 4)
                         .satisfies(buf -> assertElementIdRelationship(buf, b -> {}, b -> {}))

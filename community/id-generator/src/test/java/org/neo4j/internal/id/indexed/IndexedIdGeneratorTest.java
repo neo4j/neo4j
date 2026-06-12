@@ -2122,8 +2122,10 @@ class IndexedIdGeneratorTest {
             long id = idGenerator
                     .nextConsecutiveIdRange(1, FLAG_FAVOR_SAME_PAGE, NULL_CONTEXT)
                     .id();
-            assertThat(id).satisfiesAnyOf(_id -> assertThat(_id).isLessThan(yFirst), _id -> assertThat(_id)
-                    .isGreaterThan(yLast));
+            assertThat(id)
+                    .satisfiesAnyOf(
+                            _id -> assertThat(_id).isLessThan(yFirst),
+                            _id -> assertThat(_id).isGreaterThan(yLast));
         }
     }
 

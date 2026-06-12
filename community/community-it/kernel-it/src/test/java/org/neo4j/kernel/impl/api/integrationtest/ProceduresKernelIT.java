@@ -118,9 +118,11 @@ class ProceduresKernelIT extends KernelIntegrationTest {
 
     @Test
     void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs() throws ProcedureException {
-        var e = assertThrows(ProcedureException.class, () -> internalKernel()
-                .registerProcedure(procedure(procedureSignature(new QualifiedName("example", "exampleProc2"))
-                        .build())));
+        var e = assertThrows(
+                ProcedureException.class,
+                () -> internalKernel()
+                        .registerProcedure(procedure(procedureSignature(new QualifiedName("example", "exampleProc2"))
+                                .build())));
         assertThat(e.getMessage()).isEqualTo("Procedures with zero return columns must be declared as VOID");
         assertThat(e.gqlStatus()).isEqualTo("51N00");
         assertThat(e.cause()).isPresent();

@@ -70,7 +70,8 @@ class AuthenticationMetadataUtilsTest {
                 .isNotEmpty()
                 .containsEntry("scheme", "basic")
                 .containsEntry("principal", "alice")
-                .hasEntrySatisfying("credentials", credentials -> Assertions.assertThat(credentials)
-                        .isInstanceOf(byte[].class));
+                .hasEntrySatisfying(
+                        "credentials",
+                        credentials -> Assertions.assertThat(credentials).isInstanceOf(byte[].class));
     }
 }

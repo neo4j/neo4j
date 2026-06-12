@@ -3015,9 +3015,10 @@ class ImportCommandTest {
         // then
         try (var tx = getDatabaseApi().beginTx()) {
             var namedNodes = new HashSet<String>();
-            tx.getAllNodes().forEach(node -> assertThat(
-                            namedNodes.add(node.getProperty("name").toString()))
-                    .isTrue());
+            tx.getAllNodes()
+                    .forEach(node -> assertThat(
+                                    namedNodes.add(node.getProperty("name").toString()))
+                            .isTrue());
             assertThat(namedNodes).containsExactlyInAnyOrder("Tom", "Jerry");
         }
     }
@@ -3045,9 +3046,10 @@ class ImportCommandTest {
         // then
         try (var tx = getDatabaseApi().beginTx()) {
             var namedNodes = new HashSet<String>();
-            tx.getAllNodes().forEach(node -> assertThat(
-                            namedNodes.add(node.getProperty("name").toString()))
-                    .isTrue());
+            tx.getAllNodes()
+                    .forEach(node -> assertThat(
+                                    namedNodes.add(node.getProperty("name").toString()))
+                            .isTrue());
             assertThat(namedNodes).containsExactlyInAnyOrder("Tom", "Jerry");
         }
     }

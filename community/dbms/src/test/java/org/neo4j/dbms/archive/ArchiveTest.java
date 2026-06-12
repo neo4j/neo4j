@@ -138,9 +138,10 @@ class ArchiveTest {
         dumper.dump(
                 FileOutput.of(filesystem, archive),
                 compressionFormat,
-                Dumper.collectManifest(directory, directory, path -> path.getFileName()
-                        .toString()
-                        .equals("another-file")));
+                Dumper.collectManifest(
+                        directory,
+                        directory,
+                        path -> path.getFileName().toString().equals("another-file")));
         Path txRootDirectory = testDirectory.directory("tx-root_directory");
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot(txRootDirectory, "the-new-directory");
         Loader loader = new Loader(testDirectory.getFileSystem());

@@ -437,7 +437,8 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             seedRestoreUntil
                     .txId()
                     .ifPresentOrElse(
-                            txId -> node.setProperty(DATABASE_SEED_RESTORE_UNTIL_PROPERTY, txId), () -> seedRestoreUntil
+                            txId -> node.setProperty(DATABASE_SEED_RESTORE_UNTIL_PROPERTY, txId),
+                            () -> seedRestoreUntil
                                     .dateTime()
                                     .ifPresent(dateTime ->
                                             node.setProperty(DATABASE_SEED_RESTORE_UNTIL_PROPERTY, dateTime)));

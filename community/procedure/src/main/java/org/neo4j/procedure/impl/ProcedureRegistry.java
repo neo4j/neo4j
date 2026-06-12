@@ -310,9 +310,10 @@ public class ProcedureRegistry {
     }
 
     public Stream<ProcedureSignature> getAllProcedures(QueryLanguage scope) {
-        return stream(procedures, CallableProcedure::signature, (signature) -> signature
-                .supportedQueryLanguages()
-                .contains(scope));
+        return stream(
+                procedures,
+                CallableProcedure::signature,
+                (signature) -> signature.supportedQueryLanguages().contains(scope));
     }
 
     int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
@@ -320,9 +321,10 @@ public class ProcedureRegistry {
     }
 
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions(QueryLanguage scope) {
-        return stream(functions, CallableUserFunction::signature, (signature) -> signature
-                .supportedQueryLanguages()
-                .contains(scope));
+        return stream(
+                functions,
+                CallableUserFunction::signature,
+                (signature) -> signature.supportedQueryLanguages().contains(scope));
     }
 
     int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
@@ -330,9 +332,10 @@ public class ProcedureRegistry {
     }
 
     public Stream<UserFunctionSignature> getAllAggregatingFunctions(QueryLanguage scope) {
-        return stream(aggregationFunctions, CallableUserAggregationFunction::signature, (signature) -> signature
-                .supportedQueryLanguages()
-                .contains(scope));
+        return stream(
+                aggregationFunctions,
+                CallableUserAggregationFunction::signature,
+                (signature) -> signature.supportedQueryLanguages().contains(scope));
     }
 
     public Set<String> getAllShadowedNames(QueryLanguage scope) {

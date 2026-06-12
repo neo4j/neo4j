@@ -69,8 +69,8 @@ class CollisionValuesTest {
         arguments.add(
                 Arguments.of(Named.of("AUTO_WITHOUT_SWAP", (BiFunction<FileSystemAbstraction, Path, NumberArrayFactory>)
                         (fs, homePath) -> NumberArrayFactories.AUTO_WITHOUT_SWAP)));
-        arguments.add(
-                Arguments.of(Named.of("AUTO_WITH_SWAP", (BiFunction<FileSystemAbstraction, Path, NumberArrayFactory>)
+        arguments.add(Arguments.of(
+                Named.of("AUTO_WITH_SWAP", (BiFunction<FileSystemAbstraction, Path, NumberArrayFactory>)
                         (fs, homePath) -> NumberArrayFactories.fromBufferFactory(fileBacked(fs, homePath)))));
         return arguments.stream();
     }

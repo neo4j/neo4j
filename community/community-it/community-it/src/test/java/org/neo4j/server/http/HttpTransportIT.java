@@ -42,9 +42,10 @@ public class HttpTransportIT extends ExclusiveWebContainerTestBase {
 
     @Test
     public void shouldFailToStartIfNoTransportConfigured() {
-        assertThatExceptionOfType(UnsatisfiedDependencyException.class).isThrownBy(() -> serverOnRandomPorts()
-                .withProperty(http_enabled_transports.name(), "")
-                .build());
+        assertThatExceptionOfType(UnsatisfiedDependencyException.class)
+                .isThrownBy(() -> serverOnRandomPorts()
+                        .withProperty(http_enabled_transports.name(), "")
+                        .build());
     }
 
     @ParameterizedTest

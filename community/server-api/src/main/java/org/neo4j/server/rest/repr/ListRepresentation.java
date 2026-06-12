@@ -138,8 +138,8 @@ public class ListRepresentation extends Representation {
     }
 
     public static ListRepresentation numbers(final long... values) {
-        return new ListRepresentation(
-                RepresentationType.LONG, (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<>() {
+        return new ListRepresentation(RepresentationType.LONG, (Iterable<ValueRepresentation>)
+                () -> new PrefetchingIterator<>() {
                     int pos;
 
                     @Override
@@ -153,8 +153,8 @@ public class ListRepresentation extends Representation {
     }
 
     public static ListRepresentation numbers(final double[] values) {
-        return new ListRepresentation(
-                RepresentationType.DOUBLE, (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<>() {
+        return new ListRepresentation(RepresentationType.DOUBLE, (Iterable<ValueRepresentation>)
+                () -> new PrefetchingIterator<>() {
                     int pos;
 
                     @Override

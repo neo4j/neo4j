@@ -161,8 +161,10 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
 
     @Test
     void shouldEmbedLocalFile() {
-        var result = db.executeTransactionally(QUERY, Map.of("file", "file:///" + testFileName), res -> res.stream()
-                .toList());
+        var result = db.executeTransactionally(
+                QUERY,
+                Map.of("file", "file:///" + testFileName),
+                res -> res.stream().toList());
 
         assertThat(result).isNotEmpty();
         var row = result.getFirst();
@@ -586,8 +588,9 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
     @Test
     void shouldHandleEmptyFile() {
         var result = db.executeTransactionally(
-                QUERY, Map.of("file", "file:///" + testFileEmpty.getFileName()), res -> res.stream()
-                        .toList());
+                QUERY,
+                Map.of("file", "file:///" + testFileEmpty.getFileName()),
+                res -> res.stream().toList());
         assertThat(result).hasSize(1);
         var row = result.getFirst();
         assertThat(row.get("index")).isEqualTo(0L);
@@ -605,8 +608,9 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
                 """;
 
         var result = db.executeTransactionally(
-                query, Map.of("file", "file:///" + testFileEmpty.getFileName()), res -> res.stream()
-                        .toList());
+                query,
+                Map.of("file", "file:///" + testFileEmpty.getFileName()),
+                res -> res.stream().toList());
         assertThat(result).hasSize(1);
         var row = result.getFirst();
         assertThat(row.get("index")).isEqualTo(0L);
@@ -971,8 +975,10 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
             gos.write(fileText.getBytes(StandardCharsets.UTF_8));
         }
 
-        var result = db.executeTransactionally(QUERY, Map.of("file", "file:///test.txt.gz"), res -> res.stream()
-                .toList());
+        var result = db.executeTransactionally(
+                QUERY,
+                Map.of("file", "file:///test.txt.gz"),
+                res -> res.stream().toList());
 
         assertThat(result).hasSize(1);
         var row = result.getFirst();
@@ -1030,9 +1036,10 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
             zos.closeEntry();
         }
 
-        assertThatThrownBy(() ->
-                        db.executeTransactionally(QUERY, Map.of("file", "file:///multiple.zip"), res -> res.stream()
-                                .toList()))
+        assertThatThrownBy(() -> db.executeTransactionally(
+                        QUERY,
+                        Map.of("file", "file:///multiple.zip"),
+                        res -> res.stream().toList()))
                 .hasMessageContaining("ZIP archive contains more than one file");
     }
 
@@ -1085,9 +1092,10 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
             zos.closeEntry();
         }
 
-        assertThatThrownBy(
-                        () -> db.executeTransactionally(QUERY, Map.of("file", "file:///large.zip"), res -> res.stream()
-                                .toList()))
+        assertThatThrownBy(() -> db.executeTransactionally(
+                        QUERY,
+                        Map.of("file", "file:///large.zip"),
+                        res -> res.stream().toList()))
                 .hasMessageContaining("Decompressed file size exceeds the limit of 100.0MiB");
     }
 
@@ -1104,9 +1112,10 @@ public class FileVectorEmbeddingTest implements GenAITestExtension {
             }
         }
 
-        assertThatThrownBy(
-                        () -> db.executeTransactionally(QUERY, Map.of("file", "file:///large.gz"), res -> res.stream()
-                                .toList()))
+        assertThatThrownBy(() -> db.executeTransactionally(
+                        QUERY,
+                        Map.of("file", "file:///large.gz"),
+                        res -> res.stream().toList()))
                 .hasMessageContaining("Decompressed file size exceeds the limit of 100.0MiB");
     }
 

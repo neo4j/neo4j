@@ -255,8 +255,9 @@ class InProcessServerBuilderIT {
         Path notADirectory = Files.createTempFile("prefix", "suffix");
         assertFalse(Files.isDirectory(notADirectory));
 
-        IllegalArgumentException exception =
-                assertThrows(IllegalArgumentException.class, () -> getTestBuilder(directory.homePath())
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getTestBuilder(directory.homePath())
                         .copyFrom(notADirectory)
                         .build());
         assertThat(exception.getMessage()).contains("is not a directory");

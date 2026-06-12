@@ -81,11 +81,12 @@ class VolumeBasedCheckpointIT {
             transaction.commit();
         }
 
-        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
-                        .latestCheckPointInfo()
-                        .highestObservedClosedTransactionId()
-                        .id())
-                .isGreaterThan(lastCheckpointedTransactionId.id()));
+        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES))
+                .untilAsserted(() -> assertThat(checkPointer
+                                .latestCheckPointInfo()
+                                .highestObservedClosedTransactionId()
+                                .id())
+                        .isGreaterThan(lastCheckpointedTransactionId.id()));
     }
 
     @Test
@@ -109,11 +110,12 @@ class VolumeBasedCheckpointIT {
             }
         }
 
-        await().atMost(ofMinutes(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
-                        .latestCheckPointInfo()
-                        .highestObservedClosedTransactionId()
-                        .id())
-                .isGreaterThan(lastCheckpointedTransactionId.id()));
+        await().atMost(ofMinutes(WAIT_TIMEOUT_MINUTES))
+                .untilAsserted(() -> assertThat(checkPointer
+                                .latestCheckPointInfo()
+                                .highestObservedClosedTransactionId()
+                                .id())
+                        .isGreaterThan(lastCheckpointedTransactionId.id()));
     }
 
     @Test
@@ -140,11 +142,12 @@ class VolumeBasedCheckpointIT {
             transaction.commit();
         }
 
-        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
-                        .latestCheckPointInfo()
-                        .highestObservedClosedTransactionId()
-                        .id())
-                .isGreaterThan(lastCheckpointedTransactionId.id()));
+        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES))
+                .untilAsserted(() -> assertThat(checkPointer
+                                .latestCheckPointInfo()
+                                .highestObservedClosedTransactionId()
+                                .id())
+                        .isGreaterThan(lastCheckpointedTransactionId.id()));
     }
 
     private DatabaseManagementService startDbms(Config config) {

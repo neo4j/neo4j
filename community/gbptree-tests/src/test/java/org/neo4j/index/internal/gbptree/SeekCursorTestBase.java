@@ -1715,9 +1715,11 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate(oldRootId);
         pageCursorForSeeker.next();
         long position = i;
-        assertThrows(TreeInconsistencyException.class, () -> seekCursor(
-                        position, position + 1, pageCursorForSeeker, oldStableGeneration, oldUnstableGeneration)
-                .next());
+        assertThrows(
+                TreeInconsistencyException.class,
+                () -> seekCursor(
+                                position, position + 1, pageCursorForSeeker, oldStableGeneration, oldUnstableGeneration)
+                        .next());
     }
 
     @Test
@@ -1783,9 +1785,11 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate(rootId);
         pageCursorForSeeker.next();
         long position = i;
-        assertThrows(TreeInconsistencyException.class, () -> seekCursor(
-                        position, position + 1, pageCursorForSeeker, oldStableGeneration, oldUnstableGeneration)
-                .next());
+        assertThrows(
+                TreeInconsistencyException.class,
+                () -> seekCursor(
+                                position, position + 1, pageCursorForSeeker, oldStableGeneration, oldUnstableGeneration)
+                        .next());
     }
 
     @Test

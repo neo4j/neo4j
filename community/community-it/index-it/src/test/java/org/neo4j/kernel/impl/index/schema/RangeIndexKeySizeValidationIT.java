@@ -407,9 +407,11 @@ public class RangeIndexKeySizeValidationIT {
     }
 
     private enum NamedDynamicValueGenerator {
-        string(Byte.BYTES, 8164, (random, i) -> random.randomValues()
-                .nextAlphaNumericTextValue(i, i)
-                .stringValue()),
+        string(
+                Byte.BYTES,
+                8164,
+                (random, i) ->
+                        random.randomValues().nextAlphaNumericTextValue(i, i).stringValue()),
         byteArray(SIZE_NUMBER_BYTE, 8163, (random, i) -> random.randomValues().nextByteArrayRaw(i, i)),
         shortArray(SIZE_NUMBER_SHORT, 4081, (random, i) -> random.randomValues().nextShortArrayRaw(i, i)),
         intArray(SIZE_NUMBER_INT, 2040, (random, i) -> random.randomValues().nextIntArrayRaw(i, i)),
@@ -418,18 +420,29 @@ public class RangeIndexKeySizeValidationIT {
         doubleArray(
                 SIZE_NUMBER_DOUBLE, 1020, (random, i) -> random.randomValues().nextDoubleArrayRaw(i, i)),
         booleanArray(SIZE_BOOLEAN, 8164, (random, i) -> random.randomValues().nextBooleanArrayRaw(i, i)),
-        charArray(Byte.BYTES, 2721, (random, i) -> random.randomValues()
-                .nextAlphaNumericTextValue(i, i)
-                .stringValue()
-                .toCharArray()),
-        stringArray1(SIZE_STRING_LENGTH + 1, 2721, (random, i) -> random.randomValues()
-                .nextAlphaNumericStringArrayRaw(i, i, 1, 1)),
-        stringArray10(SIZE_STRING_LENGTH + 10, 680, (random, i) -> random.randomValues()
-                .nextAlphaNumericStringArrayRaw(i, i, 10, 10)),
-        stringArray100(SIZE_STRING_LENGTH + 100, 80, (random, i) -> random.randomValues()
-                .nextAlphaNumericStringArrayRaw(i, i, 100, 100)),
-        stringArray1000(SIZE_STRING_LENGTH + 1000, 8, (random, i) -> random.randomValues()
-                .nextAlphaNumericStringArrayRaw(i, i, 1000, 1000)),
+        charArray(
+                Byte.BYTES,
+                2721,
+                (random, i) -> random.randomValues()
+                        .nextAlphaNumericTextValue(i, i)
+                        .stringValue()
+                        .toCharArray()),
+        stringArray1(
+                SIZE_STRING_LENGTH + 1,
+                2721,
+                (random, i) -> random.randomValues().nextAlphaNumericStringArrayRaw(i, i, 1, 1)),
+        stringArray10(
+                SIZE_STRING_LENGTH + 10,
+                680,
+                (random, i) -> random.randomValues().nextAlphaNumericStringArrayRaw(i, i, 10, 10)),
+        stringArray100(
+                SIZE_STRING_LENGTH + 100,
+                80,
+                (random, i) -> random.randomValues().nextAlphaNumericStringArrayRaw(i, i, 100, 100)),
+        stringArray1000(
+                SIZE_STRING_LENGTH + 1000,
+                8,
+                (random, i) -> random.randomValues().nextAlphaNumericStringArrayRaw(i, i, 1000, 1000)),
         dateArray(SIZE_DATE, 1020, (random, i) -> random.randomValues().nextDateArrayRaw(i, i)),
         timeArray(SIZE_ZONED_TIME, 680, (random, i) -> random.randomValues().nextTimeArrayRaw(i, i)),
         localTimeArray(
@@ -440,19 +453,26 @@ public class RangeIndexKeySizeValidationIT {
                 SIZE_LOCAL_DATE_TIME, 680, (random, i) -> random.randomValues().nextLocalDateTimeArrayRaw(i, i)),
         durationArray(SIZE_DURATION, 291, (random, i) -> random.randomValues().nextDurationArrayRaw(i, i)),
         periodArray(SIZE_DURATION, 291, (random, i) -> random.randomValues().nextPeriodArrayRaw(i, i)),
-        cartesianPointArray(SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, (random, i) -> random.randomValues()
-                .nextCartesianPointArray(i, i)
-                .asObjectCopy()),
-        cartesian3DPointArray(SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, (random, i) -> random.randomValues()
-                .nextCartesian3DPointArray(i, i)
-                .asObjectCopy()),
-        geographicPointArray(SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, (random, i) -> random.randomValues()
-                .nextGeographicPointArray(i, i)
-                .asObjectCopy()),
+        cartesianPointArray(
+                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE,
+                510,
+                (random, i) ->
+                        random.randomValues().nextCartesianPointArray(i, i).asObjectCopy()),
+        cartesian3DPointArray(
+                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE,
+                340,
+                (random, i) ->
+                        random.randomValues().nextCartesian3DPointArray(i, i).asObjectCopy()),
+        geographicPointArray(
+                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE,
+                510,
+                (random, i) ->
+                        random.randomValues().nextGeographicPointArray(i, i).asObjectCopy()),
         geographic3DPointArray(
-                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, (random, i) -> random.randomValues()
-                        .nextGeographic3DPointArray(i, i)
-                        .asObjectCopy()),
+                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE,
+                340,
+                (random, i) ->
+                        random.randomValues().nextGeographic3DPointArray(i, i).asObjectCopy()),
         // NOTE: All Int8Vector in [MIN_VECTOR_DIM, MAX_VECTOR_DIM] fits into a page, no need to test this.
         vectorInt16(
                 Types.VECTOR_INT16.elementSize,

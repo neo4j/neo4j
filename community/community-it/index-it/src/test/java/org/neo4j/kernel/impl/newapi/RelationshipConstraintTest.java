@@ -114,8 +114,9 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
             // This is ok, since it will satisfy constraint
             tx.dataWrite().relationshipSetProperty(notConflicting, property, intValue(1337));
 
-            assertThrows(ConstraintValidationException.class, () -> tx.dataWrite()
-                    .relationshipSetProperty(conflicting, property, intValue(1337)));
+            assertThrows(
+                    ConstraintValidationException.class,
+                    () -> tx.dataWrite().relationshipSetProperty(conflicting, property, intValue(1337)));
             tx.commit();
         }
 
@@ -158,9 +159,9 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
                 new int[] {propId});
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            RepeatedRelationshipTypeInSchemaException e =
-                    assertThrows(RepeatedRelationshipTypeInSchemaException.class, () -> tx.schemaWrite()
-                            .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
+            RepeatedRelationshipTypeInSchemaException e = assertThrows(
+                    RepeatedRelationshipTypeInSchemaException.class,
+                    () -> tx.schemaWrite().uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
                     .isEqualTo(
@@ -188,9 +189,9 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
                 new int[] {propId0, propId1, propId2, propId1, propId3});
         // then
         try (KernelTransaction tx = beginTransaction()) {
-            RepeatedPropertyInSchemaException e =
-                    assertThrows(RepeatedPropertyInSchemaException.class, () -> tx.schemaWrite()
-                            .uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
+            RepeatedPropertyInSchemaException e = assertThrows(
+                    RepeatedPropertyInSchemaException.class,
+                    () -> tx.schemaWrite().uniquePropertyConstraintCreate(IndexPrototype.forSchema(descriptor)));
             assertThat(e.gqlStatus()).isEqualTo("22N75");
             assertThat(e.statusDescription())
                     .isEqualTo(

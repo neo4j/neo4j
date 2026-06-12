@@ -107,12 +107,13 @@ public class InTransactionStateIT {
 
         fsm.process(messages.discard(2), recorder);
 
-        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
-                .containsKey("type")
-                .containsKey("t_last")
-                .doesNotContainKey("bookmark")
-                .containsKey("db")
-                .doesNotContainKey("has_more"));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsKey("type")
+                        .containsKey("t_last")
+                        .doesNotContainKey("bookmark")
+                        .containsKey("db")
+                        .doesNotContainKey("has_more"));
 
         assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
@@ -123,11 +124,13 @@ public class InTransactionStateIT {
             throws StateMachineException {
         fsm.process(messages.pull(100), recorder);
 
-        assertThat(recorder).hasRecord().hasSuccessResponse(meta -> assertThat(meta)
-                .containsKey("type")
-                .containsKey("t_last")
-                .doesNotContainKey("bookmark")
-                .containsKey("db"));
+        assertThat(recorder)
+                .hasRecord()
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsKey("type")
+                        .containsKey("t_last")
+                        .doesNotContainKey("bookmark")
+                        .containsKey("db"));
 
         assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
@@ -140,17 +143,21 @@ public class InTransactionStateIT {
             throws StateMachineException {
         fsm.process(messages.pull(2), recorder);
 
-        assertThat(recorder).hasRecord(longValue(1)).hasRecord(longValue(2)).hasSuccessResponse(meta -> assertThat(meta)
-                .containsEntry("has_more", TRUE)
-                .doesNotContainKey("db"));
+        assertThat(recorder)
+                .hasRecord(longValue(1))
+                .hasRecord(longValue(2))
+                .hasSuccessResponse(
+                        meta -> assertThat(meta).containsEntry("has_more", TRUE).doesNotContainKey("db"));
 
         fsm.process(messages.pull(2), recorder);
 
-        assertThat(recorder).hasRecord(longValue(3)).hasSuccessResponse(meta -> assertThat(meta)
-                .containsKey("type")
-                .containsKey("t_last")
-                .doesNotContainKey("bookmark")
-                .containsKey("db"));
+        assertThat(recorder)
+                .hasRecord(longValue(3))
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsKey("type")
+                        .containsKey("t_last")
+                        .doesNotContainKey("bookmark")
+                        .containsKey("db"));
 
         assertThat(fsm).isInState(States.IN_TRANSACTION);
     }
@@ -172,11 +179,14 @@ public class InTransactionStateIT {
             throws StateMachineException {
         fsm.process(messages.commit(), recorder);
 
-        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
-                .containsEntry("bookmark", value -> AnyValueAssertions.assertThat(value)
-                        .asString()
-                        .isNotEmpty()
-                        .isNotBlank()));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> assertThat(meta)
+                        .containsEntry(
+                                "bookmark",
+                                value -> AnyValueAssertions.assertThat(value)
+                                        .asString()
+                                        .isNotEmpty()
+                                        .isNotBlank()));
     }
 
     @StateMachineTest

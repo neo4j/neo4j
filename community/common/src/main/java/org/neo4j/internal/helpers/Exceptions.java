@@ -171,10 +171,11 @@ public final class Exceptions {
     }
 
     public static StackTraceElement[] getPartialStackTrace(int from, int to) {
-        return StackWalker.getInstance().walk(s -> s.skip(from)
-                .limit(to - from)
-                .map(StackWalker.StackFrame::toStackTraceElement)
-                .toArray(StackTraceElement[]::new));
+        return StackWalker.getInstance()
+                .walk(s -> s.skip(from)
+                        .limit(to - from)
+                        .map(StackWalker.StackFrame::toStackTraceElement)
+                        .toArray(StackTraceElement[]::new));
     }
 
     public static String stringify(Throwable throwable) {

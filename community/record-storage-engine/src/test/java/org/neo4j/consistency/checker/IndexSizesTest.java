@@ -68,9 +68,10 @@ class IndexSizesTest {
 
         indexes = new ArrayList<>();
         indexAccessors = mock(IndexAccessors.class);
-        when(indexAccessors.onlineRules(any())).then(invocation -> indexes.stream()
-                .filter(index -> index.schema().entityType() == invocation.getArgument(0))
-                .collect(Collectors.toList()));
+        when(indexAccessors.onlineRules(any()))
+                .then(invocation -> indexes.stream()
+                        .filter(index -> index.schema().entityType() == invocation.getArgument(0))
+                        .collect(Collectors.toList()));
         when(indexAccessors.accessorFor(any())).then(invocation -> {
             IndexAccessor mock = mock(IndexAccessor.class);
             when(mock.estimateNumberOfEntries(any(CursorContext.class)))

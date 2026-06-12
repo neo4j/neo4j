@@ -100,8 +100,9 @@ class ListenersTest {
 
     @Test
     void notifyWithNullExecutorAndNotification() {
-        assertThrows(NullPointerException.class, () -> new Listeners<Listener>()
-                .notify(null, listener -> listener.process("foo")));
+        assertThrows(
+                NullPointerException.class,
+                () -> new Listeners<Listener>().notify(null, listener -> listener.process("foo")));
     }
 
     @Test

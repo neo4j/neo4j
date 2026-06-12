@@ -355,15 +355,17 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime, DateTimeVa
                         && !selectingEpoch) {
                     // Be sure to be in the start of the week based year (which can be later than 1st Jan)
                     var tmpResult = result;
-                    result = assertValidArgument("year", () -> tmpResult
-                            .with(
-                                    IsoFields.WEEK_BASED_YEAR,
-                                    safeCastIntegral(
-                                            TemporalFields.year.name(),
-                                            fields.get(TemporalFields.year),
-                                            TemporalFields.year.defaultValue))
-                            .with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1)
-                            .with(ChronoField.DAY_OF_WEEK, 1));
+                    result = assertValidArgument(
+                            "year",
+                            () -> tmpResult
+                                    .with(
+                                            IsoFields.WEEK_BASED_YEAR,
+                                            safeCastIntegral(
+                                                    TemporalFields.year.name(),
+                                                    fields.get(TemporalFields.year),
+                                                    TemporalFields.year.defaultValue))
+                                    .with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1)
+                                    .with(ChronoField.DAY_OF_WEEK, 1));
                 }
 
                 result = assignAllFields(result);

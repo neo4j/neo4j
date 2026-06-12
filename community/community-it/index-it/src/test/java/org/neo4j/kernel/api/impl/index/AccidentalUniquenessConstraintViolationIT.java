@@ -78,8 +78,9 @@ class AccidentalUniquenessConstraintViolationIT {
         try (Transaction tx = db.beginTx()) {
             Node fourtyTwo = tx.getNodeByElementId(fourtyTwoId);
             assertEquals(value2, fourtyTwo.getProperty(BAR));
-            assertThrows(NotFoundException.class, () -> tx.getNodeByElementId(fourtyOneId)
-                    .getProperty(BAR));
+            assertThrows(
+                    NotFoundException.class,
+                    () -> tx.getNodeByElementId(fourtyOneId).getProperty(BAR));
 
             assertEquals(fourtyTwo, tx.findNode(Foo, BAR, value2));
             assertNull(tx.findNode(Foo, BAR, value1));

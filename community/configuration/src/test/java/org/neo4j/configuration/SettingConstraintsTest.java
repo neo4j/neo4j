@@ -29,21 +29,29 @@ import org.neo4j.configuration.helpers.SocketAddress;
 class SettingConstraintsTest {
     @Test
     void invalidAdvertisedAddress() {
-        assertThat(assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
-                        .set(GraphDatabaseSettings.default_advertised_address, new SocketAddress("0.0.00.000"))
-                        .build()))
+        assertThat(assertThrows(
+                        IllegalArgumentException.class,
+                        () -> Config.newBuilder()
+                                .set(GraphDatabaseSettings.default_advertised_address, new SocketAddress("0.0.00.000"))
+                                .build()))
                 .hasMessageContaining("advertised address cannot be '0.0.0.0'");
-        assertThat(assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
-                        .set(GraphDatabaseSettings.default_advertised_address, new SocketAddress("::"))
-                        .build()))
+        assertThat(assertThrows(
+                        IllegalArgumentException.class,
+                        () -> Config.newBuilder()
+                                .set(GraphDatabaseSettings.default_advertised_address, new SocketAddress("::"))
+                                .build()))
                 .hasMessageContaining("advertised address cannot be '::'");
     }
 
     @Test
     void invalidDefaultAddress() {
-        assertThat(assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
-                        .set(GraphDatabaseSettings.default_advertised_address, new SocketAddress("localhost", 1234))
-                        .build()))
+        assertThat(assertThrows(
+                        IllegalArgumentException.class,
+                        () -> Config.newBuilder()
+                                .set(
+                                        GraphDatabaseSettings.default_advertised_address,
+                                        new SocketAddress("localhost", 1234))
+                                .build()))
                 .hasMessageContaining("can not have a port");
     }
 

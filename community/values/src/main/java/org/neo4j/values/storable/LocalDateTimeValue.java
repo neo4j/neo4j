@@ -234,15 +234,17 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime, Local
                 if (fields.containsKey(TemporalFields.week) && !selectingDate && !selectingDateTime) {
                     // Be sure to be in the start of the week based year (which can be later than 1st Jan)
                     var tempResult = result;
-                    result = assertValidArgument("year", () -> tempResult
-                            .with(
-                                    IsoFields.WEEK_BASED_YEAR,
-                                    safeCastIntegral(
-                                            TemporalFields.year.name(),
-                                            fields.get(TemporalFields.year),
-                                            TemporalFields.year.defaultValue))
-                            .with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1)
-                            .with(ChronoField.DAY_OF_WEEK, 1));
+                    result = assertValidArgument(
+                            "year",
+                            () -> tempResult
+                                    .with(
+                                            IsoFields.WEEK_BASED_YEAR,
+                                            safeCastIntegral(
+                                                    TemporalFields.year.name(),
+                                                    fields.get(TemporalFields.year),
+                                                    TemporalFields.year.defaultValue))
+                                    .with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1)
+                                    .with(ChronoField.DAY_OF_WEEK, 1));
                 }
 
                 result = assignAllFields(result);

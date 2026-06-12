@@ -132,8 +132,9 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
                             })
                             .collect(Collectors.toList());
 
-                    assertThat(httpLogLines).anyMatch(logEntry -> logEntry.getOrDefault("message", "")
-                            .contains(HttpStructuredLoggingIT.class.getSimpleName()));
+                    assertThat(httpLogLines)
+                            .anyMatch(logEntry -> logEntry.getOrDefault("message", "")
+                                    .contains(HttpStructuredLoggingIT.class.getSimpleName()));
                 },
                 Duration.ofSeconds(10),
                 Duration.ofMillis(500));

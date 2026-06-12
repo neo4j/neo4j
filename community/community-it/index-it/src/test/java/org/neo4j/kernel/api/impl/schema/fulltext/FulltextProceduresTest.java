@@ -675,8 +675,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         awaitIndexesOnline();
 
         try (Transaction tx = db.beginTx()) {
-            assertThrows(Exception.class, () -> tx.execute(format(QUERY_NODES, DEFAULT_REL_IDX_NAME, "bla bla"))
-                    .next());
+            assertThrows(
+                    Exception.class,
+                    () -> tx.execute(format(QUERY_NODES, DEFAULT_REL_IDX_NAME, "bla bla"))
+                            .next());
         }
     }
 
@@ -690,8 +692,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         awaitIndexesOnline();
 
         try (Transaction tx = db.beginTx()) {
-            assertThrows(Exception.class, () -> tx.execute(format(QUERY_RELS, DEFAULT_NODE_IDX_NAME, "bla bla"))
-                    .next());
+            assertThrows(
+                    Exception.class,
+                    () -> tx.execute(format(QUERY_RELS, DEFAULT_NODE_IDX_NAME, "bla bla"))
+                            .next());
         }
     }
 

@@ -263,8 +263,12 @@ abstract class VectorEmbeddingITBase implements GenAITestExtension {
     }
 
     private Consumer<Map<String, Object>> batchedNonBlankRow(long index) {
-        return row -> assertThat(row).containsEntry("index", index).hasEntrySatisfying("vector", c -> assertThat(c)
-                .asInstanceOf(InstanceOfAssertFactories.type(VectorValue.class))
-                .isNotNull());
+        return row -> assertThat(row)
+                .containsEntry("index", index)
+                .hasEntrySatisfying(
+                        "vector",
+                        c -> assertThat(c)
+                                .asInstanceOf(InstanceOfAssertFactories.type(VectorValue.class))
+                                .isNotNull());
     }
 }

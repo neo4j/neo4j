@@ -295,16 +295,20 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .indexCreate(IndexPrototype.forSchema(forLabel(label, prop1))
-                            .withIndexType(type)
-                            .withName("my other index")));
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .indexCreate(IndexPrototype.forSchema(forLabel(label, prop2))
-                            .withIndexType(type)
-                            .withName("my index")));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .indexCreate(IndexPrototype.forSchema(forLabel(label, prop1))
+                                    .withIndexType(type)
+                                    .withName("my other index")));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .indexCreate(IndexPrototype.forSchema(forLabel(label, prop2))
+                                    .withIndexType(type)
+                                    .withName("my index")));
             transaction.commit();
         }
     }
@@ -738,16 +742,20 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .uniquePropertyConstraintCreate(
-                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
-                                    .withName("constraint name")));
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .uniquePropertyConstraintCreate(
-                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop2))
-                                    .withName("my index")));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .uniquePropertyConstraintCreate(
+                                    uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                                            .withName("constraint name")));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .uniquePropertyConstraintCreate(
+                                    uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop2))
+                                            .withName("my index")));
             transaction.commit();
         }
     }
@@ -768,14 +776,18 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .indexCreate(IndexPrototype.forSchema(entityType.createSchemaDescriptor(entityToken, prop1))
-                            .withName("my index")));
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .indexCreate(IndexPrototype.forSchema(entityType.createSchemaDescriptor(entityToken, prop2))
-                            .withName("constraint name")));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .indexCreate(IndexPrototype.forSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                                    .withName("my index")));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .indexCreate(IndexPrototype.forSchema(entityType.createSchemaDescriptor(entityToken, prop2))
+                                    .withName("constraint name")));
             transaction.commit();
         }
     }
@@ -839,10 +851,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .uniquePropertyConstraintCreate(
-                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .uniquePropertyConstraintCreate(
+                                    uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))));
         }
     }
 
@@ -972,9 +986,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .keyConstraintCreate(uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .keyConstraintCreate(
+                                    uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))));
         }
     }
 
@@ -1091,9 +1108,11 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name", false));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name", false));
         }
     }
 
@@ -1202,9 +1221,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> transaction
-                    .schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name", false));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction
+                            .schemaWrite()
+                            .relationshipPropertyExistenceConstraintCreate(
+                                    forRelType(type, prop1), "constraint name", false));
         }
     }
 
@@ -1580,25 +1602,30 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void shouldFailIndexCreateForRepeatedProperties() throws Exception {
         try (KernelTransaction tx = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> tx.schemaWrite()
-                    .indexCreate(IndexPrototype.forSchema(forLabel(label, prop1, prop1))
-                            .withName("my index")));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> tx.schemaWrite()
+                            .indexCreate(IndexPrototype.forSchema(forLabel(label, prop1, prop1))
+                                    .withName("my index")));
         }
     }
 
     @Test
     void shouldFailUniquenessConstraintCreateForRepeatedProperties() throws Exception {
         try (KernelTransaction tx = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> tx.schemaWrite()
-                    .uniquePropertyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> tx.schemaWrite()
+                            .uniquePropertyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
         }
     }
 
     @Test
     void shouldFailNodeKeyCreateForRepeatedProperties() throws Exception {
         try (KernelTransaction tx = beginTransaction()) {
-            assertThrows(SchemaKernelException.class, () -> tx.schemaWrite()
-                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> tx.schemaWrite().keyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
         }
     }
 

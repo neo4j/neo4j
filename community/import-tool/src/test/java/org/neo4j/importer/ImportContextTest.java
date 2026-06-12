@@ -141,10 +141,13 @@ class ImportContextTest {
             assertThat(importContext.baseDir()).exists();
         }
 
-        assertThat(importsDir).exists().isNotEmptyDirectory().satisfies(dir -> assertThat(fs.listFiles(dir))
-                .hasSize(1)
-                .singleElement()
-                .satisfies(ImportContextTest::assertIsImportContextDir));
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(dir -> assertThat(fs.listFiles(dir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(ImportContextTest::assertIsImportContextDir));
     }
 
     @ParameterizedTest
@@ -170,10 +173,13 @@ class ImportContextTest {
             assertThat(capturedError).isInstanceOf(expectedErrorType);
         }
 
-        assertThat(importsDir).exists().isNotEmptyDirectory().satisfies(dir -> assertThat(fs.listFiles(dir))
-                .hasSize(1)
-                .singleElement()
-                .satisfies(ImportContextTest::assertIsImportContextDir));
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(dir -> assertThat(fs.listFiles(dir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(ImportContextTest::assertIsImportContextDir));
     }
 
     @ParameterizedTest
@@ -187,10 +193,13 @@ class ImportContextTest {
         }
 
         if (addViolation) {
-            assertThat(importsDir).exists().isNotEmptyDirectory().satisfies(dir -> assertThat(fs.listFiles(dir))
-                    .hasSize(1)
-                    .singleElement()
-                    .satisfies(ImportContextTest::assertIsImportContextDir));
+            assertThat(importsDir)
+                    .exists()
+                    .isNotEmptyDirectory()
+                    .satisfies(dir -> assertThat(fs.listFiles(dir))
+                            .hasSize(1)
+                            .singleElement()
+                            .satisfies(ImportContextTest::assertIsImportContextDir));
         } else {
             assertThat(importsDir).doesNotExist();
         }
@@ -228,9 +237,12 @@ class ImportContextTest {
         assertThat(run1).exists().content().contains(content1);
         assertThat(run2).exists().content().contains(content2);
 
-        assertThat(importsDir).exists().isNotEmptyDirectory().satisfies(dir -> assertThat(fs.listFiles(dir))
-                .hasSize(2)
-                .allSatisfy(ImportContextTest::assertIsImportContextDir));
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(dir -> assertThat(fs.listFiles(dir))
+                        .hasSize(2)
+                        .allSatisfy(ImportContextTest::assertIsImportContextDir));
     }
 
     @ParameterizedTest
@@ -240,24 +252,27 @@ class ImportContextTest {
             importContext.detailedProgressReport(progressReport());
         }
 
-        assertThat(importsDir).exists().isNotEmptyDirectory().satisfies(dir -> assertThat(fs.listFiles(dir))
-                .hasSize(1)
-                .singleElement()
-                .satisfies(contextDir -> {
-                    assertIsImportContextDir(contextDir);
+        assertThat(importsDir)
+                .exists()
+                .isNotEmptyDirectory()
+                .satisfies(dir -> assertThat(fs.listFiles(dir))
+                        .hasSize(1)
+                        .singleElement()
+                        .satisfies(contextDir -> {
+                            assertIsImportContextDir(contextDir);
 
-                    assertThat(contextDir.resolve(ImportContext.PROGRESS_REPORTING_FILE_NAME))
-                            .exists()
-                            .isNotEmptyFile()
-                            .content()
-                            .satisfies(content -> {
-                                if (withUpdates) {
-                                    assertThat(content).contains("\"updated\"", "\"deleted\"");
-                                } else {
-                                    assertThat(content).doesNotContain("\"updated\"", "\"deleted\"");
-                                }
-                            });
-                }));
+                            assertThat(contextDir.resolve(ImportContext.PROGRESS_REPORTING_FILE_NAME))
+                                    .exists()
+                                    .isNotEmptyFile()
+                                    .content()
+                                    .satisfies(content -> {
+                                        if (withUpdates) {
+                                            assertThat(content).contains("\"updated\"", "\"deleted\"");
+                                        } else {
+                                            assertThat(content).doesNotContain("\"updated\"", "\"deleted\"");
+                                        }
+                                    });
+                        }));
     }
 
     private static void assertIsImportContextDir(Path importDir) {

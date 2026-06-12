@@ -139,8 +139,9 @@ public class DbmsSupportController {
     }
 
     public <T extends Annotation> Optional<T> getTestAnnotation(Class<T> annotationType) {
-        return context.getTestMethod().map(m -> m.getAnnotation(annotationType)).or(() -> context.getTestClass()
-                .map(cls -> cls.getAnnotation(annotationType)));
+        return context.getTestMethod()
+                .map(m -> m.getAnnotation(annotationType))
+                .or(() -> context.getTestClass().map(cls -> cls.getAnnotation(annotationType)));
     }
 
     protected DatabaseManagementService buildDbms(
@@ -303,9 +304,12 @@ public class DbmsSupportController {
                 return new TestConfiguration(annotation.configurationCallback());
             }
             if (annotations[0] instanceof BoltDbmsExtension annotation) {
-                return new TestConfiguration(annotation.configurationCallback(), dbmsBuilder -> dbmsBuilder
-                        .setConfig(BoltConnector.enabled, TRUE)
-                        .overrideDefaultSetting(BoltConnector.listen_address, new SocketAddress("localhost", 0)));
+                return new TestConfiguration(
+                        annotation.configurationCallback(),
+                        dbmsBuilder -> dbmsBuilder
+                                .setConfig(BoltConnector.enabled, TRUE)
+                                .overrideDefaultSetting(
+                                        BoltConnector.listen_address, new SocketAddress("localhost", 0)));
             }
         }
 

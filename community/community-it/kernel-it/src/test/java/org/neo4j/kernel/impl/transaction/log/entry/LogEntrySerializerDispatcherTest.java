@@ -273,7 +273,8 @@ class LogEntrySerializerDispatcherTest {
     @ParameterizedTest
     @EnumSource
     void shouldThrowWhenParsingUnknownEntry(KernelVersion version) {
-        assertThrows(IllegalArgumentException.class, () -> serializationSet(version, BINARY_VERSIONS)
-                .select((byte) 42)); // unused, at lest for now
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> serializationSet(version, BINARY_VERSIONS).select((byte) 42)); // unused, at lest for now
     }
 }

@@ -1086,27 +1086,36 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
     public static Stream<Arguments> locksTracingParameter() {
         return Stream.of(
-                lockTracerParams(l -> l.acquireExclusiveNodeLock(13), (sl, lc, lt) -> verify(sl)
-                        .acquireExclusiveNodeLock(same(lt), anyLong())),
-                lockTracerParams(l -> l.acquireExclusiveRelationshipLock(13), (sl, lc, lt) -> verify(sl)
-                        .acquireExclusiveRelationshipLock(same(lt), anyLong())),
-                lockTracerParams(l -> l.acquireSharedNodeLock(13), (sl, lc, lt) -> verify(sl)
-                        .acquireSharedNodeLock(same(lt), anyLong())),
-                lockTracerParams(l -> l.acquireSharedRelationshipLock(13), (sl, lc, lt) -> verify(sl)
-                        .acquireSharedRelationshipLock(same(lt), anyLong())),
-                lockTracerParams(l -> l.acquireSharedLookupLock(EntityType.NODE), (sl, lc, lt) -> verify(lc)
-                        .acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireExclusiveNodeLock(13),
+                        (sl, lc, lt) -> verify(sl).acquireExclusiveNodeLock(same(lt), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireExclusiveRelationshipLock(13),
+                        (sl, lc, lt) -> verify(sl).acquireExclusiveRelationshipLock(same(lt), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireSharedNodeLock(13),
+                        (sl, lc, lt) -> verify(sl).acquireSharedNodeLock(same(lt), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireSharedRelationshipLock(13),
+                        (sl, lc, lt) -> verify(sl).acquireSharedRelationshipLock(same(lt), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireSharedLookupLock(EntityType.NODE),
+                        (sl, lc, lt) -> verify(lc).acquireShared(same(lt), any(), anyLong())),
                 lockTracerParams(
                         l -> l.acquireSharedSchemaLock(() -> SchemaDescriptors.forLabel(13, 13)),
                         (sl, lc, lt) -> verify(lc).acquireShared(same(lt), any(), anyLong())),
-                lockTracerParams(l -> l.acquireSharedLabelLock(13), (sl, lc, lt) -> verify(lc)
-                        .acquireShared(same(lt), any(), anyLong())),
-                lockTracerParams(l -> l.acquireSharedRelationshipTypeLock(13), (sl, lc, lt) -> verify(lc)
-                        .acquireShared(same(lt), any(), anyLong())),
-                lockTracerParams(l -> l.acquireSharedIndexEntryLock(13), (sl, lc, lt) -> verify(lc)
-                        .acquireShared(same(lt), any(), anyLong())),
-                lockTracerParams(l -> l.acquireExclusiveIndexEntryLock(13), (sl, lc, lt) -> verify(lc)
-                        .acquireExclusive(same(lt), any(), anyLong())));
+                lockTracerParams(
+                        l -> l.acquireSharedLabelLock(13),
+                        (sl, lc, lt) -> verify(lc).acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireSharedRelationshipTypeLock(13),
+                        (sl, lc, lt) -> verify(lc).acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireSharedIndexEntryLock(13),
+                        (sl, lc, lt) -> verify(lc).acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireExclusiveIndexEntryLock(13),
+                        (sl, lc, lt) -> verify(lc).acquireExclusive(same(lt), any(), anyLong())));
     }
 
     @FunctionalInterface

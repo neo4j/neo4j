@@ -36,8 +36,10 @@ class ProtocolVersionTest {
     private static Stream<ProtocolVersion> versions() {
         return IntStream.range(3, 5)
                 .boxed()
-                .flatMap(major -> IntStream.range(0, 9).boxed().flatMap(minor -> IntStream.range(0, minor)
-                        .mapToObj(range -> new ProtocolVersion(major, minor, range))));
+                .flatMap(major -> IntStream.range(0, 9)
+                        .boxed()
+                        .flatMap(minor ->
+                                IntStream.range(0, minor).mapToObj(range -> new ProtocolVersion(major, minor, range))));
     }
 
     private static int encode(ProtocolVersion version) {
@@ -127,24 +129,29 @@ class ProtocolVersionTest {
 
     @TestFactory
     Stream<DynamicTest> shouldIdentifyRangedVersions() {
-        return IntStream.rangeClosed(2, 9).boxed().flatMap(major -> IntStream.range(0, 9)
+        return IntStream.rangeClosed(2, 9)
                 .boxed()
-                .flatMap(minor ->
-                        IntStream.range(0, minor).boxed().map(range -> new ProtocolVersion(major, minor, range)))
-                .map(version -> dynamicTest(version.toString(), () -> {
-                    var actual = version.hasRange();
+                .flatMap(major -> IntStream.range(0, 9)
+                        .boxed()
+                        .flatMap(minor -> IntStream.range(0, minor)
+                                .boxed()
+                                .map(range -> new ProtocolVersion(major, minor, range)))
+                        .map(version -> dynamicTest(version.toString(), () -> {
+                            var actual = version.hasRange();
 
-                    assertEquals(version.range() != 0, actual);
-                })));
+                            assertEquals(version.range() != 0, actual);
+                        })));
     }
 
     @TestFactory
     Stream<DynamicTest> shouldIdentifyNegotiationVersions() {
         return IntStream.rangeClosed(ProtocolVersion.MAX_MAJOR_BIT - 8, ProtocolVersion.MAX_MAJOR_BIT)
                 .boxed()
-                .flatMap(major -> IntStream.range(0, 9).boxed().flatMap(minor -> IntStream.range(0, minor)
+                .flatMap(major -> IntStream.range(0, 9)
                         .boxed()
-                        .map(range -> new ProtocolVersion(major, minor, range))))
+                        .flatMap(minor -> IntStream.range(0, minor)
+                                .boxed()
+                                .map(range -> new ProtocolVersion(major, minor, range))))
                 .map(version -> dynamicTest(version.toString(), () -> {
                     var actual = version.isNegotiationVersion();
 

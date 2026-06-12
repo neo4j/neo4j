@@ -82,16 +82,20 @@ public class TextIndexIT {
 
         // Then
         try (var tx = db.beginTx()) {
-            assertThrows(IllegalArgumentException.class, () -> tx.schema()
-                    .indexFor(labels)
-                    .on("name")
-                    .withIndexType(TEXT)
-                    .create());
-            assertThrows(IllegalArgumentException.class, () -> tx.schema()
-                    .indexFor(relations)
-                    .on("name")
-                    .withIndexType(TEXT)
-                    .create());
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> tx.schema()
+                            .indexFor(labels)
+                            .on("name")
+                            .withIndexType(TEXT)
+                            .create());
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> tx.schema()
+                            .indexFor(relations)
+                            .on("name")
+                            .withIndexType(TEXT)
+                            .create());
         }
     }
 

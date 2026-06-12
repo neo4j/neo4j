@@ -324,43 +324,61 @@ public abstract class AbstractMetadataHandlerTest {
             Consumer<MapValue> child2Assertions) {
         MapValueAssertions.assertThat(value)
                 .containsEntry("operatorType", Values.utf8Value("root"))
-                .containsEntry("args", args -> Assertions.assertThat(args)
-                        .asInstanceOf(MapValueAssertions.mapValue())
-                        .hasSize(1)
-                        .containsEntry("foo", Values.stringValue("bar")))
-                .containsEntry("identifiers", ids -> Assertions.assertThat(ids)
-                        .asInstanceOf(ListValueAssertions.listValue())
-                        .containsOnly(Values.stringValue("foo"), Values.stringValue("bar")))
-                .containsEntry("children", children -> Assertions.assertThat(children)
-                        .asInstanceOf(ListValueAssertions.listValue())
-                        .hasSize(2)
-                        .satisfies(
-                                child -> Assertions.assertThat(child)
-                                        .asInstanceOf(MapValueAssertions.mapValue())
-                                        .containsEntry("operatorType", Values.utf8Value("child1"))
-                                        .containsEntry("args", args -> Assertions.assertThat(args)
+                .containsEntry(
+                        "args",
+                        args -> Assertions.assertThat(args)
+                                .asInstanceOf(MapValueAssertions.mapValue())
+                                .hasSize(1)
+                                .containsEntry("foo", Values.stringValue("bar")))
+                .containsEntry(
+                        "identifiers",
+                        ids -> Assertions.assertThat(ids)
+                                .asInstanceOf(ListValueAssertions.listValue())
+                                .containsOnly(Values.stringValue("foo"), Values.stringValue("bar")))
+                .containsEntry(
+                        "children",
+                        children -> Assertions.assertThat(children)
+                                .asInstanceOf(ListValueAssertions.listValue())
+                                .hasSize(2)
+                                .satisfies(
+                                        child -> Assertions.assertThat(child)
                                                 .asInstanceOf(MapValueAssertions.mapValue())
-                                                .hasSize(1)
-                                                .containsEntry("foo", Values.stringValue("baz")))
-                                        .containsEntry("identifiers", ids -> Assertions.assertThat(ids)
-                                                .asInstanceOf(ListValueAssertions.listValue())
-                                                .containsOnly(Values.stringValue("foo"), Values.stringValue("baz")))
-                                        .doesNotContainKey("children")
-                                        .satisfies(child1Assertions),
-                                Index.atIndex(0))
-                        .satisfies(
-                                child -> Assertions.assertThat(child)
-                                        .asInstanceOf(MapValueAssertions.mapValue())
-                                        .containsEntry("operatorType", Values.utf8Value("child2"))
-                                        .containsEntry("args", args -> Assertions.assertThat(args)
+                                                .containsEntry("operatorType", Values.utf8Value("child1"))
+                                                .containsEntry(
+                                                        "args",
+                                                        args -> Assertions.assertThat(args)
+                                                                .asInstanceOf(MapValueAssertions.mapValue())
+                                                                .hasSize(1)
+                                                                .containsEntry("foo", Values.stringValue("baz")))
+                                                .containsEntry(
+                                                        "identifiers",
+                                                        ids -> Assertions.assertThat(ids)
+                                                                .asInstanceOf(ListValueAssertions.listValue())
+                                                                .containsOnly(
+                                                                        Values.stringValue("foo"),
+                                                                        Values.stringValue("baz")))
+                                                .doesNotContainKey("children")
+                                                .satisfies(child1Assertions),
+                                        Index.atIndex(0))
+                                .satisfies(
+                                        child -> Assertions.assertThat(child)
                                                 .asInstanceOf(MapValueAssertions.mapValue())
-                                                .containsEntry("foo", Values.stringValue("bar")))
-                                        .containsEntry("identifiers", ids -> Assertions.assertThat(ids)
-                                                .asInstanceOf(ListValueAssertions.listValue())
-                                                .containsOnly(Values.stringValue("foo"), Values.stringValue("bar")))
-                                        .doesNotContainKey("children")
-                                        .satisfies(child2Assertions),
-                                Index.atIndex(1)))
+                                                .containsEntry("operatorType", Values.utf8Value("child2"))
+                                                .containsEntry(
+                                                        "args",
+                                                        args -> Assertions.assertThat(args)
+                                                                .asInstanceOf(MapValueAssertions.mapValue())
+                                                                .containsEntry("foo", Values.stringValue("bar")))
+                                                .containsEntry(
+                                                        "identifiers",
+                                                        ids -> Assertions.assertThat(ids)
+                                                                .asInstanceOf(ListValueAssertions.listValue())
+                                                                .containsOnly(
+                                                                        Values.stringValue("foo"),
+                                                                        Values.stringValue("bar")))
+                                                .doesNotContainKey("children")
+                                                .satisfies(child2Assertions),
+                                        Index.atIndex(1)))
                 .satisfies(rootAssertions);
     }
 

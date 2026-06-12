@@ -143,9 +143,11 @@ class ConfigPatternBuilderTest {
 
     private static void assertMatches(String pattern, int flags, String... expectedMatches) {
         var p = ConfigPatternBuilder.patternFromConfigString(pattern, flags);
-        assertThat(expectedMatches).allSatisfy(m -> assertThat(p.matcher(m).matches())
-                .as(String.format("Pattern '%s' should match '%s' but does not. Java regex is %s", pattern, m, p))
-                .isTrue());
+        assertThat(expectedMatches)
+                .allSatisfy(m -> assertThat(p.matcher(m).matches())
+                        .as(String.format(
+                                "Pattern '%s' should match '%s' but does not. Java regex is %s", pattern, m, p))
+                        .isTrue());
     }
 
     private static void checkDoesNotMatchAndEscapingWorks(String pattern, String... expectedMatches) {
@@ -157,8 +159,10 @@ class ConfigPatternBuilderTest {
 
     private static void assertDoesNotMatch(String pattern, int flags, String... expectedMatches) {
         var p = ConfigPatternBuilder.patternFromConfigString(pattern, flags);
-        assertThat(expectedMatches).allSatisfy(m -> assertThat(p.matcher(m).matches())
-                .as(String.format("Pattern '%s' should NOT match '%s' but does. Java regex is %s", pattern, m, p))
-                .isFalse());
+        assertThat(expectedMatches)
+                .allSatisfy(m -> assertThat(p.matcher(m).matches())
+                        .as(String.format(
+                                "Pattern '%s' should NOT match '%s' but does. Java regex is %s", pattern, m, p))
+                        .isFalse());
     }
 }

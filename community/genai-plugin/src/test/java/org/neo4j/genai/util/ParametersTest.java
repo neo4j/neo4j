@@ -359,8 +359,9 @@ public class ParametersTest {
     @Test
     void shouldIgnoreInaccessibleFields() {
         final var parameters = Parameters.getParameters(PrivateField.class);
-        assertThat(parameters).satisfiesExactlyInAnyOrder(parameter -> assertThat(parameter.name())
-                .isEqualTo("model"));
+        assertThat(parameters)
+                .satisfiesExactlyInAnyOrder(
+                        parameter -> assertThat(parameter.name()).isEqualTo("model"));
     }
 
     static class UnmappableType {

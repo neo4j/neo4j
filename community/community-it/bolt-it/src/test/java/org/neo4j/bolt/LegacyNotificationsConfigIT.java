@@ -89,8 +89,9 @@ public class LegacyNotificationsConfigIT {
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
         // Then
-        assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")))
-                .hasSize(1));
+        assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")))
+                        .hasSize(1));
     }
 
     @ProtocolTest
@@ -107,8 +108,9 @@ public class LegacyNotificationsConfigIT {
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
         // Then
-        assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")))
-                .hasSize(1));
+        assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")))
+                        .hasSize(1));
     }
 
     @ProtocolTest
@@ -120,8 +122,9 @@ public class LegacyNotificationsConfigIT {
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
         // Then
-        assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")))
-                .hasSize(1));
+        assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(((ArrayList<?>) meta.get("notifications")))
+                        .hasSize(1));
     }
 
     @ProtocolTest
@@ -178,8 +181,9 @@ public class LegacyNotificationsConfigIT {
         connection
                 .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
                 .send(wire.pull());
-        assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
-                .doesNotContainKey("notifications"));
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
         connection
                 .send(wire.run(
                         "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)",
@@ -238,8 +242,9 @@ public class LegacyNotificationsConfigIT {
         connection
                 .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
                 .send(wire.pull());
-        assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
-                .doesNotContainKey("notifications"));
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
 
         connection
                 .send(wire.run(
@@ -273,8 +278,9 @@ public class LegacyNotificationsConfigIT {
         connection
                 .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
                 .send(wire.pull());
-        assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
-                .doesNotContainKey("notifications"));
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
 
         connection.send(wire.begin(x -> x.withSeverity(NotificationConfiguration.Severity.WARNING)));
         assertThat(connection).receivesSuccess();
@@ -310,8 +316,9 @@ public class LegacyNotificationsConfigIT {
         connection
                 .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
                 .send(wire.pull());
-        assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
-                .doesNotContainKey("notifications"));
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
 
         connection.send(wire.begin(x -> x.withDisabledCategories(Collections.emptyList())));
         assertThat(connection).receivesSuccess();

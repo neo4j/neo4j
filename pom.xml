@@ -2009,14 +2009,14 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.6.0</version>
         <configuration>
           <upToDateChecking>
             <enabled>true</enabled>
           </upToDateChecking>
           <java>
             <palantirJavaFormat>
-              <version>2.82.0</version>
+              <version>2.92.0</version>
             </palantirJavaFormat>
           </java>
           <scala>

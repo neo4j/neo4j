@@ -199,8 +199,9 @@ class LabelsAcceptanceTest {
 
             // When
             try (Transaction tx = graphDatabase.beginTx()) {
-                assertThrows(ConstraintViolationException.class, () -> tx.createNode()
-                        .addLabel(Labels.MY_LABEL));
+                assertThrows(
+                        ConstraintViolationException.class,
+                        () -> tx.createNode().addLabel(Labels.MY_LABEL));
             }
 
             managementService.shutdown();

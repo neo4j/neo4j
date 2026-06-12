@@ -151,13 +151,15 @@ class PreAppendIndexDetachedLogTailScannerTest {
             fs.delete(matchedFile);
         }
 
-        var e = assertThrows(RuntimeException.class, () -> LogFilesBuilder.writeableBuilder(
-                        databaseLayout,
-                        fs,
-                        LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
-                        LatestVersions.LATEST_LOG_FORMAT_PROVIDER)
-                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
-                .build());
+        var e = assertThrows(
+                RuntimeException.class,
+                () -> LogFilesBuilder.writeableBuilder(
+                                databaseLayout,
+                                fs,
+                                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
+                                LatestVersions.LATEST_LOG_FORMAT_PROVIDER)
+                        .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
+                        .build());
         assertThat(e)
                 .rootCause()
                 .hasMessageContaining("LogPosition{logVersion=8,")

@@ -163,8 +163,9 @@ class Neo4jAdminCommandTest {
             if (fork.run(
                     () -> {
                         execute("dbms", "test-command", "--throw");
-                        Path trace = fs.listFiles(config.get(logs_directory), p -> p.toString()
-                                .contains("neo4j-admin-exception-trace"))[0];
+                        Path trace = fs.listFiles(
+                                        config.get(logs_directory),
+                                        p -> p.toString().contains("neo4j-admin-exception-trace"))[0];
                         assertThat(FileSystemUtils.readString(fs, trace, EmptyMemoryTracker.INSTANCE))
                                 .contains(CommandFailedException.class.getName());
                     },
@@ -212,8 +213,9 @@ class Neo4jAdminCommandTest {
             if (fork.run(
                     () -> {
                         execute("dbms", "test-command", "--verbose", "--throw");
-                        Path trace = fs.listFiles(config.get(logs_directory), p -> p.toString()
-                                .contains("neo4j-admin-exception-trace"))[0];
+                        Path trace = fs.listFiles(
+                                        config.get(logs_directory),
+                                        p -> p.toString().contains("neo4j-admin-exception-trace"))[0];
                         assertThat(FileSystemUtils.readString(fs, trace, EmptyMemoryTracker.INSTANCE))
                                 .contains(CommandFailedException.class.getName());
                     },

@@ -286,10 +286,11 @@ public abstract class BootloaderCommandTestBase {
                 test.run();
                 return false;
             } else {
-                var frame = StackWalker.getInstance().walk(frames -> frames.skip(1)
-                        .filter(BootloaderCommandTestBase::isTestFrame)
-                        .findFirst()
-                        .orElseThrow());
+                var frame = StackWalker.getInstance()
+                        .walk(frames -> frames.skip(1)
+                                .filter(BootloaderCommandTestBase::isTestFrame)
+                                .findFirst()
+                                .orElseThrow());
                 assertNotNull(frame, "No test found");
 
                 var process = start(

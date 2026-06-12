@@ -850,8 +850,9 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
 
             try (NodeValueIndexCursor cursor =
                     ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                IndexNotApplicableKernelException e =
-                        assertThrows(IndexNotApplicableKernelException.class, () -> ktx.dataRead()
+                IndexNotApplicableKernelException e = assertThrows(
+                        IndexNotApplicableKernelException.class,
+                        () -> ktx.dataRead()
                                 .nodeIndexSeek(
                                         ktx.queryContext(),
                                         indexSession,
@@ -900,8 +901,9 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
 
             try (NodeValueIndexCursor cursor =
                     ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                IndexNotApplicableKernelException e =
-                        assertThrows(IndexNotApplicableKernelException.class, () -> ktx.dataRead()
+                IndexNotApplicableKernelException e = assertThrows(
+                        IndexNotApplicableKernelException.class,
+                        () -> ktx.dataRead()
                                 .lockingNodeUniqueIndexSeek(
                                         ktx.dataRead().indexReadSession(index),
                                         cursor,
@@ -944,8 +946,9 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
 
             try (RelationshipValueIndexCursor cursor =
                     ktx.cursors().allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                IndexNotApplicableKernelException e =
-                        assertThrows(IndexNotApplicableKernelException.class, () -> ktx.dataRead()
+                IndexNotApplicableKernelException e = assertThrows(
+                        IndexNotApplicableKernelException.class,
+                        () -> ktx.dataRead()
                                 .lockingRelationshipUniqueIndexSeek(
                                         ktx.dataRead().indexReadSession(index),
                                         cursor,

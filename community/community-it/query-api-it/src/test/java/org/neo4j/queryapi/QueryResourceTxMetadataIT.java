@@ -178,8 +178,9 @@ class QueryResourceTxMetadataIT {
                 "$type",
                 "Map",
                 "_value",
-                map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, value -> value.getValue()
-                        .asMap())));
+                map.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey, value -> value.getValue().asMap())));
     }
 
     public static Stream<Arguments> paramTypesWithoutTypeInfo() {

@@ -189,8 +189,9 @@ class ProduceNoopCommandsIT {
                 .build();
 
         // when
-        onNode(id, (tx, node) -> node.createRelationshipTo(tx.createNode(), TYPE)
-                .delete());
+        onNode(
+                id,
+                (tx, node) -> node.createRelationshipTo(tx.createNode(), TYPE).delete());
     }
 
     private static void deleteRelationship(Node node, int index) {

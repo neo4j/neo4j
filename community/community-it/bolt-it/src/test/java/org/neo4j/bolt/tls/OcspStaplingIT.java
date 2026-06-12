@@ -173,14 +173,17 @@ class OcspStaplingIT {
 
             var ocspResponsesSeen = connection.getSeenOcspResponses();
 
-            assertThat(ocspResponsesSeen).hasSize(2).allSatisfy(response -> assertThat(response.getResponses()[0])
-                    .satisfies(res -> {
-                        // checking all responses come back OK ( null means the certificate hasn't been revoked! )
-                        assertThat(res.getCertStatus()).isNull();
+            assertThat(ocspResponsesSeen)
+                    .hasSize(2)
+                    .allSatisfy(response -> assertThat(response.getResponses()[0])
+                            .satisfies(res -> {
+                                // checking all responses come back OK ( null means the certificate hasn't been revoked!
+                                // )
+                                assertThat(res.getCertStatus()).isNull();
 
-                        // responses match the certificates seen
-                        assertThat(res.getCertID().getSerialNumber()).isIn(certificateSerialNumbersSeen);
-                    }));
+                                // responses match the certificates seen
+                                assertThat(res.getCertID().getSerialNumber()).isIn(certificateSerialNumbersSeen);
+                            }));
         }
     }
 

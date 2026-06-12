@@ -51,8 +51,9 @@ public class VectorReaderTest {
             throws PackstreamReaderException {
         var value = read(buf);
 
-        assertThat(value).asInstanceOf(type(type)).satisfies(input -> assertThat(input)
-                .isEqualTo(expected));
+        assertThat(value)
+                .asInstanceOf(type(type))
+                .satisfies(input -> assertThat(input).isEqualTo(expected));
     }
 
     private VectorValue read(PackstreamBuf buf) throws PackstreamReaderException {

@@ -452,9 +452,10 @@ class CommunityTopologyGraphComponentTest {
                 .describedAs("No aliases found for database: " + dbName)
                 .isNotNull();
         assertThat(dbAlias.getProperty(PRIMARY_PROPERTY)).isEqualTo(true);
-        Iterables.forEach(dbAlias.getRelationships(TARGETS_RELATIONSHIP), target -> assertThat(
-                        target.getEndNode().hasLabel(DATABASE_LABEL))
-                .isTrue());
+        Iterables.forEach(
+                dbAlias.getRelationships(TARGETS_RELATIONSHIP),
+                target ->
+                        assertThat(target.getEndNode().hasLabel(DATABASE_LABEL)).isTrue());
     }
 
     private static void setComponentVersionTo(int n) throws Exception {

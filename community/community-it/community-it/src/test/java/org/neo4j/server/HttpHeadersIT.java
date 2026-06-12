@@ -126,8 +126,9 @@ class HttpHeadersIT extends ExclusiveWebContainerTestBase {
         assertNull(headers.get(SERVER.asString())); // no 'Server' header
 
         for (var values : headers.values()) {
-            assertFalse(values.stream().anyMatch(value -> value.toLowerCase(Locale.ROOT)
-                    .contains("jetty"))); // no 'jetty' in other header values
+            assertFalse(values.stream()
+                    .anyMatch(value ->
+                            value.toLowerCase(Locale.ROOT).contains("jetty"))); // no 'jetty' in other header values
         }
     }
 

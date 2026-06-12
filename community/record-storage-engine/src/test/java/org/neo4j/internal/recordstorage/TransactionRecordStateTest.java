@@ -427,23 +427,25 @@ class TransactionRecordStateTest {
 
         // THEN
         StorageEngineTransaction representation = transaction(storeCursors, recordState);
-        representation.commandBatch().accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
-            @Override
-            public boolean visitPropertyCommand(PropertyCommand command) {
-                // THEN
-                verifyPropertyRecord(command.getBefore());
-                verifyPropertyRecord(command.getAfter());
-                return false;
-            }
-
-            private void verifyPropertyRecord(PropertyRecord record) {
-                if (record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue()) {
-                    for (PropertyBlock block : record.propertyBlocks()) {
-                        assertTrue(block.isLight());
+        representation
+                .commandBatch()
+                .accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
+                    @Override
+                    public boolean visitPropertyCommand(PropertyCommand command) {
+                        // THEN
+                        verifyPropertyRecord(command.getBefore());
+                        verifyPropertyRecord(command.getAfter());
+                        return false;
                     }
-                }
-            }
-        }));
+
+                    private void verifyPropertyRecord(PropertyRecord record) {
+                        if (record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue()) {
+                            for (PropertyBlock block : record.propertyBlocks()) {
+                                assertTrue(block.isLight());
+                            }
+                        }
+                    }
+                }));
     }
 
     @Test
@@ -987,19 +989,20 @@ class TransactionRecordStateTest {
         // The dynamic label record in before should be the same id as in after, and should be in use
         final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
 
-        ptx.commandBatch().accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
-            @Override
-            public boolean visitRelationshipGroupCommand(Command.RelationshipGroupCommand command) {
-                if (command.getAfter().inUse()) {
-                    if (!foundRelationshipGroupInUse.get()) {
-                        foundRelationshipGroupInUse.set(true);
-                    } else {
-                        fail();
+        ptx.commandBatch()
+                .accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
+                    @Override
+                    public boolean visitRelationshipGroupCommand(Command.RelationshipGroupCommand command) {
+                        if (command.getAfter().inUse()) {
+                            if (!foundRelationshipGroupInUse.get()) {
+                                foundRelationshipGroupInUse.set(true);
+                            } else {
+                                fail();
+                            }
+                        }
+                        return false;
                     }
-                }
-                return false;
-            }
-        }));
+                }));
         assertTrue(foundRelationshipGroupInUse.get(), "Did not create relationship group command");
     }
 

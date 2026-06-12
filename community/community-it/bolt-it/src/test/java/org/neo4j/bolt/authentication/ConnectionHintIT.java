@@ -54,10 +54,11 @@ class ConnectionHintIT {
     void shouldIncludeTelemetryHintOnCompatibleVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .extractingByKey("hints")
-                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                .containsEntry("telemetry.enabled", true));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .extractingByKey("hints")
+                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                        .containsEntry("telemetry.enabled", true));
     }
 
     @ProtocolTest
@@ -65,10 +66,11 @@ class ConnectionHintIT {
     void shouldExcludeTelemetryHintOnLegacyVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .extractingByKey("hints")
-                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                .doesNotContainKey("telemetry.enabled"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .extractingByKey("hints")
+                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                        .doesNotContainKey("telemetry.enabled"));
     }
 
     @ProtocolTest
@@ -76,10 +78,11 @@ class ConnectionHintIT {
     void shouldIncludeSSRHintOnCompatibleVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .extractingByKey("hints")
-                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                .containsEntry("ssr.enabled", true));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .extractingByKey("hints")
+                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                        .containsEntry("ssr.enabled", true));
     }
 
     @ProtocolTest
@@ -87,9 +90,10 @@ class ConnectionHintIT {
     void shouldExcludeSSRHintOnLegacyVersions(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .extractingByKey("hints")
-                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                .doesNotContainKey("ssr.enabled"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .extractingByKey("hints")
+                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                        .doesNotContainKey("ssr.enabled"));
     }
 }

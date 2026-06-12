@@ -401,8 +401,9 @@ class IndexRecoveryIT {
                         any(),
                         any());
         assertThat(writer.batchedUpdates)
-                .satisfiesAnyOf(w -> assertThat(w).isEqualTo(expectedUpdates.eager()), w -> assertThat(w)
-                        .isEqualTo(expectedUpdates.lazy()));
+                .satisfiesAnyOf(
+                        w -> assertThat(w).isEqualTo(expectedUpdates.eager()),
+                        w -> assertThat(w).isEqualTo(expectedUpdates.lazy()));
     }
 
     @Test

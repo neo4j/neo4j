@@ -121,20 +121,24 @@ public class SystemGraphComponents {
 
     private List<SystemGraphComponent> componentsToUpgrade(GraphDatabaseService system) throws Exception {
         List<SystemGraphComponent> componentsToUpgrade = new ArrayList<>();
-        SystemGraphComponent.executeWithFullAccess(system, tx -> componentMap.values().stream()
-                .filter(c -> {
-                    SystemGraphComponent.Status status = c.detect(tx);
-                    return status == SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE
-                            || status == SystemGraphComponent.Status.REQUIRES_UPGRADE
-                            ||
-                            // New components are not currently initialised in cluster deployment when new binaries are
-                            // booted on top of an existing database.
-                            // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to
-                            // CURRENT must be supported
-                            // as a workaround until it is fixed.
-                            status == SystemGraphComponent.Status.UNINITIALIZED;
-                })
-                .forEach(componentsToUpgrade::add));
+        SystemGraphComponent.executeWithFullAccess(
+                system,
+                tx -> componentMap.values().stream()
+                        .filter(c -> {
+                            SystemGraphComponent.Status status = c.detect(tx);
+                            return status == SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE
+                                    || status == SystemGraphComponent.Status.REQUIRES_UPGRADE
+                                    ||
+                                    // New components are not currently initialised in cluster deployment when new
+                                    // binaries are
+                                    // booted on top of an existing database.
+                                    // This is a known shortcoming of the lifecycle and a state transfer from
+                                    // UNINITIALIZED to
+                                    // CURRENT must be supported
+                                    // as a workaround until it is fixed.
+                                    status == SystemGraphComponent.Status.UNINITIALIZED;
+                        })
+                        .forEach(componentsToUpgrade::add));
         return componentsToUpgrade;
     }
 

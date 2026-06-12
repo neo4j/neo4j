@@ -247,8 +247,10 @@ public final class HTTP {
         if (contentEncodings != null && (contentEncoding = Iterables.singleOrNull(contentEncodings)) != null) {
             // Specifically, this is never used for character encoding.
             contentEncoding = contentEncoding.toLowerCase();
-            assertThat(contentEncoding).satisfiesAnyOf(s -> assertThat(s).contains("gzip"), s -> assertThat(s)
-                    .contains("deflate"));
+            assertThat(contentEncoding)
+                    .satisfiesAnyOf(
+                            s -> assertThat(s).contains("gzip"),
+                            s -> assertThat(s).contains("deflate"));
             assertThat(contentEncoding).doesNotContain("utf-8");
         }
         return response;

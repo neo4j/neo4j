@@ -398,10 +398,14 @@ class StoreInfoCommandTest {
             throws IOException {
         doReturn(Optional.of(storageEngineFactory))
                 .when(storageEngineSelector)
-                .selectStorageEngine(any(), argThat(dbLayout -> dbLayout.databaseDirectory()
-                        .equals(databaseLayout.databaseDirectory())));
-        doReturn(true).when(storageEngineFactory).storageExists(any(), argThat(dbLayout -> dbLayout.databaseDirectory()
-                .equals(databaseLayout.databaseDirectory())));
+                .selectStorageEngine(
+                        any(),
+                        argThat(dbLayout -> dbLayout.databaseDirectory().equals(databaseLayout.databaseDirectory())));
+        doReturn(true)
+                .when(storageEngineFactory)
+                .storageExists(
+                        any(),
+                        argThat(dbLayout -> dbLayout.databaseDirectory().equals(databaseLayout.databaseDirectory())));
         doReturn(StorageFilesState.recoveredState())
                 .when(storageEngineFactory)
                 .checkStoreFileState(

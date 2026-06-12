@@ -449,9 +449,11 @@ class TestPropertyTypes extends AbstractNeo4jTestCase {
     @Test
     void test4DPointType() {
         try (Transaction transaction = getGraphDb().beginTx()) {
-            assertThrows(InvalidArgumentException.class, () -> transaction
-                    .getNodeByElementId(node1Id)
-                    .setProperty("location", pointValue(CARTESIAN, 1, 1, 1, 1)));
+            assertThrows(
+                    InvalidArgumentException.class,
+                    () -> transaction
+                            .getNodeByElementId(node1Id)
+                            .setProperty("location", pointValue(CARTESIAN, 1, 1, 1, 1)));
         }
     }
 

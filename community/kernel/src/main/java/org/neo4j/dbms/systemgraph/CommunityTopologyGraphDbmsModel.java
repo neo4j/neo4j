@@ -349,28 +349,28 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     private Optional<DatabaseReferenceImpl.VirtualSPD> createVirtualSPDReference(Node alias, Node db) {
-        return CommunityTopologyGraphDbmsModelUtil.ignoreConcurrentDeletes(
-                () -> {
-                    var spdAliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
-                    NamedDatabaseId spdNamedDatabaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
+        return CommunityTopologyGraphDbmsModelUtil.ignoreConcurrentDeletes(() -> {
+            var spdAliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
+            NamedDatabaseId spdNamedDatabaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
 
-                    var graphShard = db
+            var graphShard =
+                    db
                             .getRelationships(Direction.OUTGOING, TopologyGraphDbmsModel.HAS_GRAPH_SHARD_RELATIONSHIP)
                             .stream()
                             .flatMap(rel -> createSPDGraphShardReference(rel.getEndNode()).stream())
                             .toList();
-                    if (graphShard.isEmpty()) {
-                        return Optional.empty();
-                    }
+            if (graphShard.isEmpty()) {
+                return Optional.empty();
+            }
 
-                    boolean isPrimary = (boolean) alias.getProperty(PRIMARY_PROPERTY);
-                    return Optional.of(new DatabaseReferenceImpl.VirtualSPD(
-                            spdAliasName,
-                            new NormalizedDatabaseName((String) alias.getProperty(NAMESPACE_PROPERTY)),
-                            spdNamedDatabaseId,
-                            graphShard.getFirst(),
-                            isPrimary));
-                });
+            boolean isPrimary = (boolean) alias.getProperty(PRIMARY_PROPERTY);
+            return Optional.of(new DatabaseReferenceImpl.VirtualSPD(
+                    spdAliasName,
+                    new NormalizedDatabaseName((String) alias.getProperty(NAMESPACE_PROPERTY)),
+                    spdNamedDatabaseId,
+                    graphShard.getFirst(),
+                    isPrimary));
+        });
     }
 
     private Optional<DatabaseReferenceImpl.GraphShard> createSPDGraphShardReference(Node alias, Node db) {

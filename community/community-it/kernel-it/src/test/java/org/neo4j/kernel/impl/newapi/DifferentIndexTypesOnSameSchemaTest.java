@@ -141,12 +141,13 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
             @Override
             void createIndexes(GraphDatabaseService db) {
                 try (Transaction tx = db.beginTx()) {
-                    List.of(IndexType.RANGE, IndexType.TEXT, IndexType.POINT).forEach(indexType -> tx.schema()
-                            .indexFor(Label.label(TOKEN))
-                            .on(PROPERTY)
-                            .withName(nameForType(indexType))
-                            .withIndexType(indexType)
-                            .create());
+                    List.of(IndexType.RANGE, IndexType.TEXT, IndexType.POINT)
+                            .forEach(indexType -> tx.schema()
+                                    .indexFor(Label.label(TOKEN))
+                                    .on(PROPERTY)
+                                    .withName(nameForType(indexType))
+                                    .withIndexType(indexType)
+                                    .create());
                     tx.commit();
                 }
                 try (Transaction tx = db.beginTx()) {
@@ -192,12 +193,13 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
             @Override
             void createIndexes(GraphDatabaseService db) {
                 try (Transaction tx = db.beginTx()) {
-                    List.of(IndexType.RANGE, IndexType.TEXT, IndexType.POINT).forEach(indexType -> tx.schema()
-                            .indexFor(RelationshipType.withName(TOKEN))
-                            .on(PROPERTY)
-                            .withName(nameForType(indexType))
-                            .withIndexType(indexType)
-                            .create());
+                    List.of(IndexType.RANGE, IndexType.TEXT, IndexType.POINT)
+                            .forEach(indexType -> tx.schema()
+                                    .indexFor(RelationshipType.withName(TOKEN))
+                                    .on(PROPERTY)
+                                    .withName(nameForType(indexType))
+                                    .withIndexType(indexType)
+                                    .create());
                     tx.commit();
                 }
                 try (Transaction tx = db.beginTx()) {

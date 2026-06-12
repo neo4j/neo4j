@@ -42,9 +42,10 @@ public class NegotiationStateIT {
         fsm.process(messages.hello(), recorder);
 
         // Then
-        assertThat(recorder).hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
-                .containsEntry("server", stringValue("Neo4j/" + Version.getNeo4jVersion()))
-                .containsEntry("connection_id", stringValue("bolt-test")));
+        assertThat(recorder)
+                .hasSuccessResponse(meta -> MapValueAssertions.assertThat(meta)
+                        .containsEntry("server", stringValue("Neo4j/" + Version.getNeo4jVersion()))
+                        .containsEntry("connection_id", stringValue("bolt-test")));
 
         StateMachineHandleAssertions.assertThat(fsm).isInState(States.AUTHENTICATION);
     }

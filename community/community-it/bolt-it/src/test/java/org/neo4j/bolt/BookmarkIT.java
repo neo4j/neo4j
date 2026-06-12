@@ -62,8 +62,9 @@ public class BookmarkIT {
         connection.send(wire.run("CREATE ()"));
         connection.send(wire.pull());
 
-        assertThat(connection).receivesSuccess().receivesSuccess(map -> Assertions.assertThat(map)
-                .containsEntry("bookmark", expectedBookmark));
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccess(map -> Assertions.assertThat(map).containsEntry("bookmark", expectedBookmark));
     }
 
     @ProtocolTest
@@ -81,8 +82,9 @@ public class BookmarkIT {
 
         connection.send(wire.run("CREATE ()")).send(wire.pull());
 
-        assertThat(connection).receivesSuccess().receivesSuccess(meta -> Assertions.assertThat(meta)
-                .doesNotContainKey("bookmark"));
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccess(meta -> Assertions.assertThat(meta).doesNotContainKey("bookmark"));
 
         connection.send(wire.commit());
         assertThat(connection)

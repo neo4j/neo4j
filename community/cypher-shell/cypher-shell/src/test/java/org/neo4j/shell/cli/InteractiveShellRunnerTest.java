@@ -197,8 +197,10 @@ class InteractiveShellRunnerTest {
 
         List<String> history = Files.readAllLines(historyFile);
 
-        assertThat(history).zipSatisfy(Arrays.asList(commands), (entry, cmd) -> assertThat(entry)
-                .endsWith(":" + cmd));
+        assertThat(history)
+                .zipSatisfy(
+                        Arrays.asList(commands),
+                        (entry, cmd) -> assertThat(entry).endsWith(":" + cmd));
         assertThat(historian.getHistory()).containsExactly(commands);
     }
 

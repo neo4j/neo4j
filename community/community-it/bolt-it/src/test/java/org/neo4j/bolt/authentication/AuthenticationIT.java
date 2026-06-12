@@ -193,9 +193,10 @@ class AuthenticationIT {
 
             BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
-            connection.send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-                            singletonMap("password", "secretPassword"))
-                    .withDatabase(SYSTEM_DATABASE_NAME)));
+            connection.send(wire.run(
+                    "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
+                    x -> x.withParameters(singletonMap("password", "secretPassword"))
+                            .withDatabase(SYSTEM_DATABASE_NAME)));
             connection.send(wire.pull());
 
             BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
@@ -399,17 +400,19 @@ class AuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-                                singletonMap("password", "password"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
+                        x -> x.withParameters(singletonMap("password", "password"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
 
         connection
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
-                                singletonMap("password", "password"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
+                        x -> x.withParameters(singletonMap("password", "password"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -434,9 +437,10 @@ class AuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
-                                singletonMap("password", "abcdefgh"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
+                        x -> x.withParameters(singletonMap("password", "abcdefgh"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -478,9 +482,10 @@ class AuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-                                singletonMap("password", "abcdefgh"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
+                        x -> x.withParameters(singletonMap("password", "abcdefgh"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -670,7 +675,8 @@ class AuthenticationIT {
 
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .containsEntry("advertised_address", "my-server.neo4j.io:7688"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(
+                        meta -> assertThat(meta).containsEntry("advertised_address", "my-server.neo4j.io:7688"));
     }
 }

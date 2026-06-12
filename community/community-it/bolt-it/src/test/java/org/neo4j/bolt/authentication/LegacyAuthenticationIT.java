@@ -97,9 +97,10 @@ public class LegacyAuthenticationIT {
 
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .containsKeys("server", "connection_id")
-                .containsEntry("credentials_expired", true));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsKeys("server", "connection_id")
+                        .containsEntry("credentials_expired", true));
     }
 
     @ProtocolTest
@@ -142,9 +143,10 @@ public class LegacyAuthenticationIT {
 
             BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
-            connection.send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-                            singletonMap("password", "secretPassword"))
-                    .withDatabase(SYSTEM_DATABASE_NAME)));
+            connection.send(wire.run(
+                    "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
+                    x -> x.withParameters(singletonMap("password", "secretPassword"))
+                            .withDatabase(SYSTEM_DATABASE_NAME)));
             connection.send(wire.pull());
 
             BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
@@ -243,23 +245,26 @@ public class LegacyAuthenticationIT {
     void shouldFailWhenReusingTheSamePassword(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .containsEntry("credentials_expired", true)
-                .containsKeys("server", "connection_id"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsEntry("credentials_expired", true)
+                        .containsKeys("server", "connection_id"));
 
         connection
                 .send(wire.reset())
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-                                singletonMap("password", "password"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
+                        x -> x.withParameters(singletonMap("password", "password"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
 
         connection
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
-                                singletonMap("password", "password"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
+                        x -> x.withParameters(singletonMap("password", "password"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -271,9 +276,10 @@ public class LegacyAuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
-                                singletonMap("password", "abcdefgh"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
+                        x -> x.withParameters(singletonMap("password", "abcdefgh"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -283,9 +289,10 @@ public class LegacyAuthenticationIT {
     void shouldFailWhenSubmittingEmptyPassword(BoltWire wire, @VersionSelected BoltTestConnection connection) {
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .containsEntry("credentials_expired", true)
-                .containsKeys("server", "connection_id"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsEntry("credentials_expired", true)
+                        .containsKeys("server", "connection_id"));
 
         connection
                 .send(wire.run(
@@ -301,9 +308,10 @@ public class LegacyAuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-                                singletonMap("password", "abcdefgh"))
-                        .withDatabase(SYSTEM_DATABASE_NAME)))
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
+                        x -> x.withParameters(singletonMap("password", "abcdefgh"))
+                                .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -315,9 +323,10 @@ public class LegacyAuthenticationIT {
         // authenticate with the default (expired) credentials
         connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> assertThat(meta)
-                .containsEntry("credentials_expired", true)
-                .containsKeys("server", "connection_id"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> assertThat(meta)
+                        .containsEntry("credentials_expired", true)
+                        .containsKeys("server", "connection_id"));
 
         // attempt to execute a query
         connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());

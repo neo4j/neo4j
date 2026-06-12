@@ -167,8 +167,9 @@ public class ConsistencyCheckServiceIntegrationTest {
     @Test
     void shouldFailOnDatabaseInNeedOfRecovery() throws IOException {
         nonRecoveredDatabase();
-        var e = assertThrows(ConsistencyCheckIncompleteException.class, () -> consistencyCheckService()
-                .runFullConsistencyCheck());
+        var e = assertThrows(
+                ConsistencyCheckIncompleteException.class,
+                () -> consistencyCheckService().runFullConsistencyCheck());
         assertThat(e.getCause().getMessage())
                 .contains("Active logical log detected, this might be a source of inconsistencies.");
     }

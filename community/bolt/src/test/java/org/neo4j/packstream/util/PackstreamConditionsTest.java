@@ -49,7 +49,8 @@ class PackstreamConditionsTest {
     Stream<DynamicTest> requireLengthShouldRejectMismatchingValues() {
         return IntStream.of(1, 2, 4, 5, 7, 9, 42, 84, 128, 255)
                 .mapToObj(expected -> DynamicTest.dynamicTest(
-                        expected + " fields", () -> ErrorGqlStatusObjectAssertions.assertThatThrownBy(
+                        expected + " fields",
+                        () -> ErrorGqlStatusObjectAssertions.assertThatThrownBy(
                                         () -> PackstreamConditions.requireLength(
                                                 new StructHeader(expected + 1, (short) (expected * 2)), expected))
                                 .isInstanceOf(IllegalStructSizeException.class)
@@ -80,9 +81,9 @@ class PackstreamConditionsTest {
     Stream<DynamicTest> requireEmptyShouldRejectNonEmptyStructures() {
         return IntStream.of(1, 2, 4, 5, 7, 9, 42, 84, 128, 255)
                 .mapToObj(length -> new StructHeader(length, (short) (length * 2)))
-                .map(header ->
-                        DynamicTest.dynamicTest(header.length() + " fields", () -> Assertions.assertThatExceptionOfType(
-                                        IllegalStructSizeException.class)
+                .map(header -> DynamicTest.dynamicTest(
+                        header.length() + " fields",
+                        () -> Assertions.assertThatExceptionOfType(IllegalStructSizeException.class)
                                 .isThrownBy(() -> PackstreamConditions.requireEmpty(header))
                                 .withMessage(useNewMessage(
                                                 "08N11: The request is invalid and could not be processed by the server. See cause for further details.")
@@ -94,10 +95,11 @@ class PackstreamConditionsTest {
 
     @TestFactory
     Stream<DynamicTest> requireNonNullShouldAcceptNonNullValues() {
-        return Stream.of("foo", "bar", "baz").flatMap(fieldName -> Stream.of(42, 84L, "potato", new Object())
-                .map(fieldValue -> DynamicTest.dynamicTest(
-                        fieldName + " = " + fieldValue,
-                        () -> PackstreamConditions.requireNonNull(fieldName, fieldValue))));
+        return Stream.of("foo", "bar", "baz")
+                .flatMap(fieldName -> Stream.of(42, 84L, "potato", new Object())
+                        .map(fieldValue -> DynamicTest.dynamicTest(
+                                fieldName + " = " + fieldValue,
+                                () -> PackstreamConditions.requireNonNull(fieldName, fieldValue))));
     }
 
     @TestFactory
@@ -113,7 +115,8 @@ class PackstreamConditionsTest {
     Stream<DynamicTest> requireNonNullShouldRejectNullValues() {
         return Stream.of("foo", "bar", "baz")
                 .map(fieldName -> DynamicTest.dynamicTest(
-                        fieldName + " = null", () -> ErrorGqlStatusObjectAssertions.assertThatThrownBy(
+                        fieldName + " = null",
+                        () -> ErrorGqlStatusObjectAssertions.assertThatThrownBy(
                                         () -> PackstreamConditions.requireNonNull(fieldName, null))
                                 .isInstanceOf(IllegalStructArgumentException.class)
                                 .hasMessage(useNewMessage("08N06: General network protocol error.")
@@ -137,7 +140,8 @@ class PackstreamConditionsTest {
     Stream<DynamicTest> requireNonNullShouldRejectNoneValues() {
         return Stream.of("foo", "bar", "baz")
                 .map(fieldName -> DynamicTest.dynamicTest(
-                        fieldName + " = null", () -> ErrorGqlStatusObjectAssertions.assertThatThrownBy(
+                        fieldName + " = null",
+                        () -> ErrorGqlStatusObjectAssertions.assertThatThrownBy(
                                         () -> PackstreamConditions.requireNonNullValue(fieldName, Values.NO_VALUE))
                                 .isInstanceOf(IllegalStructArgumentException.class)
                                 .hasMessage(useNewMessage("08N06: General network protocol error.")

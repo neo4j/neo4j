@@ -114,8 +114,9 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
     void processProviders() {
         var dependencies = new CapabilityProviderDependencies();
         dependencies.register(Configuration.class, () -> resolver.resolveDependency(Configuration.class));
-        dependencies.register(InternalLog.class, () -> resolver.resolveDependency(LogService.class)
-                .getUserLog(Capabilities.class));
+        dependencies.register(
+                InternalLog.class,
+                () -> resolver.resolveDependency(LogService.class).getUserLog(Capabilities.class));
         dependencies.register(
                 DatabaseManagementService.class, () -> resolver.resolveDependency(DatabaseManagementService.class));
 

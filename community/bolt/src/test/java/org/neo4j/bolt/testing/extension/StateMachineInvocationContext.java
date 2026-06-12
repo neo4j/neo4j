@@ -73,9 +73,11 @@ public class StateMachineInvocationContext implements TestTemplateInvocationCont
                         () -> new ResponseRecorder(this.fsmProvider.protocol().metadataHandler())),
                 new SupplierParameterResolver<>(
                         TransactionIdProvider.class, ctx -> new TransactionIdProvider(ctx, this.dependencyProvider)),
-                new SupplierParameterResolver(TransactionManager.class, ctx -> this.dependencyProvider
-                        .transactionManager()
-                        .orElseThrow(() -> new ParameterResolutionException(
-                                "TransactionManager is not exposed by this dependency provider"))));
+                new SupplierParameterResolver(
+                        TransactionManager.class,
+                        ctx -> this.dependencyProvider
+                                .transactionManager()
+                                .orElseThrow(() -> new ParameterResolutionException(
+                                        "TransactionManager is not exposed by this dependency provider"))));
     }
 }

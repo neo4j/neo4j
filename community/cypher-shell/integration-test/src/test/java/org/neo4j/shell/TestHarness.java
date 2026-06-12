@@ -192,8 +192,9 @@ public class TestHarness {
         """;
         return runInDbAndReturn("", shell -> {
             Optional<BoltResult> result = shell.runCypher(query, Collections.emptyMap(), TransactionType.USER_ACTION);
-            return result.map(boltResult -> boltResult.getRecords().stream().anyMatch(record -> "community"
-                            .equalsIgnoreCase(record.get("edition").asString())))
+            return result.map(boltResult -> boltResult.getRecords().stream()
+                            .anyMatch(record -> "community"
+                                    .equalsIgnoreCase(record.get("edition").asString())))
                     .orElse(false);
         });
     }

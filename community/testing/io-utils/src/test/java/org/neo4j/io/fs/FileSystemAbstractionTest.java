@@ -921,8 +921,9 @@ public abstract class FileSystemAbstractionTest {
         Path target = path.resolve("target");
         fsa.write(target).close();
 
-        assertThrows(FileAlreadyExistsException.class, () -> fsa.openAsOutputStream(target, Set.of(CREATE_NEW, WRITE))
-                .close());
+        assertThrows(
+                FileAlreadyExistsException.class,
+                () -> fsa.openAsOutputStream(target, Set.of(CREATE_NEW, WRITE)).close());
     }
 
     @Test

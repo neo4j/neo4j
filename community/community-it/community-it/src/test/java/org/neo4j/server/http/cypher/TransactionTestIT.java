@@ -105,8 +105,9 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase {
 
         // Then
         Map<String, Object> result = jsonToMap(response.entity());
-        List rest = (ArrayList)
-                ((Map) ((ArrayList) ((Map) ((ArrayList) result.get("results")).get(0)).get("data")).get(0)).get("rest");
+        List rest =
+                (ArrayList) ((Map) ((ArrayList) ((Map) ((ArrayList) result.get("results")).get(0)).get("data")).get(0))
+                        .get("rest");
         String selfUri = (String) ((Map) rest.get(0)).get("self");
         assertTrue(selfUri.startsWith(dbUri()));
         assertNoErrors(result);

@@ -174,12 +174,16 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             this.initializeSystemGraphSchema(system);
         } else if (currentVersion.migrationSupported()) {
             debugLog.info("Upgrading security graph to latest version");
-            SystemGraphComponent.executeWithFullAccess(system, tx -> knownUserSecurityComponentVersions
-                    .latestComponentVersion()
-                    .upgradeSecurityGraph(tx, currentVersion.version));
-            SystemGraphComponent.executeWithFullAccess(system, tx -> knownUserSecurityComponentVersions
-                    .latestComponentVersion()
-                    .upgradeSecurityGraphSchema(tx, currentVersion.version));
+            SystemGraphComponent.executeWithFullAccess(
+                    system,
+                    tx -> knownUserSecurityComponentVersions
+                            .latestComponentVersion()
+                            .upgradeSecurityGraph(tx, currentVersion.version));
+            SystemGraphComponent.executeWithFullAccess(
+                    system,
+                    tx -> knownUserSecurityComponentVersions
+                            .latestComponentVersion()
+                            .upgradeSecurityGraphSchema(tx, currentVersion.version));
         } else {
             throw currentVersion.unsupported();
         }

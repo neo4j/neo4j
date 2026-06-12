@@ -110,8 +110,9 @@ public class FileVectorEmbeddingFullPathTest implements GenAITestExtension {
     @Test
     void shouldEmbedLocalFile() {
         var result = db.executeTransactionally(
-                EMBED_QUERY, Map.of("file", testFile.toUri().toString()), res -> res.stream()
-                        .toList());
+                EMBED_QUERY,
+                Map.of("file", testFile.toUri().toString()),
+                res -> res.stream().toList());
 
         assertThat(result).isNotEmpty();
         var row = result.getFirst();

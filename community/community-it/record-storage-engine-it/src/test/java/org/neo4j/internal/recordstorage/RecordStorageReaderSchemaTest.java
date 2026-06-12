@@ -73,9 +73,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase {
         Set<ConstraintDescriptor> expectedConstraints =
                 asSet(uniqueConstraintDescriptor(label1, propertyKey), uniqueConstraintDescriptor(label2, propertyKey));
 
-        assertThat(constraints).allSatisfy(constraint -> assertThat(constraint)
-                .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
-                .isIn(expectedConstraints));
+        assertThat(constraints)
+                .allSatisfy(constraint -> assertThat(constraint)
+                        .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
+                        .isIn(expectedConstraints));
     }
 
     @Test
@@ -91,9 +92,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase {
         // Then
         Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertThat(constraints).allSatisfy(constraint -> assertThat(constraint)
-                .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
-                .isIn(expectedConstraints));
+        assertThat(constraints)
+                .allSatisfy(constraint -> assertThat(constraint)
+                        .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
+                        .isIn(expectedConstraints));
     }
 
     @Test
@@ -169,9 +171,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase {
         // Then
         Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertThat(constraints).allSatisfy(constraint -> assertThat(constraint)
-                .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
-                .isIn(expectedConstraints));
+        assertThat(constraints)
+                .allSatisfy(constraint -> assertThat(constraint)
+                        .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
+                        .isIn(expectedConstraints));
     }
 
     @Test
@@ -188,9 +191,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase {
         // Then
         Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertThat(constraints).allSatisfy(constraint -> assertThat(constraint)
-                .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
-                .isIn(expectedConstraints));
+        assertThat(constraints)
+                .allSatisfy(constraint -> assertThat(constraint)
+                        .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
+                        .isIn(expectedConstraints));
     }
 
     @Test
@@ -206,9 +210,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase {
         // Then
         Set<ConstraintDescriptor> expectedConstraints = asSet(uniqueConstraintDescriptor(label1, propertyKey));
 
-        assertThat(constraints).allSatisfy(constraint -> assertThat(constraint)
-                .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
-                .isIn(expectedConstraints));
+        assertThat(constraints)
+                .allSatisfy(constraint -> assertThat(constraint)
+                        .usingEquals(ConstraintDescriptor::equalsIgnoreName, "Ignoring constraint name")
+                        .isIn(expectedConstraints));
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor(Label label, String propertyKey) {

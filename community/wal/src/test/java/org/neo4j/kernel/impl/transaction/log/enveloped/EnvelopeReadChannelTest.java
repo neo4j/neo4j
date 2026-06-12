@@ -153,8 +153,11 @@ class EnvelopeReadChannelTest {
                 + bytesValue.length
                 + byteBufferValue.remaining();
 
-        final var payloadChecksum =
-                buildChecksum(EnvelopeType.FULL, payloadLength, BASE_TX_CHECKSUM, (buffer) -> buffer.put(byteValue)
+        final var payloadChecksum = buildChecksum(
+                EnvelopeType.FULL,
+                payloadLength,
+                BASE_TX_CHECKSUM,
+                (buffer) -> buffer.put(byteValue)
                         .putShort(shortValue)
                         .putInt(intValue)
                         .putLong(longValue)
@@ -370,10 +373,11 @@ class EnvelopeReadChannelTest {
             buffer.putLong(l1);
             buffer.put(zeros);
 
-            final var endChecksum =
-                    buildChecksum(EnvelopeType.END, Long.BYTES * 2, beginChecksum, (crcBuffer) -> crcBuffer
-                            .putLong(l2)
-                            .putLong(l3));
+            final var endChecksum = buildChecksum(
+                    EnvelopeType.END,
+                    Long.BYTES * 2,
+                    beginChecksum,
+                    (crcBuffer) -> crcBuffer.putLong(l2).putLong(l3));
             writeLogEnvelopeHeader(buffer, endChecksum, EnvelopeType.END, Long.BYTES * 2, beginChecksum, START_INDEX);
             buffer.putLong(l2).putLong(l3);
         });
@@ -2018,11 +2022,11 @@ class EnvelopeReadChannelTest {
         final var intValue = 55555;
         final var payloadLength = Integer.BYTES + bytesValue.length + Long.BYTES + Integer.BYTES;
 
-        final var payloadChecksum =
-                buildChecksum(EnvelopeType.FULL, payloadLength, BASE_TX_CHECKSUM, (buffer) -> buffer.putInt(intValue)
-                        .put(bytesValue)
-                        .putLong(1L)
-                        .putInt(intValue));
+        final var payloadChecksum = buildChecksum(
+                EnvelopeType.FULL,
+                payloadLength,
+                BASE_TX_CHECKSUM,
+                (buffer) -> buffer.putInt(intValue).put(bytesValue).putLong(1L).putInt(intValue));
 
         writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);

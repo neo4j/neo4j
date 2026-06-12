@@ -318,9 +318,11 @@ class DiskBufferedIdsTest {
 
     private int numberOfSegments() {
         try {
-            return fs.listFiles(basePath.getParent(), entry -> entry.getFileName()
-                            .toString()
-                            .contains(basePath.getFileName().toString()))
+            return fs.listFiles(
+                            basePath.getParent(),
+                            entry -> entry.getFileName()
+                                    .toString()
+                                    .contains(basePath.getFileName().toString()))
                     .length;
         } catch (IOException e) {
             throw new UncheckedIOException(e);

@@ -138,20 +138,24 @@ class DefaultMetadataHandlerTest extends AbstractMetadataHandlerTest {
                                 .containsEntry("neo4j_code", Values.utf8Value("Neo4j.Test.ThingsHappened"))
                                 .containsEntry("title", Values.utf8Value("Something Happened"))
                                 .containsEntry("description", Values.utf8Value("Notification description"))
-                                .containsEntry("diagnostic_record", diagnosticRecord -> Assertions.assertThat(
-                                                diagnosticRecord)
-                                        .asInstanceOf(MapValueAssertions.mapValue())
-                                        .hasSize(3)
-                                        .containsEntry(
-                                                "_classification",
-                                                Values.utf8Value(NotificationClassification.DEPRECATION.name()))
-                                        .containsEntry("_severity", Values.utf8Value(SeverityLevel.WARNING.name()))
-                                        .containsEntry("_position", position -> Assertions.assertThat(position)
+                                .containsEntry(
+                                        "diagnostic_record",
+                                        diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
                                                 .asInstanceOf(MapValueAssertions.mapValue())
                                                 .hasSize(3)
-                                                .containsEntry("offset", Values.longValue(5))
-                                                .containsEntry("line", Values.longValue(42))
-                                                .containsEntry("column", Values.longValue(3)))),
+                                                .containsEntry(
+                                                        "_classification",
+                                                        Values.utf8Value(NotificationClassification.DEPRECATION.name()))
+                                                .containsEntry(
+                                                        "_severity", Values.utf8Value(SeverityLevel.WARNING.name()))
+                                                .containsEntry(
+                                                        "_position",
+                                                        position -> Assertions.assertThat(position)
+                                                                .asInstanceOf(MapValueAssertions.mapValue())
+                                                                .hasSize(3)
+                                                                .containsEntry("offset", Values.longValue(5))
+                                                                .containsEntry("line", Values.longValue(42))
+                                                                .containsEntry("column", Values.longValue(3)))),
                         Index.atIndex(1))
                 .satisfies(
                         status -> Assertions.assertThat(status)
@@ -164,26 +168,35 @@ class DefaultMetadataHandlerTest extends AbstractMetadataHandlerTest {
                                 .containsEntry("neo4j_code", Values.utf8Value("Neo4j.Test.OtherThings"))
                                 .containsEntry("title", Values.utf8Value("Something else"))
                                 .containsEntry("description", Values.utf8Value("Other notification description"))
-                                .containsEntry("diagnostic_record", diagnosticRecord -> Assertions.assertThat(
-                                                diagnosticRecord)
-                                        .asInstanceOf(MapValueAssertions.mapValue())
-                                        .hasSize(3)
-                                        .containsEntry(
-                                                "_classification",
-                                                Values.utf8Value(NotificationClassification.HINT.name()))
-                                        .containsEntry("_severity", Values.utf8Value(SeverityLevel.INFORMATION.name()))
-                                        .containsEntry("_status_parameters", statusParameters -> Assertions.assertThat(
-                                                        statusParameters)
+                                .containsEntry(
+                                        "diagnostic_record",
+                                        diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
                                                 .asInstanceOf(MapValueAssertions.mapValue())
-                                                .hasSize(4)
-                                                .containsEntry("int", Values.intValue(1))
-                                                .containsEntry("string", Values.utf8Value("2"))
-                                                .containsEntry("boolean", Values.booleanValue(true))
-                                                .containsEntry("listOfString", list -> ListValueAssertions.assertThat(
-                                                                (ListValue) list)
-                                                        .hasSize(2)
-                                                        .contains(Values.utf8Value("b"), Index.atIndex(0))
-                                                        .contains(Values.utf8Value("c"), Index.atIndex(1))))),
+                                                .hasSize(3)
+                                                .containsEntry(
+                                                        "_classification",
+                                                        Values.utf8Value(NotificationClassification.HINT.name()))
+                                                .containsEntry(
+                                                        "_severity", Values.utf8Value(SeverityLevel.INFORMATION.name()))
+                                                .containsEntry(
+                                                        "_status_parameters",
+                                                        statusParameters -> Assertions.assertThat(statusParameters)
+                                                                .asInstanceOf(MapValueAssertions.mapValue())
+                                                                .hasSize(4)
+                                                                .containsEntry("int", Values.intValue(1))
+                                                                .containsEntry("string", Values.utf8Value("2"))
+                                                                .containsEntry("boolean", Values.booleanValue(true))
+                                                                .containsEntry(
+                                                                        "listOfString",
+                                                                        list -> ListValueAssertions.assertThat(
+                                                                                        (ListValue) list)
+                                                                                .hasSize(2)
+                                                                                .contains(
+                                                                                        Values.utf8Value("b"),
+                                                                                        Index.atIndex(0))
+                                                                                .contains(
+                                                                                        Values.utf8Value("c"),
+                                                                                        Index.atIndex(1))))),
                         Index.atIndex(2))
                 .satisfies(
                         status -> Assertions.assertThat(status)
@@ -194,7 +207,8 @@ class DefaultMetadataHandlerTest extends AbstractMetadataHandlerTest {
                                         "status_description",
                                         Values.utf8Value("err?: something error is might not right."))
                                 .containsEntry(
-                                        "diagnostic_record", diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
+                                        "diagnostic_record",
+                                        diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
                                                 .asInstanceOf(MapValueAssertions.mapValue())
                                                 .hasSize(3)
                                                 .containsEntry("OPERATION", Values.utf8Value("A"))

@@ -151,8 +151,9 @@ public class SysInfo implements Command {
         final var clientConfigMap = shell.runCypher5(
                         "CALL dbms.clientConfig() yield name, value", Map.of(), USER_ACTION)
                 .map(result -> result.getRecords().stream()
-                        .collect(toMap(r -> r.get("name").asString(), r -> r.get("value")
-                                .asString())))
+                        .collect(toMap(
+                                r -> r.get("name").asString(),
+                                r -> r.get("value").asString())))
                 .orElseGet(Map::of);
         final var serverMetricsPrefix = ofNullable(clientConfigMap.get("server.metrics.prefix")) // Version 5
                 .or(() -> ofNullable(clientConfigMap.get("metrics.prefix"))) // Version 4

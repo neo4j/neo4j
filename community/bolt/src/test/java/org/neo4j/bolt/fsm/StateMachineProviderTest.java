@@ -44,7 +44,8 @@ public class StateMachineProviderTest {
 
         return BoltProtocol.installed().stream()
                 .map(BoltProtocol::version)
-                .map(version -> DynamicTest.dynamicTest(version.toString(), () -> Assertions.assertThat(fsmVersions)
-                        .contains(version)));
+                .map(version -> DynamicTest.dynamicTest(
+                        version.toString(),
+                        () -> Assertions.assertThat(fsmVersions).contains(version)));
     }
 }

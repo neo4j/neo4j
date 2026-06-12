@@ -1010,8 +1010,9 @@ class TestRelationship extends AbstractNeo4jTestCase {
 
         // When
         try (Transaction tx = db.beginTx()) {
-            assertThrows(NotFoundException.class, () -> tx.getRelationshipByElementId(relId)
-                    .delete());
+            assertThrows(
+                    NotFoundException.class,
+                    () -> tx.getRelationshipByElementId(relId).delete());
         }
     }
 }

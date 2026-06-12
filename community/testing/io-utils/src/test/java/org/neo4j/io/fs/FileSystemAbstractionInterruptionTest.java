@@ -109,26 +109,30 @@ public class FileSystemAbstractionInterruptionTest {
 
     @Test
     void channelWriteAllByteBuffer() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .writeAll(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).writeAll(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
     }
 
     @Test
     void channelWriteAllByteBufferPosition() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .writeAll(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE), 1));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).writeAll(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE), 1));
     }
 
     @Test
     void channelReadByteBuffer() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .read(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).read(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
     }
 
     @Test
     void channelWriteByteBuffer() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .write(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).write(allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
     }
 
     @Test
@@ -143,26 +147,30 @@ public class FileSystemAbstractionInterruptionTest {
 
     @Test
     void channelWriteByteBuffersOffsetLength() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .write(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}, 0, 1));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).write(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}, 0, 1));
     }
 
     @Test
     void channelWriteByteBuffers() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .write(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).write(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}));
     }
 
     @Test
     void channelReadByteBuffersOffsetLength() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .read(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}, 0, 1));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).read(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}, 0, 1));
     }
 
     @Test
     void channelReadByteBuffers() {
-        assertThrows(ClosedByInterruptException.class, () -> channel(true)
-                .read(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}));
+        assertThrows(
+                ClosedByInterruptException.class,
+                () -> channel(true).read(new ByteBuffer[] {allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)}));
     }
 
     private StoreChannel channel(boolean channelShouldBeClosed) throws IOException {

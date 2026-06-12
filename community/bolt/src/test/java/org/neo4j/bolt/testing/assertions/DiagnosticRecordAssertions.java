@@ -56,12 +56,14 @@ public final class DiagnosticRecordAssertions extends AbstractMetadataAssertionB
     }
 
     public DiagnosticRecordAssertions hasPosition(long column, long line, long offset) {
-        return this.registerAssertion(POSITION_KEY, actual -> Assertions.assertThat(actual)
-                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-                .containsEntry(POSITION_COLUMN_KEY, column)
-                .containsEntry(POSITION_LINE_KEY, line)
-                .containsEntry(POSITION_OFFSET_KEY, offset)
-                .containsOnlyKeys(POSITION_COLUMN_KEY, POSITION_LINE_KEY, POSITION_OFFSET_KEY));
+        return this.registerAssertion(
+                POSITION_KEY,
+                actual -> Assertions.assertThat(actual)
+                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                        .containsEntry(POSITION_COLUMN_KEY, column)
+                        .containsEntry(POSITION_LINE_KEY, line)
+                        .containsEntry(POSITION_OFFSET_KEY, offset)
+                        .containsOnlyKeys(POSITION_COLUMN_KEY, POSITION_LINE_KEY, POSITION_OFFSET_KEY));
     }
 
     public DiagnosticRecordAssertions isIdempotent() {

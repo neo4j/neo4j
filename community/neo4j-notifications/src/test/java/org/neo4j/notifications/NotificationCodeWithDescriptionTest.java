@@ -2291,9 +2291,11 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void noNotificationShouldHaveUnknownCategory() {
-        stream(NotificationCodeWithDescription.values()).forEach(notification -> assertThat(
-                        ((Status.NotificationCode) notification.getStatus().code()).getNotificationCategory())
-                .isNotEqualTo(NotificationCategory.UNKNOWN.name()));
+        stream(NotificationCodeWithDescription.values())
+                .forEach(notification -> assertThat(((Status.NotificationCode)
+                                        notification.getStatus().code())
+                                .getNotificationCategory())
+                        .isNotEqualTo(NotificationCategory.UNKNOWN.name()));
     }
 
     @Test

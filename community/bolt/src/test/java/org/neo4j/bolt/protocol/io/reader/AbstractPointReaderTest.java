@@ -195,9 +195,10 @@ public abstract class AbstractPointReaderTest {
                 .hasStatusDescription(
                         "error: data exception - unsupported coordinate reference system. Unsupported coordinate reference system (CRS): code=42.");
 
-        assertion.hasCauseInstanceOf(InvalidArgumentException.class).satisfies(ex -> assertThat(
-                        ((IllegalStructArgumentException) ex).getFieldName())
-                .isEqualTo("crs"));
+        assertion
+                .hasCauseInstanceOf(InvalidArgumentException.class)
+                .satisfies(ex -> assertThat(((IllegalStructArgumentException) ex).getFieldName())
+                        .isEqualTo("crs"));
     }
 
     @Test

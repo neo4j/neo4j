@@ -449,10 +449,12 @@ public class DatabaseUpgradeTransactionIT {
         try (Transaction tx = db.beginTx()) {
             Node node = tx.getNodeByElementId(nodeId);
             Map<RelationshipType, Map<Direction, MutableLong>> actualDegrees = new HashMap<>();
-            Iterables.forEach(node.getRelationships(), r -> actualDegrees
-                    .computeIfAbsent(r.getType(), t -> new HashMap<>())
-                    .computeIfAbsent(directionOf(node, r), d -> new MutableLong())
-                    .increment());
+            Iterables.forEach(
+                    node.getRelationships(),
+                    r -> actualDegrees
+                            .computeIfAbsent(r.getType(), t -> new HashMap<>())
+                            .computeIfAbsent(directionOf(node, r), d -> new MutableLong())
+                            .increment());
             MutableLong actualTotalDegree = new MutableLong();
             actualDegrees.forEach((type, directions) -> {
                 long actualTotalDirectionDegree = 0;

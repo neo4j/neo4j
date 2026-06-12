@@ -351,8 +351,8 @@ public class VectorTestUtils {
             return Comparator.comparing(o -> o.getClass().descriptorString()).compare(lhs, rhs);
         });
 
-        Comparator<AnyValue> valueComparator = Comparator.nullsLast(
-                Comparator.comparing(AnyValue::valueRepresentation).thenComparing((lhs, rhs) -> {
+        Comparator<AnyValue> valueComparator = Comparator.nullsLast(Comparator.comparing(AnyValue::valueRepresentation)
+                .thenComparing((lhs, rhs) -> {
                     if (lhs instanceof SequenceValue lhsSequence && rhs instanceof SequenceValue rhsSequence) {
                         int comparison = Integer.compare(lhsSequence.intSize(), rhsSequence.intSize());
                         if (comparison != 0) {

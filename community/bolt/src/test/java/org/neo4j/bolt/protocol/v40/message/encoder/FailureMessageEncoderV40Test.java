@@ -44,11 +44,13 @@ class FailureMessageEncoderV40Test {
                 Error.from(Status.Request.InvalidFormat, "Something went wrong! :(", "Something went wrong! :(")
                         .asBoltMessage());
 
-        PackstreamBufAssertions.assertThat(buf).containsMap(meta -> assertThat(meta)
-                .isNotNull()
-                .hasSize(2)
-                .containsEntry("code", Status.Request.InvalidFormat.code().serialize())
-                .containsEntry("message", "Something went wrong! :("));
+        PackstreamBufAssertions.assertThat(buf)
+                .containsMap(meta -> assertThat(meta)
+                        .isNotNull()
+                        .hasSize(2)
+                        .containsEntry(
+                                "code", Status.Request.InvalidFormat.code().serialize())
+                        .containsEntry("message", "Something went wrong! :("));
 
         assertThat(buf.raw().isReadable()).isFalse();
     }
@@ -66,11 +68,13 @@ class FailureMessageEncoderV40Test {
                 Error.from(new IllegalRequestParameterException(gqlDummy, "Something went wrong! :("))
                         .asBoltMessage());
 
-        PackstreamBufAssertions.assertThat(buf).containsMap(meta -> assertThat(meta)
-                .isNotNull()
-                .hasSize(2)
-                .containsEntry("code", Status.Request.InvalidFormat.code().serialize())
-                .containsEntry("message", "Something went wrong! :("));
+        PackstreamBufAssertions.assertThat(buf)
+                .containsMap(meta -> assertThat(meta)
+                        .isNotNull()
+                        .hasSize(2)
+                        .containsEntry(
+                                "code", Status.Request.InvalidFormat.code().serialize())
+                        .containsEntry("message", "Something went wrong! :("));
 
         assertThat(buf.raw().isReadable()).isFalse();
     }

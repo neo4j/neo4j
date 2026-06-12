@@ -88,12 +88,14 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
             // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents
             // here
             // That is why we create a lazy Iterator and then Iterable
-            writer.addDocuments(updates.size(), () -> updates.stream()
-                    .map(ValueIndexEntryUpdate.class::cast)
-                    .filter(Predicate.not(ignoreStrategy::ignore))
-                    .map(this::updateAsDocument)
-                    .filter(Objects::nonNull)
-                    .iterator());
+            writer.addDocuments(
+                    updates.size(),
+                    () -> updates.stream()
+                            .map(ValueIndexEntryUpdate.class::cast)
+                            .filter(Predicate.not(ignoreStrategy::ignore))
+                            .map(this::updateAsDocument)
+                            .filter(Objects::nonNull)
+                            .iterator());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

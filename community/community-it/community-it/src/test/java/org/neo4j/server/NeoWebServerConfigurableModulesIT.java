@@ -52,9 +52,10 @@ import org.neo4j.test.server.HTTP;
 class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTestBase {
     @Test
     void webServerShouldNotStartWithoutAnyModule() {
-        assertThatExceptionOfType(UnsatisfiedDependencyException.class).isThrownBy(() -> serverOnRandomPorts()
-                .withProperty(http_enabled_modules.name(), "")
-                .build());
+        assertThatExceptionOfType(UnsatisfiedDependencyException.class)
+                .isThrownBy(() -> serverOnRandomPorts()
+                        .withProperty(http_enabled_modules.name(), "")
+                        .build());
     }
 
     @Test

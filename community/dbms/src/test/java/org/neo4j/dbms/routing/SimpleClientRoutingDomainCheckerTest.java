@@ -66,18 +66,20 @@ class SimpleClientRoutingDomainCheckerTest {
 
     private static void assertShouldGetClientRouting(
             ClientRoutingDomainChecker domainChecker, String... expectedDomains) {
-        assertThat(expectedDomains).allSatisfy(s -> assertThat(domainChecker.shouldGetClientRouting(
-                        SocketAddressParser.socketAddress(s, 7687, SocketAddress::new)))
-                .as("should get client routing")
-                .isTrue());
+        assertThat(expectedDomains)
+                .allSatisfy(s -> assertThat(domainChecker.shouldGetClientRouting(
+                                SocketAddressParser.socketAddress(s, 7687, SocketAddress::new)))
+                        .as("should get client routing")
+                        .isTrue());
     }
 
     private static void assertShouldNotGetClientRouting(
             ClientRoutingDomainChecker domainChecker, String... expectedDomains) {
-        assertThat(expectedDomains).allSatisfy(s -> assertThat(domainChecker.shouldGetClientRouting(
-                        SocketAddressParser.socketAddress(s, 7687, SocketAddress::new)))
-                .as("should NOT get client routing")
-                .isFalse());
+        assertThat(expectedDomains)
+                .allSatisfy(s -> assertThat(domainChecker.shouldGetClientRouting(
+                                SocketAddressParser.socketAddress(s, 7687, SocketAddress::new)))
+                        .as("should NOT get client routing")
+                        .isFalse());
     }
 
     @Test

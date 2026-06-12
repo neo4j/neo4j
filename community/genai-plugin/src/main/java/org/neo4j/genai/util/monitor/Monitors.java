@@ -121,9 +121,12 @@ record CachingMonitors(Context ctx, MonitorCache cache) implements Monitors {
 
     @Override
     public <T extends GenAIMonitor> T ofType(Class<T> type) {
-        return cache.getIfAbsentPut(ctx.graphDatabaseAPI().databaseName(), type, () -> ctx.dependencyResolver()
-                .resolveDependency(org.neo4j.monitoring.Monitors.class)
-                .newMonitor(type));
+        return cache.getIfAbsentPut(
+                ctx.graphDatabaseAPI().databaseName(),
+                type,
+                () -> ctx.dependencyResolver()
+                        .resolveDependency(org.neo4j.monitoring.Monitors.class)
+                        .newMonitor(type));
     }
 }
 

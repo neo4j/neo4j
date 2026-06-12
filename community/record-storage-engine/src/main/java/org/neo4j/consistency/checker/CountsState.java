@@ -163,9 +163,11 @@ class CountsState implements AutoCloseable {
      * @param relationship {@link RelationshipRecord} containing type information.
      */
     void incrementRelationshipTypeCounts(RelationshipCounter counter, RelationshipRecord relationship) {
-        counter.processRelationshipTypeCounts(relationship, (s, t, e) -> relationshipCountsStray
-                .computeIfAbsent(relationshipKey(s, t, e), k -> new AtomicLong())
-                .incrementAndGet());
+        counter.processRelationshipTypeCounts(
+                relationship,
+                (s, t, e) -> relationshipCountsStray
+                        .computeIfAbsent(relationshipKey(s, t, e), k -> new AtomicLong())
+                        .incrementAndGet());
     }
 
     /**

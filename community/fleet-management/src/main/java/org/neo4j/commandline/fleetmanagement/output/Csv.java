@@ -27,14 +27,16 @@ public class Csv implements IFormat {
     public void printDiscoveredDbmss(Dbmss discoveredDbmss, PrintStream out) {
         if (!discoveredDbmss.isEmpty()) {
             out.println("DBMS ID,Server ID,Version,Edition,Address");
-            discoveredDbmss.values().forEach(dbms -> dbms.getServers()
-                    .forEach(server -> out.printf(
-                            "%s,%s,%s,%s,%s%n",
-                            dbms.getDbmsId(),
-                            server.getNodeId(),
-                            server.getProductVersion(),
-                            server.getEdition(),
-                            server.getAdvertisedAddress())));
+            discoveredDbmss
+                    .values()
+                    .forEach(dbms -> dbms.getServers()
+                            .forEach(server -> out.printf(
+                                    "%s,%s,%s,%s,%s%n",
+                                    dbms.getDbmsId(),
+                                    server.getNodeId(),
+                                    server.getProductVersion(),
+                                    server.getEdition(),
+                                    server.getAdvertisedAddress())));
         }
     }
 }

@@ -74,8 +74,11 @@ public class LegacyStreamingIT {
                 .packstreamSatisfies(stream -> stream.receivesMessage()
                         .containsStruct(0x71, 1)
                         .containsListHeader(1)
-                        .satisfies(
-                                buf -> assertLegacyNode(buf, 0, "Movie", properties -> Assertions.assertThat(properties)
+                        .satisfies(buf -> assertLegacyNode(
+                                buf,
+                                0,
+                                "Movie",
+                                properties -> Assertions.assertThat(properties)
                                         .hasSize(1)
                                         .containsEntry("title", "The Matrix")))
                         .asBuffer()
@@ -107,9 +110,11 @@ public class LegacyStreamingIT {
                         .containsStruct(0x71, 1)
                         .containsListHeader(1)
                         .containsStruct(0x52, 5)
-                        .satisfies(buf -> assertLegacyIdRelationship(buf, b -> PackstreamBufAssertions.assertThat(b)
-                                .containsInt(0)
-                                .containsInt(1)))
+                        .satisfies(buf -> assertLegacyIdRelationship(
+                                buf,
+                                b -> PackstreamBufAssertions.assertThat(b)
+                                        .containsInt(0)
+                                        .containsInt(1)))
                         .asBuffer()
                         .hasNoRemainingReadableBytes())
                 .receivesSuccess();
@@ -130,12 +135,18 @@ public class LegacyStreamingIT {
                         .containsListHeader(1)
                         .containsStruct(0x50, 3)
                         .containsListHeader(2)
-                        .satisfies(
-                                buf -> assertLegacyNode(buf, 0, "Actor", properties -> Assertions.assertThat(properties)
+                        .satisfies(buf -> assertLegacyNode(
+                                buf,
+                                0,
+                                "Actor",
+                                properties -> Assertions.assertThat(properties)
                                         .hasSize(1)
                                         .containsEntry("name", "Greg")))
-                        .satisfies(
-                                buf -> assertLegacyNode(buf, 1, "Movie", properties -> Assertions.assertThat(properties)
+                        .satisfies(buf -> assertLegacyNode(
+                                buf,
+                                1,
+                                "Movie",
+                                properties -> Assertions.assertThat(properties)
                                         .hasSize(1)
                                         .containsEntry("title", "The Matrix")))
                         .containsListHeader(1)
@@ -152,8 +163,9 @@ public class LegacyStreamingIT {
         wire.enable(Feature.UTC_DATETIME);
         connection.send(wire.hello());
 
-        assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
-                .containsEntry("patch_bolt", List.of(Feature.UTC_DATETIME.getId())));
+        assertThat(connection)
+                .receivesSuccess(meta ->
+                        Assertions.assertThat(meta).containsEntry("patch_bolt", List.of(Feature.UTC_DATETIME.getId())));
     }
 
     @ProtocolTest

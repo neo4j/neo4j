@@ -75,12 +75,14 @@ public abstract class AbstractLegacyMetadataHandlerTest extends AbstractMetadata
                                         Values.utf8Value("Things may have happened and you have been notified"))
                                 .containsEntry("severity", Values.utf8Value("WARNING"))
                                 .containsEntry("category", Values.utf8Value("DEPRECATION"))
-                                .containsEntry("position", position -> Assertions.assertThat(position)
-                                        .asInstanceOf(MapValueAssertions.mapValue())
-                                        .hasSize(3)
-                                        .containsEntry("offset", Values.longValue(5))
-                                        .containsEntry("line", Values.longValue(42))
-                                        .containsEntry("column", Values.longValue(3))),
+                                .containsEntry(
+                                        "position",
+                                        position -> Assertions.assertThat(position)
+                                                .asInstanceOf(MapValueAssertions.mapValue())
+                                                .hasSize(3)
+                                                .containsEntry("offset", Values.longValue(5))
+                                                .containsEntry("line", Values.longValue(42))
+                                                .containsEntry("column", Values.longValue(3))),
                         Index.atIndex(0))
                 .satisfies(
                         notification -> Assertions.assertThat(notification)

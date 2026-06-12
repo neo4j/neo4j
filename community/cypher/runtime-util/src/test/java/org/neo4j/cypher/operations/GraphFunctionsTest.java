@@ -83,8 +83,10 @@ public class GraphFunctionsTest extends CypherFunSuite {
         securityContext = Mockito.mock(SecurityContext.class);
         DatabaseAccessMode accessMode = Mockito.mock(DatabaseAccessMode.class);
         Mockito.when(securityContext.databaseAccessMode()).thenReturn(accessMode);
-        composite.constituents().forEach(constituent -> Mockito.when(accessMode.canAccessDatabase(constituent))
-                .thenReturn(!constituent.fullName().name().contains("hidden")));
+        composite
+                .constituents()
+                .forEach(constituent -> Mockito.when(accessMode.canAccessDatabase(constituent))
+                        .thenReturn(!constituent.fullName().name().contains("hidden")));
     }
 
     private static NamedDatabaseId mockId(UUID id) {

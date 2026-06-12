@@ -80,7 +80,9 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         checkpointFile.rotate();
 
         fillWithCheckpointsWithCallback(
-                5, checkpointAppender, index -> assertThat(getMatchedFilesUnchecked(checkpointFile))
+                5,
+                checkpointAppender,
+                index -> assertThat(getMatchedFilesUnchecked(checkpointFile))
                         .hasSize(index + 2)
                         .allMatch(this::sizeEqualsToPreallocatedFile));
 

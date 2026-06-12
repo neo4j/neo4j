@@ -118,15 +118,18 @@ abstract class AbstractQueryResourceTypedJsonlParametersIT {
                 + typeString + "\", \"_value\": \"" + value.toString() + "\"} }}}}");
 
         assertResponseWithValues(
-                response, fields("$parameter"), recordValues(hasTypeAndValueSatisfies("Map", object -> assertThat(
-                                object)
-                        .asInstanceOf(MAP)
-                        .containsOnlyKeys("mappy")
-                        .extracting("mappy")
-                        .asInstanceOf(MAP)
-                        .containsOnlyKeys(CYPHER_TYPE, CYPHER_VALUE)
-                        .extracting(CYPHER_TYPE, CYPHER_VALUE)
-                        .isEqualTo(List.of(typeString, value.toString())))));
+                response,
+                fields("$parameter"),
+                recordValues(hasTypeAndValueSatisfies(
+                        "Map",
+                        object -> assertThat(object)
+                                .asInstanceOf(MAP)
+                                .containsOnlyKeys("mappy")
+                                .extracting("mappy")
+                                .asInstanceOf(MAP)
+                                .containsOnlyKeys(CYPHER_TYPE, CYPHER_VALUE)
+                                .extracting(CYPHER_TYPE, CYPHER_VALUE)
+                                .isEqualTo(List.of(typeString, value.toString())))));
     }
 
     @Test
@@ -232,14 +235,17 @@ abstract class AbstractQueryResourceTypedJsonlParametersIT {
                 + "\", \"_value\": \"" + value.toString() + "\"}]}}}}");
 
         assertResponseWithValues(
-                response, fields("$parameter"), recordValues(hasTypeAndValueSatisfies("List", object -> assertThat(
-                                object)
-                        .asInstanceOf(LIST)
-                        .hasSize(1)
-                        .element(0)
-                        .asInstanceOf(MAP)
-                        .extracting(CYPHER_TYPE, CYPHER_VALUE)
-                        .isEqualTo(List.of(typeString, value.toString())))));
+                response,
+                fields("$parameter"),
+                recordValues(hasTypeAndValueSatisfies(
+                        "List",
+                        object -> assertThat(object)
+                                .asInstanceOf(LIST)
+                                .hasSize(1)
+                                .element(0)
+                                .asInstanceOf(MAP)
+                                .extracting(CYPHER_TYPE, CYPHER_VALUE)
+                                .isEqualTo(List.of(typeString, value.toString())))));
     }
 
     @Test
@@ -257,20 +263,23 @@ abstract class AbstractQueryResourceTypedJsonlParametersIT {
                         + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": [{\"$type\":\"List\",\"_value\":[{\"$type\":\"Boolean\",\"_value\":true}]}]}}}");
 
         assertResponseWithValues(
-                response, fields("$parameter"), recordValues(hasTypeAndValueSatisfies("List", object -> assertThat(
-                                object)
-                        .asInstanceOf(LIST)
-                        .hasSize(1)
-                        .element(0)
-                        .asInstanceOf(MAP)
-                        .containsOnlyKeys(CYPHER_TYPE, CYPHER_VALUE)
-                        .extracting(CYPHER_VALUE)
-                        .asInstanceOf(LIST)
-                        .hasSize(1)
-                        .element(0)
-                        .asInstanceOf(MAP)
-                        .extracting(CYPHER_TYPE, CYPHER_VALUE)
-                        .isEqualTo(List.of("Boolean", true)))));
+                response,
+                fields("$parameter"),
+                recordValues(hasTypeAndValueSatisfies(
+                        "List",
+                        object -> assertThat(object)
+                                .asInstanceOf(LIST)
+                                .hasSize(1)
+                                .element(0)
+                                .asInstanceOf(MAP)
+                                .containsOnlyKeys(CYPHER_TYPE, CYPHER_VALUE)
+                                .extracting(CYPHER_VALUE)
+                                .asInstanceOf(LIST)
+                                .hasSize(1)
+                                .element(0)
+                                .asInstanceOf(MAP)
+                                .extracting(CYPHER_TYPE, CYPHER_VALUE)
+                                .isEqualTo(List.of("Boolean", true)))));
     }
 
     @Test

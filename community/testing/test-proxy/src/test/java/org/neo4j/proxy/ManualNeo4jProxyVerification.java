@@ -52,14 +52,17 @@ public class ManualNeo4jProxyVerification {
 
                 // then
                 var awaitTime = Duration.ofSeconds(1);
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoServer.clientConnected)
-                        .isTrue());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient.connectToServer)
-                        .isTrue());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoServer.clientConnected).isTrue());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient.connectToServer).isTrue());
                 await().atMost(awaitTime)
                         .untilAsserted(() -> assertThat(echoServer.messageRead).isTrue());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient.messageReceived)
-                        .isTrue());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient.messageReceived).isTrue());
 
                 List.of(echoClient, echoServer, proxy).forEach(IOUtils::closeQuietly);
             }
@@ -83,14 +86,17 @@ public class ManualNeo4jProxyVerification {
 
                 // then
                 var awaitTime = Duration.ofSeconds(1);
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoServer.clientConnected)
-                        .isFalse());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient.connectToServer)
-                        .isFalse());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoServer.clientConnected).isFalse());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient.connectToServer).isFalse());
                 await().atMost(awaitTime)
                         .untilAsserted(() -> assertThat(echoServer.messageRead).isFalse());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient.messageReceived)
-                        .isFalse());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient.messageReceived).isFalse());
 
                 List.of(echoClient, echoServer, proxy).forEach(IOUtils::closeQuietly);
             }
@@ -114,14 +120,17 @@ public class ManualNeo4jProxyVerification {
 
                 // then
                 var awaitTime = Duration.ofSeconds(1);
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoServer1.clientConnected)
-                        .isFalse());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient1.connectToServer)
-                        .isFalse());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoServer1.clientConnected).isFalse());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient1.connectToServer).isFalse());
                 await().atMost(awaitTime)
                         .untilAsserted(() -> assertThat(echoServer1.messageRead).isFalse());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient1.messageReceived)
-                        .isFalse());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient1.messageReceived).isFalse());
                 List.of(echoClient1, echoServer1).forEach(IOUtils::closeQuietly);
 
                 // given new server and client
@@ -136,14 +145,17 @@ public class ManualNeo4jProxyVerification {
                 executor.execute(echoClient2);
 
                 // then
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoServer2.clientConnected)
-                        .isTrue());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient2.connectToServer)
-                        .isTrue());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoServer2.clientConnected).isTrue());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient2.connectToServer).isTrue());
                 await().atMost(awaitTime)
                         .untilAsserted(() -> assertThat(echoServer2.messageRead).isTrue());
-                await().atMost(awaitTime).untilAsserted(() -> assertThat(echoClient2.messageReceived)
-                        .isTrue());
+                await().atMost(awaitTime)
+                        .untilAsserted(
+                                () -> assertThat(echoClient2.messageReceived).isTrue());
                 List.of(echoClient2, echoServer2).forEach(IOUtils::closeQuietly);
             }
         }

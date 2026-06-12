@@ -135,8 +135,10 @@ class LuceneIndexProviderTest {
         TextIndexProvider readOnlyIndexProvider = getLuceneIndexProvider(
                 readOnlyConfig, DirectoryFactory.inMemory(luceneContext), fileSystem, graphDbDir);
 
-        assertThrows(UnsupportedOperationException.class, () -> getIndexAccessor(readOnlyConfig, readOnlyIndexProvider)
-                .newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> getIndexAccessor(readOnlyConfig, readOnlyIndexProvider)
+                        .newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false));
     }
 
     @ParameterizedTest

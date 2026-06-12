@@ -274,9 +274,11 @@ class GraphDatabaseSettingsTest {
             assertEquals(
                     level, Config.defaults(transaction_tracing_level, level).get(transaction_tracing_level));
         }
-        assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
-                .setRaw(Map.of(transaction_tracing_level.name(), "TRACE"))
-                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Config.newBuilder()
+                        .setRaw(Map.of(transaction_tracing_level.name(), "TRACE"))
+                        .build());
     }
 
     @Test
