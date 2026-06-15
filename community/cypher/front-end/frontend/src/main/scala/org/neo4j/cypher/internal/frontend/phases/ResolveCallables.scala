@@ -118,13 +118,13 @@ sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, Bas
         })
       else None
     }
-    val resolved = locallyResolved.getOrElse(
+    val resolved: ResolvedCall[? <: CallClause] = locallyResolved.getOrElse(
       // otherwise resolve to non-local procedure
       ResolvedNonLocalCall(resolver.procedureSignature)(unresolved)
     )
     // We coerce here to ensure that the semantic check run after this rewriter assigns a type
     // to the coercion expressions
-    val coerced = resolved.coerceArguments
+    val coerced: CallClause = resolved.coerceArguments
     coerced
   }
 

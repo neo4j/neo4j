@@ -65,7 +65,7 @@ case object ExtractLocalDefinitions extends Phase[BaseContext, BaseState, BaseSt
     ))
   }
 
-  override def preConditions: Set[Condition] = Set(BaseContains[Statement])
+  override def preConditions: Set[Condition] = Set(BaseContains[Statement]())
 
   override def postConditions: Set[Condition] = Set(LocalCallableDefinitionsExtracted)
 

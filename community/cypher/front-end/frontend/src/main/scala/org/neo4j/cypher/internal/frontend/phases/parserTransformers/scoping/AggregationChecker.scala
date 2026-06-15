@@ -50,7 +50,7 @@ case object AggregationChecker extends VariableCheckerUtil {
   // 42N23
   private def invalidUseOfAggregation(expr: Expression): Option[SemanticError] =
     Option.when(expr.containsAggregate)(
-      SemanticError.aggregateExpressionsInOrderBy(Seq(ExpressionStringifier().apply(expr)), expr.position)
+      SemanticError.aggregateExpressionsInOrderBy(Seq(ExpressionStringifier.apply().apply(expr)), expr.position)
     )
 
   // 42N44
@@ -104,9 +104,9 @@ case object AggregationChecker extends VariableCheckerUtil {
     })
 
     val invalidReferencesInAggregationItems =
-      groups.getOrElse(AggregatingPart, Set.empty).flatMap(s =>
+      groups.getOrElse(AggregatingPart, Seq.empty[WorkingScope]).flatMap(s =>
         findAllInvalidReferences(s, AggregatingPart, inSubExpression = false).toSeq
-      ).toSeq
+      )
 
     val ambiguousReferences =
       Option.when(invalidReferencesInAggregationItems.nonEmpty) {

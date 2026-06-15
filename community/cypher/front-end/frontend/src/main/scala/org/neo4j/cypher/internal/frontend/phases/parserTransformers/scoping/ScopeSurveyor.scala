@@ -110,7 +110,7 @@ case object ScopeSurveyor extends Phase[BaseContext, BaseState, BaseState]
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement])
+  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement]())
 
   override def postConditions: Set[StepSequencer.Condition] = Set(BaseContains[WorkingScope](), UpToDateScopes)
 

@@ -322,11 +322,13 @@ object Span {
 }
 
 case class SeqSpan(parts: Seq[Span]) extends Span {
-  lazy val rawWidth: Int = parts.map(_.rawWidth()).sum
+  private lazy val computedRawWidth: Int = parts.map(_.rawWidth()).sum
+  override def rawWidth(): Int = computedRawWidth
+
   override def literalSpans(): Seq[LiteralSpan] = parts.flatMap(_.literalSpans())
 
   override def rewriteToFixLength(minLength: Int, maxLength: Int): SeqSpan = {
-    if (rawWidth < minLength) {
+    if (rawWidth() < minLength) {
       val parts = literalSpans()
       // fill where fillable
       val (fixedLength, fillers) = parts.foldLeft((0, Seq.empty[FillerLiteral])) {
@@ -350,7 +352,7 @@ case class SeqSpan(parts: Seq[Span]) extends Span {
       } else {
         this
       }
-    } else if (maxLength < rawWidth) {
+    } else if (maxLength < rawWidth()) {
       // shrink where shrinkable
       val parts = literalSpans()
       val (flexLength, flexParts) = parts.foldLeft((0, Seq.empty[LiteralSpan])) {
