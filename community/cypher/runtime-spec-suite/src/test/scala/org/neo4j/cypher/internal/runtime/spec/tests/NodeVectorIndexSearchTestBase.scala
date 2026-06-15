@@ -30,18 +30,22 @@ import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.NonExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.runtime.spec.DriverGqlStatusAdapter.asGqlException
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.GqlExceptionMatcher
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.Neo4jException
+import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
+import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DateTimeValue
 import org.neo4j.values.storable.DateValue
@@ -80,6 +84,7 @@ import java.time.ZoneOffset
 
 import scala.collection.mutable.ArrayBuffer
 import scala.math.Ordering.comparatorToOrdering
+import scala.reflect.ClassTag
 import scala.util.Random
 
 //noinspection ScalaDeprecation,RedundantDefaultArgument
@@ -2557,16 +2562,17 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       ).build()
 
     // then
-    the[InvalidArgumentException] thrownBy consume(execute(
-      logicalQuery,
-      runtime
-    )) shouldBe gqlStatus(
-      GqlStatusInfoCodes.STATUS_22G03,
-      "error: data exception - invalid value type"
-    ).withCause(
-      GqlStatusInfoCodes.STATUS_22N01,
-      "error: data exception - invalid type. Expected the value [42] to be of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, LOCAL TIME, ZONED TIME, LOCAL DATETIME, ZONED DATETIME or DURATION, but was of type LIST<INTEGER>."
-    )
+    assertGqlError[InvalidArgumentException](
+      gqlStatus(
+        GqlStatusInfoCodes.STATUS_22G03,
+        "error: data exception - invalid value type"
+      ).withCause(
+        GqlStatusInfoCodes.STATUS_22N01,
+        "error: data exception - invalid type. Expected the value [42] to be of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, LOCAL TIME, ZONED TIME, LOCAL DATETIME, ZONED DATETIME or DURATION, but was of type LIST<INTEGER>."
+      )
+    ) {
+      consume(execute(logicalQuery, runtime))
+    }
   }
 
   // entity filtering
@@ -2989,23 +2995,41 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    the[InvalidArgumentException] thrownBy consume(execute(
-      logicalQuery,
-      runtime,
-      parameters =
-        Map(
-          "vector" -> randomVector,
-          "list" -> VirtualValues.list(propFilter: _*)
-        )
-    )) shouldBe gqlStatus(
-      GqlStatusInfoCodes.STATUS_22003,
-      "error: data exception - numeric value out of range. The numeric value 1028 is outside the required range."
-    ).withCause(
-      GqlStatusInfoCodes.STATUS_22N03,
-      "error: data exception - specified numeric value out of range. Expected 'size-of-predicate-list' to be of type INTEGER NOT NULL and in the range 0 to 1024 but found 1028.",
-      fuzzyStatusDescr = true
-    )
+    assertGqlError[InvalidArgumentException](
+      gqlStatus(
+        GqlStatusInfoCodes.STATUS_22003,
+        "error: data exception - numeric value out of range. The numeric value 1028 is outside the required range."
+      ).withCause(
+        GqlStatusInfoCodes.STATUS_22N03,
+        "error: data exception - specified numeric value out of range. Expected 'size-of-predicate-list' to be of type INTEGER NOT NULL and in the range 0 to 1024 but found 1028.",
+        fuzzyStatusDescr = true
+      )
+    ) {
+      consume(execute(
+        logicalQuery,
+        runtime,
+        parameters =
+          Map(
+            "vector" -> randomVector,
+            "list" -> VirtualValues.list(propFilter: _*)
+          )
+      ))
+    }
   }
+
+  // Off-SPD asserts the concrete exception type T; under SPD the error crosses the bolt
+  // boundary as a driver type, so we match the GQL status anywhere in the cause chain.
+  private def assertGqlError[T <: Throwable with ErrorGqlStatusObject : ClassTag](
+    matcher: GqlExceptionMatcher
+  )(block: => Unit): Unit =
+    if (runningUnderSpd) {
+      the[Throwable] thrownBy block shouldBe asGqlException(matcher)
+    } else {
+      the[T] thrownBy block shouldBe matcher
+    }
+
+  protected def runningUnderSpd: Boolean =
+    "spd".equals(TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER)
 
   private def booleanVectorGraph(size: Int): Unit = {
     val random = new Random()
