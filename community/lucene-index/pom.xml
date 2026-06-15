@@ -136,4 +136,24 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>analyze</id>
+            <configuration>
+              <ignoredUnusedDeclaredDependencies combine.children="append">
+                <!-- Declared for shading into lucene9-shaded; not referenced from source. -->
+                <ignoredUnusedDeclaredDependency>org.apache.lucene:lucene-backward-codecs</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

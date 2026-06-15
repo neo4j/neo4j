@@ -23,7 +23,6 @@ Apache Software License, Version 2.0
   Jackson-core
   jackson-databind
   Java Native Access
-  Jettison
   JSpecify annotations
   Netty/Common
   org.apiguardian:apiguardian-api

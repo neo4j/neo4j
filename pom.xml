@@ -1976,7 +1976,6 @@
                 <ignoredDependency>org.opentest4j:opentest4j</ignoredDependency>
                 <ignoredDependency>org.assertj:*</ignoredDependency>
 
-                <ignoredDependency>org.codehaus.jettison:jettison</ignoredDependency>
                 <ignoredDependency>com.github.luben:zstd-jni</ignoredDependency>
                 <ignoredDependency>org.neo4j.licensing-proxy:zstd-proxy</ignoredDependency>
               </ignoredDependencies>
@@ -1985,10 +1984,6 @@
                 <ignoredUnusedDeclaredDependency>io.github.json4s:json4s-native_${scala.binary.version}</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-macros-scala3</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-rendering</ignoredUnusedDeclaredDependency>
-                <!-- lucene-backward-codecs are used for shading, not currently for code paths dependency plugin recognises -->
-                <ignoredUnusedDeclaredDependency>org.apache.lucene:lucene-backward-codecs</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>org.apache.directory.server:apacheds-server-integ</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
               <ignoredUsedUndeclaredDependencies>
                 <ignoredUsedUndeclaredDependency>org.apiguardian:apiguardian-api</ignoredUsedUndeclaredDependency>

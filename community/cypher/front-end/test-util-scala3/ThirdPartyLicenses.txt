@@ -14,7 +14,6 @@ Apache Software License, Version 2.0
   Caffeine cache
   IPAddress
   Java Native Access
-  Jettison
   JSpecify annotations
   mockito-4.6
   org.apiguardian:apiguardian-api

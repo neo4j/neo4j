@@ -440,6 +440,10 @@
               <ignoredNonTestScopedDependencies>
                 <ignoredNonTestScopedDependency>org.scala-lang:scala3-library_3</ignoredNonTestScopedDependency>
               </ignoredNonTestScopedDependencies>
+              <ignoredUnusedDeclaredDependencies combine.children="append">
+                <!-- Scala 3 QueryRenderer is referenced from Scala 2 sources; analyzer cannot see the cross-version reference. -->
+                <ignoredUnusedDeclaredDependency>org.neo4j:neo4j-cypher-rendering</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>
         </executions>
