@@ -662,21 +662,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: PatternExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            // Check with Pattern.SemanticContext.Match so that we do not get "Variable not defined" error for new variables ...
-            SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain {
-              // ... and instead check for introduced variables here in an extra check
-              (state: SemanticState) =>
-                {
-                  val errors = x.pattern.element.allVariables.toSeq.collect {
-                    case v
-                      if state.recordedScopes(x).symbol(v.name).isEmpty && !SemanticPatternCheck.variableIsGenerated(
-                        v
-                      ) =>
-                      SemanticError.unboundVariablesInPatternExpression(v.name, v.position)
-                  }
-                  SemanticCheckResult(state, errors)
-                }
-            } chain
+            // Check with Pattern.SemanticContext.Match so that we do not get "Variable not defined" error for new variables
+            SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
               SemanticState.recordCurrentScope(x.pattern)
           } chain
           specifyType(CTList(CTPath), x) chain {

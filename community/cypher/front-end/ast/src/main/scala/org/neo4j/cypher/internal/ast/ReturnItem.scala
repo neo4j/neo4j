@@ -63,7 +63,7 @@ final case class ReturnItems(
             SemanticCheckResult.error(state, SemanticError.variableAlreadyDeclared(variable.name, variable.position))
         }.getOrElse(SemanticCheckResult.success(state))
       })
-    } chain items.semanticCheck chain ensureProjectedToUniqueIds
+    } chain items.semanticCheck
   }
 
   def aliases: Set[LogicalVariable] = items.flatMap(_.alias).toSet
@@ -84,20 +84,6 @@ final case class ReturnItems(
         case None => (state: SemanticState) => SemanticCheckResult(state, Seq.empty)
       }
     )
-
-  private def ensureProjectedToUniqueIds: SemanticCheck = {
-    items.groupBy(_.name).foldSemanticCheck {
-      case (_, groupedItems) if groupedItems.size > 1 =>
-        // Warn on the second item (i.e. the first duplicate)
-        val position = groupedItems(1) match {
-          case a: AliasedReturnItem   => a.variable.position
-          case u: UnaliasedReturnItem => u.expression.position
-        }
-        SemanticError.multipleReturnColumnsWithSameName(position)
-      case _ =>
-        SemanticCheck.success
-    }
-  }
 
   def returnVariables: ReturnVariables = ReturnVariables(includeExisting, items.flatMap(_.alias))
 

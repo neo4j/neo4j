@@ -2205,7 +2205,6 @@ case class Return(
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     super.clauseSpecificSemanticCheck chain
-      checkVariableScope chain
       ProjectionClause.checkAliasedReturnItems(
         returnItems,
         context.msg
@@ -2217,22 +2216,6 @@ case class Return(
 
   def withReturnItems(returnItems: ReturnItems): Return =
     this.copy(returnItems = returnItems)(this.position)
-
-  private def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
-    returnItems match {
-      case ReturnItems(AdditiveProjection, _, _)
-        if s.currentScope.isEmpty && context == ScopeClauseSubqueryCall =>
-        Seq(SemanticError.invalidUseOfReturnStar(position))
-      case ReturnItems(AdditiveProjection, _, _)
-        if s.currentScope.isEmpty && context == QueryWithLocalDefinitions =>
-        Seq(SemanticError.invalidUseOfReturnStar(position))
-      case ReturnItems(AdditiveProjection, _, _)
-        if (s.currentScope.isEmpty && s.currentScope.parent.fold(true)(_.isEmpty))
-          && returnType != ReturnAddedInRewrite =>
-        Seq(SemanticError.invalidUseOfReturnStar(position))
-      case _ =>
-        Seq.empty
-    }
 
   def convertToWith(context: Option[String] = Some("NEXT")): With =
     With(distinct, returnItems, groupBy, orderBy, skip, limit, None, AddedInRewriteGeneral(context))(position)

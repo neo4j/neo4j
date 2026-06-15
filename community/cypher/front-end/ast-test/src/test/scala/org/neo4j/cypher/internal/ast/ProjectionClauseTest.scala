@@ -170,18 +170,6 @@ class ProjectionClauseTest extends CypherFunSuite3 with AstConstructionTestSuppo
     result.errors should be(empty)
   }
 
-  test("RETURN * not allowed when no variables in scope") {
-    // GIVEN CREATE () WITH * CREATE ()
-    val withObj = Return(distinct = false, ReturnItems(AdditiveProjection, Seq()) _, None, None, None, None) _
-
-    // WHEN
-    val beforeState = SemanticState.clean.newChildScope
-    val result = withObj.semanticCheck.run(beforeState)
-
-    // THEN
-    result.errors shouldNot be(empty)
-  }
-
   test("Aggregating queries remove variables from scope") {
     // GIVEN MATCH n WITH n.prop as x, count(*) ORDER BY n.bar
     val orderBy: OrderBy = OrderBy(Seq(

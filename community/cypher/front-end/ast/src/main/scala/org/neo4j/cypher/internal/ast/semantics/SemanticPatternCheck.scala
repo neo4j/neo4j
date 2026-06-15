@@ -242,24 +242,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             case _ => success
           }
 
-        def checkRelVariablesUnknown: SemanticCheck =
-          (state: SemanticState) => {
-            x.element match {
-              case RelationshipChain(_, rel, _) =>
-                rel.variable.flatMap(id => state.symbol(id.name)) match {
-                  case Some(symbol) if symbol.references.size > 1 =>
-                    SemanticCheckResult.error(
-                      state,
-                      SemanticError.relationshipVariableAlreadyBound(x.name, rel.position)
-                    )
-                  case _ =>
-                    SemanticCheckResult.success(state)
-                }
-              case _ =>
-                SemanticCheckResult.success(state)
-            }
-          }
-
         def checkNoQuantifiedPatterns: SemanticCheck = {
           x.element.folder.treeCollect {
             case qp: QuantifiedPath => SemanticError.qppInShortestPath(x.name, qp.position)
@@ -272,7 +254,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           checkContainsSingle chain
           checkKnownEnds chain
           checkLength chain
-          checkRelVariablesUnknown chain
           check(ctx, x.element)
     }
 

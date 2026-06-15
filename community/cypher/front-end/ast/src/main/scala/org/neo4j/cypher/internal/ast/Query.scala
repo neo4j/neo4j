@@ -1189,7 +1189,6 @@ sealed trait Union extends Query {
           SemanticCheck.setState(newState.recordWorkingGraph(state.workingGraph))
         ) chain
         checkSingleQuery(rhs) chain
-        checkColumnNamesAgree chain
         defineUnionVariables chain
         SemanticState.recordCurrentScope(this)
     })
@@ -1316,9 +1315,6 @@ sealed trait Union extends Query {
     // Union defines all return variables in its own scope using defineUnionVariables
     scope.children.last
 
-  // Check that columns names agree between both parts of the union
-  def checkColumnNamesAgree: SemanticCheck
-
   private def checkNoInputDataStreamInsideUnionElement(query: PartQuery): SemanticCheck =
     query
       .clauses
@@ -1355,13 +1351,10 @@ sealed trait Union extends Query {
  * When we do namespacing, we need to convert them the [[ProjectingUnion]].
  * ProjectingUnion is never produced by the parser.
  *
- * This has two reasons:
- * a) We capture how variables are projected from the two final scopes of the parts of the union to the scope
+ * This is because we capture how variables are projected from the two final scopes of the parts of the union to the scope
  * after the union, before the Namespacer changes the names so that the Variable inside and outside of the union have different names
  * and we would not find them any longer. The Namespacer will still change the name, but since we captured the Variable and not the
  * name, we still have the correct projecting information.
- * b) We need to disable `checkColumnNamesAgree` for ProjectingUnion, because the names will actually not agree any more after the namespacing.
- * This is not a problem though, since we would have failed earlier if the names did not agree originally.
  */
 sealed trait UnmappedUnion extends Union {
 
@@ -1398,21 +1391,9 @@ sealed trait UnmappedUnion extends Union {
 
     res.asInstanceOf[UnmappedUnion.this.type]
   }
-
-  override def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
-    val lhsScope = if (lhs.isReturning) lhs.finalScope(state.scope(lhs).getOrElse(Scope.empty)) else Scope.empty
-    val rhsScope = if (rhs.isReturning) rhs.finalScope(state.scope(rhs).getOrElse(Scope.empty)) else Scope.empty
-    val errors =
-      if (lhsScope.symbolNames == rhsScope.symbolNames) Seq.empty
-      else Seq(SemanticError.incompatibleReturnColumns(Union.errorParam, position))
-    SemanticCheckResult(state, errors)
-  }
 }
 
-sealed trait ProjectingUnion extends Union {
-  // If we have a ProjectingUnion we have already checked this before and now they have been rewritten to actually not match.
-  override def checkColumnNamesAgree: SemanticCheck = SemanticCheck.success
-}
+sealed trait ProjectingUnion extends Union
 
 final case class UnionAll(lhs: Query, rhs: PartQuery)(
   val position: InputPosition
@@ -1622,7 +1603,6 @@ case class ConditionalQueryWhen(
 
   private def semanticCheckAbstract(check: QueryUtils => SemanticCheck): SemanticCheck = {
     allBranches.foldSemanticCheck(x => withScopedState(check(x))) chain
-      checkReturns chain
       defineReturnScope chain
       recordCurrentScope(this)
   }
@@ -1634,45 +1614,6 @@ case class ConditionalQueryWhen(
     val scope = headQuery.finalScope(headScope.getOrElse(Scope.empty))
     SemanticCheckResult(result.state.importValuesFromScope(scope).popScope, Seq.empty)
   }
-
-  // Return checks
-  // 1. All conditional queries need to be either returning or unit
-  // 2. There need to be the same number of return values
-  // 3. Column names need to agree
-
-  private def firstNonConformer(f: QueryUtils => Any): Option[PartQuery] = {
-    val firstQueryType = f(branches.head)
-    allBranches.find(f(_) != firstQueryType).map(_.query)
-  }
-
-  private def checkConformingBranches: SemanticCheck =
-    when(firstNonConformer(_.isReturning).isDefined)((state: SemanticState) => {
-      SemanticCheckResult(
-        state,
-        Seq(SemanticError.incompatibleSubqueryType(name, firstNonConformer(_.isReturning).get.position))
-      )
-    })
-
-  private def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
-    val myScope: Scope = state.currentScope.scope
-
-    val scopes = allBranches.zipWithIndex.map { case (b, i) =>
-      (b, if (b.query.isReturning) b.finalScope(myScope.children(i)) else Scope.empty)
-    }
-
-    val errors = scopes.foldLeft(Seq.empty[SemanticError]) { case (errors, (branch, scope)) =>
-      if (scopes.head._2.symbolNames.size != scope.symbolNames.size)
-        errors ++ Seq(SemanticError.incompatibleNumberOfReturnColumns(name, branch.position))
-      else if (scopes.head._2.symbolNames != scope.symbolNames)
-        errors ++ Seq(SemanticError.incompatibleWhenReturnColumns(name, branch.position))
-      else errors
-    }
-    SemanticCheckResult(state, errors)
-  }
-
-  private def checkReturns: SemanticCheck =
-    checkConformingBranches ifOkChain
-      checkColumnNamesAgree
 
   override def checkImportingWith(optional: Boolean): SemanticCheck =
     allBranches.foldSemanticCheck(_.query.checkImportingWith(optional))

@@ -60,6 +60,16 @@ class GQL_42N39_IncompatibleReturnColumnNamesTest extends VariableCheckingWithLo
       Seq("x", "y")
     ),
     TestQuery(
+      """CALL () {
+        |  RETURN 2 AS x, 2 AS y, 2 AS z
+        |  UNION
+        |  RETURN 2 AS y, 2 AS x
+        |}
+        |RETURN x, y""".stripMargin,
+      E42N39,
+      Seq("x", "y")
+    ),
+    TestQuery(
       """CALL db.labels() YIELD label
         |UNION
         |CALL db.labels() YIELD label

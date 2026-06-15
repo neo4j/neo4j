@@ -421,27 +421,6 @@ class SubqueryCallTest extends CypherFunSuite3 with AstConstructionTestSupport {
       .errors.size.shouldEqual(0)
   }
 
-  test("subquery disallows union with different return columns at the end") {
-    // CALL {
-    //   RETURN 2 AS x, 2 AS y, 2 AS z
-    //     UNION
-    //   RETURN 2 AS y, 2 AS x
-    // }
-    // RETURN x, y
-    singleQuery(
-      importingWithSubqueryCall(
-        union(
-          singleQuery(return_(literal(2).as("x"), literal(2).as("y"), literal(2).as("z"))),
-          singleQuery(return_(literal(2).as("y"), literal(2).as("x")))
-        )
-      ),
-      return_(varFor("x").as("x"), varFor("y").as("y"))
-    )
-      .semanticCheck.run(clean)
-      .errors.loneElement
-      .msg.should(include("All sub queries in an UNION must have the same return column names"))
-  }
-
   test("correlated subquery importing variables using leading WITH") {
     // WITH 1 AS x
     // CALL {
