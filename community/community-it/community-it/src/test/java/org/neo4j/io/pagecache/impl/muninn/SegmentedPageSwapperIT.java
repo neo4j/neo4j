@@ -1097,6 +1097,52 @@ class SegmentedPageSwapperIT {
     }
 
     @Test
+    void readFromNotYetExistingSegmentReturnsZeroWithoutGrowingNewSegments() throws IOException {
+        Path baseFile = directory.file("read-missing-segment");
+        int pageInSegment2 = 2 * PAGES_PER_SEGMENT;
+        try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
+            writeRangeViaSwapper(swapper, 0, 1);
+            assertThat(fs.getFileSize(baseFile)).isEqualTo(PAGE_SIZE);
+
+            long buffer = allocateFilled(PAGE_SIZE, (byte) 0xFF);
+            try {
+                assertThat(swapper.read(pageInSegment2, buffer)).isZero();
+                assertPageIsZero(buffer, 0);
+
+                assertThat(fs.getFileSize(baseFile)).isEqualTo(PAGE_SIZE);
+                assertThat(fs.fileExists(segment(baseFile, 1)))
+                        .as("reading a missing segment must not create it")
+                        .isFalse();
+                assertThat(fs.fileExists(segment(baseFile, 2)))
+                        .as("reading a missing segment must not create it")
+                        .isFalse();
+            } finally {
+                freeBuffer(buffer, PAGE_SIZE);
+            }
+        }
+    }
+
+    @Test
+    void readFromNotYetExistingPagesInExistingSegmentReturnsZeroWithoutGrowingSegment() throws IOException {
+        Path baseFile = directory.file("read-resize-segment");
+        int pageInSegment = PAGES_PER_SEGMENT - 1;
+        try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
+            writeRangeViaSwapper(swapper, 0, 1);
+            assertThat(fs.getFileSize(baseFile)).isEqualTo(PAGE_SIZE);
+
+            long buffer = allocateFilled(PAGE_SIZE, (byte) 0xFF);
+            try {
+                assertThat(swapper.read(pageInSegment, buffer)).isZero();
+                assertPageIsZero(buffer, 0);
+                assertThat(fs.fileExists(baseFile)).isTrue();
+                assertThat(fs.getFileSize(baseFile)).isEqualTo(PAGE_SIZE);
+            } finally {
+                freeBuffer(buffer, PAGE_SIZE);
+            }
+        }
+    }
+
+    @Test
     void writeWithinSingleSegment() throws IOException {
         Path baseFile = directory.file("write-single-segment");
         int pages = PAGES_PER_SEGMENT - 1;
@@ -1229,6 +1275,76 @@ class SegmentedPageSwapperIT {
                 assertPageMarkers(baseAddresses[0], 0, 1);
                 assertPageIsZero(baseAddresses[1], 0);
                 assertPageIsZero(baseAddresses[2], 0);
+            } finally {
+                for (int i = 0; i < baseAddresses.length; i++) {
+                    freeBuffer(baseAddresses[i], baseLengths[i]);
+                }
+            }
+        }
+    }
+
+    @Test
+    void readVectoredFromNotYetExistingSegmentReturnsZeroWithoutGrowingStore() throws IOException {
+        Path baseFile = directory.file("read-vec-missing-segment");
+        int startPage = 2 * PAGES_PER_SEGMENT;
+        try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
+            writeRangeViaSwapper(swapper, 0, 1);
+
+            int[] bufferPages = {1, 1};
+            long[] addresses = new long[bufferPages.length];
+            int[] lengths = new int[bufferPages.length];
+            for (int i = 0; i < bufferPages.length; i++) {
+                lengths[i] = bufferPages[i] * PAGE_SIZE;
+                addresses[i] = allocateFilled(lengths[i], (byte) 0xFF);
+            }
+            long[] baseAddresses = addresses.clone();
+            int[] baseLengths = lengths.clone();
+            try {
+                assertThat(swapper.read(startPage, addresses, lengths, bufferPages.length))
+                        .isZero();
+                assertPageIsZero(baseAddresses[0], 0);
+                assertPageIsZero(baseAddresses[1], 0);
+
+                assertThat(fs.fileExists(segment(baseFile, 1))).isFalse();
+                assertThat(fs.fileExists(segment(baseFile, 2))).isFalse();
+            } finally {
+                for (int i = 0; i < baseAddresses.length; i++) {
+                    freeBuffer(baseAddresses[i], baseLengths[i]);
+                }
+            }
+        }
+    }
+
+    @Test
+    void readVectoredReadPartialSegmentAndFailToGrow() throws IOException {
+        Path baseFile = directory.file("read-vec-partial-missing");
+        int startPage = PAGES_PER_SEGMENT - 3;
+        try (PageSwapper swapper = createSegmentedSwapper(baseFile)) {
+            writeRangeViaSwapper(swapper, 0, PAGES_PER_SEGMENT - 1);
+            assertThat(fs.getFileSize(baseFile)).isEqualTo(PAGE_SIZE * (PAGES_PER_SEGMENT - 1));
+
+            int[] bufferPages = {1, 1, 1, 1};
+            long[] addresses = new long[bufferPages.length];
+            int[] lengths = new int[bufferPages.length];
+            for (int i = 0; i < bufferPages.length; i++) {
+                lengths[i] = bufferPages[i] * PAGE_SIZE;
+                addresses[i] = allocateFilled(lengths[i], (byte) 0xFF);
+            }
+            long[] baseAddresses = addresses.clone();
+            int[] baseLengths = lengths.clone();
+            try {
+                assertThat(swapper.read(startPage, addresses, lengths, bufferPages.length))
+                        .as("only the two pages that exist in segment 0 are read")
+                        .isEqualTo(2L * PAGE_SIZE);
+                assertPageMarkers(baseAddresses[0], startPage, 1);
+                assertPageMarkers(baseAddresses[1], startPage + 1, 1);
+                assertPageIsZero(baseAddresses[2], 0);
+                assertPageIsZero(baseAddresses[3], 0);
+
+                assertThat(fs.getFileSize(baseFile)).isEqualTo(PAGE_SIZE * (PAGES_PER_SEGMENT - 1));
+                assertThat(fs.fileExists(segment(baseFile, 1)))
+                        .as("read must not create the next segment")
+                        .isFalse();
             } finally {
                 for (int i = 0; i < baseAddresses.length; i++) {
                     freeBuffer(baseAddresses[i], baseLengths[i]);

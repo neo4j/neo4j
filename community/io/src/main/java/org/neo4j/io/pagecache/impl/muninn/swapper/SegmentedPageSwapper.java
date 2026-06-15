@@ -29,12 +29,14 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.file.Path;
 import java.util.Arrays;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
@@ -99,7 +101,12 @@ public final class SegmentedPageSwapper implements PageSwapper {
 
     @Override
     public long read(long filePageId, long bufferAddress) throws IOException {
-        return segmentAt(segmentIndexFor(filePageId)).read(pageWithinSegment(filePageId), bufferAddress);
+        PageSwapper segmentSwapper = segmentAt(segmentIndexFor(filePageId), true);
+        if (segmentSwapper == null) {
+            UnsafeUtil.setMemory(bufferAddress, filePageSize, MuninnPageCache.ZERO_BYTE);
+            return 0;
+        }
+        return segmentSwapper.read(pageWithinSegment(filePageId), bufferAddress);
     }
 
     @Override
@@ -119,8 +126,13 @@ public final class SegmentedPageSwapper implements PageSwapper {
                 int originalLength = bufferLengths[buffersToRead - 1];
                 bufferLengths[buffersToRead - 1] = Math.toIntExact(bytesLeft - bytesToRead);
 
-                totalBytes += segmentAt(segment)
-                        .read(pageWithinSegment(pageId), bufferAddresses, bufferLengths, buffersToRead);
+                PageSwapper pageSwapper = segmentAt(segment, true);
+                if (pageSwapper == null) {
+                    clearBuffers(bufferAddresses, bufferLengths, buffersToRead);
+                    return totalBytes;
+                }
+                totalBytes +=
+                        pageSwapper.read(pageWithinSegment(pageId), bufferAddresses, bufferLengths, buffersToRead);
 
                 // patching buffer addresses and forcing loop to check current buffer again if we did the partial read
                 int bufferLength = bufferLengths[buffersToRead - 1];
@@ -144,15 +156,27 @@ public final class SegmentedPageSwapper implements PageSwapper {
             }
         }
         if (bytesToRead > 0) {
-            totalBytes +=
-                    segmentAt(segment).read(pageWithinSegment(pageId), bufferAddresses, bufferLengths, buffersToRead);
+            PageSwapper pageSwapper = segmentAt(segment, true);
+            if (pageSwapper != null) {
+                totalBytes +=
+                        pageSwapper.read(pageWithinSegment(pageId), bufferAddresses, bufferLengths, buffersToRead);
+            } else {
+                clearBuffers(bufferAddresses, bufferLengths, buffersToRead);
+                return totalBytes;
+            }
         }
         return totalBytes;
     }
 
+    private static void clearBuffers(long[] bufferAddresses, int[] bufferLengths, int buffersToRead) {
+        for (int j = 0; j < buffersToRead; j++) {
+            UnsafeUtil.setMemory(bufferAddresses[j], bufferLengths[j], MuninnPageCache.ZERO_BYTE);
+        }
+    }
+
     @Override
     public long write(long filePageId, long bufferAddress) throws IOException {
-        return segmentAt(segmentIndexFor(filePageId)).write(pageWithinSegment(filePageId), bufferAddress);
+        return segmentAt(segmentIndexFor(filePageId), false).write(pageWithinSegment(filePageId), bufferAddress);
     }
 
     @Override
@@ -170,7 +194,8 @@ public final class SegmentedPageSwapper implements PageSwapper {
             int segmentIndex = segmentIndexFor(writePageId);
             long pagesLeftInSegment = pagesLeftInSegment(writePageId);
             int writeLength = Math.toIntExact(Math.min(pagesLeftInSegment * filePageSize, bytesToWrite));
-            long writeBytes = segmentAt(segmentIndex).write(pageWithinSegment(writePageId), writeAddress, writeLength);
+            long writeBytes =
+                    segmentAt(segmentIndex, false).write(pageWithinSegment(writePageId), writeAddress, writeLength);
 
             totalWrite += writeBytes;
             bytesToWrite -= writeBytes;
@@ -198,7 +223,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
                 int originalLength = bufferLengths[buffersToWrite - 1];
                 bufferLengths[buffersToWrite - 1] = Math.toIntExact(bytesLeft - bytesToWrite);
 
-                totalBytes += segmentAt(segment)
+                totalBytes += segmentAt(segment, false)
                         .write(pageWithinSegment(pageId), bufferAddresses, bufferLengths, buffersToWrite);
 
                 // patching buffer addresses and forcing loop to check current buffer again if we did the partial write
@@ -224,8 +249,8 @@ public final class SegmentedPageSwapper implements PageSwapper {
             }
         }
         if (bytesToWrite > 0) {
-            totalBytes +=
-                    segmentAt(segment).write(pageWithinSegment(pageId), bufferAddresses, bufferLengths, buffersToWrite);
+            totalBytes += segmentAt(segment, false)
+                    .write(pageWithinSegment(pageId), bufferAddresses, bufferLengths, buffersToWrite);
         }
         return totalBytes;
     }
@@ -233,7 +258,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
     @Override
     public void asyncWrite(AsyncBlockAccessor accessor, long pageRef, long filePageId, long bufferAddress)
             throws IOException {
-        segmentAt(segmentIndexFor(filePageId))
+        segmentAt(segmentIndexFor(filePageId), false)
                 .asyncWrite(accessor, pageRef, pageWithinSegment(filePageId), bufferAddress);
     }
 
@@ -263,7 +288,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
 
                 // Crossing a segment boundary fills the rest of the current segment exactly.
                 int segmentPages = Math.toIntExact(bytesLeft / filePageSize);
-                segmentAt(segment)
+                segmentAt(segment, false)
                         .asyncWrite(
                                 accessor,
                                 pageWithinSegment(pageId),
@@ -299,7 +324,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
             }
         }
         if (bytesToWrite > 0) {
-            segmentAt(segment)
+            segmentAt(segment, false)
                     .asyncWrite(
                             accessor,
                             pageWithinSegment(pageId),
@@ -373,7 +398,7 @@ public final class SegmentedPageSwapper implements PageSwapper {
             return PageCursor.UNBOUND_PAGE_ID;
         }
         for (int lastSegment = swappers.length - 1; lastSegment >= 0; lastSegment--) {
-            PageSwapper segment = openOrGrow(lastSegment);
+            PageSwapper segment = openOrGrow(swappers, lastSegment, true);
             if (segment != null) {
                 long lastPageId = segment.getLastPageId();
                 if (lastPageId == PageCursor.UNBOUND_PAGE_ID) {
@@ -429,10 +454,10 @@ public final class SegmentedPageSwapper implements PageSwapper {
         int fullSegments = Math.toIntExact(newFileSize / maxSegmentBytes);
         long remainderBytes = newFileSize % maxSegmentBytes;
         for (int segment = 0; segment < fullSegments; segment++) {
-            segmentAt(segment).allocate(maxSegmentBytes);
+            segmentAt(segment, false).allocate(maxSegmentBytes);
         }
         if (remainderBytes > 0) {
-            segmentAt(fullSegments).allocate(remainderBytes);
+            segmentAt(fullSegments, false).allocate(remainderBytes);
         }
     }
 
@@ -478,35 +503,42 @@ public final class SegmentedPageSwapper implements PageSwapper {
         return ((long) segmentIndex << pageShift) + pageWithinSegment;
     }
 
-    private PageSwapper segmentAt(int index) throws IOException {
+    private PageSwapper segmentAt(int index, boolean readOnly) throws IOException {
         if (index < 0) {
             throw new IOException("Incorrect segment index: " + index);
         }
-        PageSwapper[] current = (PageSwapper[]) SEGMENTS.getAcquire(this);
-        if (index < current.length) {
-            PageSwapper segment = current[index];
+        PageSwapper[] segments = (PageSwapper[]) SEGMENTS.getAcquire(this);
+        if (index < segments.length) {
+            PageSwapper segment = segments[index];
             if (segment != null) {
                 return segment;
             }
         }
-        return openOrGrow(index);
+        return openOrGrow(segments, index, readOnly);
     }
 
-    private synchronized PageSwapper openOrGrow(int targetIndex) throws IOException {
-        PageSwapper[] current = (PageSwapper[]) SEGMENTS.getAcquire(this);
-        if (targetIndex < current.length) {
-            PageSwapper existing = (PageSwapper) SEGMENT_SLOT.getAcquire(current, targetIndex);
+    private synchronized PageSwapper openOrGrow(PageSwapper[] segments, int targetIndex, boolean readOnly)
+            throws IOException {
+        if (targetIndex < segments.length) {
+            PageSwapper existing = (PageSwapper) SEGMENT_SLOT.getAcquire(segments, targetIndex);
             if (existing != null) {
                 return existing;
             }
             try (SegmentEvent loadEvent = pageCacheTracer.loadSegment(basePath, targetIndex)) {
                 PageSwapper opened = openSegment(segmentPath(basePath, targetIndex), false);
-                SEGMENT_SLOT.setRelease(current, targetIndex, opened);
+                SEGMENT_SLOT.setRelease(segments, targetIndex, opened);
                 return opened;
             }
         }
-        int oldLength = current.length;
-        PageSwapper[] grown = Arrays.copyOf(current, targetIndex + 1);
+        if (readOnly) {
+            return null;
+        }
+        return grow(segments, targetIndex);
+    }
+
+    private PageSwapper grow(PageSwapper[] pageSwappers, int targetIndex) throws IOException {
+        int oldLength = pageSwappers.length;
+        PageSwapper[] grown = Arrays.copyOf(pageSwappers, targetIndex + 1);
         for (int idx = oldLength; idx <= targetIndex; idx++) {
             try (SegmentEvent createEvent = pageCacheTracer.createSegment(basePath, idx)) {
                 grown[idx] = openSegment(segmentPath(basePath, idx), true);
