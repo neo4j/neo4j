@@ -19,8 +19,7 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ class EphemeralFileSystemExtensionTest {
 
     @Test
     void fileSystemInjectionCreateFileSystem() {
-        assertNotNull(rootFileSystem);
+        assertThat(rootFileSystem).isNotNull();
     }
 
     @Nested
@@ -44,17 +43,17 @@ class EphemeralFileSystemExtensionTest {
 
         @Test
         void nestedFileSystemInjection() {
-            assertNotNull(nestedFileSystem);
+            assertThat(nestedFileSystem).isNotNull();
         }
 
         @Test
         void rootFileSystemAvailable() {
-            assertNotNull(rootFileSystem);
+            assertThat(rootFileSystem).isNotNull();
         }
 
         @Test
         void nestedAndRootFileSystemsAreTheSame() {
-            assertSame(nestedFileSystem, rootFileSystem);
+            assertThat(rootFileSystem).isSameAs(nestedFileSystem);
         }
     }
 }

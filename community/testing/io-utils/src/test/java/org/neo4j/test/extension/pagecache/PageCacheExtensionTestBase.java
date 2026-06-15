@@ -20,8 +20,6 @@
 package org.neo4j.test.extension.pagecache;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
@@ -50,12 +48,12 @@ abstract class PageCacheExtensionTestBase {
 
     @Test
     void pageCacheInjected() {
-        assertNotNull(pageCache);
+        assertThat(pageCache).isNotNull();
     }
 
     @Test
     void testDirectoryInjected() {
-        assertNotNull(testDirectory);
+        assertThat(testDirectory).isNotNull();
     }
 
     @Test
@@ -63,7 +61,7 @@ abstract class PageCacheExtensionTestBase {
         Path testFile = testDirectory.createFile("testFile");
         try (PagedFile map = pageCache.map(
                 testFile, 4096, testDirectory.homePath().getFileName().toString())) {
-            assertNotNull(map);
+            assertThat(map).isNotNull();
         }
     }
 
@@ -113,12 +111,12 @@ abstract class PageCacheExtensionTestBase {
 
         @Test
         void nestedPageCacheInjection() {
-            assertNotNull(nestedPageCache);
+            assertThat(nestedPageCache).isNotNull();
         }
 
         @Test
         void nestedAndRootPageCacheAreTheSame() {
-            assertSame(pageCache, nestedPageCache);
+            assertThat(nestedPageCache).isSameAs(pageCache);
         }
     }
 }

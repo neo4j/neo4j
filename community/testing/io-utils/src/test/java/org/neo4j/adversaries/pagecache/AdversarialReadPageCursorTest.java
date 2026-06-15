@@ -19,7 +19,7 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,8 +44,8 @@ class AdversarialReadPageCursorTest {
         cursor.getBytes(buf, buf.length - 1, 1);
 
         // Then the range outside of buf.length-1, buf.length should be pristine
-        assertEquals(0, buf[0]);
-        assertEquals(0, buf[1]);
-        assertEquals(0, buf[2]);
+        assertThat(buf[0]).isZero();
+        assertThat(buf[1]).isZero();
+        assertThat(buf[2]).isZero();
     }
 }

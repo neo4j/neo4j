@@ -21,10 +21,7 @@ package org.neo4j.io.fs;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.io.fs.FileSystemUtils.readLines;
 import static org.neo4j.io.fs.FileSystemUtils.readString;
 import static org.neo4j.io.fs.FileSystemUtils.writeString;
@@ -54,14 +51,16 @@ abstract class FileSystemUtilsTest {
     void shouldCheckNonExistingDirectory() throws IOException {
         Path nonExistingDir = Path.of("nonExistingDir");
 
-        assertTrue(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, nonExistingDir));
+        assertThat(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, nonExistingDir))
+                .isTrue();
     }
 
     @Test
     void shouldCheckExistingEmptyDirectory() throws IOException {
         Path existingEmptyDir = testDirectory.directory("existingEmptyDir");
 
-        assertTrue(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, existingEmptyDir));
+        assertThat(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, existingEmptyDir))
+                .isTrue();
     }
 
     @Test
@@ -69,11 +68,11 @@ abstract class FileSystemUtilsTest {
         Path directory = testDirectory.directory("directory");
         fs.openAsOutputStream(directory.resolve("a"), false).close();
 
-        assertEquals(1, fs.listFiles(directory).length);
+        assertThat(fs.listFiles(directory)).hasSize(1);
 
         FileSystemUtils.deleteFile(fs, directory);
 
-        assertThrows(NoSuchFileException.class, () -> fs.listFiles(directory));
+        assertThatThrownBy(() -> fs.listFiles(directory)).isInstanceOf(NoSuchFileException.class);
     }
 
     @Test
@@ -81,14 +80,16 @@ abstract class FileSystemUtilsTest {
         Path existingEmptyDir = testDirectory.directory("existingEmptyDir");
         fs.write(existingEmptyDir.resolve("someFile")).close();
 
-        assertFalse(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, existingEmptyDir));
+        assertThat(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, existingEmptyDir))
+                .isFalse();
     }
 
     @Test
     void shouldCheckExistingFile() throws IOException {
         Path existingFile = testDirectory.createFile("existingFile");
 
-        assertFalse(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, existingFile));
+        assertThat(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, existingFile))
+                .isFalse();
     }
 
     @Test
@@ -131,7 +132,7 @@ abstract class FileSystemUtilsTest {
         String data = RandomStringUtils.random((int) ByteUnit.kibiBytes(117));
         writeString(fs, file, data, EmptyMemoryTracker.INSTANCE);
 
-        assertEquals(data, readString(fs, file, EmptyMemoryTracker.INSTANCE));
+        assertThat(readString(fs, file, EmptyMemoryTracker.INSTANCE)).isEqualTo(data);
     }
 
     @Test
@@ -146,9 +147,9 @@ abstract class FileSystemUtilsTest {
         writeString(fs, file, data, EmptyMemoryTracker.INSTANCE);
 
         List<String> lines = readLines(fs, file, EmptyMemoryTracker.INSTANCE);
-        assertEquals(100, lines.size());
+        assertThat(lines).hasSize(100);
         for (int i = 0; i < numberOfLines; i++) {
-            assertEquals(i + "", lines.get(i));
+            assertThat(lines.get(i)).isEqualTo(i + "");
         }
     }
 
@@ -160,13 +161,13 @@ abstract class FileSystemUtilsTest {
         var writePeakTracker = new ThreadSafePeakMemoryTracker();
         var writeMemoryTracker = new DefaultScopedMemoryTracker(writePeakTracker);
         writeString(fs, file, data, writeMemoryTracker);
-        assertEquals(0, writeMemoryTracker.usedNativeMemory());
-        assertEquals(data.getBytes(UTF_8).length, writePeakTracker.peakMemoryUsage());
+        assertThat(writeMemoryTracker.usedNativeMemory()).isEqualTo(0);
+        assertThat(writePeakTracker.peakMemoryUsage()).isEqualTo(data.getBytes(UTF_8).length);
 
         var readPeakTracker = new ThreadSafePeakMemoryTracker();
         var readMemoryTracker = new DefaultScopedMemoryTracker(readPeakTracker);
-        assertEquals(data, readString(fs, file, readMemoryTracker));
-        assertEquals(0, readMemoryTracker.usedNativeMemory());
-        assertEquals(data.getBytes(UTF_8).length, readPeakTracker.peakMemoryUsage());
+        assertThat(readString(fs, file, readMemoryTracker)).isEqualTo(data);
+        assertThat(readMemoryTracker.usedNativeMemory()).isEqualTo(0);
+        assertThat(readPeakTracker.peakMemoryUsage()).isEqualTo(data.getBytes(UTF_8).length);
     }
 }

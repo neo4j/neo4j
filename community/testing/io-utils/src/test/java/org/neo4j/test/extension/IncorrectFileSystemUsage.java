@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +32,6 @@ class IncorrectFileSystemUsage {
 
     @Test
     void anyInteraction() {
-        assertNotNull(fileSystem);
+        assertThat(fileSystem).isNotNull();
     }
 }

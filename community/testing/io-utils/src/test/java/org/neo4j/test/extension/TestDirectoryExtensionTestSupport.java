@@ -20,11 +20,6 @@
 package org.neo4j.test.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.platform.engine.TestExecutionResult.Status.FAILED;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
@@ -109,8 +104,8 @@ abstract class TestDirectoryExtensionTestSupport {
             execute("lockFileAndFailToDeleteDirectory", failedTestListener);
             Path lockedFile = ExecutionSharedContext.getValue(LOCKED_TEST_FILE_KEY);
 
-            assertNotNull(lockedFile);
-            assertTrue(lockedFile.toFile().setReadable(true, true));
+            assertThat(lockedFile).isNotNull();
+            assertThat(lockedFile.toFile().setReadable(true, true)).isTrue();
             FileUtils.deleteDirectory(lockedFile);
             failedTestListener.assertTestObserver();
         }
@@ -203,28 +198,28 @@ abstract class TestDirectoryExtensionTestSupport {
 
     @Test
     void testDirectoryInjectionWorks() {
-        assertNotNull(testDirectory);
+        assertThat(testDirectory).isNotNull();
     }
 
     @Test
     void testDirectoryInitialisedForUsage() {
         Path directory = testDirectory.homePath();
-        assertNotNull(directory);
-        assertTrue(fileSystem.fileExists(directory));
+        assertThat(directory).isNotNull();
+        assertThat(fileSystem.fileExists(directory)).isTrue();
         Path targetTestData = Paths.get("target", "test data");
-        assertTrue(directory.toAbsolutePath().toString().contains(targetTestData.toString()));
+        assertThat(directory.toAbsolutePath().toString()).contains(targetTestData.toString());
     }
 
     @Test
     void testDirectoryUsesFileSystemFromExtension() {
-        assertSame(fileSystem, testDirectory.getFileSystem());
+        assertThat(testDirectory.getFileSystem()).isSameAs(fileSystem);
     }
 
     @Test
     void createTestFile() {
         Path file = testDirectory.createFile("a");
-        assertEquals("a", file.getFileName().toString());
-        assertTrue(fileSystem.fileExists(file));
+        assertThat(file.getFileName()).hasToString("a");
+        assertThat(fileSystem.fileExists(file)).isTrue();
     }
 
     @Test
@@ -232,8 +227,8 @@ abstract class TestDirectoryExtensionTestSupport {
         ExecutionSharedContext.clear();
         execute("failAndKeepDirectory");
         Path failedFile = ExecutionSharedContext.getValue(CREATED_TEST_FILE_PAIRS_KEY);
-        assertNotNull(failedFile);
-        assertTrue(Files.exists(failedFile));
+        assertThat(failedFile).isNotNull();
+        assertThat(Files.exists(failedFile)).isTrue();
     }
 
     @Test
@@ -241,8 +236,8 @@ abstract class TestDirectoryExtensionTestSupport {
         ExecutionSharedContext.clear();
         execute("executeAndCleanupDirectory");
         Path greenTestFail = ExecutionSharedContext.getValue(SUCCESSFUL_TEST_FILE_KEY);
-        assertNotNull(greenTestFail);
-        assertFalse(Files.exists(greenTestFail));
+        assertThat(greenTestFail).isNotNull();
+        assertThat(Files.exists(greenTestFail)).isFalse();
     }
 
     @Test
@@ -328,8 +323,7 @@ abstract class TestDirectoryExtensionTestSupport {
         ExecutionSharedContext.clear();
         executeClass(testClass);
         List<Pair<Path, Boolean>> pairs = ExecutionSharedContext.getValue(CREATED_TEST_FILE_PAIRS_KEY);
-        assertNotNull(pairs);
-        assertThat(pairs).hasSize(count);
+        assertThat(pairs).isNotNull().hasSize(count);
         return pairs;
     }
 
@@ -416,7 +410,7 @@ abstract class TestDirectoryExtensionTestSupport {
         }
 
         void assertTestObserver() {
-            assertEquals(1, resultsObserved);
+            assertThat(resultsObserved).isEqualTo(1);
         }
     }
 }

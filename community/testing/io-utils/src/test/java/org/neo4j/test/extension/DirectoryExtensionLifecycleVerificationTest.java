@@ -19,8 +19,8 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.neo4j.test.extension.ExecutionSharedContext.CREATED_TEST_FILE_PAIRS_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
@@ -116,7 +116,7 @@ abstract class DirectoryExtensionLifecycleVerificationTest {
     @Test
     void executeAndCleanupDirectory() {
         Path file = directory.createFile("a");
-        assertTrue(fs.fileExists(file));
+        assertThat(fs.fileExists(file)).isTrue();
         ExecutionSharedContext.setValue(SUCCESSFUL_TEST_FILE_KEY, file);
     }
 
@@ -131,7 +131,7 @@ abstract class DirectoryExtensionLifecycleVerificationTest {
     void lockFileAndFailToDeleteDirectory() {
         Path nonDeletableDirectory = directory.directory("c");
         ExecutionSharedContext.setValue(LOCKED_TEST_FILE_KEY, nonDeletableDirectory);
-        assertTrue(nonDeletableDirectory.toFile().setReadable(false, false));
+        assertThat(nonDeletableDirectory.toFile().setReadable(false, false)).isTrue();
     }
 
     @TestFactory

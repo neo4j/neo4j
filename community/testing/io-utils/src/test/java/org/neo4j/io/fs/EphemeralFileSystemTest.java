@@ -19,10 +19,8 @@
  */
 package org.neo4j.io.fs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -91,9 +89,9 @@ class EphemeralFileSystemTest {
 
             // then
             StoreChannel readChannel = fs.read(aFile);
-            assertEquals(numberOfBytesForced, readChannel.size());
+            assertThat(readChannel.size()).isEqualTo(numberOfBytesForced);
 
-            assertEquals(1111, readLong(readChannel).getLong());
+            assertThat(readLong(readChannel).getLong()).isEqualTo(1111);
         }
     }
 
@@ -174,14 +172,14 @@ class EphemeralFileSystemTest {
             fileSystemAbstraction.mkdir(testDir);
             fileSystemAbstraction.write(testFile);
 
-            assertTrue(fileSystemAbstraction.fileExists(testFile));
-            assertTrue(fileSystemAbstraction.fileExists(testFile));
+            assertThat(fileSystemAbstraction.fileExists(testFile)).isTrue();
+            assertThat(fileSystemAbstraction.fileExists(testFile)).isTrue();
 
             fileSystemAbstraction.close();
 
-            assertTrue(fileSystemAbstraction.isClosed());
-            assertFalse(fileSystemAbstraction.fileExists(testFile));
-            assertFalse(fileSystemAbstraction.fileExists(testFile));
+            assertThat(fileSystemAbstraction.isClosed()).isTrue();
+            assertThat(fileSystemAbstraction.fileExists(testFile)).isFalse();
+            assertThat(fileSystemAbstraction.fileExists(testFile)).isFalse();
         }
     }
 
@@ -194,7 +192,7 @@ class EphemeralFileSystemTest {
 
             for (int position = 0; position < claimedSize; position += 8) {
                 long value = buffer.getLong(position);
-                assertEquals(1, value);
+                assertThat(value).isEqualTo(1);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -209,9 +207,9 @@ class EphemeralFileSystemTest {
             buffer.flip();
 
             if (claimedSize == 8) {
-                assertEquals(1, buffer.getLong());
+                assertThat(buffer.getLong()).isEqualTo(1);
             } else {
-                assertThrows(BufferUnderflowException.class, buffer::getLong, "Should have thrown an exception");
+                assertThatThrownBy(buffer::getLong).isInstanceOf(BufferUnderflowException.class);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

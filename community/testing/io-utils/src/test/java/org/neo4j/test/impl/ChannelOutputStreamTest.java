@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,7 +52,7 @@ class ChannelOutputStreamTest {
             // Then it should get cleanly written and be readable
             InputStream in = fs.openAsInputStream(workFile);
             in.skip(8096);
-            assertEquals(7, in.read());
+            assertThat(in.read()).isEqualTo(7);
         }
     }
 }

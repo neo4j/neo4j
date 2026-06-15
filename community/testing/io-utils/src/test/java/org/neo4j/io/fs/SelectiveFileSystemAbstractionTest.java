@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.fs;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -93,8 +93,8 @@ class SelectiveFileSystemAbstractionTest {
 
         try (SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction(specialFile, special, normal)) {
             FileWatcher fileWatcher = fs.fileWatcher();
-            assertSame(specialResource, fileWatcher.watch(specialFile));
-            assertSame(normalResource, fileWatcher.watch(otherFile));
+            assertThat(fileWatcher.watch(specialFile)).isSameAs(specialResource);
+            assertThat(fileWatcher.watch(otherFile)).isSameAs(normalResource);
         }
     }
 }

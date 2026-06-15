@@ -19,11 +19,9 @@
  */
 package org.neo4j.io.fs;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 
 import java.io.IOException;
@@ -42,17 +40,17 @@ public class EphemeralFileSystemAbstractionTest extends FileSystemAbstractionTes
     @Test
     void ephemeralFileSystemFileDescriptors() throws IOException {
         fsa.mkdirs(path);
-        assertTrue(fsa.fileExists(path));
+        assertThat(fsa.fileExists(path)).isTrue();
         path = path.resolve("some_file");
         try (StoreChannel channel = fsa.write(path)) {
-            assertEquals(INVALID_FILE_DESCRIPTOR, fsa.getFileDescriptor(channel));
+            assertThat(fsa.getFileDescriptor(channel)).isEqualTo(INVALID_FILE_DESCRIPTOR);
         }
     }
 
     @Test
     void ephemeralFileSystemBehavesAsLinuxWhenOpenFileIsDeleted() throws IOException {
         fsa.mkdirs(path);
-        assertTrue(fsa.fileExists(path));
+        assertThat(fsa.fileExists(path)).isTrue();
         var file = path.resolve("file");
         ByteBuffer buffer = ByteBuffer.allocate(1);
         buffer.put((byte) 1);
