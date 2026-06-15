@@ -122,6 +122,15 @@ public record ChunkedCommandBatch(List<StorageCommand> commands, ChunkMetadata c
         return appendIndex;
     }
 
+    /**
+     * Returns the append index of this batch without performing sanity checks on the value.
+     * <p><b>Note: </b>Use {@code #appendIndex} instead unless we expect to be dealing with representations of txs that
+     * cannot have a set value for this field.
+     */
+    public long appendIndexUnverified() {
+        return chunkMetadata.appendIndex().longValue();
+    }
+
     @Override
     public long previousBatchAppendIndex() {
         return chunkMetadata.previousBatchAppendIndex();

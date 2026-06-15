@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.database;
 
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -181,8 +184,8 @@ public class MultiVersionDatabaseRollbackService extends LifecycleAdapter {
                 true,
                 transactionInfo.lastBatchAppendIndex(),
                 transactionInfo.chunkId() + 1,
-                new MutableLong(),
-                new MutableLong(),
+                new MutableLong(UNKNOWN_CONSENSUS_INDEX),
+                new MutableLong(UNKNOWN_APPEND_INDEX),
                 time,
                 -1,
                 time,

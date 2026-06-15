@@ -59,6 +59,14 @@ public class PreFlushedTransactionAppender extends LifecycleAdapter implements T
             StorageEngineTransaction commands = batch;
             while (commands != null) {
                 LogPositionMetadata metadata = commands.logPositionMetadata();
+
+                // Compute txid
+                if (commands.commandBatch().isFirst()) {
+                    commands.transactionId(metadata.appendIndex());
+                } else {
+                    commands.transactionId();
+                }
+
                 if (!metadata.hasValidPositionData()) {
                     throw new IllegalArgumentException(
                             format("Attempted to publish transaction with invalid LogPositionMetadata: %s", metadata));
@@ -92,8 +100,6 @@ public class PreFlushedTransactionAppender extends LifecycleAdapter implements T
                             metadata.appendIndex(), nextProvidedAppendIndex, commands, metadata.prePosition()));
                 }
 
-                // Compute txid
-                commands.transactionId();
                 // Because we're on Merged Logs, some txs (specifically non-first multichunked) need to take an extra
                 // step to maintain our gap-free sequences properly.
                 commands.fillGapsOnCloseIfRelevant(true);

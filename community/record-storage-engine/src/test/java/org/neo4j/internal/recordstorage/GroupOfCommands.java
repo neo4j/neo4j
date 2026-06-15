@@ -61,6 +61,11 @@ public class GroupOfCommands implements StorageEngineTransaction {
     }
 
     @Override
+    public long transactionId(long externalId) {
+        throw new IllegalStateException("This impl isn't relevant for this test and should never be called.");
+    }
+
+    @Override
     public long chunkId() {
         return UNKNOWN_CHUNK_ID;
     }

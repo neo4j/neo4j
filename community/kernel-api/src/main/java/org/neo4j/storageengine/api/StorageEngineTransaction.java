@@ -37,6 +37,12 @@ public interface StorageEngineTransaction extends AutoCloseable {
     long transactionId();
 
     /**
+     * @param externalId suggested id to use
+     * @return transaction id representing this group of commands.
+     */
+    long transactionId(long externalId);
+
+    /**
      * @return chunk id representing this group of commands
      */
     long chunkId();

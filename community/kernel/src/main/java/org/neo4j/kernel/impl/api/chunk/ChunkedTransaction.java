@@ -147,10 +147,19 @@ public class ChunkedTransaction implements StorageEngineTransaction {
 
     @Override
     public long transactionId() {
+        return transactionId(transactionId);
+    }
+
+    @Override
+    public long transactionId(long externalId) {
         if (idGenerated) {
+            if (transactionId != externalId) {
+                throw new IllegalStateException(
+                        "Attempted to set transaction id when a different one has already been generated.");
+            }
             return transactionId;
         }
-        this.transactionId = transactionIdGenerator.nextId(transactionId);
+        transactionId = transactionIdGenerator.nextId(externalId);
         idGenerated = true;
         return transactionId;
     }

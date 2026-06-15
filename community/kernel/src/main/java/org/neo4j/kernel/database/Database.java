@@ -123,6 +123,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -1150,7 +1151,9 @@ public class Database extends AbstractDatabase {
 
         TransactionExecutionMonitor transactionExecutionMonitor =
                 getMonitors().newMonitor(TransactionExecutionMonitor.class);
-        var transactionIdGenerator = new IdStoreTransactionIdGenerator(logMetadataProvider);
+        var transactionIdGenerator = databaseConfig.get(GraphDatabaseInternalSettings.merged_log) && !isSystem()
+                ? TransactionIdGenerator.EXTERNAL_ID
+                : new IdStoreTransactionIdGenerator(logMetadataProvider);
         databaseDependencies.satisfyDependency(transactionIdGenerator);
 
         if (!databaseDependencies.containsDependency(ApplyEnrichmentStrategy.class)) {

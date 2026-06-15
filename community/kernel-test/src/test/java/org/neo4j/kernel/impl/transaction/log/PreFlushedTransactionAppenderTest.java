@@ -44,7 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
-import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Panic;
@@ -58,7 +57,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public class PreFlushedTransactionAppenderTest {
     private final Panic databasePanic = mock(DatabaseHealth.class);
     private final TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
-    private final TransactionIdGenerator transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
+    private final TransactionIdGenerator transactionIdGenerator = TransactionIdGenerator.EXTERNAL_ID;
     private static final long FIRST_APPEND_INDEX = BASE_APPEND_INDEX + 1;
 
     @Test
