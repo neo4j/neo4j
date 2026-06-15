@@ -83,21 +83,25 @@ class RecoveryContextTracker {
         }
         var checkpointTransactionId = checkpointInfo.transactionId();
         var checkpointBatchInfo = new BatchInformation(checkpointTransactionId, checkpointTransactionId.appendIndex());
-        var transactionId = checkpointInfo.transactionId();
 
-        lastBatchInfo = new BatchInformation(transactionId, checkpointInfo.appendIndex());
+        lastBatchInfo = new BatchInformation(checkpointTransactionId, checkpointInfo.appendIndex());
         lastHighestTransactionBatchInfo = checkpointBatchInfo;
     }
 
     void commitedBatch(CommittedCommandBatchRepresentation nextCommandBatch, LogPosition position) {
-        BatchInformation batchInfo = nextCommandBatch.batchInformation();
-        if (updateHighestBatchInfo(nextCommandBatch.txId())) {
-            lastHighestTransactionBatchInfo = batchInfo;
+        if (nextCommandBatch.commandBatch().isFirst()) {
+            transactionIdFirstAppendIndexMap.put(nextCommandBatch.txId(), nextCommandBatch.appendIndex());
         }
+        BatchInformation batchInfo = nextCommandBatch.batchInformation();
+        updateHighestBatchInfoIfNeeded(batchInfo);
         lastBatchInfo = batchInfo;
 
         offerClosedTx(nextCommandBatch, position);
         updatePositions(position);
+
+        if (nextCommandBatch.commandBatch().isLast()) {
+            transactionIdFirstAppendIndexMap.remove(nextCommandBatch.txId());
+        }
 
         recoveredBatches++;
     }
@@ -106,17 +110,9 @@ class RecoveryContextTracker {
         if (APPLY != incompleteTransactionAction) {
             return;
         }
-        if (nextCommandBatch.commandBatch().isFirst()) {
-            transactionIdFirstAppendIndexMap.put(nextCommandBatch.txId(), nextCommandBatch.appendIndex());
-        }
-        if ((nextCommandBatch.txId() > initialTransactionId)
+        if (nextCommandBatch.txId() > initialTransactionId
                 && nextCommandBatch.commandBatch().isLast()) {
-            long firstAppendIndex =
-                    transactionIdFirstAppendIndexMap.removeKeyIfAbsent(nextCommandBatch.txId(), UNKNOWN_APPEND_INDEX);
-            if (firstAppendIndex == UNKNOWN_APPEND_INDEX) {
-                throw new IllegalStateException(
-                        "Transaction " + nextCommandBatch.txId() + " first append index is missing.");
-            }
+            long firstAppendIndex = firstAppendIndex(nextCommandBatch.txId());
             OutOfOrderSequence.Meta meta = new OutOfOrderSequence.Meta(
                     position.getLogVersion(),
                     position.getByteOffset(),
@@ -134,14 +130,30 @@ class RecoveryContextTracker {
     }
 
     void rollbackBatch(RollbackTransactionInfo rollbackTransactionInfo, LogPosition position) {
-        if (updateHighestBatchInfo(rollbackTransactionInfo.batchInfo().txId())) {
-            lastHighestTransactionBatchInfo = rollbackTransactionInfo.batchInfo();
-        }
+        updateHighestBatchInfoIfNeeded(rollbackTransactionInfo.batchInfo());
         updatePositions(position);
     }
 
-    private boolean updateHighestBatchInfo(long id) {
-        return lastHighestTransactionBatchInfo == null || lastHighestTransactionBatchInfo.txId() < id;
+    private void updateHighestBatchInfoIfNeeded(BatchInformation candidate) {
+        if (candidate.txId() <= initialTransactionId) {
+            return;
+        }
+
+        if (lastHighestTransactionBatchInfo == null || lastHighestTransactionBatchInfo.txId() < candidate.txId()) {
+            lastHighestTransactionBatchInfo = candidate;
+        } else if (lastHighestTransactionBatchInfo.txId() == candidate.txId()
+                && lastHighestTransactionBatchInfo.appendIndex() < candidate.appendIndex()) {
+            // Later chunk of the same transaction: keep the first chunk's append index, but advance the
+            // remaining metadata (checksum, ...) to the latest chunk.
+            long firstAppendIndex = firstAppendIndex(candidate.txId());
+            lastHighestTransactionBatchInfo = new BatchInformation(
+                    candidate.txId(),
+                    candidate.kernelVersion(),
+                    candidate.checksum(),
+                    candidate.timeWritten(),
+                    candidate.consensusIndex(),
+                    firstAppendIndex);
+        }
     }
 
     void completeRecovery(LogPosition logPosition) {
@@ -186,5 +198,13 @@ class RecoveryContextTracker {
 
     public OpenTransactionMetadata getEarliestOpenTransactionMetadata() {
         return earliestOpenTransactionMetadata;
+    }
+
+    private long firstAppendIndex(long transactionId) {
+        long firstAppendIndex = transactionIdFirstAppendIndexMap.getIfAbsent(transactionId, UNKNOWN_APPEND_INDEX);
+        if (firstAppendIndex == UNKNOWN_APPEND_INDEX) {
+            throw new IllegalStateException("Transaction " + transactionId + " first append index is missing.");
+        }
+        return firstAppendIndex;
     }
 }

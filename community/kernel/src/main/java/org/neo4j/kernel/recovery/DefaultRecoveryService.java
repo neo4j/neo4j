@@ -174,7 +174,6 @@ public class DefaultRecoveryService implements RecoveryService {
                         highestTransactionRecoveredBatch.txId(),
                         highestTransactionRecoveredBatch.appendIndex(),
                         highestTransactionRecoveredBatch.kernelVersion(),
-                        // TODO: misha this checksum is from the first batch while usually its from the last one
                         highestTransactionRecoveredBatch.checksum(),
                         highestTransactionRecoveredBatch.timeWritten(),
                         highestTransactionRecoveredBatch.consensusIndex(),
@@ -190,7 +189,6 @@ public class DefaultRecoveryService implements RecoveryService {
                         recoveryOutcome.lastClosedGapFree().number(),
                         recoveryOutcome.notClosedTransactionIds(),
                         highestTransactionRecoveredBatch.appendIndex(),
-                        // TODO: misha this checksum is from the first batch while usually its from the last one
                         highestTransactionRecoveredBatch.kernelVersion(),
                         highestTransactionRecoveredBatch.checksum(),
                         highestTransactionRecoveredBatch.timeWritten(),
