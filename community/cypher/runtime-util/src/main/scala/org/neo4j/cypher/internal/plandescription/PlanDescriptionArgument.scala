@@ -45,7 +45,7 @@ object PrettyString {
 object Arguments {
   private val VERSION_PATTERN = "(\\d+)\\.{1}(\\d+)(?:\\.(\\d+))?.*".r
 
-  val CURRENT_VERSION: String =
+  val CURRENT_DB_VERSION: String =
     parseMajorMinorPatch(selectVersion)
 
   object Details {
@@ -129,7 +129,7 @@ object Arguments {
   }
 
   object RuntimeVersion {
-    def currentVersion: RuntimeVersion = RuntimeVersion(CURRENT_VERSION)
+    def currentVersion: RuntimeVersion = RuntimeVersion(CURRENT_DB_VERSION)
   }
 
   case class Planner(value: String) extends Argument {
@@ -142,13 +142,25 @@ object Arguments {
     override def name = "planner-impl"
   }
 
-  case class PlannerVersion(value: String) extends Argument {
-
+  sealed trait PlannerVersionArgument extends Argument {
+    def value: String
     override def name = "planner-version"
   }
 
-  object PlannerVersion {
-    def currentVersion: PlannerVersion = PlannerVersion(CURRENT_VERSION)
+  case class PlannerVersion(value: String) extends PlannerVersionArgument
+  // TODO: when enabling the display_planner_version flag, we should get rid of this class
+  // Until then, this helps the serializer distinguish between the old and new planner version formats
+  // so that only the newer version may be printed.
+  case class CypherPlannerVersion(value: String) extends PlannerVersionArgument
+
+  object PlannerVersionArgument {
+    def currentVersion: PlannerVersionArgument = PlannerVersion(CURRENT_DB_VERSION)
+
+    def forDisplay(cypherPlannerVersion: Option[String]): PlannerVersionArgument =
+      cypherPlannerVersion match {
+        case Some(version) => CypherPlannerVersion(version) // the display_planner_version flag is enabled
+        case None          => currentVersion
+      }
   }
 
   case class Runtime(value: String) extends Argument {

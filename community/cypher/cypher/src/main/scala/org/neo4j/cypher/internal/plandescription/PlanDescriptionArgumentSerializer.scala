@@ -50,7 +50,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
-import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersionArgument
 import org.neo4j.cypher.internal.plandescription.Arguments.Referenced
 import org.neo4j.cypher.internal.plandescription.Arguments.ResultColumns
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
@@ -69,29 +69,29 @@ object PlanDescriptionArgumentSerializer {
 
   def serialize(arg: Argument): AnyRef = {
     arg match {
-      case Details(info)                          => info.mkPrettyString(", ").prettifiedString
-      case DbHits(value)                          => Long.box(value)
-      case Memory(value)                          => Long.box(value)
-      case GlobalMemory(value)                    => Long.box(value)
-      case AvailableWorkers(value)                => Int.box(value)
-      case AvailableProcessors(value)             => Int.box(value)
-      case PageCacheHits(value)                   => Long.box(value)
-      case PageCacheMisses(value)                 => Long.box(value)
-      case Rows(value)                            => Long.box(value)
-      case Time(value)                            => Long.box(value)
-      case EstimatedRows(effectiveCardinality, _) => Double.box(effectiveCardinality)
-      case Order(providedOrder)                   => providedOrder.prettifiedString
-      case Distinctness(distinctness)             => distinctness.prettifiedString
-      case Version(version)                       => version
-      case Planner(planner)                       => planner
-      case PlannerImpl(plannerName)               => plannerName
-      case PlannerVersion(value)                  => value
-      case Runtime(runtime)                       => runtime
-      case RuntimeVersion(value)                  => value
-      case SourceCode(_, sourceCode)              => sourceCode
-      case ByteCode(_, byteCode)                  => byteCode
-      case RuntimeImpl(runtimeName)               => runtimeName
-      case BatchSize(size)                        => Int.box(size)
+      case Details(info)                                  => info.mkPrettyString(", ").prettifiedString
+      case DbHits(value)                                  => Long.box(value)
+      case Memory(value)                                  => Long.box(value)
+      case GlobalMemory(value)                            => Long.box(value)
+      case AvailableWorkers(value)                        => Int.box(value)
+      case AvailableProcessors(value)                     => Int.box(value)
+      case PageCacheHits(value)                           => Long.box(value)
+      case PageCacheMisses(value)                         => Long.box(value)
+      case Rows(value)                                    => Long.box(value)
+      case Time(value)                                    => Long.box(value)
+      case EstimatedRows(effectiveCardinality, _)         => Double.box(effectiveCardinality)
+      case Order(providedOrder)                           => providedOrder.prettifiedString
+      case Distinctness(distinctness)                     => distinctness.prettifiedString
+      case Version(version)                               => version
+      case Planner(planner)                               => planner
+      case PlannerImpl(plannerName)                       => plannerName
+      case plannerVersionArgument: PlannerVersionArgument => plannerVersionArgument.value
+      case Runtime(runtime)                               => runtime
+      case RuntimeVersion(value)                          => value
+      case SourceCode(_, sourceCode)                      => sourceCode
+      case ByteCode(_, byteCode)                          => byteCode
+      case RuntimeImpl(runtimeName)                       => runtimeName
+      case BatchSize(size)                                => Int.box(size)
       case PipelineInfo(pipelineId, fused, markAsSerial) =>
         val fusion = if (fused) "Fused in" else "In"
         val serialString = if (markAsSerial) " serial" else ""

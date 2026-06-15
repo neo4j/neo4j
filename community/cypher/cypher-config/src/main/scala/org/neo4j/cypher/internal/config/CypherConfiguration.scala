@@ -300,6 +300,9 @@ class CypherConfiguration private (val config: Config) {
   val mergeOptimizationEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.merge_optimization_enabled).booleanValue()
 
+  val displayPlannerVersion: Boolean =
+    config.get(GraphDatabaseInternalSettings.display_planner_version).booleanValue()
+
   val useVirtualGraph: Boolean =
     if (config.getDeclaredSettings.containsKey("internal.virtual_graph.enabled")) {
       val setting = config.getSetting("internal.virtual_graph.enabled")

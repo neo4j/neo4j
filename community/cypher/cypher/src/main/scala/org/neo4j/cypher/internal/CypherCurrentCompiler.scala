@@ -247,7 +247,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       query.resolvedLanguage,
       executionPlanCacheKeyHash,
       planState.returnColumns.toArray,
-      planState.maybeExplainScope
+      planState.maybeExplainScope,
+      contextManager.config.displayPlannerVersion
     )
   }
 
@@ -341,7 +342,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         cachedExecutionPlan.executionPlan,
         renderPlanDescription = true,
         query.resolvedLanguage,
-        planState.maybeExplainScope
+        planState.maybeExplainScope,
+        None // TODO: PLAN-3477
       )
       val cacheKeyHashHex = String.format("%08X", executionPlanCacheKeyHash)
       val queryId = executingQuery.id()
@@ -520,7 +522,8 @@ object CypherCurrentCompiler {
     cypherVersion: CypherVersion,
     override val executionPlanCacheKeyHash: Int,
     val returnColumns: Array[String],
-    maybeExplainScope: Option[WorkingScope]
+    maybeExplainScope: Option[WorkingScope],
+    displayPlannerVersion: Boolean = false
   ) extends ExecutableQuery {
 
     // Monitors are implemented via dynamic proxies which are slow compared to NOOP which is why we want to able to completely disable
@@ -529,6 +532,8 @@ object CypherCurrentCompiler {
 
     private val resourceMonitor =
       if (enableMonitors) kernelMonitors.newMonitor(classOf[ResourceMonitor]) else ResourceMonitor.NOOP
+
+    private val cypherPlannerVersion: Option[String] = Option.when(displayPlannerVersion)(compilerInfo.plannerVersion())
 
     private val planDescriptionBuilder =
       PlanDescriptionBuilder(
@@ -543,7 +548,8 @@ object CypherCurrentCompiler {
         executionPlan,
         renderPlanDescription,
         cypherVersion,
-        maybeExplainScope
+        maybeExplainScope,
+        cypherPlannerVersion
       )
 
     private def createQueryContext(

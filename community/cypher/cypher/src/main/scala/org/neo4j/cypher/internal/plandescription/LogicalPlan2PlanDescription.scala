@@ -339,7 +339,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
-import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersionArgument
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.getPrettyDynamicElement
@@ -377,7 +377,8 @@ object LogicalPlan2PlanDescription {
     renderNestedPlanExpressions: Boolean,
     providedOrders: ImmutablePlanningAttributes.ProvidedOrders,
     runtimeOperatorMetadata: Id => Seq[Argument],
-    cypherVersion: CypherVersion
+    cypherVersion: CypherVersion,
+    cypherPlannerVersion: Option[String] = None
   ): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(
       readOnly,
@@ -393,7 +394,7 @@ object LogicalPlan2PlanDescription {
       .addArgument(RuntimeVersion.currentVersion)
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
-      .addArgument(PlannerVersion.currentVersion)
+      .addArgument(PlannerVersionArgument.forDisplay(cypherPlannerVersion))
   }
 
   def prettyOptions(options: Options): PrettyString = options match {

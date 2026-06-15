@@ -252,7 +252,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Display the planner version in query logs.")
+    @Description("Display the planner version in query logs and plan descriptions.")
     public static final Setting<Boolean> display_planner_version =
             newBuilder("internal.cypher.display_planner_version", BOOL, false).build();
 

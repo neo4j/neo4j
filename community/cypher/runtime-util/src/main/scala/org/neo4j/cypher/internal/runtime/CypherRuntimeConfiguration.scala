@@ -50,7 +50,8 @@ object CypherRuntimeConfiguration {
       warnOnAggregationSkipNull = config.warnOnAggregationSkipNull,
       errorIfShortestPathHasCommonNodesAtRuntime = config.errorIfShortestPathHasCommonNodesAtRuntime,
       pipelinedSubqueryTransactionRetryEnabled = config.pipelinedSubqueryTransactionRetryEnabled,
-      enableNonFusedMerge = config.enableNonFusedMerge
+      enableNonFusedMerge = config.enableNonFusedMerge,
+      displayPlannerVersion = config.displayPlannerVersion
     )(config)
   }
 
@@ -78,7 +79,8 @@ case class CypherRuntimeConfiguration(
   warnOnAggregationSkipNull: Boolean,
   errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
   pipelinedSubqueryTransactionRetryEnabled: Boolean,
-  enableNonFusedMerge: Boolean
+  enableNonFusedMerge: Boolean,
+  displayPlannerVersion: Boolean = false
 )(val cypherConfiguration: CypherConfiguration = null) {
 
   Preconditions.checkArgument(

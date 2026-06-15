@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.CatalogName
@@ -261,15 +262,20 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.plandescription.Arguments.CypherPlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersionArgument
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTestBase.anonVar
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTestBase.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTestBase.planDescription
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.spi.ImmutablePlanningAttributes
 import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.EffectiveCardinality
@@ -6803,4 +6809,49 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
     )
   }
 
+  // cypherPlannerVersion propagation
+  test(
+    "LogicalPlan2PlanDescription.create with cypherPlannerVersion=Some displays the set cypherPlannerVersion option"
+  ) {
+    val planDesc = LogicalPlan2PlanDescription.create(
+      lhsLP,
+      IDPPlannerName,
+      readOnly = true,
+      ImmutablePlanningAttributes.EffectiveCardinalities(effectiveCardinalities),
+      withRawCardinalities = false,
+      withDistinctness = false,
+      renderNestedPlanExpressions = false,
+      providedOrders = ImmutablePlanningAttributes.ProvidedOrders(providedOrders),
+      StubExecutionPlan().operatorMetadata,
+      CypherVersion.Legacy.legacyVersion(),
+      cypherPlannerVersion = Some("v2026_04")
+    )
+    planDesc.arguments should contain(CypherPlannerVersion("v2026_04"))
+    planDesc.arguments should not contain PlannerVersionArgument.currentVersion
+  }
+
+  test("LogicalPlan2PlanDescription.create with cypherPlannerVersion=None uses currentVersion") {
+    val planDesc = LogicalPlan2PlanDescription.create(
+      lhsLP,
+      IDPPlannerName,
+      readOnly = true,
+      ImmutablePlanningAttributes.EffectiveCardinalities(effectiveCardinalities),
+      withRawCardinalities = false,
+      withDistinctness = false,
+      renderNestedPlanExpressions = false,
+      providedOrders = ImmutablePlanningAttributes.ProvidedOrders(providedOrders),
+      StubExecutionPlan().operatorMetadata,
+      CypherVersion.Legacy.legacyVersion()
+    )
+    planDesc.arguments should contain(PlannerVersionArgument.currentVersion)
+  }
+
+  // plannerversion forDisplay
+  test("PlannerVersionArgument.forDisplay(None) returns CURRENT DB VERSION") {
+    PlannerVersionArgument.forDisplay(None) shouldEqual PlannerVersion(Arguments.CURRENT_DB_VERSION)
+  }
+
+  test("PlannerVersionArgument.forDisplay(Some(version)) returns CypherPlannerVersion with that version") {
+    PlannerVersionArgument.forDisplay(Some("v2026_04")) should equal(CypherPlannerVersion("v2026_04"))
+  }
 }

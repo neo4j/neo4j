@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
+import org.neo4j.cypher.internal.plandescription.Arguments.CypherPlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.IdArg
@@ -215,6 +216,12 @@ final case class PlanDescriptionImpl(
     val version = arguments.collectFirst {
       case Version(v) => s"Cypher $v$NL"
     }
+
+    val plannerVersion = arguments.collectFirst {
+      // TODO: when releasing the display_planner_version feature this check should look at PlannerVersion instead.
+      case v: CypherPlannerVersion => s"Planner version ${v.value.toUpperCase(Locale.ROOT)}$NL"
+    }
+
     val planner = arguments.collectFirst {
       case Planner(n) => s"Planner ${n.toUpperCase(Locale.ROOT)}$NL"
     }
@@ -231,7 +238,7 @@ final case class PlanDescriptionImpl(
       case BatchSize(n) => s"Batch size $n$NL"
     }
 
-    val prefix = version ++ planner ++ runtime ++ runtimeVersion ++ batchSize
+    val prefix = version ++ planner ++ plannerVersion ++ runtime ++ runtimeVersion ++ batchSize
     s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this, withRawCardinalities, withDistinctness)}$NL${renderSummary(this)}$renderSources"
   }
 

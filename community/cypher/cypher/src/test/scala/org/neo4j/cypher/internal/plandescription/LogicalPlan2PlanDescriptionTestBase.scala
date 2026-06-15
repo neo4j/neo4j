@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
-import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersionArgument
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -75,7 +75,7 @@ class LogicalPlan2PlanDescriptionTestBase extends CommunityCypherTestSuite with 
     with AstConstructionTestSupport {
 
   protected val RUNTIME_VERSION: RuntimeVersion = RuntimeVersion.currentVersion
-  protected val PLANNER_VERSION: PlannerVersion = PlannerVersion.currentVersion
+  protected val PLANNER_VERSION: PlannerVersionArgument = PlannerVersionArgument.currentVersion
 
   implicit val idGen: IdGen = new SequentialIdGen()
   protected val effectiveCardinalities = new EffectiveCardinalities
@@ -126,7 +126,7 @@ class LogicalPlan2PlanDescriptionTestBase extends CommunityCypherTestSuite with 
           arg.isInstanceOf[EstimatedRows] ||
           arg.isInstanceOf[Version] ||
           arg.isInstanceOf[RuntimeVersion] ||
-          arg.isInstanceOf[PlannerVersion])
+          arg.isInstanceOf[PlannerVersionArgument])
 
     def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription): Unit = {
       withClue("name")(a.name should equal(b.name))

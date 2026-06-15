@@ -381,7 +381,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       executionPlan,
       renderPlanDescription = false,
       CypherVersion.Legacy.legacyVersion(),
-      explainScopeOpt = None
+      explainScopeOpt = None,
+      cypherPlannerVersion = None
     )
 
   def explainDescription(logicalQuery: LogicalQuery, executionPlan: ExecutionPlan): InternalPlanDescription =

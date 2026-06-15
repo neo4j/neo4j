@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CommunityCypherTestSuite
+import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
+import org.neo4j.cypher.internal.plandescription.Arguments.CypherPlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersionArgument
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
@@ -101,6 +104,8 @@ class InternalPlanDescriptionTest extends CommunityCypherTestSuite {
       .addArgument(RuntimeVersion(version))
       .addArgument(Runtime("PIPELINED"))
       .addArgument(BatchSize(128))
+      // use the legacy version which does not show in the description
+      .addArgument(PlannerVersionArgument.currentVersion)
 
     normalizeNewLines(planDescription.toString) should equal(
       normalizeNewLines(s"""Cypher $version
@@ -121,6 +126,43 @@ class InternalPlanDescriptionTest extends CommunityCypherTestSuite {
                            |
                            |Total database accesses: ?
                            |""".stripMargin)
+    )
+  }
+
+  test("toString should render nicely with planner version") {
+    val version = "5.0"
+    val plannerVersion = "EXPERIMENTAL"
+    val planDescription = PlanDescriptionImpl(ID, "Leaf", Seq.empty, Seq.empty, Set())
+      .addArgument(Version(version))
+      .addArgument(Planner("COST"))
+      .addArgument(RuntimeVersion(version))
+      .addArgument(Runtime("PIPELINED"))
+      .addArgument(BatchSize(128))
+      .addArgument(CypherPlannerVersion(plannerVersion))
+
+    normalizeNewLines(planDescription.toString) should equal(
+      normalizeNewLines(
+        s"""Cypher $version
+           |
+           |Planner COST
+           |
+           |Planner version $plannerVersion
+           |
+           |Runtime PIPELINED
+           |
+           |Runtime version $version
+           |
+           |Batch size 128
+           |
+           |+----------+----+
+           || Operator | Id |
+           |+----------+----+
+           || +Leaf    |  0 |
+           |+----------+----+
+           |
+           |Total database accesses: ?
+           |""".stripMargin
+      )
     )
   }
 }
