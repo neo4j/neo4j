@@ -175,18 +175,16 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v25.Cypher25Parser
 import org.neo4j.cypher.internal.parser.v25.Cypher25ParserListener
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlPrivilegeBuilder.ElementGraphToken
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlPrivilegeBuilder.GraphToken
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlPrivilegeBuilder.NodeGraphToken
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlPrivilegeBuilder.RelGraphToken
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlPrivilegeBuilder.UsernamesOrAuthRuleNames
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ArraySeq
 
 trait DdlPrivilegeBuilder extends Cypher25ParserListener {
-
-  sealed trait UsernamesOrAuthRuleNames
-
-  private object UsernamesOrAuthRuleNames {
-    case class UserNames(names: Seq[Expression]) extends UsernamesOrAuthRuleNames
-    case class AuthRuleNames(names: Seq[Expression]) extends UsernamesOrAuthRuleNames
-  }
 
   final override def exitGrantCommand(
     ctx: Cypher25Parser.GrantCommandContext
@@ -767,11 +765,6 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
     } else List(ElementsAllQualifier()(pos(ctx)))
   }
 
-  sealed private trait GraphToken
-  final private case object RelGraphToken extends GraphToken
-  final private case object NodeGraphToken extends GraphToken
-  final private case object ElementGraphToken extends GraphToken
-
   override def exitGraphQualifierToken(ctx: Cypher25Parser.GraphQualifierTokenContext): Unit = {
     ctx.ast = ctxChild(ctx, 0) match {
       case _: Cypher25Parser.RelTokenContext     => RelGraphToken
@@ -902,4 +895,18 @@ trait DdlPrivilegeBuilder extends Cypher25ParserListener {
   override def exitGroupToken(ctx: Cypher25Parser.GroupTokenContext): Unit = {}
   override def exitPathToken(ctx: Cypher25Parser.PathTokenContext): Unit = {}
 
+}
+
+object DdlPrivilegeBuilder {
+  sealed private trait GraphToken
+  private case object RelGraphToken extends GraphToken
+  private case object NodeGraphToken extends GraphToken
+  private case object ElementGraphToken extends GraphToken
+
+  sealed private trait UsernamesOrAuthRuleNames
+
+  private object UsernamesOrAuthRuleNames {
+    case class UserNames(names: Seq[Expression]) extends UsernamesOrAuthRuleNames
+    case class AuthRuleNames(names: Seq[Expression]) extends UsernamesOrAuthRuleNames
+  }
 }

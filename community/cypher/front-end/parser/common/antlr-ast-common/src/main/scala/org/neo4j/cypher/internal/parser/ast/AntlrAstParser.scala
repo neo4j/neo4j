@@ -25,6 +25,7 @@ import org.antlr.v4.runtime.atn.PredictionMode
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy
 import org.neo4j.cypher.internal.parser.SyntaxErrorListener
+import org.neo4j.cypher.internal.parser.ast.AntlrAstParser.ParsingResult
 import org.neo4j.cypher.internal.parser.lexer.CypherToken
 import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -41,8 +42,6 @@ trait AntlrAstParser[P <: AstBuildingAntlrParser] extends AstParser {
   protected def newLexer(fullTokens: Boolean): Lexer
   protected def exceptionFactory: CypherExceptionFactory
   protected def errorStrategyConf: CypherErrorStrategy.Conf
-
-  case class ParsingResult(cst: AstRuleCtx, tokens: Seq[Token], errors: Seq[Throwable])
 
   final def parse[AST <: AnyRef](f: P => AstRuleCtx): AST = {
     val listener = new SyntaxErrorListener(exceptionFactory)
@@ -145,4 +144,8 @@ trait AntlrAstParser[P <: AstBuildingAntlrParser] extends AstParser {
     case cypherToken: CypherToken => cypherToken.position()
     case _                        => InputPosition(token.getStartIndex, token.getLine, token.getCharPositionInLine + 1)
   }
+}
+
+object AntlrAstParser {
+  case class ParsingResult(cst: AstRuleCtx, tokens: Seq[Token], errors: Seq[Throwable])
 }

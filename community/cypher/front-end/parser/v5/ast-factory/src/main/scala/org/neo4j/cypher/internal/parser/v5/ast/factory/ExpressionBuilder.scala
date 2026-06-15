@@ -116,7 +116,7 @@ import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Trim
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.notification.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.notification.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
@@ -314,22 +314,22 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   }
 
   final override def exitExpression(ctx: Cypher5Parser.ExpressionContext): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Or(lhs, rhs)(pos(token)))
   }
 
   final override def exitExpression11(ctx: Cypher5Parser.Expression11Context): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Xor(lhs, rhs)(pos(token)))
   }
 
   final override def exitExpression10(ctx: Cypher5Parser.Expression10Context): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => And(lhs, rhs)(pos(token)))
   }
 
   final override def exitExpression9(ctx: Cypher5Parser.Expression9Context): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.expression8() == lastChild(ctx))
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.expression8() == lastChild(ctx))
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast
       case 2 => Not(astChild(ctx, 1))(pos(ctx))
@@ -340,7 +340,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   }
 
   final override def exitExpression8(ctx: Cypher5Parser.Expression8Context): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast
       case 3 => binaryPredicate(ctxChild(ctx, 0).ast(), child(ctx, 1), child(ctx, 2))
@@ -384,7 +384,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   }
 
   private def stringAndListComparisonExpression(lhs: Expression, ctx: AstRuleCtx): Expression = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       ctx.isInstanceOf[Cypher5Parser.StringAndListComparisonContext] ||
         ctx.isInstanceOf[Cypher5Parser.WhenStringOrListContext]
     )
@@ -400,7 +400,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   }
 
   private def nullComparisonExpression(lhs: Expression, ctx: AstRuleCtx): Expression = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       ctx.isInstanceOf[Cypher5Parser.NullComparisonContext] ||
         ctx.isInstanceOf[Cypher5Parser.WhenNullContext]
     )
@@ -409,7 +409,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   }
 
   private def typeComparisonExpression(lhs: Expression, ctx: AstRuleCtx): Expression = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
       ctx.isInstanceOf[Cypher5Parser.TypeComparisonContext] ||
         ctx.isInstanceOf[Cypher5Parser.WhenTypeContext]
     )
@@ -446,7 +446,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   }
 
   final override def exitExpression6(ctx: Cypher5Parser.Expression6Context): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold(ctx, binaryAdditive)
   }
 
@@ -471,7 +471,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   }
 
   final override def exitExpression4(ctx: Cypher5Parser.Expression4Context): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Pow(lhs, rhs)(pos(token.getSymbol)))
   }
 
@@ -538,7 +538,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
 
   final override def exitExpression1(ctx: Cypher5Parser.Expression1Context): Unit = {
     ctx.ast = ctx.children.size match {
-      case 1 => ctxChild(ctx, 0).ast()
+      case 1 => ctxChild(ctx, 0).ast
       case _ => throw new IllegalStateException("Unexpected expression")
     }
   }
@@ -548,7 +548,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
   ): Unit = {
     ctx.ast = CaseExpression(
       expression = None,
-      alternatives = astSeq(ctx.caseAlternative()),
+      alternatives = astSeq[(Expression, Expression)](ctx.caseAlternative()),
       default = astOpt(ctx.expression())
     )(pos(ctx))
   }
@@ -954,7 +954,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
             }
           case Cypher5Parser.LIST | Cypher5Parser.ARRAY => ListType(ctx.`type`().ast(), true)(p)
           case Cypher5Parser.ANY =>
-            AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.LT() != null && ctx.GT() != null)
+            AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.LT() != null && ctx.GT() != null)
             ctx.`type`().ast[CypherType]() match {
               case du: ClosedDynamicUnionType => du
               case other                      => ClosedDynamicUnionType(Set(other))(other.position)
@@ -964,7 +964,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
       case _ => firstToken match {
           case Cypher5Parser.LIST | Cypher5Parser.ARRAY => ListType(ctx.`type`().ast(), true)(p)
           case Cypher5Parser.ANY =>
-            AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.LT() != null && ctx.GT() != null)
+            AssertMacros3.checkOnlyWhenAssertionsAreEnabled(ctx.LT() != null && ctx.GT() != null)
             ctx.`type`().ast[CypherType]() match {
               case du: ClosedDynamicUnionType => du
               case other                      => ClosedDynamicUnionType(Set(other))(other.position)

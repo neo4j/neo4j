@@ -113,6 +113,9 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ShowConstraintMultiContext
 import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlShowBuilder.NoEntity
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlShowBuilder.Node
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlShowBuilder.Rel
 import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlShowBuilder.ShowWrapper
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -365,11 +368,6 @@ trait DdlShowBuilder extends Cypher5ParserListener {
     }
   }
 
-  sealed private trait ConstraintEntity
-  private case object Node extends ConstraintEntity
-  private case object Rel extends ConstraintEntity
-  private case object NoEntity extends ConstraintEntity
-
   final override def exitShowConstraintsAllowBriefAndYield(
     ctx: Cypher5Parser.ShowConstraintsAllowBriefAndYieldContext
   ): Unit = {
@@ -605,6 +603,11 @@ trait DdlShowBuilder extends Cypher5ParserListener {
 }
 
 object DdlShowBuilder {
+
+  sealed private trait ConstraintEntity
+  private case object Node extends ConstraintEntity
+  private case object Rel extends ConstraintEntity
+  private case object NoEntity extends ConstraintEntity
 
   case class ShowWrapper(
     where: Option[Where] = None,

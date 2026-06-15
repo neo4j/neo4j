@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast.factory.query
 
+import org.neo4j.cypher.internal.ast.CypherParserTestSuite
 import org.neo4j.cypher.internal.ast.LoadCSV
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SensitiveUrlTest extends CypherFunSuite {
+class SensitiveUrlTest extends CypherParserTestSuite {
 
   Seq(
     "ftp://hello:supersecretpassword@server" -> true,

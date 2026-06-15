@@ -164,6 +164,10 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
 import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlPrivilegeBuilder.ElementGraphToken
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlPrivilegeBuilder.GraphToken
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlPrivilegeBuilder.NodeGraphToken
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlPrivilegeBuilder.RelGraphToken
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ArraySeq
@@ -693,11 +697,6 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
     } else List(ElementsAllQualifier()(pos(ctx)))
   }
 
-  sealed private trait GraphToken
-  final private case object RelGraphToken extends GraphToken
-  final private case object NodeGraphToken extends GraphToken
-  final private case object ElementGraphToken extends GraphToken
-
   override def exitGraphQualifierToken(ctx: Cypher5Parser.GraphQualifierTokenContext): Unit = {
     ctx.ast = ctxChild(ctx, 0) match {
       case _: Cypher5Parser.RelTokenContext     => RelGraphToken
@@ -827,4 +826,11 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
   override def exitGroupToken(ctx: Cypher5Parser.GroupTokenContext): Unit = {}
   override def exitPathToken(ctx: Cypher5Parser.PathTokenContext): Unit = {}
 
+}
+
+object DdlPrivilegeBuilder {
+  sealed private trait GraphToken
+  private case object RelGraphToken extends GraphToken
+  private case object NodeGraphToken extends GraphToken
+  private case object ElementGraphToken extends GraphToken
 }

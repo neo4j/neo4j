@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory
 
+import org.neo4j.cypher.internal.ast.CypherParserTestSuite
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
@@ -46,12 +47,11 @@ import org.neo4j.cypher.internal.util.symbols.UUIDType
 import org.neo4j.cypher.internal.util.symbols.VectorType
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.math.signum
 import scala.util.Random
 
-class CypherTypeNameTest extends CypherFunSuite {
+class CypherTypeNameTest extends CypherParserTestSuite {
 
   /**
    * To make it easier to see which normalization rule is being tested, each rule here is given an arbitrary number

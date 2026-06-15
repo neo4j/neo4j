@@ -55,7 +55,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros3
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
 import org.neo4j.cypher.internal.parser.ast.util.Util.astOptFromList
@@ -441,7 +441,7 @@ trait DdlCreateBuilder extends Cypher25ParserListener {
     val nameExpressions = ctx.commandNameExpression()
     val from =
       if (nameExpressions.size > 1) {
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(nameExpressions.size == 2)
+        AssertMacros3.checkOnlyWhenAssertionsAreEnabled(nameExpressions.size == 2)
         Some(nameExpressions.get(1).ast[Expression])
       } else
         None

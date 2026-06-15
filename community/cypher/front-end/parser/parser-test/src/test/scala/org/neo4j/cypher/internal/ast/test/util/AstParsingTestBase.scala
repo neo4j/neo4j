@@ -17,10 +17,11 @@
 package org.neo4j.cypher.internal.ast.test.util
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.CypherParserTestSuite
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseResults
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParserInTest
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
@@ -33,7 +34,7 @@ import scala.util.Try
 /**
  * Test helpers for cypher ast parsing.
  */
-trait AstParsingTestBase extends CypherFunSuite
+trait AstParsingTestBase extends CypherParserTestSuite
     with AstParsingMatchers
     with TestNameAstAssertions
     with AstConstructionTestSupport {
@@ -128,7 +129,7 @@ trait TestNameAstAssertions extends AstParsingMatchers with AstParsing with Test
    * Fails to parse test name in all parsers.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def failsParsing[T <: ASTNode : ClassTag]()(implicit p: Parsers[T]): Parses[T] =
+  def failsParsing[T <: ASTNode : ClassTag](implicit p: Parsers[T]): Parses[T] =
     Parses(parseAst[T](testName), ignorePrettifier = ignorePrettifier).withAnyFailure
 
   /**
@@ -147,6 +148,7 @@ case class Parses[T <: ASTNode : ClassTag](
 ) extends FluentMatchers[Parses[T], T] {
 
   override protected def copyWith(matchers: Seq[Matcher[ParseResults[_]]]): Parses[T] = {
+    given org.scalactic.source.Position = CypherFunSuiteWithMacroShadowing.defaultPosition
     matchers.foreach(`match` => result should `match`)
     this
   }

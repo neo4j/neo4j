@@ -17,13 +17,13 @@
 package org.neo4j.cypher.internal.ast.unreleased
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_enable_local_callables
+import org.neo4j.cypher.internal.ast.CypherParserTestSuite
 import org.neo4j.cypher.internal.parser.v25.Cypher25Parser
 import org.neo4j.cypher.internal.parser.v25.ast.factory.Cypher25ErrorStrategyConf
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-class UnreleasedFeaturesTest extends CypherFunSuite {
+class UnreleasedFeaturesTest extends CypherParserTestSuite {
 
   // When this test breaks: Update Cypher25ErrorStrategyConf().ignoredTokens to make it pass, then remove the test.
   test("ignore DEFINE keyword as long as it's unreleased") {

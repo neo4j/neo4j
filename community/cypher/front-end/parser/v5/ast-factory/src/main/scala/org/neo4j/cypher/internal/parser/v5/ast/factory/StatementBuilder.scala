@@ -112,7 +112,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.notification.DeprecatedGraphReferenceNotification
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.parser.AstRuleCtx
@@ -401,7 +401,6 @@ trait StatementBuilder extends Cypher5ParserListener {
     val patternPartsWithSelector = patternParts.ast[ArraySeq[PatternPart]]().map {
       case part: PrefixedPatternPart    => part
       case part: NonPrefixedPatternPart => PrefixedPatternPart(PatternPart.AllPaths()(part.position), part)
-      case other => throw new IllegalStateException(s"Expected pattern part but was ${other.getClass}")
     }
 
     val position = pos(ctx)

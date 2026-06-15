@@ -127,7 +127,7 @@ class CreateAuthRuleAdministrationCommandParserTest extends AdministrationAndSch
     )
 
   (validExpressions :+ complexValidAndOrExpression)
-    .map(e => (ExpressionStringifier().apply(e), AuthRuleCondition(e)(pos)))
+    .map(e => (ExpressionStringifier.apply().apply(e), AuthRuleCondition(e)(pos)))
     .foreach { case (exprString, authRuleCondition) =>
       test(s"CREATE AUTH RULE foo SET CONDITION $exprString") {
         parsesIn[Statement] {

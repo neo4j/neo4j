@@ -34,6 +34,8 @@ import org.neo4j.gqlstatus.GqlStatusInfoCodes
 
 import java.nio.charset.StandardCharsets
 
+import scala.language.implicitConversions
+
 class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   protected def assertAst(
@@ -74,9 +76,9 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
       case _                          => _.toAstWith(expected(false), obfuscator = obfuscator)
     }
 
-  implicit val stringToLeftConvertor: String => Either[String, Parameter] = s => Left(s)
-  implicit val stringToExpressionConvertor: String => Expression = s => literalString(s)
-  implicit val namespacedNameConvertor: String => ast.DatabaseName = s => ast.NamespacedName(s)(pos)
+  implicit def stringToLeftConvertor(s: String): Either[String, Parameter] = Left(s)
+  implicit def stringToExpressionConvertor(s: String): Expression = literalString(s)
+  implicit def namespacedNameConvertor(s: String): ast.DatabaseName = ast.NamespacedName(s)(pos)
 
   protected val showCurrentGraphTypeCypher5Error: Parses[ast.Statements] => Parses[ast.Statements] =
     _.withSyntaxErrorContaining(

@@ -114,6 +114,10 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v25.Cypher25Parser
 import org.neo4j.cypher.internal.parser.v25.Cypher25ParserListener
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlShowBuilder.ConstraintEntity
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlShowBuilder.NoEntity
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlShowBuilder.Node
+import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlShowBuilder.Rel
 import org.neo4j.cypher.internal.parser.v25.ast.factory.DdlShowBuilder.ShowWrapper
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -353,11 +357,6 @@ trait DdlShowBuilder extends Cypher25ParserListener {
       case _                                   => NoEntity
     }
   }
-
-  sealed private trait ConstraintEntity
-  private case object Node extends ConstraintEntity
-  private case object Rel extends ConstraintEntity
-  private case object NoEntity extends ConstraintEntity
 
   final override def exitShowConstraintsEnd(
     ctx: Cypher25Parser.ShowConstraintsEndContext
@@ -602,6 +601,11 @@ trait DdlShowBuilder extends Cypher25ParserListener {
 }
 
 object DdlShowBuilder {
+
+  sealed private trait ConstraintEntity
+  private case object Node extends ConstraintEntity
+  private case object Rel extends ConstraintEntity
+  private case object NoEntity extends ConstraintEntity
 
   case class ShowWrapper(
     where: Option[Where] = None,

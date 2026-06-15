@@ -808,7 +808,7 @@ class CombineMultipleCommandsParserTest extends CombineCommandsParserTestBase {
 
   // Can't be named `assertAst` or `assertAstVersionBased` as that leads to compile errors on `Cannot resolve overloaded method`
   private def assertAstVersionAware(supportedInCypher5: Boolean, expectedClauses: ast.Clause*): Unit =
-    assertAstVersionAware(supportedInCypher5, true, expectedClauses *)
+    assertAstVersionAware(supportedInCypher5, true, expectedClauses*)
 
   private def assertAstVersionAware(
     supportedInCypher5: Boolean,
