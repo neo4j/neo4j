@@ -374,6 +374,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  Hamcrest
   Zstandard
 ------------------------------------------------------------------------------
 

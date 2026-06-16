@@ -82,7 +82,7 @@ trait ExecutionEngineTestSupport extends ExecutionEngineHelper {
 
   override def executeScalar[T](q: String, params: (String, Any)*): T =
     try {
-      super.executeScalar[T](q, params *)
+      super.executeScalar[T](q, params*)
     } catch {
       case e: ScalarFailureException => fail(e.getMessage)
     }

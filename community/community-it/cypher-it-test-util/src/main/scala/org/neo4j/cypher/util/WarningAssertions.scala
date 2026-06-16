@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.util
 
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuiteWithMacroShadowing
 import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
@@ -28,6 +29,9 @@ import org.scalatest.Assertions
 import org.scalatest.matchers.should.Matchers
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
+
+// Remove after Scala 3 migration is complete
+given org.scalactic.source.Position = CypherFunSuiteWithMacroShadowing.defaultPosition
 
 trait WarningAssertions {
   self: Assertions & Matchers =>

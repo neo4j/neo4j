@@ -426,7 +426,7 @@ trait GraphDatabaseTestSupport
     })
   }
 
-  def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String, Any](), labels *)
+  def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String, Any](), labels*)
 
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
