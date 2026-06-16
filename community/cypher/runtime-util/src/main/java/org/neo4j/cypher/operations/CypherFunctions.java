@@ -2725,6 +2725,25 @@ public final class CypherFunctions {
         }
     }
 
+    public static AnyValue cardinality(AnyValue item) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof SequenceValue list) {
+            return longValue(list.actualSize());
+        } else if (item instanceof VirtualPathValue path) {
+            return longValue(path.cardinality());
+        } else if (item instanceof MapValue map) {
+            return longValue(map.size());
+        } else {
+            throw CypherTypeException.functionArgumentWrongType(
+                    "Invalid input for function 'cardinality()': Expected a Map, List or Path, got: " + item,
+                    "cardinality",
+                    item.prettify(),
+                    List.of("MAP", "LIST<ANY>", "PATH"),
+                    CypherTypeValueMapper.valueType(item));
+        }
+    }
+
     public static Value toBoolean(AnyValue in) {
         if (in == NO_VALUE) {
             return NO_VALUE;

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.TypeSignature
 import org.neo4j.cypher.internal.expressions.functions.AggregatingFunction
 import org.neo4j.cypher.internal.expressions.functions.AllReduce
+import org.neo4j.cypher.internal.expressions.functions.Cardinality
 import org.neo4j.cypher.internal.expressions.functions.Coalesce
 import org.neo4j.cypher.internal.expressions.functions.CollDistinct
 import org.neo4j.cypher.internal.expressions.functions.CollFlatten
@@ -74,6 +75,8 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
@@ -153,6 +156,15 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
   private def semanticCheck(ctx: Expression.SemanticContext, invocation: FunctionInvocation): SemanticCheck =
     fromContext(semanticCheckContext =>
       invocation.functionWithScope(semanticCheckContext.cypherVersion) match {
+        case Cardinality =>
+          checkMinArgs(invocation, 1, Cardinality.signatures) ifOkChain
+            checkMaxArgs(invocation, 1, Cardinality.signatures) ifOkChain
+            expectType(
+              CTMap.invariant | CTList(CTAny).covariant | CTPath.invariant,
+              invocation.arguments.head
+            ) ifOkChain
+            specifyType(CTInteger, invocation)
+
         case Coalesce =>
           checkMinArgs(invocation, 1, Coalesce.signatures) chain
             expectType(CTAny.covariant, invocation.arguments) chain

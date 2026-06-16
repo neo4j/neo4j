@@ -58,6 +58,7 @@ object Function {
     Atan2,
     Avg,
     BTrim,
+    Cardinality,
     Ceil,
     Ceiling,
     CharacterLength,

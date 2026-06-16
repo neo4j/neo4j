@@ -387,6 +387,37 @@
     "category": "String"
   },
   {
+    "name": "cardinality",
+    "aggregating": false,
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "isBuiltIn": true,
+    "rolesBoostedExecution": [],
+    "returnDescription": "INTEGER",
+    "description": "Returns the number of keys in a `MAP`, the number of elements in a `LIST`, or the number of nodes and relationships in a `PATH`.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "cypherVersionScope": [
+      25
+    ],
+    "signature": "cardinality(input :: MAP | LIST<ANY> | PATH) :: INTEGER",
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "A map, list or path whose cardinality is to be calculated.",
+        "isDeprecated": false,
+        "type": "MAP | LIST<ANY> | PATH"
+      }
+    ],
+    "category": "Scalar"
+  },
+  {
     "name": "ceil",
     "aggregating": false,
     "isDeprecated": false,

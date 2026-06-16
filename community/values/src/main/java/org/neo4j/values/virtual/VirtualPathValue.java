@@ -41,6 +41,10 @@ public abstract class VirtualPathValue extends VirtualValue {
 
     public abstract int size();
 
+    public int cardinality() {
+        return (size() * 2) + 1;
+    }
+
     public abstract ListValue asList();
 
     @Override

@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.functions.Atan
 import org.neo4j.cypher.internal.expressions.functions.Atan2
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.BTrim
+import org.neo4j.cypher.internal.expressions.functions.Cardinality
 import org.neo4j.cypher.internal.expressions.functions.Ceil
 import org.neo4j.cypher.internal.expressions.functions.CharacterLength
 import org.neo4j.cypher.internal.expressions.functions.Coalesce
@@ -700,7 +701,9 @@ case class CommunityExpressionConverter(
           self.toCommandExpression(id, invocation.arguments.head),
           self.toCommandExpression(id, invocation.arguments(1))
         )
-      case Length     => commands.expressions.LengthFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Length => commands.expressions.LengthFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Cardinality =>
+        commands.expressions.CardinalityFunction(self.toCommandExpression(id, invocation.arguments.head))
       case IsEmpty    => commands.expressions.IsEmptyFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Linenumber => commands.expressions.Linenumber()
       case Log        => commands.expressions.LogFunction(self.toCommandExpression(id, invocation.arguments.head))
