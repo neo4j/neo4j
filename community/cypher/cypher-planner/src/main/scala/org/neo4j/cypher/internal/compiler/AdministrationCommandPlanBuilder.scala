@@ -338,7 +338,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         case r: ResolvedNonLocalCall => r.signature.systemProcedure
         case c                       => c.isInstanceOf[CommandClauseAllowedOnSystem]
       } && clauses.forall {
-        case w: With                 => w.withType == ParsedAsYield || w.withType == AddedInRewriteShowCommands
+        case w: With =>
+          w.withType == ParsedAsYield || w.withType == AddedInRewriteShowCommands || w.withType == AddedInRewriteProcCall
         case r: ResolvedNonLocalCall => r.signature.systemProcedure
         case c                       => c.isInstanceOf[ClauseAllowedOnSystem]
       }
@@ -1891,11 +1892,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case c: ResolvedNonLocalCall =>
             acc => SkipChildren(acc :+ s"CALL ${c.signature.name.fullName}")
           case _: Return => acc => SkipChildren(acc)
-          case w: With if w.withType == AddedInRewriteProcCall =>
-            acc =>
-              val name = w.where.map(_ => "WHERE").getOrElse(w.name)
-              SkipChildren(acc :+ name)
-          case w: With if w.withType == ParsedAsYield || w.withType == AddedInRewriteShowCommands =>
+          case w: With
+            if w.withType == ParsedAsYield || w.withType == AddedInRewriteShowCommands || w.withType == AddedInRewriteProcCall =>
             acc => SkipChildren(acc)
           case _: CommandClauseAllowedOnSystem => acc => SkipChildren(acc)
           case c: Clause                       => acc => SkipChildren(acc :+ c.name)
