@@ -799,9 +799,9 @@ object expandSolverStep {
    * A value that controls what expansion mode candidates should be produced.
    */
   sealed trait IntoVsAllHeuristic extends Ordered[IntoVsAllHeuristic] {
-    private val inOrder = Seq(IntoVsAllHeuristic.Avoid, IntoVsAllHeuristic.Neutral, IntoVsAllHeuristic.Prefer)
 
-    override def compare(that: IntoVsAllHeuristic): Int = inOrder.indexOf(this) - inOrder.indexOf(that)
+    override def compare(that: IntoVsAllHeuristic): Int =
+      IntoVsAllHeuristic.inOrder.indexOf(this) - IntoVsAllHeuristic.inOrder.indexOf(that)
   }
 
   object IntoVsAllHeuristic {
@@ -820,6 +820,8 @@ object expandSolverStep {
      * Avoid planning this plan, if possible.
      */
     case object Avoid extends IntoVsAllHeuristic
+
+    private val inOrder = Seq(IntoVsAllHeuristic.Avoid, IntoVsAllHeuristic.Neutral, IntoVsAllHeuristic.Prefer)
   }
 
   case class LogicalPlanWithIntoVsAllHeuristic(plan: LogicalPlan, heuristic: IntoVsAllHeuristic)
