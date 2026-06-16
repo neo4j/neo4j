@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AllReduceAccumulator
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.DynamicLabelExpression
 import org.neo4j.cypher.internal.expressions.DynamicRelTypeExpression
@@ -416,7 +417,13 @@ object LogicalPlan2PlanDescription {
   }
 
   def getPrettyStringName(nameOption: Option[Expression]): PrettyString =
-    nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
+    nameOption.map(n => pretty" ${getPrettyStringName(n)}").getOrElse(pretty"")
+
+  def getPrettyStringName(name: Expression): PrettyString =
+    name match {
+      case _: AutoExtractedParameter => asPrettyString(name)
+      case _                         => PrettyString(Prettifier.escapeName(name))
+    }
 
   def getPrettyDynamicElement(expr: DynamicElement) = {
     expr match {
@@ -1819,7 +1826,7 @@ case class LogicalPlan2PlanDescription(
           id,
           "DropIndex",
           children,
-          Seq(Details(pretty"INDEX ${PrettyString(Prettifier.escapeName(name))}$ifExistsString")),
+          Seq(Details(pretty"INDEX ${getPrettyStringName(name)}$ifExistsString")),
           variables,
           withRawCardinalities,
           withDistinctness
@@ -1879,7 +1886,7 @@ case class LogicalPlan2PlanDescription(
 
       case DropConstraintOnName(name, ifExists) =>
         val ifExistsString = if (ifExists) pretty" IF EXISTS" else pretty""
-        val constraintDetails = Details(pretty"CONSTRAINT ${PrettyString(Prettifier.escapeName(name))}$ifExistsString")
+        val constraintDetails = Details(pretty"CONSTRAINT ${getPrettyStringName(name)}$ifExistsString")
         PlanDescriptionImpl(
           id,
           "DropConstraint",
@@ -4553,9 +4560,9 @@ case class LogicalPlan2PlanDescription(
   private def getInnerNameDescriptions(names: CommandClauseNames): Option[PrettyString] = names match {
     case NoNames => None
     case CommaSeparatedNames(ls) =>
-      val es = ls.expressions.map(_.asCanonicalStringVal)
+      val es = ls.expressions.map(asPrettyString(_))
       Some(asPrettyString.raw(es.mkString(", ")))
-    case ExpressionNames(e) => Some(asPrettyString.raw(e.asCanonicalStringVal))
+    case ExpressionNames(e) => Some(asPrettyString(e))
   }
 
   private def formatPropertyPredicatesForDynamicIndexSeek(

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
@@ -294,22 +295,176 @@ class LiteralReplacementTest extends CypherFunSuite3 with AstRewritingTestSuppor
     )
   }
 
-  private def assertDoesNotRewrite(query: String): Unit = {
-    assertRewrite(query, query, Map.empty)
+  test("should extract from composable commands") {
+    // This doesn't cover all the composable commands, but it covers a bit of everything
+    assertRewrite(
+      "SHOW TRANSACTIONS 'abc'",
+      "SHOW TRANSACTIONS $`  AUTOSTRING0`",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "abc")
+    )
+    assertRewrite(
+      "TERMINATE TRANSACTIONS ['abc']",
+      "TERMINATE TRANSACTIONS $`  AUTOLIST0`",
+      Map(autoParameter("  AUTOLIST0", CTList(CTString), Some(1)) -> Seq("abc"))
+    )
+    assertRewrite(
+      "SHOW SETTINGS 'abc' + 1",
+      "SHOW SETTINGS $`  AUTOSTRING0` + $`  AUTOINT1`",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "abc", autoParameter("  AUTOINT1", CTInteger) -> 1)
+    )
+    assertDoesNotRewrite("SHOW SETTINGS 'abc', 'def'")
+    assertRewrite(
+      "SHOW INDEXES YIELD name WHERE name STARTS WITH 'abc'",
+      "SHOW INDEXES YIELD name WHERE name STARTS WITH $`  AUTOSTRING0`",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "abc")
+    )
+    assertRewrite(
+      "SHOW PROCEDURES EXECUTABLE BY foo YIELD name ORDER BY name + 3.14 SKIP 1 LIMIT 5",
+      "SHOW PROCEDURES EXECUTABLE BY foo YIELD name ORDER BY name + $`  AUTODOUBLE0` SKIP 1 LIMIT 5",
+      Map(autoParameter("  AUTODOUBLE0", CTFloat) -> 3.14)
+    )
+    // Show databases have different default columns in the different versions, so lets only run with one
+    assertDoesNotRewrite("SHOW DATABASE foo", Some(CypherVersion.Cypher25))
   }
 
+  test("should extract from index commands") {
+    assertRewrite(
+      "CREATE INDEX name FOR (n:Label) ON n.prop",
+      "CREATE INDEX $`  AUTOSTRING0` FOR (n:Label) ON n.prop",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+    assertRewrite(
+      "CREATE FULLTEXT INDEX name FOR (n:Label) ON EACH [n.prop]",
+      "CREATE FULLTEXT INDEX $`  AUTOSTRING0` FOR (n:Label) ON EACH [n.prop]",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+    assertRewrite(
+      "CREATE VECTOR INDEX name FOR ()-[r:REL_TYPE]-() ON r.prop1 WITH [r.prop2]",
+      "CREATE VECTOR INDEX $`  AUTOSTRING0` FOR ()-[r:REL_TYPE]-() ON r.prop1 WITH [r.prop2]",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      // Additional properties are not allowed in Cypher 5
+      cypherVersion = Some(CypherVersion.Cypher25),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+    assertRewrite(
+      "CREATE LOOKUP INDEX name IF NOT EXISTS FOR (n) ON EACH labels(n)",
+      "CREATE LOOKUP INDEX $`  AUTOSTRING0` IF NOT EXISTS FOR (n) ON EACH labels(n)",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+    assertRewrite(
+      "DROP INDEX name",
+      "DROP INDEX $`  AUTOSTRING0`",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+  }
+
+  test("should extract from constraint commands") {
+    assertRewrite(
+      "CREATE CONSTRAINT name FOR (n:Label) REQUIRE (n.prop1, n.prop2) IS KEY",
+      "CREATE CONSTRAINT $`  AUTOSTRING0` FOR (n:Label) REQUIRE (n.prop1, n.prop2) IS KEY",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+    assertRewrite(
+      "CREATE CONSTRAINT name IF NOT EXISTS FOR ()-[r:REL_TYPE]-() REQUIRE r.prop IS :: STRING",
+      "CREATE CONSTRAINT $`  AUTOSTRING0` IF NOT EXISTS FOR ()-[r:REL_TYPE]-() REQUIRE r.prop IS :: STRING",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+    assertRewrite(
+      "DROP CONSTRAINT name",
+      "DROP CONSTRAINT $`  AUTOSTRING0`",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(4)) -> "name"),
+      additionalExpectedAstUpdates = updateSchemaNameParam
+    )
+  }
+
+  test("should not extract from graph type commands") {
+    // Since graph type commands doesn't allow parameters it should not auto-parameterize things
+    // Graph types are only available in Cypher 25
+    assertDoesNotRewrite(
+      """ALTER CURRENT GRAPH TYPE SET {
+        |  (n:Label1 => :Label2 {prop :: STRING NOT NULL}),
+        |  (:Label7 => :Label2 {}),
+        |  (:Label3)-[r:REL_TYPE1 => {prop :: INT NOT NULL}]->(:Label4),
+        |  (n)-[:REL_TYPE5 => {}]->(),
+        |  CONSTRAINT c1 FOR (n:Label1) REQUIRE n.prop IS KEY,
+        |  CONSTRAINT c2 FOR (n:Label5) REQUIRE n.prop IS UNIQUE,
+        |  CONSTRAINT c3 FOR (n:Label4) REQUIRE n.prop IS NOT NULL,
+        |  CONSTRAINT c4 FOR (n:Label6) REQUIRE n.prop IS :: DATE,
+        |  CONSTRAINT c5 FOR ()-[r:REL_TYPE2]->() REQUIRE r.prop IS KEY,
+        |  CONSTRAINT c6 FOR ()-[r:REL_TYPE1]->() REQUIRE r.prop IS UNIQUE,
+        |  CONSTRAINT c7 FOR ()-[r:REL_TYPE3]->() REQUIRE r.prop IS NOT NULL,
+        |  CONSTRAINT c8 FOR ()-[r:REL_TYPE4]->() REQUIRE r.prop IS :: DATE
+        |}""".stripMargin,
+      Some(CypherVersion.Cypher25)
+    )
+    assertDoesNotRewrite(
+      """ALTER CURRENT GRAPH TYPE ADD {
+        |  (:Label1 => :Label2 {prop :: STRING NOT NULL}),
+        |  (:Label3)-[:REL_TYPE1 => {prop :: INT NOT NULL}]->(:Label4),
+        |  CONSTRAINT c1 FOR (n:Label1) REQUIRE n.prop IS KEY,
+        |  CONSTRAINT c2 FOR (n:Label5) REQUIRE n.prop IS UNIQUE,
+        |  CONSTRAINT c3 FOR (n:Label4) REQUIRE n.prop IS NOT NULL,
+        |  CONSTRAINT c4 FOR (n:Label6) REQUIRE n.prop IS :: DATE,
+        |  CONSTRAINT c5 FOR ()-[r:REL_TYPE2]->() REQUIRE r.prop IS KEY,
+        |  CONSTRAINT c6 FOR ()-[r:REL_TYPE1]->() REQUIRE r.prop IS UNIQUE,
+        |  CONSTRAINT c7 FOR ()-[r:REL_TYPE3]->() REQUIRE r.prop IS NOT NULL,
+        |  CONSTRAINT c8 FOR ()-[r:REL_TYPE4]->() REQUIRE r.prop IS :: DATE
+        |}""".stripMargin,
+      Some(CypherVersion.Cypher25)
+    )
+    assertDoesNotRewrite(
+      """ALTER CURRENT GRAPH TYPE ALTER {
+        |  (:Label1 => :Label2 {prop :: STRING NOT NULL}),
+        |  (:Label3)-[:REL_TYPE1 => {prop :: INT NOT NULL}]->(:Label4)
+        |}""".stripMargin,
+      Some(CypherVersion.Cypher25)
+    )
+    assertDoesNotRewrite(
+      """ALTER CURRENT GRAPH TYPE DROP {
+        |  (n:Label1 => :Label2 {prop :: STRING NOT NULL}),
+        |  (:Label7 =>),
+        |  (:Label3)-[r:REL_TYPE1 => {prop :: INT NOT NULL}]->(:Label4),
+        |  ()-[:REL_TYPE5 =>]->(),
+        |  CONSTRAINT c1,
+        |  CONSTRAINT c2,
+        |  CONSTRAINT c3,
+        |  CONSTRAINT c4,
+        |  CONSTRAINT c5,
+        |  CONSTRAINT c6,
+        |  CONSTRAINT c7,
+        |  CONSTRAINT c8
+        |}""".stripMargin,
+      Some(CypherVersion.Cypher25)
+    )
+  }
+
+  private def assertDoesNotRewrite(query: String, cypherVersion: Option[CypherVersion] = None): Unit = {
+    assertRewrite(query, query, Map.empty, cypherVersion = cypherVersion)
+  }
+
+  // additionalExpectedAstUpdates is for updating things that are changed in the rewriter but cannot be expressed in the query,
+  // for example that the schema commands parses their parameters as string type parameters and not any type parameters
   private def assertRewrite(
     originalQuery: String,
     expectedQuery: String,
     replacements: Map[AutoExtractedParameter, Any],
     extractLiterals: LiteralExtractionStrategy = Forced,
-    cypherVersion: Option[CypherVersion] = None
+    cypherVersion: Option[CypherVersion] = None,
+    additionalExpectedAstUpdates: Statement => Statement = identity
   ): Unit = {
     val exceptionFactory = Neo4jCypherExceptionFactory(originalQuery, None)
     val original = cypherVersion.map(cv => parse(cv, originalQuery, exceptionFactory))
       .getOrElse(parse(originalQuery, exceptionFactory))
-    val expected = cypherVersion.map(cv => parse(cv, expectedQuery, exceptionFactory))
-      .getOrElse(parse(expectedQuery, exceptionFactory))
+    val expected = additionalExpectedAstUpdates(
+      cypherVersion.map(cv => parse(cv, expectedQuery, exceptionFactory))
+        .getOrElse(parse(expectedQuery, exceptionFactory))
+    )
 
     val (rewriter, actuallyReplacedLiterals) = literalReplacement(original, extractLiterals)
     val expectedReplacedLiterals = replacements.map {
@@ -324,4 +479,11 @@ class LiteralReplacementTest extends CypherFunSuite3 with AstRewritingTestSuppor
   private def removeAutoExtracted() = bottomUp(Rewriter.lift {
     case p @ AutoExtractedParameter(name, _, _) => ExplicitParameter(name, CTAny)(p.position)
   })
+
+  // The index/constraint names are parsed as string type parameters not any type parameters,
+  // in difference to the regular Cypher parameters and the removeAutoExtracted expect
+  private def updateSchemaNameParam(expectedStatement: Statement): Statement =
+    expectedStatement.endoRewrite(bottomUp(Rewriter.lift {
+      case p @ ExplicitParameter(name, CTString, _) => ExplicitParameter(name, CTAny)(p.position)
+    }))
 }

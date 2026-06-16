@@ -18,6 +18,8 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommaSeparatedNames
+import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.Match
@@ -82,7 +84,8 @@ object literalReplacement {
       _: With |
       _: SubqueryCall |
       _: Unwind |
-      _: CallClause =>
+      _: CallClause |
+      _: CommandClause =>
       acc => TraverseChildren(acc)
     case s: Search =>
       // TODO: Once Search can handle index name as parameter,
@@ -141,6 +144,10 @@ object literalReplacement {
             SizeBucket.computeBucket(l.expressions.size)
           )))
         }
+    case csn: CommaSeparatedNames =>
+      // These are represented by a ListLiteral with StringLiterals, but we can't replace them with a parameter
+      // as parameters would be ExpressionNames instead of CommaSeparatedNames, and we can't have loose comma separated parameters
+      acc => SkipChildren(acc)
   }
 
   private def createParameter(

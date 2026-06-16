@@ -5079,7 +5079,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "ShowSettings",
         Seq.empty,
-        Seq(details("settings(Foo, Bar), defaultColumns")),
+        Seq(details("settings(\"Foo\", \"Bar\"), defaultColumns")),
         Set("xxx", "yyy")
       )
     )
@@ -5104,7 +5104,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "ShowSettings",
         Seq.empty,
-        Seq(details("settings(foo.*), columns(xxx, yyy AS zzz, vvv)")),
+        Seq(details("settings(\"foo.*\"), columns(xxx, yyy AS zzz, vvv)")),
         Set("xxx", "zzz", "vvv")
       )
     )
@@ -5151,7 +5151,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "ShowTransactions",
         Seq.empty,
-        Seq(details("allColumns, transactions(db1-transaction-123)")),
+        Seq(details("allColumns, transactions(\"db1-transaction-123\")")),
         Set("xxx", "yyy")
       )
     )
@@ -5176,7 +5176,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "ShowTransactions",
         Seq.empty,
-        Seq(details("columns(xxx, yyy AS zzz, vvv), transactions(db1-transaction-123, db2-transaction-456)")),
+        Seq(details("columns(xxx, yyy AS zzz, vvv), transactions(\"db1-transaction-123\", \"db2-transaction-456\")")),
         Set("xxx", "zzz", "vvv")
       )
     )
@@ -5239,7 +5239,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "ShowTransactions",
         Seq.empty,
-        Seq(details("defaultColumns, transactions(foo + 123)")),
+        Seq(details("defaultColumns, transactions(foo + \"123\")")),
         Set("xxx", "yyy")
       )
     )
@@ -5265,7 +5265,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "TerminateTransactions",
         Seq.empty,
-        Seq(details("defaultColumns, transactions(db1-transaction-123)")),
+        Seq(details("defaultColumns, transactions(\"db1-transaction-123\")")),
         Set("xxx", "yyy")
       )
     )
@@ -5286,7 +5286,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
         id,
         "TerminateTransactions",
         Seq.empty,
-        Seq(details("columns(xxx, yyy AS zzz), transactions(db1-transaction-123, db2-transaction-456)")),
+        Seq(details("columns(xxx, yyy AS zzz), transactions(\"db1-transaction-123\", \"db2-transaction-456\")")),
         Set("xxx", "zzz")
       )
     )
@@ -5461,7 +5461,9 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
             id,
             "ShowTransactions",
             Seq.empty,
-            Seq(details("columns(xxx, yyy AS zzz, vvv), transactions(db1-transaction-123, db2-transaction-456)")),
+            Seq(
+              details("columns(xxx, yyy AS zzz, vvv), transactions(\"db1-transaction-123\", \"db2-transaction-456\")")
+            ),
             Set("xxx", "zzz", "vvv")
           ),
           planDescription(
@@ -5663,7 +5665,7 @@ class SchemaAndNonAdminCommandsLogicalPlan2PlanDescriptionTest extends LogicalPl
             id,
             "ShowSettings",
             Seq.empty,
-            Seq(details("settings(Foo, Bar), defaultColumns")),
+            Seq(details("settings(\"Foo\", \"Bar\"), defaultColumns")),
             Set("xxx", "yyy")
           )
         ),
