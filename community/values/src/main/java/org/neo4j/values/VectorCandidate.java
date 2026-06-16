@@ -62,8 +62,8 @@ public interface VectorCandidate {
         }
 
         return switch (candidate) {
-            case final VectorCandidate vectorCandidate -> vectorCandidate;
-            case final SequenceValue sequenceValue -> new SequenceValueVectorCandidate(sequenceValue);
+            case VectorCandidate vectorCandidate -> vectorCandidate;
+            case SequenceValue sequenceValue -> new SequenceValueVectorCandidate(sequenceValue);
             default -> null;
         };
     }
@@ -76,12 +76,12 @@ public interface VectorCandidate {
 
         @Override
         public float floatValue(int index) {
-            return sequence.value(index) instanceof final NumberValue number ? number.floatValue() : Float.NaN;
+            return sequence.value(index) instanceof NumberValue number ? number.floatValue() : Float.NaN;
         }
 
         @Override
         public double doubleValue(int index) {
-            return sequence.value(index) instanceof final NumberValue number ? number.doubleValue() : Double.NaN;
+            return sequence.value(index) instanceof NumberValue number ? number.doubleValue() : Double.NaN;
         }
 
         @Override

@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 import org.junit.jupiter.api.Test;
@@ -115,10 +116,16 @@ class ListValueFuzzTest {
             for (ValueType valueType : ValueType.ALL_TYPES) {
                 AnyValue value = random.nextValue(valueType);
                 if (value.valueRepresentation().canCreateArrayOfValueGroup()) {
+                    assertThat(valueType.valueGroup.category())
+                            .as("remove when VectorArray is storable, IND-468")
+                            .isNotEqualTo(ValueCategory.VECTOR);
                     ListValue list = VirtualValues.list(value, value, value);
                     assertThat(fromArray(list.toStorableArray())).isEqualTo(list);
                     seenStorable = true;
                 } else {
+                    assumeThat(valueType.valueGroup.category())
+                            .as("remove when VectorArray is storable, IND-468")
+                            .isNotEqualTo(ValueCategory.VECTOR);
                     ListValue list = VirtualValues.list(value, value, value);
                     assertThatExceptionOfType(CypherTypeException.class).isThrownBy(list::toStorableArray);
                     seenNonStorable = true;

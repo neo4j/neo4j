@@ -27,7 +27,9 @@ import java.time.ZonedDateTime;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.VectorCandidate;
 
-public abstract class NumberArray extends ArrayValue implements VectorCandidate {
+public abstract sealed class NumberArray extends ArrayValue implements VectorCandidate
+        permits IntegralArray, FloatingPointArray {
+
     abstract int compareTo(IntegralArray other);
 
     abstract int compareTo(FloatingPointArray other);

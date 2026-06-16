@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.utils;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanArray;
 import org.neo4j.values.storable.BooleanValue;
@@ -62,6 +63,7 @@ import org.neo4j.values.storable.UUIDValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.storable.VectorValue;
+import org.neo4j.values.virtual.ListValue;
 
 /// This class duplicates much of `CypherTypeValueMapper` in `org.neo4j.values.utils`
 /// because we don't have access to that class (and the Scala it uses) at this level.
@@ -69,6 +71,8 @@ public class ValueTypeNames {
     public static String nameOfType(Object object) {
         return switch (object) {
             case Value value -> ofRepresentation(value.valueRepresentation(), value);
+            case ListValue list -> listOf(list.itemValueRepresentation());
+            case AnyValue value -> value.getTypeName();
             case Class<?> type -> nameOfType(type);
             default -> nameOfType(object.getClass());
         };
@@ -107,6 +111,7 @@ public class ValueTypeNames {
             case INT8_ARRAY -> listOf(ValueRepresentation.INT8);
             case FLOAT64_ARRAY -> listOf(ValueRepresentation.FLOAT64);
             case FLOAT32_ARRAY -> listOf(ValueRepresentation.FLOAT32);
+            case VECTOR_ARRAY -> listOf("VECTOR");
             case UUID_ARRAY -> listOf(ValueRepresentation.UUID);
             case GEOMETRY -> "POINT";
             case ZONED_DATE_TIME -> DateTimeValue.CYPHER_TYPE_NAME;
@@ -249,7 +254,11 @@ public class ValueTypeNames {
     }
 
     private static String listOf(ValueRepresentation memberRepresentation) {
-        return String.format("LIST<%s>", ofRepresentation(memberRepresentation));
+        return listOf(ofRepresentation(memberRepresentation));
+    }
+
+    private static String listOf(String member) {
+        return "LIST<%s>".formatted(member);
     }
 
     private static String vectorOf(String elementTypeName, Value value) {
@@ -257,6 +266,6 @@ public class ValueTypeNames {
         if (value instanceof VectorValue vector) {
             dimensions = String.valueOf(vector.dimensions());
         }
-        return String.format("VECTOR<%s>(%s)", elementTypeName, dimensions);
+        return "VECTOR<%s>(%s)".formatted(elementTypeName, dimensions);
     }
 }

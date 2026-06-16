@@ -21,7 +21,7 @@ package org.neo4j.values.storable;
 
 import org.neo4j.values.AnyValue;
 
-public abstract class NumberValue extends ScalarValue {
+public abstract sealed class NumberValue extends ScalarValue permits IntegralValue, FloatingPointValue {
     static long castToLong(String name, AnyValue value) {
         if (value == null) {
             return 0L;

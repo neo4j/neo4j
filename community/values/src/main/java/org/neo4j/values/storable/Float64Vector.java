@@ -77,11 +77,12 @@ public final class Float64Vector extends FloatingPointVector {
 
     @Override
     protected int unsafeCompareTo(Value other) {
-        final var that = (Float64Vector) other;
+        Float64Vector that = (Float64Vector) other;
         int comparison = Integer.compare(this.dimensions(), that.dimensions());
         if (comparison != 0) {
             return comparison;
         }
+
         return Arrays.compare(this.coordinates, that.coordinates);
     }
 

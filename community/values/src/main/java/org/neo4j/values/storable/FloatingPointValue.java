@@ -22,7 +22,7 @@ package org.neo4j.values.storable;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.utils.ValueMath;
 
-public abstract class FloatingPointValue extends NumberValue {
+public abstract sealed class FloatingPointValue extends NumberValue permits FloatValue, DoubleValue {
     public static final String CYPHER_TYPE_NAME = "FLOAT";
 
     @Override

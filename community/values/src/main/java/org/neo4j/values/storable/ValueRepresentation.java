@@ -62,6 +62,7 @@ public enum ValueRepresentation {
     INT8_ARRAY(ValueGroup.NUMBER_ARRAY, false),
     FLOAT64_ARRAY(ValueGroup.NUMBER_ARRAY, false),
     FLOAT32_ARRAY(ValueGroup.NUMBER_ARRAY, false),
+    VECTOR_ARRAY(ValueGroup.VECTOR_ARRAY, false),
     UUID_ARRAY(ValueGroup.UUID_ARRAY, false),
     GEOMETRY(ValueGroup.GEOMETRY, true) {
         @Override
@@ -336,12 +337,42 @@ public enum ValueRepresentation {
             };
         }
     },
-    INT8_VECTOR(ValueGroup.INT8_VECTOR, false),
-    INT16_VECTOR(ValueGroup.INT16_VECTOR, false),
-    INT32_VECTOR(ValueGroup.INT32_VECTOR, false),
-    INT64_VECTOR(ValueGroup.INT64_VECTOR, false),
-    FLOAT32_VECTOR(ValueGroup.FLOAT32_VECTOR, false),
-    FLOAT64_VECTOR(ValueGroup.FLOAT64_VECTOR, false),
+    INT8_VECTOR(ValueGroup.INT8_VECTOR, true) {
+        @Override
+        public ArrayValue arrayOf(SequenceValue values) {
+            return Values.vectorArray(values);
+        }
+    },
+    INT16_VECTOR(ValueGroup.INT16_VECTOR, true) {
+        @Override
+        public ArrayValue arrayOf(SequenceValue values) {
+            return Values.vectorArray(values);
+        }
+    },
+    INT32_VECTOR(ValueGroup.INT32_VECTOR, true) {
+        @Override
+        public ArrayValue arrayOf(SequenceValue values) {
+            return Values.vectorArray(values);
+        }
+    },
+    INT64_VECTOR(ValueGroup.INT64_VECTOR, true) {
+        @Override
+        public ArrayValue arrayOf(SequenceValue values) {
+            return Values.vectorArray(values);
+        }
+    },
+    FLOAT32_VECTOR(ValueGroup.FLOAT32_VECTOR, true) {
+        @Override
+        public ArrayValue arrayOf(SequenceValue values) {
+            return Values.vectorArray(values);
+        }
+    },
+    FLOAT64_VECTOR(ValueGroup.FLOAT64_VECTOR, true) {
+        @Override
+        public ArrayValue arrayOf(SequenceValue values) {
+            return Values.vectorArray(values);
+        }
+    },
     UUID(ValueGroup.UUID, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
@@ -365,7 +396,9 @@ public enum ValueRepresentation {
     }
 
     public boolean canCreateArrayOfValueGroup() {
-        return canCreateArrayOf;
+        // ensure cannot create VectorArray this way until we are ready
+        // todo: remove VECTOR check when we want to allow Cypher to automatically create VectorArrays
+        return canCreateArrayOf && group.category() != ValueCategory.VECTOR;
     }
 
     public ValueGroup valueGroup() {

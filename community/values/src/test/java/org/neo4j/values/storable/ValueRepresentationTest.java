@@ -19,13 +19,13 @@
  */
 package org.neo4j.values.storable;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.ValueRepresentation.ANYTHING;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT32;
-import static org.neo4j.values.storable.ValueRepresentation.FLOAT32_VECTOR;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT64;
 import static org.neo4j.values.storable.ValueRepresentation.GEOMETRY;
 import static org.neo4j.values.storable.ValueRepresentation.INT16;
@@ -41,7 +41,10 @@ import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectAssertions;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
@@ -191,21 +194,21 @@ class ValueRepresentationTest {
 
     // Feel free to update or remove this test if it is no longer true for vectors.
     // Its aim is to exercise the !value.valueRepresentation().canCreateArrayOfValueGroup() case
-    @Test
-    void shouldFailToCreateArrayOfVector() {
-        ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> FLOAT32_VECTOR.arrayOf(list(Values.int32Vector(5))))
-                .isInstanceOf(CypherTypeException.class)
-                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22G03)
-                .hasStatusDescription("error: data exception - invalid value type")
-                .gqlCause()
-                .hasGqlStatus(GqlStatusInfoCodes.STATUS_22N01)
-                .hasStatusDescription(
-                        "error: data exception - invalid type. Expected the value vector([5], 1, INTEGER32) to be of type BOOLEAN, STRING, INTEGER, FLOAT, DATE, LOCAL TIME, ZONED TIME, LOCAL DATETIME, ZONED DATETIME, DURATION or POINT, but was of type INT32VECTOR.");
+    @ParameterizedTest
+    @MethodSource
+    void shouldFailToCreateArrayOfVector(ValueRepresentation vectorValueRepresentaiton) {
+        assertThat(vectorValueRepresentaiton.canCreateArrayOfValueGroup())
+                .as("remove when VectorArray is storable, IND-468")
+                .isFalse();
+    }
+
+    private static Stream<ValueRepresentation> shouldFailToCreateArrayOfVector() {
+        return Arrays.stream(ValueRepresentation.values())
+                .filter(rep -> rep.valueGroup().category() == ValueCategory.VECTOR);
     }
 
     @Test
     void shouldFailToCreateArrayOfMap() {
-
         ErrorGqlStatusObjectAssertions.assertThatThrownBy(() -> ANYTHING.arrayOf(list(MapValue.EMPTY)))
                 .isInstanceOf(CypherTypeException.class)
                 .hasGqlStatus(GqlStatusInfoCodes.STATUS_22G03)

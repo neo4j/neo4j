@@ -77,11 +77,12 @@ public final class Float32Vector extends FloatingPointVector {
 
     @Override
     protected int unsafeCompareTo(Value other) {
-        final var that = (Float32Vector) other;
+        Float32Vector that = (Float32Vector) other;
         int comparison = Integer.compare(this.dimensions(), that.dimensions());
         if (comparison != 0) {
             return comparison;
         }
+
         return Arrays.compare(this.coordinates, that.coordinates);
     }
 

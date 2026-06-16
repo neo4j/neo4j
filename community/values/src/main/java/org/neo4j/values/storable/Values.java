@@ -46,6 +46,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.Vector;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
+import org.neo4j.values.virtual.ListValue;
 
 /**
  * Entry point to the values library.
@@ -250,10 +253,13 @@ public final class Values {
     }
 
     public static PointValue point(Point point) {
-        // An optimization could be to do an instanceof PointValue check here
-        // and in that case just return the casted argument.
-        double[] coords = point.getCoordinate().getCoordinateCopy();
-        return new PointValue(crs(point.getCRS()), coords);
+        return switch (point) {
+            case PointValue pointValue -> pointValue;
+            default -> {
+                double[] coords = point.getCoordinate().getCoordinateCopy();
+                yield new PointValue(crs(point.getCRS()), coords);
+            }
+        };
     }
 
     public static PointValue minPointValue(PointValue reference) {
@@ -276,12 +282,12 @@ public final class Values {
         PointValue[] values = new PointValue[maybePoints.length];
         for (int i = 0; i < maybePoints.length; i++) {
             Value maybePoint = maybePoints[i];
-            if (!(maybePoint instanceof PointValue)) {
+            if (!(maybePoint instanceof PointValue pointValue)) {
                 throw new IllegalArgumentException(format(
                         "[%s:%s] is not a supported point value",
                         maybePoint, maybePoint.getClass().getName()));
             }
-            values[i] = Values.point((PointValue) maybePoint);
+            values[i] = Values.point(pointValue);
         }
         return pointArray(values);
     }
@@ -355,11 +361,37 @@ public final class Values {
         return new DurationArray(durations);
     }
 
-    public static Value vectorValue(Vector vector) {
+    public static VectorValue vectorValue(Vector vector) {
         return switch (vector) {
             case VectorValue value -> value;
-            case null -> NO_VALUE;
             default -> throw new UnsupportedOperationException("Unsupported type of Vector " + vector);
+        };
+    }
+
+    public static VectorValue vectorValue(NumberArray array) {
+        return switch (array) {
+            case ByteArray byteArray -> int8Vector(byteArray.asObjectCopy());
+            case ShortArray shortArray -> int16Vector(shortArray.asObjectCopy());
+            case IntArray intArray -> int32Vector(intArray.asObjectCopy());
+            case LongArray longArray -> int64Vector(longArray.asObjectCopy());
+            case FloatArray floatArray -> float32Vector(floatArray.asObjectCopy());
+            case DoubleArray doubleArray -> float64Vector(doubleArray.asObjectCopy());
+        };
+    }
+
+    public static VectorValue vectorValue(AnyValue value) {
+        return switch (value) {
+            case VectorValue vector -> vector;
+            case NumberArray array -> vectorValue(array);
+            case SequenceValue sequence -> {
+                ListValue list = sequence.asListValue();
+                if (list.itemValueRepresentation().valueGroup() == ValueGroup.NUMBER
+                        && list.toStorableArray() instanceof NumberArray array) {
+                    yield vectorValue(array);
+                }
+                throw new UnsupportedOperationException("Unsupported type of SequenceValue " + value);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported type of AnyValue " + value);
         };
     }
 
@@ -401,6 +433,19 @@ public final class Values {
 
     public static Float32Vector uncheckedFloat32Vector(float[] coordinates) {
         return new Float32Vector(coordinates);
+    }
+
+    public static VectorArray vectorArray(SequenceValue sequence) {
+        VectorValue[] vectors = new VectorValue[sequence.intSize()];
+        int i = 0;
+        for (AnyValue value : sequence) {
+            vectors[i] = Values.vectorValue(value);
+        }
+        return vectorArray(vectors);
+    }
+
+    public static VectorArray vectorArray(VectorValue... vectors) {
+        return new VectorArray(vectors);
     }
 
     public static UUIDValue uuidValue(long msb, long lsb) {
@@ -523,7 +568,7 @@ public final class Values {
             case Boolean[] array -> booleanArray(copy(array, new boolean[array.length]));
             case Character[] array -> charArray(copy(array, new char[array.length]));
             case Short[] array -> shortArray(copy(array, new short[array.length]));
-            case PointValue[] array -> pointArray(copyDefensively ? copy(array, new PointValue[value.length]) : array);
+            case PointValue[] array -> pointArray(copyDefensively ? copy(array, new PointValue[array.length]) : array);
             case Point[] array -> pointArray(array); // no need to copy here, pointArray copies
             case ZonedDateTime[] array ->
                 dateTimeArray(copyDefensively ? copy(array, new ZonedDateTime[array.length]) : array);
@@ -534,6 +579,8 @@ public final class Values {
                 localTimeArray(copyDefensively ? copy(array, new LocalTime[array.length]) : array);
             case LocalDate[] array -> dateArray(copyDefensively ? copy(array, new LocalDate[array.length]) : array);
             case TemporalAmount[] array -> durationArray(array); // no need to copy here, durationArray will copy
+            case VectorValue[] array ->
+                vectorArray(copyDefensively ? copy(array, new VectorValue[array.length]) : array);
             case UUID[] array -> uuidArray(array);
             default -> null;
         };

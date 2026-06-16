@@ -26,8 +26,8 @@ import org.neo4j.values.Comparison;
 import org.neo4j.values.VectorCandidate;
 import org.neo4j.values.utils.PrettyPrinter;
 
-public abstract sealed class VectorValue extends HashMemoizingScalarValue implements Vector, VectorCandidate
-        permits IntegralVector, FloatingPointVector {
+public abstract sealed class VectorValue extends HashMemoizingScalarValue
+        implements Vector, VectorCandidate, Comparable<VectorValue> permits IntegralVector, FloatingPointVector {
 
     public static final int MIN_VECTOR_DIMENSIONS = 1;
     public static final int MAX_VECTOR_DIMENSIONS = 4096;
@@ -41,7 +41,7 @@ public abstract sealed class VectorValue extends HashMemoizingScalarValue implem
 
     @Override
     public String prettyPrint() {
-        final var pp = new PrettyPrinter();
+        PrettyPrinter pp = new PrettyPrinter();
         writeTo(pp);
         return pp.value();
     }
@@ -55,6 +55,11 @@ public abstract sealed class VectorValue extends HashMemoizingScalarValue implem
         } else {
             return Comparison.UNDEFINED;
         }
+    }
+
+    @Override
+    public int compareTo(VectorValue that) {
+        return Values.COMPARATOR.compare(this, that);
     }
 
     @Override
@@ -90,7 +95,7 @@ public abstract sealed class VectorValue extends HashMemoizingScalarValue implem
     }
 
     public static void ensureFiniteCoordinates(float[] coordinates) {
-        for (var c : coordinates) {
+        for (float c : coordinates) {
             if (!Float.isFinite(c)) {
                 throw InvalidArgumentException.invalidVectorCoordinate(coordinates);
             }
@@ -98,7 +103,7 @@ public abstract sealed class VectorValue extends HashMemoizingScalarValue implem
     }
 
     public static void ensureFiniteCoordinates(double[] coordinates) {
-        for (var c : coordinates) {
+        for (double c : coordinates) {
             if (!Double.isFinite(c)) {
                 throw InvalidArgumentException.invalidVectorCoordinate(coordinates);
             }

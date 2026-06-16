@@ -234,9 +234,7 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
     @ParameterizedTest
     @EnumSource(
             mode = EXCLUDE,
-            names = {
-                "NO_VALUE",
-            })
+            names = {"NO_VALUE", "VECTOR_ARRAY"}) // todo: remove when vector array is storable, IND-468
     void copyShouldCopyExtremeValues(ValueGroup valueGroup) {
         // Given
         KEY extreme = newKeyState();

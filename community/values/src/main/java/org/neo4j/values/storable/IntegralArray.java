@@ -21,7 +21,7 @@ package org.neo4j.values.storable;
 
 import org.neo4j.hashing.HashFunction;
 
-public abstract class IntegralArray extends NumberArray {
+public abstract sealed class IntegralArray extends NumberArray permits ByteArray, ShortArray, IntArray, LongArray {
     public abstract long longValue(int offset);
 
     @Override

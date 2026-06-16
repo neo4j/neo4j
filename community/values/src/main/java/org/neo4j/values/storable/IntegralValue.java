@@ -23,7 +23,7 @@ import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.ValueMath;
 
-public abstract class IntegralValue extends NumberValue {
+public abstract sealed class IntegralValue extends NumberValue permits ByteValue, ShortValue, IntValue, LongValue {
     public static final String CYPHER_TYPE_NAME = "INTEGER";
 
     public static long safeCastIntegral(String name, AnyValue value, long defaultValue) {

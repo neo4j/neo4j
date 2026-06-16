@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
-public class ShortArray extends IntegralArray {
+public final class ShortArray extends IntegralArray {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(ShortArray.class);
 
     private final short[] value;

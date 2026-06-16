@@ -77,11 +77,12 @@ public final class Int64Vector extends IntegralVector {
 
     @Override
     protected int unsafeCompareTo(Value other) {
-        final var that = (Int64Vector) other;
+        Int64Vector that = (Int64Vector) other;
         int comparison = Integer.compare(this.dimensions(), that.dimensions());
         if (comparison != 0) {
             return comparison;
         }
+
         return Arrays.compare(this.coordinates, that.coordinates);
     }
 
