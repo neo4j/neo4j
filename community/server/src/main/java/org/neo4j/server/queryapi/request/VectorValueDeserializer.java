@@ -21,6 +21,7 @@ package org.neo4j.server.queryapi.request;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
@@ -36,22 +37,47 @@ public class VectorValueDeserializer extends StdDeserializer<VectorValue> {
 
     @Override
     public VectorValue deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        var coordinatesTypeFieldName = p.nextFieldName();
-        if (!coordinatesTypeFieldName.equals("coordinatesType")) {
-            throw new JsonParseException(
-                    p, "Expected property \'coordinatesType\' but found " + coordinatesTypeFieldName);
-        }
-        var coordinatesType = p.nextTextValue();
-        var coordinatesFieldName = p.nextFieldName();
-        if (!coordinatesFieldName.equals("coordinates")) {
-            throw new JsonParseException(p, "Expected property \'coordinates\' but found " + coordinatesFieldName);
-        }
-        p.nextToken();
-        var coordinates = p.readValueAs(String[].class);
+        var vectorValueTypedJson = readVectorValueTypedJson(p);
 
-        return CypherVectorTypes.safeValueOf(coordinatesType)
-                .map(type -> type.read(coordinates))
+        return CypherVectorTypes.safeValueOf(vectorValueTypedJson.coordinatesType())
+                .map(type -> type.read(vectorValueTypedJson.coordinates()))
                 .orElseThrow(() -> new UnsupportedTypeException(
-                        String.join(", ", coordinates), CypherVectorTypes.getTypeNames(), coordinatesType));
+                        String.join(", ", vectorValueTypedJson.coordinates()),
+                        CypherVectorTypes.getTypeNames(),
+                        vectorValueTypedJson.coordinatesType()));
     }
+
+    private static VectorValueTypedJson readVectorValueTypedJson(JsonParser p) throws IOException {
+        String coordinatesType = null;
+        String[] coordinates = null;
+        while (p.getCurrentToken() != JsonToken.END_OBJECT) {
+            var fieldName = p.nextFieldName();
+            switch (fieldName) {
+                case "coordinatesType":
+                    coordinatesType = p.nextTextValue();
+                    break;
+                case "coordinates":
+                    p.nextToken();
+                    coordinates = p.readValueAs(String[].class);
+                    break;
+
+                case null: // we might reach the end here
+                    break;
+                default:
+                    throw new JsonParseException(
+                            p, "Expected property \'coordinatesType\' or \'coordinates\'  but found " + fieldName);
+            }
+        }
+
+        if (coordinatesType == null) {
+            throw new JsonParseException(p, "Expected property \'coordinatesType\' not found.");
+        }
+        if (coordinates == null) {
+            throw new JsonParseException(p, "Expected property \'coordinates\' not found.");
+        }
+
+        return new VectorValueTypedJson(coordinatesType, coordinates);
+    }
+
+    private record VectorValueTypedJson(String coordinatesType, String[] coordinates) {}
 }
