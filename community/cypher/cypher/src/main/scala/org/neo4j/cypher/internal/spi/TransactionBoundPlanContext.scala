@@ -685,9 +685,10 @@ class TransactionBoundPlanContext(
     new TransactionBoundPlanContext(tc, notificationLogger, graphStatistics, cypherVersion)
 
   override def databaseMode: DatabaseMode = tc.kernelTransactionalContext.databaseMode match {
-    case TransactionalContext.DatabaseMode.SINGLE    => DatabaseMode.SINGLE
-    case TransactionalContext.DatabaseMode.COMPOSITE => DatabaseMode.COMPOSITE
-    case TransactionalContext.DatabaseMode.SHARDED   => DatabaseMode.SHARDED
+    case TransactionalContext.DatabaseMode.SINGLE       => DatabaseMode.SINGLE
+    case TransactionalContext.DatabaseMode.COMPOSITE    => DatabaseMode.COMPOSITE
+    case TransactionalContext.DatabaseMode.SHARDED      => DatabaseMode.SHARDED
+    case TransactionalContext.DatabaseMode.GRAPH_ENGINE => DatabaseMode.GRAPH_ENGINE
   }
 
   override def storageHasPropertyColocation: Boolean = {

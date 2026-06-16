@@ -29,10 +29,11 @@ import org.neo4j.internal.schema.constraints.ConstrainableType
  * SINGLE: A standard database
  * COMPOSITE: A composite database
  * SHARDED: A sharded database (which means properties are stored in a separate store and not in the graph store)
+ * GRAPH_ENGINE: Graph engine virtual database.
  */
 object DatabaseMode extends Enumeration {
   type DatabaseMode = Value
-  val SINGLE, COMPOSITE, SHARDED = Value
+  val SINGLE, COMPOSITE, SHARDED, GRAPH_ENGINE = Value
 }
 
 /**

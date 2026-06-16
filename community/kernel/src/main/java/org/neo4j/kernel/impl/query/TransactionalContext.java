@@ -131,6 +131,7 @@ public interface TransactionalContext {
     enum DatabaseMode {
         SINGLE,
         COMPOSITE,
-        SHARDED
+        SHARDED,
+        GRAPH_ENGINE
     }
 }
