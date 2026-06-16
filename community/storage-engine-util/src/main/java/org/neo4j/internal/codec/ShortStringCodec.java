@@ -21,6 +21,7 @@ package org.neo4j.internal.codec;
 
 import java.util.Arrays;
 import org.neo4j.util.BitBuffer;
+import org.neo4j.values.storable.UTF8StringValue;
 
 public enum ShortStringCodec {
     /**
@@ -667,27 +668,43 @@ public enum ShortStringCodec {
         }
         int encodings = ALL_BIT_MASK;
         // filter out larger encodings in one go
-        for (int i = 0; i < stringLength; i++) {
-            char c = string.charAt(i);
-            // non ASCII chars not supported
-            if (c >= TRANSLATION_COUNT) {
-                return 0;
-            }
-            data[i] = TRANSLATION[c];
-            // remove not matching encoders
-            encodings &= REMOVE_MASK[c];
-            if (encodings == 0) {
-                return 0;
-            }
+        for (int i = 0; i < stringLength && encodings != 0; i++) {
+            encodings = considerEncodingsForCharacter(encodings, string.charAt(i), data, i);
         }
+        return patchEncodingsForOutOfOrderCodecs(additionalCodecs, encodings);
+    }
 
+    public static int prepareEncode(UTF8StringValue string, byte[] data, boolean additionalCodecs) {
+        int encodings = ALL_BIT_MASK;
+        // filter out larger encodings in one go
+        var cpc = string.codePointCursor();
+        if (!cpc.hasNext()) {
+            return 0;
+        }
+        for (int i = 0; cpc.hasNext() && encodings != 0; i++) {
+            encodings = considerEncodingsForCharacter(encodings, cpc.nextCodePoint(), data, i);
+        }
+        return patchEncodingsForOutOfOrderCodecs(additionalCodecs, encodings);
+    }
+
+    private static int patchEncodingsForOutOfOrderCodecs(boolean additionalCodecs, int encodings) {
         // This is hard-coded for the out-of-order UPPERHEX/LOWERHEX codecs and makes them prioritized over
         // other (larger bits-per-character) codecs that can also encode them
         if (additionalCodecs && (encodings & HEX_CODECS_COMPATIBILITY_MASK) != 0) {
             encodings &= HEX_CODECS_FILTER;
         }
-
         return encodings;
+    }
+
+    private static int considerEncodingsForCharacter(int encodings, long codePoint, byte[] data, int i) {
+        // non ASCII chars not supported
+        if ((codePoint >= TRANSLATION_COUNT)) {
+            return 0;
+        }
+        int asciiCharacter = (int) (codePoint & 0xFF);
+        data[i] = TRANSLATION[asciiCharacter];
+        // remove not matching encoders
+        return encodings & REMOVE_MASK[asciiCharacter];
     }
 
     public static ShortStringCodec codecById(int id) {

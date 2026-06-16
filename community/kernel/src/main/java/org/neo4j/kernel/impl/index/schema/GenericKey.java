@@ -450,7 +450,7 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     }
 
     @Override
-    public void writeUTF8(byte[] bytes, int offset, int length) {
+    public void writeUTF8(byte[] bytes, int offset, int length, int numCodePoints) {
         byte[] dest = new byte[length];
         System.arraycopy(bytes, offset, dest, 0, length);
         writeStringBytes(dest, false);
