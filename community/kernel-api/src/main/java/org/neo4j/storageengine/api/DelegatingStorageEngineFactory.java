@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
@@ -395,7 +396,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
-            IndexProvidersAccess indexProvidersAccess,
+            Supplier<IndexProvidersAccess> indexProvidersAccess,
             int numShards,
             DependencyResolver storageSpecificArguments,
             DatabaseCreationOptions databaseCreationOptions,
@@ -469,7 +470,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
-            IndexProvidersAccess indexProvidersAccess,
+            Supplier<IndexProvidersAccess> indexProvidersAccess,
             int numShards,
             DependencyResolver storageSpecificArguments) {
         return delegate.incrementalBatchImporter(

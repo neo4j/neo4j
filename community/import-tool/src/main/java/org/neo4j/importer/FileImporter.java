@@ -185,7 +185,7 @@ public class FileImporter {
                     jobScheduler,
                     contextFactory,
                     importConfig,
-                    new IndexProvidersAccess() {
+                    () -> new IndexProvidersAccess() {
                         @Override
                         public IndexProviderMap access(
                                 PageCache pageCache,
@@ -203,6 +203,9 @@ public class FileImporter {
                                 TokenHolders tokenHolders) {
                             return unsupported();
                         }
+
+                        @Override
+                        public void close() {}
 
                         private IndexProviderMap unsupported() {
                             throw new UnsupportedOperationException(
@@ -291,14 +294,14 @@ public class FileImporter {
                     NullLogProvider.getInstance(),
                     new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()),
                     databaseConfig.get(duplication_user_messages));
-            var indexProviders = life.add(new DefaultIndexProvidersAccess(
+            Supplier<IndexProvidersAccess> indexProviders = () -> new DefaultIndexProvidersAccess(
                     storageEngineFactory,
                     fileSystem,
                     databaseConfig,
                     jobScheduler,
                     new SimpleLogService(logProvider),
                     pageCacheTracer,
-                    contextFactory));
+                    contextFactory);
             if (superFast) {
                 type.doSuperFastImport(
                         fileSystem,

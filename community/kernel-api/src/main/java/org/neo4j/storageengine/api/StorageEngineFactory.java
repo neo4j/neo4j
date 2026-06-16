@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.service.Service;
@@ -422,7 +423,7 @@ public interface StorageEngineFactory {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
-            IndexProvidersAccess indexProvidersAccess,
+            Supplier<IndexProvidersAccess> indexProvidersAccess,
             int numShards,
             DependencyResolver storageSpecificArguments,
             DatabaseCreationOptions databaseCreationOptions,
@@ -462,7 +463,7 @@ public interface StorageEngineFactory {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
-            IndexProvidersAccess indexProvidersAccess,
+            Supplier<IndexProvidersAccess> indexProvidersAccess,
             int numShards,
             DependencyResolver storageSpecificArguments);
 

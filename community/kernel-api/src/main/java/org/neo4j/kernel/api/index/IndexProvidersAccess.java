@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.Closeable;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -26,7 +27,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 
-public interface IndexProvidersAccess {
+public interface IndexProvidersAccess extends Closeable {
     IndexProviderMap access(
             PageCache pageCache,
             DatabaseLayout layout,

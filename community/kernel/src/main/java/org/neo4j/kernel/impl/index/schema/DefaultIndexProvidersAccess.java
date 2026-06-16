@@ -24,6 +24,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.index.schema.SchemaIndexExtensionLoader.instantiateExtensions;
 
+import java.io.IOException;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -125,5 +126,10 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
                 contextFactory,
                 pageCacheTracer,
                 dependencies));
+    }
+
+    @Override
+    public void close() throws IOException {
+        shutdown();
     }
 }

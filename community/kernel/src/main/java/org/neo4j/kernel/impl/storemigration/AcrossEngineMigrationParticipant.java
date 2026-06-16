@@ -28,6 +28,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.core.util.NullOutputStream;
 import org.neo4j.batchimport.api.AdditionalInitialIds;
 import org.neo4j.batchimport.api.BatchImporter;
@@ -51,11 +52,11 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DatabaseCreationOptions;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailMetadataFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
-import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -135,13 +136,11 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 .fromConfig(config)
                 .set(GraphDatabaseSettings.db_format, toVersion.formatName())
                 .build();
-        var life = new Lifespan();
-
         // Use the ids from the old logTail. This means that the importer will end up on the
         // same tx id as the logs migration
         AdditionalInitialIds additionalInitialIds = getInitialIds(tailMetadata);
-        var indexProviders = life.add(new DefaultIndexProvidersAccess(
-                targetStorageEngine, fileSystem, config, jobScheduler, logService, pageCacheTracer, contextFactory));
+        Supplier<IndexProvidersAccess> indexProviders = () -> new DefaultIndexProvidersAccess(
+                targetStorageEngine, fileSystem, config, jobScheduler, logService, pageCacheTracer, contextFactory);
 
         // The default progress output is a condensed and consolidated 0..100% progress,
         // which (probably for legacy reasons) is done via the special VisibleMigrationProgressMonitorFactory.
@@ -216,17 +215,16 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
 
         // Do the copy
         try (Input fromInput = srcStorageEngine.asBatchImporterInput(
-                        directoryLayoutArg,
-                        fileSystem,
-                        pageCache,
-                        pageCacheTracer,
-                        config,
-                        memoryTracker,
-                        ReadBehaviour.INCLUSIVE_STRICT,
-                        !keepNodeIds,
-                        contextFactory,
-                        tailMetadata);
-                life) {
+                directoryLayoutArg,
+                fileSystem,
+                pageCache,
+                pageCacheTracer,
+                config,
+                memoryTracker,
+                ReadBehaviour.INCLUSIVE_STRICT,
+                !keepNodeIds,
+                contextFactory,
+                tailMetadata)) {
             if (!targetStorageEngine.supportsVectorData() && fromInput.containsVectorData()) {
                 throw new UnsupportedOperationException("Provided input is known to contain vector value data, "
                         + "which is not supported by the target storage engine.");

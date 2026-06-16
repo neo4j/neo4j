@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
@@ -772,7 +773,7 @@ public class ImportCommand {
                 JobScheduler jobScheduler,
                 CursorContextFactory contextFactory,
                 Configuration importConfig,
-                IndexProvidersAccess indexProvidersAccess,
+                Supplier<IndexProvidersAccess> indexProvidersAccess,
                 PrintStream stdOut,
                 boolean verbose,
                 ShardingArguments shardingArguments,
@@ -797,7 +798,7 @@ public class ImportCommand {
                 Collector badCollector,
                 MemoryTracker memoryTracker,
                 Input input,
-                IndexProvidersAccess indexProvidersAccess,
+                Supplier<IndexProvidersAccess> indexProvidersAccess,
                 ShardingArguments shardingArguments,
                 Monitor monitor)
                 throws IOException;
@@ -822,7 +823,7 @@ public class ImportCommand {
                 Input input,
                 Charset encoding,
                 Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels,
-                IndexProvidersAccess indexProvidersAccess,
+                Supplier<IndexProvidersAccess> indexProvidersAccess,
                 ShardingArguments shardingArguments,
                 Monitor monitor)
                 throws IOException;
@@ -1233,7 +1234,7 @@ public class ImportCommand {
                 JobScheduler jobScheduler,
                 CursorContextFactory contextFactory,
                 Configuration importConfig,
-                IndexProvidersAccess indexProvidersAccess,
+                Supplier<IndexProvidersAccess> indexProvidersAccess,
                 PrintStream stdOut,
                 boolean verbose,
                 ShardingArguments shardingArguments,
@@ -1287,7 +1288,7 @@ public class ImportCommand {
                 Input input,
                 Charset encoding,
                 Map<Set<String>, List<FileGroup>> nodeFileGroupsByAdditionalLabels,
-                IndexProvidersAccess indexProvidersAccess,
+                Supplier<IndexProvidersAccess> indexProvidersAccess,
                 ShardingArguments shardingArguments,
                 Monitor monitor)
                 throws IOException {
@@ -1338,7 +1339,7 @@ public class ImportCommand {
                 Collector badCollector,
                 MemoryTracker memoryTracker,
                 Input input,
-                IndexProvidersAccess indexProvidersAccess,
+                Supplier<IndexProvidersAccess> indexProvidersAccess,
                 ShardingArguments shardingArguments,
                 Monitor monitor)
                 throws IOException {

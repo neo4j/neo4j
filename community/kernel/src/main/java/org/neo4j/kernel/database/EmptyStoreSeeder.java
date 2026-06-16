@@ -71,7 +71,6 @@ import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailMetadataFactoryImpl;
-import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.GeneratedStore;
@@ -180,8 +179,7 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
         Config updatedConfig = withoutTxLogPreAllocation(updateConfigVersion(config, kernelVersionForSeed));
         var indexProvidersAccess = indexProviders(storageEngineFactory, updatedConfig);
         var tempDatabaseLayout = cleanTempDatabaseLayout();
-        try (var life = new Lifespan(indexProvidersAccess);
-                var pageCache = openNonForcingSmallPageCache(fs, jobScheduler)) {
+        try (var pageCache = openNonForcingSmallPageCache(fs, jobScheduler)) {
             var batchImporter = batchImporter(
                     storageEngineFactory, updatedConfig, tempDatabaseLayout, pageCache, indexProvidersAccess);
             batchImporter.doImport(new NoInput());
@@ -251,7 +249,7 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
             Config dbConfig,
             DatabaseLayout tempDatabaseLayout,
             PageCache pageCache,
-            IndexProvidersAccess indexProvidersAccess) {
+            Supplier<IndexProvidersAccess> indexProvidersAccess) {
         var configuration = new Configuration.Overridden(DEFAULT) {
             @Override
             public ExternallyManagedPageCache providedPageCache() {
@@ -299,8 +297,8 @@ public class EmptyStoreSeeder implements StoreGenerator, StoreSeeder {
                 HardwareValidation.NONE);
     }
 
-    private DefaultIndexProvidersAccess indexProviders(StorageEngineFactory storageEngineFactory, Config dbConfig) {
-        return new DefaultIndexProvidersAccess(
+    private Supplier<IndexProvidersAccess> indexProviders(StorageEngineFactory storageEngineFactory, Config dbConfig) {
+        return () -> new DefaultIndexProvidersAccess(
                 storageEngineFactory,
                 fs,
                 dbConfig,

@@ -24,6 +24,7 @@ import static java.util.Comparator.comparingLong;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.batchimport.api.IncrementalBatchImporter;
@@ -70,7 +71,7 @@ public abstract class IncrementalBatchImporterFactory implements NamedService {
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
-            IndexProvidersAccess indexProvidersAccess);
+            Supplier<IndexProvidersAccess> indexProvidersAccess);
 
     public static IncrementalBatchImporterFactory withHighestPriority() {
         return Services.loadAll(IncrementalBatchImporterFactory.class).stream()
