@@ -73,6 +73,7 @@ import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
@@ -100,6 +101,7 @@ public class KernelRead implements Read {
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
     private final EntityCounter entityCounter;
     private final boolean applyAccessModeToTxState;
+    private final boolean multiVersioned;
     protected final TokenRead tokenRead;
     private final StoreCursors storageCursors;
     protected final QueryContext queryContext;
@@ -143,6 +145,7 @@ public class KernelRead implements Read {
                 index -> indexingService.getIndexProxy(index).newTokenReader());
         this.entityCounter = new EntityCounter(multiVersioned);
         this.applyAccessModeToTxState = multiVersioned;
+        this.multiVersioned = multiVersioned;
         this.assertOpen = assertOpen;
         this.accessModeProvider = accessModeProvider;
         this.parallel = parallel;
@@ -287,26 +290,28 @@ public class KernelRead implements Read {
                     log, indexDescriptor.getName(), "Multi-token index " + index + " does not support uniqueness.");
         }
         long indexEntryId = indexEntryResourceId(entityTokenIds[0], predicates);
-        // First try to find entity under a shared lock
-        // if not found upgrade to exclusive and try again
+        // First try to find entity under a shared lock (no actual lock under mvcc and it's not needed)
+        // If not found, upgrade to exclusive lock and retry with unbounded visibility to see all committed data
         entityLocks.acquireSharedIndexEntryLock(indexEntryId);
         exactEntityIndexSeek(cursor, cursorContext, reader, predicates);
-        if (!cursor.next()) {
-            entityLocks.releaseSharedIndexEntryLock(indexEntryId);
-            entityLocks.acquireExclusiveIndexEntryLock(indexEntryId);
-            exactEntityIndexSeek(cursor, cursorContext, reader, predicates);
-            if (cursor.next()) {
-                // we found it under the exclusive lock
-                // downgrade to a shared lock
-                entityLocks.acquireSharedIndexEntryLock(indexEntryId);
-                entityLocks.releaseExclusiveIndexEntryLock(indexEntryId);
-                return cursor.reference();
-            } else {
-                return StatementConstants.NO_SUCH_ENTITY;
-            }
+        if (cursor.next()) {
+            return cursor.reference();
         }
-
-        return cursor.reference();
+        entityLocks.releaseSharedIndexEntryLock(indexEntryId);
+        entityLocks.acquireExclusiveIndexEntryLock(indexEntryId);
+        CursorContext unboundedContext = cursorContext.createUnboundedRelatedContext();
+        exactEntityIndexSeek(cursor, unboundedContext, reader, predicates);
+        if (cursor.next()) {
+            if (multiVersioned) {
+                // in mvcc case throw transient exception so query is retried with updated visibility
+                throw TransactionConflictException.uniqueIndexEntryConflict(
+                        indexSession.reference().getName(), cursorContext.getVersionContext());
+            }
+            entityLocks.acquireSharedIndexEntryLock(indexEntryId);
+            entityLocks.releaseExclusiveIndexEntryLock(indexEntryId);
+            return cursor.reference();
+        }
+        return StatementConstants.NO_SUCH_ENTITY;
     }
 
     void indexSeekForExactProperty(

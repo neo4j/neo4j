@@ -916,20 +916,26 @@ private[internal] class TransactionBoundReadQueryContext(
       transactionalContext.cursorContext,
       transactionalContext.memoryTracker
     )
-    indexSearchMonitor.lockingUniqueIndexSeek(index.reference(), queries)
-    if (queries.exists(q => q.value() eq Values.NO_VALUE)) {
-      cursor.close()
-      RelationshipValueHit.EMPTY
-    } else {
-      val resultRelId = reads().lockingRelationshipUniqueIndexSeek(index, cursor, queries: _*)
-      if (StatementConstants.NO_SUCH_RELATIONSHIP == resultRelId) {
+    try {
+      indexSearchMonitor.lockingUniqueIndexSeek(index.reference(), queries)
+      if (queries.exists(q => q.value() eq Values.NO_VALUE)) {
         cursor.close()
         RelationshipValueHit.EMPTY
       } else {
-        resources.trace(cursor)
-        val values = queries.map(_.value()).toArray
-        new RelationshipValueHit(cursor, values)
+        val resultRelId = reads().lockingRelationshipUniqueIndexSeek(index, cursor, queries: _*)
+        if (StatementConstants.NO_SUCH_RELATIONSHIP == resultRelId) {
+          cursor.close()
+          RelationshipValueHit.EMPTY
+        } else {
+          resources.trace(cursor)
+          val values = queries.map(_.value()).toArray
+          new RelationshipValueHit(cursor, values)
+        }
       }
+    } catch {
+      case t: Throwable =>
+        cursor.close()
+        throw t
     }
   }
 

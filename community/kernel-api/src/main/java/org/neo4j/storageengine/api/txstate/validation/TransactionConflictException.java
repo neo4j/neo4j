@@ -74,8 +74,9 @@ public class TransactionConflictException extends TransientFailureException {
         return new TransactionConflictException(GQL_STATUS, databaseFile, versionContext, pageId);
     }
 
-    public static TransactionConflictException transactionConflict(String message, Exception cause) {
-        return new TransactionConflictException(GQL_STATUS, message, cause);
+    public static TransactionConflictException uniqueIndexEntryConflict(
+            String indexName, VersionContext versionContext) {
+        return new TransactionConflictException(GQL_STATUS, createMessageUniqueIndex(indexName, versionContext), null);
     }
 
     public static TransactionConflictException transactionConflict(Exception cause) {
@@ -135,6 +136,15 @@ public class TransactionConflictException extends TransientFailureException {
             String denseRelationshipStoreName, long denseRelationshipId, VersionContext versionContext) {
         return "Concurrent modification exception. Dense relationship " + denseRelationshipId + " in '"
                 + denseRelationshipStoreName + "' store is modified already by transaction "
+                + versionContext.chainHeadVersion() + ", while ongoing transaction highest visible is: "
+                + versionContext.highestClosed()
+                + ", with not yet visible transaction ids are: "
+                + Arrays.toString(versionContext.notVisibleTransactionIds()) + ".";
+    }
+
+    private static String createMessageUniqueIndex(String indexName, VersionContext versionContext) {
+        return "Concurrent modification exception. Matching entry in unique index " + indexName
+                + " is already created by transaction "
                 + versionContext.chainHeadVersion() + ", while ongoing transaction highest visible is: "
                 + versionContext.highestClosed()
                 + ", with not yet visible transaction ids are: "
