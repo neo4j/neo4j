@@ -319,7 +319,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("p1", "p2").withRows(Seq(Array(3, 3), Array(null, null))).withStatistics(
+    runtimeResult should beColumns("p1", "p2").withRows(Seq(Array(3, 3), Array[Any](null, null))).withStatistics(
       propertiesSet = 2
     )
   }

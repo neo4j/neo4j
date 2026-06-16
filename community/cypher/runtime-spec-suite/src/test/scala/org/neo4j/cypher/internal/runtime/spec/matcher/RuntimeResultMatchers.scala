@@ -36,7 +36,6 @@ import org.scalactic.Equality
 import org.scalactic.TolerantNumerics
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
-import org.scalatest.matchers.should.Matchers
 
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
@@ -47,7 +46,7 @@ import scala.collection.mutable.Map
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
-  self: Matchers =>
+  self: RuntimeSpecSuiteTestSuite =>
 
   protected def runtimeTestSupport: RuntimeTestSupport[CONTEXT]
 
@@ -95,7 +94,7 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
   }
 
   def matching(func: PartialFunction[Any, _]): RowsMatcher = {
-    CustomRowsMatcher(matchPattern(func))
+    CustomRowsMatcher(matchPatternLike(func))
   }
 
   def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(None, None, columns: _*)
@@ -454,69 +453,6 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
     }
   }
 
-  class IndexProfilesMatcher extends Matcher[QueryProfile] {
-    private lazy val matchers: mutable.Map[Int, IndexProfilesMatcher.MatchOption] = mutable.Map()
-
-    def addOne(operatorId: Int, profileMatcher: IndexProfilesMatcher.MatchOption): Unit = {
-      matchers.updateWith(operatorId) {
-        case Some(value) =>
-          Some(IndexProfilesMatcher.All(Seq(value, profileMatcher)))
-        case None =>
-          Some(profileMatcher)
-      }
-    }
-
-    def indexProfilesMatch(
-      matchers: Map[Int, IndexProfilesMatcher.MatchOption],
-      actual: Map[Int, Seq[String]]
-    ): Boolean = {
-      matchers.keySet == actual.keySet &&
-      matchers.forall { case (id, matcher) =>
-        matcher.doesMatch(actual(id))
-      }
-    }
-
-    override def apply(left: QueryProfile): MatchResult = {
-      val actualIndexesUsed = matchers.map {
-        case (id: Int, _) =>
-          id -> left.operatorProfile(id).indexesUsed().map(_.getName).toSeq
-      }
-      MatchResult(
-        matches = indexProfilesMatch(matchers, actualIndexesUsed),
-        rawFailureMessage = s"expected to use indexes $matchers but found $actualIndexesUsed",
-        rawNegatedFailureMessage = ""
-      )
-    }
-  }
-
-  object IndexProfilesMatcher {
-    def anyOf(indexNames: String*): IndexProfilesMatcher.MatchOption = Any(indexNames.map(Unary))
-    def allOf(indexNames: String*): IndexProfilesMatcher.MatchOption = All(indexNames.map(Unary))
-    def not(matcher: IndexProfilesMatcher.MatchOption): IndexProfilesMatcher.MatchOption = Not(matcher)
-
-    sealed trait MatchOption {
-      def doesMatch(targets: Seq[String]): Boolean
-    }
-
-    case class Unary(name: String) extends MatchOption {
-      override def doesMatch(targets: Seq[String]): Boolean = targets.contains(name)
-    }
-
-    case class Any(anyMatches: Seq[MatchOption]) extends MatchOption {
-      override def doesMatch(targets: Seq[String]): Boolean = anyMatches.exists(_.doesMatch(targets))
-    }
-
-    case class All(allMatches: Seq[MatchOption]) extends MatchOption {
-      override def doesMatch(targets: Seq[String]): Boolean = allMatches.forall(_.doesMatch(targets))
-    }
-
-    case class Not(negativeMatch: MatchOption) extends MatchOption {
-      override def doesMatch(targets: Seq[String]): Boolean = !negativeMatch.doesMatch(targets)
-    }
-  }
-
-  case class DiffItem(missingRow: ListValue, fromA: Boolean)
-
   def failProbe(failAfterRowCount: Int, fail: String => Throwable = msg => new RuntimeException(msg)): Prober.Probe =
     new Prober.Probe {
       val c = new AtomicInteger(0)
@@ -543,4 +479,69 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
         }
       }
     }
+}
+
+// The declarations below are not nested in the trait above because the Scala 2.13 TASTy reader
+// cannot resolve objects (including synthetic companions) nested in a Scala 3 trait.
+case class DiffItem(missingRow: ListValue, fromA: Boolean)
+
+class IndexProfilesMatcher extends Matcher[QueryProfile] {
+  private lazy val matchers: mutable.Map[Int, IndexProfilesMatcher.MatchOption] = mutable.Map()
+
+  def addOne(operatorId: Int, profileMatcher: IndexProfilesMatcher.MatchOption): Unit = {
+    matchers.updateWith(operatorId) {
+      case Some(value) =>
+        Some(IndexProfilesMatcher.All(Seq(value, profileMatcher)))
+      case None =>
+        Some(profileMatcher)
+    }
+  }
+
+  def indexProfilesMatch(
+    matchers: Map[Int, IndexProfilesMatcher.MatchOption],
+    actual: Map[Int, Seq[String]]
+  ): Boolean = {
+    matchers.keySet == actual.keySet &&
+    matchers.forall { case (id, matcher) =>
+      matcher.doesMatch(actual(id))
+    }
+  }
+
+  override def apply(left: QueryProfile): MatchResult = {
+    val actualIndexesUsed = matchers.map {
+      case (id: Int, _) =>
+        id -> left.operatorProfile(id).indexesUsed().map(_.getName).toSeq
+    }
+    MatchResult(
+      matches = indexProfilesMatch(matchers, actualIndexesUsed),
+      rawFailureMessage = s"expected to use indexes $matchers but found $actualIndexesUsed",
+      rawNegatedFailureMessage = ""
+    )
+  }
+}
+
+object IndexProfilesMatcher {
+  def anyOf(indexNames: String*): IndexProfilesMatcher.MatchOption = Any(indexNames.map(Unary(_)))
+  def allOf(indexNames: String*): IndexProfilesMatcher.MatchOption = All(indexNames.map(Unary(_)))
+  def not(matcher: IndexProfilesMatcher.MatchOption): IndexProfilesMatcher.MatchOption = Not(matcher)
+
+  sealed trait MatchOption {
+    def doesMatch(targets: Seq[String]): Boolean
+  }
+
+  case class Unary(name: String) extends MatchOption {
+    override def doesMatch(targets: Seq[String]): Boolean = targets.contains(name)
+  }
+
+  case class Any(anyMatches: Seq[MatchOption]) extends MatchOption {
+    override def doesMatch(targets: Seq[String]): Boolean = anyMatches.exists(_.doesMatch(targets))
+  }
+
+  case class All(allMatches: Seq[MatchOption]) extends MatchOption {
+    override def doesMatch(targets: Seq[String]): Boolean = allMatches.forall(_.doesMatch(targets))
+  }
+
+  case class Not(negativeMatch: MatchOption) extends MatchOption {
+    override def doesMatch(targets: Seq[String]): Boolean = !negativeMatch.doesMatch(targets)
+  }
 }

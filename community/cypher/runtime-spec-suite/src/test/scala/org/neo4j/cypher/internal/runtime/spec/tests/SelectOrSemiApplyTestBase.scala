@@ -1148,7 +1148,7 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .apply
+      .apply()
       .|.distinct("x AS x")
       .|.union()
       .|.|.selectOrSemiApply("x = 8 AND j = 1").withLeveragedOrder()

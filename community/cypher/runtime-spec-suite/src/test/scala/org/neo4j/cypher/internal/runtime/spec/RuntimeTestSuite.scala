@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.Prober
+import org.neo4j.cypher.internal.macros.ControlFlowMacros3.doWhile
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
@@ -46,7 +47,6 @@ import org.neo4j.cypher.internal.runtime.spec.matcher.RuntimeResultMatchers
 import org.neo4j.cypher.internal.runtime.spec.resolver.RuntimeTestResolver
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
@@ -120,7 +120,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   val runtime: CypherRuntime[CONTEXT],
   workloadMode: WorkloadMode = WorkloadMode.Off,
   testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
-) extends CypherFunSuite
+) extends RuntimeSpecSuiteTestSuite
     with AstConstructionTestSupport
     with RuntimeTestSupportExecution[CONTEXT]
     with GraphCreation[CONTEXT]
@@ -526,6 +526,9 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
 
   def shouldSetup: Boolean
 
+  // resolves the conflicting overrides of AnyFunSuiteLike and BeforeAndAfterAll; can be removed with ScalaTest 3
+  override def run(testName: Option[String], args: Args): Status = super.run(testName, args)
+
   override protected def beforeEach(): Unit = {
     if (shouldSetup) {
       DebugSupport.TIMELINE.beginTime()
@@ -577,7 +580,7 @@ trait RuntimeTestResult {
 }
 
 trait RuntimeTestResultConsumptionController {
-  def consume(runtimeResult: RuntimeResult)
+  def consume(runtimeResult: RuntimeResult): Unit
 }
 
 case object ConsumeAllThenCloseResultConsumer extends RuntimeTestResultConsumptionController {
@@ -591,9 +594,9 @@ case class ConsumeNByNThenCloseResultConsumer(nRowsPerRequest: Int) extends Runt
 
   override def consume(runtimeResult: RuntimeResult): Unit = {
     Using.resource(runtimeResult) { r =>
-      do {
+      doWhile {
         r.request(nRowsPerRequest)
-      } while (r.await())
+      }(r.await())
     }
   }
 }
@@ -603,10 +606,10 @@ case class ConsumeSlowlyNByNThenCloseResultConsumer(nRowsPerRequest: Int, sleepN
 
   override def consume(runtimeResult: RuntimeResult): Unit = {
     Using.resource(runtimeResult) { r =>
-      do {
+      doWhile {
         Thread.sleep(0L, sleepNanos)
         r.request(nRowsPerRequest)
-      } while (r.await())
+      }(r.await())
     }
   }
 }

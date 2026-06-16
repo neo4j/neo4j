@@ -36,6 +36,11 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
+import org.neo4j.cypher.internal.runtime.spec.tests.InputStreams.E_INT
+import org.neo4j.cypher.internal.runtime.spec.tests.InputStreams.E_INT_IN_DISTINCT
+import org.neo4j.cypher.internal.runtime.spec.tests.InputStreams.E_NODE_PRIMITIVE
+import org.neo4j.cypher.internal.runtime.spec.tests.InputStreams.E_NODE_VALUE
+import org.neo4j.cypher.internal.runtime.spec.tests.InputStreams.ValueToEstimate
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.largeMaxMemory
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.largeObjectThreshold
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase.maxMemory
@@ -74,6 +79,21 @@ object MemoryManagementTestBase {
 
   val perWorkerGrabSize: Long = ByteUnit.kibiBytes(8)
   val largeObjectThreshold: Long = 2048
+}
+
+object InputStreams {
+
+  // The members are not defined in the trait below because the Scala 2.13 TASTy reader
+  // cannot resolve objects nested in a Scala 3 trait.
+  sealed trait ValueToEstimate
+  // a single int column
+  case object E_INT extends ValueToEstimate
+  // a single int column used in DISTINCT
+  case object E_INT_IN_DISTINCT extends ValueToEstimate
+  // a single node column, which can be stored in a long-slot in slotted
+  case object E_NODE_PRIMITIVE extends ValueToEstimate
+  // a single node column, which cannot be stored in a long-slot in slotted
+  case object E_NODE_VALUE extends ValueToEstimate
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -135,16 +155,6 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   protected def killAfterNRows(rowSize: Long): Long = {
     ((MemoryManagementTestBase.maxMemory / rowSize) * 1.2).toLong // An extra of 20% rows to account for mis-estimation and batching
   }
-
-  sealed trait ValueToEstimate
-  // a single int column
-  case object E_INT extends ValueToEstimate
-  // a single int column used in DISTINCT
-  case object E_INT_IN_DISTINCT extends ValueToEstimate
-  // a single node column, which can be stored in a long-slot in slotted
-  case object E_NODE_PRIMITIVE extends ValueToEstimate
-  // a single node column, which cannot be stored in a long-slot in slotted
-  case object E_NODE_VALUE extends ValueToEstimate
 
   /**
    * Estimate the size of an object after converting it into a Neo4j value.

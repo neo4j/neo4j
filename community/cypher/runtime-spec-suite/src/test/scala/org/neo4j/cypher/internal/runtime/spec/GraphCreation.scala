@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
+import org.neo4j.cypher.internal.runtime.spec.GraphCreation.Connectivity
+import org.neo4j.cypher.internal.runtime.spec.GraphCreation.NodeConnections
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.NodeSpec
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.NodeSpec.WithLabel
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.NodeSpec.WithProperty
@@ -695,15 +697,6 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     (globalCenter, nNodes)
   }
 
-  case class Connectivity(atLeast: Int, atMost: Int, relType: String)
-
-  /**
-   * All outgoing relationships of a node
-   * @param from the start node
-   * @param connections the end nodes rels, grouped by rel type
-   */
-  case class NodeConnections(from: Node, connections: Map[String, Seq[Node]])
-
   /**
    * Randomly connect nodes.
    * @param nodes all nodes to connect.
@@ -783,7 +776,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     rels.map {
       case (from, to, typ, props) =>
         val r = nodes(from).createRelationshipTo(nodes(to), RelationshipType.withName(typ))
-        props.foreach((r.setProperty _).tupled)
+        props.foreach { case (key, value) => r.setProperty(key, value) }
         r
     }
   }
@@ -965,6 +958,17 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
 
 object GraphCreation {
 
+  // The case classes are not defined in the trait above because the Scala 2.13 TASTy reader
+  // cannot resolve objects (including synthetic companions) nested in a Scala 3 trait.
+  case class Connectivity(atLeast: Int, atMost: Int, relType: String)
+
+  /**
+   * All outgoing relationships of a node
+   * @param from the start node
+   * @param connections the end nodes rels, grouped by rel type
+   */
+  case class NodeConnections(from: Node, connections: Map[String, Seq[Node]])
+
   sealed trait NodeSpec
 
   object NodeSpec {
@@ -972,7 +976,7 @@ object GraphCreation {
     case class WithProperty(key: String, value: Any) extends NodeSpec
 
     implicit def labelStringToSpec(string: String): NodeSpec = WithLabel(Label.label(string))
-    implicit def propTupleToSpec(tuple: (String, Any)): NodeSpec = WithProperty.tupled(tuple)
+    implicit def propTupleToSpec(tuple: (String, Any)): NodeSpec = WithProperty(tuple._1, tuple._2)
   }
 
   case class ComplexGraph(

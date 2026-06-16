@@ -289,7 +289,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected =
       Array(
-        Array[Any](n1, Array.empty, n1),
+        Array[Any](n1, Array.empty[Any], n1),
         Array[Any](n1, Array(r1), n2),
         Array[Any](n1, Array(r1, r3), n3),
         Array[Any](n1, Array(r2), n2),
@@ -338,7 +338,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected =
       Array(
-        Array[Any](n1, Array.empty, n1),
+        Array[Any](n1, Array.empty[Any], n1),
         Array[Any](n1, Array(r1), n2),
         Array[Any](n1, Array(r2), n2)
       )
@@ -505,8 +505,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected: Array[Array[Any]] =
       Array(
-        Array(n1, Array(r1, r3), n3),
-        Array(n1, Array(r2, r3), n3)
+        Array[Any](n1, Array(r1, r3), n3),
+        Array[Any](n1, Array(r2, r3), n3)
       )
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
@@ -530,7 +530,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(n1, n3)))
 
     // then
-    val expected: Array[Array[Any]] = Array(Array(n1, Array(r4), n3))
+    val expected: Array[Array[Any]] = Array(Array[Any](n1, Array(r4), n3))
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
@@ -554,8 +554,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected: Array[Array[Any]] = Array(
-      Array(n1, Array(r1, r3), n3),
-      Array(n1, Array(r2, r3), n3)
+      Array[Any](n1, Array(r1, r3), n3),
+      Array[Any](n1, Array(r2, r3), n3)
     )
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)

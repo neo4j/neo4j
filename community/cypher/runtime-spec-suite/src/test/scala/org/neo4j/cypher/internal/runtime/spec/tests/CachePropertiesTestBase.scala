@@ -418,7 +418,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(nodes.map(n => Array[Any](n)): _*))
 
     // then
-    val expected = nodes.map(_ => Array(null, null))
+    val expected = nodes.map(_ => Array[Any](null, null))
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
@@ -453,7 +453,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.map(_ => Array(null))
+    val expected = nodes.map(_ => Array[Any](null))
     runtimeResult should beColumns("x").withRows(expected)
   }
 

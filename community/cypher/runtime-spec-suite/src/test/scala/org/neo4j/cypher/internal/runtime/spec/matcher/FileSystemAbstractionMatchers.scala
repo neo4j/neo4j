@@ -27,6 +27,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.util.Using
+import scala.util.boundary
 
 trait FileSystemAbstractionMatchers {
 
@@ -60,22 +61,24 @@ trait FileSystemAbstractionMatchers {
         s"File '$pathString' did not contain '$expected'",
         s"File '$pathString' did contain '$expected'"
       )
-      Using.resource(left.read(path)) { read =>
-        val bufferSize = math.max(expected.length * 2, 16_000)
-        val buffer = ByteBuffer.wrap(new Array[Byte](bufferSize))
-        while (read.read(buffer) > 0) {
-          val lastNewLinePos = buffer.array().lastIndexOf('\n', buffer.position())
-          require(lastNewLinePos > 0)
-          val readString = new String(buffer.array(), 0, lastNewLinePos, UTF_8)
-          // println(readString)
-          if (readString.contains(expected)) {
-            return result(matches = true)
+      boundary {
+        Using.resource(left.read(path)) { read =>
+          val bufferSize = math.max(expected.length * 2, 16_000)
+          val buffer = ByteBuffer.wrap(new Array[Byte](bufferSize))
+          while (read.read(buffer) > 0) {
+            val lastNewLinePos = buffer.array().lastIndexOf('\n', buffer.position())
+            require(lastNewLinePos > 0)
+            val readString = new String(buffer.array(), 0, lastNewLinePos, UTF_8)
+            // println(readString)
+            if (readString.contains(expected)) {
+              boundary.break(result(matches = true))
+            }
+            buffer.position(lastNewLinePos)
+            buffer.clear()
           }
-          buffer.position(lastNewLinePos)
-          buffer.clear()
         }
+        result(matches = false)
       }
-      result(matches = false)
     }
   }
 

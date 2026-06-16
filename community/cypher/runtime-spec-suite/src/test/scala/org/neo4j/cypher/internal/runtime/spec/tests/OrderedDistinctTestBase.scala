@@ -553,7 +553,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     10,
     Int.MaxValue
   ).foreach {
-    limit: Int =>
+    (limit: Int) =>
       {
         test(s"should work with limit = $limit on top under apply, one column, one sorted") {
           // given

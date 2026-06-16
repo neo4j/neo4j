@@ -376,7 +376,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       case Parallel => 0.4
       case _        => 0.1
     }
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input _, input _, toleratedDeviation = toleratedDeviation)
+    compareMemoryUsage(logicalQuery1, logicalQuery2, input, input, toleratedDeviation = toleratedDeviation)
   }
 
   test("should deallocate memory between right outer hash joins") {
@@ -428,7 +428,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       case Parallel => 0.4
       case _        => 0.1
     }
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input _, input _, toleratedDeviation = toleratedDeviation)
+    compareMemoryUsage(logicalQuery1, logicalQuery2, input, input, toleratedDeviation = toleratedDeviation)
   }
 
   test("should deallocate memory between value hash joins") {
@@ -814,8 +814,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val planWithDiscard = plan(discard = true)
 
     // then
-    val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput _)
-    val maxMemWithDiscard = maxAllocatedMem(planWithDiscard, createInput _)
+    val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput)
+    val maxMemWithDiscard = maxAllocatedMem(planWithDiscard, createInput)
 
     val expectedSavingsPerRow = Values.of(createInputRow()(0)).estimatedHeapUsage()
     val expectedSavings = nRows * expectedSavingsPerRow
@@ -855,8 +855,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val planWithDiscard = plan(true)
 
     // then
-    val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput _)
-    val maxMemWithDiscard = maxAllocatedMem(planWithDiscard, createInput _)
+    val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput)
+    val maxMemWithDiscard = maxAllocatedMem(planWithDiscard, createInput)
 
     val expectedSavingsPerRow = Values.of(createInputRow()(0)).estimatedHeapUsage()
     val expectedSavings = nRows * expectedSavingsPerRow
@@ -1142,8 +1142,10 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val deviationPercentage = Math.round(deviation * 100)
     val toleratedDeviationPercentage = Math.round(toleratedDeviation * 100)
     val deviationMessage =
-      s"$deviationPercentage%${if (toleratedDeviation > 0.0d) s" is more than tolerated ${toleratedDeviationPercentage}%"
-        else ""}"
+      s"$deviationPercentage%${
+          if (toleratedDeviation > 0.0d) s" is more than tolerated ${toleratedDeviationPercentage}%"
+          else ""
+        }"
 
     withClue(
       s"Query 1 used $maxMem1 bytes and Query 2 used $maxMem2 bytes ($memDiff bytes difference, $deviationMessage):\n"

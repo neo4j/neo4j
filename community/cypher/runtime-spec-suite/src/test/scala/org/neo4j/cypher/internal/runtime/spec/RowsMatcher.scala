@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros3.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.spec.RowDiffStringBuilder.PARTIALLY_ORDERED_GROUP_SEPARATOR
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
@@ -429,12 +429,7 @@ trait RowOrderMatcher extends RowsMatcher {
       return false
     }
 
-    for (row <- rows) {
-      if (!onRow(columns, row)) {
-        return false
-      }
-    }
-    onComplete()
+    rows.forall(row => onRow(columns, row)) && onComplete()
   }
 
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)

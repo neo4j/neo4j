@@ -80,6 +80,7 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
+import org.scalactic.anyvals.PosInt
 import org.scalatest.LoneElement
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -1160,7 +1161,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .withRows(expected)
   }
 
-  private def testIntegrityFailInsideBuffer() {
+  private def testIntegrityFailInsideBuffer(): Unit = {
     val throwingPlan = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .transactionApply(1, onErrorBehaviour = OnErrorFail)
@@ -1599,7 +1600,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(PosInt.from(100).get)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "i2", "started", "committed", "errorMessage")
         .projection(
@@ -1669,7 +1670,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(PosInt.from(100).get)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "i2")
         .transactionApply(
@@ -1731,7 +1732,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(PosInt.from(100).get)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "i2", "started", "committed")
         .projection(
@@ -1814,7 +1815,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
     }
 
     // TODO Are we leaking memory, got failure when I turned up minSuccessful?
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(50)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(PosInt.from(50).get)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "i2", "started", "committed")
         .projection(

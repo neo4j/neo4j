@@ -54,7 +54,9 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
     runtime: CypherRuntime[CONTEXT],
     workloadMode: WorkloadMode,
     logProvider: InternalLogProvider,
-    debugOptions: CypherDebugOptions = CypherDebugOptions.default
+    // No default value: a default getter would synthesize a companion object, which the
+    // Scala 2.13 TASTy reader cannot resolve when nested in a Scala 3 trait
+    debugOptions: CypherDebugOptions
   ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions) {
 
     override protected def rewriteLogicalQuery(

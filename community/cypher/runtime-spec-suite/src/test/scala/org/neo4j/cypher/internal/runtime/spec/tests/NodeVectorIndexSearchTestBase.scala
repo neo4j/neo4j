@@ -97,7 +97,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       runtime
     ) with QueryExpressionConstructionTestSupport {
 
-  private val configurations = Seq(
+  private val configurations: Seq[(String, VectorValue)] = Seq(
     ("INT64", int64Vector(1L to sizeHint: _*)),
     ("INT32", int32Vector(1 to sizeHint: _*)),
     ("INT16", int16Vector((1 to sizeHint).map(_.toShort): _*)),

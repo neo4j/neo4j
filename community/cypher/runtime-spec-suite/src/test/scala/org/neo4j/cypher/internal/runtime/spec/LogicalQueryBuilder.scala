@@ -95,6 +95,8 @@ class LogicalQueryBuilder(
     this
   }
 
+  private[spec] def buildInnerLogicalPlan(): LogicalPlan = buildLogicalPlan()
+
   def build(readOnly: Boolean = true): LogicalQuery = {
     val logicalPlan = buildLogicalPlan()
     LogicalQuery(
@@ -173,7 +175,7 @@ object LogicalQueryBuilder {
 
   def nestedPlanCollectExpression(innerPlan: LogicalQueryBuilder, e: Expression): NestedPlanCollectExpression = {
     NestedPlanCollectExpression(
-      innerPlan.buildLogicalPlan(),
+      innerPlan.buildInnerLogicalPlan(),
       e,
       "collect(...)"
     )(pos)

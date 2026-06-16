@@ -1350,7 +1350,7 @@ abstract class RemoteBatchPropertiesWithFilterTestBase[CONTEXT <: RuntimeContext
     val expected = (0 until 10).map(i =>
       i % 2 match {
         case 1 => Array(1, i * 2)
-        case _ => Array(null, null)
+        case _ => Array[Any](null, null)
       }
     )
     result should beColumns("prop1", "prop2").withRows(expected)
@@ -1405,7 +1405,7 @@ abstract class RemoteBatchPropertiesWithFilterTestBase[CONTEXT <: RuntimeContext
     val expected = (0 until 10).map(i =>
       i % 2 match {
         case 0 => Array(0, i * 2)
-        case _ => Array(null, null)
+        case _ => Array[Any](null, null)
       }
     )
 

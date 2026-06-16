@@ -73,6 +73,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 import org.scalacheck.Gen
+import org.scalactic.anyvals.PosInt
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -1509,7 +1510,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(50)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(PosInt.from(50).get)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i")
         .transactionForeach(
@@ -1571,7 +1572,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(50)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(PosInt.from(50).get)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "started", "committed")
         .projection(
@@ -1652,7 +1653,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(50)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(PosInt.from(50).get)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "started", "committed")
         .projection(

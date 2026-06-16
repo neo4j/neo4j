@@ -1305,6 +1305,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val result = execute(logicalQuery, runtime)
-    result should beColumns("n0").withRows(inOrder(Seq(Array(null), Array(null))))
+    result should beColumns("n0").withRows(inOrder(Seq(Array[Any](null), Array[Any](null))))
   }
 }

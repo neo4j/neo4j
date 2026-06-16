@@ -219,8 +219,10 @@ case class TestPlanCombinationRewriterConfig(
        |  seed = Some(${_seed}L),
        |  randomizeMiddleStepOrdering = $randomizeMiddleStepOrdering,
        |  ${if (preSteps.nonEmpty) s"preSteps = Seq(${preSteps.mkString(s"$nl    ", s"$nl    ", "")}$nl  )," else ""}
-       |  ${if (middleSteps.nonEmpty) s"middleSteps = Seq(${middleSteps.mkString(s"$nl    ", s"$nl    ", "")}$nl  ),"
-      else ""}
+       |  ${
+        if (middleSteps.nonEmpty) s"middleSteps = Seq(${middleSteps.mkString(s"$nl    ", s"$nl    ", "")}$nl  ),"
+        else ""
+      }
        |  ${if (postSteps.nonEmpty) s"postSteps = Seq(${postSteps.mkString(s"$nl    ", s"$nl    ", "")}$nl  )" else ""}
        |  ${if (hints.nonEmpty) s"hints = ListSet(${hints.mkString(s"$nl    ", s"$nl    ", "")}$nl  )" else ""}
        |)""".stripMargin

@@ -385,20 +385,22 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   private def relationshipTypeIndexIsOrdered: Boolean = {
+    // No boundary/break here: Using.apply wraps the body in Try, which would swallow boundary.Break
+    var supportsOrdering: Option[Boolean] = None
     Using(graphDb.beginTx) { tx =>
       {
         tx.schema.getIndexes.forEach({ id =>
           {
             val index = id.asInstanceOf[IndexDefinitionImpl].getIndexReference
             if (
-              index.schema.isAnyTokenSchemaDescriptor && (index.schema.entityType eq EntityType.RELATIONSHIP) && (index.getIndexType eq IndexType.LOOKUP)
+              supportsOrdering.isEmpty && index.schema.isAnyTokenSchemaDescriptor && (index.schema.entityType eq EntityType.RELATIONSHIP) && (index.getIndexType eq IndexType.LOOKUP)
             ) {
-              return index.getCapability.supportsOrdering()
+              supportsOrdering = Some(index.getCapability.supportsOrdering())
             }
           }
         })
       }
     }
-    fail("Didn't find the relationship type token index")
+    supportsOrdering.getOrElse(fail("Didn't find the relationship type token index"))
   }
 }

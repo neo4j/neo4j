@@ -19,18 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
+import org.scalatest.Args
+import org.scalatest.Status
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Random
 
-class RowsMatcherTest extends CypherFunSuite with TestName {
+class RowsMatcherTest extends RuntimeSpecSuiteTestSuite with TestName {
+
+  // resolves the conflicting overrides of TestName and BeforeAndAfterEach; can be removed with ScalaTest 3
+  override protected def runTest(testName: String, args: Args): Status = super.runTest(testName, args)
 
   private val NO_ROWS = IndexedSeq[Array[AnyValue]]()
   private val NO_PARTIAL_ROWS = IndexedSeq[IndexedSeq[Array[AnyValue]]]()

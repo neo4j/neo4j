@@ -96,7 +96,7 @@ abstract class VariableLivenessTestBase[CONTEXT <: RuntimeContext](
       case Some(CypherRuntimeOption.slotted) =>
         probe.seenRows shouldBe Array(Array(longValue(2)))
       case _ =>
-        probe.seenRows shouldBe Array(Array(null))
+        probe.seenRows shouldBe Array(Array[Any](null))
     }
     runtimeResult should beColumns("a", "c").withSingleRow(1, 3)
   }

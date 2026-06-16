@@ -20,18 +20,15 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.util.test_helpers.WithFixtureClue
 import org.neo4j.values.storable.RandomValues
 import org.neo4j.values.storable.RandomValuesUtils
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueType
-import org.scalatest.Failed
-import org.scalatest.Outcome
-import org.scalatest.TestSuite
-import org.scalatest.TestSuiteMixin
 
 import scala.util.Random
 
-trait RandomValuesTestSupport[CONTEXT <: RuntimeContext] extends TestSuiteMixin with TestSuite {
+trait RandomValuesTestSupport[CONTEXT <: RuntimeContext] extends WithFixtureClue {
   self: RuntimeTestSuite[CONTEXT] =>
 
   private val initialSeedSeed = Random.nextLong()
@@ -85,8 +82,8 @@ trait RandomValuesTestSupport[CONTEXT <: RuntimeContext] extends TestSuiteMixin 
   def randomAmong[T](values: Seq[T]): T = values(randomValues.nextInt(values.size))
   def shuffle[T](values: Seq[T]): Seq[T] = random.shuffle(values)
 
-  abstract override def withFixture(test: NoArgTest): Outcome = {
-    val clue = new { // Trick to defer evaluation since initialSeed is not available before the test is run.
+  override protected def testFailureClue: AnyRef =
+    new { // Trick to defer evaluation since initialSeed is not available before the test is run.
       override def toString: String =
         s"""
            |${classOf[RandomValuesTestSupport[CONTEXT]].getSimpleName} test failed with initial seed: ${initialSeed}L
@@ -95,25 +92,4 @@ trait RandomValuesTestSupport[CONTEXT <: RuntimeContext] extends TestSuiteMixin 
            |
            |""".stripMargin
     }
-    withClue(clue) {
-      try {
-        val outcome = super.withFixture(test)
-        outcome match {
-          case Failed(_: org.scalatest.exceptions.ModifiableMessage[_]) =>
-          // Clue will be included in the exception by the wrapping withClue
-          case Failed(_) =>
-            // Print clue to stderr since withClue won't include it
-            System.err.println(clue)
-          case _ =>
-          // Do nothing
-        }
-        outcome
-      } catch {
-        case e: Throwable if !e.isInstanceOf[org.scalatest.exceptions.ModifiableMessage[_]] =>
-          // Print clue to stderr
-          System.err.println(clue)
-          throw e
-      }
-    }
-  }
 }

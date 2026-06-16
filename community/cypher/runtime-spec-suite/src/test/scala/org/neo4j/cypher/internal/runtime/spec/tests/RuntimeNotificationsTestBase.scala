@@ -52,7 +52,7 @@ abstract class RuntimeNotificationsTestBase[CONTEXT <: RuntimeContext](
     values.map(e => (e - m) * (e - m)).sum
   }
 
-  private val unaryAggregations = Seq(
+  private val unaryAggregations: Seq[(String, Any)] = Seq(
     ("count", 5),
     ("avg", average(1.0, 2.0, 3.0, 4.0, 5.0)),
     ("max", 5.0),

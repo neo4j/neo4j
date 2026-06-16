@@ -2477,8 +2477,8 @@ abstract class RepeatAcyclicTestBase[CONTEXT <: RuntimeContext](
    *
    */
   protected def complexGraphAndExpectedResult: Seq[Array[Object]] = {
-    val (n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) =
-      ComplexGraph.unapply(givenComplexGraph).get
+    val ComplexGraph(n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) =
+      givenComplexGraph()
 
     val empty = util.List.of()
 
@@ -5484,8 +5484,8 @@ object OrderedAcyclicTestBase {
    *
    */
   def complexGraphAndPartiallyOrderedExpectedResult(complexGraph: ComplexGraph): Seq[Seq[Array[Object]]] = {
-    val (n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) =
-      ComplexGraph.unapply(complexGraph).get
+    val ComplexGraph(n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) =
+      complexGraph
 
     val empty = util.List.of()
 

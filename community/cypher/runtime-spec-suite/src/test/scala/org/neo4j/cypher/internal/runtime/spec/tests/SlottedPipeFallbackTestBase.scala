@@ -167,7 +167,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.map { _ => Array(null) }
+    val expected = rels.map { _ => Array[Any](null) }
     runtimeResult should beColumns("foo").withRows(expected)
   }
 

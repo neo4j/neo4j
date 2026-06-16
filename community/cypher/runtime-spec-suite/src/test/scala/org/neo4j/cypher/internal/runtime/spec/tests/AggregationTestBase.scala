@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.AggregationLargeMorselTestBase.withLargeMorsels
+import org.neo4j.cypher.internal.util.test_helpers.StackableBeforeAndAfterEach
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
@@ -69,7 +70,6 @@ import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.ListValue
-import org.scalatest.BeforeAndAfterEach
 
 import java.time.Duration
 import java.time.temporal.ChronoUnit
@@ -644,7 +644,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(Array.empty)
+    runtimeResult should beColumns("c").withSingleRow(Array.empty[Any])
   }
 
   test("should collect(n) where n is null with grouping") {
@@ -660,7 +660,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(Array.empty)
+    runtimeResult should beColumns("c").withSingleRow(Array.empty[Any])
   }
 
   test("should sum(n.prop)") {
@@ -2500,7 +2500,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(Array.empty)
+    runtimeResult should beColumns("c").withSingleRow(Array.empty[Any])
   }
 
   test("should collect(distinct ids(n)) where n is null with grouping") {
@@ -2516,7 +2516,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(Array.empty)
+    runtimeResult should beColumns("c").withSingleRow(Array.empty[Any])
   }
 
   test("should collect(distinct ids(n)) with limit") {
@@ -2638,7 +2638,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    val expected = aNodes.map(_ => Array[Any](Array.empty))
+    val expected = aNodes.map(_ => Array[Any](Array.empty[Any]))
     runtimeResult should beColumns("c").withRows(expected)
   }
 
@@ -2889,7 +2889,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
-trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAndAfterEach {
+trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends StackableBeforeAndAfterEach {
   self: AggregationTestBase[CONTEXT] =>
 
   private val userAggregationFunctions = {
@@ -3023,8 +3023,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
     )
   }
 
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
+  registerBeforeEach {
     userAggregationFunctions.foreach(registerUserAggregation)
     // Refresh the transaction so its ProcedureView snapshot includes the aggregations we just registered.
     restartTx()

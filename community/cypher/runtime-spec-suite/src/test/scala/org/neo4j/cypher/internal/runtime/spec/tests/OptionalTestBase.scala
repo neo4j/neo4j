@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.GraphCreation.Connectivity
+import org.neo4j.cypher.internal.runtime.spec.GraphCreation.NodeConnections
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.ArithmeticException
