@@ -107,14 +107,17 @@ class DriverResultSerializer {
     }
 
     public void writeEvent(String event, RunnableSerialization runnable) throws IOException {
-        object(() -> {
-            jsonGenerator.writeStringField(CYPHER_EVENT, event);
-            jsonGenerator.writeFieldName(CYPHER_BODY);
-            runnable.run();
-        });
-        jsonGenerator.flush();
-        outputStream.write("\n".getBytes());
-        outputStream.flush();
+        try {
+            object(() -> {
+                jsonGenerator.writeStringField(CYPHER_EVENT, event);
+                jsonGenerator.writeFieldName(CYPHER_BODY);
+                runnable.run();
+            });
+        } finally {
+            jsonGenerator.flush();
+            outputStream.write("\n".getBytes());
+            outputStream.flush();
+        }
     }
 
     public void writeData(Result result) throws IOException {

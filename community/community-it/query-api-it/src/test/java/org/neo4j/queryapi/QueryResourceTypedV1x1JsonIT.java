@@ -19,10 +19,16 @@
  */
 package org.neo4j.queryapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
+import org.neo4j.queryapi.testclient.QueryRequest;
 
 @QueryAPITestExtension(
         contentType = QueryContentType.TYPED_V1_1,
@@ -31,7 +37,8 @@ import org.neo4j.queryapi.testclient.QueryContentType;
             QueryContentType.TYPED_V1_0,
             QueryContentType.TYPED,
             QueryContentType.UNTYPED
-        })
+        },
+        enabledFeatureFlagForUUID = true)
 class QueryResourceTypedV1x1JsonIT extends AbstractQueryResourcedTypedJsonIT {
 
     QueryResourceTypedV1x1JsonIT(DatabaseManagementService dbms, QueryAPITestClient client) {
@@ -41,5 +48,28 @@ class QueryResourceTypedV1x1JsonIT extends AbstractQueryResourcedTypedJsonIT {
     @Override
     protected QueryContentType contentType() {
         return QueryContentType.TYPED_V1_1;
+    }
+
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")
+                .build());
+
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(contentType())
+                .wasSuccessful()
+                .hasFieldNames("theUUID");
+
+        QueryAssertions.assertThat(response.body().data())
+                .hasTypedResultAtValueSatisfies(
+                        0,
+                        "Unsupported",
+                        value -> assertThat(value)
+                                .matches(
+                                        Predicate.isEqual("Type \"UUID\" is not supported in the current MimeType.")
+                                                .or(
+                                                        Predicate.isEqual(
+                                                                "Type \"UUID\" is not supported by the Query API driver. Minimum Bolt version: 6.1."))));
     }
 }

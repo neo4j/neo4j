@@ -24,6 +24,7 @@ import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_VALUE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 
@@ -41,18 +42,20 @@ final class QueryAssertions extends AbstractAssert<QueryAssertions, JsonNode> {
     }
 
     QueryAssertions hasTypedResultAt(int index, String expectedType, String expectedValue) {
+        return hasTypedResultAtValueSatisfies(
+                index, expectedType, value -> Assertions.assertThat(value).isEqualTo(expectedValue));
+    }
+
+    QueryAssertions hasTypedResultAtValueSatisfies(int index, String expectedType, Consumer<Object> requirements) {
         Assertions.assertThat(jsonNode.get(VALUES_KEY)
                         .get(0)
                         .get(index)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo(expectedType);
-        Assertions.assertThat(jsonNode.get(VALUES_KEY)
-                        .get(0)
-                        .get(index)
-                        .get(CYPHER_VALUE)
-                        .asText())
-                .isEqualTo(expectedValue);
+
+        requirements.accept(
+                jsonNode.get(VALUES_KEY).get(0).get(index).get(CYPHER_VALUE).asText());
         return this;
     }
 

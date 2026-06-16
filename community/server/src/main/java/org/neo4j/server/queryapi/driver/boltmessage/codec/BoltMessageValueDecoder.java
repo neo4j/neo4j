@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.InternalUnsupportedType;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.InternalValue;
@@ -277,7 +278,8 @@ public class BoltMessageValueDecoder {
 
         @Override
         public InternalValue mapUUID(UUIDValue value) {
-            throw new UnsupportedOperationException("UUID not supported");
+            return new org.neo4j.driver.internal.value.UnsupportedTypeValue(
+                    new InternalUnsupportedType("UUID", "6.1", null));
         }
     }
 

@@ -47,7 +47,7 @@ import org.neo4j.queryapi.testclient.QueryContentType;
 
 abstract class AbstractQueryResourceTypedJsonlParametersIT {
 
-    private final QueryAPITestClient testClient;
+    protected final QueryAPITestClient testClient;
 
     AbstractQueryResourceTypedJsonlParametersIT(QueryAPITestClient testClient) {
         this.testClient = testClient;

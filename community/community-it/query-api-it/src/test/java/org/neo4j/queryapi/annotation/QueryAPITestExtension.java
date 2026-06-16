@@ -88,6 +88,12 @@ public @interface QueryAPITestExtension {
     int bookmarkReadyTimeoutInSeconds() default -1;
 
     /**
+     * Enable feature UUID
+     * @deprecated Will be removed when UUID is released
+     */
+    boolean enabledFeatureFlagForUUID() default false;
+
+    /**
      * The content type which the body of the request are encoded on the provided
      * {@link org.neo4j.queryapi.testclient.QueryAPITestClient}
      */

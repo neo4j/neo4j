@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
@@ -102,14 +103,37 @@ public final class QueryResponseAssertions
     }
 
     public QueryResponseAssertions hasErrorStatus(int httpCode, Status status) {
+        return hasErrorStatus(httpCode, status, (Consumer<String>) null);
+    }
+
+    public QueryResponseAssertions hasErrorStatus(int httpCode, Status status, String message) {
+        return hasErrorStatus(httpCode, status, actual -> Objects.equals(actual, message));
+    }
+
+    public QueryResponseAssertions hasErrorStatus(int httpCode, Status status, Consumer<String> messageRequirements) {
         Assertions.assertThat(queryResponse.statusCode()).isEqualTo(httpCode);
         Assertions.assertThat(queryResponse.body().errors().size()).isEqualTo(1);
         Assertions.assertThat(
                         queryResponse.body().errors().get(0).get(ERROR_CODE).asText())
                 .isEqualTo(status.code().serialize());
-        Assertions.assertThat(
-                        queryResponse.body().errors().get(0).get(ERROR_MESSAGE).asText())
-                .isNotBlank();
+        if (messageRequirements == null) {
+            Assertions.assertThat(queryResponse
+                            .body()
+                            .errors()
+                            .get(0)
+                            .get(ERROR_MESSAGE)
+                            .asText())
+                    .isNotBlank();
+        } else {
+            Assertions.assertThat(queryResponse
+                            .body()
+                            .errors()
+                            .get(0)
+                            .get(ERROR_MESSAGE)
+                            .asText())
+                    .satisfies(messageRequirements);
+        }
+
         return this;
     }
 

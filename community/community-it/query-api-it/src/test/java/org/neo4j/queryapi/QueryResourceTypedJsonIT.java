@@ -19,14 +19,22 @@
  */
 package org.neo4j.queryapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
+import org.neo4j.queryapi.testclient.QueryRequest;
 
 @QueryAPITestExtension(
         contentType = QueryContentType.TYPED_V1_0,
-        acceptedContentTypes = {QueryContentType.TYPED_V1_0, QueryContentType.TYPED, QueryContentType.UNTYPED})
+        acceptedContentTypes = {QueryContentType.TYPED_V1_0, QueryContentType.TYPED, QueryContentType.UNTYPED},
+        enabledFeatureFlagForUUID = true)
 class QueryResourceTypedJsonIT extends AbstractQueryResourcedTypedJsonIT {
 
     public QueryResourceTypedJsonIT(DatabaseManagementService dbms, QueryAPITestClient apiTestClient) {
@@ -36,5 +44,21 @@ class QueryResourceTypedJsonIT extends AbstractQueryResourcedTypedJsonIT {
     @Override
     protected QueryContentType contentType() {
         return QueryContentType.TYPED_V1_0;
+    }
+
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.autoCommit(QueryRequest.newBuilder()
+                .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")
+                .build());
+
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(contentType())
+                .hasErrorStatus(
+                        202,
+                        Status.Request.Invalid,
+                        value -> assertThat(value)
+                                .matches(Predicate.isEqual("Type \"UUID\" is not supported in the current MimeType.")
+                                        .or(Predicate.isEqual("Type UNSUPPORTED is not supported."))));
     }
 }

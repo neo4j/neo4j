@@ -39,7 +39,7 @@ import org.neo4j.queryapi.testclient.QueryContentType;
 
 abstract class AbstractQueryResourceTypedParametersIT {
 
-    private final QueryAPITestClient testClient;
+    protected final QueryAPITestClient testClient;
 
     AbstractQueryResourceTypedParametersIT(QueryAPITestClient testClient) {
         this.testClient = testClient;

@@ -19,6 +19,9 @@
  */
 package org.neo4j.queryapi;
 
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
@@ -30,7 +33,8 @@ import org.neo4j.queryapi.testclient.QueryContentType;
             QueryContentType.TYPED_V1_0,
             QueryContentType.TYPED,
             QueryContentType.UNTYPED
-        })
+        },
+        enabledFeatureFlagForUUID = true)
 class QueryResourceTypedV1x1ParametersIT extends AbstractQueryResourceTypedParametersIT {
 
     QueryResourceTypedV1x1ParametersIT(QueryAPITestClient testClient) {
@@ -40,5 +44,15 @@ class QueryResourceTypedV1x1ParametersIT extends AbstractQueryResourceTypedParam
     @Override
     protected QueryContentType contentType() {
         return QueryContentType.TYPED_V1_1;
+    }
+
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.sendRaw("{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": "
+                + "{\"$type\": \"UUID\", \"_value\": \"ca3d9a43-09e3-4b66-9384-87ea25e27d01\"}}}");
+
+        QueryResponseAssertions.assertThat(response)
+                .hasContentType(contentType())
+                .hasErrorStatus(400, Status.Request.Invalid, "Type UUID is not supported.");
     }
 }

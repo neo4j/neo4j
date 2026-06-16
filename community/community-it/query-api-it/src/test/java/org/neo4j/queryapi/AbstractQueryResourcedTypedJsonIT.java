@@ -42,7 +42,7 @@ import org.neo4j.server.queryapi.response.format.Fieldnames;
 
 abstract class AbstractQueryResourcedTypedJsonIT {
     private final DatabaseManagementService dbms;
-    private final QueryAPITestClient testClient;
+    protected final QueryAPITestClient testClient;
 
     AbstractQueryResourcedTypedJsonIT(DatabaseManagementService dbms, QueryAPITestClient testClient) {
         this.dbms = dbms;

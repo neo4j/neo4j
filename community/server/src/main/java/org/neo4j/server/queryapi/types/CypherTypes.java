@@ -35,6 +35,7 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Point;
+import org.neo4j.driver.types.UnsupportedType;
 import org.neo4j.values.storable.DurationValue;
 
 /**
@@ -113,7 +114,7 @@ public enum CypherTypes {
 
     Vector,
 
-    Unsupported(null, Value::toString),
+    Unsupported(null, value -> serializeUnsupportedType(value.asUnsupportedType())),
     ;
 
     private final String value;
@@ -207,5 +208,13 @@ public enum CypherTypes {
                 + ";POINT"
                 + (is3d ? " Z " : " ")
                 + "(" + point.x() + " " + point.y() + (is3d ? " " + point.z() + ")" : ")");
+    }
+
+    private static String serializeUnsupportedType(UnsupportedType value) {
+        return java.lang.String.format(
+                "Type \"%s\" is not supported by the Query API driver. Minimum Bolt version: %s.%s",
+                value.name(),
+                value.minProtocolVersion(),
+                value.message().map(" %"::formatted).orElse(""));
     }
 }

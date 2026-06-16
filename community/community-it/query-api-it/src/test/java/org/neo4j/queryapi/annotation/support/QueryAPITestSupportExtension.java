@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
@@ -44,6 +46,8 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.database.DbmsRuntimeVersion;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.annotation.BoltTransportType;
@@ -98,6 +102,21 @@ public class QueryAPITestSupportExtension
                 builder = builder.setConfig(
                         GraphDatabaseSettings.bookmark_ready_timeout,
                         Duration.ofSeconds(annotation.bookmarkReadyTimeoutInSeconds()));
+            }
+
+            if (annotation.enabledFeatureFlagForUUID()) {
+                builder.setConfig(GraphDatabaseSettings.default_language, GraphDatabaseSettings.CypherVersion.Cypher25);
+                builder.setConfig(
+                        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features, Set.of("UUIDType"));
+                builder.setConfig(
+                        GraphDatabaseInternalSettings.latest_kernel_version,
+                        KernelVersion.VERSION_UUID_VALUE_INTRODUCED.version());
+                builder.setConfig(
+                        GraphDatabaseInternalSettings.latest_runtime_version,
+                        DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion());
+                builder.setConfig(
+                        BoltConnectorInternalSettings.max_protocol_version,
+                        new BoltConnectorInternalSettings.ConfiguredProtocolVersion(6, 1));
             }
 
             var dbms = builder.build();

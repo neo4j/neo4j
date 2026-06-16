@@ -19,10 +19,15 @@
  */
 package org.neo4j.queryapi.jsonl;
 
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.queryapi.QueryResponseJsonlAssertions;
 import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
+import org.neo4j.queryapi.testclient.QueryRequest;
 
 @QueryAPITestExtension(
         contentType = QueryContentType.TYPED_V1_0,
@@ -31,7 +36,8 @@ import org.neo4j.queryapi.testclient.QueryContentType;
             QueryContentType.TYPED_V1_0,
             QueryContentType.TYPED,
             QueryContentType.UNTYPED
-        })
+        },
+        enabledFeatureFlagForUUID = true)
 class QueryResourceTypedJsonlIT extends AbstractQueryResourcedTypedJsonlIT {
 
     QueryResourceTypedJsonlIT(DatabaseManagementService dbms, QueryAPITestClient testClient) {
@@ -41,5 +47,22 @@ class QueryResourceTypedJsonlIT extends AbstractQueryResourcedTypedJsonlIT {
     @Override
     protected QueryContentType expectedContentType() {
         return QueryContentType.TYPED_L_V1_0;
+    }
+
+    @Test
+    void uuid() throws IOException, InterruptedException {
+        var response = testClient.autoCommitJsonl(QueryRequest.newBuilder()
+                .statement("RETURN UUID('ca3d9a43-09e3-4b66-9384-87ea25e27d01') AS theUUID")
+                .build());
+
+        QueryResponseJsonlAssertions.assertThat(response)
+                .isTransferEncodingChunked()
+                .hasContentType(expectedContentType())
+                .hasStatus(202)
+                .receivesHeader("theUUID")
+                // empty record
+                .receivesRecord()
+                .receivesError(Status.Request.Invalid)
+                .hasNoRemainingEvents();
     }
 }
