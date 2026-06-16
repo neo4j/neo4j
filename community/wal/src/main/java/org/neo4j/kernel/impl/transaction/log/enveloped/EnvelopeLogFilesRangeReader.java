@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.NoSuchFileException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.logging.InternalLog;
@@ -38,7 +39,7 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
 
     @Override
     public StoreChannelsForTransfer storeChannels(long fromIndex, long desiredToIndex) throws IOException {
-        return retryOnNoSuchFileException(() -> {
+        return retryOnConcurrentDeletion(() -> {
             var logFilesMetadata = envelopedLogFiles.logFilesMetadata(false);
             logFilesMetadata.next();
             long availableFromIndex = logFilesMetadata.get().logHeader().getLastAppendIndex() + 1;
@@ -46,15 +47,17 @@ public class EnvelopeLogFilesRangeReader implements EnvelopeLogRangeReader {
         });
     }
 
-    protected StoreChannelsForTransfer retryOnNoSuchFileException(
+    protected StoreChannelsForTransfer retryOnConcurrentDeletion(
             ThrowingSupplier<StoreChannelsForTransfer, IOException> supplier) throws IOException {
-        NoSuchFileException lastException = null;
+        IOException lastException = null;
         for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             try {
                 return supplier.get();
-            } catch (NoSuchFileException e) {
-                // This means a log file has been deleted concurrently with us calculating the availableFromIndex.
-                // We need to retry.
+            } catch (NoSuchFileException | AccessDeniedException e) {
+                // A log file has been (or is being) deleted concurrently with us calculating the availableFromIndex.
+                // POSIX surfaces this as NoSuchFileException; Windows surfaces an in-progress deletion as
+                // AccessDeniedException, because a file marked for deletion cannot be opened until the delete
+                // completes. Both are the same logical race and are handled the same way: retry.
                 lastException = e;
             }
         }
