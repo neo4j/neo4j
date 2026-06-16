@@ -838,7 +838,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description("Specifies if engine should run cypher query based on a snapshot of accessed data. "
-            + "Query will be restarted in case if concurrent modification of data will be detected.")
+            + "Query will be restarted in case if concurrent modification of data will be detected. "
+            + "This is not supported on a SPD database.")
     public static final Setting<Boolean> snapshot_query =
             newBuilder("internal.dbms.query.snapshot", BOOL, false).build();
 

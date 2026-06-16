@@ -56,7 +56,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-@SkipOnSpd(reason = "Temporarily skipped on SPD", notes = SkipOnSpd.Note.temporary)
+@SkipOnSpd(reason = "Will be superseded by MVCC", notes = SkipOnSpd.Note.irrelevant)
 class EagerResultIT {
     @Inject
     private TestDirectory testDirectory;
