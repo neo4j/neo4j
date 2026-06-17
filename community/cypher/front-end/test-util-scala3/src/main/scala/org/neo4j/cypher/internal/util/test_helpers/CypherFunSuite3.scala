@@ -20,6 +20,8 @@ import org.mockito.ArgumentCaptor
 import org.scalatest.Args
 import org.scalatest.Assertions
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.Canceled
+import org.scalatest.Outcome
 import org.scalatest.Status
 import org.scalatest.Suite
 import org.scalatest.Tag
@@ -38,17 +40,32 @@ abstract class CypherFunSuite3
 
   object Tags {
 
+    // Exclusion is done natively in withFixture below to avoid JUnit Platform post-discovery
+    // tag pruning on the ScalaTest tree (helmethair scalatest-junit-runner is not safe under it).
+
     /**
      * Use this tag to exclude tests from running with overridden default query language.
      * See the default-query-lang-cypher-25 maven profile.
+     *
+     * Note: must differ from the cypher25 profile's <excludedTestGroups> value to keep this tag out of the JUnit Platform
      */
-    val NoQueryLangOverride = Tag("exclude-default-query-lang-override")
+    val NoQueryLangOverride: Tag = Tag("cypher.skip-on-query-language-override")
 
     /**
      * Use this tag to exclude tests from running with SPD.
      * See the test-spd maven profile.
      */
-    val NoSpdOverride = Tag("exclude-spd-override")
+    val NoSpdOverride: Tag = Tag("exclude-spd-override")
+  }
+
+  override def withFixture(test: NoArgTest): Outcome = {
+    val skipForSpd = test.tags.contains(Tags.NoSpdOverride.name) &&
+      Option(System.getProperty("NEO4J_OVERRIDE_DBMS_TEST_FACTORY_SUPPLIER")).contains("spd")
+    val skipForQueryLang = test.tags.contains(Tags.NoQueryLangOverride.name) &&
+      Option(System.getProperty("NEO4J_OVERRIDE_QUERY_LANGUAGE")).contains("cypher_25")
+    if (skipForSpd) Canceled(s"Excluded under SPD test profile: ${test.name}")
+    else if (skipForQueryLang) Canceled(s"Excluded under default-query-lang override profile: ${test.name}")
+    else super.withFixture(test)
   }
 
   def argCaptor[T <: AnyRef](implicit manifest: Manifest[T]): ArgumentCaptor[T] = {
