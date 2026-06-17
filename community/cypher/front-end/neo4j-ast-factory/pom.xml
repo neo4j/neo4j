@@ -13,9 +13,9 @@
   </parent>
   <artifactId>neo4j-cypher-ast-factory-tests</artifactId>
   <packaging>jar</packaging>
-  <name>Cypher Parser Tests</name>
+  <name>Cypher AST Factory Tests</name>
 
-  <description>Cypher Parser Tests</description>
+  <description>Cypher AST Factory Tests</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>

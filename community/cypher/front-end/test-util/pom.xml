@@ -10,7 +10,7 @@
   </parent>
   <artifactId>neo4j-test-util</artifactId>
   <packaging>jar</packaging>
-  <name>openCypher Test Utils</name>
+  <name>openCypher Test Utils - Scala 2</name>
 
   <description>Cypher test utilities</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

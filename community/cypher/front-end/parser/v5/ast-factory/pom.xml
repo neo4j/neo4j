@@ -10,7 +10,7 @@
   </parent>
   <artifactId>cypher-v5-ast-factory</artifactId>
   <packaging>jar</packaging>
-  <name>Neo4j - Neo4j CST factory</name>
+  <name>Cypher 5 CST factory</name>
 
   <description>Neo4j Cypher CST factory</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
