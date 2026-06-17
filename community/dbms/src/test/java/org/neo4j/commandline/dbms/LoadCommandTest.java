@@ -21,7 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
@@ -200,11 +199,12 @@ class LoadCommandTest {
         doThrow(IncorrectFormat.class)
                 .when(loader)
                 .load(any(), anyBoolean(), anyBoolean(), any(), any(DumpInput.class));
-        CommandFailedException commandFailed =
-                assertThrows(CommandFailedException.class, () -> execute("foo", archive));
-        assertThat(commandFailed.getMessage()).contains("Load failed for databases: 'foo'");
-        assertThat(commandFailed.getCause().getMessage()).contains(archive.toString());
-        assertThat(commandFailed.getCause().getMessage()).contains("valid Neo4j archive");
+        assertThatThrownBy(() -> execute("foo", archive))
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining("Load failed for databases: 'foo'")
+                .cause()
+                .hasMessageContaining(archive.toString())
+                .hasMessageContaining("valid Neo4j archive");
     }
 
     @Test

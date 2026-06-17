@@ -20,8 +20,8 @@
 package org.neo4j.dbms.systemgraph.allocation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,11 +38,11 @@ public class DatabaseWeightTest {
 
         // when/then
         for (var validWeight : validWeights) {
-            assertDoesNotThrow(() -> new DatabaseWeight(validWeight));
+            assertThatCode(() -> new DatabaseWeight(validWeight)).doesNotThrowAnyException();
         }
 
         for (var invalidWeight : invalidWeights) {
-            assertThrows(IllegalArgumentException.class, () -> new DatabaseWeight(invalidWeight));
+            assertThatThrownBy(() -> new DatabaseWeight(invalidWeight)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 

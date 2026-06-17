@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.archive;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.ZSTD;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.selectCompressionFormat;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 class CompressionFormatTest {
     @Test
     void shouldSelectZstdAsDefault() {
-        assertEquals(ZSTD, selectCompressionFormat());
+        assertThat(selectCompressionFormat()).isEqualTo(ZSTD);
     }
 
     @Test
@@ -38,14 +38,17 @@ class CompressionFormatTest {
         // this test runs in a separate process to avoid problems with any parallel execution and shared static states
         int expectedExitCode = 66;
         var process = start(CompressionFormatTest.class.getName(), Integer.toString(expectedExitCode));
-        assertEquals(expectedExitCode, process.waitFor()); // using exitcode to verify execution of correct function
+        assertThat(process.waitFor())
+                .isEqualTo(expectedExitCode); // using exitcode to verify execution of correct function
     }
 
     public static void main(String[] args) {
         int exitCode = Integer.parseInt(args[0]);
         System.setProperty("os.arch", "foo"); // sabotage ZSTD loading
         StandardCompressionFormat format = selectCompressionFormat();
-        assertEquals(GZIP, format, String.format("Should fallback to %s when %s fails", GZIP.name(), ZSTD.name()));
+        assertThat(format)
+                .as(String.format("Should fallback to %s when %s fails", GZIP.name(), ZSTD.name()))
+                .isEqualTo(GZIP);
         System.exit(exitCode);
     }
 }

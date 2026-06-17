@@ -20,7 +20,7 @@
 package org.neo4j.dbms.systemgraph;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_RESTORE_UNTIL_PROPERTY;
@@ -42,9 +42,8 @@ public class SeedRestoreUntilTest {
         long invalidTxId = -100;
 
         // when/then
-        assertThat(assertThrows(
-                        IllegalArgumentException.class,
-                        () -> SeedRestoreUntil.validateArgs(OptionalLong.of(invalidTxId), Optional.empty())))
+        assertThatThrownBy(() -> SeedRestoreUntil.validateArgs(OptionalLong.of(invalidTxId), Optional.empty()))
+                .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(
                         String.format("Transaction id should be a positive number. Provided value: %s", invalidTxId));
     }
@@ -56,7 +55,8 @@ public class SeedRestoreUntilTest {
         var datetime = Optional.<ZonedDateTime>empty();
 
         // when/then
-        assertThat(assertThrows(IllegalArgumentException.class, () -> SeedRestoreUntil.validateArgs(txId, datetime)))
+        assertThatThrownBy(() -> SeedRestoreUntil.validateArgs(txId, datetime))
+                .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Must contain either a transaction id or transaction date");
     }
 
@@ -67,7 +67,8 @@ public class SeedRestoreUntilTest {
         var datetime = Optional.of(ZonedDateTime.now());
 
         // when/then
-        assertThat(assertThrows(IllegalArgumentException.class, () -> SeedRestoreUntil.validateArgs(txId, datetime)))
+        assertThatThrownBy(() -> SeedRestoreUntil.validateArgs(txId, datetime))
+                .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Only one of transaction id or transaction date can be provided");
     }
 
@@ -100,7 +101,8 @@ public class SeedRestoreUntilTest {
         var invalidType = "invalidType";
 
         // when/then
-        assertThat(assertThrows(IllegalArgumentException.class, () -> SeedRestoreUntil.fromObj(invalidType)))
+        assertThatThrownBy(() -> SeedRestoreUntil.fromObj(invalidType))
+                .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Provided value can't be converted to transaction id or transaction date");
     }
 

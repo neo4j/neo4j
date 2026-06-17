@@ -20,10 +20,7 @@
 package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayOutputStream;
@@ -99,19 +96,19 @@ class UnbindCommandTest {
         // when
         execute();
         // then
-        assertFalse(testDirectory.getFileSystem().fileExists(serverId));
+        assertThat(testDirectory.getFileSystem().fileExists(serverId)).isFalse();
     }
 
     @Test
     void shouldRemoveServerId() throws CommandFailedException, IOException {
         // given
         Files.write(serverId, new byte[17]);
-        assertTrue(testDirectory.getFileSystem().fileExists(serverId));
+        assertThat(testDirectory.getFileSystem().fileExists(serverId)).isTrue();
 
         // when
         execute();
         // then
-        assertFalse(testDirectory.getFileSystem().fileExists(serverId));
+        assertThat(testDirectory.getFileSystem().fileExists(serverId)).isFalse();
     }
 
     @Test
@@ -119,7 +116,8 @@ class UnbindCommandTest {
         // given
         try (var ignored = createLockedFakeDbDir()) {
             // when/then
-            assertThat(assertThrows(CommandFailedException.class, this::execute))
+            assertThatThrownBy(this::execute)
+                    .isInstanceOf(CommandFailedException.class)
                     .hasMessageContaining("Database is currently locked. Please shutdown database.");
         }
     }
@@ -127,7 +125,7 @@ class UnbindCommandTest {
     private FileLock createLockedFakeDbDir() throws IOException {
         var channel = testDirectory.getFileSystem().write(neo4jLayout.storeLockFile());
         var fileLock = channel.tryLock();
-        assertNotNull(fileLock, "Unable to acquire a store lock");
+        assertThat(fileLock).as("Unable to acquire a store lock").isNotNull();
         return fileLock;
     }
 

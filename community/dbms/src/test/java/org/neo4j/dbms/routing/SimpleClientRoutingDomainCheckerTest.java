@@ -20,8 +20,6 @@
 package org.neo4j.dbms.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -92,8 +90,8 @@ class SimpleClientRoutingDomainCheckerTest {
         SocketAddress socketAddress = SocketAddressParser.socketAddress(clientRoutingDomain, SocketAddress::new);
 
         // then
-        assertTrue(checker.isEmpty());
-        assertFalse(checker.shouldGetClientRouting(socketAddress));
+        assertThat(checker.isEmpty()).isTrue();
+        assertThat(checker.shouldGetClientRouting(socketAddress)).isFalse();
 
         // when
         config.setDynamic(
@@ -102,8 +100,8 @@ class SimpleClientRoutingDomainCheckerTest {
                 this.getClass().getName());
 
         // then
-        assertFalse(checker.isEmpty());
-        assertTrue(checker.shouldGetClientRouting(socketAddress));
+        assertThat(checker.isEmpty()).isFalse();
+        assertThat(checker.shouldGetClientRouting(socketAddress)).isTrue();
 
         // when
         config.setDynamic(
@@ -112,7 +110,7 @@ class SimpleClientRoutingDomainCheckerTest {
                 this.getClass().getName());
 
         // then
-        assertTrue(checker.isEmpty());
-        assertFalse(checker.shouldGetClientRouting(socketAddress));
+        assertThat(checker.isEmpty()).isTrue();
+        assertThat(checker.shouldGetClientRouting(socketAddress)).isFalse();
     }
 }

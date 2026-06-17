@@ -21,8 +21,8 @@ package org.neo4j.dbms.archive;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Fail.fail;
 import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
 
 import java.io.ByteArrayOutputStream;
@@ -77,7 +77,7 @@ class ArchiveProgressPrinterTest {
     @MethodSource("workloads")
     void printProgressEmptyReporter(Workload workload) {
         OutputProgressPrinter outputPrinter = ProgressPrinters.emptyPrinter();
-        assertDoesNotThrow(() -> workload.generator.apply(outputPrinter));
+        assertThatCode(() -> workload.generator.apply(outputPrinter)).doesNotThrowAnyException();
     }
 
     @ParameterizedTest

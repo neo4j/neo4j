@@ -20,8 +20,7 @@
 package org.neo4j.dbms.systemgraph.allocation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -40,7 +39,7 @@ public class DatabaseAllocationHintsTest {
     @Test
     void hintShouldBeSealed() {
         var hintClass = DatabaseAllocationHints.Hint.class;
-        assertTrue(hintClass.isSealed(), "Hint class must be sealed!");
+        assertThat(hintClass.isSealed()).as("Hint class must be sealed!").isTrue();
     }
 
     @Test
@@ -104,7 +103,8 @@ public class DatabaseAllocationHintsTest {
             AnyValue hintValue,
             Class<? extends DatabaseAllocationHints.Hint<?>> expectedHintClass,
             Object expectedValue) {
-        assertThrows(IllegalArgumentException.class, () -> DatabaseAllocationHints.createFromInput(hintKey, hintValue));
+        assertThatThrownBy(() -> DatabaseAllocationHints.createFromInput(hintKey, hintValue))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest

@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.archive;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -151,7 +151,8 @@ class ArchiveTest {
         filesystem.mkdirs(expectedOutput);
         touch(expectedOutput.resolve("a-file"));
 
-        assertEquals(describeRecursively(expectedOutput), describeRecursively(databaseLayout.databaseDirectory()));
+        assertThat(describeRecursively(databaseLayout.databaseDirectory()))
+                .isEqualTo(describeRecursively(expectedOutput));
     }
 
     @ParameterizedTest
@@ -179,7 +180,8 @@ class ArchiveTest {
         Path expectedOutput = testDirectory.directory("expected-output");
         filesystem.mkdirs(expectedOutput);
 
-        assertEquals(describeRecursively(expectedOutput), describeRecursively(databaseLayout.databaseDirectory()));
+        assertThat(describeRecursively(databaseLayout.databaseDirectory()))
+                .isEqualTo(describeRecursively(expectedOutput));
     }
 
     @ParameterizedTest
@@ -213,10 +215,10 @@ class ArchiveTest {
         Path expectedTxLogs = testDirectory.directory("expectedTxLogs");
         touch(expectedTxLogs.resolve(TransactionLogFilesHelper.DEFAULT_NAME + ".0"));
 
-        assertEquals(describeRecursively(expectedOutput), describeRecursively(newDatabaseLayout.databaseDirectory()));
-        assertEquals(
-                describeRecursively(expectedTxLogs),
-                describeRecursively(newDatabaseLayout.getTransactionLogsDirectory()));
+        assertThat(describeRecursively(newDatabaseLayout.databaseDirectory()))
+                .isEqualTo(describeRecursively(expectedOutput));
+        assertThat(describeRecursively(newDatabaseLayout.getTransactionLogsDirectory()))
+                .isEqualTo(describeRecursively(expectedTxLogs));
     }
 
     public static Stream<DumpFormat> formats() {
@@ -253,7 +255,7 @@ class ArchiveTest {
         Loader loader = new Loader(testDirectory.getFileSystem());
         loader.load(databaseLayout, archive);
 
-        assertEquals(describeRecursively(oldDirectory), describeRecursively(newDirectory));
+        assertThat(describeRecursively(newDirectory)).isEqualTo(describeRecursively(oldDirectory));
     }
 
     private Map<Path, Description> describeRecursively(Path directory) throws IOException {

@@ -19,8 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.commandline.Util.isSameOrChildFile;
 
 import java.nio.file.Path;
@@ -30,11 +29,13 @@ class UtilTest {
     @Test
     void correctlyIdentifySameOrChildFile() {
         Path home = Path.of(".").toAbsolutePath();
-        assertTrue(isSameOrChildFile(home, home));
-        assertTrue(isSameOrChildFile(home, home.resolve("a")));
-        assertTrue(isSameOrChildFile(home.resolve("a/./b"), home.resolve("a/b")));
-        assertTrue(isSameOrChildFile(home.resolve("a/b"), home.resolve("a/./b")));
+        assertThat(isSameOrChildFile(home, home)).isTrue();
+        assertThat(isSameOrChildFile(home, home.resolve("a"))).isTrue();
+        assertThat(isSameOrChildFile(home.resolve("a/./b"), home.resolve("a/b")))
+                .isTrue();
+        assertThat(isSameOrChildFile(home.resolve("a/b"), home.resolve("a/./b")))
+                .isTrue();
 
-        assertFalse(isSameOrChildFile(home.resolve("a"), home.resolve("b")));
+        assertThat(isSameOrChildFile(home.resolve("a"), home.resolve("b"))).isFalse();
     }
 }

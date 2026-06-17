@@ -22,7 +22,7 @@ package org.neo4j.dbms.routing.result;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -52,7 +52,7 @@ class RoutingResultFormatTest {
         // then
         RoutingResult parsed = RoutingResultFormat.parse(record);
 
-        assertEquals(original, parsed);
+        assertThat(parsed).isEqualTo(original);
     }
 
     @Test
@@ -71,6 +71,6 @@ class RoutingResultFormatTest {
         // then
         RoutingResult parsed = RoutingResultFormat.parse(record);
 
-        assertEquals(original, parsed);
+        assertThat(parsed).isEqualTo(original);
     }
 }
