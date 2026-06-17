@@ -19,14 +19,25 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.util.test_helpers.WithFixtureClue
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.QualifiedName
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
+import org.neo4j.kernel.api.procedure.CallableUserFunction.BasicUserFunction
+import org.neo4j.kernel.api.procedure.Context
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.RandomValues
 import org.neo4j.values.storable.RandomValuesUtils
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueType
+import org.neo4j.values.storable.Values
 
 import scala.util.Random
+import scala.util.Try
 
 trait RandomValuesTestSupport[CONTEXT <: RuntimeContext] extends WithFixtureClue {
   self: RuntimeTestSuite[CONTEXT] =>
@@ -74,6 +85,17 @@ trait RandomValuesTestSupport[CONTEXT <: RuntimeContext] extends WithFixtureClue
     _randomValues
   }
 
+  protected def effectivePipelinedBatchSizes: Option[(Int, Int)] =
+    Option(graphDb).flatMap { db =>
+      Try {
+        val config = db.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Config])
+        (
+          config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small).intValue(),
+          config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big).intValue()
+        )
+      }.toOption
+    }
+
   // Scala compat
   def randomValue(valueType: ValueType): Value = randomValues.nextValueOfType(valueType)
 
@@ -85,11 +107,35 @@ trait RandomValuesTestSupport[CONTEXT <: RuntimeContext] extends WithFixtureClue
   override protected def testFailureClue: AnyRef =
     new { // Trick to defer evaluation since initialSeed is not available before the test is run.
       override def toString: String =
-        s"""
-           |${classOf[RandomValuesTestSupport[CONTEXT]].getSimpleName} test failed with initial seed: ${initialSeed}L
-           |To reproduce, put the following line at the top of the test that failed:
-           |setInitialSeed(${initialSeed}L)
-           |
-           |""".stripMargin
+        RandomValuesTestSupport.reproductionClue(initialSeed, effectivePipelinedBatchSizes)
     }
+
+  def restartTxWithSeededRandFunction(name: String = "test.seededRand"): String = {
+    val seededRandom = new java.util.Random(random.nextLong())
+    registerFunction(new BasicUserFunction(
+      UserFunctionSignature.functionSignature(new QualifiedName(name))
+        .out(Neo4jTypes.NTFloat).threadSafe().build()
+    ) {
+      override def apply(ctx: Context, input: Array[AnyValue]): AnyValue =
+        Values.doubleValue(seededRandom.nextDouble())
+    })
+    restartTx()
+    name
+  }
+}
+
+object RandomValuesTestSupport {
+
+  def reproductionClue(initialSeed: Long, pipelinedBatchSizes: Option[(Int, Int)]): String = {
+    val lines =
+      Seq(
+        "",
+        s"RandomValuesTestSupport test failed with initial seed: ${initialSeed}L",
+        "To reproduce, put the following line at the top of the test that failed:",
+        s"setInitialSeed(${initialSeed}L)"
+      ) ++ pipelinedBatchSizes.map { case (small, big) =>
+        s"effective pipelined batch size: small=$small, big=$big"
+      } ++ Seq("", "")
+    lines.mkString("\n")
+  }
 }

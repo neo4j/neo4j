@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsRetryParameters
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -52,7 +54,9 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewri
 import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionApplyTestBase.ComplexRhsTestSetup
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterWithParent
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.bottomUpWithParent
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.StatusWrapCypherException
@@ -995,13 +999,19 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     val query = planBuilder.build()
 
+    val randFunction = restartTxWithSeededRandFunction()
+
     val rewritten = query.logicalPlan.endoRewrite(bottomUpWithParent(
       RewriterWithParent.lift {
         case (rhs: LogicalPlan, Some(parent: TransactionApply)) if parent.right == rhs =>
-          rhs.endoRewrite(RussianRoulette(0.0005, 0.25, planBuilder.idGen, random))
+          rhs.endoRewrite(RussianRoulette(0.0005, 0.25, planBuilder.idGen, random, bangFunction = randFunction))
       },
       cancellation = CancellationChecker.neverCancelled()
     ))
+      .endoRewrite(bottomUp(Rewriter.lift {
+        case fi: FunctionInvocation if fi.needsToBeResolved =>
+          ResolvedFunctionInvocation.fromUnresolved(functionSignature)(fi).coerceArguments
+      }))
 
     // The result Seqs represent 1) tx batch, 2) rows in tx batch 3) columns in row
     def batches(rows: Seq[Array[_ <: AnyRef]]): Seq[Seq[Seq[AnyValue]]] = {
@@ -1571,15 +1581,15 @@ object TransactionApplyTestBase {
 
 /**
  * Tests transaction foreach in queries like.
- * 
+ *
  * .produceResult()
  * .transactionApply()
  * .|.create("(n {props})")
  * .|.unwind("randomProps AS props")
  * .input("randomProps")
- * 
+ *
  * With random:
- * 
+ *
  * - Number of input rows.
  * - Size of rhs (the unwind list)
  * - Failures
