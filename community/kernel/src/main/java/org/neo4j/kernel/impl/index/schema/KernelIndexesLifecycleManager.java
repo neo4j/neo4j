@@ -25,12 +25,14 @@ import static org.neo4j.io.async.AsyncBlockAccessor.EMPTY_ASYNC_BLOCK_ACCESSOR;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
 import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
+import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_POPULATION;
 import static org.neo4j.scheduler.Group.INDEX_POPULATION_WORK;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.factory.primitive.ObjectFloatMaps;
 import org.eclipse.collections.api.map.primitive.MutableObjectFloatMap;
@@ -53,6 +55,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.KernelSchemaLifecycleContext;
@@ -81,6 +84,8 @@ import org.neo4j.util.VisibleForTesting;
 public class KernelIndexesLifecycleManager implements IndexesLifecycleManager {
 
     private static final float ZERO = 0.0f;
+
+    private final AtomicBoolean checkpointed = new AtomicBoolean();
 
     private final KernelSchemaLifecycleContext context;
     private final Lifespan lifespan;
@@ -133,6 +138,7 @@ public class KernelIndexesLifecycleManager implements IndexesLifecycleManager {
             return;
         }
 
+        checkpointed.set(false);
         indexingService.createIndexes(
                 Subject.SYSTEM,
                 CursorContext.NULL_CONTEXT,
@@ -141,9 +147,9 @@ public class KernelIndexesLifecycleManager implements IndexesLifecycleManager {
                         .toArray(IndexDescriptor[]::new));
 
         boolean noErrors = true;
-        MutableObjectFloatMap<IndexDescriptor> progressTracker = ObjectFloatMaps.mutable.<IndexDescriptor>empty();
+        MutableObjectFloatMap<IndexDescriptor> progressTracker = ObjectFloatMaps.mutable.empty();
         MutableSet<IndexDescriptor> descriptorsToCreate = Sets.mutable.ofAll(indexDescriptors);
-        MutableSet<IndexProxy> tentatives = Sets.mutable.<IndexProxy>empty();
+        MutableSet<IndexProxy> tentatives = Sets.mutable.empty();
         while (!descriptorsToCreate.isEmpty()) {
             for (IndexProxy indexProxy : indexingService.getIndexProxies()) {
                 IndexDescriptor descriptor = indexProxy.getDescriptor();
@@ -204,6 +210,7 @@ public class KernelIndexesLifecycleManager implements IndexesLifecycleManager {
                     DatabaseFlushEvent flushEvent = context.pageCacheTracer().beginDatabaseFlush()) {
                 indexingService.checkpoint(flushEvent, EMPTY_ASYNC_BLOCK_ACCESSOR, creationContext);
                 creationListener.onCheckpointingCompleted();
+                checkpointed.set(true);
             }
         }
     }
@@ -259,7 +266,7 @@ public class KernelIndexesLifecycleManager implements IndexesLifecycleManager {
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
                 config, storageEngine, NO_LOCKS_LOCK_MANAGER, fullScanStoreView, NO_LOCK_SERVICE, logProvider);
 
-        IndexStatisticsStore indexStatisticsStore = life.add(new IndexStatisticsStore(
+        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
                 pageCache,
                 fileSystem,
                 databaseLayout.indexStatisticsStore(),
@@ -268,7 +275,17 @@ public class KernelIndexesLifecycleManager implements IndexesLifecycleManager {
                 databaseLayout.getDatabaseName(),
                 contextFactory,
                 pageCacheTracer,
-                storageEngine.getOpenOptions()));
+                storageEngine.getOpenOptions());
+        life.add(onShutdown(() -> {
+            // this is for the case when only constraints were created (i.e. no indexes) BUT the schema store has been
+            // updated and any consistency checks would then require the stats store to be present
+            if (checkpointed.compareAndSet(false, true)) {
+                try (var cursorContext = contextFactory.create("checkpointIndexStatisticsStore")) {
+                    indexStatisticsStore.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, cursorContext);
+                }
+            }
+            indexStatisticsStore.shutdown();
+        }));
 
         return life.add(IndexingServiceFactory.createIndexingService(
                 storageEngine,
