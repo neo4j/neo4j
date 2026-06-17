@@ -225,7 +225,7 @@ case class ProjectionSpecification(
 
   def hasExplicitKeys: Boolean = groupingKeys.exists(_.explicit) || groupingKeys.isEmpty
 
-  def getGroupingKeyExpression(expr: Expression): Option[Expression] = expr match {
+  def getUnderlyingExpression(expr: Expression): Option[Expression] = expr match {
     case lv: LogicalVariable => groupingKeyByAlias.get(lv).map(_.expression)
     case _                   => None
   }

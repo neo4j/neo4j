@@ -480,41 +480,44 @@ object pegClause {
       aggregationItems.map(item => pegExpression(item.expression, aggregatingExpressionContext))
   }
 
-  private def scopeGroupBy(groupBy: GroupBy, incoming: ProjectionExpressionContext)(implicit
-    c: PegContext): WorkingScope = {
+  private def scopeGroupBy(
+    groupBy: GroupBy,
+    incoming: ProjectionExpressionContext,
+    itemIncoming: ProjectionExpressionContext
+  )(implicit c: PegContext): WorkingScope = {
 
-    val groupByContext = incoming.groupByContext()
     val spec = incoming.projectionSpecification
 
     val children = groupBy.groupingElements match {
       case ExplicitGroupingElements(elements) =>
         elements.map { e =>
-          // getGroupingKeyExpression only returns Some when `e` is an alias, which is always a LogicalVariable.
-          (e, spec.getGroupingKeyExpression(e)) match {
-            case (alias: LogicalVariable, Some(underlyingExpression)) =>
-              val scope = pegExpression(underlyingExpression, groupByContext)
-              val aliasRefs = References.connect(Seq(alias), groupByContext.allSymbolsAndKeys)
-              scope match {
-                case es: ExpressionScope => es.copy(referenced = es.referenced union aliasRefs)
-                case other               => other
-              }
-            case _ =>
-              pegExpression(e, groupByContext)
-          }
+          val elementScoped = pegExpression(e, incoming).asInstanceOf[ExpressionScope]
+
+          val referencedAliases = elementScoped.referenced.filterTargets(spec.aliases).getVariables
+
+          // Gathers the references from underlying expressions
+          // RETURN n.x AS a GROUP BY a ==> Referenced: n, a
+          val transitiveScopeReferences =
+            referencedAliases
+              .flatMap(spec.getUnderlyingExpression)
+              .map(expr => pegExpression(expr, itemIncoming))
+              .map(_.referenced)
+
+          elementScoped.copy(referenced = elementScoped.referenced union transitiveScopeReferences)
         }
       case GroupingAll() =>
         spec.groupingKeys.map(key => {
-          pegExpression(key.expression, groupByContext)
+          pegExpression(key.expression, incoming)
         }).toSeq
       case GroupingNone() => Seq()
     }
 
     StatementScope(
       groupBy,
-      groupByContext,
+      incoming,
       WorkingScope.referencedInChildren(children),
       Declarations.noDeclarations,
-      groupByContext,
+      incoming,
       NoResult,
       children
     )
@@ -697,7 +700,13 @@ object pegClause {
       scopeProjectionItems(nonAggregatingScope, aggregatingScope, aggregatingItems, groupingItems)
 
     val groupByScopeOpt =
-      subclauses.groupBy.map(gb => scopeGroupBy(gb, groupByScope))
+      subclauses.groupBy.map(gb =>
+        scopeGroupBy(
+          gb,
+          groupByScope,
+          incoming.amendedWithProjectionSpecification(projectionSpecification, GroupByPart)
+        )
+      )
 
     val subclauseScopes = scopeSubclauses(subclauseScope, subclauses)
 

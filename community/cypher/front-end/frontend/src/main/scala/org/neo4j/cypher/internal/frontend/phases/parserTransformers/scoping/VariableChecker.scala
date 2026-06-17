@@ -164,6 +164,12 @@ case class VariableChecker(
     case _ => acc
   }
 
+  private def variableNotDefinedInGroupBy(acc: Acc, ss: StatementScope): Acc = (acc, ss) match {
+    case (_, Scope.Clause.GroupBy(references)) if references.hasSelfReference =>
+      acc(references.getSelfReferences.map(lv => SemanticError.variableNotDefined(lv.name, lv.position)))
+    case _ => acc
+  }
+
   private def invalidEntityReferenceInUpdatingClause(acc: Acc, ss: StatementScope): Acc = (acc, ss) match {
     case ( // ≥ Cypher 25
         Acc.CreatePattern(a, topo, _, create, true),
@@ -284,6 +290,7 @@ case class VariableChecker(
     incompatibleReturnColumns,
     invalidUseOfReturnStar,
     variableNotDefinedInScopeClause,
+    variableNotDefinedInGroupBy,
     invalidEntityReferenceInUpdatingClause,
     localCallableAlreadyDefined,
     duplicateLocalCallableParameter

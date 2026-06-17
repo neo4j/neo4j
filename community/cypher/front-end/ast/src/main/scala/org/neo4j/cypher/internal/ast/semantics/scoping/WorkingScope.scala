@@ -457,7 +457,13 @@ case class References(references: Map[Ref[LogicalVariable], Ref[LogicalVariable]
   def getVariables: Seq[LogicalVariable] = references.keySet.toSeq.map(_.value)
 
   // TODO is this behavior we want to rely on further
-  def hasSelfReference: Boolean = references.exists { case (from, to) => from == to }
+  def hasSelfReference: Boolean = references.exists { case (reference, declaration) => reference == declaration }
+
+  def getSelfReferences: Set[LogicalVariable] =
+    references
+      .view
+      .collect { case (reference, declaration) if reference == declaration => reference.value }
+      .toSet
 
   def union(that: References): References = References(references ++ that.references)
 

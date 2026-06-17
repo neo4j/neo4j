@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ConditionalQueryBranch
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
+import org.neo4j.cypher.internal.ast.GroupBy
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -156,6 +157,7 @@ object WorkingScope2PlanDescription {
   private def renderAstString(astNode: ASTNode): String = astNode match {
     case s: Statement           => prettifier.asString(s)
     case c: Clause              => prettifier.asString(SingleQuery(Seq(c))(InputPosition.NONE))
+    case gb: GroupBy            => prettifier.asString(gb)
     case ex: Expression         => prettifier.expr(ex)
     case p: Pattern             => prettifier.expr.patterns(p)
     case p: PatternPart         => prettifier.expr.patterns(p)

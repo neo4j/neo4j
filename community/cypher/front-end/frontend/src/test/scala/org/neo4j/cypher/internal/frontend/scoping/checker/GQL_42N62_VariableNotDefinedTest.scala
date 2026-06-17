@@ -767,6 +767,59 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
       ignoreBeforeCypher25(E42N62("x")),
       Seq("outerCnt", "numPets")
     ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, p
+        |  GROUP BY bacon, a, p""".stripMargin,
+      ignoreBeforeCypher25(E42N62("p")),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, 2 * p AS p
+        |  GROUP BY bacon, a, 2 * p""".stripMargin,
+      ignoreBeforeCypher25(E42N62("p")),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |WITH bacon, a, 2 * p AS p
+        |  GROUP BY bacon, a, 2 * p
+        |RETURN *""".stripMargin,
+      ignoreBeforeCypher25(E42N62("p")),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, [x IN a.list | p * x] AS p
+        |  GROUP BY bacon, a, [x IN a.list | p * x]""".stripMargin,
+      ignoreBeforeCypher25(E42N62("p")),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """RETURN 1 AS b
+        |  GROUP BY x""".stripMargin,
+      ignoreBeforeCypher25(E42N62("x")),
+      Seq("b")
+    ),
+    TestQuery(
+      """RETURN x
+        |  GROUP BY ()""".stripMargin,
+      ignoreBeforeCypher25(E42N62("x")),
+      Seq("x")
+    ),
+    TestQuery(
+      """RETURN x
+        |  GROUP BY x""".stripMargin,
+      ignoreBeforeCypher25(E42N62("x")),
+      Seq("x")
+    ),
+    TestQuery(
+      """RETURN x
+        |  GROUP BY ALL""".stripMargin,
+      ignoreBeforeCypher25(E42N62("x")),
+      Seq("x")
+    ),
 
     // Positive tests
     TestQuery(
@@ -1331,6 +1384,48 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
         |RETURN y""".stripMargin,
       Passes,
       Seq("y")
+    ),
+    TestQuery(
+      """WITH 1 AS x, 2 AS y, 3 AS z
+        |RETURN x + y AS a
+        | GROUP BY a, z""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("a")
+    ),
+    TestQuery(
+      """WITH 1 AS x, 2 AS y, {p: 1} AS z
+        |RETURN x, z.p AS a
+        |  GROUP BY a, y + 1""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("x", "a")
+    ),
+    TestQuery(
+      """WITH 1 AS x, 2 AS y, 3 AS z
+        |RETURN x + y AS a
+        |  GROUP BY a, z""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("a")
+    ),
+    TestQuery(
+      """WITH 1 AS x, 2 AS y
+        |RETURN x + y AS z
+        |  GROUP BY z""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("z")
+    ),
+    TestQuery(
+      """WITH 1 AS x, 2 AS y, 4 AS z
+        |RETURN x + y AS z
+        |  GROUP BY z""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("z")
+    ),
+    TestQuery(
+      """WITH 1 AS x, 2 AS y
+        |RETURN x, y, x + y AS z
+        |  GROUP BY x, y""".stripMargin,
+      ignoreBeforeCypher25(Passes),
+      Seq("x", "y", "z")
     )
   )
 }

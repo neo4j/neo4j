@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.ConditionalQueryBranch
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.CreateOrInsert
+import org.neo4j.cypher.internal.ast.GroupBy
 import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.LocalCallableDefinition
 import org.neo4j.cypher.internal.ast.LocalFieldSignature
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.PatternScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.References
 import org.neo4j.cypher.internal.ast.semantics.scoping.RegularContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.Result
 import org.neo4j.cypher.internal.ast.semantics.scoping.StatementScope
@@ -280,6 +282,17 @@ trait VariableCheckerUtil {
               Some((imports, incoming))
             case StatementScope(ImportingWithSubqueryCall(innerQuery, _, _), incoming, _, _, _, _, _, _) =>
               Some((innerQuery.importColumns, incoming))
+            case _ => None
+          }
+
+      }
+
+      object GroupBy {
+
+        def unapply(scope: WorkingScope): Option[References] =
+          scope match {
+            case StatementScope(_: GroupBy, _, referenced, _, _, _, _, _) =>
+              Some(referenced)
             case _ => None
           }
 

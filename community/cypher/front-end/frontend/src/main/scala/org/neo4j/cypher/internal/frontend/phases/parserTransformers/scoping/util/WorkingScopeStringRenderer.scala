@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ConditionalQueryBranch
 import org.neo4j.cypher.internal.ast.ConditionalQueryWhen
 import org.neo4j.cypher.internal.ast.GraphReference
+import org.neo4j.cypher.internal.ast.GroupBy
 import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
@@ -241,6 +242,7 @@ object WorkingScopeStringRenderer {
   private def renderAstString(astNode: ASTNode): String = whitespaceNormalization(astNode match {
     case s: Statement           => prettifier.asString(s)
     case c: Clause              => prettifier.asString(SingleQuery(Seq(c))(InputPosition.NONE))
+    case gb: GroupBy            => prettifier.asString(gb)
     case gr: GraphReference     => prettifier.expr(gr)
     case s: Search              => prettifier.asString(s)
     case ex: Expression         => prettifier.expr(ex)
