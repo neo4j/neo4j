@@ -240,8 +240,10 @@ case class VariableChecker(
       } else {
         a(SemanticError.variableNotDefined(variable.name, variable.position))
       }
-    case (Acc.Aggregation(a, incomingToClause), Scope.Expr.Variable(variable, isConstant))
-      if !isConstant(variable) => getVariableNotDefined(a, incomingToClause, variable)
+    case (Acc.Aggregation(_, incomingToClause), Scope.Expr.Variable(variable, isConstant)) =>
+      if (!incomingToClause(variable) && (!isConstant(variable) || es.referenced.hasSelfReference))
+        acc(SemanticError.variableNotDefined(variable.name, variable.position))
+      else acc
     case (_, Scope.Expr.Variable(variable, isConstant)) if !isConstant(variable) =>
       acc(SemanticError.variableNotDefined(variable.name, variable.position))
     case _ => acc

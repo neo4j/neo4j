@@ -554,6 +554,219 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
       E42N62("graphName"),
       Seq("id", "y")
     ),
+    TestQuery(
+      """RETURN DISTINCT b""".stripMargin,
+      E42N62("b"),
+      Seq("b")
+    ),
+    TestQuery(
+      """RETURN DISTINCT b, SUM(1) + b AS s""".stripMargin,
+      E42N62("b"),
+      Seq("b", "s")
+    ),
+    TestQuery(
+      """WITH DISTINCT b
+        |RETURN b""".stripMargin,
+      E42N62("b"),
+      Seq("b")
+    ),
+    TestQuery(
+      """WITH DISTINCT b, SUM(1) + b AS s
+        |RETURN b""".stripMargin,
+      E42N62("b"),
+      Seq("b")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, p""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN DISTINCT bacon, a, p""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, COUNT(p) AS cnt""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "cnt")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |WITH bacon, a, p
+        |RETURN *""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |WITH DISTINCT bacon, a, p
+        |RETURN *""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |WITH bacon, a, COUNT(p) AS cnt
+        |RETURN *""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "cnt")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, 2 * p AS p""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN DISTINCT bacon, a, 2 * p AS p""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, COUNT(2 * p) AS cnt""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "cnt")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |WITH bacon, a, 2 * p AS p
+        |RETURN *""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |WITH DISTINCT bacon, a, 2 * p AS p
+        |RETURN *""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |WITH bacon, a, COUNT(2 * p) AS cnt
+        |RETURN *""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "cnt")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, [x IN a.list | p * x] AS p""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN DISTINCT bacon, a, [x IN a.list | p * x] AS p""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "p")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})-[*1..3]-(a:Person)
+        |RETURN bacon, a, COUNT([x IN a.list | p * x]) AS cnt""".stripMargin,
+      E42N62("p"),
+      Seq("bacon", "a", "cnt")
+    ),
+    TestQuery(
+      """MATCH (issue:DataQualityIssue)
+        |OPTIONAL MATCH (source)-[:HAS_DQ_ISSUE]->(issue)
+        |WITH issue, source, labels(source)[0] AS sourceLabel
+        |WITH coalesce(
+        |       CASE WHEN sourceLabel = "A" THEN source.name
+        |            WHEN sourceLabel = "B" THEN source.name
+        |            WHEN sourceLabel = "C" THEN source.name
+        |            WHEN sourceLabel = "D" THEN "D" + source.orderId
+        |            WHEN sourceLabel = "E" THEN source.sourceSystem + "E" + source.objectType
+        |            WHEN sourceLabel = "F" THEN source.goldenName
+        |            ELSE "G" END, "else") AS hotspot,
+        |     coalesce(sourceLabel, "null") AS hotspotType,
+        |     issue
+        |RETURN DISTINCT issue AS _graph_issue, source AS _graph_source
+        |LIMIT 10""".stripMargin,
+      E42N62("source"),
+      Seq("_graph_issue", "_graph_source")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})
+        |WHERE COUNT {
+        |  MATCH (owner)-[*1..3]-(a:Person)
+        |  WITH count(*) AS num, owner AS owner, p
+        |  RETURN num
+        |} = 1
+        |RETURN owner""".stripMargin,
+      E42N62("p"),
+      Seq("owner")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})
+        |WHERE COUNT {
+        |  MATCH (owner)-[*1..3]-(a:Person)
+        |  RETURN DISTINCT owner, p
+        |} = 1
+        |RETURN owner""".stripMargin,
+      E42N62("p"),
+      Seq("owner")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})
+        |WHERE COUNT {
+        |  MATCH (owner)-[*1..3]-(a:Person)
+        |  WITH count(*) AS num
+        |    GROUP BY owner, p
+        |  RETURN num
+        |} = 1
+        |RETURN owner""".stripMargin,
+      ignoreBeforeCypher25(E42N62("p")),
+      Seq("owner")
+    ),
+    TestQuery(
+      """MATCH (bacon:Person {name:'Bob'})
+        |WHERE COUNT {
+        |  MATCH (owner)-[*1..3]-(a:Person)
+        |  RETURN count(*) AS num
+        |    GROUP BY owner, p
+        |} = 1
+        |RETURN owner""".stripMargin,
+      ignoreBeforeCypher25(E42N62("p")),
+      Seq("owner")
+    ),
+    TestQuery(
+      """MATCH (person:Person)
+        |CALL (person) {
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  RETURN dog.name AS petName
+        |}
+        |RETURN count(*) AS outerCnt,
+        |       COUNT {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name + x AS subPet
+        |       } AS numPets""".stripMargin,
+      E42N62("x"),
+      Seq("outerCnt", "numPets")
+    ),
+    TestQuery(
+      """MATCH (person:Person)
+        |CALL (person) {
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  RETURN dog.name AS petName
+        |}
+        |RETURN count(*) AS outerCnt,
+        |       COUNT {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name AS subPet
+        |       } AS numPets
+        |  GROUP BY COUNT {
+        |         MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |         RETURN dog.name + x AS subPet
+        |       }""".stripMargin,
+      ignoreBeforeCypher25(E42N62("x")),
+      Seq("outerCnt", "numPets")
+    ),
 
     // Positive tests
     TestQuery(
