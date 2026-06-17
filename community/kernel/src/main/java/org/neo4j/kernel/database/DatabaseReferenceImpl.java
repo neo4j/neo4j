@@ -453,6 +453,12 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
             return databaseName + GRAPH_SHARD_NAME_POSTFIX;
         }
 
+        public static String virtualDatabaseName(String graphShardName) {
+            return graphShardName.endsWith(GRAPH_SHARD_NAME_POSTFIX)
+                    ? graphShardName.substring(0, graphShardName.length() - GRAPH_SHARD_NAME_POSTFIX.length())
+                    : graphShardName;
+        }
+
         private static final Pattern graphShardPattern = Pattern.compile("(.)+(-g)([0-9]{3})");
 
         public static boolean isGraphShardName(String databaseName) {
