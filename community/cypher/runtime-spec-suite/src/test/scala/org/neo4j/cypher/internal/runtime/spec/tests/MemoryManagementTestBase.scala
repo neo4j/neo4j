@@ -75,7 +75,7 @@ object MemoryManagementTestBase {
     if (runningUnderSpd) ByteUnit.mebiBytes(256) else ByteUnit.mebiBytes(115)
 
   private def runningUnderSpd: Boolean =
-    "spd".equals(TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER)
+    TestDatabaseManagementServiceFactorySupplier.isSpd
 
   val perWorkerGrabSize: Long = ByteUnit.kibiBytes(8)
   val largeObjectThreshold: Long = 2048

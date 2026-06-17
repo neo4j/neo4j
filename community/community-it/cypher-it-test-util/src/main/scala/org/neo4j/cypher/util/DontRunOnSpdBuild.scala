@@ -20,7 +20,7 @@
 package org.neo4j.cypher.util
 
 import org.neo4j.cypher.CypherITTestSuite
-import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER
+import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.isSpd
 import org.scalatest
 import org.scalatest.Args
 import org.scalatest.Status
@@ -28,7 +28,7 @@ import org.scalatest.Status
 trait DontRunOnSpdBuild extends CypherITTestSuite {
 
   override protected def runTests(testName: Option[String], args: Args): Status = {
-    if ("spd".equals(FACTORY_SUPPLIER)) scalatest.SucceededStatus
+    if (isSpd) scalatest.SucceededStatus
     else super.runTests(testName, args)
   }
 }

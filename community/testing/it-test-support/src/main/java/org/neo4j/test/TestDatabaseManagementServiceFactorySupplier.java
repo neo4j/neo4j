@@ -33,6 +33,10 @@ import org.neo4j.time.SystemNanoClock;
 public interface TestDatabaseManagementServiceFactorySupplier {
     String FACTORY_SUPPLIER = System.getProperty("NEO4J_OVERRIDE_DBMS_TEST_FACTORY_SUPPLIER");
 
+    static boolean isSpd() {
+        return "spd".equalsIgnoreCase(FACTORY_SUPPLIER);
+    }
+
     DatabaseManagementServiceFactory create(
             DbmsInfo dbmsInfo,
             Function<GlobalModule, AbstractEditionModule> editionFactory,

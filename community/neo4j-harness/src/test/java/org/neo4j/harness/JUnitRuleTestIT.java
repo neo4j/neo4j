@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER;
+import static org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.isSpd;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.nio.file.Path;
@@ -121,7 +121,7 @@ public class JUnitRuleTestIT {
 
     @Test
     public void shouldRuleWorkWithExistingDirectory() throws Throwable {
-        assumeFalse("spd".equalsIgnoreCase(FACTORY_SUPPLIER));
+        assumeFalse(isSpd());
         // given a root folder, create /databases/neo4j folders.
         Path oldLayout = folder.newFolder("old").toPath();
         try (var managementService = new TestDatabaseManagementServiceBuilder(oldLayout).build()) {

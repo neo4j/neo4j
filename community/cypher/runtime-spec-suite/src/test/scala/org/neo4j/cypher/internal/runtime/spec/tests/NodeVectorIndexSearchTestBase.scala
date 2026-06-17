@@ -3022,14 +3022,11 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
   private def assertGqlError[T <: Throwable with ErrorGqlStatusObject : ClassTag](
     matcher: GqlExceptionMatcher
   )(block: => Unit): Unit =
-    if (runningUnderSpd) {
+    if (TestDatabaseManagementServiceFactorySupplier.isSpd) {
       the[Throwable] thrownBy block shouldBe asGqlException(matcher)
     } else {
       the[T] thrownBy block shouldBe matcher
     }
-
-  protected def runningUnderSpd: Boolean =
-    "spd".equals(TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER)
 
   private def booleanVectorGraph(size: Int): Unit = {
     val random = new Random()

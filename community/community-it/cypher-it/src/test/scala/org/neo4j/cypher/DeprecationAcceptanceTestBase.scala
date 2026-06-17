@@ -64,7 +64,7 @@ import org.neo4j.notifications.NotificationCodeWithDescription.procedureWarning
 import org.neo4j.notifications.NotificationDetail
 import org.neo4j.notifications.NotificationDetail.deprecatedName
 import org.neo4j.notifications.NotificationDetail.deprecationNotificationDetail
-import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.FACTORY_SUPPLIER
+import org.neo4j.test.TestDatabaseManagementServiceFactorySupplier.isSpd
 import org.scalatest.BeforeAndAfterAll
 
 abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with BeforeAndAfterAll
@@ -81,7 +81,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherITTestSuite with Befo
     dbms.shutdown()
   }
 
-  private val dbName = if ("spd".equals(FACTORY_SUPPLIER)) "neo4j-g000" else "neo4j"
+  private val dbName = if (isSpd) "neo4j-g000" else "neo4j"
   private val startPosition = new InputPosition(0, 1, 1)
 
   // DEPRECATED PROCEDURE THINGS
