@@ -217,11 +217,6 @@
     </dependency>
     <dependency>
       <groupId>com.lihaoyi</groupId>
-      <artifactId>fansi_${scala.binary.version}</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.lihaoyi</groupId>
       <artifactId>pprint_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>

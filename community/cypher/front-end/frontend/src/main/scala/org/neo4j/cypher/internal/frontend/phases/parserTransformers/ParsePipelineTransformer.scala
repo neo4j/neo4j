@@ -48,10 +48,12 @@ case object ParsePipelineTransformer extends StepSequencer.Step {
     ScopeSurveyor,
     SyntaxDeprecationWarningsAndReplacements(Deprecations.SyntacticallyDeprecatedFeatures),
     ResolveLocalFunctions,
+    ResolveLocalProceduresStep1,
     UnresolveShadowedFunctions,
     ProcedureRelocator,
-    ExtractLocalDefinitions,
     ResolveCallables,
+    ResolveLocalProceduresStep2,
+    ExtractLocalDefinitions,
     ObfuscationMetadataCollection
   )
 

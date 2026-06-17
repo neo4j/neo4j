@@ -25,7 +25,12 @@ sealed trait LocalCallableScopeSignature {
   def result: Result
 }
 
-case class LocalProcedureScopeSignature(name: CallableName, result: Result) extends LocalCallableScopeSignature
+case class LocalProcedureScopeSignature(
+  name: CallableName,
+  inputSignature: Seq[LocalFieldSignature],
+  outputSignature: Option[Seq[LocalFieldSignature]],
+  result: Result
+) extends LocalCallableScopeSignature
 
 case class LocalFunctionScopeSignature(
   name: CallableName,

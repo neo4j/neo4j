@@ -334,6 +334,8 @@ case class Prettifier(
 
   def asString(localCallableDefinition: LocalCallableDefinition): String = base.asString(localCallableDefinition)
 
+  def asString(unresolvedCall: UnresolvedCall): String = base.asString(unresolvedCall)
+
   def asString(search: Search): String = base.asString(search)
 
   def asString(groupBy: GroupBy): String = base.asString(groupBy)

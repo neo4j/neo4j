@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionResult
+import org.neo4j.cypher.internal.ast.semantics.scoping.LocalCallableScopeSignature
 import org.neo4j.cypher.internal.ast.semantics.scoping.LocalFunctionScopeSignature
 import org.neo4j.cypher.internal.ast.semantics.scoping.LocalProcedureScopeSignature
 import org.neo4j.cypher.internal.ast.semantics.scoping.NoResult
@@ -91,15 +92,23 @@ object pegStatement {
             val bodyIncoming = previous.outgoing.amendedWithConstant(lcd.inputSignature.map(lfs =>
               Variable(lfs.name)(lfs.position, Variable.isIsolatedDefault).asInstanceOf[LogicalVariable]
             ).toSet)
-            val (bodyChild, localCallableScopeSignature) = lcd match {
-              case LocalProcedureDefinition(name, _, outputSignatureOpt, body) =>
+            val (bodyChild, localCallableScopeSignature): (WorkingScope, LocalCallableScopeSignature) = lcd match {
+              case lpd @ LocalProcedureDefinition(name, inputSignature, outputSignatureOpt, body) =>
                 val bodyChild = apply(body, bodyIncoming)
                 val definitionResult = outputSignatureOpt.map(outputSignature =>
                   TableResult(outputSignature.map(lfs =>
                     Variable(lfs.name)(lfs.position, Variable.isIsolatedDefault).asInstanceOf[LogicalVariable]
                   ))
                 ).getOrElse(bodyChild.result)
-                (bodyChild, LocalProcedureScopeSignature(name, definitionResult))
+                (
+                  bodyChild,
+                  LocalProcedureScopeSignature(
+                    name,
+                    inputSignature,
+                    lpd.inferredOutputSignatureWithoutTypes,
+                    definitionResult
+                  )
+                )
               case LocalFunctionDefinition(name, inputSignature, outputSignature, body) =>
                 val bodyChild = body match {
                   case QueryBody(query)           => apply(query, bodyIncoming)

@@ -542,7 +542,6 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
     )
   }
 
-  /* This test do not work due to SURF-850
   test(
     s"""DEFINE FUNCTION foo.a(n) {
        |                ^
@@ -575,7 +574,6 @@ class LocalFunctionsSemanticAnalysisTest extends LocalCallablesSemanticAnalysisT
       msg42N57()
     )
   }
-   */
 
   /*
    * Valid query body returns

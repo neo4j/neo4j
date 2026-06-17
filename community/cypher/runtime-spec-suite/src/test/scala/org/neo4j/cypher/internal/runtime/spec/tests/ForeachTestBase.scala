@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
@@ -762,7 +762,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]", Seq(delete("node")))
+      .foreach("node", "[n, null]", Seq(AbstractLogicalPlanBuilder.delete("node")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -780,7 +780,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .foreach("node", "[n, null]", Seq(delete("node", forced = true)))
+      .foreach("node", "[n, null]", Seq(AbstractLogicalPlanBuilder.delete("node", forced = true)))
       .allNodeScan("n")
       .build(readOnly = false)
 

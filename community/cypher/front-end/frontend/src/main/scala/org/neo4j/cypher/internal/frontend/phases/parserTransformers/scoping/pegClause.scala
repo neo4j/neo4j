@@ -100,6 +100,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope.unitVariable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
+import org.neo4j.cypher.internal.frontend.phases.ResolvedLocalCall
 import org.neo4j.cypher.internal.frontend.phases.ResolvedNonLocalCall
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Ref
@@ -225,7 +226,7 @@ object pegClause {
          */
         locallyResolved match {
           // Local callable
-          case Some(LocalProcedureScopeSignature(_, procedureResult)) =>
+          case Some(LocalProcedureScopeSignature(_, _, _, procedureResult)) =>
             val yieldColumnsOpt = declaredResult.map(_.items.map(_.variable))
             val resultColumns = (procedureResult, yieldColumnsOpt) match {
               // no YIELD and YIELD *
@@ -280,6 +281,16 @@ object pegClause {
                 )
             }
         }
+      // resolved local named call
+      case ResolvedLocalCall(_, _, outputSignature, _, callArguments, callResults, _, _, _, _) =>
+        val children = callArguments.map(arg => pegExpression(arg, incoming.constantChildContext()))
+        val referenced = Some(WorkingScope.referencedInChildren(children))
+        val resultColumns = callResults.map(_.variable)
+        val outgoing = incoming.amendedWith(resultColumns.toSet)
+        val declared = Declarations(Seq.empty, resultColumns)
+
+        incoming.noResultScope(outgoing, children, referenced, declared)
+
       // resolved non-local named call
       case ResolvedNonLocalCall(signature, callArguments, callResults, _, declaredResults, yieldAll, _) =>
         val children = callArguments.map(arg => pegExpression(arg, incoming.constantChildContext()))

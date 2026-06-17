@@ -307,6 +307,9 @@ trait AstConstructionTestSupport {
   def exists(e: Expression): FunctionInvocation =
     FunctionInvocation(FunctionName(Exists.name)(e.position), e)(e.position)
 
+  def existsSubquery(cs: Clause*): ExistsExpression =
+    ExistsExpression(singleQuery(cs: _*))(pos, None, None)
+
   def prop(variable: String, propKey: String, position: InputPosition = pos): Property =
     Property(varFor(variable, position), propName(propKey, increasePos(position, variable.length + 1)))(position)
 
@@ -1292,6 +1295,9 @@ trait AstConstructionTestSupport {
   def topLevelBraces(graph: UseGraph, cs: Clause*): TopLevelBraces =
     topLevelBraces(SingleQuery(cs)(pos), graph)
 
+  def conditionalQueryDefault(queryOpt: Option[PartQuery]): Option[ConditionalQueryBranch] =
+    queryOpt.map(query => ConditionalQueryBranch(None, query)(pos))
+
   def conditionalQueryDefault(query: PartQuery): Option[ConditionalQueryBranch] =
     Some(ConditionalQueryBranch(None, query)(pos))
 
@@ -1526,6 +1532,12 @@ trait AstConstructionTestSupport {
     where: Option[Where] = None
   ): With =
     With(distinct = false, returnItems, None, orderBy, skip, limit, where = where, withType = ParsedAsYield)(pos)
+
+  def delete(expressions: Expression*): Delete =
+    Delete(expressions, forced = false)(pos)
+
+  def detachDelete(expressions: Expression*): Delete =
+    Delete(expressions, forced = true)(pos)
 
   def set_(items: Seq[SetItem]): SetClause =
     SetClause(items)(pos)

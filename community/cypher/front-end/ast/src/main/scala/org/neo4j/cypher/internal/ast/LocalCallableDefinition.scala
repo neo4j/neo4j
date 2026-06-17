@@ -124,19 +124,20 @@ case class LocalProcedureDefinition(
   body: Query
 )(val position: InputPosition) extends LocalCallableDefinition with SemanticAnalysisTooling {
 
-  /*
-   * Infers output signature from the procedure body.
-   * If the body is not returning, then the inferred output signature is None.
-   * Otherwise, the inferred output signature is the return columns with their inferred types.
+  /**
+   * Infers output names from the procedure body before semantic analysis has assigned types.
+   * Procedures ending in FINISH are represented as an empty output signature.
    */
-  def inferredOutputSignature(semanticState: SemanticState): Option[Seq[LocalFieldSignature]] = {
-    Option.when(body.isReturning)(
-      body.returnColumns.map { col =>
-        val typeSpec = semanticState.expectType(col, symbols.CTAny, coercion = false)._2
-        LocalFieldSignature(col.name, Some(TypeSpec.cypherTypeForTypeSpec(typeSpec)), None)(position = col.position)
+  def inferredOutputSignatureWithoutTypes: Option[Seq[LocalFieldSignature]] =
+    outputSignature.orElse {
+      if (body.isReturning) {
+        Some(body.returnColumns.map { col =>
+          LocalFieldSignature(col.name, None, None)(position = col.position)
+        })
+      } else {
+        Some(Seq.empty)
       }
-    )
-  }
+    }
 
   override def semanticCheckBody(queryOuterState: SemanticState, definitionOuterState: SemanticState): SemanticCheck = {
     for {

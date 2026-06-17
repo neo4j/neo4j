@@ -46,7 +46,7 @@ case object ExtractLocalDefinitions extends Phase[BaseContext, BaseState, BaseSt
     /* Note that
      * 1) The directory distinguishes local definitions by type (e.g. functions vs. procedures), even if they have the same name
      * 2) Naming conflicts are handled in the VariableChecker, cf. 42I77 for local callables
-     * 3) Name resolution of local callables is handled in ResolveCallables
+     * 3) Name resolution of local callables is handled in ResolveLocalFunctions, ResolveLocalProceduresStep1 and ResolveLocalProceduresStep2
      */
     val localCallableDefinitions = from.statement().folder.treeCollect {
       case lcd: LocalCallableDefinition => lcd
@@ -65,7 +65,8 @@ case object ExtractLocalDefinitions extends Phase[BaseContext, BaseState, BaseSt
     ))
   }
 
-  override def preConditions: Set[Condition] = Set(BaseContains[Statement]())
+  override def preConditions: Set[Condition] =
+    Set(BaseContains[Statement](), LocalFunctionsResolved, LocalProceduresFullyResolved)
 
   override def postConditions: Set[Condition] = Set(LocalCallableDefinitionsExtracted)
 

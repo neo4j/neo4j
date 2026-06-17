@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.AbstractFieldSignature
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.LocalFieldSignature
-import org.neo4j.cypher.internal.ast.LocalProcedureDefinition
 import org.neo4j.cypher.internal.ast.NonOptional
 import org.neo4j.cypher.internal.ast.OptionalState
 import org.neo4j.cypher.internal.ast.ProcedureResult
@@ -31,6 +30,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.ast.semantics.scoping.LocalProcedureScopeSignature
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
@@ -284,21 +284,14 @@ object ResolvedLocalCall {
 
   def apply(
     unresolved: UnresolvedCall,
-    localProcedureDefinition: LocalProcedureDefinition,
-    inferredOutputSignature: Option[Seq[LocalFieldSignature]]
+    localProcedureScopeSignature: LocalProcedureScopeSignature
   ): ResolvedLocalCall = {
     val UnresolvedCall(procedureName, declaredArguments, declaredResult, _, yieldAll, optional) = unresolved
     val position = unresolved.position
-    val inputSignature = localProcedureDefinition.inputSignature
-    val outputSignature = localProcedureDefinition.outputSignature.orElse(inferredOutputSignature)
+    val inputSignature = localProcedureScopeSignature.inputSignature
+    val outputSignature = localProcedureScopeSignature.outputSignature
 
-    def implicitArguments: Seq[Expression] = inputSignature.map(s =>
-      s.default.map(d => ImplicitProcedureArgument(s.name, s.getType, d)).getOrElse(
-        ExplicitParameter(s.name, s.getType)(position)
-      )
-    )
-
-    val callArguments = declaredArguments.getOrElse(implicitArguments)
+    val callArguments = declaredArguments.getOrElse(Seq.empty)
     val callArgumentsWithSensitivityMarkers = callArguments.map { (e: Expression) =>
       e.endoRewrite(SensitiveParameterRewriter)
     }
@@ -318,7 +311,7 @@ object ResolvedLocalCall {
         procedureName,
         inputSignature,
         outputSignature,
-        localProcedureDefinition.body.containsUpdates,
+        bodyContainsUpdates = false,
         callArgumentsWithSensitivityMarkers,
         callResults,
         declaredArguments.nonEmpty,
@@ -363,6 +356,9 @@ case class ResolvedLocalCall(
 
   def mapCallArguments(f: Expression => Expression): ResolvedLocalCall =
     copy(callArguments = callArguments.map(f))(this.position)
+
+  def withBodyContainsUpdates(newValue: Boolean): ResolvedLocalCall =
+    copy(bodyContainsUpdates = newValue)(position)
 
   override def signatureString: String = {
     val sig = inputSignature.mkString(", ")

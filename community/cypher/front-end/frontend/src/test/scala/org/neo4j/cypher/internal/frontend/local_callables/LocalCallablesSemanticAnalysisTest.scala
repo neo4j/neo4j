@@ -30,8 +30,9 @@ import org.neo4j.cypher.internal.frontend.phases.QueryLanguage.Cypher25
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.TryResolveCallables
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractLocalDefinitions
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ResolveLocalFunctions
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ResolveLocalProceduresStep1
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ResolveLocalProceduresStep2
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.FunctionName
@@ -96,9 +97,12 @@ trait LocalCallablesSemanticAnalysisTest
       disabledCypherVersions = Set(CypherVersion.Cypher5),
       semanticAnalysisTwice(
         extraStepBefore = Some(
-          ScopeSurveyor andThen ResolveLocalFunctions andThen ExtractLocalDefinitions
-        ),
-        extraStepInBetween = Some(TryResolveCallables(makeResolverMock))
+          ScopeSurveyor andThen
+            ResolveLocalFunctions andThen
+            ResolveLocalProceduresStep1 andThen
+            ResolveLocalProceduresStep2 andThen
+            TryResolveCallables(makeResolverMock)
+        )
       ),
       features ++ Seq(LocalCallables): _*
     )

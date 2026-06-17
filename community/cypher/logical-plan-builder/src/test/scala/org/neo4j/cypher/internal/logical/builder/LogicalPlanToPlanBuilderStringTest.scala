@@ -53,7 +53,6 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipExpression
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipFull
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipWithDynamicType
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicLabel
@@ -906,7 +905,7 @@ class LogicalPlanToPlanBuilderStringTest
           createPattern(nodes = Seq(createNode("n"))),
           removeLabel("x", "L"),
           removeDynamicLabel("x", "'M'"),
-          delete("x", forced = true),
+          AbstractLogicalPlanBuilder.delete("x", forced = true),
           setNodeProperty("n", "prop", "i"),
           setDynamicProperty("n", "'foo'", "i")
         )

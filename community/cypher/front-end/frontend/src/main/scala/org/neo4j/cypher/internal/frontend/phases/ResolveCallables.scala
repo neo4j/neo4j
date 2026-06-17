@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LocalCallables
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
@@ -33,6 +32,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransfor
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.DeprecatedSyntaxReplaced
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LocalFunctionsResolved
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LocalProceduresPartiallyResolved
 import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.GQLAliasFunctionNameRewritten
@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.rewriting.conditions.ProcedureCallWrappedAndExp
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.FunctionName
 import org.neo4j.cypher.internal.util.ProcedureName
-import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -49,9 +48,10 @@ import org.neo4j.cypher.internal.util.bottomUpWithParent
 import scala.util.Try
 
 /**
- * Resolves [[UnresolvedCall]] into resolved procedure calls and [[FunctionInvocation]] into
- * [[ResolvedFunctionInvocation]] if needed using a [[ScopedProcedureSignatureResolver]]. Subclasses
- * pick the policy for unresolved calls — [[StrictResolveCallables]] throws,
+ * Resolves non-local [[UnresolvedCall]]s into resolved procedure calls and [[FunctionInvocation]]
+ * into [[ResolvedFunctionInvocation]] if needed using a [[ScopedProcedureSignatureResolver]].
+ * Local procedure calls are handled earlier by ResolveLocalProceduresStep1/2. Subclasses pick
+ * the policy for unresolved non-local calls — [[StrictResolveCallables]] throws,
  * [[TryResolveCallables]] leaves them as-is.
  */
 sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, BaseState] {
@@ -104,24 +104,7 @@ sealed abstract class ResolveCallables extends Phase[BaseContext, BaseState, Bas
     resolver: ScopedProcedureSignatureResolver,
     unresolved: UnresolvedCall
   ): CallClause = {
-    // try resolve to local procedure
-    val procedureName = unresolved.procedureName
-    val definitions = from.localDefinitions().localProcedureDefinitions
-    val locallyResolved = {
-      if (context.semanticFeatures contains LocalCallables)
-        from.scopeState().recordedScopes(Ref(unresolved)).incoming.localCallables.collectFirst(Function.unlift {
-          case sig if sig.name.fullNameEqual(procedureName) =>
-            definitions.get(procedureName).map { definition =>
-              ResolvedLocalCall(unresolved, definition, definition.inferredOutputSignature(from.semantics()))
-            }
-          case _ => None
-        })
-      else None
-    }
-    val resolved: ResolvedCall[? <: CallClause] = locallyResolved.getOrElse(
-      // otherwise resolve to non-local procedure
-      ResolvedNonLocalCall(resolver.procedureSignature)(unresolved)
-    )
+    val resolved = ResolvedNonLocalCall(resolver.procedureSignature)(unresolved)
     // We coerce here to ensure that the semantic check run after this rewriter assigns a type
     // to the coercion expressions
     val coerced: CallClause = resolved.coerceArguments
@@ -195,6 +178,7 @@ object ResolveCallables
   override def preConditions: Set[StepSequencer.Condition] =
     Set(
       LocalFunctionsResolved,
+      LocalProceduresPartiallyResolved,
       ProcedureCallWrappedAndExpanded,
       GQLAliasFunctionNameRewritten,
       DeprecatedSyntaxReplaced

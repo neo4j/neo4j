@@ -149,11 +149,11 @@ trait FrontEndCompilationPhases {
     resolver: ScopedProcedureSignatureResolver
   ): Transformer[BaseContext, BaseState, BaseState] = {
     ScopeSurveyor andThen
-      ExtractLocalDefinitions andThen
       StrictResolveCallables(resolver) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = Some(true)) andThen
-      ObfuscationMetadataCollection
+      ObfuscationMetadataCollection andThen
+      ExtractLocalDefinitions
   }
 }
 
