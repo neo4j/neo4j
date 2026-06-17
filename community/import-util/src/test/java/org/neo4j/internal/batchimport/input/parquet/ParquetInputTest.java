@@ -3682,6 +3682,84 @@ class ParquetInputTest {
         }
     }
 
+    @Test
+    void shouldFailImportOnNestedListColumn() throws Exception {
+        // list_nested_int32.parquet stores a List<List<Integer>>; Neo4j properties cannot hold arrays of
+        // arrays, so the reader must reject it rather than silently flatten it into a single list.
+        var fileUrl = getClass().getResource("/parquet/list_nested_int32.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(":ID", "name:string", "aList:int[]", ":Label"), List.of(":ID", "name", "aList", ":Label"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThatThrownBy(() -> readNext(nodes))
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining("Nested list columns are not supported");
+        }
+    }
+
+    @Test
+    void shouldFailImportOnVectorFromNestedListColumn() throws Exception {
+        // A nested list mapped to a vector must also be rejected rather than silently flattened.
+        var fileUrl = getClass().getResource("/parquet/list_nested_int32.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(":ID", "name:string", "\"aList:vector{coordinateType:int,dimensions:3}\"", ":Label"),
+                List.of(":ID", "name", "aList", ":Label"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        assertThat(input.containsVectorData()).isTrue();
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThatThrownBy(() -> readNext(nodes))
+                    .isInstanceOf(InputException.class)
+                    .hasMessageContaining("Nested list columns are not supported");
+        }
+    }
+
+    @Test
+    void shouldIgnoreNestedListColumnWhenNotMapped() throws Exception {
+        // A nested list column that is not imported (mapped to IGNORE) must not break the import, even
+        // though Neo4j properties cannot hold arrays of arrays - it is read and discarded, never stored.
+        var fileUrl = getClass().getResource("/parquet/list_nested_int32.parquet");
+        var nodeFile = Path.of(fileUrl.toURI());
+        Path headerFile = createHeaderFile(
+                List.of(":ID", "name:string", "aList:IGNORE", ":Label"), List.of(":ID", "name", "aList", ":Label"));
+
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(""),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, headerFile), new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 123L, properties("name", "Mattias Persson"), labels("HACKER"));
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
     private static Stream<Arguments> dimensionMismatchedVectors() {
         return Stream.of(
                 Arguments.of("vector{coordinateType:byte,dimensions:3}", "123;-2"),

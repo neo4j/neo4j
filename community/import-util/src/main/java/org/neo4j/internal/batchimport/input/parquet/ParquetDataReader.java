@@ -50,6 +50,7 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.internal.batchimport.input.Groups;
+import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
@@ -350,6 +351,7 @@ class ParquetDataReader implements Closeable {
 
             if (nestedLogicalType != null && nestedLogicalType.equals(LogicalTypeAnnotation.listType())) {
                 // Handle list within struct - use repetition level pattern
+                rejectNestedList(column);
                 mapValues.values().add(collectRepeatedValues(columnReader, column, primitiveType));
             } else {
                 // Only read value if we're at max definition level (field value is present)
@@ -366,6 +368,7 @@ class ParquetDataReader implements Closeable {
 
         private ArrayList<Object> readListValues(
                 ColumnReader columnReader, ColumnDescriptor column, PrimitiveType primitiveType) {
+            rejectNestedList(column);
             // Check if the list itself is null (definition level 0)
             if (columnReader.getCurrentDefinitionLevel() == 0) {
                 columnReader.consume();
@@ -401,6 +404,19 @@ class ParquetDataReader implements Closeable {
             var values = collectRepeatedValuesWithNulls(columnReader, column, primitiveType);
             mapValues.values().addAll(values);
             return mapValues;
+        }
+
+        /**
+         * Rejects nested list columns (arrays of arrays). A standard 3-level LIST encodes its element at
+         * max repetition level 1; a higher value means the element is itself repeated. Neo4j properties
+         * cannot hold arrays of arrays, so fail fast with a clear message instead.
+         */
+        private static void rejectNestedList(ColumnDescriptor column) {
+            if (column.getMaxRepetitionLevel() > 1) {
+                throw new InputException(
+                        "Nested list columns are not supported (column '%s'): Neo4j properties cannot hold arrays of arrays."
+                                .formatted(column.getPath()[0]));
+            }
         }
 
         /**
