@@ -19,8 +19,7 @@
  */
 package org.neo4j.collection;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.collection.PrimitiveArrays.union;
 
 import java.util.Arrays;
@@ -69,9 +68,11 @@ public class PrimitiveArraysUnionTest {
         int[] expected = input.expected;
         int[] actual = union(lhs, rhs);
         if (lhs == expected || rhs == expected) {
-            assertSame(expected, actual);
+            assertThat(actual).isSameAs(expected);
         } else {
-            assertArrayEquals(expected, actual, "Arrays should be equal. Test seed value: " + SEED);
+            assertThat(actual)
+                    .as("Arrays should be equal. Test seed value: " + SEED)
+                    .containsExactly(expected);
         }
     }
 

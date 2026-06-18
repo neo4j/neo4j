@@ -22,9 +22,7 @@ package org.neo4j.internal.helpers.collection;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -44,35 +42,39 @@ import org.neo4j.graphdb.ResourceIterator;
 
 class TestCommonIterators {
     @Test
-    void testFirstElement() {
+    void firstElement() {
         Object object = new Object();
         Object object2 = new Object();
         Object defaultValue = new Object();
 
         // first Iterable
-        assertEquals(object, Iterables.first(asList(object, object2)));
-        assertEquals(object, Iterables.first(singletonList(object)));
-        assertThrows(NoSuchElementException.class, () -> Iterables.first(Collections.emptyList()));
+        assertThat(Iterables.first(asList(object, object2))).isEqualTo(object);
+        assertThat(Iterables.first(singletonList(object))).isEqualTo(object);
+        assertThatThrownBy(() -> Iterables.first(Collections.emptyList())).isInstanceOf(NoSuchElementException.class);
 
         // first Iterator
-        assertEquals(object, Iterators.first(asList(object, object2).iterator()));
-        assertEquals(object, Iterators.first(singletonList(object).iterator()));
-        assertThrows(NoSuchElementException.class, () -> Iterators.first(Collections.emptyIterator()));
+        assertThat(Iterators.first(asList(object, object2).iterator())).isEqualTo(object);
+        assertThat(Iterators.first(singletonList(object).iterator())).isEqualTo(object);
+        assertThatThrownBy(() -> Iterators.first(Collections.emptyIterator()))
+                .isInstanceOf(NoSuchElementException.class);
 
         // firstOrNull Iterable
-        assertEquals(object, Iterables.firstOrNull(asList(object, object2)));
-        assertEquals(object, Iterables.firstOrNull(singletonList(object)));
-        assertNull(Iterables.firstOrNull(Collections.emptyList()));
+        assertThat(Iterables.firstOrNull(asList(object, object2))).isEqualTo(object);
+        assertThat(Iterables.firstOrNull(singletonList(object))).isEqualTo(object);
+        assertThat((Object) Iterables.firstOrNull(Collections.emptyList())).isNull();
 
         // firstOrNull Iterator
-        assertEquals(object, Iterators.firstOrNull(asList(object, object2).iterator()));
-        assertEquals(object, Iterators.firstOrNull(singletonList(object).iterator()));
-        assertNull(Iterators.firstOrNull(Collections.emptyIterator()));
+        assertThat(Iterators.firstOrNull(asList(object, object2).iterator())).isEqualTo(object);
+        assertThat(Iterators.firstOrNull(singletonList(object).iterator())).isEqualTo(object);
+        assertThat((Object) Iterators.firstOrNull(Collections.emptyIterator())).isNull();
 
         // firstOrDefault
-        assertEquals(object, Iterators.firstOrDefault(asList(object, object2).iterator(), defaultValue));
-        assertEquals(object, Iterators.firstOrDefault(singletonList(object).iterator(), defaultValue));
-        assertEquals(defaultValue, Iterators.firstOrDefault(Collections.emptyIterator(), defaultValue));
+        assertThat(Iterators.firstOrDefault(asList(object, object2).iterator(), defaultValue))
+                .isEqualTo(object);
+        assertThat(Iterators.firstOrDefault(singletonList(object).iterator(), defaultValue))
+                .isEqualTo(object);
+        assertThat(Iterators.firstOrDefault(Collections.emptyIterator(), defaultValue))
+                .isEqualTo(defaultValue);
     }
 
     @Test
@@ -90,24 +92,25 @@ class TestCommonIterators {
     }
 
     @Test
-    void testLastElement() {
+    void lastElement() {
         Object object = new Object();
         Object object2 = new Object();
 
         // last Iterable
-        assertEquals(object2, Iterables.last(asList(object, object2)));
-        assertEquals(object, Iterables.last(singletonList(object)));
-        assertThrows(NoSuchElementException.class, () -> Iterables.last(Collections.emptyList()));
+        assertThat(Iterables.last(asList(object, object2))).isEqualTo(object2);
+        assertThat(Iterables.last(singletonList(object))).isEqualTo(object);
+        assertThatThrownBy(() -> Iterables.last(Collections.emptyList())).isInstanceOf(NoSuchElementException.class);
 
         // last Iterator
-        assertEquals(object2, Iterators.last(asList(object, object2).iterator()));
-        assertEquals(object, Iterators.last(singletonList(object).iterator()));
-        assertThrows(NoSuchElementException.class, () -> Iterators.last(Collections.emptyIterator()));
+        assertThat(Iterators.last(asList(object, object2).iterator())).isEqualTo(object2);
+        assertThat(Iterators.last(singletonList(object).iterator())).isEqualTo(object);
+        assertThatThrownBy(() -> Iterators.last(Collections.emptyIterator()))
+                .isInstanceOf(NoSuchElementException.class);
 
         // lastOrNull Iterator
-        assertEquals(object2, Iterators.lastOrNull(asList(object, object2).iterator()));
-        assertEquals(object, Iterators.lastOrNull(singletonList(object).iterator()));
-        assertNull(Iterators.lastOrNull(Collections.emptyIterator()));
+        assertThat(Iterators.lastOrNull(asList(object, object2).iterator())).isEqualTo(object2);
+        assertThat(Iterators.lastOrNull(singletonList(object).iterator())).isEqualTo(object);
+        assertThat((Object) Iterators.lastOrNull(Collections.emptyIterator())).isNull();
     }
 
     @Test
@@ -125,33 +128,33 @@ class TestCommonIterators {
     }
 
     @Test
-    void testSingleElement() {
+    void singleElement() {
         Object object = new Object();
         Object object2 = new Object();
 
         // single Iterable
-        assertEquals(object, Iterables.single(singletonList(object)));
-        assertThrows(NoSuchElementException.class, () -> Iterables.single(Collections.emptyList()));
-        assertThrows(NoSuchElementException.class, () -> Iterables.single(asList(object, object2)));
+        assertThat(Iterables.single(singletonList(object))).isEqualTo(object);
+        assertThatThrownBy(() -> Iterables.single(Collections.emptyList())).isInstanceOf(NoSuchElementException.class);
+        assertThatThrownBy(() -> Iterables.single(asList(object, object2))).isInstanceOf(NoSuchElementException.class);
 
         // single Iterator
-        assertEquals(object, Iterators.single(singletonList(object).iterator()));
-        assertThrows(NoSuchElementException.class, () -> Iterators.single(Collections.emptyIterator()));
-        assertThrows(
-                NoSuchElementException.class,
-                () -> Iterators.single(asList(object, object2).iterator()));
+        assertThat(Iterators.single(singletonList(object).iterator())).isEqualTo(object);
+        assertThatThrownBy(() -> Iterators.single(Collections.emptyIterator()))
+                .isInstanceOf(NoSuchElementException.class);
+        assertThatThrownBy(() -> Iterators.single(asList(object, object2).iterator()))
+                .isInstanceOf(NoSuchElementException.class);
 
         // singleOrNull Iterable
-        assertEquals(object, Iterables.singleOrNull(singletonList(object)));
-        assertNull(Iterables.singleOrNull(Collections.emptyList()));
-        assertThrows(NoSuchElementException.class, () -> Iterables.singleOrNull(asList(object, object2)));
+        assertThat(Iterables.singleOrNull(singletonList(object))).isEqualTo(object);
+        assertThat((Object) Iterables.singleOrNull(Collections.emptyList())).isNull();
+        assertThatThrownBy(() -> Iterables.singleOrNull(asList(object, object2)))
+                .isInstanceOf(NoSuchElementException.class);
 
         // singleOrNull Iterator
-        assertEquals(object, Iterators.singleOrNull(singletonList(object).iterator()));
-        assertNull(Iterators.singleOrNull(Collections.emptyIterator()));
-        assertThrows(
-                NoSuchElementException.class,
-                () -> Iterators.singleOrNull(asList(object, object2).iterator()));
+        assertThat(Iterators.singleOrNull(singletonList(object).iterator())).isEqualTo(object);
+        assertThat((Object) Iterators.singleOrNull(Collections.emptyIterator())).isNull();
+        assertThatThrownBy(() -> Iterators.singleOrNull(asList(object, object2).iterator()))
+                .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
@@ -171,9 +174,9 @@ class TestCommonIterators {
     @Test
     void getItemFromEnd() {
         Iterable<Integer> ints = asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        assertEquals((Integer) 9, Iterators.fromEnd(ints.iterator(), 0));
-        assertEquals((Integer) 8, Iterators.fromEnd(ints.iterator(), 1));
-        assertEquals((Integer) 7, Iterators.fromEnd(ints.iterator(), 2));
+        assertThat(Iterators.fromEnd(ints.iterator(), 0)).isEqualTo((Integer) 9);
+        assertThat(Iterators.fromEnd(ints.iterator(), 1)).isEqualTo((Integer) 8);
+        assertThat(Iterators.fromEnd(ints.iterator(), 2)).isEqualTo((Integer) 7);
     }
 
     @Test
@@ -192,7 +195,7 @@ class TestCommonIterators {
 
     @Test
     void iteratorsStreamForNull() {
-        assertThrows(NullPointerException.class, () -> Iterators.stream(null));
+        assertThatThrownBy(() -> Iterators.stream(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -201,7 +204,7 @@ class TestCommonIterators {
 
         Iterator<Object> iterator = list.iterator();
 
-        assertEquals(list, Iterators.stream(iterator).toList());
+        assertThat(Iterators.stream(iterator).toList()).containsExactlyElementsOf(list);
     }
 
     @Test
@@ -212,7 +215,7 @@ class TestCommonIterators {
         ResourceIterator<Object> iterator = Iterators.resourceIterator(list.iterator(), resource);
 
         try (Stream<Object> stream = Iterators.stream(iterator)) {
-            assertEquals(list, stream.toList());
+            assertThat(stream.toList()).containsExactlyElementsOf(list);
         }
         verify(resource).close();
     }
@@ -224,19 +227,19 @@ class TestCommonIterators {
 
         Stream<Integer> stream = Iterators.stream(iterator, characteristics);
 
-        assertEquals(characteristics, stream.spliterator().characteristics());
+        assertThat(stream.spliterator().characteristics()).isEqualTo(characteristics);
     }
 
     @Test
     void iterablesStreamForNull() {
-        assertThrows(NullPointerException.class, () -> Iterables.stream(null));
+        assertThatThrownBy(() -> Iterables.stream(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void iterablesStream() {
         List<Object> list = asList(1, 2, "3", '4', null, "abc", "56789");
 
-        assertEquals(list, Iterables.stream(list).toList());
+        assertThat(Iterables.stream(list).toList()).containsExactlyElementsOf(list);
     }
 
     @Test
@@ -257,7 +260,7 @@ class TestCommonIterators {
         };
 
         try (Stream<Object> stream = Iterables.stream(iterable)) {
-            assertEquals(list, stream.toList());
+            assertThat(stream.toList()).containsExactlyElementsOf(list);
         }
         verify(resource).close();
     }
@@ -269,13 +272,15 @@ class TestCommonIterators {
 
         Stream<Integer> stream = Iterables.stream(iterable, characteristics);
 
-        assertEquals(characteristics, stream.spliterator().characteristics());
+        assertThat(stream.spliterator().characteristics()).isEqualTo(characteristics);
     }
 
     @Test
     void iteratorsToString() {
-        assertEquals("[a, b, c]", Iterators.toString(Iterators.iterator("a", "b", "c"), Object::toString, 5));
-        assertEquals("[a, b, ...]", Iterators.toString(Iterators.iterator("a", "b", "c"), Object::toString, 2));
+        assertThat(Iterators.toString(Iterators.iterator("a", "b", "c"), Object::toString, 5))
+                .isEqualTo("[a, b, c]");
+        assertThat(Iterators.toString(Iterators.iterator("a", "b", "c"), Object::toString, 2))
+                .isEqualTo("[a, b, ...]");
     }
 
     @Test

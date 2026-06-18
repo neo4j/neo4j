@@ -75,6 +75,6 @@ class CombiningResourceIteratorTest {
         CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>(iterator(it1, it2));
 
         // When I iterate through it, things come back in the right order
-        assertThat(Iterators.asList(combingIterator)).isEqualTo(asList(1L, 5L, 6L, 7L));
+        assertThat(Iterators.asList(combingIterator)).containsExactlyElementsOf(asList(1L, 5L, 6L, 7L));
     }
 }

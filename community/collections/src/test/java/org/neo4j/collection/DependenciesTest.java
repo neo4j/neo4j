@@ -21,7 +21,7 @@ package org.neo4j.collection;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -130,7 +130,8 @@ class DependenciesTest {
     void givenEmptyDependenciesWhenResolveWithTypeThenException() {
         Dependencies dependencies = new Dependencies();
 
-        assertThrows(UnsatisfiedDependencyException.class, () -> dependencies.resolveDependency(Collection.class));
+        assertThatThrownBy(() -> dependencies.resolveDependency(Collection.class))
+                .isInstanceOf(UnsatisfiedDependencyException.class);
     }
 
     @Test
@@ -142,7 +143,8 @@ class DependenciesTest {
         dependencies.satisfyDependency(foo);
         dependencies.satisfyDependency(bar);
 
-        assertThrows(IllegalArgumentException.class, () -> dependencies.resolveDependency(List.class));
+        assertThatThrownBy(() -> dependencies.resolveDependency(List.class))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -152,7 +154,7 @@ class DependenciesTest {
 
         assertThat(dependencies.resolveOptionalDependency(CollectionsFactory.class))
                 .isPresent()
-                .contains(OnHeapCollectionsFactory.INSTANCE);
+                .hasValue(OnHeapCollectionsFactory.INSTANCE);
         assertThat(dependencies.resolveOptionalDependency(RawIterator.class)).isEmpty();
     }
 
@@ -164,7 +166,7 @@ class DependenciesTest {
 
         assertThat(localDependencies.resolveOptionalDependency(CollectionsFactory.class))
                 .isPresent()
-                .contains(OnHeapCollectionsFactory.INSTANCE);
+                .hasValue(OnHeapCollectionsFactory.INSTANCE);
         assertThat(localDependencies.resolveOptionalDependency(RawIterator.class))
                 .isEmpty();
     }

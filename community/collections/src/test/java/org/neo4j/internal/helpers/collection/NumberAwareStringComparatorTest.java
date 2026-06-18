@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
@@ -59,15 +58,15 @@ class NumberAwareStringComparatorTest {
     }
 
     private static void assertLesser(String first, String other) {
-        assertTrue(compare(first, other) < 0);
+        assertThat(compare(first, other)).isLessThan(0);
     }
 
     private static void assertSame(String first, String other) {
-        assertEquals(0, compare(first, other));
+        assertThat(compare(first, other)).isZero();
     }
 
     private static void assertGreater(String first, String other) {
-        assertTrue(compare(first, other) > 0);
+        assertThat(compare(first, other)).isGreaterThan(0);
     }
 
     private static int compare(String first, String other) {

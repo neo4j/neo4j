@@ -20,11 +20,8 @@
 package org.neo4j.internal.helpers.collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -39,23 +36,23 @@ class LongRangeTest {
         int to = 8;
         LongRange range = LongRange.range(from, to);
 
-        assertFalse(range.isWithinRange(from - 1));
-        assertFalse(range.isWithinRange(to + 1));
+        assertThat(range.isWithinRange(from - 1)).isFalse();
+        assertThat(range.isWithinRange(to + 1)).isFalse();
         for (int i = from; i < to + 1; i++) {
-            assertTrue(range.isWithinRange(i));
+            assertThat(range.isWithinRange(i)).isTrue();
         }
     }
 
     @ParameterizedTest
     @MethodSource("validRanges")
     void shouldBeWithinRange(RangeProvider rangeProvider) {
-        assertDoesNotThrow(rangeProvider::get);
+        assertThatCode(rangeProvider::get).doesNotThrowAnyException();
     }
 
     @ParameterizedTest
     @MethodSource("invalidRanges")
     void checkInvalidRanges(RangeProvider rangeProvider) {
-        assertThrows(IllegalArgumentException.class, rangeProvider::get);
+        assertThatThrownBy(rangeProvider::get).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -63,22 +60,22 @@ class LongRangeTest {
         LongRange rangeA = LongRange.range(10, 12);
         LongRange rangeB = LongRange.range(13, 15);
         LongRange joinedRange = LongRange.join(rangeA, rangeB);
-        assertEquals(10, joinedRange.from());
-        assertEquals(15, joinedRange.to());
+        assertThat(joinedRange.from()).isEqualTo(10);
+        assertThat(joinedRange.to()).isEqualTo(15);
     }
 
     @Test
     void emptyRange() {
-        assertTrue(LongRange.EMPTY_RANGE.isEmpty());
-        assertFalse(LongRange.range(5, 5).isEmpty());
-        assertEquals(6, LongRange.range(6, 6).stream().findAny().orElseThrow());
+        assertThat(LongRange.EMPTY_RANGE.isEmpty()).isTrue();
+        assertThat(LongRange.range(5, 5).isEmpty()).isFalse();
+        assertThat(LongRange.range(6, 6).stream().findAny().orElseThrow()).isEqualTo(6);
     }
 
     @Test
     void rangeStream() {
         LongRange longRange = LongRange.range(2, 5);
-        assertEquals(2, longRange.stream().min().orElseThrow());
-        assertEquals(5, longRange.stream().max().orElseThrow());
+        assertThat(longRange.stream().min().orElseThrow()).isEqualTo(2);
+        assertThat(longRange.stream().max().orElseThrow()).isEqualTo(5);
     }
 
     @Test
@@ -92,7 +89,7 @@ class LongRangeTest {
     void failJoinNonAdjacentRanges() {
         LongRange rangeA = LongRange.range(10, 12);
         LongRange rangeB = LongRange.range(14, 15);
-        assertThrows(IllegalArgumentException.class, () -> LongRange.join(rangeA, rangeB));
+        assertThatThrownBy(() -> LongRange.join(rangeA, rangeB)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -102,10 +99,10 @@ class LongRangeTest {
         LongRange rangeC = LongRange.range(12, 15);
         LongRange rangeD = LongRange.range(10, 11);
 
-        assertFalse(rangeA.isAdjacent(rangeB));
-        assertFalse(rangeA.isAdjacent(rangeC));
-        assertTrue(rangeD.isAdjacent(rangeC));
-        assertFalse(rangeD.isAdjacent(rangeB));
+        assertThat(rangeA.isAdjacent(rangeB)).isFalse();
+        assertThat(rangeA.isAdjacent(rangeC)).isFalse();
+        assertThat(rangeD.isAdjacent(rangeC)).isTrue();
+        assertThat(rangeD.isAdjacent(rangeB)).isFalse();
     }
 
     private static Stream<RangeProvider> invalidRanges() {

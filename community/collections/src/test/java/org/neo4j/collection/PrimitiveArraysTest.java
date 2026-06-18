@@ -21,8 +21,6 @@ package org.neo4j.collection;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveArrays.countUnique;
 import static org.neo4j.collection.PrimitiveArrays.intersect;
 import static org.neo4j.collection.PrimitiveArrays.subtract;
@@ -45,7 +43,7 @@ class PrimitiveArraysTest {
     void shouldDeduplicate() {
         int[] array = new int[] {1, 1, 2, 5, 6, 6};
 
-        assertArrayEquals(new int[] {1, 2, 5, 6}, PrimitiveArrays.deduplicate(array));
+        assertThat(PrimitiveArrays.deduplicate(array)).containsExactly(new int[] {1, 2, 5, 6});
     }
 
     @Test
@@ -65,10 +63,10 @@ class PrimitiveArraysTest {
             int[] dedupedExpected = new int[set.size()];
             Iterator<Integer> itr = set.iterator();
             for (int j = 0; j < dedupedExpected.length; j++) {
-                assertTrue(itr.hasNext());
+                assertThat(itr).hasNext();
                 dedupedExpected[j] = itr.next();
             }
-            assertArrayEquals(dedupedExpected, dedupedActual);
+            assertThat(dedupedActual).containsExactly(dedupedExpected);
         }
     }
 
@@ -118,7 +116,7 @@ class PrimitiveArraysTest {
 
     @Test
     void symDiff_shouldHandleNullInput() {
-        assertThat(PrimitiveArrays.symmetricDifference(null, null)).isEqualTo(null);
+        assertThat(PrimitiveArrays.symmetricDifference(null, null)).isNull();
         assertThat(PrimitiveArrays.symmetricDifference(null, EMPTY_INT_ARRAY)).isEmpty();
         assertThat(PrimitiveArrays.symmetricDifference(EMPTY_INT_ARRAY, null)).isEmpty();
         assertThat(PrimitiveArrays.symmetricDifference(null, ONE_INT)).isEqualTo(ONE_INT);

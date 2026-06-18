@@ -31,20 +31,20 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class BloomFilterTest {
+class BloomFilterTest {
 
     Random random = new Random();
     long seed;
 
     @BeforeEach
-    public void setRandom() {
+    void setRandom() {
         seed = System.nanoTime();
         random.setSeed(seed);
     }
 
     @ParameterizedTest
     @MethodSource("provideBloomFilterImplementations")
-    void testBloomFilter(BloomFilter filter) {
+    void bloomFilter(BloomFilter filter) {
         // Given
         List<Long> values = List.of(1L, 10L, 1000L, 10000000L, 1000000000000L, 1000000000000000L);
 
@@ -60,7 +60,7 @@ public class BloomFilterTest {
 
     @ParameterizedTest
     @MethodSource("provideBloomFilterImplementations")
-    void testBloomFilterRandomNumbers(BloomFilter filter) {
+    void bloomFilterRandomNumbers(BloomFilter filter) {
         // Given
         List<Long> values = new ArrayList<>();
         // When

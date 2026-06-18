@@ -20,7 +20,7 @@
 package org.neo4j.collection.trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,16 +32,16 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.memory.EmptyMemoryTracker;
 
-public class HeapTrackingOrderedAppendSetTest {
+class HeapTrackingOrderedAppendSetTest {
 
     @Test
     void emptySet() {
         HeapTrackingOrderedAppendSet<Integer> appendSet = create();
         assertThat(appendSet.isEmpty()).isTrue();
         assertThat(appendSet.contains(1337)).isFalse();
-        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(appendSet::getFirst);
-        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(appendSet::getLast);
-        assertThatExceptionOfType(IndexOutOfBoundsException.class).isThrownBy(() -> appendSet.get(0));
+        assertThatThrownBy(appendSet::getFirst).isInstanceOf(NoSuchElementException.class);
+        assertThatThrownBy(appendSet::getLast).isInstanceOf(NoSuchElementException.class);
+        assertThatThrownBy(() -> appendSet.get(0)).isInstanceOf(IndexOutOfBoundsException.class);
         assertThat(appendSet.iterator()).isExhausted();
     }
 
@@ -49,12 +49,11 @@ public class HeapTrackingOrderedAppendSetTest {
     void singleElementSet() {
         HeapTrackingOrderedAppendSet<Integer> appendSet = create(1337);
         assertThat(appendSet.isEmpty()).isFalse();
-        assertThat(appendSet.contains(1337)).isTrue();
-        assertThat(appendSet.contains(1338)).isFalse();
+        assertThat(appendSet).contains(1337).doesNotContain(1338);
         assertThat(appendSet.getFirst()).isEqualTo(1337);
         assertThat(appendSet.getLast()).isEqualTo(1337);
         assertThat(appendSet.get(0)).isEqualTo(1337);
-        assertThatExceptionOfType(IndexOutOfBoundsException.class).isThrownBy(() -> appendSet.get(1));
+        assertThatThrownBy(() -> appendSet.get(1)).isInstanceOf(IndexOutOfBoundsException.class);
         assertThat(Iterators.asList(appendSet.iterator())).isEqualTo(List.of(1337));
     }
 
@@ -120,7 +119,7 @@ public class HeapTrackingOrderedAppendSetTest {
     }
 
     private <T> void assertSetContains(OrderedAppendSet<T> set, List<T> objects) {
-        assertThat(set).hasSize(objects.size());
+        assertThat(set).hasSameSizeAs(objects);
         assertThat(set.isEmpty()).isEqualTo(objects.isEmpty());
         assertThat(set.getFirst()).isEqualTo(objects.getFirst());
         assertThat(set.getLast()).isEqualTo(objects.getLast());

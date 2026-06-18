@@ -21,9 +21,7 @@ package org.neo4j.collection.pool;
 
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,14 +39,14 @@ class LinkedQueuePoolTest {
                 new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy(ofMillis(10), clock);
 
         while (clock.getAsLong() <= MILLISECONDS.toNanos(10)) {
-            assertFalse(timeStrategy.shouldCheck());
+            assertThat(timeStrategy.shouldCheck()).isFalse();
             clock.forward(1, MILLISECONDS);
         }
 
-        assertTrue(timeStrategy.shouldCheck());
+        assertThat(timeStrategy.shouldCheck()).isTrue();
 
         clock.forward(1, MILLISECONDS);
-        assertFalse(timeStrategy.shouldCheck());
+        assertThat(timeStrategy.shouldCheck()).isFalse();
     }
 
     @Test
@@ -66,10 +64,10 @@ class LinkedQueuePoolTest {
 
         // THEN
         // clock didn't tick, these two are not set
-        assertEquals(-1, stateMonitor.currentPeakSize.get());
-        assertEquals(-1, stateMonitor.targetSize.get());
+        assertThat(stateMonitor.currentPeakSize.get()).isEqualTo(-1);
+        assertThat(stateMonitor.targetSize.get()).isEqualTo(-1);
         // no disposed happened, since the count to update is 5
-        assertEquals(0, stateMonitor.disposed.get());
+        assertThat(stateMonitor.disposed.get()).isZero();
     }
 
     @Test
@@ -87,12 +85,12 @@ class LinkedQueuePoolTest {
 
         // THEN
         // The clock hasn't ticked, so these two should be unset
-        assertEquals(-1, stateMonitor.currentPeakSize.get());
-        assertEquals(-1, stateMonitor.targetSize.get());
+        assertThat(stateMonitor.currentPeakSize.get()).isEqualTo(-1);
+        assertThat(stateMonitor.targetSize.get()).isEqualTo(-1);
         // We obviously created 15 threads
-        assertEquals(15, stateMonitor.created.get());
+        assertThat(stateMonitor.created.get()).isEqualTo(15);
         // And of those 10 are not needed and therefore disposed on release (min size is 5)
-        assertEquals(10, stateMonitor.disposed.get());
+        assertThat(stateMonitor.disposed.get()).isEqualTo(10);
     }
 
     @Test
@@ -110,9 +108,9 @@ class LinkedQueuePoolTest {
         holders.addAll(acquireFromPool(pool, 1)); // Needed to trigger the alarm
 
         // then
-        assertEquals(MAX_SIZE + 1, stateMonitor.currentPeakSize.get());
+        assertThat(stateMonitor.currentPeakSize.get()).isEqualTo(MAX_SIZE + 1);
         // We have not released anything, so targetSize will not be reduced
-        assertEquals(MAX_SIZE + 1, stateMonitor.targetSize.get()); // + 1 from the acquire
+        assertThat(stateMonitor.targetSize.get()).isEqualTo(MAX_SIZE + 1); // + 1 from the acquire
     }
 
     @Test
@@ -132,9 +130,9 @@ class LinkedQueuePoolTest {
         }
 
         // then
-        assertEquals(-1, stateMonitor.currentPeakSize.get()); // no alarm has rung, -1 is the default
-        assertEquals(1, stateMonitor.created.get());
-        assertEquals(0, stateMonitor.disposed.get()); // we should always be below min size, so 0 dispose calls
+        assertThat(stateMonitor.currentPeakSize.get()).isEqualTo(-1); // no alarm has rung, -1 is the default
+        assertThat(stateMonitor.created.get()).isOne();
+        assertThat(stateMonitor.disposed.get()).isZero(); // we should always be below min size, so 0 dispose calls
     }
 
     @Test
@@ -159,12 +157,12 @@ class LinkedQueuePoolTest {
         // then
 
         // currentPeakSize must have reset from the latest alarm to MIN_SIZE.
-        assertEquals(1, stateMonitor.currentPeakSize.get()); // Alarm
+        assertThat(stateMonitor.currentPeakSize.get()).isOne(); // Alarm
         // targetSize must be set to MIN_SIZE since currentPeakSize was that 2 alarms ago and didn't increase
-        assertEquals(MIN_SIZE, stateMonitor.targetSize.get());
+        assertThat(stateMonitor.targetSize.get()).isEqualTo(MIN_SIZE);
         // Only pooled Flyweights must be used, disposing what is in excess
         // +1 for the alarm from buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects
-        assertEquals(MAX_SIZE - MIN_SIZE + 1, stateMonitor.disposed.get());
+        assertThat(stateMonitor.disposed.get()).isEqualTo(MAX_SIZE - MIN_SIZE + 1);
     }
 
     @Test
@@ -183,7 +181,8 @@ class LinkedQueuePoolTest {
         buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects(MAX_SIZE, clock, pool, holders);
 
         // then
-        assertEquals(MAX_SIZE + 1, stateMonitor.currentPeakSize.get()); // the peak method above does +1 on the peak
+        assertThat(stateMonitor.currentPeakSize.get())
+                .isEqualTo(MAX_SIZE + 1); // the peak method above does +1 on the peak
 
         // when
         /* After the peak, stay at MID_SIZE concurrent usage, using up all already present Flyweights in the process
@@ -206,12 +205,12 @@ class LinkedQueuePoolTest {
 
         // then
         // currentPeakSize should be at MID_SIZE
-        assertEquals(MID_SIZE, stateMonitor.currentPeakSize.get());
+        assertThat(stateMonitor.currentPeakSize.get()).isEqualTo(MID_SIZE);
         // target size too
-        assertEquals(MID_SIZE, stateMonitor.targetSize.get());
+        assertThat(stateMonitor.targetSize.get()).isEqualTo(MID_SIZE);
         // only the excess from the MAX_SIZE down to mid size must have been disposed
         // +1 for the alarm from buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects
-        assertEquals(MAX_SIZE - MID_SIZE + 1, stateMonitor.disposed.get());
+        assertThat(stateMonitor.disposed.get()).isEqualTo(MAX_SIZE - MID_SIZE + 1);
     }
 
     @Test
@@ -242,14 +241,14 @@ class LinkedQueuePoolTest {
 
         // then
         // currentPeakSize should be at MIN_SIZE / 5
-        assertTrue(
-                stateMonitor.currentPeakSize.get() <= BELOW_MIN_SIZE,
-                "Expected " + stateMonitor.currentPeakSize.get() + " <= " + BELOW_MIN_SIZE);
+        assertThat(stateMonitor.currentPeakSize.get() <= BELOW_MIN_SIZE)
+                .as("Expected " + stateMonitor.currentPeakSize.get() + " <= " + BELOW_MIN_SIZE)
+                .isTrue();
         // target size should remain at MIN_SIZE
-        assertEquals(MIN_SIZE, stateMonitor.targetSize.get());
+        assertThat(stateMonitor.targetSize.get()).isEqualTo(MIN_SIZE);
         // only the excess from the MAX_SIZE down to min size must have been disposed
         // +1 for the alarm from buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects
-        assertEquals(MAX_SIZE - MIN_SIZE + 1, stateMonitor.disposed.get());
+        assertThat(stateMonitor.disposed.get()).isEqualTo(MAX_SIZE - MIN_SIZE + 1);
 
         stateMonitor.created.set(0);
         stateMonitor.disposed.set(0);
@@ -259,8 +258,8 @@ class LinkedQueuePoolTest {
         holders.addAll(acquireFromPool(pool, MAX_SIZE));
 
         // then
-        assertEquals(MAX_SIZE - MIN_SIZE, stateMonitor.created.get());
-        assertEquals(0, stateMonitor.disposed.get());
+        assertThat(stateMonitor.created.get()).isEqualTo(MAX_SIZE - MIN_SIZE);
+        assertThat(stateMonitor.disposed.get()).isZero();
     }
 
     private static void buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects(

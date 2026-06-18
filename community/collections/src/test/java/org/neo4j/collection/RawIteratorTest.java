@@ -20,7 +20,7 @@
 package org.neo4j.collection;
 
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,10 +30,10 @@ import org.junit.jupiter.api.Test;
 class RawIteratorTest {
     @Test
     void shouldCreateSimpleRawIterator() {
-        assertEquals(Collections.emptyList(), list(RawIterator.of()));
-        assertEquals(Collections.singletonList(1), list(RawIterator.of(1)));
-        assertEquals(asList(1, 2), list(RawIterator.of(1, 2)));
-        assertEquals(asList(1, 2, 3), list(RawIterator.of(1, 2, 3)));
+        assertThat(list(RawIterator.of())).containsExactlyElementsOf(Collections.emptyList());
+        assertThat(list(RawIterator.of(1))).containsExactlyElementsOf(Collections.singletonList(1));
+        assertThat(list(RawIterator.of(1, 2))).containsExactlyElementsOf(asList(1, 2));
+        assertThat(list(RawIterator.of(1, 2, 3))).containsExactlyElementsOf(asList(1, 2, 3));
     }
 
     private static List<Integer> list(RawIterator<Integer, RuntimeException> iter) {

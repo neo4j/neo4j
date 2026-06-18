@@ -19,10 +19,8 @@
  */
 package org.neo4j.collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.NoSuchElementException;
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -32,7 +30,7 @@ class PrimitiveLongArrayQueueTest {
 
     @Test
     void newQueueIsEmpty() {
-        assertTrue(createQueue().isEmpty());
+        assertThat(createQueue().isEmpty()).isTrue();
     }
 
     @Test
@@ -40,7 +38,7 @@ class PrimitiveLongArrayQueueTest {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
         for (int i = 1; i < 1000; i++) {
             longArrayQueue.enqueue(i);
-            assertEquals(i, longArrayQueue.size());
+            assertThat(longArrayQueue.size()).isEqualTo(i);
         }
     }
 
@@ -49,8 +47,8 @@ class PrimitiveLongArrayQueueTest {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
         for (int i = 0; i < 1000; i++) {
             longArrayQueue.enqueue(i);
-            assertEquals(i, longArrayQueue.dequeue());
-            assertTrue(longArrayQueue.isEmpty());
+            assertThat(longArrayQueue.dequeue()).isEqualTo(i);
+            assertThat(longArrayQueue.isEmpty()).isTrue();
         }
     }
 
@@ -59,13 +57,13 @@ class PrimitiveLongArrayQueueTest {
         PrimitiveLongArrayQueue arrayQueue = createQueue();
         for (int i = 1; i < 16; i++) {
             arrayQueue.enqueue(i);
-            assertEquals(i, arrayQueue.size());
+            assertThat(arrayQueue.size()).isEqualTo(i);
         }
     }
 
     @Test
     void failToRemoveElementFromNewEmptyQueue() {
-        assertThrows(IllegalStateException.class, () -> createQueue().dequeue());
+        assertThatThrownBy(() -> createQueue().dequeue()).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -76,7 +74,7 @@ class PrimitiveLongArrayQueueTest {
         }
         int currentValue = 1;
         while (!arrayQueue.isEmpty()) {
-            assertEquals(currentValue++, arrayQueue.dequeue());
+            assertThat(arrayQueue.dequeue()).isEqualTo(currentValue++);
         }
     }
 
@@ -87,13 +85,13 @@ class PrimitiveLongArrayQueueTest {
             queue.enqueue(i);
         }
         for (int i = 0; i < 10; i++) {
-            assertEquals(i, queue.dequeue());
+            assertThat(queue.dequeue()).isEqualTo(i);
         }
         for (int i = 14; i < 24; i++) {
             queue.enqueue(i);
         }
 
-        assertEquals(14, queue.size());
+        assertThat(queue.size()).isEqualTo(14);
     }
 
     @Test
@@ -103,15 +101,15 @@ class PrimitiveLongArrayQueueTest {
             queue.enqueue(i);
         }
         for (int i = 0; i < 10; i++) {
-            assertEquals(i, queue.dequeue());
+            assertThat(queue.dequeue()).isEqualTo(i);
         }
         for (int i = 14; i < 34; i++) {
             queue.enqueue(i);
         }
 
-        assertEquals(24, queue.size());
+        assertThat(queue.size()).isEqualTo(24);
         for (int j = 10; j < 34; j++) {
-            assertEquals(j, queue.dequeue());
+            assertThat(queue.dequeue()).isEqualTo(j);
         }
     }
 
@@ -122,25 +120,24 @@ class PrimitiveLongArrayQueueTest {
             queue.enqueue(i);
         }
         for (int i = 0; i < 10; i++) {
-            assertEquals(i, queue.dequeue());
+            assertThat(queue.dequeue()).isEqualTo(i);
         }
         for (int i = 14; i < 24; i++) {
             queue.enqueue(i);
         }
 
-        assertEquals(14, queue.size());
+        assertThat(queue.size()).isEqualTo(14);
         LongIterator iterator = queue.longIterator();
         for (int j = 10; j < 24; j++) {
-            assertTrue(iterator.hasNext());
-            assertEquals(j, iterator.next());
+            assertThat(iterator.hasNext()).isTrue();
+            assertThat(iterator.next()).isEqualTo(j);
         }
-        assertFalse(iterator.hasNext());
+        assertThat(iterator.hasNext()).isFalse();
     }
 
     @Test
     void failToGetNextOnEmptyQueueIterator() {
-        assertThrows(
-                NoSuchElementException.class, () -> createQueue().longIterator().next());
+        assertThatThrownBy(() -> createQueue().longIterator().next()).isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
@@ -153,18 +150,18 @@ class PrimitiveLongArrayQueueTest {
         otherQueue.enqueue(4);
         queue.addAll(otherQueue);
 
-        assertTrue(otherQueue.isEmpty());
-        assertEquals(0, otherQueue.size());
-        assertEquals(4, queue.size());
+        assertThat(otherQueue.isEmpty()).isTrue();
+        assertThat(otherQueue.size()).isZero();
+        assertThat(queue.size()).isEqualTo(4);
         for (int value = 1; value <= 4; value++) {
-            assertEquals(value, queue.dequeue());
+            assertThat(queue.dequeue()).isEqualTo(value);
         }
-        assertTrue(queue.isEmpty());
+        assertThat(queue.isEmpty()).isTrue();
     }
 
     @Test
     void doNotAllowCreationOfQueueWithRandomCapacity() {
-        assertThrows(IllegalArgumentException.class, () -> new PrimitiveLongArrayQueue(7));
+        assertThatThrownBy(() -> new PrimitiveLongArrayQueue(7)).isInstanceOf(IllegalArgumentException.class);
     }
 
     private static PrimitiveLongArrayQueue createQueue() {

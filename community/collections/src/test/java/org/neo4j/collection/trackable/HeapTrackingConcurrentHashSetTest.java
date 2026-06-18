@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
-public class HeapTrackingConcurrentHashSetTest {
+class HeapTrackingConcurrentHashSetTest {
 
     private final ExecutorService executor = Executors.newFixedThreadPool(20);
 
@@ -42,51 +42,50 @@ public class HeapTrackingConcurrentHashSetTest {
     }
 
     @Test
-    public void add() {
+    void add() {
         HeapTrackingConcurrentHashSet<Integer> set = newSetWith(1, 2);
         assertThat(set.add(1)).isFalse();
         assertThat(set.add(3)).isTrue();
     }
 
     @Test
-    public void remove() {
+    void remove() {
         HeapTrackingConcurrentHashSet<Integer> set = newSetWith(1, 2);
 
-        assertThat(set.contains(1)).isTrue();
+        assertThat(set).contains(1);
         assertThat(set.remove(1)).isTrue();
-        assertThat(set.contains(1)).isFalse();
+        assertThat(set).doesNotContain(1);
         assertThat(set.remove(3)).isFalse();
     }
 
     @Test
-    public void concurrentAddAndRemove() {
+    void concurrentAddAndRemove() {
         HeapTrackingConcurrentHashSet<Integer> set1 = HeapTrackingConcurrentHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         HeapTrackingConcurrentHashSet<Integer> set2 = HeapTrackingConcurrentHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),
                 each -> {
                     assertThat(set1.add(each)).isTrue();
-                    assertThat(set1.contains(each)).isTrue();
+                    assertThat(set1).contains(each);
                     assertThat(set2.addAll(List.of(each, each))).isTrue();
                     assertThat(set1.remove(each)).isTrue();
                     assertThat(set1.addAll(List.of(each, each))).isTrue();
-                    assertThat(set2.contains(each)).isTrue();
+                    assertThat(set2).contains(each);
                     assertThat(set2.remove(each)).isTrue();
-                    assertThat(set2.contains(each)).isFalse();
+                    assertThat(set2).doesNotContain(each);
                     assertThat(set2.add(each)).isTrue();
-                    assertThat(set2.contains(each)).isTrue();
+                    assertThat(set2).contains(each);
                     assertThat(set2.add(each)).isFalse();
                     assertThat(set2.remove(each)).isTrue();
                     assertThat(set2.add(each)).isTrue();
                 },
                 1,
                 executor);
-        assertThat(set1).isEqualTo(set2);
-        assertThat(set1).hasSameHashCodeAs(set2);
+        assertThat(set1).hasSameElementsAs(set2).hasSameHashCodeAs(set2);
     }
 
     @Test
-    public void concurrentClear() {
+    void concurrentClear() {
         HeapTrackingConcurrentHashSet<Integer> set = HeapTrackingConcurrentHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),

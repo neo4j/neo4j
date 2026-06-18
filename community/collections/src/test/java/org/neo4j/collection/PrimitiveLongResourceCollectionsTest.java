@@ -19,8 +19,8 @@
  */
 package org.neo4j.collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -47,7 +47,7 @@ class PrimitiveLongResourceCollectionsTest {
         iterator.close();
 
         // Then
-        assertEquals(1, resource.closeCount(), "exactly one call to close");
+        assertThat(resource.closeCount()).as("exactly one call to close").isOne();
     }
 
     // FILTER
@@ -71,7 +71,9 @@ class PrimitiveLongResourceCollectionsTest {
         concat.close();
 
         // Then
-        assertEquals(2, resource.closeCount(), "all concatenated iterators are closed");
+        assertThat(resource.closeCount())
+                .as("all concatenated iterators are closed")
+                .isEqualTo(2);
     }
 
     public static Stream<Arguments> complement() {
@@ -110,9 +112,9 @@ class PrimitiveLongResourceCollectionsTest {
                 fail("More values than expected: " + iterator.next());
                 return;
             }
-            assertEquals(expected[i++], iterator.next(), "has expected value");
+            assertThat(iterator.next()).as("has expected value").isEqualTo(expected[i++]);
         }
-        assertEquals(expected.length, i, "has all expected values");
+        assertThat(i).as("has all expected values").isEqualTo(expected.length);
     }
 
     private static class CountingResource implements Resource {

@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 
-public class AbstractResourceIterableTest {
+class AbstractResourceIterableTest {
     @Test
     void shouldDelegateToUnderlyingIterableForData() {
         // Given
@@ -243,7 +243,7 @@ public class AbstractResourceIterableTest {
                 }
             }
         });
-        assertThat(emitted).isEqualTo(List.of(1));
+        assertThat(emitted).containsExactlyElementsOf(List.of(1));
         assertThat(iteratorClosed.isTrue()).isTrue();
         assertThat(iterableClosed.isTrue()).isTrue();
     }
@@ -275,7 +275,7 @@ public class AbstractResourceIterableTest {
         }
 
         // Then
-        assertThat(emitted).isEqualTo(items);
+        assertThat(emitted).containsExactlyElementsOf(items);
         assertThat(iteratorClosed.isTrue()).isTrue();
         assertThat(iterableClosed.isTrue()).isFalse();
     }
@@ -302,7 +302,7 @@ public class AbstractResourceIterableTest {
         // When
         try (Stream<Integer> stream = iterable.stream()) {
             final var result = stream.toList();
-            assertThat(result).isEqualTo(asList(1, 2, 3));
+            assertThat(result).containsExactlyElementsOf(asList(1, 2, 3));
         }
 
         // Then

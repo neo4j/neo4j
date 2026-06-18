@@ -21,12 +21,8 @@ package org.neo4j.collection;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
 import java.util.List;
@@ -44,10 +40,10 @@ class PrimitiveLongCollectionsTest {
     @Test
     void singleIterator() {
         LongIterator iterator = PrimitiveLongCollections.single(42);
-        assertTrue(iterator.hasNext());
-        assertEquals(42, iterator.next());
-        assertFalse(iterator.hasNext());
-        assertThrows(NoSuchElementException.class, iterator::next);
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.next()).isEqualTo(42);
+        assertThat(iterator.hasNext()).isFalse();
+        assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
@@ -92,10 +88,10 @@ class PrimitiveLongCollectionsTest {
         Supplier<LongIterator> items = () -> PrimitiveLongCollections.iterator(10, 20, 30);
 
         // THEN
-        assertEquals(-1, PrimitiveLongCollections.indexOf(items.get(), 55));
-        assertEquals(0, PrimitiveLongCollections.indexOf(items.get(), 10));
-        assertEquals(1, PrimitiveLongCollections.indexOf(items.get(), 20));
-        assertEquals(2, PrimitiveLongCollections.indexOf(items.get(), 30));
+        assertThat(PrimitiveLongCollections.indexOf(items.get(), 55)).isEqualTo(-1);
+        assertThat(PrimitiveLongCollections.indexOf(items.get(), 10)).isZero();
+        assertThat(PrimitiveLongCollections.indexOf(items.get(), 20)).isOne();
+        assertThat(PrimitiveLongCollections.indexOf(items.get(), 30)).isEqualTo(2);
     }
 
     @Test
@@ -107,7 +103,7 @@ class PrimitiveLongCollectionsTest {
         int count = PrimitiveLongCollections.count(items);
 
         // THEN
-        assertEquals(3, count);
+        assertThat(count).isEqualTo(3);
     }
 
     @Test
@@ -119,7 +115,7 @@ class PrimitiveLongCollectionsTest {
         long[] array = PrimitiveLongCollections.asArray(items);
 
         // THEN
-        assertArrayEquals(new long[] {1, 2, 3}, array);
+        assertThat(array).containsExactly(new long[] {1, 2, 3});
     }
 
     @Test
@@ -134,25 +130,25 @@ class PrimitiveLongCollectionsTest {
         };
 
         // WHEN/THEN
-        assertTrue(iterator.hasNext());
-        assertTrue(iterator.hasNext());
-        assertEquals(1L, iterator.next());
-        assertTrue(iterator.hasNext());
-        assertTrue(iterator.hasNext());
-        assertEquals(0L, iterator.next());
-        assertFalse(iterator.hasNext());
-        assertFalse(iterator.hasNext());
-        assertEquals(-1L, count.get());
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.next()).isOne();
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.next()).isZero();
+        assertThat(iterator.hasNext()).isFalse();
+        assertThat(iterator.hasNext()).isFalse();
+        assertThat(count.get()).isEqualTo(-1L);
     }
 
     @Test
     void convertJavaCollectionToSetOfPrimitives() {
         List<Long> longs = asList(1L, 4L, 7L);
         LongSet longSet = PrimitiveLongCollections.asSet(longs);
-        assertTrue(longSet.contains(1L));
-        assertTrue(longSet.contains(4L));
-        assertTrue(longSet.contains(7L));
-        assertEquals(3, longSet.size());
+        assertThat(longSet.contains(1L)).isTrue();
+        assertThat(longSet.contains(4L)).isTrue();
+        assertThat(longSet.contains(7L)).isTrue();
+        assertThat(longSet.size()).isEqualTo(3);
     }
 
     @Test
@@ -172,13 +168,17 @@ class PrimitiveLongCollectionsTest {
     }
 
     private static void assertNoMoreItems(LongIterator iterator) {
-        assertFalse(iterator.hasNext(), iterator + " should have no more items");
-        assertThrows(NoSuchElementException.class, iterator::next);
+        assertThat(iterator.hasNext())
+                .as(iterator + " should have no more items")
+                .isFalse();
+        assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
     }
 
     private static void assertNextEquals(long expected, LongIterator iterator) {
-        assertTrue(iterator.hasNext(), iterator + " should have had more items");
-        assertEquals(expected, iterator.next());
+        assertThat(iterator.hasNext())
+                .as(iterator + " should have had more items")
+                .isTrue();
+        assertThat(iterator.next()).isEqualTo(expected);
     }
 
     private static void assertItems(LongIterator iterator, long... expectedItems) {

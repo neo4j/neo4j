@@ -20,11 +20,8 @@
 package org.neo4j.internal.helpers.collection;
 
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,38 +30,38 @@ import org.junit.jupiter.api.Test;
 
 class FirstItemIterableTest {
     @Test
-    void testEmptyIterator() {
+    void emptyIterator() {
         FirstItemIterable<?> firstItemIterable = new FirstItemIterable<>(Collections.emptyList());
         Iterator<?> empty = firstItemIterable.iterator();
-        assertFalse(empty.hasNext());
-        assertThrows(NoSuchElementException.class, empty::next);
-        assertNull(firstItemIterable.getFirst());
+        assertThat(empty).isExhausted();
+        assertThatThrownBy(empty::next).isInstanceOf(NoSuchElementException.class);
+        assertThat(firstItemIterable.getFirst()).isNull();
     }
 
     @Test
-    void testSingleIterator() {
+    void singleIterator() {
         FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>(Collections.singleton(Boolean.TRUE));
         Iterator<Boolean> empty = firstItemIterable.iterator();
-        assertTrue(empty.hasNext());
-        assertEquals(Boolean.TRUE, empty.next());
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
-        assertFalse(empty.hasNext());
-        assertThrows(NoSuchElementException.class, empty::next);
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
+        assertThat(empty).hasNext();
+        assertThat(empty.next()).isEqualTo(Boolean.TRUE);
+        assertThat(firstItemIterable.getFirst()).isEqualTo(Boolean.TRUE);
+        assertThat(empty).isExhausted();
+        assertThatThrownBy(empty::next).isInstanceOf(NoSuchElementException.class);
+        assertThat(firstItemIterable.getFirst()).isEqualTo(Boolean.TRUE);
     }
 
     @Test
-    void testMultiIterator() {
+    void multiIterator() {
         FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>(asList(Boolean.TRUE, Boolean.FALSE));
         Iterator<Boolean> empty = firstItemIterable.iterator();
-        assertTrue(empty.hasNext());
-        assertEquals(Boolean.TRUE, empty.next());
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
-        assertTrue(empty.hasNext());
-        assertEquals(Boolean.FALSE, empty.next());
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
-        assertFalse(empty.hasNext());
-        assertThrows(NoSuchElementException.class, empty::next);
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
+        assertThat(empty).hasNext();
+        assertThat(empty.next()).isEqualTo(Boolean.TRUE);
+        assertThat(firstItemIterable.getFirst()).isEqualTo(Boolean.TRUE);
+        assertThat(empty).hasNext();
+        assertThat(empty.next()).isEqualTo(Boolean.FALSE);
+        assertThat(firstItemIterable.getFirst()).isEqualTo(Boolean.TRUE);
+        assertThat(empty).isExhausted();
+        assertThatThrownBy(empty::next).isInstanceOf(NoSuchElementException.class);
+        assertThat(firstItemIterable.getFirst()).isEqualTo(Boolean.TRUE);
     }
 }

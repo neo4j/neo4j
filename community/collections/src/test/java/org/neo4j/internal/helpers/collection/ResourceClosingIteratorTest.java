@@ -26,7 +26,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.ResourceIterator;
 
-public class ResourceClosingIteratorTest {
+class ResourceClosingIteratorTest {
     @Test
     void fromResourceIterableShouldCloseParentIterable() {
         final var iterableClosed = new MutableBoolean(false);

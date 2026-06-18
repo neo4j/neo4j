@@ -39,9 +39,9 @@ class IterablesTest {
 
     @Test
     void unionLists() {
-        assertThat(union(List.of(), List.of(1, 2))).hasSize(2).containsExactly(1, 2);
+        assertThat(union(List.of(), List.of(1, 2))).containsExactly(1, 2);
         assertThat(union(List.of(), List.of())).isEmpty();
-        assertThat(union(List.of(1, 3), List.of(2, 4))).hasSize(4).containsExactly(1, 3, 2, 4);
+        assertThat(union(List.of(1, 3), List.of(2, 4))).containsExactly(1, 3, 2, 4);
     }
 
     @Test
@@ -68,7 +68,7 @@ class IterablesTest {
                 .hasSuppressedException(new RuntimeException("5"));
 
         // then good
-        assertThat(seenSubjects).isEqualTo(subjects);
+        assertThat(seenSubjects).containsExactlyElementsOf(subjects);
         assertThat(failedSubjects).containsExactly("1", "3", "5");
     }
 
@@ -112,7 +112,7 @@ class IterablesTest {
         Iterables.forEach(Iterables.resourceIterable(() -> resourceIterator), seenSubjects::add);
 
         // then good
-        assertThat(seenSubjects).isEqualTo(subjects);
+        assertThat(seenSubjects).containsExactlyElementsOf(subjects);
         assertThat(closed.isTrue()).isTrue();
     }
 
@@ -138,7 +138,7 @@ class IterablesTest {
         assertThatThrownBy(() -> Iterables.forEach(Iterables.resourceIterable(() -> resourceIterator), consumer));
 
         // then good
-        assertThat(seenSubjects).isEqualTo(asList(1, 2));
+        assertThat(seenSubjects).containsExactlyElementsOf(asList(1, 2));
         assertThat(failedSubjects).containsExactly(2);
         assertThat(closed.isTrue()).isTrue();
     }
@@ -217,7 +217,7 @@ class IterablesTest {
         long first = Iterables.first(iterable);
 
         // then
-        assertThat(first).isEqualTo(1);
+        assertThat(first).isOne();
         assertThat(iteratorClosed.isTrue()).isTrue();
         assertThat(iterableClosed.isTrue()).isTrue();
     }

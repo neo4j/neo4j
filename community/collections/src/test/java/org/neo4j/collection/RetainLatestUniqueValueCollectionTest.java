@@ -101,7 +101,6 @@ class RetainLatestUniqueValueCollectionTest {
         collection.add(new Entry(2));
         collection.add(new Entry(3));
         assertThat(collection)
-                .hasSize(3)
                 .containsExactlyInAnyOrder(new Entry(1), new Entry(2), new Entry(3))
                 .allMatch(entry -> entry.version() == 0);
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -41,7 +41,7 @@ class MapUtilTest {
         Map<String, String> result = MapUtil.load(inputStream);
 
         // then
-        assertEquals(expected, result);
+        assertThat(result).containsExactlyInAnyOrderEntriesOf(expected);
     }
 
     @Test
@@ -57,6 +57,6 @@ class MapUtilTest {
         Map<String, String> result = MapUtil.load(inputStream);
 
         // then
-        assertEquals(expected, result);
+        assertThat(result).containsExactlyInAnyOrderEntriesOf(expected);
     }
 }

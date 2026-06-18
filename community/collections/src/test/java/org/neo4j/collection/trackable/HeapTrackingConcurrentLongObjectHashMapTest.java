@@ -49,22 +49,22 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
     }
 
     @Test
-    public void putIfAbsent() {
+    void putIfAbsent() {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
-        assertThat(map.putIfAbsent(1, 1)).isEqualTo(1);
+        assertThat(map.putIfAbsent(1, 1)).isOne();
         assertThat(map.putIfAbsent(3, 3)).isNull();
     }
 
     @Test
-    public void replace() {
+    void replace() {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
-        assertThat(map.replace(1, 7)).isEqualTo(1);
+        assertThat(map.replace(1, 7)).isOne();
         assertThat(map.get(1)).isEqualTo(7);
         assertThat(map.replace(3, 3)).isNull();
     }
 
     @Test
-    public void replaceWithOldValue() {
+    void replaceWithOldValue() {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
 
         assertThat(map.replace(1, 1, 7)).isTrue();
@@ -73,7 +73,7 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
     }
 
     @Test
-    public void removeWithKeyValue() {
+    void removeWithKeyValue() {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
 
         assertThat(map.remove(1, 1)).isTrue();
@@ -82,7 +82,7 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
 
     @SuppressWarnings("RedundantCollectionOperation")
     @RepeatedTest(100)
-    public void concurrentPutGetPutRemoveContainsKeyContainsValueGetIfAbsentPutTest() {
+    void concurrentPutGetPutRemoveContainsKeyContainsValueGetIfAbsentPutTest() {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map1 =
                 HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE);
         HeapTrackingConcurrentLongObjectHashMap<Integer> map2 =
@@ -115,13 +115,12 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
                 },
                 1,
                 executor);
-        assertThat(map1).isEqualTo(map2);
-        assertThat(map1).hasSameHashCodeAs(map2);
+        assertThat(map1).isEqualTo(map2).hasSameHashCodeAs(map2);
     }
 
     @SuppressWarnings("RedundantCollectionOperation")
     @RepeatedTest(10)
-    public void concurrentSlowComputeIfAbsentTest() {
+    void concurrentSlowComputeIfAbsentTest() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         HeapTrackingConcurrentLongObjectHashMap<Integer> map1 =
@@ -163,12 +162,11 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
                 },
                 1,
                 executor);
-        assertThat(map1).isEqualTo(map2);
-        assertThat(map1).hasSameHashCodeAs(map2);
+        assertThat(map1).isEqualTo(map2).hasSameHashCodeAs(map2);
     }
 
     @Test
-    public void concurrentClear() {
+    void concurrentClear() {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map =
                 HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
@@ -185,7 +183,7 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
     }
 
     @Test
-    public void concurrentRemoveAndPutIfAbsent() {
+    void concurrentRemoveAndPutIfAbsent() {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map =
                 HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
@@ -297,7 +295,7 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
 
             executor.shutdown();
             assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
-            assertThat(map.size()).isEqualTo(1);
+            assertThat(map.size()).isOne();
             assertThat(hasBeenCalledMultipleTimes.get()).isFalse();
             assertThat(getFailed.get()).isFalse();
         }

@@ -20,30 +20,31 @@
 package org.neo4j.internal.helpers.collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
 class LfuCacheTest {
     @Test
     void shouldThrowWhenMaxSizeIsNotGreaterThanZero() {
-        assertThrows(IllegalArgumentException.class, () -> new LfuCache<>("TestCache", 0));
+        assertThatThrownBy(() -> new LfuCache<>("TestCache", 0)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void shouldThrowWhenPuttingEntryWithNullKey() {
-        assertThrows(NullPointerException.class, () -> new LfuCache<>("TestCache", 70).put(null, new Object()));
+        assertThatThrownBy(() -> new LfuCache<>("TestCache", 70).put(null, new Object()))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void shouldThrowWhenPuttingEntryWithNullValue() {
-        assertThrows(NullPointerException.class, () -> new LfuCache<>("TestCache", 70).put(new Object(), null));
+        assertThatThrownBy(() -> new LfuCache<>("TestCache", 70).put(new Object(), null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void shouldThrowWhenGettingWithANullKey() {
-        assertThrows(NullPointerException.class, () -> new LfuCache<>("TestCache", 70).get(null));
+        assertThatThrownBy(() -> new LfuCache<>("TestCache", 70).get(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -76,11 +77,11 @@ class LfuCacheTest {
 
         int size = cache.size();
 
-        assertEquals(3, size);
-        assertEquals(s5, cache.get(key5));
+        assertThat(size).isEqualTo(3);
+        assertThat(cache.get(key5)).isEqualTo(s5);
 
         cache.clear();
-        assertEquals(0, cache.size());
+        assertThat(cache.size()).isZero();
     }
 
     @Test
@@ -123,7 +124,7 @@ class LfuCacheTest {
         cache.get(key2);
 
         assertThat(cache.keySet()).containsOnly(key1, key2, key3);
-        assertEquals(cache.maxSize(), cache.size());
+        assertThat(cache.size()).isEqualTo(cache.maxSize());
 
         cache.put(key4, s4);
 
@@ -131,10 +132,10 @@ class LfuCacheTest {
 
         cache.put(key5, s5);
 
-        assertEquals(cache.maxSize(), cache.size());
+        assertThat(cache.size()).isEqualTo(cache.maxSize());
 
         cache.clear();
 
-        assertEquals(0, cache.size());
+        assertThat(cache.size()).isZero();
     }
 }

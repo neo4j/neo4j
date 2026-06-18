@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
-public class HeapTrackingConcurrentLongHashSetTest {
+class HeapTrackingConcurrentLongHashSetTest {
 
     private final ExecutorService executor = Executors.newFixedThreadPool(20);
 
@@ -40,14 +40,14 @@ public class HeapTrackingConcurrentLongHashSetTest {
     }
 
     @Test
-    public void add() {
+    void add() {
         HeapTrackingConcurrentLongHashSet set = newSetWith(1, 2);
         assertThat(set.add(1)).isFalse();
         assertThat(set.add(3)).isTrue();
     }
 
     @Test
-    public void remove() {
+    void remove() {
         HeapTrackingConcurrentLongHashSet set = newSetWith(1, 2);
 
         assertThat(set.contains(1)).isTrue();
@@ -57,7 +57,7 @@ public class HeapTrackingConcurrentLongHashSetTest {
     }
 
     @Test
-    public void concurrentAddAndRemove() {
+    void concurrentAddAndRemove() {
         HeapTrackingConcurrentLongHashSet set1 = HeapTrackingConcurrentLongHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         HeapTrackingConcurrentLongHashSet set2 = HeapTrackingConcurrentLongHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
@@ -81,12 +81,11 @@ public class HeapTrackingConcurrentLongHashSetTest {
                 },
                 1,
                 executor);
-        assertThat(set1).isEqualTo(set2);
-        assertThat(set1).hasSameHashCodeAs(set2);
+        assertThat(set1).isEqualTo(set2).hasSameHashCodeAs(set2);
     }
 
     @Test
-    public void concurrentClear() {
+    void concurrentClear() {
         HeapTrackingConcurrentLongHashSet set = HeapTrackingConcurrentLongHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class ByteToEnumTest {
+class ByteToEnumTest {
 
     public enum TestType {
         MIN(Byte.MIN_VALUE),
@@ -59,7 +59,7 @@ public class ByteToEnumTest {
     }
 
     @Test
-    public void nulls() {
+    void nulls() {
         assertThat(MAP.get((byte) -2)).isNull();
         assertThat(MAP.get((byte) 0)).isNull();
         assertThat(MAP.get((byte) 4)).isNull();
@@ -69,7 +69,7 @@ public class ByteToEnumTest {
     }
 
     @Test
-    public void wrap() {
+    void wrap() {
         assertThat(MAP.get((byte) 128)).isEqualTo(TestType.MIN);
         assertThat(MAP.get((byte) 255)).isEqualTo(TestType.MINUS_ONE);
         assertThat(MAP.get((byte) 383)).isEqualTo(TestType.MAX);
