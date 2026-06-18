@@ -128,8 +128,7 @@ class EnvelopedLogFilesTest {
         var baseFolder = testDirectory.directory("logsFolder");
         var filesHelper = new SequentialFileNameHelper(baseFolder, baseFileName);
         mirroringRepository = new LogsRepository(fs, filesHelper);
-        var logHeaderFactory = new BaseLogHeaderFactory(
-                kernelVersion, StoreIdentifier.newStoreIdentifier(new StoreId(0, 12345, "", "", 1, 1)));
+        var logHeaderFactory = new BaseLogHeaderFactory(kernelVersion, StoreIdentifier.newStoreIdentifier(12345));
         envelopedLogFiles = new EnvelopedLogFiles(
                 mirroringRepository,
                 logHeaderFactory,

@@ -222,6 +222,9 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                     tailInfo.lastValidTerm());
         } else if (tailInfo.brokenLastEntry()) {
             log.warn("Last raft log entry incomplete. Truncating log file to end of last complete entry. " + tailInfo);
+
+            logHeaderFactory.setStoreIdentifier(tailInfo.storeIdentifier());
+
             long lastValidVersion = tailInfo.lastValidatedPosition().getLogVersion();
             var logChannelCtx = openWriteChannel(
                     lastValidVersion, tailInfo.lastValidatedPosition().getByteOffset());
@@ -246,6 +249,9 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
             appendingChannel.prepareForFlush().flush();
         } else {
             log.info("Reopen previous enveloped raft log file. " + tailInfo);
+
+            logHeaderFactory.setStoreIdentifier(tailInfo.storeIdentifier());
+
             // stop updateState throwing if for some reason we call initialise twice
             if (appendingChannel != null) {
                 appendingChannel.close();

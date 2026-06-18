@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.enveloped;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.KernelVersion;
@@ -29,9 +30,10 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdentifier;
 
 public class BaseLogHeaderFactory implements LogHeaderFactory {
-
+    // Once the store identifier is set or used for a log, then it cannot be changed.
+    private final AtomicBoolean storeIdentifierFinalized = new AtomicBoolean(false);
     private volatile KernelVersion currentAppendedDatabaseVersion;
-    private final StoreIdentifier storeIdentifier;
+    private volatile StoreIdentifier storeIdentifier;
 
     public BaseLogHeaderFactory(KernelVersion currentAppendedDatabaseVersion, StoreIdentifier storeIdentifier) {
         this.currentAppendedDatabaseVersion = currentAppendedDatabaseVersion;
@@ -46,6 +48,7 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
     @Override
     public LogHeader createLogHeader(
             long newFileVersion, long lastAppendIndex, int lastChecksum, int segmentSize, long preFileTerm) {
+        storeIdentifierFinalized.set(true);
         KernelVersion version = getCurrentDatabaseVersion();
         Config envelopeEnabledConfig = Config.defaults(Map.of(
                 GraphDatabaseInternalSettings.allow_new_log_format_on_upgrade_or_create,
@@ -63,6 +66,15 @@ public class BaseLogHeaderFactory implements LogHeaderFactory {
 
     public void setVersion(KernelVersion databaseVersion) {
         this.currentAppendedDatabaseVersion = databaseVersion;
+    }
+
+    public void setStoreIdentifier(StoreIdentifier storeIdentifier) {
+        if (storeIdentifierFinalized.compareAndSet(false, true)) {
+            this.storeIdentifier = storeIdentifier;
+        } else if (!storeIdentifier.equals(this.storeIdentifier)) {
+            throw new IllegalStateException(
+                    "Store identifier can not be changed current:" + this.storeIdentifier + " new:" + storeIdentifier);
+        }
     }
 
     public KernelVersion getCurrentDatabaseVersion() {

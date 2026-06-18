@@ -67,6 +67,7 @@ public class EnvelopedLogTailChecker {
     }
 
     public record EnvelopedLogTailInfo(
+            StoreIdentifier storeIdentifier,
             LogPosition lastValidatedPosition,
             long lastValidAppendIndex,
             long lastValidTerm,
@@ -75,23 +76,36 @@ public class EnvelopedLogTailChecker {
             boolean createInitial,
             boolean brokenLastEntry) {
 
-        public static EnvelopedLogTailInfo empty() {
+        public static EnvelopedLogTailInfo empty(StoreIdentifier identifier) {
             return new EnvelopedLogTailInfo(
-                    new LogPosition(0L, 0L), UNSPECIFIED_INDEX, UNSPECIFIED_TERM, BASE_TX_CHECKSUM, 0, true, false);
+                    identifier,
+                    new LogPosition(0L, 0L),
+                    UNSPECIFIED_INDEX,
+                    UNSPECIFIED_TERM,
+                    BASE_TX_CHECKSUM,
+                    0,
+                    true,
+                    false);
         }
     }
 
     public EnvelopedLogTailInfo checkEnvelopedLogTail(long fromVersion) throws IOException {
         var versionsRange = logsRepository.logVersionsRange();
         if (versionsRange.isEmpty()) {
-            return EnvelopedLogTailInfo.empty();
+            return EnvelopedLogTailInfo.empty(StoreIdentifier.UNKNOWN);
         }
         versionsRange = LongRange.range(max(fromVersion, versionsRange.from()), versionsRange.to());
-        checkEnvelopedLogVersionSequence(versionsRange);
+        var storeIdentifier = checkEnvelopedLogVersionSequence(versionsRange);
         // update log range again, previous check may have deleted the last file
         versionsRange = logsRepository.logVersionsRange();
         if (versionsRange.isEmpty()) {
-            return EnvelopedLogTailInfo.empty();
+            // Some logs exist, but not in range, so grab a single header for the store identifier.
+            try (var metadata = new LogFilesMetadata(logsRepository)) {
+                if (metadata.next()) {
+                    return EnvelopedLogTailInfo.empty(metadata.get().logHeader().getStoreIdentifier());
+                }
+                return EnvelopedLogTailInfo.empty(StoreIdentifier.UNKNOWN);
+            }
         }
         // reversed iteration
         for (long version = versionsRange.to(); version >= versionsRange.from(); version--) {
@@ -130,6 +144,7 @@ public class EnvelopedLogTailChecker {
                     }
                     // first entry we have is incomplete, so just preserve header values and rebuild
                     return new EnvelopedLogTailInfo(
+                            storeIdentifier,
                             new LogPosition(
                                     version, logHeader.getStartPosition().getByteOffset()),
                             logHeader.getLastAppendIndex(),
@@ -141,6 +156,7 @@ public class EnvelopedLogTailChecker {
                 }
 
                 return new EnvelopedLogTailInfo(
+                        storeIdentifier,
                         lastGoodPosition,
                         lastValidAppendIndex,
                         lastValidTerm,
@@ -150,10 +166,10 @@ public class EnvelopedLogTailChecker {
                         brokenLastEntry);
             }
         }
-        return EnvelopedLogTailInfo.empty();
+        return EnvelopedLogTailInfo.empty(storeIdentifier);
     }
 
-    private void checkEnvelopedLogVersionSequence(LongRange versionRange) throws IOException {
+    private StoreIdentifier checkEnvelopedLogVersionSequence(LongRange versionRange) throws IOException {
         long expectedLogVersion = versionRange.from();
         long lastHeaderTerm = -1L;
         long lastHeaderAppendIndex = -1L;
@@ -196,7 +212,7 @@ public class EnvelopedLogTailChecker {
                     log.info("Removing last partial header/preallocated log file: " + logsRepository.pathFor(version));
                     // truncate away the additional file to stop it causing problems later
                     logsRepository.deleteLogFilesFrom(version);
-                    return;
+                    return storeIdentifier;
                 }
 
                 // must be enveloped
@@ -255,5 +271,6 @@ public class EnvelopedLogTailChecker {
             }
             ++expectedLogVersion;
         }
+        return storeIdentifier;
     }
 }
