@@ -20,9 +20,7 @@
 package org.neo4j.configuration.helpers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -34,9 +32,9 @@ import org.neo4j.string.Globbing;
 class GlobbingPatternTest {
     @Test
     void invalidGlobbingPatternShouldThrow() {
-        IllegalArgumentException exception =
-                assertThrows(IllegalArgumentException.class, () -> new GlobbingPattern("invalid[globbing*pattern"));
-        assertThat(exception.getMessage()).isEqualTo("Invalid globbing pattern 'invalid[globbing*pattern'");
+        assertThatThrownBy(() -> new GlobbingPattern("invalid[globbing*pattern"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid globbing pattern 'invalid[globbing*pattern'");
     }
 
     @Test
@@ -53,15 +51,15 @@ class GlobbingPatternTest {
         GlobbingPattern starsFirstLast = new GlobbingPattern("*pattern1.test*");
         GlobbingPattern questionMarks = new GlobbingPattern("?pattern1.test?");
 
-        assertTrue(globbingPattern.matches("pattern11.test"));
-        assertTrue(globbingPattern.matches("patternstuff11.test"));
-        assertFalse(globbingPattern.matches("pattern1.test"));
-        assertFalse(globbingPattern.matches("pattern111test"));
-        assertTrue(starsFirstLast.matches("pattern1.test"));
-        assertTrue(starsFirstLast.matches("apattern1.testa"));
-        assertTrue(questionMarks.matches("apattern1.testa"));
-        assertFalse(questionMarks.matches("aapattern1.testaa"));
-        assertFalse(questionMarks.matches("pattern1.test"));
+        assertThat(globbingPattern.matches("pattern11.test")).isTrue();
+        assertThat(globbingPattern.matches("patternstuff11.test")).isTrue();
+        assertThat(globbingPattern.matches("pattern1.test")).isFalse();
+        assertThat(globbingPattern.matches("pattern111test")).isFalse();
+        assertThat(starsFirstLast.matches("pattern1.test")).isTrue();
+        assertThat(starsFirstLast.matches("apattern1.testa")).isTrue();
+        assertThat(questionMarks.matches("apattern1.testa")).isTrue();
+        assertThat(questionMarks.matches("aapattern1.testaa")).isFalse();
+        assertThat(questionMarks.matches("pattern1.test")).isFalse();
     }
 
     @Test
@@ -71,23 +69,23 @@ class GlobbingPatternTest {
         GlobbingPattern noGlobbing = new GlobbingPattern("full.name");
         GlobbingPattern all = new GlobbingPattern("*");
 
-        assertTrue(empty.matches(""));
-        assertFalse(empty.matches(" "));
-        assertFalse(empty.matches("a"));
+        assertThat(empty.matches("")).isTrue();
+        assertThat(empty.matches(" ")).isFalse();
+        assertThat(empty.matches("a")).isFalse();
 
-        assertFalse(space.matches(""));
-        assertTrue(space.matches(" "));
-        assertFalse(space.matches("a"));
+        assertThat(space.matches("")).isFalse();
+        assertThat(space.matches(" ")).isTrue();
+        assertThat(space.matches("a")).isFalse();
 
-        assertTrue(all.matches(""));
-        assertTrue(all.matches(" "));
-        assertTrue(all.matches("a"));
+        assertThat(all.matches("")).isTrue();
+        assertThat(all.matches(" ")).isTrue();
+        assertThat(all.matches("a")).isTrue();
 
-        assertTrue(noGlobbing.matches("full.name"));
-        assertFalse(noGlobbing.matches(""));
-        assertFalse(noGlobbing.matches("fullAname"));
-        assertFalse(noGlobbing.matches("Afull.name"));
-        assertFalse(noGlobbing.matches("full.nameA"));
+        assertThat(noGlobbing.matches("full.name")).isTrue();
+        assertThat(noGlobbing.matches("")).isFalse();
+        assertThat(noGlobbing.matches("fullAname")).isFalse();
+        assertThat(noGlobbing.matches("Afull.name")).isFalse();
+        assertThat(noGlobbing.matches("full.nameA")).isFalse();
     }
 
     private record Combination(List<String> include, List<String> exclude, List<String> expected) {

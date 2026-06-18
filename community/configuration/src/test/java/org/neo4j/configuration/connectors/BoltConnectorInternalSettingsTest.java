@@ -19,8 +19,8 @@
  */
 package org.neo4j.configuration.connectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
@@ -40,15 +40,14 @@ class BoltConnectorInternalSettingsTest {
 
             var configured = BoltConnectorInternalSettings.PROTOCOL_VERSION.parse(version);
 
-            assertEquals(expectedVersion, configured);
+            assertThat(configured).isEqualTo(expectedVersion);
         }
 
         @ParameterizedTest
         @MethodSource("provideInvalidProtocolVersions")
         void shouldFailOnInvalidProtocolVersions(String invalidVersion) {
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> BoltConnectorInternalSettings.PROTOCOL_VERSION.parse(invalidVersion));
+            assertThatThrownBy(() -> BoltConnectorInternalSettings.PROTOCOL_VERSION.parse(invalidVersion))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         private static Stream<Arguments> provideValidProtocolVersions() {

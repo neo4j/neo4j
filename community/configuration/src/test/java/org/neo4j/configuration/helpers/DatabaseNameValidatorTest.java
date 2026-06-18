@@ -19,8 +19,7 @@
  */
 package org.neo4j.configuration.helpers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -38,63 +37,63 @@ class DatabaseNameValidatorTest {
 
     @Test
     void shouldGetAnErrorForAnEmptyDatabaseName() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> assertValid(""));
-        assertEquals("The provided database name is empty.", e.getMessage());
+        assertThatThrownBy(() -> assertValid(""))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The provided database name is empty.");
 
-        Exception e2 = assertThrows(
-                NullPointerException.class, () -> DatabaseNameValidator.validateExternalDatabaseName(null));
-        assertEquals("The provided database name is empty.", e2.getMessage());
+        assertThatThrownBy(() -> DatabaseNameValidator.validateExternalDatabaseName(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("The provided database name is empty.");
     }
 
     @Test
     void shouldGetAnErrorForADatabaseNameWithInvalidCharacters() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> assertValid("database%"));
-        assertEquals(
-                "Database name 'database%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.",
-                e.getMessage());
+        assertThatThrownBy(() -> assertValid("database%"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Database name 'database%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.");
 
-        Exception e2 = assertThrows(IllegalArgumentException.class, () -> assertValid("data_base"));
-        assertEquals(
-                "Database name 'data_base' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.",
-                e2.getMessage());
+        assertThatThrownBy(() -> assertValid("data_base"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Database name 'data_base' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.");
 
-        Exception e3 = assertThrows(IllegalArgumentException.class, () -> assertValid("dataåäö"));
-        assertEquals(
-                "Database name 'dataåäö' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.",
-                e3.getMessage());
+        assertThatThrownBy(() -> assertValid("dataåäö"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Database name 'dataåäö' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.");
     }
 
     @Test
     void shouldGetAnErrorForADatabaseNameWithInvalidFirstCharacter() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> assertValid("ädatabase"));
-        assertEquals(
-                "Database name 'ädatabase' is not starting with an ASCII alphabetic character or number.",
-                e.getMessage());
+        assertThatThrownBy(() -> assertValid("ädatabase"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Database name 'ädatabase' is not starting with an ASCII alphabetic character or number.");
 
-        Exception e2 = assertThrows(IllegalArgumentException.class, () -> assertValid("_database"));
-        assertEquals(
-                "Database name '_database' is not starting with an ASCII alphabetic character or number.",
-                e2.getMessage());
+        assertThatThrownBy(() -> assertValid("_database"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Database name '_database' is not starting with an ASCII alphabetic character or number.");
     }
 
     @Test
     void shouldGetAnErrorForADatabaseNameWithSystemPrefix() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> assertValid("systemdatabase"));
-        assertEquals("Database name 'systemdatabase' is invalid, due to the prefix 'system'.", e.getMessage());
+        assertThatThrownBy(() -> assertValid("systemdatabase"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Database name 'systemdatabase' is invalid, due to the prefix 'system'.");
     }
 
     @Test
     void shouldGetAnErrorForADatabaseNameWithInvalidLength() {
         // Too short
-        Exception e = assertThrows(IllegalArgumentException.class, () -> assertValid("me"));
-        assertEquals("The provided database name must have a length between 3 and 63 characters.", e.getMessage());
+        assertThatThrownBy(() -> assertValid("me"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The provided database name must have a length between 3 and 63 characters.");
 
         // Too long
-        Exception e2 = assertThrows(
-                IllegalArgumentException.class,
-                () -> assertValid(
-                        "ihaveallooootoflettersclearlymorethanishould-ihaveallooootoflettersclearlymorethanishould"));
-        assertEquals("The provided database name must have a length between 3 and 63 characters.", e2.getMessage());
+        assertThatThrownBy(() -> assertValid(
+                        "ihaveallooootoflettersclearlymorethanishould-ihaveallooootoflettersclearlymorethanishould"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The provided database name must have a length between 3 and 63 characters.");
     }
 
     private static void assertValid(String name) {

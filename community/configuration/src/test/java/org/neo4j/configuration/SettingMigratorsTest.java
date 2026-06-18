@@ -20,9 +20,7 @@
 package org.neo4j.configuration;
 
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.within;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_options;
@@ -157,10 +155,10 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertTrue(config.get(BoltConnector.enabled));
-        assertTrue(config.get(HttpConnector.enabled));
-        assertTrue(config.get(HttpsConnector.enabled));
-        assertEquals(ofSeconds(1), config.get(thread_pool_shutdown_wait_time));
+        assertThat(config.get(BoltConnector.enabled)).isTrue();
+        assertThat(config.get(HttpConnector.enabled)).isTrue();
+        assertThat(config.get(HttpsConnector.enabled)).isTrue();
+        assertThat(config.get(thread_pool_shutdown_wait_time)).isEqualTo(ofSeconds(1));
 
         var warnConfigMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
         warnConfigMatcher
@@ -201,7 +199,7 @@ class SettingMigratorsTest {
                 .containsMessageWithArguments(
                         "The setting cypher.query_max_allocations is removed and replaced by %s.",
                         memory_transaction_max_size.name());
-        assertEquals(BYTES.parse("6g"), config.get(memory_transaction_max_size));
+        assertThat(config.get(memory_transaction_max_size)).isEqualTo(BYTES.parse("6g"));
     }
 
     @Test
@@ -220,7 +218,7 @@ class SettingMigratorsTest {
                         "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take "
                                 + "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
                         memory_transaction_max_size.name(), memory_transaction_max_size.name(), "6g");
-        assertEquals(BYTES.parse("7g"), config.get(memory_transaction_max_size));
+        assertThat(config.get(memory_transaction_max_size)).isEqualTo(BYTES.parse("7g"));
     }
 
     @Test
@@ -244,8 +242,8 @@ class SettingMigratorsTest {
                         "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.security.procedures.whitelist", procedure_allowlist.name());
 
-        assertEquals("a", config.get(pagecache_warmup_prefetch_allowlist));
-        assertEquals(List.of("a", "b"), config.get(procedure_allowlist));
+        assertThat(config.get(pagecache_warmup_prefetch_allowlist)).isEqualTo("a");
+        assertThat(config.get(procedure_allowlist)).isEqualTo(List.of("a", "b"));
     }
 
     @Test
@@ -264,7 +262,7 @@ class SettingMigratorsTest {
                         "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size.name());
 
-        assertEquals(1073741824L, config.get(memory_transaction_database_max_size));
+        assertThat(config.get(memory_transaction_database_max_size)).isEqualTo(1073741824L);
     }
 
     @Test
@@ -276,7 +274,7 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals("foo-bar", config.get(windows_service_name));
+        assertThat(config.get(windows_service_name)).isEqualTo("foo-bar");
     }
 
     @Test
@@ -295,11 +293,11 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals(GraphDatabaseSettings.CheckpointPolicy.PERIODIC, config.get(check_point_policy));
-        assertEquals(Duration.ofMinutes(10), config.get(check_point_interval_time));
-        assertEquals(17, config.get(check_point_interval_tx));
-        assertEquals(mebiBytes(125), config.get(check_point_interval_volume));
-        assertEquals(456, config.get(check_point_iops_limit));
+        assertThat(config.get(check_point_policy)).isEqualTo(GraphDatabaseSettings.CheckpointPolicy.PERIODIC);
+        assertThat(config.get(check_point_interval_time)).isEqualTo(Duration.ofMinutes(10));
+        assertThat(config.get(check_point_interval_tx)).isEqualTo(17);
+        assertThat(config.get(check_point_interval_volume)).isEqualTo(mebiBytes(125));
+        assertThat(config.get(check_point_iops_limit)).isEqualTo(456);
     }
 
     @Test
@@ -336,18 +334,18 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals(a, config.get(neo4j_home));
-        assertEquals(b, config.get(data_directory));
-        assertEquals(c, config.get(transaction_logs_root_path));
-        assertEquals(d, config.get(script_root_path));
-        assertEquals(e, config.get(database_dumps_root_path));
-        assertEquals(f, config.get(load_csv_file_url_root));
-        assertEquals(g, config.get(plugin_dir));
-        assertEquals(h, config.get(logs_directory));
-        assertEquals(i, config.get(licenses_directory));
+        assertThat(config.get(neo4j_home)).isEqualTo(a);
+        assertThat(config.get(data_directory)).isEqualTo(b);
+        assertThat(config.get(transaction_logs_root_path)).isEqualTo(c);
+        assertThat(config.get(script_root_path)).isEqualTo(d);
+        assertThat(config.get(database_dumps_root_path)).isEqualTo(e);
+        assertThat(config.get(load_csv_file_url_root)).isEqualTo(f);
+        assertThat(config.get(plugin_dir)).isEqualTo(g);
+        assertThat(config.get(logs_directory)).isEqualTo(h);
+        assertThat(config.get(licenses_directory)).isEqualTo(i);
 
-        assertEquals(j, config.get(run_directory));
-        assertEquals(k, config.get(lib_directory));
+        assertThat(config.get(run_directory)).isEqualTo(j);
+        assertThat(config.get(lib_directory)).isEqualTo(k);
     }
 
     @Test
@@ -403,14 +401,14 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals(true, config.get(forbid_exhaustive_shortestpath));
-        assertEquals(false, config.get(forbid_shortestpath_common_nodes));
-        assertEquals(true, config.get(cypher_hints_error));
-        assertEquals(false, config.get(cypher_lenient_create_relationship));
-        assertEquals(ofSeconds(11), config.get(cypher_min_replan_interval));
-        assertEquals(GraphDatabaseSettings.CypherPlanner.COST, config.get(cypher_planner));
-        assertEquals(true, config.get(cypher_render_plan_descriptions));
-        assertEquals(0.42, config.get(query_statistics_divergence_threshold), 0.01);
+        assertThat(config.get(forbid_exhaustive_shortestpath)).isTrue();
+        assertThat(config.get(forbid_shortestpath_common_nodes)).isFalse();
+        assertThat(config.get(cypher_hints_error)).isTrue();
+        assertThat(config.get(cypher_lenient_create_relationship)).isFalse();
+        assertThat(config.get(cypher_min_replan_interval)).isEqualTo(ofSeconds(11));
+        assertThat(config.get(cypher_planner)).isEqualTo(GraphDatabaseSettings.CypherPlanner.COST);
+        assertThat(config.get(cypher_render_plan_descriptions)).isTrue();
+        assertThat(config.get(query_statistics_divergence_threshold)).isCloseTo(0.42, within(0.01));
     }
 
     @Test
@@ -422,7 +420,7 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals(100, config.get(query_cache_size));
+        assertThat(config.get(query_cache_size)).isEqualTo(100);
     }
 
     @Test
@@ -441,10 +439,10 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertEquals(ByteUnit.bytes(134072), config.get(transaction_log_buffer_size));
-        assertFalse(config.get(preallocate_logical_logs));
-        assertEquals("3 days", config.get(keep_logical_logs));
-        assertEquals(mebiBytes(34), config.get(logical_log_rotation_threshold));
+        assertThat(config.get(transaction_log_buffer_size)).isEqualTo(ByteUnit.bytes(134072));
+        assertThat(config.get(preallocate_logical_logs)).isFalse();
+        assertThat(config.get(keep_logical_logs)).isEqualTo("3 days");
+        assertThat(config.get(logical_log_rotation_threshold)).isEqualTo(mebiBytes(34));
     }
 
     @Test
@@ -454,7 +452,7 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertFalse(config.get(filewatcher_enabled));
+        assertThat(config.get(filewatcher_enabled)).isFalse();
     }
 
     @Test
@@ -464,7 +462,7 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertEquals(Duration.ofMinutes(15), config.get(lock_acquisition_timeout));
+        assertThat(config.get(lock_acquisition_timeout)).isEqualTo(Duration.ofMinutes(15));
     }
 
     @Test
@@ -475,8 +473,8 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertEquals(123, config.get(csv_buffer_size));
-        assertFalse(config.get(csv_legacy_quote_escaping));
+        assertThat(config.get(csv_buffer_size)).isEqualTo(123);
+        assertThat(config.get(csv_legacy_quote_escaping)).isFalse();
     }
 
     @Test
@@ -497,13 +495,13 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertTrue(config.get(track_query_cpu_time));
-        assertEquals(ofSeconds(100), config.get(bookmark_ready_timeout));
-        assertEquals(17, config.get(max_concurrent_transactions));
-        assertEquals(ofSeconds(4), config.get(transaction_monitor_check_interval));
-        assertEquals(78, config.get(transaction_sampling_percentage));
-        assertEquals(ofSeconds(10), config.get(transaction_timeout));
-        assertEquals(SAMPLE, config.get(transaction_tracing_level));
+        assertThat(config.get(track_query_cpu_time)).isTrue();
+        assertThat(config.get(bookmark_ready_timeout)).isEqualTo(ofSeconds(100));
+        assertThat(config.get(max_concurrent_transactions)).isEqualTo(17);
+        assertThat(config.get(transaction_monitor_check_interval)).isEqualTo(ofSeconds(4));
+        assertThat(config.get(transaction_sampling_percentage)).isEqualTo(78);
+        assertThat(config.get(transaction_timeout)).isEqualTo(ofSeconds(10));
+        assertThat(config.get(transaction_tracing_level)).isEqualTo(SAMPLE);
     }
 
     @Test
@@ -519,10 +517,10 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertTrue(config.get(gc_logging_enabled));
-        assertEquals("niceOptions", config.get(gc_logging_options));
-        assertEquals(7, config.get(gc_logging_rotation_keep_number));
-        assertEquals(ByteUnit.mebiBytes(5), config.get(gc_logging_rotation_size));
+        assertThat(config.get(gc_logging_enabled)).isTrue();
+        assertThat(config.get(gc_logging_options)).isEqualTo("niceOptions");
+        assertThat(config.get(gc_logging_rotation_keep_number)).isEqualTo(7);
+        assertThat(config.get(gc_logging_rotation_size)).isEqualTo(ByteUnit.mebiBytes(5));
     }
 
     @Test
@@ -531,7 +529,7 @@ class SettingMigratorsTest {
         Files.write(confFile, List.of("dbms.upgrade_max_processors=7"));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
-        assertEquals(7, config.get(upgrade_processors));
+        assertThat(config.get(upgrade_processors)).isEqualTo(7);
     }
 
     @Test
@@ -547,10 +545,10 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertTrue(config.get(pagecache_warmup_enabled));
-        assertFalse(config.get(pagecache_warmup_prefetch));
-        assertEquals("*index*", config.get(pagecache_warmup_prefetch_allowlist));
-        assertEquals(ofSeconds(5), config.get(pagecache_warmup_profiling_interval));
+        assertThat(config.get(pagecache_warmup_enabled)).isTrue();
+        assertThat(config.get(pagecache_warmup_prefetch)).isFalse();
+        assertThat(config.get(pagecache_warmup_prefetch_allowlist)).isEqualTo("*index*");
+        assertThat(config.get(pagecache_warmup_profiling_interval)).isEqualTo(ofSeconds(5));
     }
 
     @Test
@@ -561,8 +559,8 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertEquals(Duration.ofMinutes(17), config.get(shutdown_transaction_end_timeout));
-        assertFalse(config.get(preallocate_store_files));
+        assertThat(config.get(shutdown_transaction_end_timeout)).isEqualTo(Duration.ofMinutes(17));
+        assertThat(config.get(preallocate_store_files)).isFalse();
     }
 
     @Test
@@ -572,7 +570,7 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertEquals(132, config.get(query_cache_size));
+        assertThat(config.get(query_cache_size)).isEqualTo(132);
     }
 
     @Test
@@ -587,9 +585,9 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertEquals(mebiBytes(11), config.get(memory_transaction_database_max_size));
-        assertEquals(mebiBytes(111), config.get(memory_transaction_global_max_size));
-        assertEquals(mebiBytes(1111), config.get(memory_transaction_max_size));
+        assertThat(config.get(memory_transaction_database_max_size)).isEqualTo(mebiBytes(11));
+        assertThat(config.get(memory_transaction_global_max_size)).isEqualTo(mebiBytes(111));
+        assertThat(config.get(memory_transaction_max_size)).isEqualTo(mebiBytes(1111));
     }
 
     @Test
@@ -600,8 +598,8 @@ class SettingMigratorsTest {
                 List.of("dbms.relationship_grouping_threshold=4242", "dbms.recovery.fail_on_missing_files=true"));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
-        assertEquals(4242, config.get(dense_node_threshold));
-        assertTrue(config.get(fail_on_missing_files));
+        assertThat(config.get(dense_node_threshold)).isEqualTo(4242);
+        assertThat(config.get(fail_on_missing_files)).isTrue();
     }
 
     @Test
@@ -612,8 +610,8 @@ class SettingMigratorsTest {
                 List.of("dbms.default_listen_address=localhost1", "dbms.default_advertised_address=otherhost"));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
-        assertEquals(new SocketAddress("localhost1"), config.get(default_listen_address));
-        assertEquals(new SocketAddress("otherhost"), config.get(default_advertised_address));
+        assertThat(config.get(default_listen_address)).isEqualTo(new SocketAddress("localhost1"));
+        assertThat(config.get(default_advertised_address)).isEqualTo(new SocketAddress("otherhost"));
     }
 
     @Test
@@ -634,15 +632,15 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertEquals(Duration.ofDays(7), config.get(log_queries_transaction_threshold));
-        assertEquals(INFO, config.get(log_queries_transactions_level));
-        assertEquals(Duration.ofMinutes(8), config.get(log_queries_threshold));
-        assertTrue(config.get(log_queries_query_plan));
-        assertFalse(config.get(log_queries_parameter_logging_enabled));
-        assertTrue(config.get(log_queries_obfuscate_literals));
-        assertEquals(9, config.get(query_log_max_parameter_length));
-        assertEquals(VERBOSE, config.get(log_queries));
-        assertTrue(config.get(log_queries_early_raw_logging_enabled));
+        assertThat(config.get(log_queries_transaction_threshold)).isEqualTo(Duration.ofDays(7));
+        assertThat(config.get(log_queries_transactions_level)).isEqualTo(INFO);
+        assertThat(config.get(log_queries_threshold)).isEqualTo(Duration.ofMinutes(8));
+        assertThat(config.get(log_queries_query_plan)).isTrue();
+        assertThat(config.get(log_queries_parameter_logging_enabled)).isFalse();
+        assertThat(config.get(log_queries_obfuscate_literals)).isTrue();
+        assertThat(config.get(query_log_max_parameter_length)).isEqualTo(9);
+        assertThat(config.get(log_queries)).isEqualTo(VERBOSE);
+        assertThat(config.get(log_queries_early_raw_logging_enabled)).isTrue();
     }
 
     @Test
@@ -674,9 +672,9 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertTrue(config.get(index_background_sampling_enabled));
-        assertEquals(1048577, config.get(index_sample_size_limit));
-        assertEquals(75, config.get(index_sampling_update_percentage));
+        assertThat(config.get(index_background_sampling_enabled)).isTrue();
+        assertThat(config.get(index_sample_size_limit)).isEqualTo(1048577);
+        assertThat(config.get(index_sampling_update_percentage)).isEqualTo(75);
     }
 
     @Test
@@ -695,14 +693,14 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertEquals(gibiBytes(1), config.get(pagecache_memory));
-        assertEquals(8, config.get(pagecache_scan_prefetch));
-        assertEquals(129, config.get(pagecache_flush_buffer_size_in_pages));
-        assertEquals(true, config.get(pagecache_buffered_flush_enabled));
-        assertEquals(true, config.get(pagecache_direct_io));
+        assertThat(config.get(pagecache_memory)).isEqualTo(gibiBytes(1));
+        assertThat(config.get(pagecache_scan_prefetch)).isEqualTo(8);
+        assertThat(config.get(pagecache_flush_buffer_size_in_pages)).isEqualTo(129);
+        assertThat(config.get(pagecache_buffered_flush_enabled)).isTrue();
+        assertThat(config.get(pagecache_direct_io)).isTrue();
 
-        assertEquals(mebiBytes(512), config.get(max_heap_size));
-        assertEquals(mebiBytes(511), config.get(initial_heap_size));
+        assertThat(config.get(max_heap_size)).isEqualTo(mebiBytes(512));
+        assertThat(config.get(initial_heap_size)).isEqualTo(mebiBytes(511));
     }
 
     @Test

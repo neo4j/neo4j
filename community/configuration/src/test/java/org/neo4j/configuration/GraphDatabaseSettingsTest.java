@@ -20,11 +20,8 @@
 package org.neo4j.configuration;
 
 import static java.lang.String.format;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_language;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
@@ -92,11 +89,11 @@ class GraphDatabaseSettingsTest {
             if (field.getType() == Setting.class) {
                 Setting<?> setting = (Setting<?>) field.get(null);
 
-                assertFalse(
-                        fields.containsKey(setting.name()),
-                        format(
+                assertThat(fields)
+                        .as(format(
                                 "'%s' in %s has already been defined in %s",
-                                setting.name(), field.getName(), fields.get(setting.name())));
+                                setting.name(), field.getName(), fields.get(setting.name())))
+                        .doesNotContainKey(setting.name());
                 fields.put(setting.name(), field.getName());
             }
         }
@@ -113,7 +110,7 @@ class GraphDatabaseSettingsTest {
         SocketAddress listenSocketAddress = config.get(BoltConnector.listen_address);
 
         // then
-        assertEquals(new SocketAddress("localhost", 7687), listenSocketAddress);
+        assertThat(listenSocketAddress).isEqualTo(new SocketAddress("localhost", 7687));
     }
 
     @Test
@@ -125,7 +122,7 @@ class GraphDatabaseSettingsTest {
                 .build();
 
         // then
-        assertEquals(new SocketAddress("localhost", 8000), config.get(BoltConnector.listen_address));
+        assertThat(config.get(BoltConnector.listen_address)).isEqualTo(new SocketAddress("localhost", 8000));
     }
 
     @Test
@@ -137,7 +134,7 @@ class GraphDatabaseSettingsTest {
                 .build();
 
         // then
-        assertEquals(new SocketAddress("0.0.0.0", 7687), config.get(BoltConnector.listen_address));
+        assertThat(config.get(BoltConnector.listen_address)).isEqualTo(new SocketAddress("0.0.0.0", 7687));
     }
 
     @Test
@@ -150,7 +147,7 @@ class GraphDatabaseSettingsTest {
                 .build();
 
         // then
-        assertEquals(new SocketAddress("0.0.0.0", 8000), config.get(BoltConnector.listen_address));
+        assertThat(config.get(BoltConnector.listen_address)).isEqualTo(new SocketAddress("0.0.0.0", 8000));
     }
 
     @Test
@@ -161,13 +158,13 @@ class GraphDatabaseSettingsTest {
                 .build();
 
         // then
-        assertEquals(new SocketAddress("localhost", 7474), config.get(HttpConnector.listen_address));
-        assertEquals(new SocketAddress("localhost", 7473), config.get(HttpsConnector.listen_address));
-        assertEquals(new SocketAddress("localhost", 7687), config.get(BoltConnector.listen_address));
+        assertThat(config.get(HttpConnector.listen_address)).isEqualTo(new SocketAddress("localhost", 7474));
+        assertThat(config.get(HttpsConnector.listen_address)).isEqualTo(new SocketAddress("localhost", 7473));
+        assertThat(config.get(BoltConnector.listen_address)).isEqualTo(new SocketAddress("localhost", 7687));
 
-        assertTrue(config.get(HttpConnector.enabled));
-        assertFalse(config.get(HttpsConnector.enabled));
-        assertTrue(config.get(BoltConnector.enabled));
+        assertThat(config.get(HttpConnector.enabled)).isTrue();
+        assertThat(config.get(HttpsConnector.enabled)).isFalse();
+        assertThat(config.get(BoltConnector.enabled)).isTrue();
     }
 
     @Test
@@ -175,7 +172,7 @@ class GraphDatabaseSettingsTest {
         Config config = Config.defaults();
         long bookmarkReadyTimeoutMs =
                 config.get(GraphDatabaseSettings.bookmark_ready_timeout).toMillis();
-        assertEquals(TimeUnit.SECONDS.toMillis(30), bookmarkReadyTimeoutMs);
+        assertThat(bookmarkReadyTimeoutMs).isEqualTo(TimeUnit.SECONDS.toMillis(30));
     }
 
     @Test
@@ -183,14 +180,13 @@ class GraphDatabaseSettingsTest {
         String[] illegalValues = {"0ms", "0s", "10ms", "99ms", "999ms", "42ms"};
 
         for (String value : illegalValues) {
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> {
+            assertThatThrownBy(() -> {
                         Config config =
                                 Config.defaults(GraphDatabaseSettings.bookmark_ready_timeout, DURATION.parse(value));
                         config.get(GraphDatabaseSettings.bookmark_ready_timeout);
-                    },
-                    "Exception expected for value '" + value + "'");
+                    })
+                    .as("Exception expected for value '" + value + "'")
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -203,9 +199,9 @@ class GraphDatabaseSettingsTest {
                 .build();
 
         // then
-        assertEquals("0.0.0.0", config.get(HttpConnector.listen_address).getHostname());
-        assertEquals("0.0.0.0", config.get(HttpsConnector.listen_address).getHostname());
-        assertEquals("0.0.0.0", config.get(BoltConnector.listen_address).getHostname());
+        assertThat(config.get(HttpConnector.listen_address).getHostname()).isEqualTo("0.0.0.0");
+        assertThat(config.get(HttpsConnector.listen_address).getHostname()).isEqualTo("0.0.0.0");
+        assertThat(config.get(BoltConnector.listen_address).getHostname()).isEqualTo("0.0.0.0");
     }
 
     @Test
@@ -219,9 +215,9 @@ class GraphDatabaseSettingsTest {
                 .build();
 
         // then
-        assertEquals(new SocketAddress("0.0.0.0", 9000), config.get(HttpsConnector.listen_address));
-        assertEquals(new SocketAddress("0.0.0.0", 8000), config.get(HttpConnector.listen_address));
-        assertEquals(new SocketAddress("0.0.0.0", 10000), config.get(BoltConnector.listen_address));
+        assertThat(config.get(HttpsConnector.listen_address)).isEqualTo(new SocketAddress("0.0.0.0", 9000));
+        assertThat(config.get(HttpConnector.listen_address)).isEqualTo(new SocketAddress("0.0.0.0", 8000));
+        assertThat(config.get(BoltConnector.listen_address)).isEqualTo(new SocketAddress("0.0.0.0", 10000));
     }
 
     @Test
@@ -243,14 +239,14 @@ class GraphDatabaseSettingsTest {
         String[] invalidSet = new String[] {"invalid", "all", "10", "10k", "10k a"};
 
         for (String valid : validSet) {
-            assertEquals(valid, Config.defaults(keep_logical_logs, valid).get(keep_logical_logs));
+            assertThat(Config.defaults(keep_logical_logs, valid).get(keep_logical_logs))
+                    .isEqualTo(valid);
         }
 
         for (String invalid : invalidSet) {
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> Config.defaults(keep_logical_logs, invalid),
-                    "Value \"" + invalid + "\" should be considered invalid");
+            assertThatThrownBy(() -> Config.defaults(keep_logical_logs, invalid))
+                    .as("Value \"" + invalid + "\" should be considered invalid")
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -260,25 +256,27 @@ class GraphDatabaseSettingsTest {
         range.forEach(percentage -> {
             Config config = Config.defaults(transaction_sampling_percentage, percentage);
             int configuredSampling = config.get(transaction_sampling_percentage);
-            assertEquals(percentage, configuredSampling);
+            assertThat(configuredSampling).isEqualTo(percentage);
         });
-        assertThrows(IllegalArgumentException.class, () -> Config.defaults(transaction_sampling_percentage, 0));
-        assertThrows(IllegalArgumentException.class, () -> Config.defaults(transaction_sampling_percentage, 101));
-        assertThrows(IllegalArgumentException.class, () -> Config.defaults(transaction_sampling_percentage, 10101));
+        assertThatThrownBy(() -> Config.defaults(transaction_sampling_percentage, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Config.defaults(transaction_sampling_percentage, 101))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Config.defaults(transaction_sampling_percentage, 10101))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void validateTransactionTracingLevelValues() {
         GraphDatabaseSettings.TransactionTracingLevel[] values = GraphDatabaseSettings.TransactionTracingLevel.values();
         for (GraphDatabaseSettings.TransactionTracingLevel level : values) {
-            assertEquals(
-                    level, Config.defaults(transaction_tracing_level, level).get(transaction_tracing_level));
+            assertThat(Config.defaults(transaction_tracing_level, level).get(transaction_tracing_level))
+                    .isEqualTo(level);
         }
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> Config.newBuilder()
+        assertThatThrownBy(() -> Config.newBuilder()
                         .setRaw(Map.of(transaction_tracing_level.name(), "TRACE"))
-                        .build());
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -295,21 +293,20 @@ class GraphDatabaseSettingsTest {
 
     @Test
     void testDefaultAddressOnlyAllowsHostname() {
-        assertDoesNotThrow(() -> Config.defaults(default_listen_address, new SocketAddress("foo")));
-        assertDoesNotThrow(() -> Config.defaults(default_advertised_address, new SocketAddress("bar")));
+        assertThatCode(() -> Config.defaults(default_listen_address, new SocketAddress("foo")))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> Config.defaults(default_advertised_address, new SocketAddress("bar")))
+                .doesNotThrowAnyException();
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> Config.defaults(default_listen_address, new SocketAddress("foo", 123)));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> Config.defaults(default_advertised_address, new SocketAddress("bar", 456)));
+        assertThatThrownBy(() -> Config.defaults(default_listen_address, new SocketAddress("foo", 123)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Config.defaults(default_advertised_address, new SocketAddress("bar", 456)))
+                .isInstanceOf(IllegalArgumentException.class);
 
-        assertThrows(
-                IllegalArgumentException.class, () -> Config.defaults(default_listen_address, new SocketAddress(123)));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> Config.defaults(default_advertised_address, new SocketAddress(456)));
+        assertThatThrownBy(() -> Config.defaults(default_listen_address, new SocketAddress(123)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Config.defaults(default_advertised_address, new SocketAddress(456)))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

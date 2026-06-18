@@ -19,12 +19,8 @@
  */
 package org.neo4j.configuration.helpers;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,77 +41,85 @@ class DatabaseNamePatternTest {
 
     @Test
     void shouldMatchWithProvidedDatabaseNames() {
-        assertTrue(new DatabaseNamePattern("???").matches("abc"));
-        assertTrue(new DatabaseNamePattern("****").matches("Customer01"));
-        assertTrue(new DatabaseNamePattern("?*??").matches("Customer01"));
-        assertTrue(new DatabaseNamePattern("cust*").matches("Customer01"));
-        assertTrue(new DatabaseNamePattern("*01").matches("Customer01"));
-        assertTrue(new DatabaseNamePattern("Widgets-customer-*-db1").matches("Widgets-customer-001-db1"));
-        assertTrue(new DatabaseNamePattern("Widgets-customer-*-db?").matches("Widgets-customer-222-db5"));
-        assertTrue(new DatabaseNamePattern("Widgets-****-*-db?").matches("Widgets-customer-222-db5"));
-        assertTrue(new DatabaseNamePattern("c*01").matches("Customer01"));
-        assertTrue(new DatabaseNamePattern("c?st*tp").matches("Customer01tp"));
-        assertTrue(new DatabaseNamePattern("cust*tp?").matches("Customer01tp"));
-        assertTrue(new DatabaseNamePattern("database1").matches("database1"));
-        assertTrue(new DatabaseNamePattern("my.Vaild-D*b1?3").matches("my.Vaild-Daweeb123"));
+        assertThat(new DatabaseNamePattern("???").matches("abc")).isTrue();
+        assertThat(new DatabaseNamePattern("****").matches("Customer01")).isTrue();
+        assertThat(new DatabaseNamePattern("?*??").matches("Customer01")).isTrue();
+        assertThat(new DatabaseNamePattern("cust*").matches("Customer01")).isTrue();
+        assertThat(new DatabaseNamePattern("*01").matches("Customer01")).isTrue();
+        assertThat(new DatabaseNamePattern("Widgets-customer-*-db1").matches("Widgets-customer-001-db1"))
+                .isTrue();
+        assertThat(new DatabaseNamePattern("Widgets-customer-*-db?").matches("Widgets-customer-222-db5"))
+                .isTrue();
+        assertThat(new DatabaseNamePattern("Widgets-****-*-db?").matches("Widgets-customer-222-db5"))
+                .isTrue();
+        assertThat(new DatabaseNamePattern("c*01").matches("Customer01")).isTrue();
+        assertThat(new DatabaseNamePattern("c?st*tp").matches("Customer01tp")).isTrue();
+        assertThat(new DatabaseNamePattern("cust*tp?").matches("Customer01tp")).isTrue();
+        assertThat(new DatabaseNamePattern("database1").matches("database1")).isTrue();
+        assertThat(new DatabaseNamePattern("my.Vaild-D*b1?3").matches("my.Vaild-Daweeb123"))
+                .isTrue();
     }
 
     @Test
     void shouldNotMatchWithProvidedDatabaseNames() {
-        assertFalse(new DatabaseNamePattern("C?").matches("Customer01"));
-        assertFalse(new DatabaseNamePattern("C?tomer01").matches("Customer01"));
-        assertFalse(new DatabaseNamePattern("temp").matches("temp2"));
-        assertFalse(new DatabaseNamePattern("r*r").matches("tur"));
+        assertThat(new DatabaseNamePattern("C?").matches("Customer01")).isFalse();
+        assertThat(new DatabaseNamePattern("C?tomer01").matches("Customer01")).isFalse();
+        assertThat(new DatabaseNamePattern("temp").matches("temp2")).isFalse();
+        assertThat(new DatabaseNamePattern("r*r").matches("tur")).isFalse();
     }
 
     @Test
     void shouldGetAnErrorForAnEmptyDatabaseName() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> assertValid(""));
-        assertEquals("The provided database name is empty.", e.getMessage());
+        assertThatThrownBy(() -> assertValid(""))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The provided database name is empty.");
 
-        Exception e2 = assertThrows(NullPointerException.class, () -> assertValid(null));
-        assertEquals("The provided database name is empty.", e2.getMessage());
+        assertThatThrownBy(() -> assertValid(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("The provided database name is empty.");
     }
 
     @Test
     void shouldGetAnErrorForADatabaseNameWithInvalidCharacters() {
-        Exception e = assertThrows(IllegalArgumentException.class, () -> assertValid("database%"));
-        assertEquals(
-                "Database name 'database%' contains illegal characters. Use simple ascii characters, numbers,"
-                        + " dots, question marks, asterisk and dashes.",
-                e.getMessage());
+        assertThatThrownBy(() -> assertValid("database%"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Database name 'database%' contains illegal characters. Use simple ascii characters, numbers,"
+                                + " dots, question marks, asterisk and dashes.");
 
-        Exception e2 = assertThrows(IllegalArgumentException.class, () -> assertValid("data{base}"));
-        assertEquals(
-                "Database name 'data{base}' contains illegal characters. Use simple ascii characters, numbers,"
-                        + " dots, question marks, asterisk and dashes.",
-                e2.getMessage());
+        assertThatThrownBy(() -> assertValid("data{base}"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Database name 'data{base}' contains illegal characters. Use simple ascii characters, numbers,"
+                                + " dots, question marks, asterisk and dashes.");
 
-        Exception e3 = assertThrows(IllegalArgumentException.class, () -> assertValid("data/base"));
-        assertEquals(
-                "Database name 'data/base' contains illegal characters. Use simple ascii characters, numbers,"
-                        + " dots, question marks, asterisk and dashes.",
-                e3.getMessage());
+        assertThatThrownBy(() -> assertValid("data/base"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Database name 'data/base' contains illegal characters. Use simple ascii characters, numbers,"
+                                + " dots, question marks, asterisk and dashes.");
 
-        Exception e4 = assertThrows(IllegalArgumentException.class, () -> assertValid("dataåäö"));
-        assertEquals(
-                "Database name 'dataåäö' contains illegal characters. Use simple ascii characters, numbers, "
-                        + "dots, question marks, asterisk and dashes.",
-                e4.getMessage());
+        assertThatThrownBy(() -> assertValid("dataåäö"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "Database name 'dataåäö' contains illegal characters. Use simple ascii characters, numbers, "
+                                + "dots, question marks, asterisk and dashes.");
     }
 
     @Test
     void shouldGetAnErrorForADatabaseNameWithInvalidLength() {
         // Too short
-        Exception e1 = assertThrows(IllegalArgumentException.class, () -> assertValid(" "));
-        assertEquals("The provided database name is empty.", e1.getMessage());
+        assertThatThrownBy(() -> assertValid(" "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The provided database name is empty.");
 
-        Exception e2 = assertThrows(IllegalArgumentException.class, () -> assertValid(""));
-        assertEquals("The provided database name is empty.", e2.getMessage());
+        assertThatThrownBy(() -> assertValid(""))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The provided database name is empty.");
 
-        Exception e3 = assertThrows(IllegalArgumentException.class, () -> assertValid("a" + randomAscii(64)));
-
-        assertEquals("The provided database name must have a length between 1 and 63 characters.", e3.getMessage());
+        assertThatThrownBy(() -> assertValid("a".repeat(64)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The provided database name must have a length between 1 and 63 characters.");
     }
 
     @ParameterizedTest

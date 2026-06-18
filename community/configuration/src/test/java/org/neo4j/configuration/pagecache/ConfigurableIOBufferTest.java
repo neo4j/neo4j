@@ -20,8 +20,6 @@
 package org.neo4j.configuration.pagecache;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -36,7 +34,7 @@ class ConfigurableIOBufferTest {
     void ioBufferEnabledByDefault() {
         var config = Config.defaults();
         try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, INSTANCE)) {
-            assertTrue(ioBuffer.isEnabled());
+            assertThat(ioBuffer.isEnabled()).isTrue();
         }
     }
 
@@ -95,17 +93,17 @@ class ConfigurableIOBufferTest {
         try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
             assertThat(memoryTracker.usedNativeMemory()).isEqualTo(PAGE_SIZE * customPageSize + PAGE_SIZE);
 
-            assertTrue(ioBuffer.hasMoreCapacity(0, 1));
-            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE, PAGE_SIZE));
-            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE * 2, PAGE_SIZE));
-            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE * 3, PAGE_SIZE));
-            assertTrue(ioBuffer.hasMoreCapacity(PAGE_SIZE * 4, PAGE_SIZE));
+            assertThat(ioBuffer.hasMoreCapacity(0, 1)).isTrue();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE, PAGE_SIZE)).isTrue();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 2, PAGE_SIZE)).isTrue();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 3, PAGE_SIZE)).isTrue();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 4, PAGE_SIZE)).isTrue();
 
-            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 4, PAGE_SIZE + 1));
-            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 5, PAGE_SIZE));
-            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 6, PAGE_SIZE));
-            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 7, PAGE_SIZE));
-            assertFalse(ioBuffer.hasMoreCapacity(PAGE_SIZE * 8, PAGE_SIZE));
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 4, PAGE_SIZE + 1)).isFalse();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 5, PAGE_SIZE)).isFalse();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 6, PAGE_SIZE)).isFalse();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 7, PAGE_SIZE)).isFalse();
+            assertThat(ioBuffer.hasMoreCapacity(PAGE_SIZE * 8, PAGE_SIZE)).isFalse();
         }
     }
 
@@ -115,8 +113,8 @@ class ConfigurableIOBufferTest {
         var config = Config.defaults(pagecache_flush_buffer_size_in_pages, customPageSize);
         var memoryTracker = new PoisonedMemoryTracker();
         try (ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer(config, memoryTracker)) {
-            assertTrue(memoryTracker.isExceptionThrown());
-            assertFalse(ioBuffer.isEnabled());
+            assertThat(memoryTracker.isExceptionThrown()).isTrue();
+            assertThat(ioBuffer.isEnabled()).isFalse();
         }
     }
 

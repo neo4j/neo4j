@@ -20,12 +20,9 @@
 package org.neo4j.configuration.ssl;
 
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
 
@@ -76,15 +73,15 @@ class SslPolicyConfigValidatorTest {
         ClientAuth clientAuth = config.get(policyConfig.client_auth);
 
         // then
-        assertEquals(privateKey, privateKeyFromConfig);
-        assertEquals(publicCertificate, publicCertificateFromConfig);
-        assertEquals(trustedDir, trustedDirFromConfig);
-        assertEquals(revokedDir, revokedDirFromConfig);
-        assertNull(privateKeyPassword);
-        assertFalse(trustAll);
-        assertEquals(List.of("TLSv1.2", "TLSv1.3"), tlsVersions);
-        assertNull(ciphers);
-        assertEquals(ClientAuth.REQUIRE, clientAuth);
+        assertThat(privateKeyFromConfig).isEqualTo(privateKey);
+        assertThat(publicCertificateFromConfig).isEqualTo(publicCertificate);
+        assertThat(trustedDirFromConfig).isEqualTo(trustedDir);
+        assertThat(revokedDirFromConfig).isEqualTo(revokedDir);
+        assertThat(privateKeyPassword).isNull();
+        assertThat(trustAll).isFalse();
+        assertThat(tlsVersions).containsExactly("TLSv1.2", "TLSv1.3");
+        assertThat(ciphers).isNull();
+        assertThat(clientAuth).isEqualTo(ClientAuth.REQUIRE);
     }
 
     @Test
@@ -133,17 +130,18 @@ class SslPolicyConfigValidatorTest {
         ClientAuth clientAuth = config.get(policyConfig.client_auth);
 
         // then
-        assertEquals(privateKey, privateKeyFromConfig);
-        assertEquals(publicCertificate, publicCertificateFromConfig);
-        assertEquals(trustedDir, trustedDirFromConfig);
-        assertEquals(revokedDir, revokedDirFromConfig);
+        assertThat(privateKeyFromConfig).isEqualTo(privateKey);
+        assertThat(publicCertificateFromConfig).isEqualTo(publicCertificate);
+        assertThat(trustedDirFromConfig).isEqualTo(trustedDir);
+        assertThat(revokedDirFromConfig).isEqualTo(revokedDir);
 
-        assertTrue(trustAll);
-        assertEquals("setecastronomy", privateKeyPassword.getString());
-        assertEquals(asList("TLSv1.1", "TLSv1.2"), tlsVersions);
-        assertEquals(
-                asList("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"), ciphers);
-        assertEquals(ClientAuth.OPTIONAL, clientAuth);
+        assertThat(trustAll).isTrue();
+        assertThat(privateKeyPassword.getString()).isEqualTo("setecastronomy");
+        assertThat(tlsVersions).isEqualTo(asList("TLSv1.1", "TLSv1.2"));
+        assertThat(ciphers)
+                .isEqualTo(
+                        asList("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"));
+        assertThat(clientAuth).isEqualTo(ClientAuth.OPTIONAL);
     }
 
     @Test
@@ -162,7 +160,7 @@ class SslPolicyConfigValidatorTest {
                 .set(sslPolicy.trusted_dir, Path.of("xyz"))
                 .set(sslPolicy.private_key_password, new SecureString("xyz"));
 
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
     }
 
     @Test

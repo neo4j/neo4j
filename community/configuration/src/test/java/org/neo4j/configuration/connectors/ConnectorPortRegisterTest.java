@@ -19,9 +19,7 @@
  */
 package org.neo4j.configuration.connectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.InetSocketAddress;
 import org.junit.jupiter.api.Test;
@@ -53,11 +51,11 @@ class ConnectorPortRegisterTest {
     void shouldDeregister() {
         SocketAddress address = new SocketAddress("neo4j.com", 42);
         portRegister.register(ConnectorType.BOLT, address);
-        assertNotNull(portRegister.getLocalAddress(ConnectorType.BOLT));
+        assertThat(portRegister.getLocalAddress(ConnectorType.BOLT)).isNotNull();
 
         portRegister.deregister(ConnectorType.BOLT);
 
-        assertNull(portRegister.getLocalAddress(ConnectorType.BOLT));
+        assertThat(portRegister.getLocalAddress(ConnectorType.BOLT)).isNull();
     }
 
     @Test
@@ -77,6 +75,6 @@ class ConnectorPortRegisterTest {
 
     private void verifyAddress(ConnectorType connectorType, String expectedHostname, int expectedPort) {
         HostnamePort expectedAddress = new HostnamePort(expectedHostname, expectedPort);
-        assertEquals(expectedAddress, portRegister.getLocalAddress(connectorType));
+        assertThat(portRegister.getLocalAddress(connectorType)).isEqualTo(expectedAddress);
     }
 }

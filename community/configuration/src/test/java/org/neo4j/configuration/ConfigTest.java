@@ -30,13 +30,8 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -112,10 +107,10 @@ class ConfigTest {
     @Test
     void testLoadSettingsToConfig() {
         Config config = Config.newBuilder().addSettingsClass(TestSettings.class).build();
-        assertEquals("hello", config.get(TestSettings.stringSetting));
-        assertEquals(1, config.get(TestSettings.intSetting));
-        assertEquals(List.of(1), config.get(TestSettings.intListSetting));
-        assertNull(config.get(TestSettings.boolSetting));
+        assertThat(config.get(TestSettings.stringSetting)).isEqualTo("hello");
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(1);
+        assertThat(config.get(TestSettings.intListSetting)).containsExactly(1);
+        assertThat(config.get(TestSettings.boolSetting)).isNull();
     }
 
     @Test
@@ -130,10 +125,11 @@ class ConfigTest {
 
     @Test
     void buildConfigForSettingInWrongNamespaceWhenStrictDisabled() {
-        assertDoesNotThrow(() -> Config.newBuilder()
-                .addSettingsClass(WrongNamespaceSettings.class)
-                .set(GraphDatabaseSettings.strict_config_validation, false)
-                .build());
+        assertThatCode(() -> Config.newBuilder()
+                        .addSettingsClass(WrongNamespaceSettings.class)
+                        .set(GraphDatabaseSettings.strict_config_validation, false)
+                        .build())
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -171,7 +167,7 @@ class ConfigTest {
         Config config = Config.newBuilder().addSettingsClass(TestSettings.class).build();
         Setting<Boolean> absentSetting =
                 newBuilder("test.absent.bool", BOOL, null).build();
-        assertThrows(IllegalArgumentException.class, () -> config.get(absentSetting));
+        assertThatThrownBy(() -> config.get(absentSetting)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -180,32 +176,32 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .set(TestSettings.intSetting, 3)
                 .build();
-        assertEquals(3, config.get(TestSettings.intSetting));
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(3);
         config.setDynamic(TestSettings.intSetting, 2, getClass().getSimpleName());
-        assertEquals(2, config.get(TestSettings.intSetting));
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(2);
         config.setDynamic(TestSettings.intSetting, null, getClass().getSimpleName());
-        assertEquals(1, config.get(TestSettings.intSetting));
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(1);
     }
 
     @Test
     void testSetConstrainedValue() {
         Config.Builder builder =
                 Config.newBuilder().addSettingsClass(TestSettings.class).set(TestSettings.constrainedIntSetting, 4);
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThatThrownBy(builder::build).isInstanceOf(IllegalArgumentException.class);
         builder.set(TestSettings.constrainedIntSetting, 2);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
     }
 
     @Test
     void testUpdateConstrainedValue() {
         Config config = Config.newBuilder().addSettingsClass(TestSettings.class).build();
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> config.setDynamic(
-                        TestSettings.constrainedIntSetting, 4, getClass().getSimpleName()));
-        assertEquals(1, config.get(TestSettings.constrainedIntSetting));
-        assertDoesNotThrow(() -> config.setDynamic(
-                TestSettings.constrainedIntSetting, 2, getClass().getSimpleName()));
+        assertThatThrownBy(() -> config.setDynamic(
+                        TestSettings.constrainedIntSetting, 4, getClass().getSimpleName()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(config.get(TestSettings.constrainedIntSetting)).isEqualTo(1);
+        assertThatCode(() -> config.setDynamic(
+                        TestSettings.constrainedIntSetting, 2, getClass().getSimpleName()))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -215,7 +211,7 @@ class ConfigTest {
                 .set(GraphDatabaseSettings.strict_config_validation, true)
                 .addSettingsClass(TestSettings.class)
                 .setRaw(settings);
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThatThrownBy(builder::build).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -229,31 +225,31 @@ class ConfigTest {
                 .setDefaults(overriddenDefaults)
                 .build();
 
-        assertEquals("foo", config.get(TestSettings.stringSetting));
-        assertEquals(11, config.get(TestSettings.intSetting));
-        assertEquals(true, config.get(TestSettings.boolSetting));
+        assertThat(config.get(TestSettings.stringSetting)).isEqualTo("foo");
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(11);
+        assertThat(config.get(TestSettings.boolSetting)).isEqualTo(true);
     }
 
     @Test
     void testUpdateStatic() {
         Config config = Config.newBuilder().addSettingsClass(TestSettings.class).build();
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> config.setDynamic(
-                        TestSettings.stringSetting, "not allowed", getClass().getSimpleName()));
-        assertEquals("hello", config.get(TestSettings.stringSetting));
+        assertThatThrownBy(() -> config.setDynamic(
+                        TestSettings.stringSetting, "not allowed", getClass().getSimpleName()))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(config.get(TestSettings.stringSetting)).isEqualTo("hello");
         config.set(TestSettings.stringSetting, "allowed internally");
-        assertEquals("allowed internally", config.get(TestSettings.stringSetting));
+        assertThat(config.get(TestSettings.stringSetting)).isEqualTo("allowed internally");
     }
 
     @Test
     void testUpdateImmutable() {
         Config config = Config.newBuilder().addSettingsClass(TestSettings.class).build();
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> config.setDynamic(
-                        TestSettings.boolSetting, true, getClass().getSimpleName()));
-        assertThrows(IllegalArgumentException.class, () -> config.set(TestSettings.boolSetting, true));
+        assertThatThrownBy(() -> config.setDynamic(
+                        TestSettings.boolSetting, true, getClass().getSimpleName()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.set(TestSettings.boolSetting, true))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -269,25 +265,25 @@ class ConfigTest {
 
         config.addListener(TestSettings.intSetting, listener);
 
-        assertEquals(0, observedOld.getValue());
-        assertEquals(0, observedNew.getValue());
+        assertThat(observedOld.getValue()).isEqualTo(0);
+        assertThat(observedNew.getValue()).isEqualTo(0);
 
         config.setDynamic(TestSettings.intSetting, 2, getClass().getSimpleName());
-        assertEquals(1, observedOld.getValue());
-        assertEquals(2, observedNew.getValue());
+        assertThat(observedOld.getValue()).isEqualTo(1);
+        assertThat(observedNew.getValue()).isEqualTo(2);
 
         config.setDynamic(TestSettings.intSetting, 7, getClass().getSimpleName());
-        assertEquals(2, observedOld.getValue());
-        assertEquals(7, observedNew.getValue());
+        assertThat(observedOld.getValue()).isEqualTo(2);
+        assertThat(observedNew.getValue()).isEqualTo(7);
 
         config.removeListener(TestSettings.intSetting, listener);
 
         config.setDynamic(TestSettings.intSetting, 9, getClass().getSimpleName());
-        assertEquals(2, observedOld.getValue());
-        assertEquals(7, observedNew.getValue());
+        assertThat(observedOld.getValue()).isEqualTo(2);
+        assertThat(observedNew.getValue()).isEqualTo(7);
 
-        assertThrows(
-                IllegalArgumentException.class, () -> config.addListener(TestSettings.boolSetting, (oV, nV) -> {}));
+        assertThatThrownBy(() -> config.addListener(TestSettings.boolSetting, (oV, nV) -> {}))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -303,14 +299,13 @@ class ConfigTest {
                 .set(g2.hostname, "127.0.0.1")
                 .build();
 
-        assertEquals(1111, config.get(g1.port));
-        assertEquals(2222, config.get(g2.port));
-        assertEquals(false, config.get(g1.secure));
-        assertEquals(true, config.get(g2.secure));
+        assertThat(config.get(g1.port)).isEqualTo(1111);
+        assertThat(config.get(g2.port)).isEqualTo(2222);
+        assertThat(config.get(g1.secure)).isEqualTo(false);
+        assertThat(config.get(g2.secure)).isEqualTo(true);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> config.get(TestConnectionGroupSetting.group("not_specified_id").port));
+        assertThatThrownBy(() -> config.get(TestConnectionGroupSetting.group("not_specified_id").port))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -323,20 +318,20 @@ class ConfigTest {
                 .set(g2.value, "value2")
                 .build();
 
-        assertEquals("value1", config.get(g1.value));
-        assertEquals("value2", config.get(g2.value));
+        assertThat(config.get(g1.value)).isEqualTo("value1");
+        assertThat(config.get(g2.value)).isEqualTo("value2");
 
         config.setDynamic(g1.value, "new1", getClass().getSimpleName());
-        assertEquals("new1", config.get(g1.value));
-        assertEquals("value2", config.get(g2.value));
+        assertThat(config.get(g1.value)).isEqualTo("new1");
+        assertThat(config.get(g2.value)).isEqualTo("value2");
 
         config.setDynamic(g2.value, "new2", getClass().getSimpleName());
-        assertEquals("new2", config.get(g2.value));
+        assertThat(config.get(g2.value)).isEqualTo("new2");
 
         var groups = config.getGroups(TestDynamicGroupSetting.class);
-        assertEquals(2, groups.size());
-        assertEquals("new1", config.get(groups.get("1").value));
-        assertEquals("new2", config.get(groups.get("2").value));
+        assertThat(groups).hasSize(2);
+        assertThat(config.get(groups.get("1").value)).isEqualTo("new1");
+        assertThat(config.get(groups.get("2").value)).isEqualTo("new2");
     }
 
     @Test
@@ -349,23 +344,23 @@ class ConfigTest {
                 .set(g2.value, "value")
                 .build();
 
-        assertEquals("avalue1", config.get(g1.constrainedValue));
-        assertEquals("aDefaultValue", config.get(g2.constrainedValue));
+        assertThat(config.get(g1.constrainedValue)).isEqualTo("avalue1");
+        assertThat(config.get(g2.constrainedValue)).isEqualTo("aDefaultValue");
 
         config.setDynamic(g1.constrainedValue, "aNewValue", getClass().getSimpleName());
-        assertEquals("aNewValue", config.get(g1.constrainedValue));
-        assertEquals("aDefaultValue", config.get(g2.constrainedValue));
+        assertThat(config.get(g1.constrainedValue)).isEqualTo("aNewValue");
+        assertThat(config.get(g2.constrainedValue)).isEqualTo("aDefaultValue");
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> config.setDynamic(g2.constrainedValue, "new2", getClass().getSimpleName()));
-        assertEquals("aDefaultValue", config.get(g2.constrainedValue));
-        assertEquals("aNewValue", config.get(g1.constrainedValue));
+        assertThatThrownBy(() -> config.setDynamic(
+                        g2.constrainedValue, "new2", getClass().getSimpleName()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(config.get(g2.constrainedValue)).isEqualTo("aDefaultValue");
+        assertThat(config.get(g1.constrainedValue)).isEqualTo("aNewValue");
 
         var groups = config.getGroups(TestDynamicGroupSetting.class);
-        assertEquals(2, groups.size());
-        assertEquals("aNewValue", config.get(groups.get("1").constrainedValue));
-        assertEquals("aDefaultValue", config.get(groups.get("2").constrainedValue));
+        assertThat(groups).hasSize(2);
+        assertThat(config.get(groups.get("1").constrainedValue)).isEqualTo("aNewValue");
+        assertThat(config.get(groups.get("2").constrainedValue)).isEqualTo("aDefaultValue");
     }
 
     @Test
@@ -378,8 +373,8 @@ class ConfigTest {
                 .set(TestDynamicGroupSetting.group("2").value, "value2")
                 .build();
 
-        assertEquals("value1", config1.get(g1.value));
-        assertEquals("value2", config1.get(g2.value));
+        assertThat(config1.get(g1.value)).isEqualTo("value1");
+        assertThat(config1.get(g2.value)).isEqualTo("value2");
 
         Config config2 = Config.newBuilder()
                 .addGroupSettingClass(TestDynamicGroupSetting.class)
@@ -387,8 +382,8 @@ class ConfigTest {
                 .set(TestDynamicGroupSetting.group("2").value, "value2")
                 .build();
 
-        assertEquals("value1", config2.get(g1.value));
-        assertEquals("value2", config2.get(g2.value));
+        assertThat(config2.get(g1.value)).isEqualTo("value1");
+        assertThat(config2.get(g2.value)).isEqualTo("value2");
 
         config1.setDynamic(
                 TestDynamicGroupSetting.group("1").value, "new1", getClass().getSimpleName());
@@ -396,14 +391,14 @@ class ConfigTest {
                 TestDynamicGroupSetting.group("2").value, "new2", getClass().getSimpleName());
 
         var groups1 = config1.getGroups(TestDynamicGroupSetting.class);
-        assertEquals(2, groups1.size());
-        assertEquals("new1", config1.get(groups1.get("1").value));
-        assertEquals("new2", config1.get(groups1.get("2").value));
+        assertThat(groups1).hasSize(2);
+        assertThat(config1.get(groups1.get("1").value)).isEqualTo("new1");
+        assertThat(config1.get(groups1.get("2").value)).isEqualTo("new2");
 
         var groups2 = config2.getGroups(TestDynamicGroupSetting.class);
-        assertEquals(2, groups2.size());
-        assertEquals("value1", config2.get(groups2.get("1").value));
-        assertEquals("value2", config2.get(groups2.get("2").value));
+        assertThat(groups2).hasSize(2);
+        assertThat(config2.get(groups2.get("1").value)).isEqualTo("value1");
+        assertThat(config2.get(groups2.get("2").value)).isEqualTo("value2");
     }
 
     @Test
@@ -418,25 +413,25 @@ class ConfigTest {
                 .build();
 
         config.addListener(g1.value, (oldValue, newValue) -> {
-            assertEquals(oldValue, "value1");
-            assertEquals(newValue, "new1");
+            assertThat(oldValue).isEqualTo("value1");
+            assertThat(newValue).isEqualTo("new1");
         });
         config.addListener(g2.value, (oldValue, newValue) -> {
-            assertEquals(oldValue, "value2");
-            assertEquals(newValue, "new2");
+            assertThat(oldValue).isEqualTo("value2");
+            assertThat(newValue).isEqualTo("new2");
         });
 
         config.setDynamic(g1.value, "new1", getClass().getSimpleName());
-        assertEquals("new1", config.get(g1.value));
-        assertEquals("value2", config.get(g2.value));
+        assertThat(config.get(g1.value)).isEqualTo("new1");
+        assertThat(config.get(g2.value)).isEqualTo("value2");
 
         config.setDynamic(g2.value, "new2", getClass().getSimpleName());
-        assertEquals("new2", config.get(g2.value));
+        assertThat(config.get(g2.value)).isEqualTo("new2");
 
         var groups = config.getGroups(TestDynamicGroupSetting.class);
-        assertEquals(2, groups.size());
-        assertEquals("new1", config.get(groups.get("1").value));
-        assertEquals("new2", config.get(groups.get("2").value));
+        assertThat(groups).hasSize(2);
+        assertThat(config.get(groups.get("1").value)).isEqualTo("new1");
+        assertThat(config.get(groups.get("2").value)).isEqualTo("new2");
     }
 
     @Test
@@ -447,8 +442,8 @@ class ConfigTest {
                 .set(group.childSetting, "child")
                 .build();
 
-        assertEquals("child", config.get(group.childSetting));
-        assertEquals("parent", config.get(group.parentSetting));
+        assertThat(config.get(group.childSetting)).isEqualTo("child");
+        assertThat(config.get(group.parentSetting)).isEqualTo("parent");
     }
 
     @Test
@@ -462,23 +457,22 @@ class ConfigTest {
                 .build();
 
         config.setDynamic(group1.parentSetting, "newParent", getClass().getSimpleName());
-        assertEquals("newParent", config.get(group1.parentSetting));
-        assertEquals("parent", config.get(group2.parentSetting));
+        assertThat(config.get(group1.parentSetting)).isEqualTo("newParent");
+        assertThat(config.get(group2.parentSetting)).isEqualTo("parent");
 
         config.setDynamic(group1.childSetting, "newChild", getClass().getSimpleName());
-        assertEquals("newChild", config.get(group1.childSetting));
-        assertEquals("child", config.get(group2.childSetting));
+        assertThat(config.get(group1.childSetting)).isEqualTo("newChild");
+        assertThat(config.get(group2.childSetting)).isEqualTo("child");
 
-        assertEquals(
-                "newChild", config.get(config.getGroups(ChildDynamicGroup.class).get("1").childSetting));
-        assertEquals(
-                "newParent",
-                config.get(config.getGroups(ChildDynamicGroup.class).get("1").parentSetting));
+        assertThat(config.get(config.getGroups(ChildDynamicGroup.class).get("1").childSetting))
+                .isEqualTo("newChild");
+        assertThat(config.get(config.getGroups(ChildDynamicGroup.class).get("1").parentSetting))
+                .isEqualTo("newParent");
 
-        assertEquals(
-                "child", config.get(config.getGroups(ChildDynamicGroup.class).get("2").childSetting));
-        assertEquals(
-                "parent", config.get(config.getGroups(ChildDynamicGroup.class).get("2").parentSetting));
+        assertThat(config.get(config.getGroups(ChildDynamicGroup.class).get("2").childSetting))
+                .isEqualTo("child");
+        assertThat(config.get(config.getGroups(ChildDynamicGroup.class).get("2").parentSetting))
+                .isEqualTo("parent");
     }
 
     @Test
@@ -490,7 +484,7 @@ class ConfigTest {
                 .addGroupSettingClass(TestConnectionGroupSetting.class)
                 .setRaw(settings);
 
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThatThrownBy(builder::build).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -506,9 +500,9 @@ class ConfigTest {
                 .build();
 
         var groups = config.getGroups(TestConnectionGroupSetting.class);
-        assertEquals(Set.of("default", "1", "2"), groups.keySet());
-        assertEquals(7474, config.get(groups.get("default").port));
-        assertEquals(true, config.get(groups.get("2").secure));
+        assertThat(groups.keySet()).isEqualTo(Set.of("default", "1", "2"));
+        assertThat(config.get(groups.get("default").port)).isEqualTo(7474);
+        assertThat(config.get(groups.get("2").secure)).isTrue();
     }
 
     @Test
@@ -520,15 +514,15 @@ class ConfigTest {
                 .build();
 
         Config config1 = Config.newBuilder().fromConfig(fromConfig).build();
-        assertEquals(3, config1.get(TestSettings.intSetting));
-        assertEquals("hello", config1.get(TestSettings.stringSetting));
+        assertThat(config1.get(TestSettings.intSetting)).isEqualTo(3);
+        assertThat(config1.get(TestSettings.stringSetting)).isEqualTo("hello");
 
         Config config2 = Config.newBuilder()
                 .fromConfig(fromConfig)
                 .set(TestSettings.intSetting, 5)
                 .build();
 
-        assertEquals(5, config2.get(TestSettings.intSetting));
+        assertThat(config2.get(TestSettings.intSetting)).isEqualTo(5);
 
         Config config3 = Config.newBuilder()
                 .addSettingsClass(TestSettings.class)
@@ -536,8 +530,8 @@ class ConfigTest {
                 .set(TestSettings.intSetting, 7)
                 .build();
 
-        assertEquals(7, config3.get(TestSettings.intSetting));
-        assertEquals(false, config3.get(TestSettings.boolSetting));
+        assertThat(config3.get(TestSettings.intSetting)).isEqualTo(7);
+        assertThat(config3.get(TestSettings.boolSetting)).isFalse();
     }
 
     @Test
@@ -548,12 +542,11 @@ class ConfigTest {
                 .set(TestSettings.intSetting, 3)
                 .build();
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> Config.newBuilder()
+        assertThatThrownBy(() -> Config.newBuilder()
                         .fromConfig(fromConfig)
                         .fromConfig(fromConfig)
-                        .build());
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -569,8 +562,8 @@ class ConfigTest {
         Config config1 = Config.newBuilder().fromConfig(fromConfig).build();
 
         var groups1 = config1.getGroups(TestConnectionGroupSetting.class);
-        assertEquals(Set.of("default", "1"), groups1.keySet());
-        assertEquals(7474, config1.get(groups1.get("default").port));
+        assertThat(groups1.keySet()).isEqualTo(Set.of("default", "1"));
+        assertThat(config1.get(groups1.get("default").port)).isEqualTo(7474);
 
         Config config2 = Config.newBuilder()
                 .fromConfig(fromConfig)
@@ -581,11 +574,11 @@ class ConfigTest {
                 .build();
 
         var groups2 = config2.getGroups(TestConnectionGroupSetting.class);
-        assertEquals(Set.of("default", "1", "2"), groups2.keySet());
-        assertEquals(7474, config2.get(groups2.get("default").port));
-        assertEquals(3333, config2.get(groups2.get("1").port));
-        assertEquals(true, config2.get(groups2.get("default").secure));
-        assertEquals(true, config2.get(groups2.get("2").secure));
+        assertThat(groups2.keySet()).isEqualTo(Set.of("default", "1", "2"));
+        assertThat(config2.get(groups2.get("default").port)).isEqualTo(7474);
+        assertThat(config2.get(groups2.get("1").port)).isEqualTo(3333);
+        assertThat(config2.get(groups2.get("default").secure)).isTrue();
+        assertThat(config2.get(groups2.get("2").secure)).isTrue();
     }
 
     @Test
@@ -594,20 +587,21 @@ class ConfigTest {
 
         {
             Config config = builder.build();
-            assertEquals(config.get(DependencySettings.baseString), config.get(DependencySettings.dependingString));
+            assertThat(config.get(DependencySettings.dependingString))
+                    .isEqualTo(config.get(DependencySettings.baseString));
         }
         {
             String value = "default overrides dependency";
             builder.setDefault(DependencySettings.dependingString, value);
             Config config = builder.build();
-            assertEquals(value, config.get(DependencySettings.dependingString));
+            assertThat(config.get(DependencySettings.dependingString)).isEqualTo(value);
         }
 
         {
             String value = "value overrides dependency";
             builder.set(DependencySettings.dependingString, value);
             Config config = builder.build();
-            assertEquals(value, config.get(DependencySettings.dependingString));
+            assertThat(config.get(DependencySettings.dependingString)).isEqualTo(value);
         }
     }
 
@@ -616,15 +610,21 @@ class ConfigTest {
         Config config =
                 Config.newBuilder().addSettingsClass(DependencySettings.class).build();
 
-        assertEquals(Path.of("/base/").toAbsolutePath(), config.get(DependencySettings.basePath));
-        assertEquals(Path.of("/base/mid/").toAbsolutePath(), config.get(DependencySettings.midPath));
-        assertEquals(Path.of("/base/mid/end/file").toAbsolutePath(), config.get(DependencySettings.endPath));
-        assertEquals(Path.of("/another/path/file").toAbsolutePath(), config.get(DependencySettings.absolute));
+        assertThat(config.get(DependencySettings.basePath))
+                .isEqualTo(Path.of("/base/").toAbsolutePath());
+        assertThat(config.get(DependencySettings.midPath))
+                .isEqualTo(Path.of("/base/mid/").toAbsolutePath());
+        assertThat(config.get(DependencySettings.endPath))
+                .isEqualTo(Path.of("/base/mid/end/file").toAbsolutePath());
+        assertThat(config.get(DependencySettings.absolute))
+                .isEqualTo(Path.of("/another/path/file").toAbsolutePath());
 
         config.set(DependencySettings.endPath, Path.of("/path/another_file"));
         config.set(DependencySettings.absolute, Path.of("path/another_file"));
-        assertEquals(Path.of("/path/another_file").toAbsolutePath(), config.get(DependencySettings.endPath));
-        assertEquals(Path.of("/base/mid/path/another_file").toAbsolutePath(), config.get(DependencySettings.absolute));
+        assertThat(config.get(DependencySettings.endPath))
+                .isEqualTo(Path.of("/path/another_file").toAbsolutePath());
+        assertThat(config.get(DependencySettings.absolute))
+                .isEqualTo(Path.of("/base/mid/path/another_file").toAbsolutePath());
     }
 
     private static final class BrokenDependencySettings implements SettingsDeclaration {
@@ -639,7 +639,7 @@ class ConfigTest {
     @Test
     void testResolveBrokenSettingDependency() {
         Config.Builder builder = Config.newBuilder().addSettingsClass(BrokenDependencySettings.class);
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThatThrownBy(builder::build).isInstanceOf(IllegalArgumentException.class);
     }
 
     private static final class SingleSettingGroup implements GroupSetting {
@@ -677,10 +677,11 @@ class ConfigTest {
                 .setRaw(fromSettings)
                 .build();
 
-        assertEquals(3, config.getGroups(SingleSettingGroup.class).size());
-        assertEquals("default value", config.get(SingleSettingGroup.group("default").singleSetting));
-        assertEquals("foo", config.get(SingleSettingGroup.group("foo").singleSetting));
-        assertEquals("bar", config.get(SingleSettingGroup.group("bar").singleSetting));
+        assertThat(config.getGroups(SingleSettingGroup.class)).hasSize(3);
+        assertThat(config.get(SingleSettingGroup.group("default").singleSetting))
+                .isEqualTo("default value");
+        assertThat(config.get(SingleSettingGroup.group("foo").singleSetting)).isEqualTo("foo");
+        assertThat(config.get(SingleSettingGroup.group("bar").singleSetting)).isEqualTo("bar");
     }
 
     @Test
@@ -701,7 +702,7 @@ class ConfigTest {
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
         InternalLog log = logProvider.getLog(Config.class);
         Path confFile = testDirectory.file("test.conf");
-        assertTrue(confFile.toFile().createNewFile());
+        assertThat(confFile.toFile().createNewFile()).isTrue();
         assumeTrue(confFile.toFile().setReadable(false));
 
         Config config = Config.emptyBuilder().fromFileNoThrow(confFile).build();
@@ -718,8 +719,9 @@ class ConfigTest {
 
         Config config1 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFile(confFile)::build);
         Config config2 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFileNoThrow(confFile)::build);
-        Stream.of(config1, config2)
-                .forEach(c -> assertEquals("foo", c.get(GraphDatabaseSettings.initial_default_database)));
+        assertThat(List.of(config1, config2))
+                .extracting(c -> c.get(GraphDatabaseSettings.initial_default_database))
+                .containsOnly("foo");
     }
 
     @Test
@@ -749,9 +751,8 @@ class ConfigTest {
         Files.writeString(confFile, GraphDatabaseSettings.data_directory.name() + "=\\test\folder");
 
         Config conf = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFile(confFile)::build);
-        assertEquals(
-                Path.of("/test/folder").toAbsolutePath(),
-                conf.get(GraphDatabaseSettings.data_directory).toAbsolutePath());
+        assertThat(conf.get(GraphDatabaseSettings.data_directory).toAbsolutePath())
+                .isEqualTo(Path.of("/test/folder").toAbsolutePath());
     }
 
     @Test
@@ -762,8 +763,9 @@ class ConfigTest {
 
         Config config1 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFile(confDir)::build);
         Config config2 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFileNoThrow(confDir)::build);
-        Stream.of(config1, config2)
-                .forEach(c -> assertEquals("foo", c.get(GraphDatabaseSettings.initial_default_database)));
+        assertThat(List.of(config1, config2))
+                .extracting(c -> c.get(GraphDatabaseSettings.initial_default_database))
+                .containsOnly("foo");
     }
 
     @Test
@@ -800,10 +802,10 @@ class ConfigTest {
         Config config = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFile(confDir)::build);
         Config config2 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFileNoThrow(confDir)::build);
 
-        Stream.of(config, config2).forEach(c -> {
-            assertEquals("foo", c.get(GraphDatabaseSettings.initial_default_database));
-            assertEquals(true, c.get(GraphDatabaseSettings.auth_enabled));
-            assertEquals(4, c.get(GraphDatabaseSettings.auth_max_failed_attempts));
+        assertThat(List.of(config, config2)).allSatisfy(c -> {
+            assertThat(c.get(GraphDatabaseSettings.initial_default_database)).isEqualTo("foo");
+            assertThat(c.get(GraphDatabaseSettings.auth_enabled)).isTrue();
+            assertThat(c.get(GraphDatabaseSettings.auth_max_failed_attempts)).isEqualTo(4);
         });
     }
 
@@ -878,22 +880,21 @@ class ConfigTest {
 
     @Test
     void mustThrowIfConfigFileCouldNotBeFound() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            Path confFile = testDirectory.file("test.conf");
-
-            Config.emptyBuilder().fromFile(confFile).build();
-        });
+        assertThatThrownBy(() -> {
+                    Path confFile = testDirectory.file("test.conf");
+                    Config.emptyBuilder().fromFile(confFile).build();
+                })
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @DisabledForRoot
     void mustThrowIfConfigFileCouldNotBeRead() throws IOException {
         Path confFile = testDirectory.file("test.conf");
-        assertTrue(confFile.toFile().createNewFile());
+        assertThat(confFile.toFile().createNewFile()).isTrue();
         assumeTrue(confFile.toFile().setReadable(false));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> Config.emptyBuilder().fromFile(confFile).build());
+        assertThatThrownBy(() -> Config.emptyBuilder().fromFile(confFile).build())
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -946,40 +947,40 @@ class ConfigTest {
 
         ConfigUtils.disableAllConnectors(config);
 
-        assertFalse(config.get(BoltConnector.enabled));
-        assertFalse(config.get(HttpConnector.enabled));
-        assertFalse(config.get(HttpsConnector.enabled));
+        assertThat(config.get(BoltConnector.enabled)).isFalse();
+        assertThat(config.get(HttpConnector.enabled)).isFalse();
+        assertThat(config.get(HttpsConnector.enabled)).isFalse();
     }
 
     @Test
     void testAmendIfNotSet() {
         Config config = Config.newBuilder().addSettingsClass(TestSettings.class).build();
         config.setIfNotSet(TestSettings.intSetting, 77);
-        assertEquals(77, config.get(TestSettings.intSetting));
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(77);
 
         Config configWithSetting = Config.newBuilder()
                 .addSettingsClass(TestSettings.class)
                 .set(TestSettings.intSetting, 66)
                 .build();
         configWithSetting.setIfNotSet(TestSettings.intSetting, 77);
-        assertEquals(66, configWithSetting.get(TestSettings.intSetting));
+        assertThat(configWithSetting.get(TestSettings.intSetting)).isEqualTo(66);
     }
 
     @Test
     void testIsExplicitlySet() {
         Config config =
                 Config.emptyBuilder().addSettingsClass(TestSettings.class).build();
-        assertFalse(config.isExplicitlySet(TestSettings.intSetting));
+        assertThat(config.isExplicitlySet(TestSettings.intSetting)).isFalse();
         config.set(TestSettings.intSetting, 77);
-        assertTrue(config.isExplicitlySet(TestSettings.intSetting));
+        assertThat(config.isExplicitlySet(TestSettings.intSetting)).isTrue();
 
         Config configWithSetting = Config.emptyBuilder()
                 .addSettingsClass(TestSettings.class)
                 .set(TestSettings.intSetting, 66)
                 .build();
-        assertTrue(configWithSetting.isExplicitlySet(TestSettings.intSetting));
+        assertThat(configWithSetting.isExplicitlySet(TestSettings.intSetting)).isTrue();
         configWithSetting.set(TestSettings.intSetting, null);
-        assertFalse(configWithSetting.isExplicitlySet(TestSettings.intSetting));
+        assertThat(configWithSetting.isExplicitlySet(TestSettings.intSetting)).isFalse();
     }
 
     @Test
@@ -989,10 +990,10 @@ class ConfigTest {
 
         Config.Builder builder = Config.newBuilder().fromFile(confFile);
         builder.set(GraphDatabaseSettings.strict_config_validation, true);
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThatThrownBy(builder::build).isInstanceOf(IllegalArgumentException.class);
 
         builder.set(GraphDatabaseSettings.strict_config_validation, false);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
     }
 
     @Test
@@ -1005,10 +1006,10 @@ class ConfigTest {
                         GraphDatabaseSettings.initial_default_database.name() + "=bar"));
         Config.Builder builder = Config.newBuilder().fromFile(confFile);
         builder.set(GraphDatabaseSettings.strict_config_validation, true);
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThatThrownBy(builder::build).isInstanceOf(IllegalArgumentException.class);
 
         builder.set(GraphDatabaseSettings.strict_config_validation, false);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
     }
 
     @Test
@@ -1019,7 +1020,7 @@ class ConfigTest {
         Config.Builder builder = Config.newBuilder().fromFile(confFile);
         builder.set(GraphDatabaseSettings.strict_config_validation, true);
         builder.set(GraphDatabaseInternalSettings.strict_config_validation_allow_duplicates, true);
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThatThrownBy(builder::build).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -1034,7 +1035,7 @@ class ConfigTest {
         builder.set(GraphDatabaseSettings.strict_config_validation, true);
         builder.set(GraphDatabaseInternalSettings.strict_config_validation_allow_duplicates, true);
         MutableObject<Config> conf = new MutableObject<>();
-        assertDoesNotThrow(() -> conf.setValue(builder.build()));
+        assertThatCode(() -> conf.setValue(builder.build())).doesNotThrowAnyException();
 
         var logProvider = new AssertableLogProvider();
         conf.getValue().setLogger(logProvider.getLog(Config.class));
@@ -1047,12 +1048,11 @@ class ConfigTest {
         Config.Builder builder =
                 Config.newBuilder().addSettingsClass(TestSettings.class).set(cfgMap);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
-        assertEquals(
-                "Error evaluating value for setting 'db.test.setting.integer'."
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Error evaluating value for setting 'db.test.setting.integer'."
                         + " Setting 'db.test.setting.integer' can not have value 'not an int'."
-                        + " Should be of type 'Integer', but is 'String'",
-                exception.getMessage());
+                        + " Should be of type 'Integer', but is 'String'");
     }
 
     @Test
@@ -1079,19 +1079,19 @@ class ConfigTest {
         Config.Builder builder = Config.emptyBuilder().addSettingsClass(ConstraintDependency.class);
 
         // Then
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
 
         builder.set(ConstraintDependency.setting1, 5);
         builder.set(ConstraintDependency.setting2, 3);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
 
         builder.set(ConstraintDependency.setting2, 4);
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("maximum allowed value is 3");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maximum allowed value is 3");
 
         builder.set(ConstraintDependency.setting1, 2);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
     }
 
     @Test
@@ -1100,29 +1100,29 @@ class ConfigTest {
         Config.Builder builder = Config.emptyBuilder().addSettingsClass(ConstraintValueDependency.class);
 
         // Then
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
 
         // When
         builder.set(ConstraintValueDependency.setting1, Boolean.TRUE);
 
         // Then
         builder.set(ConstraintValueDependency.setting2, 1);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
 
         builder.set(ConstraintValueDependency.setting2, 2);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
 
         // When
         builder.set(ConstraintValueDependency.setting1, Boolean.FALSE);
 
         // Then
         builder.set(ConstraintValueDependency.setting2, 1);
-        assertDoesNotThrow(builder::build);
+        assertThatCode(builder::build).doesNotThrowAnyException();
 
         builder.set(ConstraintValueDependency.setting2, 2);
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("2 is not allowed since 'dbms.test.setting.1' was false");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("2 is not allowed since 'dbms.test.setting.1' was false");
     }
 
     @Test
@@ -1131,9 +1131,9 @@ class ConfigTest {
         Config.Builder builder = Config.emptyBuilder().addSettingsClass(CircularConstraints.class);
 
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("circular dependency");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("circular dependency");
     }
 
     @Test
@@ -1142,9 +1142,9 @@ class ConfigTest {
         Config.Builder builder = Config.emptyBuilder().addSettingsClass(DynamicConstraintDependency.class);
 
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("Can not depend on dynamic setting");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Can not depend on dynamic setting");
     }
 
     @Test
@@ -1155,9 +1155,9 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .setRaw(Map.of(TestSettings.intSetting.name(), "$(foo bar)"));
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("is a command, but config is not explicitly told to expand it");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("is a command, but config is not explicitly told to expand it");
     }
 
     @Test
@@ -1168,9 +1168,9 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .setRaw(Map.of(TestSettings.intSetting.name(), "$(foo bar"));
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("Error evaluating value for setting 'db.test.setting.integer'");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Error evaluating value for setting 'db.test.setting.integer'");
     }
 
     @Test
@@ -1182,9 +1182,9 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .setRaw(Map.of(TestSettings.intSetting.name(), "$(foo bar)"));
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("Cannot run program \"foo\"");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot run program \"foo\"");
     }
 
     @Test
@@ -1201,7 +1201,7 @@ class ConfigTest {
         config.setLogger(logProvider.getLog(Config.class));
 
         // Then
-        assertEquals(8, config.get(TestSettings.intSetting));
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(8);
         assertThat(logProvider)
                 .containsMessages(
                         "Command expansion is explicitly enabled for configuration",
@@ -1220,10 +1220,9 @@ class ConfigTest {
 
         // Then
         // we would expect that the created file has all the permissions that we asked for...
-        assertThrows(
-                AssertionError.class,
-                () -> assertThat(Files.getPosixFilePermissions(confFile))
-                        .containsExactlyInAnyOrderElementsOf(permissions));
+        assertThatThrownBy(() -> assertThat(Files.getPosixFilePermissions(confFile))
+                        .containsExactlyInAnyOrderElementsOf(permissions))
+                .isInstanceOf(AssertionError.class);
         // why would you do this to us java ?!
     }
 
@@ -1260,7 +1259,7 @@ class ConfigTest {
                 .build();
 
         // Then
-        assertEquals(6, config.get(TestSettings.intSetting));
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(6);
     }
 
     @Test
@@ -1280,7 +1279,7 @@ class ConfigTest {
                 .build();
 
         // Then
-        assertEquals("1", config.get(TestSettings.stringSetting));
+        assertThat(config.get(TestSettings.stringSetting)).isEqualTo("1");
     }
 
     @Test
@@ -1318,12 +1317,12 @@ class ConfigTest {
                 .fromFile(confFile);
 
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
         String expectedErrorMessage = IS_OS_WINDOWS
                 ? "does not have the correct ACL for owner"
                 : "does not have the correct file permissions";
-        assertThat(msg).contains(expectedErrorMessage);
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedErrorMessage);
     }
 
     private static void setPosixFilePermissions(Path confFile, Set<PosixFilePermission> filePermissions)
@@ -1347,10 +1346,9 @@ class ConfigTest {
                 .fromFile(confDir);
 
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        String expectedErrorMessage = "does not have the correct file permissions";
-        assertThat(msg).contains(expectedErrorMessage);
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not have the correct file permissions");
     }
 
     @Test
@@ -1372,7 +1370,7 @@ class ConfigTest {
 
         // Then
         Config config = buildWithoutErrorsOrWarnings(configBuilder::build);
-        assertEquals(6, config.get(TestSettings.intSetting));
+        assertThat(config.get(TestSettings.intSetting)).isEqualTo(6);
     }
 
     @Test
@@ -1388,9 +1386,9 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .setRaw(Map.of(TestSettings.intSetting.name(), format("$(%s)", command)));
         // Then
-        String msg =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-        assertThat(msg).contains("Timed out executing command");
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Timed out executing command");
     }
 
     @Test
@@ -1489,12 +1487,10 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .fromFile(confFile);
 
-        // when
-        String errorMessage =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-
-        // then
-        assertThat(errorMessage).contains("does not have the correct file permissions to evaluate commands");
+        // when/then
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not have the correct file permissions to evaluate commands");
     }
 
     @DisabledOnOs({OS.WINDOWS})
@@ -1513,12 +1509,10 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .fromFile(confFile);
 
-        // when
-        String errorMessage =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-
-        // then
-        assertThat(errorMessage).contains("does not have the correct file permissions to evaluate commands");
+        // when/then
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not have the correct file permissions to evaluate commands");
     }
 
     @DisabledOnOs({OS.WINDOWS})
@@ -1535,12 +1529,10 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .fromFile(confDir);
 
-        // when
-        String errorMessage =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-
-        // then
-        assertThat(errorMessage).contains("does not have the correct file permissions to evaluate commands");
+        // when/then
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not have the correct file permissions to evaluate commands");
     }
 
     @DisabledOnOs({OS.WINDOWS})
@@ -1556,12 +1548,10 @@ class ConfigTest {
                 .addSettingsClass(TestSettings.class)
                 .fromFile(confDir);
 
-        // when
-        String errorMessage =
-                assertThrows(IllegalArgumentException.class, builder::build).getMessage();
-
-        // then
-        assertThat(errorMessage).contains("does not have the correct file permissions to evaluate commands");
+        // when/then
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not have the correct file permissions to evaluate commands");
     }
 
     @Test
@@ -1581,7 +1571,7 @@ class ConfigTest {
                 .addMigrator(new AMigrator())
                 .build();
 
-        assertEquals(Duration.ofSeconds(777), config.get(GraphDatabaseSettings.transaction_timeout));
+        assertThat(config.get(GraphDatabaseSettings.transaction_timeout)).isEqualTo(Duration.ofSeconds(777));
     }
 
     @Test

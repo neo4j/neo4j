@@ -19,8 +19,7 @@
  */
 package org.neo4j.configuration.database.readonly;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.Optional;
@@ -53,9 +52,7 @@ public class ConfigBasedLookupTest {
     void withDefaultConfigDatabaseAreWritable() {
         var lookupFactory = new ConfigBasedLookupFactory(Config.defaults(), databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
-        for (var db : databases) {
-            assertFalse(lookup.databaseIsReadOnly(db));
-        }
+        assertThat(databases).as("all databases should be writable").noneMatch(lookup::databaseIsReadOnly);
     }
 
     @Test
@@ -63,9 +60,7 @@ public class ConfigBasedLookupTest {
         var config = Config.defaults(GraphDatabaseSettings.read_only_database_default, true);
         var lookupFactory = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
-        for (var db : databases) {
-            assertTrue(lookup.databaseIsReadOnly(db));
-        }
+        assertThat(databases).as("all databases should be read-only").allMatch(lookup::databaseIsReadOnly);
     }
 
     @Test
@@ -73,9 +68,9 @@ public class ConfigBasedLookupTest {
         var config = Config.defaults(GraphDatabaseSettings.read_only_databases, Set.of("foo", "bar"));
         var lookupFactory = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
-        assertFalse(lookup.databaseIsReadOnly(baz));
-        assertTrue(lookup.databaseIsReadOnly(foo));
-        assertTrue(lookup.databaseIsReadOnly(bar));
+        assertThat(lookup.databaseIsReadOnly(baz)).isFalse();
+        assertThat(lookup.databaseIsReadOnly(foo)).isTrue();
+        assertThat(lookup.databaseIsReadOnly(bar)).isTrue();
     }
 
     @Test
@@ -87,8 +82,8 @@ public class ConfigBasedLookupTest {
                 Set.of("foo")));
         var lookupFactory = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
-        assertFalse(lookup.databaseIsReadOnly(foo));
-        assertTrue(lookup.databaseIsReadOnly(bar));
-        assertTrue(lookup.databaseIsReadOnly(baz));
+        assertThat(lookup.databaseIsReadOnly(foo)).isFalse();
+        assertThat(lookup.databaseIsReadOnly(bar)).isTrue();
+        assertThat(lookup.databaseIsReadOnly(baz)).isTrue();
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.configuration.pagecache;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -34,7 +33,7 @@ class ConfigurableIOBufferFactoryTest {
         var config = Config.defaults(pagecache_buffered_flush_enabled, false);
         var bufferFactory = new ConfigurableIOBufferFactory(config, INSTANCE);
         try (var ioBuffer = bufferFactory.createBuffer()) {
-            assertFalse(ioBuffer.isEnabled());
+            assertThat(ioBuffer.isEnabled()).isFalse();
         }
     }
 
@@ -44,7 +43,7 @@ class ConfigurableIOBufferFactoryTest {
         var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         var bufferFactory = new ConfigurableIOBufferFactory(config, INSTANCE);
         try (var ioBuffer = bufferFactory.createBuffer()) {
-            assertFalse(ioBuffer.isEnabled());
+            assertThat(ioBuffer.isEnabled()).isFalse();
             assertThat(memoryTracker.usedNativeMemory()).isZero();
         }
     }
@@ -55,7 +54,7 @@ class ConfigurableIOBufferFactoryTest {
         var memoryTracker = new DefaultScopedMemoryTracker(INSTANCE);
         var bufferFactory = new ConfigurableIOBufferFactory(config, memoryTracker);
         try (var ioBuffer = bufferFactory.createBuffer()) {
-            assertFalse(ioBuffer.isEnabled());
+            assertThat(ioBuffer.isEnabled()).isFalse();
             assertThat(memoryTracker.usedNativeMemory()).isZero();
         }
         assertThat(memoryTracker.usedNativeMemory()).isZero();

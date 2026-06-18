@@ -21,15 +21,9 @@ package org.neo4j.configuration;
 
 import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
@@ -105,35 +99,35 @@ class SettingTest {
     @Test
     void testInteger() {
         var setting = setting("setting", INT);
-        assertEquals(5, setting.parse("5"));
-        assertEquals(5, setting.parse(" 5 "));
-        assertEquals(-76, setting.parse("-76"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("foo"));
+        assertThat(setting.parse("5")).isEqualTo(5);
+        assertThat(setting.parse(" 5 ")).isEqualTo(5);
+        assertThat(setting.parse("-76")).isEqualTo(-76);
+        assertThatThrownBy(() -> setting.parse("foo")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testLong() {
         var setting = setting("setting", LONG);
-        assertEquals(112233445566778899L, setting.parse("112233445566778899"));
-        assertEquals(112233445566778899L, setting.parse(" 112233445566778899 "));
-        assertEquals(-112233445566778899L, setting.parse("-112233445566778899"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("foo"));
+        assertThat(setting.parse("112233445566778899")).isEqualTo(112233445566778899L);
+        assertThat(setting.parse(" 112233445566778899 ")).isEqualTo(112233445566778899L);
+        assertThat(setting.parse("-112233445566778899")).isEqualTo(-112233445566778899L);
+        assertThatThrownBy(() -> setting.parse("foo")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testString() {
         var setting = setting("setting", STRING);
-        assertEquals("foo", setting.parse("foo"));
-        assertEquals("bar", setting.parse("  bar   "));
+        assertThat(setting.parse("foo")).isEqualTo("foo");
+        assertThat(setting.parse("  bar   ")).isEqualTo("bar");
     }
 
     @Test
     void testSecureString() {
         var setting = setting("setting", SECURE_STRING);
-        assertEquals("foo", setting.parse("foo").getString());
-        assertNotEquals("foo", setting.parse("foo").toString());
-        assertEquals("bar", setting.parse("  bar   ").getString());
-        assertNotEquals("foo", setting.valueToString(setting.parse("foo")));
+        assertThat(setting.parse("foo").getString()).isEqualTo("foo");
+        assertThat(setting.parse("foo").toString()).isNotEqualTo("foo");
+        assertThat(setting.parse("  bar   ").getString()).isEqualTo("bar");
+        assertThat(setting.valueToString(setting.parse("foo"))).isNotEqualTo("foo");
     }
 
     @Test
@@ -141,33 +135,34 @@ class SettingTest {
         BiFunction<Double, Double, Boolean> compareDoubles = (Double d1, Double d2) -> Math.abs(d1 - d2) < 0.000001;
 
         var setting = setting("setting", DOUBLE);
-        assertEquals(5.0, setting.parse("5"));
-        assertEquals(5.0, setting.parse("  5 "));
-        assertTrue(compareDoubles.apply(-.123, setting.parse("-0.123")));
-        assertTrue(compareDoubles.apply(5.0, setting.parse("5")));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("foo"));
+        assertThat(setting.parse("5")).isEqualTo(5.0);
+        assertThat(setting.parse("  5 ")).isEqualTo(5.0);
+        assertThat(compareDoubles.apply(-.123, setting.parse("-0.123"))).isTrue();
+        assertThat(compareDoubles.apply(5.0, setting.parse("5"))).isTrue();
+        assertThatThrownBy(() -> setting.parse("foo")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testList() {
         var setting = setting("setting", listOf(INT));
-        assertEquals(5, setting.parse("5").get(0));
-        assertEquals(0, setting.parse("").size());
-        assertEquals(4, setting.parse("5, 31, -4  ,2").size());
-        assertEquals(Arrays.asList(4, 2, 3, 1), setting.parse("4,2,3,1"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("2,3,foo,7"));
+        assertThat(setting.parse("5").get(0)).isEqualTo(5);
+        assertThat(setting.parse("")).isEmpty();
+        assertThat(setting.parse("5, 31, -4  ,2")).hasSize(4);
+        assertThat(setting.parse("4,2,3,1")).isEqualTo(Arrays.asList(4, 2, 3, 1));
+        assertThatThrownBy(() -> setting.parse("2,3,foo,7")).isInstanceOf(IllegalArgumentException.class);
 
-        assertFalse(setting.valueToString(setting.parse("4,2,3,1")).startsWith("["));
-        assertFalse(setting.valueToString(setting.parse("4,2,3,1")).endsWith("]"));
+        assertThat(setting.valueToString(setting.parse("4,2,3,1"))).doesNotStartWith("[");
+        assertThat(setting.valueToString(setting.parse("4,2,3,1"))).doesNotEndWith("]");
     }
 
     @Test
     void testListValidation() {
         var setting = setting("setting", listOf(POSITIVE_INT));
-        assertDoesNotThrow(() -> setting.validate(List.of(), EMPTY));
-        assertDoesNotThrow(() -> setting.validate(List.of(5), EMPTY));
-        assertDoesNotThrow(() -> setting.validate(List.of(1, 2, 3), EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(List.of(1, -2, 3), EMPTY));
+        assertThatCode(() -> setting.validate(List.of(), EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(List.of(5), EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(List.of(1, 2, 3), EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate(List.of(1, -2, 3), EMPTY))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -177,110 +172,112 @@ class SettingTest {
         assertThat(setting.parse("")).isEmpty();
         assertThat(setting.parse("5, 31, -4  ,2")).containsExactlyInAnyOrder(5, 31, -4, 2);
         assertThat(setting.parse("5, 5, 5, 3, 900, 0")).containsExactlyInAnyOrder(0, 3, 5, 900);
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("2,3,foo,7"));
+        assertThatThrownBy(() -> setting.parse("2,3,foo,7")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testSetValidation() {
         var setting = setting("setting", setOf(POSITIVE_INT));
-        assertDoesNotThrow(() -> setting.validate(Set.of(), EMPTY));
-        assertDoesNotThrow(() -> setting.validate(Set.of(5), EMPTY));
-        assertDoesNotThrow(() -> setting.validate(Set.of(1, 2, 3), EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(Set.of(1, -2, 3), EMPTY));
+        assertThatCode(() -> setting.validate(Set.of(), EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(Set.of(5), EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(Set.of(1, 2, 3), EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate(Set.of(1, -2, 3), EMPTY))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testEnum() {
         var setting = setting("setting", ofEnum(Colors.class));
-        assertEquals(Colors.BLUE, setting.parse("BLUE"));
-        assertEquals(Colors.GREEN, setting.parse("gReEn"));
-        assertEquals(Colors.RED, setting.parse("red"));
-        assertEquals(Colors.RED, setting.parse(" red "));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("orange"));
+        assertThat(setting.parse("BLUE")).isEqualTo(Colors.BLUE);
+        assertThat(setting.parse("gReEn")).isEqualTo(Colors.GREEN);
+        assertThat(setting.parse("red")).isEqualTo(Colors.RED);
+        assertThat(setting.parse(" red ")).isEqualTo(Colors.RED);
+        assertThatThrownBy(() -> setting.parse("orange")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testPartialEnum() {
         var setting = setting("setting", ofPartialEnum(Colors.GREEN, Colors.BLUE));
-        assertEquals(Colors.BLUE, setting.parse("BLUE"));
-        assertEquals(Colors.GREEN, setting.parse("gReEn"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("red"));
+        assertThat(setting.parse("BLUE")).isEqualTo(Colors.BLUE);
+        assertThat(setting.parse("gReEn")).isEqualTo(Colors.GREEN);
+        assertThatThrownBy(() -> setting.parse("red")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testStringEnum() {
         var setting = setting("setting", ofEnum(StringEnum.class));
-        assertEquals(StringEnum.DEFAULT, setting.parse("default"));
-        assertEquals(StringEnum.V_1, setting.parse("1.0"));
-        assertEquals(StringEnum.V_1_1, setting.parse("1.1"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("orange"));
+        assertThat(setting.parse("default")).isEqualTo(StringEnum.DEFAULT);
+        assertThat(setting.parse("1.0")).isEqualTo(StringEnum.V_1);
+        assertThat(setting.parse("1.1")).isEqualTo(StringEnum.V_1_1);
+        assertThatThrownBy(() -> setting.parse("orange")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testBool() {
         var setting = setting("setting", BOOL);
-        assertTrue(setting.parse("True"));
-        assertFalse(setting.parse("false"));
-        assertFalse(setting.parse(FALSE));
-        assertTrue(setting.parse(TRUE));
-        assertTrue(setting.parse(" true "));
-        assertFalse(setting.parse("  false"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("foo"));
+        assertThat(setting.parse("True")).isTrue();
+        assertThat(setting.parse("false")).isFalse();
+        assertThat(setting.parse(FALSE)).isFalse();
+        assertThat(setting.parse(TRUE)).isTrue();
+        assertThat(setting.parse(" true ")).isTrue();
+        assertThat(setting.parse("  false")).isFalse();
+        assertThatThrownBy(() -> setting.parse("foo")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testUnsignedByte() {
         var setting = setting("setting", UNSIGNED_BYTE);
-        assertEquals((byte) 0, setting.parse("0"));
-        assertEquals((byte) 127, setting.parse("127"));
-        assertEquals((byte) -128, setting.parse("128"));
-        assertEquals((byte) -1, setting.parse("255"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("-1"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("256"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("foo"));
+        assertThat(setting.parse("0")).isEqualTo((byte) 0);
+        assertThat(setting.parse("127")).isEqualTo((byte) 127);
+        assertThat(setting.parse("128")).isEqualTo((byte) -128);
+        assertThat(setting.parse("255")).isEqualTo((byte) -1);
+        assertThatThrownBy(() -> setting.parse("-1")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("256")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("foo")).isInstanceOf(IllegalArgumentException.class);
 
-        assertEquals("0", setting.valueToString(setting.parse("0")));
-        assertEquals("127", setting.valueToString(setting.parse("127")));
-        assertEquals("128", setting.valueToString(setting.parse("128")));
-        assertEquals("255", setting.valueToString(setting.parse("255")));
+        assertThat(setting.valueToString(setting.parse("0"))).isEqualTo("0");
+        assertThat(setting.valueToString(setting.parse("127"))).isEqualTo("127");
+        assertThat(setting.valueToString(setting.parse("128"))).isEqualTo("128");
+        assertThat(setting.valueToString(setting.parse("255"))).isEqualTo("255");
     }
 
     @Test
     void testMapPattern() {
         var setting = setting("setting", MAP_PATTERN);
-        assertEquals(Map.of("a", "1"), setting.parse("a=1"));
-        assertEquals(Map.of("a", "1", "b", "2"), setting.parse("a=1;b=2"));
-        assertEquals(Map.of("a", "1"), setting.parse("a=1;a=1"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("a"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("1"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("a=1;b"));
+        assertThat(setting.parse("a=1")).isEqualTo(Map.of("a", "1"));
+        assertThat(setting.parse("a=1;b=2")).isEqualTo(Map.of("a", "1", "b", "2"));
+        assertThat(setting.parse("a=1;a=1")).isEqualTo(Map.of("a", "1"));
+        assertThatThrownBy(() -> setting.parse("a")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("1")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("a=1;b")).isInstanceOf(IllegalArgumentException.class);
 
-        assertEquals("a=1", setting.valueToString(setting.parse("a=1")));
-        assertEquals("a=1;b=2", setting.valueToString(setting.parse("a=1;b=2")));
-        assertEquals("a=1", setting.valueToString(setting.parse("a=1;a=1")));
+        assertThat(setting.valueToString(setting.parse("a=1"))).isEqualTo("a=1");
+        assertThat(setting.valueToString(setting.parse("a=1;b=2"))).isEqualTo("a=1;b=2");
+        assertThat(setting.valueToString(setting.parse("a=1;a=1"))).isEqualTo("a=1");
     }
 
     @Test
     void testDuration() {
         var setting = setting("setting", DURATION);
-        assertEquals(60, setting.parse("1m").toSeconds());
-        assertEquals(60, setting.parse(" 1m ").toSeconds());
-        assertEquals(1000, setting.parse("1s").toMillis());
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("foo"));
+        assertThat(setting.parse("1m").toSeconds()).isEqualTo(60);
+        assertThat(setting.parse(" 1m ").toSeconds()).isEqualTo(60);
+        assertThat(setting.parse("1s").toMillis()).isEqualTo(1000);
+        assertThatThrownBy(() -> setting.parse("foo")).isInstanceOf(IllegalArgumentException.class);
 
-        assertEquals("1s", setting.valueToString(setting.parse("1s")));
-        assertEquals("3m", setting.valueToString(setting.parse("3m")));
+        assertThat(setting.valueToString(setting.parse("1s"))).isEqualTo("1s");
+        assertThat(setting.valueToString(setting.parse("3m"))).isEqualTo("3m");
 
         // Anything less than a millisecond is rounded down
-        assertEquals("0s", setting.valueToString(setting.parse("0s")));
-        assertEquals("0s", setting.valueToString(setting.parse("1ns")));
-        assertEquals("0s", setting.valueToString(setting.parse("999999ns")));
-        assertEquals("0s", setting.valueToString(setting.parse("999μs")));
+        assertThat(setting.valueToString(setting.parse("0s"))).isEqualTo("0s");
+        assertThat(setting.valueToString(setting.parse("1ns"))).isEqualTo("0s");
+        assertThat(setting.valueToString(setting.parse("999999ns"))).isEqualTo("0s");
+        assertThat(setting.valueToString(setting.parse("999μs"))).isEqualTo("0s");
 
         // Time strings containing multiple units are permitted
-        assertEquals("11d19h25m4s50ms", setting.valueToString(setting.parse("11d19h25m4s50ms607μs80ns")));
+        assertThat(setting.valueToString(setting.parse("11d19h25m4s50ms607μs80ns")))
+                .isEqualTo("11d19h25m4s50ms");
         // Weird time strings will be converted to something more readable
-        assertEquals("2m1ms", setting.valueToString(setting.parse("1m60000ms1000000ns")));
+        assertThat(setting.valueToString(setting.parse("1m60000ms1000000ns"))).isEqualTo("2m1ms");
 
         String descriptionWithConstraint = SettingImpl.newBuilder("setting", DURATION, ofMinutes(1))
                 .addConstraint(min(Duration.ofSeconds(10)))
@@ -289,145 +286,135 @@ class SettingTest {
 
         String expected =
                 "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) that is minimum `10s`.";
-        assertEquals(expected, descriptionWithConstraint);
+        assertThat(descriptionWithConstraint).isEqualTo(expected);
     }
 
     @Test
     void testDurationRange() {
         var setting = setting("setting", DURATION_RANGE);
-        assertEquals(60, setting.parse("1m-2m").getMin().toSeconds());
-        assertEquals(120, setting.parse("1m-2m").getMax().toSeconds());
-        assertEquals(60, setting.parse(" 1m-2m ").getMin().toSeconds());
-        assertEquals(120, setting.parse(" 1m-2m ").getMax().toSeconds());
-        assertEquals(1000, setting.parse("1s-2s").getMin().toMillis());
-        assertEquals(2000, setting.parse("1s-2s").getMax().toMillis());
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("1s"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("1s-"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("-1s"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("-1s--2s"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("2s-1s"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("2000ms-1s"));
+        assertThat(setting.parse("1m-2m").getMin().toSeconds()).isEqualTo(60);
+        assertThat(setting.parse("1m-2m").getMax().toSeconds()).isEqualTo(120);
+        assertThat(setting.parse(" 1m-2m ").getMin().toSeconds()).isEqualTo(60);
+        assertThat(setting.parse(" 1m-2m ").getMax().toSeconds()).isEqualTo(120);
+        assertThat(setting.parse("1s-2s").getMin().toMillis()).isEqualTo(1000);
+        assertThat(setting.parse("1s-2s").getMax().toMillis()).isEqualTo(2000);
+        assertThatThrownBy(() -> setting.parse("1s")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("1s-")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("-1s")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("-1s--2s")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("2s-1s")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("2000ms-1s")).isInstanceOf(IllegalArgumentException.class);
 
         // DurationRange may have zero delta
-        assertEquals(1, setting.parse("1s-1s").getMin().toSeconds());
-        assertEquals(1, setting.parse("1s-1s").getMax().toSeconds());
-        assertEquals(0, setting.parse("1s-1s").getDelta().toNanos());
+        assertThat(setting.parse("1s-1s").getMin().toSeconds()).isEqualTo(1);
+        assertThat(setting.parse("1s-1s").getMax().toSeconds()).isEqualTo(1);
+        assertThat(setting.parse("1s-1s").getDelta().toNanos()).isEqualTo(0);
 
-        assertEquals("0ns-0ns", setting.valueToString(setting.parse("0s-0s")));
-        assertEquals("1s-2s", setting.valueToString(setting.parse("1s-2s")));
-        assertEquals("3m-6m", setting.valueToString(setting.parse("[3m-6m]")));
+        assertThat(setting.valueToString(setting.parse("0s-0s"))).isEqualTo("0ns-0ns");
+        assertThat(setting.valueToString(setting.parse("1s-2s"))).isEqualTo("1s-2s");
+        assertThat(setting.valueToString(setting.parse("[3m-6m]"))).isEqualTo("3m-6m");
 
         // Time strings containing multiple units are permitted
-        assertEquals("0ns-1m23s456ms", setting.valueToString(setting.parse("0s-1m23s456ms")));
+        assertThat(setting.valueToString(setting.parse("0s-1m23s456ms"))).isEqualTo("0ns-1m23s456ms");
 
         // Units will be converted to something "more readable"
-        assertEquals("1s-2s500ms", setting.valueToString(setting.parse("1000ms-2500ms")));
+        assertThat(setting.valueToString(setting.parse("1000ms-2500ms"))).isEqualTo("1s-2s500ms");
 
         // Anything less than a millisecond is rounded down
-        assertEquals("0ns-0ns", setting.valueToString(setting.parse("999μs-999999ns")));
-        assertEquals(0, setting.parse("999μs-999999ns").getDelta().toNanos());
+        assertThat(setting.valueToString(setting.parse("999μs-999999ns"))).isEqualTo("0ns-0ns");
+        assertThat(setting.parse("999μs-999999ns").getDelta().toNanos()).isEqualTo(0);
     }
 
     @Test
     void testHostnamePort() {
         var setting = setting("setting", HOSTNAME_PORT);
-        assertEquals(new HostnamePort("localhost", 7474), setting.parse("localhost:7474"));
-        assertEquals(new HostnamePort("localhost", 1000, 2000), setting.parse("localhost:1000-2000"));
-        assertEquals(new HostnamePort("localhost"), setting.parse("localhost"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("localhost:5641:7474"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("localhost:foo"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("7474:localhost"));
+        assertThat(setting.parse("localhost:7474")).isEqualTo(new HostnamePort("localhost", 7474));
+        assertThat(setting.parse("localhost:1000-2000")).isEqualTo(new HostnamePort("localhost", 1000, 2000));
+        assertThat(setting.parse("localhost")).isEqualTo(new HostnamePort("localhost"));
+        assertThatThrownBy(() -> setting.parse("localhost:5641:7474")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("localhost:foo")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("7474:localhost")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testTimeZone() {
         var setting = setting("setting", TIMEZONE);
-        assertEquals(ZoneId.from(ZoneOffset.UTC), setting.parse("+00:00"));
-        assertEquals(ZoneId.from(ZoneOffset.UTC), setting.parse(" +00:00 "));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("foo"));
+        assertThat(setting.parse("+00:00")).isEqualTo(ZoneId.from(ZoneOffset.UTC));
+        assertThat(setting.parse(" +00:00 ")).isEqualTo(ZoneId.from(ZoneOffset.UTC));
+        assertThatThrownBy(() -> setting.parse("foo")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testCidrIp() {
         var setting = setting("setting", CIDR_IP);
-        assertEquals(new IPAddressString("1.1.1.0/8"), setting.parse("1.1.1.0/8"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("garbage"));
+        assertThat(setting.parse("1.1.1.0/8")).isEqualTo(new IPAddressString("1.1.1.0/8"));
+        assertThatThrownBy(() -> setting.parse("garbage")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testSocket() {
         var setting = setting("setting", SOCKET_ADDRESS);
-        assertEquals(new SocketAddress("127.0.0.1", 7474), setting.parse("127.0.0.1:7474"));
-        assertEquals(new SocketAddress("127.0.0.1", 7474), setting.parse("[127.0.0.1]:7474"));
-        assertEquals(new SocketAddress("127.0.0.1", 7474), setting.parse(" 127.0.0.1:7474 "));
-        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("127.0.0.1"));
-        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("[127.0.0.1]"));
-        assertEquals(new SocketAddress(null, 7474), setting.parse(":7474"));
-        assertEquals(
-                new SocketAddress("fd01::9419:4c0e:be04:f0e3", 4332), setting.parse("fd01::9419:4c0e:be04:f0e3:4332"));
-        assertEquals(
-                new SocketAddress("fd01::9419:4c0e:be04:f0e3:4332", -1),
-                setting.parse("[fd01::9419:4c0e:be04:f0e3:4332]"));
-        assertEquals(
-                new SocketAddress("fd01::9419:4c0e:be04:f0e3", 4332),
-                setting.parse("[fd01::9419:4c0e:be04:f0e3]:4332"));
+        assertThat(setting.parse("127.0.0.1:7474")).isEqualTo(new SocketAddress("127.0.0.1", 7474));
+        assertThat(setting.parse("[127.0.0.1]:7474")).isEqualTo(new SocketAddress("127.0.0.1", 7474));
+        assertThat(setting.parse(" 127.0.0.1:7474 ")).isEqualTo(new SocketAddress("127.0.0.1", 7474));
+        assertThat(setting.parse("127.0.0.1")).isEqualTo(new SocketAddress("127.0.0.1", -1));
+        assertThat(setting.parse("[127.0.0.1]")).isEqualTo(new SocketAddress("127.0.0.1", -1));
+        assertThat(setting.parse(":7474")).isEqualTo(new SocketAddress(null, 7474));
+        assertThat(setting.parse("fd01::9419:4c0e:be04:f0e3:4332"))
+                .isEqualTo(new SocketAddress("fd01::9419:4c0e:be04:f0e3", 4332));
+        assertThat(setting.parse("[fd01::9419:4c0e:be04:f0e3:4332]"))
+                .isEqualTo(new SocketAddress("fd01::9419:4c0e:be04:f0e3:4332", -1));
+        assertThat(setting.parse("[fd01::9419:4c0e:be04:f0e3]:4332"))
+                .isEqualTo(new SocketAddress("fd01::9419:4c0e:be04:f0e3", 4332));
     }
 
     @Test
     void testSocketSolve() {
         var setting = setting("setting", SOCKET_ADDRESS);
-        assertEquals(
-                new SocketAddress("localhost", 7473),
-                setting.solveDependency(setting.parse("localhost:7473"), setting.parse("127.0.0.1:7474")));
-        assertEquals(
-                new SocketAddress("127.0.0.1", 7473),
-                setting.solveDependency(setting.parse(":7473"), setting.parse("127.0.0.1:7474")));
-        assertEquals(
-                new SocketAddress("127.0.0.1", 7473),
-                setting.solveDependency(setting.parse(":7473"), setting.parse("127.0.0.1")));
-        assertEquals(
-                new SocketAddress("localhost", 7474),
-                setting.solveDependency(setting.parse("localhost"), setting.parse(":7474")));
-        assertEquals(
-                new SocketAddress("localhost", 7474),
-                setting.solveDependency(setting.parse("localhost"), setting.parse("127.0.0.1:7474")));
-        assertEquals(
-                new SocketAddress("localhost", 7474), setting.solveDependency(null, setting.parse("localhost:7474")));
+        assertThat(setting.solveDependency(setting.parse("localhost:7473"), setting.parse("127.0.0.1:7474")))
+                .isEqualTo(new SocketAddress("localhost", 7473));
+        assertThat(setting.solveDependency(setting.parse(":7473"), setting.parse("127.0.0.1:7474")))
+                .isEqualTo(new SocketAddress("127.0.0.1", 7473));
+        assertThat(setting.solveDependency(setting.parse(":7473"), setting.parse("127.0.0.1")))
+                .isEqualTo(new SocketAddress("127.0.0.1", 7473));
+        assertThat(setting.solveDependency(setting.parse("localhost"), setting.parse(":7474")))
+                .isEqualTo(new SocketAddress("localhost", 7474));
+        assertThat(setting.solveDependency(setting.parse("localhost"), setting.parse("127.0.0.1:7474")))
+                .isEqualTo(new SocketAddress("localhost", 7474));
+        assertThat(setting.solveDependency(null, setting.parse("localhost:7474")))
+                .isEqualTo(new SocketAddress("localhost", 7474));
     }
 
     @Test
     void testSocketOnlyHostname() {
         var setting = setting("setting", SOCKET_ADDRESS_ONLY_HOST_NAME);
-        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("127.0.0.1"));
-        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse(" 127.0.0.1 "));
-        assertEquals(new SocketAddress("127.0.0.1", -1), setting.parse("[127.0.0.1]"));
-        assertEquals(
-                new SocketAddress("fd01::9419:4c0e:be04:f0e3:4332", -1),
-                setting.parse("fd01::9419:4c0e:be04:f0e3:4332"));
+        assertThat(setting.parse("127.0.0.1")).isEqualTo(new SocketAddress("127.0.0.1", -1));
+        assertThat(setting.parse(" 127.0.0.1 ")).isEqualTo(new SocketAddress("127.0.0.1", -1));
+        assertThat(setting.parse("[127.0.0.1]")).isEqualTo(new SocketAddress("127.0.0.1", -1));
+        assertThat(setting.parse("fd01::9419:4c0e:be04:f0e3:4332"))
+                .isEqualTo(new SocketAddress("fd01::9419:4c0e:be04:f0e3:4332", -1));
     }
 
     @Test
     void testSocketOnlyHostnameSolve() {
         var parent = setting("parent", SOCKET_ADDRESS_ONLY_HOST_NAME);
         var child = setting("child", SOCKET_ADDRESS);
-        assertEquals(
-                new SocketAddress("localhost", 7473),
-                child.solveDependency(child.parse("localhost:7473"), parent.parse("127.0.0.1")));
-        assertEquals(
-                new SocketAddress("127.0.0.1", 7473),
-                child.solveDependency(child.parse(":7473"), parent.parse("127.0.0.1")));
-        assertEquals(
-                new SocketAddress("localhost", -1),
-                child.solveDependency(child.parse("localhost"), parent.parse("127.0.0.1")));
-        assertEquals(new SocketAddress("localhost", -1), child.solveDependency(null, parent.parse("localhost")));
+        assertThat(child.solveDependency(child.parse("localhost:7473"), parent.parse("127.0.0.1")))
+                .isEqualTo(new SocketAddress("localhost", 7473));
+        assertThat(child.solveDependency(child.parse(":7473"), parent.parse("127.0.0.1")))
+                .isEqualTo(new SocketAddress("127.0.0.1", 7473));
+        assertThat(child.solveDependency(child.parse("localhost"), parent.parse("127.0.0.1")))
+                .isEqualTo(new SocketAddress("localhost", -1));
+        assertThat(child.solveDependency(null, parent.parse("localhost")))
+                .isEqualTo(new SocketAddress("localhost", -1));
     }
 
     @Test
     void testBytes() {
         var setting = setting("setting", BYTES);
-        assertEquals(2048, setting.parse("2k"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("1gig"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("-1M"));
+        assertThat(setting.parse("2k")).isEqualTo(2048);
+        assertThatThrownBy(() -> setting.parse("1gig")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("-1M")).isInstanceOf(IllegalArgumentException.class);
 
         String descriptionWithConstraint = SettingImpl.newBuilder("setting", BYTES, ByteUnit.gibiBytes(2))
                 .addConstraint(range(ByteUnit.mebiBytes(100), ByteUnit.gibiBytes(10)))
@@ -437,27 +424,28 @@ class SettingTest {
         String expected =
                 "setting, a byte size (valid multipliers are `B`, `KiB`, `KB`, `K`, `kB`, `kb`, `k`, `MiB`, `MB`, `M`, `mB`, `mb`, `m`, "
                         + "`GiB`, `GB`, `G`, `gB`, `gb`, `g`, `TiB`, `TB`, `PiB`, `PB`, `EiB`, `EB`) that is in the range `100.00MiB` to `10.00GiB`.";
-        assertEquals(expected, descriptionWithConstraint);
+        assertThat(descriptionWithConstraint).isEqualTo(expected);
     }
 
     @Test
     void testURI() {
         var setting = setting("setting", SettingValueParsers.URI);
-        assertEquals(URI.create("/path/to/../something/"), setting.parse("/path/to/../something/"));
+        assertThat(setting.parse("/path/to/../something/")).isEqualTo(URI.create("/path/to/../something/"));
     }
 
     @Test
     void testHttpsURI() {
         var setting = setting("setting", SettingValueParsers.HTTPS_URI(true));
-        assertEquals(URI.create("https://www.example.com/path"), setting.parse("https://www.example.com/path"));
+        assertThat(setting.parse("https://www.example.com/path")).isEqualTo(URI.create("https://www.example.com/path"));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"http://www.example.com", "neo4js://database", "/path/to/../something/"})
     void testHttpsURIWithInvalidUris(String uri) {
         var setting = setting("setting", SettingValueParsers.HTTPS_URI(true));
-        var exception = assertThrows(IllegalArgumentException.class, () -> setting.parse(uri));
-        assertEquals(String.format("'%s' does not have required scheme 'https'", uri), exception.getMessage());
+        assertThatThrownBy(() -> setting.parse(uri))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(String.format("'%s' does not have required scheme 'https'", uri));
     }
 
     @ParameterizedTest
@@ -470,84 +458,78 @@ class SettingTest {
             })
     void testHttpURIExemptionForLocalhostURIs(String uri) {
         var setting = setting("setting", SettingValueParsers.HTTPS_URI(true));
-        assertEquals(URI.create(uri), setting.parse(uri));
+        assertThat(setting.parse(uri)).isEqualTo(URI.create(uri));
 
         var invalidSetting = setting("setting", SettingValueParsers.HTTPS_URI(false));
-        var exception = assertThrows(IllegalArgumentException.class, () -> invalidSetting.parse(uri));
-        assertEquals(String.format("'%s' does not have required scheme 'https'", uri), exception.getMessage());
+        assertThatThrownBy(() -> invalidSetting.parse(uri))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(String.format("'%s' does not have required scheme 'https'", uri));
     }
 
     @Test
     void testStringMapWithNoConstraintOnKeys() {
         var setting = setting("setting", SettingValueParsers.MAP_PATTERN);
-        assertEquals(Map.of("k1", "v1", "k2", "v2"), setting.parse("k1=v1;k2=v2"));
+        assertThat(setting.parse("k1=v1;k2=v2")).isEqualTo(Map.of("k1", "v1", "k2", "v2"));
     }
 
     @Test
     void testStringMapWithValuesContainingEquals() {
         var setting = setting("setting", SettingValueParsers.MAP_PATTERN);
-        assertEquals(
-                Map.of("k1", "cn=admin,dc=example,dc=com", "k2", "v2"),
-                setting.parse("k1=cn=admin,dc=example,dc=com;k2=v2"));
+        assertThat(setting.parse("k1=cn=admin,dc=example,dc=com;k2=v2"))
+                .isEqualTo(Map.of("k1", "cn=admin,dc=example,dc=com", "k2", "v2"));
     }
 
     @Test
     void testStringMapWithRequiredKeys() {
         var setting = setting("setting", new SettingValueParsers.MapPattern(Set.of("k1", "k2")));
-        assertEquals(Map.of("k1", "v1", "k2", "v2", "k3", "v3"), setting.parse("k1=v1;k2=v2;k3=v3"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("k1=v1;k3=v3"));
+        assertThat(setting.parse("k1=v1;k2=v2;k3=v3")).isEqualTo(Map.of("k1", "v1", "k2", "v2", "k3", "v3"));
+        assertThatThrownBy(() -> setting.parse("k1=v1;k3=v3")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testStringMapWithRestrictedKeys() {
         var setting = setting("setting", new SettingValueParsers.MapPattern(Set.of("k1"), Set.of("k1", "k2")));
-        assertEquals(Map.of("k1", "v1", "k2", "v2"), setting.parse("k1=v1;k2=v2"));
-        assertEquals(Map.of("k1", "v1"), setting.parse("k1=v1"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("k2=v2"));
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("k1=v1;k3=v3"));
+        assertThat(setting.parse("k1=v1;k2=v2")).isEqualTo(Map.of("k1", "v1", "k2", "v2"));
+        assertThat(setting.parse("k1=v1")).isEqualTo(Map.of("k1", "v1"));
+        assertThatThrownBy(() -> setting.parse("k2=v2")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.parse("k1=v1;k3=v3")).isInstanceOf(IllegalArgumentException.class);
         var settingWithoutRequired = setting("setting", new SettingValueParsers.MapPattern(null, Set.of("k1", "k2")));
-        assertEquals(Map.of("k2", "v2"), settingWithoutRequired.parse("k2=v2"));
+        assertThat(settingWithoutRequired.parse("k2=v2")).isEqualTo(Map.of("k2", "v2"));
     }
 
     @Test
     void testNormalizedRelativeURI() {
         var setting = setting("setting", NORMALIZED_RELATIVE_URI);
-        assertEquals(URI.create("/path/to/something"), setting.parse("/path/away/from/../../to/something/"));
+        assertThat(setting.parse("/path/away/from/../../to/something/")).isEqualTo(URI.create("/path/to/something"));
     }
 
     @Test
     void testPath() {
         var setting = setting("setting", PATH);
-        assertEquals(Path.of("/absolute/path"), setting.parse("/absolute/path"));
-        assertEquals(Path.of("/absolute/path"), setting.parse("/absolute/wrong/../path"));
-        assertEquals(Path.of("/test/escaped/chars/r/n/dir"), setting.parse("\test\\escaped\\chars\r\n\\\\dir"));
+        assertThat(setting.parse("/absolute/path")).isEqualTo(Path.of("/absolute/path"));
+        assertThat(setting.parse("/absolute/wrong/../path")).isEqualTo(Path.of("/absolute/path"));
+        assertThat(setting.parse("\test\\escaped\\chars\r\n\\\\dir")).isEqualTo(Path.of("/test/escaped/chars/r/n/dir"));
     }
 
     @Test
     void testSolvePath() {
         var setting = setting("setting", PATH);
-        assertEquals(
-                Path.of("/base/path/to/file").toAbsolutePath(),
-                setting.solveDependency(
-                        setting.parse("to/file"), setting.parse("/base/path").toAbsolutePath()));
-        assertEquals(
-                Path.of("/to/file").toAbsolutePath(),
-                setting.solveDependency(
-                        setting.parse("/to/file"), setting.parse("/base/path").toAbsolutePath()));
-        assertEquals(
-                Path.of("/base/path/").toAbsolutePath(),
-                setting.solveDependency(
-                        setting.parse(""), setting.parse("/base/path/").toAbsolutePath()));
-        assertEquals(
-                Path.of("/base/path").toAbsolutePath(),
-                setting.solveDependency(
-                        setting.parse("path"), setting.parse("/base").toAbsolutePath()));
-        assertEquals(
-                Path.of("/base").toAbsolutePath(),
-                setting.solveDependency(null, setting.parse("/base").toAbsolutePath()));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> setting.solveDependency(setting.parse("path"), setting.parse("base")));
+        assertThat(setting.solveDependency(
+                        setting.parse("to/file"), setting.parse("/base/path").toAbsolutePath()))
+                .isEqualTo(Path.of("/base/path/to/file").toAbsolutePath());
+        assertThat(setting.solveDependency(
+                        setting.parse("/to/file"), setting.parse("/base/path").toAbsolutePath()))
+                .isEqualTo(Path.of("/to/file").toAbsolutePath());
+        assertThat(setting.solveDependency(
+                        setting.parse(""), setting.parse("/base/path/").toAbsolutePath()))
+                .isEqualTo(Path.of("/base/path/").toAbsolutePath());
+        assertThat(setting.solveDependency(
+                        setting.parse("path"), setting.parse("/base").toAbsolutePath()))
+                .isEqualTo(Path.of("/base/path").toAbsolutePath());
+        assertThat(setting.solveDependency(null, setting.parse("/base").toAbsolutePath()))
+                .isEqualTo(Path.of("/base").toAbsolutePath());
+        assertThatThrownBy(() -> setting.solveDependency(setting.parse("path"), setting.parse("base")))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -588,14 +570,14 @@ class SettingTest {
         };
         var actualSettings = setting.parse(String.join(System.lineSeparator(), inputs));
         var expectedSettings = String.join(System.lineSeparator(), outputs);
-        assertEquals(expectedSettings, actualSettings);
+        assertThat(actualSettings).isEqualTo(expectedSettings);
     }
 
     @Test
     void testJvmAdditionalBadQuoting() {
         // A JVM setting starting with a quote should have an end quote
         var setting = setting("setting", JVM_ADDITIONAL);
-        assertThrows(IllegalArgumentException.class, () -> setting.parse("\"missing_end_quote"));
+        assertThatThrownBy(() -> setting.parse("\"missing_end_quote")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -625,28 +607,28 @@ class SettingTest {
         };
 
         var setting = setting("setting", defaultSolver);
-        assertEquals("foo", setting.solveDependency("foo", "bar"));
-        assertEquals("bar", setting.solveDependency(null, "bar"));
-        assertEquals("foo", setting.solveDependency("foo", null));
-        assertNull(setting.solveDependency(null, null));
+        assertThat(setting.solveDependency("foo", "bar")).isEqualTo("foo");
+        assertThat(setting.solveDependency(null, "bar")).isEqualTo("bar");
+        assertThat(setting.solveDependency("foo", null)).isEqualTo("foo");
+        assertThat(setting.solveDependency(null, null)).isNull();
     }
 
     @Test
     void testMinConstraint() {
         var setting = (SettingImpl<Integer>)
                 settingBuilder("setting", INT).addConstraint(min(10)).build();
-        assertDoesNotThrow(() -> setting.validate(100, EMPTY));
-        assertDoesNotThrow(() -> setting.validate(10, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(9, EMPTY));
+        assertThatCode(() -> setting.validate(100, EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(10, EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate(9, EMPTY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testMaxConstraint() {
         var setting = (SettingImpl<Integer>)
                 settingBuilder("setting", INT).addConstraint(max(10)).build();
-        assertDoesNotThrow(() -> setting.validate(-100, EMPTY));
-        assertDoesNotThrow(() -> setting.validate(10, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(11, EMPTY));
+        assertThatCode(() -> setting.validate(-100, EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(10, EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate(11, EMPTY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -655,10 +637,10 @@ class SettingTest {
                 .addConstraint(range(10.0, 20.0))
                 .build();
 
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(9.9, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(20.01, EMPTY));
-        assertDoesNotThrow(() -> setting.validate(10.1, EMPTY));
-        assertDoesNotThrow(() -> setting.validate(19.9999, EMPTY));
+        assertThatThrownBy(() -> setting.validate(9.9, EMPTY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> setting.validate(20.01, EMPTY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatCode(() -> setting.validate(10.1, EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(19.9999, EMPTY)).doesNotThrowAnyException();
     }
 
     @Test
@@ -684,55 +666,66 @@ class SettingTest {
                 .addConstraint(lessThanOrEqual(intLimit))
                 .build();
         // Then
-        assertDoesNotThrow(() -> mustBeLessSetting.validate(-1, simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessSetting.validate(0, simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessSetting.validate(1, simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessSetting.validate(5, simpleConfig));
-        assertThrows(IllegalArgumentException.class, () -> mustBeLessSetting.validate(6, simpleConfig));
+        assertThatCode(() -> mustBeLessSetting.validate(-1, simpleConfig)).doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessSetting.validate(0, simpleConfig)).doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessSetting.validate(1, simpleConfig)).doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessSetting.validate(5, simpleConfig)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> mustBeLessSetting.validate(6, simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
 
         // When
         var mustBeLessThanHalfSetting = (SettingImpl<Integer>) settingBuilder("less.than.half.int", INT)
                 .addConstraint(lessThanOrEqual(i -> (long) i, intLimit, i -> i / 2, "divided by 2"))
                 .build();
         // Then
-        assertDoesNotThrow(() -> mustBeLessThanHalfSetting.validate(-1, simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessThanHalfSetting.validate(0, simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessThanHalfSetting.validate(2, simpleConfig));
-        assertThrows(IllegalArgumentException.class, () -> mustBeLessThanHalfSetting.validate(3, simpleConfig));
+        assertThatCode(() -> mustBeLessThanHalfSetting.validate(-1, simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessThanHalfSetting.validate(0, simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessThanHalfSetting.validate(2, simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> mustBeLessThanHalfSetting.validate(3, simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
 
         // When
         var mustBeLessDuration = (SettingImpl<Duration>) settingBuilder("less.than.duration", DURATION)
                 .addConstraint(lessThanOrEqual(Duration::toMillis, durationLimit))
                 .build();
         // Then
-        assertDoesNotThrow(() -> mustBeLessDuration.validate(Duration.ofSeconds(-1), simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessDuration.validate(Duration.ofSeconds(0), simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessDuration.validate(Duration.ofMinutes(1), simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessDuration.validate(Duration.ofSeconds(123), simpleConfig));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> mustBeLessDuration.validate(Duration.ofMillis(123001), simpleConfig));
+        assertThatCode(() -> mustBeLessDuration.validate(Duration.ofSeconds(-1), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessDuration.validate(Duration.ofSeconds(0), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessDuration.validate(Duration.ofMinutes(1), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessDuration.validate(Duration.ofSeconds(123), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> mustBeLessDuration.validate(Duration.ofMillis(123001), simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
 
         // When
         var mustBeLessThanHalfDuration = (SettingImpl<Duration>) settingBuilder("less.than.duration", DURATION)
                 .addConstraint(lessThanOrEqual(Duration::toMillis, durationLimit, i -> i / 2, "divided by 2"))
                 .build();
         // Then
-        assertDoesNotThrow(() -> mustBeLessThanHalfDuration.validate(Duration.ofSeconds(-1), simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessThanHalfDuration.validate(Duration.ofSeconds(0), simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessThanHalfDuration.validate(Duration.ofMinutes(1), simpleConfig));
-        assertDoesNotThrow(() -> mustBeLessThanHalfDuration.validate(Duration.ofSeconds(61), simpleConfig));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> mustBeLessThanHalfDuration.validate(Duration.ofMillis(61501), simpleConfig));
+        assertThatCode(() -> mustBeLessThanHalfDuration.validate(Duration.ofSeconds(-1), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessThanHalfDuration.validate(Duration.ofSeconds(0), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessThanHalfDuration.validate(Duration.ofMinutes(1), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> mustBeLessThanHalfDuration.validate(Duration.ofSeconds(61), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> mustBeLessThanHalfDuration.validate(Duration.ofMillis(61501), simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testExceptConstraint() {
         var setting = (SettingImpl<String>)
                 settingBuilder("setting", STRING).addConstraint(except("foo")).build();
-        assertThrows(IllegalArgumentException.class, () -> setting.validate("foo", EMPTY));
-        assertDoesNotThrow(() -> setting.validate("bar", EMPTY));
+        assertThatThrownBy(() -> setting.validate("foo", EMPTY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatCode(() -> setting.validate("bar", EMPTY)).doesNotThrowAnyException();
     }
 
     @Test
@@ -740,25 +733,25 @@ class SettingTest {
         var setting = (SettingImpl<String>) settingBuilder("setting", STRING)
                 .addConstraint(matches("^[^.]+\\.[^.]+$"))
                 .build();
-        assertDoesNotThrow(() -> setting.validate("foo.bar", EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate("foo", EMPTY));
+        assertThatCode(() -> setting.validate("foo.bar", EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate("foo", EMPTY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testPowerOf2Constraint() {
         var setting = (SettingImpl<Long>)
                 settingBuilder("setting", LONG).addConstraint(POWER_OF_2).build();
-        assertDoesNotThrow(() -> setting.validate(8L, EMPTY));
-        assertDoesNotThrow(() -> setting.validate(4294967296L, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(1023L, EMPTY));
+        assertThatCode(() -> setting.validate(8L, EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(4294967296L, EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate(1023L, EMPTY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testIsConstraint() {
         var setting = (SettingImpl<Integer>)
                 settingBuilder("setting", INT).addConstraint(is(10)).build();
-        assertDoesNotThrow(() -> setting.validate(10, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> setting.validate(9, EMPTY));
+        assertThatCode(() -> setting.validate(10, EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate(9, EMPTY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -766,26 +759,29 @@ class SettingTest {
         var intSetting = (SettingImpl<Integer>) settingBuilder("setting", INT)
                 .addConstraint(any(min(30), is(0), is(-10)))
                 .build();
-        assertDoesNotThrow(() -> intSetting.validate(30, EMPTY));
-        assertDoesNotThrow(() -> intSetting.validate(100, EMPTY));
-        assertDoesNotThrow(() -> intSetting.validate(0, EMPTY));
-        assertDoesNotThrow(() -> intSetting.validate(-10, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> intSetting.validate(29, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> intSetting.validate(1, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> intSetting.validate(-9, EMPTY));
+        assertThatCode(() -> intSetting.validate(30, EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> intSetting.validate(100, EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> intSetting.validate(0, EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> intSetting.validate(-10, EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> intSetting.validate(29, EMPTY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> intSetting.validate(1, EMPTY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> intSetting.validate(-9, EMPTY)).isInstanceOf(IllegalArgumentException.class);
 
         var durationSetting = (SettingImpl<Duration>) settingBuilder("setting", DURATION)
                 .addConstraint(any(min(ofMinutes(30)), is(Duration.ZERO)))
                 .build();
-        assertDoesNotThrow(() -> durationSetting.validate(ofMinutes(30), EMPTY));
-        assertDoesNotThrow(() -> durationSetting.validate(Duration.ofHours(1), EMPTY));
-        assertDoesNotThrow(() -> durationSetting.validate(Duration.ZERO, EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> durationSetting.validate(ofMinutes(29), EMPTY));
-        assertThrows(IllegalArgumentException.class, () -> durationSetting.validate(Duration.ofMillis(1), EMPTY));
+        assertThatCode(() -> durationSetting.validate(ofMinutes(30), EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> durationSetting.validate(Duration.ofHours(1), EMPTY))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> durationSetting.validate(Duration.ZERO, EMPTY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> durationSetting.validate(ofMinutes(29), EMPTY))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> durationSetting.validate(Duration.ofMillis(1), EMPTY))
+                .isInstanceOf(IllegalArgumentException.class);
 
         String expected =
                 "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) that is minimum `30m` or is `0s`.";
-        assertEquals(expected, durationSetting.description());
+        assertThat(durationSetting.description()).isEqualTo(expected);
     }
 
     @Test
@@ -816,30 +812,31 @@ class SettingTest {
         settings.put(intSetting, 5);
         settings.put(enumSetting, Colors.BLUE);
         // Then
-        assertDoesNotThrow(() -> dependingIntSetting.validate(3, simpleConfig));
-        assertThrows(IllegalArgumentException.class, () -> dependingIntSetting.validate(4, simpleConfig));
+        assertThatCode(() -> dependingIntSetting.validate(3, simpleConfig)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> dependingIntSetting.validate(4, simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
 
-        assertDoesNotThrow(() -> dependingEnumSetting.validate(List.of("a", "b"), simpleConfig));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> dependingEnumSetting.validate(List.of("a", "b", "c"), simpleConfig));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> dependingEnumSetting.validate(List.of("a", "b", "c", "d"), simpleConfig));
+        assertThatCode(() -> dependingEnumSetting.validate(List.of("a", "b"), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> dependingEnumSetting.validate(List.of("a", "b", "c"), simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> dependingEnumSetting.validate(List.of("a", "b", "c", "d"), simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
 
         // When
         settings.put(intSetting, 2);
         settings.put(enumSetting, Colors.GREEN);
         // Then
-        assertDoesNotThrow(() -> dependingIntSetting.validate(4, simpleConfig));
-        assertThrows(IllegalArgumentException.class, () -> dependingIntSetting.validate(8, simpleConfig));
+        assertThatCode(() -> dependingIntSetting.validate(4, simpleConfig)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> dependingIntSetting.validate(8, simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
 
-        assertDoesNotThrow(() -> dependingEnumSetting.validate(List.of("a", "b", "c", "d"), simpleConfig));
-        assertThrows(
-                IllegalArgumentException.class, () -> dependingEnumSetting.validate(List.of("a", "b"), simpleConfig));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> dependingEnumSetting.validate(List.of("a", "b", "c"), simpleConfig));
+        assertThatCode(() -> dependingEnumSetting.validate(List.of("a", "b", "c", "d"), simpleConfig))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> dependingEnumSetting.validate(List.of("a", "b"), simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> dependingEnumSetting.validate(List.of("a", "b", "c"), simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -867,18 +864,16 @@ class SettingTest {
                 .build();
 
         // Then
-        assertEquals("setting.name, a long that is power of 2.", oneConstraintSetting.description());
-        assertEquals(
-                "setting.name, an integer that is minimum `2` and is maximum `10`.",
-                twoConstraintSetting.description());
-        assertEquals(
-                "setting.depending.name, a comma-separated list where each element is a string, which depends on setting.name."
-                        + " If setting.name is `BLUE` then it is of size `2` otherwise it is of size `4`.",
-                dependencySetting1.description());
-        assertEquals(
-                "setting.depending.name, an integer that depends on setting.name."
-                        + " If setting.name is minimum `3` then it is maximum `3` otherwise it is maximum `7`.",
-                dependencySetting2.description());
+        assertThat(oneConstraintSetting.description()).isEqualTo("setting.name, a long that is power of 2.");
+        assertThat(twoConstraintSetting.description())
+                .isEqualTo("setting.name, an integer that is minimum `2` and is maximum `10`.");
+        assertThat(dependencySetting1.description())
+                .isEqualTo(
+                        "setting.depending.name, a comma-separated list where each element is a string, which depends on setting.name."
+                                + " If setting.name is `BLUE` then it is of size `2` otherwise it is of size `4`.");
+        assertThat(dependencySetting2.description())
+                .isEqualTo("setting.depending.name, an integer that depends on setting.name."
+                        + " If setting.name is minimum `3` then it is maximum `3` otherwise it is maximum `7`.");
     }
 
     @Test
@@ -888,14 +883,13 @@ class SettingTest {
                         .build();
 
         var parsedSetting = enumSetting.parse("red, blue");
-        assertEquals(2, parsedSetting.size());
-        assertTrue(parsedSetting.containsAll(List.of(Colors.BLUE, Colors.RED)));
-        assertTrue(enumSetting.parse("").isEmpty());
-        assertEquals(
-                "setting.name, a comma-separated list where each element is one of [BLUE, GREEN, RED].",
-                enumSetting.description());
-        assertEquals(List.of(Colors.GREEN), enumSetting.defaultValue());
-        assertThrows(IllegalArgumentException.class, () -> enumSetting.parse("blue, kaputt"));
+        assertThat(parsedSetting).hasSize(2);
+        assertThat(parsedSetting).containsAll(List.of(Colors.BLUE, Colors.RED));
+        assertThat(enumSetting.parse("")).isEmpty();
+        assertThat(enumSetting.description())
+                .isEqualTo("setting.name, a comma-separated list where each element is one of [BLUE, GREEN, RED].");
+        assertThat(enumSetting.defaultValue()).isEqualTo(List.of(Colors.GREEN));
+        assertThatThrownBy(() -> enumSetting.parse("blue, kaputt")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -905,14 +899,13 @@ class SettingTest {
                         .build();
 
         var parsedSetting = enumSetting.parse("red, blue, red");
-        assertEquals(2, parsedSetting.size());
-        assertTrue(parsedSetting.containsAll(List.of(Colors.BLUE, Colors.RED)));
-        assertTrue(enumSetting.parse("").isEmpty());
-        assertEquals(
-                "setting.name, a comma-separated set where each element is one of [BLUE, GREEN, RED].",
-                enumSetting.description());
-        assertEquals(Set.of(Colors.GREEN), enumSetting.defaultValue());
-        assertThrows(IllegalArgumentException.class, () -> enumSetting.parse("blue, kaputt"));
+        assertThat(parsedSetting).hasSize(2);
+        assertThat(parsedSetting).containsAll(List.of(Colors.BLUE, Colors.RED));
+        assertThat(enumSetting.parse("")).isEmpty();
+        assertThat(enumSetting.description())
+                .isEqualTo("setting.name, a comma-separated set where each element is one of [BLUE, GREEN, RED].");
+        assertThat(enumSetting.defaultValue()).isEqualTo(Set.of(Colors.GREEN));
+        assertThatThrownBy(() -> enumSetting.parse("blue, kaputt")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -920,14 +913,12 @@ class SettingTest {
         var setting = (SettingImpl<List<String>>) settingBuilder("setting", listOf(STRING))
                 .addConstraint(noDuplicates())
                 .build();
-        assertDoesNotThrow(() -> setting.validate(List.of("a", "b"), EMPTY));
-        assertDoesNotThrow(() -> setting.validate(List.of(), EMPTY));
+        assertThatCode(() -> setting.validate(List.of("a", "b"), EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(List.of(), EMPTY)).doesNotThrowAnyException();
 
-        var exception =
-                assertThrows(IllegalArgumentException.class, () -> setting.validate(List.of("a", "b", "b"), EMPTY));
-        assertEquals(
-                "Failed to validate '[a, b, b]' for 'setting': items should not have duplicates: a,b,b",
-                exception.getMessage());
+        assertThatThrownBy(() -> setting.validate(List.of("a", "b", "b"), EMPTY))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Failed to validate '[a, b, b]' for 'setting': items should not have duplicates: a,b,b");
     }
 
     @Test
@@ -949,17 +940,16 @@ class SettingTest {
         // When
         settings.put(booleanSetting, java.lang.Boolean.TRUE);
         // Then
-        assertDoesNotThrow(() -> setting.validate(1, simpleConfig));
-        assertDoesNotThrow(() -> setting.validate(2, simpleConfig));
+        assertThatCode(() -> setting.validate(1, simpleConfig)).doesNotThrowAnyException();
+        assertThatCode(() -> setting.validate(2, simpleConfig)).doesNotThrowAnyException();
 
         // When
         settings.put(booleanSetting, java.lang.Boolean.FALSE);
         // Then
-        assertDoesNotThrow(() -> setting.validate(1, simpleConfig));
-        var exception = assertThrows(IllegalArgumentException.class, () -> setting.validate(2, simpleConfig));
-        assertEquals(
-                "Failed to validate '2' for 'setting': 2 is not allowed since 'bool-setting' was false",
-                exception.getMessage());
+        assertThatCode(() -> setting.validate(1, simpleConfig)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> setting.validate(2, simpleConfig))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Failed to validate '2' for 'setting': 2 is not allowed since 'bool-setting' was false");
     }
 
     @TestFactory
@@ -997,7 +987,7 @@ class SettingTest {
                 .setDependency(parent)
                 .build();
 
-        assertEquals(expectedDescription, child.description());
+        assertThat(child.description()).isEqualTo(expectedDescription);
     }
 
     @Test
@@ -1066,7 +1056,7 @@ class SettingTest {
         settings.put(setting2, name2);
 
         // then
-        assertDoesNotThrow(() -> setting1.validate(name1, simpleConfig));
+        assertThatCode(() -> setting1.validate(name1, simpleConfig)).doesNotThrowAnyException();
         assertThatThrownBy(() -> setting2.validate(name2, simpleConfig))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cannot be set in combination with");
