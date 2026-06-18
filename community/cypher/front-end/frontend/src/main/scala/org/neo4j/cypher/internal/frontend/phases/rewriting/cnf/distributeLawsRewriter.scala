@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -69,10 +70,27 @@ case class distributeLawsRewriter(
   )
 
   private val step: Rewriter = Rewriter.lift {
+    // don't duplicate FALSE literal
+    case p @ Or(exp1, AndContainingFalse(f)) =>
+      Or(exp1, f)(p.position)
+    case p @ Or(AndContainingFalse(f), exp2) =>
+      Or(f, exp2)(p.position)
+
     case p @ Or(exp1, And(exp2, exp3)) if allowedToDuplicate(exp1) =>
       And(Or(exp1, exp2)(p.position), Or(exp1.endoRewrite(copyVariables), exp3)(p.position))(p.position)
     case p @ Or(And(exp1, exp2), exp3) if allowedToDuplicate(exp3) =>
       And(Or(exp1, exp3)(p.position), Or(exp2, exp3.endoRewrite(copyVariables))(p.position))(p.position)
+  }
+
+  private object AndContainingFalse {
+
+    def unapply(and: And): Option[False] = {
+      and match {
+        case And(f @ False(), _) => Some(f)
+        case And(_, f @ False()) => Some(f)
+        case _                   => None
+      }
+    }
   }
 
   private val rewriteOrRepeatedly: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)

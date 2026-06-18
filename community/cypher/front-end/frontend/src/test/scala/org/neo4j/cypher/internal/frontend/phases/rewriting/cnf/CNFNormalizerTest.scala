@@ -179,6 +179,13 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     verify(astRewritingMonitor).abortedRewritingDueToLargeDNF(any())
   }
 
+  test("shouldn't distribute over conjunction containing FALSE, simplify instead") {
+    or(P, and(FALSE, R)) <=> bool(P)
+    or(P, and(R, FALSE)) <=> bool(P)
+    or(and(FALSE, R), P) <=> bool(P)
+    or(and(R, FALSE), P) <=> bool(P)
+  }
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     val monitors = mock[Monitors]

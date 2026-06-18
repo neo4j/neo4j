@@ -263,6 +263,13 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
     dnfCounts(or(or(P, and(Q, R)), or(P, and(Q, R)))) should be(2)
   }
 
+  test("shouldn't distribute over conjunction containing FALSE, simplify instead") {
+    or(P, and(FALSE, R)) <=> or(P, FALSE)
+    or(P, and(R, FALSE)) <=> or(P, FALSE)
+    or(and(FALSE, R), P) <=> or(FALSE, P)
+    or(and(R, FALSE), P) <=> or(FALSE, P)
+  }
+
   @tailrec
   private def combineUntilLimit(start: Expression, limit: Int): Expression =
     if (limit > 0)
