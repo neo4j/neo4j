@@ -165,6 +165,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
     }
 
     public long initialise() throws IOException {
+        clearCache();
         logsRepository.initialise();
         return recoverLogTail(0, true);
     }
@@ -274,7 +275,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
 
     private void closeCurrentWriteChannel() throws IOException {
         if (appendingChannel != null) {
-            appendingChannel.prepareForFlush().flush();
             appendingChannel.close();
             appendingChannel = null;
         }
@@ -453,10 +453,7 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
 
     @Override
     public void close() throws IOException {
-        if (appendingChannel != null) {
-            appendingChannel.close();
-            currentWriteChannel = null;
-        }
+        closeCurrentWriteChannel();
     }
 
     @VisibleForTesting
@@ -624,10 +621,10 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
         LogHeader header =
                 LogHeaderReader.readLogHeader(logChannelCtx.channel(), true, logChannelCtx.path(), memoryTracker);
         if (header == null) {
+            long position = logChannelCtx.channel().position();
             logChannelCtx.close();
             // Either there was nothing at all, or we read one byte and saw that it was a preallocated file.
-            throw new IncompleteLogHeaderException(
-                    logChannelCtx.path(), (int) logChannelCtx.channel().position(), -1);
+            throw new IncompleteLogHeaderException(logChannelCtx.path(), (int) position, -1);
         }
         return header;
     }
