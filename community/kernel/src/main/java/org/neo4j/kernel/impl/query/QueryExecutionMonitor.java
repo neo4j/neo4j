@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.impl.query.statistic.PlanDetailsToBeLogged;
 
 public interface QueryExecutionMonitor {
     void startProcessing(ExecutingQuery query);
@@ -41,9 +42,9 @@ public interface QueryExecutionMonitor {
      *
      * @param executionPlanCacheKeyHash the hash of the execution plan cache key, as an 8-character hex string
      * @param queryId the id of the query that introduced the execution plan
-     * @param planDescription the tree table rendered query plan description
+     * @param planDetails all details of the query plan that need to be logged
      */
-    default void planComputed(String executionPlanCacheKeyHash, String queryId, String planDescription) {}
+    default void planComputed(String executionPlanCacheKeyHash, String queryId, PlanDetailsToBeLogged planDetails) {}
 
     QueryExecutionMonitor NO_OP = new QueryExecutionMonitor() {
         @Override

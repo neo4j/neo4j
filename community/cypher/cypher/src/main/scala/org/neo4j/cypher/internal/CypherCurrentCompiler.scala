@@ -106,6 +106,7 @@ import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.statistic.PlanDetailsToBeLogged
 import org.neo4j.monitoring.Monitors
 import org.neo4j.notifications.NotificationImplementation
 import org.neo4j.values.virtual.MapValue
@@ -347,8 +348,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       )
       val cacheKeyHashHex = String.format("%08X", executionPlanCacheKeyHash)
       val queryId = executingQuery.id()
-      val planDescription = planDescriptionBuilder.explain().toString
-      queryExecutionMonitor.planComputed(cacheKeyHashHex, queryId, planDescription)
+      val internalPlanDescription = planDescriptionBuilder.explain()
+      val planDescriptionInfoToLog = internalPlanDescription.logInfo()
+      queryExecutionMonitor.planComputed(cacheKeyHashHex, queryId, new PlanDetailsToBeLogged(planDescriptionInfoToLog))
     } catch {
       case _: Exception => // Best effort logging, don't fail the query
     }

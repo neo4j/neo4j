@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.neo4j.kernel.impl.query.statistic.PlanDetailsToBeLogged;
+
 /**
  * Logger for query plan cache events.
  * Called when a new execution plan is computed and inserted into the execution plan cache.
@@ -32,7 +34,7 @@ public interface QueryPlanLogger {
      *
      * @param executionPlanCacheKeyHash the hash of the execution plan cache key, as an 8-character hex string
      * @param queryId the id of the query that introduced the execution plan
-     * @param planDescription the tree table rendered query plan description
+     * @param planDetails all details of a query plan that need to be logged
      */
-    void planComputed(String executionPlanCacheKeyHash, String queryId, String planDescription);
+    void planComputed(String executionPlanCacheKeyHash, String queryId, PlanDetailsToBeLogged planDetails);
 }

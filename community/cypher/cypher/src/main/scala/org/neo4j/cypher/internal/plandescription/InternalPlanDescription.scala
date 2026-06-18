@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
+import org.neo4j.kernel.impl.query.statistic.PlanOperatorDetailsToBeLogged
 
 import java.util
 import java.util.Locale
@@ -110,6 +111,42 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
       case Details(info) => info.contains(asPrettyString.raw(infoString))
       case _             => false
     }
+
+  private def logInfoSingleOperator(): PlanOperatorDetailsToBeLogged = {
+    val result = new PlanOperatorDetailsToBeLogged()
+
+    result.setOperatorName(name)
+    result.setOperatorId(id.x)
+
+    if (children.nonEmpty) result.setLeftOperatorId(children.head.id.x)
+    if (children.size > 1) result.setRightOperatorId(children(1).id.x)
+
+    arguments.foreach {
+      case Arguments.Details(detailsString) if detailsString.nonEmpty =>
+        result.setDetails(detailsString.mkString(", "))
+      case Arguments.EstimatedRows(effectiveCardinality, cardinality) =>
+        val m = new java.util.LinkedHashMap[String, java.lang.Double]()
+        m.put("effectiveCardinality", effectiveCardinality)
+        cardinality.foreach(c => m.put("rawCardinality", c))
+        result.setEstimatedRows(m)
+      case Arguments.Order(orderString) =>
+        result.setOrder(orderString.prettifiedString)
+      case Arguments.Distinctness(distinctnessString) =>
+        val distinctnessPrettified = distinctnessString.prettifiedString
+        if (distinctnessPrettified.nonEmpty) result.setDistinctness(distinctnessPrettified)
+      case Arguments.PipelineInfo(pipelineId, _, markAsSerial) =>
+        val m = new java.util.LinkedHashMap[String, Object]()
+        m.put("pipelineId", pipelineId.toString)
+        m.put("requiresSerialExecution", Boolean.box(markAsSerial))
+        result.setPipelineInfo(m)
+      case _ =>
+    }
+    result
+  }
+
+  def logInfo(): Array[PlanOperatorDetailsToBeLogged] = {
+    flatten.map(_.logInfoSingleOperator()).toArray
+  }
 
   // Implement public Java API here=
   override def getName: String = name
