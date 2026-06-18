@@ -29,11 +29,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
@@ -219,6 +222,29 @@ class ArchiveTest {
                 .isEqualTo(describeRecursively(expectedOutput));
         assertThat(describeRecursively(newDatabaseLayout.getTransactionLogsDirectory()))
                 .isEqualTo(describeRecursively(expectedTxLogs));
+    }
+
+    @Test
+    void dumpZstdShouldWriteMetadataRegardlessOfProgressPrinter() throws IOException {
+        Path archive = testDirectory.file("the-archive.dump");
+        Path content = testDirectory.file("content");
+        byte[] data = new byte[] {1, 2, 3, 4};
+        try (var os =
+                filesystem.openAsOutputStream(content, Set.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
+            os.write(data);
+        }
+
+        Manifest manifest = Manifest.builder().add(content).build();
+
+        Dumper dumper = new Dumper(filesystem); // No progress printer
+        dumper.dump(FileOutput.of(filesystem, archive), new DumpZstdFormatV1(), manifest);
+
+        Loader loader = new Loader(filesystem);
+        var metadata = loader.getMetaData(
+                archive, filesystem, () -> filesystem.openAsInputStream(archive), DumpFormatSelector::decompress);
+        assertThat(metadata.sizeMeta()).isNotNull();
+        assertThat(metadata.sizeMeta().bytes()).isEqualTo(data.length);
+        assertThat(metadata.sizeMeta().files()).isEqualTo(1);
     }
 
     public static Stream<DumpFormat> formats() {

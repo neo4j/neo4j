@@ -40,6 +40,7 @@ import java.util.function.Predicate;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.Util;
+import org.neo4j.dbms.archive.Manifest.FileRecord;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.graphdb.Resource;
@@ -119,15 +120,21 @@ public class Dumper {
      */
     public void dump(DumpOutput dot, DumpFormat format, Manifest mf) throws IOException {
         progressPrinter.reset();
+        long numFiles = 0;
+        long numBytes = 0;
         for (Manifest.ManifestRecord record : mf.files()) {
-            progressPrinter.maxBytes(progressPrinter.maxBytes() + fs.getFileSize(record.source()));
-            progressPrinter.maxFiles(progressPrinter.maxFiles() + (record instanceof Manifest.FileRecord ? 1 : 0));
+            if (record instanceof FileRecord fileRecord) {
+                numFiles += 1;
+                numBytes += fileRecord.size();
+            }
         }
+        progressPrinter.maxBytes(numBytes);
+        progressPrinter.maxFiles(numFiles);
 
         try (OutputStream compress = format.compress(dot.stream())) {
             // Add enough archive meta-data that the load command can print a meaningful progress indicator.
             if (StandardCompressionFormat.ZSTD.isFormat(compress)) {
-                writeArchiveMetadata(compress);
+                writeArchiveMetadata(compress, numFiles, numBytes);
             }
 
             Tarball.Writer progressWriter = (pth, os) -> {
@@ -148,11 +155,11 @@ public class Dumper {
     /**
      * @see Loader#readArchiveSizeMetadata(InputStream)
      */
-    void writeArchiveMetadata(OutputStream stream) throws IOException {
+    void writeArchiveMetadata(OutputStream stream, long numFiles, long numBytes) throws IOException {
         DataOutputStream metadata = new DataOutputStream(stream); // Unbuffered. No need for flushing.
         metadata.writeInt(1); // Archive format version. Increment whenever the metadata format changes.
-        metadata.writeLong(progressPrinter.maxFiles());
-        metadata.writeLong(progressPrinter.maxBytes());
+        metadata.writeLong(numFiles);
+        metadata.writeLong(numBytes);
     }
 
     public interface DumpFormat extends CompressionFormat {}
