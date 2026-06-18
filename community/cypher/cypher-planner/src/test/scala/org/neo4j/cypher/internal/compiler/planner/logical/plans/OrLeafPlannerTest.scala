@@ -188,7 +188,6 @@ class OrLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningTestS
 
   test("should only generate a plan where the solved predicates are a subset of the input query graph") {
     val orLeafPlanner = orleafPlannerWithSubplans
-    var numSuccessfulOrLeafsPlanned = 0
 
     forAll { (queryGraph: QueryGraph) =>
       new givenPlanWithMinimumCardinalityEnabled {
@@ -222,8 +221,6 @@ class OrLeafPlannerTest extends CypherPlannerTestSuite with LogicalPlanningTestS
             )
           }
         }
-        if (resultPlans.nonEmpty)
-          numSuccessfulOrLeafsPlanned += 1
       }
     }
   }

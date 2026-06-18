@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.invariantTypeSpec
 import org.neo4j.graphdb.schema.IndexType
 
 import scala.language.reflectiveCalls

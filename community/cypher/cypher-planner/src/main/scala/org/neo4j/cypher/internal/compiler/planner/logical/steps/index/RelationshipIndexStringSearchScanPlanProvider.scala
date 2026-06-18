@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.exceptions.InternalException
 
 object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPlanProvider {
 
