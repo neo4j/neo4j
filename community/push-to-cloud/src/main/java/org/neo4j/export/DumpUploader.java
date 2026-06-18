@@ -33,6 +33,7 @@ import org.neo4j.export.aura.AuraJsonMapper;
 import org.neo4j.export.providers.SignedUpload;
 import org.neo4j.export.providers.SignedUploadURLFactory;
 import org.neo4j.export.util.IOCommon;
+import org.neo4j.util.VisibleForTesting;
 
 public class DumpUploader extends Uploader {
     private static final String BACKUP_EXTENSION = ".backup";
@@ -187,7 +188,8 @@ public class DumpUploader extends Uploader {
         return result;
     }
 
-    private static long archiveSize(Path archive, String database, ExecutionContext ctx, boolean verbose) {
+    @VisibleForTesting
+    static long archiveSize(Path archive, String database, ExecutionContext ctx, boolean verbose) {
         long sizeInBytes;
         String fileName = archive.getFileName().toString();
         if (fileName.endsWith(Dumper.DUMP_EXTENSION) || fileName.endsWith(BACKUP_EXTENSION)) {
