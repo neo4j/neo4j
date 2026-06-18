@@ -77,7 +77,7 @@ public enum KernelVersion {
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
     // and it is not sure which version the feature will land in.
-    GLORIOUS_FUTURE(254, 7);
+    GLORIOUS_FUTURE(254, 8);
     // 255(or -1) is typically used as a non-existing value, so we don't use that here
 
     public static final KernelVersion EARLIEST = V4_2;
