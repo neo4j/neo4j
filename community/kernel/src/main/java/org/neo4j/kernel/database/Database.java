@@ -989,7 +989,7 @@ public class Database extends AbstractDatabase {
                 readOnlyDatabaseChecker,
                 databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection),
                 commandCommitListeners,
-                !isSystem() && databaseConfig.get(GraphDatabaseInternalSettings.prefetch_on_commit));
+                false);
         var rollbackProcess =
                 commitProcessFactory.createRollbackProcess(storageEngine, logsModule.getLogicalTransactionStore());
         databaseDependencies.satisfyDependency(rollbackProcess);

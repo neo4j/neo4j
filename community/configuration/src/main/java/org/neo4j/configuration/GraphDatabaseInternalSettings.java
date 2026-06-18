@@ -1594,11 +1594,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Enable background prefetch of the pages affected by transaction commands before applying them")
-    public static final Setting<Boolean> prefetch_on_commit =
-            newBuilder("internal.dbms.prefetch_on_commit", BOOL, false).build();
-
-    @Internal
     @Description("The maximum amount of time to wait for terminated transactions to start closing before allowing "
             + "initiated database shutdown to continue")
     public static final Setting<Duration> shutdown_terminated_transaction_wait_timeout = newBuilder(
