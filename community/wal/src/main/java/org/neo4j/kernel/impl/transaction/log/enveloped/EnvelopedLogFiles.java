@@ -231,6 +231,10 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                     tailInfo.lastValidAppendIndex(),
                     tailInfo.lastValidTerm());
             deleteLogFilesFrom(lastValidVersion + 1L);
+            // truncateToPosition may create a new file, so populate the cache first
+            if (populateCache) {
+                populateCache();
+            }
             appendingChannel.truncateToPosition(
                     tailInfo.lastValidatedPosition().getByteOffset(),
                     tailInfo.lastValidChecksum(),
@@ -240,9 +244,6 @@ public class EnvelopedLogFiles implements EnvelopeReadChannelProvider, AutoClose
                 appendingChannel.insertStartOffset(tailInfo.segmentOffset());
             }
             appendingChannel.prepareForFlush().flush();
-            if (populateCache) {
-                populateCache();
-            }
         } else {
             log.info("Reopen previous enveloped raft log file. " + tailInfo);
             // stop updateState throwing if for some reason we call initialise twice

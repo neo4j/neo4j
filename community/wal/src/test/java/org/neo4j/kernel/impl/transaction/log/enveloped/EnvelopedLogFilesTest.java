@@ -1769,6 +1769,45 @@ class EnvelopedLogFilesTest {
     }
 
     @Test
+    void shouldRecoverWhenManyFilesPrecedeBrokenLastEntry() throws IOException {
+        // Generate 4 files
+        envelopedLogFiles.initialise();
+        var data = EIGHT_BYTES_MESSAGE.getBytes(StandardCharsets.UTF_8);
+        var writeChannel = envelopedLogFiles.currentWriteChannel();
+        int appendIndex = 0;
+        for (int file = 0; file < 4; file++) {
+            writeData(writeChannel, data);
+            appendIndex++;
+            envelopedLogFiles.forceRotate();
+        }
+        writeData(writeChannel, data);
+        appendIndex++;
+        writeChannel.prepareForFlush().flush();
+        var endOffset = writeChannel.position();
+        envelopedLogFiles.close();
+
+        // Ruin the only envelope in file 4 so brokenLastEntry recovery kicks in.
+        try (var channel = mirroringRepository.createWriteChannel(4).channel()) {
+            int wipeAt = (int) (endOffset - 1);
+            channel.position(wipeAt);
+            channel.writeAll(ByteBuffer.wrap(new byte[1]));
+            channel.flush();
+        }
+
+        recreateEnvelopedLogFiles(LatestVersions.LATEST_KERNEL_VERSION);
+        assertThat(envelopedLogFiles.initialise()).isEqualTo(appendIndex - 2L);
+        writeChannel = envelopedLogFiles.currentWriteChannel();
+
+        // After recovery file 4 is re-created and the cache covers [0..4].
+        assertThat(mirroringRepository.logVersionsRange()).isEqualTo(LongRange.range(0L, 4L));
+
+        // and we can keep appending without issues
+        writeData(writeChannel, data);
+        assertThat(writeChannel.currentIndex()).isEqualTo(appendIndex - 1L);
+        writeChannel.prepareForFlush().flush();
+    }
+
+    @Test
     void shouldRecoverWithCorruptFirstEntryInFile() throws IOException {
         // Create initial files one with 2 entries and second with a single entry
         envelopedLogFiles.initialise();
