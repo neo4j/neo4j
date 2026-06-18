@@ -27,6 +27,7 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.value.Uncoercible;
@@ -298,6 +299,11 @@ class FakeValue implements Value {
     @Override
     public UnsupportedType asUnsupportedType() {
         throw new Uncoercible(getClass().getSimpleName(), "UnsupportedType");
+    }
+
+    @Override
+    public UUID asUUID() {
+        throw new Uncoercible(getClass().getSimpleName(), "UUID");
     }
 
     @Override

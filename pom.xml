@@ -143,7 +143,7 @@
     <maven.compiler.release>${vm.target.version}</maven.compiler.release>
     <metrics.version>4.2.39</metrics.version>
     <mockito.version>5.23.0</mockito.version>
-    <neo4j-java-driver.version>6.1.0</neo4j-java-driver.version>
+    <neo4j-java-driver.version>6.2.0</neo4j-java-driver.version>
     <neo4j.bolt.connection.version>11.1.0</neo4j.bolt.connection.version>
     <!--
      - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
