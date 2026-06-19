@@ -44,6 +44,16 @@ public interface VersionStorageAccessor {
         public int maxAreaSize() {
             return 0;
         }
+
+        @Override
+        public long referenceLocation(long reference) {
+            throw new UnsupportedOperationException("Empty accessor");
+        }
+
+        @Override
+        public long fullReference(long location) {
+            throw new UnsupportedOperationException("Empty accessor");
+        }
     };
 
     /**
@@ -68,4 +78,15 @@ public interface VersionStorageAccessor {
      * @return maximum area size that can be allocated
      */
     int maxAreaSize();
+
+    /**
+     * Strips the per-run sequence from a reference, leaving only the location that fits in 6 bytes.
+     * {@code UNDEFINED_REFERENCE} (0) maps to 0
+     */
+    long referenceLocation(long reference);
+
+    /**
+     * Reconstructs a full reference from a location; 0 stays 0 (undefined).
+     */
+    long fullReference(long location);
 }
