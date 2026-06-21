@@ -163,6 +163,7 @@
               <args combine.self="override">
                 <arg>-Xfatal-warnings</arg>
                 <arg>-feature</arg>
+                <arg>-Wunused:imports,privates,locals</arg>
               </args>
             </configuration>
           </plugin>

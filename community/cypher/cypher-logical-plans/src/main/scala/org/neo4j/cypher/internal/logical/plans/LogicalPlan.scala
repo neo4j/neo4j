@@ -60,7 +60,6 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
-import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SameNodeMode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan.safeGet
@@ -3125,7 +3124,7 @@ case class FindShortestPaths(
   perStepRelPredicates: Seq[VariablePredicate] = Seq.empty,
   pathPredicates: Seq[Expression] = Seq.empty,
   withFallBack: Boolean = false,
-  sameNodeMode: SameNodeMode = DisallowSameNode,
+  sameNodeMode: SameNodeMode = FindShortestPaths.DisallowSameNode,
   pathMode: TraversalPathMode = Trail
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {

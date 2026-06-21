@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CommunityCypherTestSuite
-import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.CypherPlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits

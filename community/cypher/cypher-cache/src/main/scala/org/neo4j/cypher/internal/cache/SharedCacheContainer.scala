@@ -107,7 +107,10 @@ case class SharedCacheContainer[K, V <: AnyRef](
 
   override def asMap(): ConcurrentMap[K, V] = mapRepresentation
 
-  override def policy(): Policy[K, V] = new SharedCacheContainer.Policy(inner.policy(), id)
+  override def policy(): Policy[K, V] = {
+    import SharedCacheContainer.Policy
+    new Policy(inner.policy(), id)
+  }
 
   override def close(): Unit = cacheFactory.close(id)
 

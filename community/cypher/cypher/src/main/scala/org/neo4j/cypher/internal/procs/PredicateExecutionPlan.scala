@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan.AccessModeChanger
-import org.neo4j.cypher.internal.procs.PredicateExecutionPlan.NoAccessModeChange
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.result.EmptyQuerySubscription
@@ -67,7 +66,7 @@ class PredicateExecutionPlan(
   predicate: Predicate,
   source: Option[ExecutionPlan] = None,
   onViolation: (MapValue, TransactionalContext, SecurityContext) => Exception,
-  changeAccessMode: AccessModeChanger = NoAccessModeChange
+  changeAccessMode: AccessModeChanger = PredicateExecutionPlan.NoAccessModeChange
 ) extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(

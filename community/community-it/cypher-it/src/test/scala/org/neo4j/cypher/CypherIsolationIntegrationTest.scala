@@ -286,7 +286,6 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     // And while waiting for all scrambler futures threads to be done,
     // execute the read query and assert on the results
     try {
-      var i = 0
       while (futures.exists(!_.isDone)) {
         var retry = true
         while (retry) {
@@ -299,7 +298,6 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
             case t: Throwable                            => throw new RuntimeException(t)
           }
         }
-        i += 1
       }
     } finally {
       executor.shutdown()

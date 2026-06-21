@@ -272,6 +272,7 @@
               <args combine.self="override">
                 <arg>-Xfatal-warnings</arg>
                 <arg>-feature</arg>
+                <arg>-Wunused:imports,privates,locals</arg>
                 <!-- Silence Scala 3 syntax deprecation warnings -->
                 <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
               </args>

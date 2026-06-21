@@ -266,6 +266,7 @@
                 <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
                 <arg>-Xfatal-warnings</arg>
                 <arg>-feature</arg>
+                <arg>-Wunused:imports,privates,locals</arg>
               </args>
             </configuration>
           </plugin>

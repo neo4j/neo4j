@@ -102,7 +102,6 @@ final class RegularCypherSteps @Inject() (
   private[this] var lastResult: QueryExecution = _
   private[this] var registeredProcedures = Seq.empty[QualifiedName]
   private[this] var openTx: CypherExecutorTransaction = _ // Only used for certain steps
-  private[this] var scenario: Scenario = _
 
   override def lastExecutionResult: QueryExecution = lastResult
 
@@ -114,7 +113,6 @@ final class RegularCypherSteps @Inject() (
     require(dbmsAccessor == null)
     dbmsAccessor = executors.acquire(scenario, dynamicSettings)
     db = dbmsAccessor.dbms
-    this.scenario = scenario
   }
 
   After { after() }
