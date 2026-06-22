@@ -42,11 +42,11 @@ public class UpdateMigrationStatusMessage {
     public String serverId;
 
     @JsonProperty("migration_id")
-    @JsonPropertyDescription("ID of the migration.")
+    @JsonPropertyDescription("ID of the migration")
     public String migrationId;
 
     @JsonProperty("migration_step")
-    @JsonPropertyDescription("Name of the migration step to update status for.")
+    @JsonPropertyDescription("Name of the migration step to update status for")
     public MigrationStep migrationStep;
 
     @JsonProperty("started_at")
@@ -78,7 +78,6 @@ public class UpdateMigrationStatusMessage {
         IMPORT
     }
 
-    @JsonClassDescription("Logs from a migration step")
     public static class MigrationStepLogs {
         @JsonProperty("stdout")
         @JsonPropertyDescription("Standard output from the migration step")
@@ -94,7 +93,6 @@ public class UpdateMigrationStatusMessage {
         }
     }
 
-    @JsonClassDescription("Error details from a migration step")
     public static class MigrationStepError {
         @JsonProperty("message")
         @JsonPropertyDescription("Error message")

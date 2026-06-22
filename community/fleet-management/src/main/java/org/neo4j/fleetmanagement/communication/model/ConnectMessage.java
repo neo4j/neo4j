@@ -53,7 +53,7 @@ public class ConnectMessage {
     public String buildProfile;
 
     @JsonProperty("is_system_db_writer")
-    @JsonPropertyDescription("Does this server allow writing to system DB?")
+    @JsonPropertyDescription("Whether this server allows writing to system DB")
     public boolean isSystemDbWriter;
 
     public ConnectMessage(

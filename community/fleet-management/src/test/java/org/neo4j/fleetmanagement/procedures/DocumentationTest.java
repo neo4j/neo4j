@@ -33,6 +33,6 @@ class DocumentationTest {
         Stream<Documentation.DocumentationResult> result = documentation.generateDocumentation();
         assertThat(result.count())
                 .as("Payload messages have changed, consider updating the documentation")
-                .isEqualTo(164);
+                .isEqualTo(162);
     }
 }

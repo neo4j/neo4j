@@ -39,6 +39,6 @@ public class MigrationTokenMessage {
     public String serverId;
 
     @JsonProperty("migration_id")
-    @JsonPropertyDescription("ID of the migration.")
+    @JsonPropertyDescription("ID of the migration")
     public String migrationId;
 }
