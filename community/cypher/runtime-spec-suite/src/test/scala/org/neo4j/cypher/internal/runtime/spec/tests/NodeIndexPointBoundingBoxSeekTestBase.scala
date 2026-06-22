@@ -21,10 +21,15 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN
@@ -67,6 +72,42 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         "{x: 2.0, y: 2.0, crs: 'cartesian'}",
         indexType = IndexType.POINT
       )
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
+  }
+
+  test("should seek points with a row-dependent bounding box") {
+    givenGraph {
+      nodeIndex(IndexType.POINT, "Place", "location")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
+    }
+
+    // when: both bounding-box corners are read from the input row instead of being literals
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("location")
+      .projection("n.location.x AS location")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Place(location)",
+        customQueryExpression = Some(RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+          PointBoundingBoxRange[Expression](prop("row", "lowerLeft"), prop("row", "upperRight"))
+        )(InputPosition.NONE))),
+        argumentIds = Set("row"),
+        indexType = IndexType.POINT
+      )
+      .unwind(
+        "[{lowerLeft: point({x: 0.0, y: 0.0, crs: 'cartesian'}), upperRight: point({x: 2.0, y: 2.0, crs: 'cartesian'})}] AS row"
+      )
+      .argument()
       .build()
 
     // then

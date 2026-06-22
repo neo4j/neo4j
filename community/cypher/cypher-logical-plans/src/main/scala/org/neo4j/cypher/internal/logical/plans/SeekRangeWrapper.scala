@@ -25,34 +25,55 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.util.InputPosition
 
+/**
+ * Common supertype of the seek-range-carrying expression wrappers
+ */
+sealed trait SeekRangeWrapper extends Expression {
+
+  /**
+   * Rewrites the inner range expressions while preserving the wrapper's structure
+   */
+  def mapBounds(f: Expression => Expression): SeekRangeWrapper
+}
+
 case class PrefixSeekRangeWrapper(
   range: PrefixRange[Expression]
-)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+)(val position: InputPosition) extends Expression with SemanticCheckableExpression with SeekRangeWrapper {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 
   override def isConstantForQuery: Boolean = range.arguments.forall(_.isConstantForQuery)
+
+  override def mapBounds(f: Expression => Expression): SeekRangeWrapper =
+    PrefixSeekRangeWrapper(range.map(f))(position)
 }
 
 case class InequalitySeekRangeWrapper(
   range: InequalitySeekRange[Expression]
-)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+)(val position: InputPosition) extends Expression with SemanticCheckableExpression with SeekRangeWrapper {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 
   override def isConstantForQuery: Boolean = range.arguments.forall(_.isConstantForQuery)
+
+  override def mapBounds(f: Expression => Expression): SeekRangeWrapper =
+    InequalitySeekRangeWrapper(range.mapBounds(f))(position)
 }
 
 case class PointDistanceSeekRangeWrapper(
   range: PointDistanceRange[Expression]
-)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+)(val position: InputPosition) extends Expression with SemanticCheckableExpression with SeekRangeWrapper {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
   override def isConstantForQuery: Boolean = range.arguments.forall(_.isConstantForQuery)
 
+  override def mapBounds(f: Expression => Expression): SeekRangeWrapper =
+    PointDistanceSeekRangeWrapper(range.map(f))(position)
 }
 
 case class PointBoundingBoxSeekRangeWrapper(
   range: PointBoundingBoxRange[Expression]
-)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+)(val position: InputPosition) extends Expression with SemanticCheckableExpression with SeekRangeWrapper {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
   override def isConstantForQuery: Boolean = range.arguments.forall(_.isConstantForQuery)
 
+  override def mapBounds(f: Expression => Expression): SeekRangeWrapper =
+    PointBoundingBoxSeekRangeWrapper(range.map(f))(position)
 }

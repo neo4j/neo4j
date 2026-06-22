@@ -981,12 +981,4 @@ abstract class ConcurrentTransactionApplyTestBase[CONTEXT <: RuntimeContext](
       }
     }
   }
-
-  protected def countingProbe(atomicIncr: AtomicInteger): Prober.Probe = {
-    new Probe {
-      override def onRow(row: AnyRef, state: AnyRef): Unit = {
-        atomicIncr.getAndAdd(1)
-      }
-    }
-  }
 }

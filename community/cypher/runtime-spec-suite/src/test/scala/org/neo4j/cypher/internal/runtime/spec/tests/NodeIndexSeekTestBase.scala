@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -34,8 +35,13 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.QualifiedName
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXACT
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType.RANGE
+import org.neo4j.kernel.api.procedure.CallableUserFunction
+import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.impl.util.ValueUtils.asValue
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
@@ -49,6 +55,8 @@ import org.neo4j.values.storable.ValueType
 import org.neo4j.values.storable.ValueType.BOOLEAN
 import org.neo4j.values.storable.Values
 import org.neo4j.values.utils.ValueBooleanLogic
+
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -1232,6 +1240,51 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "prop", "prop2").withRows(expected)
   }
 
+  testWithIndex(
+    i => i.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT) && i.supportsValues(EXACT),
+    "should cache only the non-prefix GetValue property in a composite index"
+  ) { index =>
+    val type1 = randomAmong(index.provideValueSupport(EXACT))
+    val type2 = randomAmong(index.provideValueSupport(EXACT))
+    val nodes = givenGraph {
+      nodeGraph(5, "Milk")
+      indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
+        case (node, i) if i % 10 == 0 =>
+          node.setProperty("prop", randomValue(type1).asObject())
+          node.setProperty("prop2", randomValue(type2).asObject())
+      }
+    }
+    val someNode = randomAmong(nodes)
+
+    // when — seek on both properties, but GetValue (cache) ONLY prop2.
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "prop2")
+      .projection("cache[x.prop2] AS prop2")
+      .nodeIndexOperator(
+        "x:Honey(prop = ???, prop2 = ???)",
+        getValue = {
+          case "prop2" => GetValue
+          case _       => DoNotGetValue
+        },
+        paramExpr = Seq(someNode.getProperty("prop"), someNode.getProperty("prop2")).map(toExpression),
+        indexType = index.indexType
+      )
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then — the emitted cached value must be prop2's value, not prop's.
+    val expectedProp = Values.of(someNode.getProperty("prop"))
+    val expectedProp2 = Values.of(someNode.getProperty("prop2"))
+    val expected = nodes
+      .map(n => (n, Values.of(n.getProperty("prop")), Values.of(n.getProperty("prop2"))))
+      .collect {
+        case (n, prop, prop2) if prop == expectedProp && prop2 == expectedProp2 =>
+          Array[Any](n, prop2)
+      }
+    runtimeResult should beColumns("x", "prop2").withRows(expected)
+  }
+
   testWithIndex(_.supportsValues(EXACT), "should use existing values from arguments when available") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
@@ -1260,6 +1313,299 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       nodes.filter(propFilter(equalTo(v)))
     }
     runtimeResult should beColumns("x").withRows(singleColumn(expected, listInAnyOrder = true))
+  }
+
+  testWithIndex(_.supportsValues(EXACT), "should handle empty input morsel through index seek") { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value"),
+        indexType = index.indexType
+      )
+      .input(variables = Seq("value"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues())
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  testWithIndex(_.supportsValues(EXACT), "should work with larger input") { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val values = (0 until sizeHint).map(_ => asValue(randomAmong(nodes).getProperty("prop")))
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value"),
+        indexType = index.indexType
+      )
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues(values.map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    // read each node's prop once before filtering (in SPD every Node.getProperty is a costly remote call)
+    val nodeProps = nodes.collect { case n if n.hasProperty("prop") => (n, asValue(n.getProperty("prop"))) }
+    val expected = values.flatMap(v => nodeProps.collect { case (n, p) if equalTo(v)(p) => n })
+    runtimeResult should beColumns("x").withRows(singleColumn(expected, listInAnyOrder = true))
+  }
+
+  testWithIndex(_.supportsValues(EXACT), "should emit cached property values") { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val values = Seq(randomAmong(nodes), randomAmong(nodes)).map(n => asValue(n.getProperty("prop")))
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "cachedProp")
+      .projection("cacheN[x.prop] AS cachedProp")
+      .apply()
+      .|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        getValue = _ => GetValue,
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value"),
+        indexType = index.indexType
+      )
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues(values.map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    val expected = values.flatMap { v =>
+      nodes.filter(propFilter(equalTo(v))).map(n => Array[Any](n, n.getProperty("prop")))
+    }
+    runtimeResult should beColumns("x", "cachedProp").withRows(expected, listInAnyOrder = true)
+  }
+
+  testWithIndex(_.supportsValues(EXACT), "should produce correct row count under LIMIT-above-Apply") { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val values = (0 until 50).map(_ => asValue(randomAmong(nodes).getProperty("prop")))
+
+    val rowsAtLimit = new AtomicInteger(0)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(5)
+      .prober(countingProbe(rowsAtLimit))
+      .apply()
+      .|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value"),
+        indexType = index.indexType
+      )
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues(values.map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("x").withRows(rowCount(5))
+
+    // LIMIT cancellation propagates upstream across the Apply in every non-Parallel runtime.
+    if (runtimeUsed != Parallel) {
+      // Each of the 50 input rows matches >= 1 node, so without cancellation propagation >= 50 rows
+      // reach LIMIT; with propagation LIMIT cancels upstream after 5 and far fewer arrive.
+      rowsAtLimit.get() should be < 50
+    }
+  }
+
+  // NOTE: keep as test() not testWithIndex()!
+  // This test targets a specific argument cancellation code path for RemoteNodeIndexSeek that is challenging to hit.
+  // Do not change the test in any way that changes its behavior.
+  test("should skip cancelled interior arguments on the RHS of a nodeHashJoin") {
+    val nValues = 20
+    nodeIndex("Honey", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraphFunctional(
+        nValues,
+        properties = i => Map("prop" -> i, "lhsKey" -> (if (i % 2 == 0) i else -1)),
+        labels = _ => Seq("Honey")
+      )
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.nodeHashJoin("x")
+      .|.|.nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(varFor("value")), argumentIds = Set("value"))
+      .|.filter("x.lhsKey = value")
+      .|.allNodeScan("x", "value")
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues((0 until nValues).map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = nodes.zipWithIndex.collect { case (n, i) if i % 2 == 0 => Array[Any](n) }
+    runtimeResult should beColumns("x").withRows(expected, listInAnyOrder = true)
+  }
+
+  // NOTE: keep as test() not testWithIndex()!
+  // This test targets a specific argument cancellation code path for RemoteNodeIndexSeek that is challenging to hit.
+  // Do not change the test in any way that changes its behavior.
+  test("should not emit more rows than limit, when on RHS of Apply") {
+    val numValues = 20
+    val perValue = 30
+    val total = numValues * perValue
+    val morselSize = 4
+    nodeIndex("Honey", "prop")
+    givenGraph {
+      nodePropertyGraphFunctional(total, i => Map[String, Any]("prop" -> (i % numValues)), _ => Seq("Honey"))
+    }
+
+    // Any incorrectly emitted rows would be hidden from the result by the limit,
+    // which guards against the error in a read-only query.
+    // However, if a write was performed between the seek and limit we could get incorrect results.
+    val seekEmissions = new AtomicInteger(0)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(1)
+      .|.prober(countingProbe(seekEmissions))
+      .|.nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(varFor("value")), argumentIds = Set("value"))
+      .input(variables = Seq("value"))
+      .withMorselSize(morselSize)
+      .build()
+
+    val input = inputValues((0 until numValues).map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("x").withRows(rowCount(numValues))
+
+    // A correct operator emits at most one morsel per argument before that argument is canceled.
+    // Parallel limit propagation is racy.
+    if (runtimeUsed != Parallel) {
+      seekEmissions.get() should be <= numValues * morselSize * 2
+    }
+  }
+
+  testWithIndex(_.supportsValues(EXACT), "should handle multiple matches per input argumentId") { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    val sharedValue = randomValue(propertyType).asObject()
+    val nodes = givenGraph(indexedNodeGraph(index.indexType, "Honey", "prop") {
+      case (n, i) if i < 3 => n.setProperty("prop", sharedValue)
+      case (n, _)          => n.setProperty("prop", randomValue(propertyType).asObject())
+    })
+    val pickedValue = asValue(nodes.head.getProperty("prop"))
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value"),
+        indexType = index.indexType
+      )
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues(Array[Any](pickedValue))
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    val expected = nodes.filter(propFilter(equalTo(pickedValue)))
+    require(expected.size >= 2, "graph generator must guarantee >= 2 matches per argumentId")
+    runtimeResult should beColumns("x").withRows(singleColumn(expected, listInAnyOrder = true))
+  }
+
+  testWithIndex(
+    _.supportsValues(EXACT),
+    "should handle input rows that produce zero matches (gap in argumentId sequence)"
+  ) {
+    index =>
+      val propertyType = randomAmong(index.querySupport(EXACT))
+      val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+      val matchingValue = asValue(randomAmong(nodes).getProperty("prop"))
+      val noMatchValue = org.neo4j.values.storable.Values.NO_VALUE
+      val values = Seq(matchingValue, noMatchValue, matchingValue)
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .apply()
+        .|.nodeIndexOperator(
+          "x:Honey(prop = ???)",
+          paramExpr = Some(varFor("value")),
+          argumentIds = Set("value"),
+          indexType = index.indexType
+        )
+        .input(variables = Seq("value"))
+        .build()
+
+      val input = inputValues(values.map(v => Array[Any](v)): _*)
+      val runtimeResult = execute(logicalQuery, runtime, input)
+      val expected = values.flatMap(v => nodes.filter(propFilter(equalTo(v))))
+      runtimeResult should beColumns("x").withRows(singleColumn(expected, listInAnyOrder = true))
+  }
+
+  testWithIndex(
+    _.supportsValues(EXACT),
+    "should handle input rows that produce zero matches with a typed not-in-graph value (gap in argumentId sequence)"
+  ) { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val matchingValue = asValue(randomAmong(nodes).getProperty("prop"))
+    val existingValues = nodes.map(_.getProperty("prop")).toSet
+    val noMatchValueOpt = pickValueNotIn(propertyType, existingValues)
+    // Skip types whose domain a sizeHint-node graph exhausts (e.g. BOOLEAN) — no not-in-graph value exists.
+    assume(noMatchValueOpt.isDefined)
+    val values = Seq(matchingValue, noMatchValueOpt.get, matchingValue)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value"),
+        indexType = index.indexType
+      )
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues(values.map(v => Array[Any](v)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    val expected = values.flatMap(v => nodes.filter(propFilter(equalTo(v))))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected, listInAnyOrder = true))
+  }
+
+  testWithIndex(
+    _.supportsValues(EXACT),
+    "should not corrupt rows under heavy LIMIT cancellation with multi-match continuation"
+  ) { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    // A handful of values, each shared by many nodes, so each input row matches many nodes.
+    val sharedValues = (0 until 5).map(_ => randomValue(propertyType).asObject())
+    givenGraph(indexedNodeGraph(index.indexType, "Honey", "prop") {
+      case (n, i) => n.setProperty("prop", sharedValues(i % sharedValues.length))
+    })
+    // Many input rows cycling through the shared values; each matches a large fraction of the graph.
+    val inputRows = (0 until 200).map(i => Array[Any](asValue(sharedValues(i % sharedValues.length))))
+
+    val limit = 5
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(limit)
+      .apply()
+      .|.nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(varFor("value")),
+        argumentIds = Set("value"),
+        indexType = index.indexType
+      )
+      .input(variables = Seq("value"))
+      .build()
+
+    val input = inputValues(inputRows: _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("x").withRows(rowCount(limit))
   }
 
   testWithIndex(
@@ -1640,6 +1986,506 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withSingleRow(n)
   }
 
+  test("should handle node index seek with a property as the seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 42) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop = ???)",
+        paramExpr = Some(prop("row", "i")),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 42}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withSingleRow(nodes.head)
+  }
+
+  test("should handle node index seek with a per-row property seek value across multiple rows") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(2, { case i => Map("prop" -> (if (i == 0) 42 else 7)) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop = ???)",
+        paramExpr = Some(prop("row", "i")),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 42}, {i: 7}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(Seq(nodes.head, nodes(1))))
+  }
+
+  test("should handle node index seek with a null per-row property seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    givenGraph {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 42) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop = ???)",
+        paramExpr = Some(prop("row", "i")),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: null}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withNoRows()
+  }
+
+  test("should handle node index seek with an entity property as the seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "B", "prop")
+    val (aNodes, bNodes) = givenGraph {
+      val bs = nodePropertyGraph(10, { case i => Map("prop" -> i) }, "B")
+      val as = nodePropertyGraph(10, { case i => Map("prop" -> i) }, "A")
+      (as, bs)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply()
+      .|.nodeIndexOperator(
+        "b:B(prop = ???)",
+        paramExpr = Some(prop("a", "prop")),
+        argumentIds = Set("a"),
+        indexType = IndexType.RANGE
+      )
+      .nodeByLabelScan("a", "A", IndexOrderAscending)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = aNodes.map(a => Array[Any](a, bNodes(a.getProperty("prop").asInstanceOf[Int])))
+    runtimeResult should beColumns("a", "b").withRows(expected, listInAnyOrder = true)
+  }
+
+  test("should handle node index seek with a nullable entity property as the seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "B", "prop")
+    val (aNodes, bNodes) = givenGraph {
+      val bs = nodePropertyGraph(10, { case i => Map("prop" -> i) }, "B")
+      val as = nodePropertyGraph(3, { case i => Map("prop" -> i) }, "A")
+      (as, bs)
+    }
+
+    // when: optional() makes the entity slot nullable (but the values are not null)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .apply()
+      .|.nodeIndexOperator(
+        "b:B(prop = ???)",
+        paramExpr = Some(prop("a", "prop")),
+        argumentIds = Set("a"),
+        indexType = IndexType.RANGE
+      )
+      .optional()
+      .nodeByLabelScan("a", "A", IndexOrderAscending)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = aNodes.map(a => bNodes(a.getProperty("prop").asInstanceOf[Int]))
+    runtimeResult should beColumns("b").withRows(singleColumn(expected, listInAnyOrder = true))
+  }
+
+  test("should handle node index seek with a nullable entity property as the seek value when the entity is null") {
+    // given
+    nodeIndex(IndexType.RANGE, "B", "prop")
+    givenGraph {
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "B")
+    }
+
+    // when: no :A nodes exist, so optional() emits a single all-null row and the seek value evaluates to NO_VALUE
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .apply()
+      .|.nodeIndexOperator(
+        "b:B(prop = ???)",
+        paramExpr = Some(prop("a", "prop")),
+        argumentIds = Set("a"),
+        indexType = IndexType.RANGE
+      )
+      .optional()
+      .nodeByLabelScan("a", "A", IndexOrderAscending)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("b").withNoRows()
+  }
+
+  test("should handle node index seek with a cached entity property as the seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "B", "prop")
+    val (aNodes, bNodes) = givenGraph {
+      val bs = nodePropertyGraph(10, { case i => Map("prop" -> i) }, "B")
+      val as = nodePropertyGraph(10, { case i => Map("prop" -> i) }, "A")
+      (as, bs)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply()
+      .|.nodeIndexOperator(
+        "b:B(prop = ???)",
+        paramExpr = Some(cachedNodeProp("a", "prop")),
+        argumentIds = Set("a"),
+        indexType = IndexType.RANGE
+      )
+      .cacheProperties("cache[a.prop]")
+      .nodeByLabelScan("a", "A", IndexOrderAscending)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = aNodes.map(a => Array[Any](a, bNodes(a.getProperty("prop").asInstanceOf[Int])))
+    runtimeResult should beColumns("a", "b").withRows(expected, listInAnyOrder = true)
+  }
+
+  test("should handle node index seek with a compound expression as the seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 42) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop = ???)",
+        paramExpr = Some(add(prop("row", "i"), literalInt(1))),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 41}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withSingleRow(nodes.head)
+  }
+
+  test("should handle node index seek with a function of a per-row value as the seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 42) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop = ???)",
+        paramExpr = Some(function("toInteger", prop("row", "s"))),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{s: '42'}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withSingleRow(nodes.head)
+  }
+
+  test("should handle node index seek with row-dependent range bounds") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "Label")
+    }
+
+    // when: prop > row.lo AND prop < row.hi + 1
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(??? < prop < ???)",
+        paramExpr = Seq(prop("row", "lo"), add(prop("row", "hi"), literalInt(1))),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{lo: 2, hi: 6}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes.slice(3, 7), listInAnyOrder = true))
+  }
+
+  test("should handle composite node index seek with two row-dependent members") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "p1", "p2")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("p1" -> i, "p2" -> (i + 1)) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(p1 = ???, p2 = ???)",
+        paramExpr = Seq(prop("row", "i"), add(prop("row", "i"), literalInt(1))),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 3}, {i: 5}, {i: 7}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(Seq(nodes(3), nodes(5), nodes(7)), listInAnyOrder = true))
+  }
+
+  test("should handle composite node index seek with a constant and a row-dependent member") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "p1", "p2")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("p1" -> (i % 2), "p2" -> i) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(p1 = 0, p2 = ???)",
+        paramExpr = Some(prop("row", "i")),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 4}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withSingleRow(nodes(4))
+  }
+
+  test("should handle node index seek with a row-dependent IN-list seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(prop("row", "i"), prop("row", "j")))),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 2, j: 5}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(Seq(nodes(2), nodes(5)), listInAnyOrder = true))
+  }
+
+  test("should handle node index seek with a non-deterministic seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("prop" -> (i + 1)) }, "Label")
+    }
+
+    // when: rand() < 1 <= every prop value, so each input row matches all nodes
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop > ???)",
+        paramExpr = Some(function("rand")),
+        argumentIds = Set("r"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[1, 2] AS r")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes ++ nodes, listInAnyOrder = true))
+  }
+
+  test("should handle node index seek with a user-defined function as the seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "Label")
+    }
+    val invocations = new AtomicInteger()
+    val udf = new CallableUserFunction.BasicUserFunction(
+      UserFunctionSignature.functionSignature(new QualifiedName("test.seekValue"))
+        .out(Neo4jTypes.NTInteger).threadSafe().build()
+    ) {
+      override def apply(ctx: Context, input: Array[AnyValue]): AnyValue = {
+        invocations.incrementAndGet()
+        Values.intValue(7)
+      }
+    }
+    registerFunction(udf)
+    // refresh tx so its ProcedureView snapshot includes the function we just registered.
+    restartTx()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop = ???)",
+        paramExpr = Some(function("test.seekValue")),
+        argumentIds = Set("r"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[1, 2] AS r")
+      .argument()
+      .build()
+
+    // then
+    val invocationsBefore = invocations.get()
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(Seq(nodes(7), nodes(7))))
+    // delta rather than absolute count, because the function instance survives reruns in the same suite
+    withClue("UDF invocation count delta") {
+      invocations.get() - invocationsBefore shouldBe 2
+    }
+  }
+
+  test("should handle node index range seek with a null per-row seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop > ???)",
+        paramExpr = Some(prop("row", "i")),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{i: 5}, {i: null}] AS row")
+      .argument()
+      .build()
+
+    // then: the null row contributes no rows; no exception
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes.slice(6, 10), listInAnyOrder = true))
+  }
+
+  test("should handle node index STARTS WITH seek with a null per-row seek value") {
+    // given
+    nodeIndex(IndexType.RANGE, "Label", "prop")
+    val nodes = givenGraph {
+      nodePropertyGraph(10, { case i => Map("prop" -> s"s$i") }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Label(prop STARTS WITH ???)",
+        paramExpr = Some(prop("row", "s")),
+        argumentIds = Set("row"),
+        indexType = IndexType.RANGE
+      )
+      .unwind("[{s: 's1'}, {s: null}] AS row")
+      .argument()
+      .build()
+
+    // then: the null row contributes no rows; no exception
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withSingleRow(nodes(1))
+  }
+
+  test("should handle range seek when row-dependent seek value is null with index changes in the transaction") {
+    // the parallel runtime rejects open transaction state by design
+    assume(runtimeUsed != Parallel)
+
+    // given
+    nodeIndex(IndexType.RANGE, "B", "prop")
+    givenGraph {
+      nodePropertyGraph(3, { case i => Map("prop" -> i) }, "B")
+      nodePropertyGraph(1, { case _ => Map("other" -> 1) }, "A") // no 'prop'
+    }
+    // make non-empty tx-state so the seek consults TxStateIndexChanges
+    tx.createNode(Label.label("B")).setProperty("prop", 99)
+
+    // when: a.prop is missing -> null range bound under tx-state index changes
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .apply()
+      .|.nodeIndexOperator(
+        "b:B(prop > ???)",
+        paramExpr = Some(prop("a", "prop")),
+        argumentIds = Set("a"),
+        indexType = IndexType.RANGE
+      )
+      .nodeByLabelScan("a", "A", IndexOrderAscending)
+      .build()
+
+    // then: no rows, no exception
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("b").withNoRows()
+  }
+
   test("should handle multi-index seek under apply with an eager on the lhs") {
     // given
     val size = Math.max(sizeHint, 10)
@@ -1754,6 +2600,16 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
         propFunction.apply(t)
         n
     }
+  }
+
+  protected def pickValueNotIn(propertyType: ValueType, existing: Set[AnyRef]): Option[Value] = {
+    var attempts = 0
+    var candidate = randomValue(propertyType)
+    while (existing.contains(candidate.asObject()) && attempts < 1000) {
+      candidate = randomValue(propertyType)
+      attempts += 1
+    }
+    if (existing.contains(candidate.asObject())) None else Some(candidate)
   }
 }
 
@@ -2163,7 +3019,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
       .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt(_)): _*))),
+        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt): _*))),
         unique = true
       )
       .build(readOnly = false)

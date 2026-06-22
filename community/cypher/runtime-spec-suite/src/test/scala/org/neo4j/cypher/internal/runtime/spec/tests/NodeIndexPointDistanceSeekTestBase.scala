@@ -21,10 +21,15 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
+import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN
 import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D
@@ -270,5 +275,39 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
         pointValue(CARTESIAN, 1, 0),
         pointValue(CARTESIAN, 2, 0)
       )))
+  }
+
+  test("should seek points with a row-dependent distance seek centre") {
+    givenGraph {
+      nodeIndex(IndexType.POINT, "Place", "location")
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("location" -> pointValue(CARTESIAN, i, 0))
+        },
+        "Place"
+      )
+    }
+
+    // when: the seek expression is read from the input row instead of being a literal
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("location")
+      .projection("n.location.x AS location")
+      .apply()
+      .|.nodeIndexOperator(
+        "n:Place(location)",
+        customQueryExpression = Some(RangeQueryExpression(PointDistanceSeekRangeWrapper(
+          PointDistanceRange[Expression](prop("row", "centre"), literalFloat(2), inclusive = true)
+        )(InputPosition.NONE))),
+        argumentIds = Set("row"),
+        indexType = IndexType.POINT
+      )
+      .unwind("[{centre: point({x: 0.0, y: 0.0, crs: 'cartesian'})}] AS row")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
   }
 }

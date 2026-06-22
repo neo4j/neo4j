@@ -25,54 +25,39 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 
 /**
- * Separator emitted between inner predicates of a [[CompositeQueryExpression]].
+ * Selects what syntax [[QueryExpressionStringifier]] renders.
  *
- *  - [[CompositeSeparator.Comma]] (default): ", " — used by [[LogicalPlanToPlanBuilderString]] and other plan-builder consumers.
- *  - [[CompositeSeparator.And]]: " AND " — used by callers that embed the rendered string in a Cypher WHERE clause.
- */
-sealed trait CompositeSeparator
-
-object CompositeSeparator {
-  case object Comma extends CompositeSeparator
-  case object And extends CompositeSeparator
-}
-
-/**
- * How [[ExistenceQueryExpression]] / [[NonExistenceQueryExpression]] / [[AllQueryExpression]]
- * are rendered.
+ *  - [[Dialect.PlanBuilder]] (default): plan-builder DSL
+ *  - [[Dialect.Cypher]]: valid Cypher
  *
- *  - [[ExistencePredicateForm.PropertyReference]] (default): emits the bare property reference
- *    ("n.prop" / "NOT n.prop"). NOT valid in a Cypher WHERE-clause predicate; intended for plan-builder (e.g. [[LogicalPlanToPlanBuilderString]]).
- *  - [[ExistencePredicateForm.IsNotNull]]: emits standard Cypher null-check predicates
- *    ("n.prop IS NOT NULL" / "n.prop IS NULL"). Use this when the rendered string must be valid in a WHERE clause.
+ * Orthogonal to `valueStringifier`, which independently controls how individual value expressions are rendered.
  */
-sealed trait ExistencePredicateForm
+sealed trait Dialect
 
-object ExistencePredicateForm {
-  case object PropertyReference extends ExistencePredicateForm
-  case object IsNotNull extends ExistencePredicateForm
+object Dialect {
+  case object PlanBuilder extends Dialect
+  case object Cypher extends Dialect
 }
 
 class QueryExpressionStringifier(
   exprStringifier: ExpressionStringifier,
   valueStringifier: Option[Expression => String] = None,
-  compositeSeparator: CompositeSeparator = CompositeSeparator.Comma,
-  existencePredicateForm: ExistencePredicateForm = ExistencePredicateForm.PropertyReference
+  dialect: Dialect = Dialect.PlanBuilder
 ) {
 
-  private val compositeSeparatorString: String = compositeSeparator match {
-    case CompositeSeparator.Comma => ", "
-    case CompositeSeparator.And   => " AND "
+  private val compositeSeparatorString: String = dialect match {
+    case Dialect.PlanBuilder => ", "
+    case Dialect.Cypher      => " AND "
   }
 
-  private def existencePredicate(ref: String): String = existencePredicateForm match {
-    case ExistencePredicateForm.PropertyReference => ref
-    case ExistencePredicateForm.IsNotNull         => s"$ref IS NOT NULL"
+  private def existencePredicate(ref: String): String = dialect match {
+    case Dialect.PlanBuilder => ref
+    case Dialect.Cypher      => s"$ref IS NOT NULL"
   }
 
-  private def nonExistencePredicate(ref: String): String = existencePredicateForm match {
-    case ExistencePredicateForm.PropertyReference => s"NOT $ref"
-    case ExistencePredicateForm.IsNotNull         => s"$ref IS NULL"
+  private def nonExistencePredicate(ref: String): String = dialect match {
+    case Dialect.PlanBuilder => s"NOT $ref"
+    case Dialect.Cypher      => s"$ref IS NULL"
   }
 
   def apply(valueExpr: QueryExpression[Expression], propNames: Seq[String]): String =
@@ -100,7 +85,12 @@ class QueryExpressionStringifier(
       case qe: ManyQueryExpression[?] =>
         qe.expression match {
           case ListLiteral(expressions) =>
-            s"${propRef(propNames.head)} = ${expressions.map(stringify).mkString(" OR ")}"
+            dialect match {
+              case Dialect.PlanBuilder =>
+                s"${propRef(propNames.head)} = ${expressions.map(stringify).mkString(" OR ")}"
+              case Dialect.Cypher =>
+                s"${propRef(propNames.head)} IN [${expressions.map(stringify).mkString(", ")}]"
+            }
           case expr =>
             s"${propRef(propNames.head)} IN ${stringify(expr)}"
         }
@@ -128,9 +118,9 @@ class QueryExpressionStringifier(
           apply(innerQe, entity, Seq(propName))
         }.mkString(compositeSeparatorString)
       case AllQueryExpression =>
-        existencePredicateForm match {
-          case ExistencePredicateForm.PropertyReference => propRef(propNames.head)
-          case ExistencePredicateForm.IsNotNull         => "true"
+        dialect match {
+          case Dialect.PlanBuilder => propRef(propNames.head)
+          case Dialect.Cypher      => "true"
         }
       case NonExistenceQueryExpression => nonExistencePredicate(propRef(propNames.head))
       case other                       => throw new IllegalStateException(s"Unknown query expression: $other")

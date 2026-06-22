@@ -59,7 +59,7 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
     debugOptions: CypherDebugOptions
   ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions) {
 
-    override protected def rewriteLogicalQuery(
+    override protected[spec] def rewriteLogicalQuery(
       logicalQuery: LogicalQuery,
       anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
       testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]

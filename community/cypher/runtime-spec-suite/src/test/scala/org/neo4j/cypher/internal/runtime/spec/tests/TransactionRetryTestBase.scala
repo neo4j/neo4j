@@ -1238,13 +1238,6 @@ abstract class TransactionRetryTestBase[CONTEXT <: RuntimeContext](
         withNewTx(assertion(_))
       }
   }
-
-  protected def countingProbe(atomicIncr: AtomicInteger): Prober.Probe = {
-    (row: AnyRef, state: AnyRef) =>
-      {
-        atomicIncr.getAndAdd(1)
-      }
-  }
 }
 
 object TransactionRetryTestBase {

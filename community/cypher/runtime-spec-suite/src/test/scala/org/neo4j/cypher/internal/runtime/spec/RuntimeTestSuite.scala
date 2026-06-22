@@ -95,6 +95,7 @@ import java.util.Locale
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Predicate
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -465,6 +466,14 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       ThreadSafeRecordingProbe(variablesToRecord: _*)
     else
       RecordingProbe(variablesToRecord: _*)
+  }
+
+  protected def countingProbe(counter: AtomicInteger): Prober.Probe = {
+    new Prober.Probe {
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
+        counter.getAndAdd(1)
+      }
+    }
   }
 
   /** Hack to make TC report test results correctly for certain nested suites */

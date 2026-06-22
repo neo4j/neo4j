@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite3
 class QueryExpressionStringifierTest extends CypherFunSuite3 with AstConstructionTestSupport {
 
   private val defaultStringifier = new QueryExpressionStringifier(ExpressionStringifier())
+  private val cypherStringifier = new QueryExpressionStringifier(ExpressionStringifier(), dialect = Dialect.Cypher)
 
   // SingleQueryExpression tests
   test("should stringify SingleQueryExpression with literal") {
@@ -62,6 +63,44 @@ class QueryExpressionStringifierTest extends CypherFunSuite3 with AstConstructio
   test("should stringify ManyQueryExpression with variable as IN") {
     val expr = ManyQueryExpression(varFor("myList"))
     defaultStringifier(expr, Seq("prop")) should equal("prop IN myList")
+  }
+
+  test("should stringify ManyQueryExpression with ListLiteral as IN [list] under Dialect.Cypher") {
+    val expr = ManyQueryExpression(listOf(literalInt(1), literalInt(2), literalInt(3)))
+    cypherStringifier(expr, Seq("prop")) should equal("prop IN [1, 2, 3]")
+  }
+
+  test("should stringify ManyQueryExpression with empty ListLiteral as IN [] under Dialect.Cypher") {
+    val expr = ManyQueryExpression(listOf())
+    cypherStringifier(expr, Seq("prop")) should equal("prop IN []")
+  }
+
+  test("should stringify ManyQueryExpression with single-element ListLiteral as IN [x] under Dialect.Cypher") {
+    val expr = ManyQueryExpression(listOf(literalInt(1)))
+    cypherStringifier(expr, Seq("prop")) should equal("prop IN [1]")
+  }
+
+  test("should stringify ManyQueryExpression with map element under Dialect.Cypher") {
+    val expr = ManyQueryExpression(listOf(mapOf("foo" -> literalInt(20)), literalInt(10)))
+    cypherStringifier(expr, Seq("prop")) should equal("prop IN [{foo: 20}, 10]")
+  }
+
+  test("should stringify ManyQueryExpression with null element under Dialect.Cypher") {
+    val expr = ManyQueryExpression(listOf(literalInt(10), nullLiteral))
+    cypherStringifier(expr, Seq("prop")) should equal("prop IN [10, NULL]")
+  }
+
+  test("should stringify composite of many-value seeks as AND of IN-lists under Dialect.Cypher") {
+    val expr = CompositeQueryExpression(Seq(
+      ManyQueryExpression(listOf(literalInt(1), literalInt(2))),
+      ManyQueryExpression(listOf(literalInt(3), literalInt(4)))
+    ))
+    cypherStringifier(expr, Seq("prop1", "prop2")) should equal("prop1 IN [1, 2] AND prop2 IN [3, 4]")
+  }
+
+  test("should stringify ManyQueryExpression with non-ListLiteral as unbracketed IN under Dialect.Cypher") {
+    val expr = ManyQueryExpression(parameter("list", CTAny))
+    cypherStringifier(expr, Seq("prop")) should equal("prop IN $list")
   }
 
   // ExistenceQueryExpression tests
@@ -348,66 +387,50 @@ class QueryExpressionStringifierTest extends CypherFunSuite3 with AstConstructio
     defaultStringifier(composite, Seq("prop1", "prop2")) should equal("prop1 = 1, NOT prop2")
   }
 
-  // Composite separator configuration test
   test("should stringify CompositeQueryExpression with AND separator") {
-    val andStringifier =
-      new QueryExpressionStringifier(ExpressionStringifier(), compositeSeparator = CompositeSeparator.And)
     val expr = CompositeQueryExpression(Seq(
       SingleQueryExpression(literalInt(1)),
       SingleQueryExpression(literalString("abc"))
     ))
-    andStringifier(expr, Seq("prop1", "prop2")) should equal("prop1 = 1 AND prop2 = \"abc\"")
+    cypherStringifier(expr, Seq("prop1", "prop2")) should equal("prop1 = 1 AND prop2 = \"abc\"")
   }
 
-  // ExistencePredicateForm.IsNotNull tests — emits standard Cypher null-check predicates
-  // suitable for use as a standalone WHERE clause.
-  private val isNotNullStringifier =
-    new QueryExpressionStringifier(
-      ExpressionStringifier(),
-      existencePredicateForm = ExistencePredicateForm.IsNotNull
-    )
-
   test("should stringify ExistenceQueryExpression with IsNotNull form") {
-    isNotNullStringifier(ExistenceQueryExpression, Seq("prop")) should equal("prop IS NOT NULL")
+    cypherStringifier(ExistenceQueryExpression, Seq("prop")) should equal("prop IS NOT NULL")
   }
 
   test("should stringify ExistenceQueryExpression with IsNotNull form and entity") {
-    isNotNullStringifier(ExistenceQueryExpression, varFor("n"), Seq("prop")) should equal("n.prop IS NOT NULL")
+    cypherStringifier(ExistenceQueryExpression, varFor("n"), Seq("prop")) should equal("n.prop IS NOT NULL")
   }
 
   test("should stringify AllQueryExpression with IsNotNull form") {
-    isNotNullStringifier(AllQueryExpression, Seq("prop")) should equal("true")
+    cypherStringifier(AllQueryExpression, Seq("prop")) should equal("true")
   }
 
   test("should stringify NonExistenceQueryExpression with IsNotNull form") {
-    isNotNullStringifier(NonExistenceQueryExpression, Seq("prop")) should equal("prop IS NULL")
+    cypherStringifier(NonExistenceQueryExpression, Seq("prop")) should equal("prop IS NULL")
   }
 
   test("should stringify NonExistenceQueryExpression with IsNotNull form and entity") {
-    isNotNullStringifier(NonExistenceQueryExpression, varFor("n"), Seq("prop")) should equal("n.prop IS NULL")
+    cypherStringifier(NonExistenceQueryExpression, varFor("n"), Seq("prop")) should equal("n.prop IS NULL")
   }
 
   test("should stringify CompositeQueryExpression with IsNotNull form and AND separator") {
-    val whereClauseStringifier = new QueryExpressionStringifier(
-      ExpressionStringifier(),
-      compositeSeparator = CompositeSeparator.And,
-      existencePredicateForm = ExistencePredicateForm.IsNotNull
-    )
     val composite = CompositeQueryExpression(Seq(
       SingleQueryExpression(literalInt(1)),
       ExistenceQueryExpression,
       NonExistenceQueryExpression
     ))
-    whereClauseStringifier(composite, Seq("prop1", "prop2", "prop3")) should equal(
+    cypherStringifier(composite, Seq("prop1", "prop2", "prop3")) should equal(
       "prop1 = 1 AND prop2 IS NOT NULL AND prop3 IS NULL"
     )
   }
 
   test("should backtick property names with special characters under IsNotNull form") {
-    isNotNullStringifier(ExistenceQueryExpression, Seq("prop with spaces")) should equal(
+    cypherStringifier(ExistenceQueryExpression, Seq("prop with spaces")) should equal(
       "`prop with spaces` IS NOT NULL"
     )
-    isNotNullStringifier(NonExistenceQueryExpression, varFor("n"), Seq("prop with spaces")) should equal(
+    cypherStringifier(NonExistenceQueryExpression, varFor("n"), Seq("prop with spaces")) should equal(
       "n.`prop with spaces` IS NULL"
     )
   }
