@@ -419,6 +419,19 @@ class CheckCommandIT {
     }
 
     @Test
+    void checkSplitDump() {
+        final var dump = testDirectory.directory("split-dump");
+        createDump(dump, dbName, "--experimental-split-size=5kb");
+
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var checkCommand = new CheckCommand(ctx);
+            CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
+            assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+            assertThat(ctx.outAsString()).contains("Loading dump from: " + dump.resolve(dbName + ".dump"));
+        });
+    }
+
+    @Test
     void checkDumpArtifact() throws IOException {
         final var dump = testDirectory.directory("dump");
 
@@ -585,10 +598,14 @@ class CheckCommandIT {
         createDump(dump, dbName);
     }
 
-    private void createDump(Path dump, final String dumpDBName) {
+    private void createDump(Path dump, final String dumpDBName, String... additionalArgs) {
         withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
             final var dumpCommand = new DumpCommand(ctx);
-            CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dumpDBName);
+            String[] args = new String[2 + additionalArgs.length];
+            args[0] = dumpDBName;
+            args[1] = "--to-path=" + dump;
+            System.arraycopy(additionalArgs, 0, args, 2, additionalArgs.length);
+            CommandLine.populateCommand(dumpCommand, args);
             assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
         });
     }

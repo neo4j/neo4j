@@ -28,10 +28,15 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class ExportTestUtilities {
 
-    public static void createDump(Path homeDir, Path confDir, Path dump, FileSystemAbstraction fs, String dbName) {
+    public static void createDump(
+            Path homeDir, Path confDir, Path dump, FileSystemAbstraction fs, String dbName, String... additionalArgs) {
         withSuppressedOutput(homeDir, confDir, fs, ctx -> {
             final var dumpCommand = new DumpCommand(ctx);
-            picocli.CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
+            String[] args = new String[additionalArgs.length + 2];
+            args[0] = dbName;
+            args[1] = "--to-path=" + dump;
+            System.arraycopy(additionalArgs, 0, args, 2, additionalArgs.length);
+            picocli.CommandLine.populateCommand(dumpCommand, args);
             assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
         });
     }

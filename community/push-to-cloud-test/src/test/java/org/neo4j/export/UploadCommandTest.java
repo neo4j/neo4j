@@ -102,6 +102,7 @@ class UploadCommandTest {
     static final String ERROR_REASON_UNSUPPORTED_INDEXES = "LegacyIndexes";
     private static final int MOCK_SERVER_PORT = 8080;
     private static final String DBNAME = "neo4j";
+    private static final String SPLIT_DBNAME = "neo4j-split";
     private static final String MOCK_BASE_URL = "http://localhost:" + MOCK_SERVER_PORT;
     private static final String SOME_EXAMPLE_BOLT_URI = "bolt+routing://database_id.databases.neo4j.io";
     private static final String STATUS_POLLING_PASSED_FIRST_CALL = "Passed first";
@@ -145,11 +146,13 @@ class UploadCommandTest {
         Path configFile = configDir.resolve("neo4j.conf");
         dumpDir = directory.directory("dumps");
         ExportTestUtilities.prepareDatabase(neo4jLayout.databaseLayout(DBNAME));
+        ExportTestUtilities.prepareDatabase(neo4jLayout.databaseLayout(SPLIT_DBNAME));
         Files.createFile(configFile);
         PrintStream nullOutputStream = new PrintStream(nullOutputStream());
         ctx = new ExecutionContext(homeDir, confPath, nullOutputStream, nullOutputStream, directory.getFileSystem());
         dump = dumpDir.resolve(DBNAME + ".dump");
         ExportTestUtilities.createDump(homeDir, confPath, dumpDir, fs, DBNAME);
+        ExportTestUtilities.createDump(homeDir, confPath, dumpDir, fs, SPLIT_DBNAME, "--experimental-split-size=5kb");
         dbFullSize = IOCommon.readSizeFromArchiveMetaData(ctx, dump);
     }
 
@@ -183,9 +186,37 @@ class UploadCommandTest {
         verifyGCPPresignedEndpoints();
     }
 
+    @Test
+    void happyPathGCPSplitUploadCommandTest() {
+        String authResponse = "token";
+        createAuraHappyPathStubs(authResponse);
+        createGCPHappyPathWireMockStubs(authResponse);
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
+                .withHeader("Authorization", equalTo("Bearer " + authResponse))
+                .willReturn(firstSuccessfulDatabaseRunningResponse())
+                .inScenario("test")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
+
+        AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        UploadCommand command = buildUploadCommand(auraURLFactory);
+        String[] args = getNormalRuntimeArgs(SPLIT_DBNAME);
+
+        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
+
+        verifyCommonConsoleUrls();
+        verifyGCPPresignedEndpoints();
+    }
+
     private String[] getNormalRuntimeArgs() {
+        return getNormalRuntimeArgs(DBNAME);
+    }
+
+    private String[] getNormalRuntimeArgs(String dbName) {
         String[] args = {
-            DBNAME,
+            dbName,
             "--from-path",
             dumpDir.toAbsolutePath().toString(),
             "--to-uri",
@@ -253,6 +284,43 @@ class UploadCommandTest {
                 PushToCloudCLI.fakeCLI("username", "password", false));
 
         String[] args = getNormalRuntimeArgs();
+        assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
+
+        verifyCommonConsoleUrls();
+
+        verify(putRequestedFor(urlEqualTo("/signed1")));
+        verify(putRequestedFor(urlEqualTo("/signed2")));
+        verify(putRequestedFor(urlEqualTo("/signed3")));
+    }
+
+    @Test
+    void happyPathAWSSplitUploadCommandTest() {
+        String authResponse = "token";
+        createAuraHappyPathStubs(authResponse);
+
+        wireMockServer.stubFor(
+                initiateUploadTargetRequest(authResponse).willReturn(successfulInitiateUploadTargetAWSResponse()));
+        wireMockServer.stubFor(uploadRequest().willReturn(aResponse().withStatus(HTTP_OK)));
+        AuraConsole testConsole = new AuraConsole(MOCK_BASE_URL, "sausage");
+        wireMockServer.stubFor(get(urlMatching(".*?/import/status$"))
+                .withHeader("Authorization", equalTo("Bearer " + authResponse))
+                .willReturn(firstSuccessfulDatabaseRunningResponse())
+                .inScenario("test")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
+        wireMockServer.stubFor(getMultiPartStatusRequest().willReturn(successfulMultiPartStatusResponse()));
+
+        AuraURLFactory auraURLFactory = mock(AuraURLFactory.class);
+        when(auraURLFactory.buildConsoleURI(any(), anyBoolean())).thenReturn(testConsole);
+        AuraClient.AuraClientBuilder auraClientBuilder = new AuraClient.AuraClientBuilder(ctx);
+        UploadCommand command = new UploadCommand(
+                ctx,
+                auraClientBuilder,
+                auraURLFactory,
+                new FakeAWSUploadURLFactory(),
+                PushToCloudCLI.fakeCLI("username", "password", false));
+
+        String[] args = getNormalRuntimeArgs(SPLIT_DBNAME);
         assertThatCode(() -> new CommandLine(command).execute(args)).doesNotThrowAnyException();
 
         verifyCommonConsoleUrls();

@@ -57,7 +57,7 @@ public class SequentialFileNameHelper {
     }
 
     public Path getFileForVersion(long version) {
-        return Path.of(baseName.toAbsolutePath() + VERSION_SUFFIX + version);
+        return baseName.resolveSibling(baseName.getFileName().toString() + VERSION_SUFFIX + version);
     }
 
     public Path directory() {
