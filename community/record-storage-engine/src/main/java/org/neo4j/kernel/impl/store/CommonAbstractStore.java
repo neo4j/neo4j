@@ -25,7 +25,6 @@ import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_CHAIN_FOLLOW;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -430,15 +429,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     @Override
     public PageCursor openPageCursorForReading(long id, CursorContext cursorContext) {
         return openPageCursorForReading(id, 0, cursorContext);
-    }
-
-    /**
-     * Opens a new {@link PageCursor} to this store.
-     * The opened cursor will make use of the {@link PagedFile#PF_NO_CHAIN_FOLLOW} flag set and will not follow chain links regardless of the version context.
-     */
-    @Override
-    public PageCursor openPageCursorForReadingHeadOnly(long id, CursorContext cursorContext) {
-        return openPageCursorForReading(id, PF_NO_CHAIN_FOLLOW, cursorContext);
     }
 
     private PageCursor openPageCursorForReading(long id, int additionalCursorFlags, CursorContext cursorContext) {
