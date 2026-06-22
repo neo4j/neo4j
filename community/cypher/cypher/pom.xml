@@ -21,6 +21,7 @@
   </scm>
 
   <properties>
+    <mixed.language.allowed>true</mixed.language.allowed>
     <moduleName>org.neo4j.cypher</moduleName>
   </properties>
 

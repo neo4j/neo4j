@@ -23,6 +23,7 @@
 
   <properties>
     <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
+    <mixed.language.allowed>true</mixed.language.allowed>
     <moduleName>org.neo4j.tooling.import_tool</moduleName>
   </properties>
 

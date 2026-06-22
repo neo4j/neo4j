@@ -16,6 +16,7 @@
   <name>Neo4j - Query Router</name>
 
   <properties>
+    <mixed.language.allowed>true</mixed.language.allowed>
     <moduleName>com.neo4j.router</moduleName>
     <scala.binary.version>3</scala.binary.version>
   </properties>

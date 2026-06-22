@@ -142,6 +142,12 @@
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
     <maven.compiler.release>${vm.target.version}</maven.compiler.release>
     <metrics.version>4.2.39</metrics.version>
+    <!--
+      It is strongly preferred that a module should NOT contain both Java and Scala sources.
+      The preference is for new modules to split the languages into separate modules.
+      Existing modules can set this to true.
+    -->
+    <mixed.language.allowed>false</mixed.language.allowed>
     <mockito.version>5.23.0</mockito.version>
     <neo4j-java-driver.version>6.2.0</neo4j-java-driver.version>
     <neo4j.bolt.connection.version>11.1.0</neo4j.bolt.connection.version>
@@ -1801,6 +1807,42 @@
                       qualified imports.</reason>
                     <bannedImport>**.'*'</bannedImport>
                   </RestrictImports>
+                </rules>
+                <fail>true</fail>
+              </configuration>
+            </execution>
+            <execution>
+              <!-- A module should not contain both Java and Scala sources. Defined as its own
+                   execution (not in "default") so it is inherited by every module - including the
+                   enterprise trees that override the "default" rules with combine.self="override". -->
+              <id>enforce-no-mixed-language</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <phase>validate</phase>
+              <configuration>
+                <rules>
+                  <evaluateBeanshell>
+                    <message>This module mixes Java and Scala sources (both src/main/java + src/main/scala, or src/test/java + src/test/scala). New mixed-language modules are not allowed - keep Java and Scala in separate modules. If this is an intentional, reviewed exception, set &lt;mixed.language.allowed&gt;true&lt;/mixed.language.allowed&gt; in the module POM.</message>
+                    <condition>import java.io.File;
+                      containsExt(File dir, String ext) {
+                        if (!dir.isDirectory()) return false;
+                        File[] kids = dir.listFiles();
+                        if (kids == null) return false;
+                        for (File f : kids) {
+                          if (f.isDirectory()) { if (containsExt(f, ext)) return true; }
+                          else if (f.getName().endsWith(ext)) return true;
+                        }
+                        return false;
+                      }
+                      if (Boolean.parseBoolean("${mixed.language.allowed}")) { return true; }
+                      File base = new File("${project.basedir}");
+                      boolean mainMixed = containsExt(new File(base,"src/main/java"),".java")
+                                       &amp;&amp; containsExt(new File(base,"src/main/scala"),".scala");
+                      boolean testMixed = containsExt(new File(base,"src/test/java"),".java")
+                                       &amp;&amp; containsExt(new File(base,"src/test/scala"),".scala");
+                      return !(mainMixed || testMixed);</condition>
+                  </evaluateBeanshell>
                 </rules>
                 <fail>true</fail>
               </configuration>

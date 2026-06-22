@@ -33,6 +33,7 @@
 
   <properties>
     <dependency.analyse.strict>true</dependency.analyse.strict>
+    <mixed.language.allowed>true</mixed.language.allowed>
     <moduleName>org.neo4j.cypher.internal.frontend</moduleName>
   </properties>
 
