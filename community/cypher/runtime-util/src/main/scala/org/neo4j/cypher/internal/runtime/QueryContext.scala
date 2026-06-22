@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.Locks
@@ -207,6 +208,12 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
     needsValues: Boolean,
     indexOrder: IndexOrder,
     queries: Seq[PropertyIndexQuery]
+  ): NodeValueIndexCursor
+
+  def nodeFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
   ): NodeValueIndexCursor
 
   def nodeIndexSeekByContains(

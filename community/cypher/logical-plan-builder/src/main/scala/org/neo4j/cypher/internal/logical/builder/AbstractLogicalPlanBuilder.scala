@@ -2428,9 +2428,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     skip: Option[ToExpression] = None,
     score: String = "",
     argumentIds: Set[String] = Set.empty,
-    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-    entityFilter: EntityFilterQueryExpression[Expression] = MatchAllQueryExpression,
-    propertyFilter: Option[QueryExpression[Expression]] = None
+    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue
   ): IMPL = {
     val labels = labelNames.map(labelName => LabelToken(labelName, LabelId(resolver.getLabelId(labelName))))
     val propIDs = properties
@@ -2456,8 +2454,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         analyzer.map(a => toExpression(a)),
         skip.map(s => toExpression(s)),
         toExpression(limit),
-        entityFilter,
-        propertyFilter,
         argumentIds.map(varFor)
       )(idGen)
     }

@@ -1818,8 +1818,6 @@ object LogicalPlanToPlanBuilderString {
           analyzer,
           skip,
           limit,
-          entityFilter,
-          maybePropertyFilter,
           argumentIds
         ) =>
         params(
@@ -1833,9 +1831,7 @@ object LogicalPlanToPlanBuilderString {
           skip.map(_.quoted.some).getOrElse(Param("None")),
           score.map(_.name.quoted).getOrElse("".quoted),
           argumentIds,
-          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
-          entityFilter,
-          maybePropertyFilter
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex)
         )
 
       case DirectedRelationshipFulltextIndexSearch(

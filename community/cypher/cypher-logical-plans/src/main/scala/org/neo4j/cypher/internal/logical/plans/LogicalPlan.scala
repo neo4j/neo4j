@@ -371,7 +371,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
             entityTypes,
             properties.map(_.propertyKeyToken)
           )
-      case NodeFulltextIndexSearch(idName, entityTypes, properties, _, _, _, _, _, _, _, _, _) =>
+      case NodeFulltextIndexSearch(idName, entityTypes, properties, _, _, _, _, _, _, _) =>
         acc => acc :+ SchemaSemanticNodeIndexUsage(idName, entityTypes, properties.map(_.propertyKeyToken))
       case UndirectedRelationshipFulltextIndexSearch(
           maybeIdName,
@@ -4073,8 +4073,6 @@ case class NodeFulltextIndexSearch(
   analyzer: Option[Expression],
   skip: Option[Expression],
   limit: Expression,
-  entityFilter: EntityFilterQueryExpression[Expression],
-  maybePropertyFilter: Option[QueryExpression[Expression]],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends NodeIndexLeafPlan(idGen) with StableLeafPlan {
   override val localAvailableSymbols: Set[LogicalVariable] = argumentIds + idName ++ score
@@ -4083,9 +4081,7 @@ case class NodeFulltextIndexSearch(
     queryString.dependencies ++
       analyzer.map(_.dependencies).getOrElse(Set.empty) ++
       skip.map(_.dependencies).getOrElse(Set.empty) ++
-      limit.dependencies ++
-      entityFilter.expressions.flatMap(_.dependencies) ++
-      maybePropertyFilter.map(_.expressions.flatMap(_.dependencies)).getOrElse(Set.empty)
+      limit.dependencies
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeFulltextIndexSearch =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))

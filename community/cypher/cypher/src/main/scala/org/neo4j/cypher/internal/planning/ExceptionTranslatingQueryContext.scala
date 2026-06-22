@@ -52,6 +52,7 @@ import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.MutatingEntityCursor
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -188,6 +189,13 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     values: Seq[PropertyIndexQuery]
   ): NodeValueIndexCursor =
     translateException(tokenNameLookup, inner.nodeIndexSeek(index, needsValues, indexOrder, values))
+
+  override def nodeFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
+  ): NodeValueIndexCursor =
+    translateException(tokenNameLookup, inner.nodeFulltextIndexSeek(index, constraints, query))
 
   override def relationshipIndexSeek(
     index: IndexReadSession,

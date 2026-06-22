@@ -154,7 +154,7 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
           if (index.getIndexType != indexType) {
             throw InvalidArgumentException.wrongIndexType(
               name,
-              IndexType.VECTOR.name().toLowerCase(Locale.ROOT),
+              indexType.name().toLowerCase(Locale.ROOT),
               index.getIndexType.name().toLowerCase(Locale.ROOT)
             )
           }

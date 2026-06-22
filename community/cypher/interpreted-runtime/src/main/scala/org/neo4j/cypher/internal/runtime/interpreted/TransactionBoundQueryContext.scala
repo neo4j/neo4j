@@ -894,6 +894,16 @@ private[internal] class TransactionBoundReadQueryContext(
     }
   }
 
+  override def nodeFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
+  ): NodeValueIndexCursor = {
+    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
+    reads().nodeIndexSeek(transactionalContext.kernelQueryContext, index, nodeCursor, constraints, query)
+    nodeCursor
+  }
+
   override def relationshipIndexSeek(
     index: IndexReadSession,
     needsValues: Boolean,

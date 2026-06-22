@@ -821,11 +821,6 @@ case class LogicalPlan2PlanDescription(
         )
 
       case s: NodeFulltextIndexSearch =>
-        val predicate = s.maybePropertyFilter match {
-          case Some(valueExpr) =>
-            pretty" WHERE ${indexPredicateString(Some(s.idName), s.properties.drop(1).map(_.propertyKeyToken), valueExpr)}"
-          case None => pretty""
-        }
         val analyzerPart = s.analyzer match {
           case Some(a) => pretty" WITH ANALYZER ${asPrettyString(a)}"
           case None    => pretty""
@@ -839,7 +834,7 @@ case class LogicalPlan2PlanDescription(
           case None                => pretty""
         }
         val prettyDetails =
-          pretty"SEARCH ${asPrettyString(s.idName)} IN (FULLTEXT INDEX ${asPrettyString(s.indexName)} FOR ${asPrettyString(s.queryString)}$analyzerPart$predicate$skipPart LIMIT ${asPrettyString(s.limit)})$score"
+          pretty"SEARCH ${asPrettyString(s.idName)} IN (FULLTEXT INDEX ${asPrettyString(s.indexName)} FOR ${asPrettyString(s.queryString)}$analyzerPart$skipPart LIMIT ${asPrettyString(s.limit)})$score"
 
         PlanDescriptionImpl(
           id,

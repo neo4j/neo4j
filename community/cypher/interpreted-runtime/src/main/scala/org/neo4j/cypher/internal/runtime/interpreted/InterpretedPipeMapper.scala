@@ -118,6 +118,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
@@ -308,6 +309,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeUniqueNodePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeCountFromCountStorePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeFulltextIndexSearchPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexContainsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexEndsWithScanPipe
@@ -1106,6 +1108,28 @@ case class InterpretedPipeMapper(
           indexRegistrator.registerNamedQueryIndex(indexName, IndexType.VECTOR, labels, properties),
           entityFilter.map(buildExpression),
           maybePropertyFilter.map(_.map(buildExpression))
+        )(id)
+
+      case NodeFulltextIndexSearch(
+          node,
+          labels,
+          properties,
+          score,
+          indexName,
+          queryString,
+          analyzer,
+          skip,
+          limit,
+          _
+        ) =>
+        NodeFulltextIndexSearchPipe(
+          node.name,
+          score.map(_.name),
+          buildExpression(queryString),
+          analyzer.map(buildExpression),
+          skip.map(buildExpression),
+          buildExpression(limit),
+          indexRegistrator.registerNamedQueryIndex(indexName, IndexType.FULLTEXT, labels, properties)
         )(id)
 
       case DirectedRelationshipVectorIndexSearch(

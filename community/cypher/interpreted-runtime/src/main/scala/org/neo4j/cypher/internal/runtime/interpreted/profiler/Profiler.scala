@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.Cursor
+import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
@@ -348,6 +349,15 @@ final class ProfilingPipeQueryContext(
   ): NodeValueIndexCursor = {
     PipeTracer.onIndexSeek(index.reference())
     trace(super.nodeIndexSeek(index, needsValues, indexOrder, queries))
+  }
+
+  override def nodeFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
+  ): NodeValueIndexCursor = {
+    PipeTracer.onIndexSeek(index.reference())
+    trace(super.nodeFulltextIndexSeek(index, constraints, query))
   }
 
   override def nodeIndexScan(

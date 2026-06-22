@@ -1991,8 +1991,7 @@ class LogicalPlanToPlanBuilderStringTest
         skip = Some("5"),
         score = "score",
         argumentIds = Set("x"),
-        getValueFromIndex = Map("prop" -> GetValue, "prop2" -> DoNotGetValue),
-        propertyFilter = Some(rangeExpression(gte(5)))
+        getValueFromIndex = Map("prop" -> GetValue, "prop2" -> DoNotGetValue)
       )
       .nodeFulltextIndexSearch(
         "x",

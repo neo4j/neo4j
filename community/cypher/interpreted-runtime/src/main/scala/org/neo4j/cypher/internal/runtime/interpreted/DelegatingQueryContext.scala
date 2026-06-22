@@ -54,6 +54,7 @@ import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.Locks
 import org.neo4j.internal.kernel.api.MutatingEntityCursor
@@ -385,6 +386,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     queries: Seq[PropertyIndexQuery]
   ): NodeValueIndexCursor =
     inner.nodeIndexSeek(index, needsValues, indexOrder, queries)
+
+  override def nodeFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
+  ): NodeValueIndexCursor =
+    inner.nodeFulltextIndexSeek(index, constraints, query)
 
   override def nodeIndexScan(
     index: IndexReadSession,

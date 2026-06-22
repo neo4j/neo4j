@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.runtime.memory.NoOpQueryMemoryTracker
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.MutatingEntityCursor
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -376,6 +377,12 @@ object StaticEvaluation {
       needsValues: Boolean,
       indexOrder: IndexOrder,
       queries: Seq[PropertyIndexQuery]
+    ): NodeValueIndexCursor = notAvailable()
+
+    override def nodeFulltextIndexSeek(
+      index: IndexReadSession,
+      constraints: IndexQueryConstraints,
+      query: PropertyIndexQuery.FulltextSearchPredicate
     ): NodeValueIndexCursor = notAvailable()
 
     override def nodeIndexSeekByContains(
