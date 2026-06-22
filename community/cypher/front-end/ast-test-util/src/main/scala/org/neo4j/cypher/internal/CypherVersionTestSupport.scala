@@ -60,14 +60,25 @@ trait CypherVersionTestSupport {
   // CypherFunSuite (2.13) and CypherFunSuite3 both satisfy this while front-end is still on 2.13.
   self: AnyFunSuiteLike with Assertions with Matchers =>
 
+  // Remove after Scala 3 migration is complete
+  private lazy val scalaTest2TestMethod = this.getClass.getMethods.find(_.getName == "test")
+
+  // Remove after Scala 3 migration is complete
+  private def registerNewTest(testName: String)(f: => Any)(implicit pos: org.scalactic.source.Position): Unit = {
+    scalaTest2TestMethod match {
+      case Some(testMethod) => testMethod.invoke(this, testName, Seq.empty, () => f, pos)
+      case None             => test(testName)(f)
+    }
+  }
+
   def testVersions(testName: String)(f: CypherVersion => Any)(implicit pos: org.scalactic.source.Position): Unit =
-    test(testName) {
+    registerNewTest(testName) {
       CypherVersion.values().foreach(v => withClue(s"CYPHER $v\n")(f(v)))
     }
 
   def testVersionsExcept5(testName: String)(f: CypherVersion => Any)(implicit
     pos: org.scalactic.source.Position): Unit =
-    test(testName) {
+    registerNewTest(testName) {
       versionsExcept5Iterable.foreach(v =>
         withClue(s"CYPHER $v\n")(f(v))
       )
