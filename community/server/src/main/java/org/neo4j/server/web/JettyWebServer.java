@@ -41,6 +41,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.zip.ZipInputStream;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.ee8.servlet.FilterHolder;
 import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee8.webapp.WebAppContext;
@@ -388,8 +389,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
             switch (staticContent.type()) {
                 case JAR -> {
                     staticContext.setContextPath(mountPoint);
-                    var tempDir = Files.createTempDirectory("decompressed-browser");
-                    tempDir.toFile().deleteOnExit();
+                    var tempDir = createSelfDeletingOnShutdownTempDir();
                     var content = extractZip(browserPath, tempDir);
                     resource = ResourceFactory.root().newResource(content);
                 }
@@ -547,5 +547,19 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
             log.warn("Unable to decompress browser archive.", e);
         }
         return null;
+    }
+
+    private Path createSelfDeletingOnShutdownTempDir() throws IOException {
+        var tempDir = Files.createTempDirectory("decompressed-browser");
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                FileUtils.deleteDirectory(tempDir.toFile());
+            } catch (IOException e) {
+                log.warn("Unable to delete temporary directory for browser decompression ", e);
+            }
+        }));
+
+        return tempDir;
     }
 }

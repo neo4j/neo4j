@@ -58,6 +58,10 @@
       <artifactId>jackson-jaxrs-json-provider</artifactId>
     </dependency>
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-base</artifactId>
     </dependency>
