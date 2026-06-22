@@ -173,7 +173,7 @@
     <scala.test.version>3.2.13</scala.test.version>
     <scala.version>2.13.17</scala.version>
     <scala3.version>3.7.4</scala3.version>
-    <shiro.version>2.1.0</shiro.version>
+    <shiro.version>2.2.1</shiro.version>
     <skip-scalastyle>false</skip-scalastyle>
     <slf4j.version>2.0.17</slf4j.version>
     <sqlite-jdbc.version>3.53.2.0</sqlite-jdbc.version>
