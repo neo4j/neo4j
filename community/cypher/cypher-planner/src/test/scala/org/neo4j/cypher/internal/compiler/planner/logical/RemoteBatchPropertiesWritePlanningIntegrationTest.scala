@@ -71,6 +71,10 @@ abstract class AbstractRemoteBatchPropertiesWritePlanningIntegrationTest(executi
       GraphDatabaseInternalSettings.cypher_remote_batch_properties_implementation,
       RemoteBatchPropertiesImplementation.PLANNER
     )
+    .withSetting(
+      GraphDatabaseInternalSettings.remote_leaf_operators,
+      true
+    )
     .setExecutionModel(executionModel)
     .setAllNodesCardinality(3181725)
     .setLabelCardinality("Person", 9892)
@@ -486,7 +490,10 @@ abstract class AbstractRemoteBatchPropertiesWritePlanningIntegrationTest(executi
       .filter("cacheR[k.since] > 2020", "p2:Person")
       .remoteBatchProperties("cacheRFromStore[k.since]", "cacheRFromStore[k.value]") // cache property `value`
       .expandAll("(p1)-[k:KNOWS]->(p2)")
-      .nodeIndexOperator("p1:Person(firstName = 'J')", getValue = Map("firstName" -> DoNotGetValue))
+      .nodeIndexOperator(
+        "p1:Person(firstName = 'J')",
+        getValue = Map("firstName" -> DoNotGetValue)
+      ) // should NOT plan a remoteNodeIndexSeek operator since it is not supported for write queries.
       .build()
   }
 

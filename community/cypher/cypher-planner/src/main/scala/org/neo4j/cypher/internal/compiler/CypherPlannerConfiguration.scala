@@ -302,4 +302,11 @@ class CypherPlannerConfiguration(
     )
     () => config.mergeOptimizationEnabled
   }
+
+  val remoteLeafOperators: () => Boolean = {
+    AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.remote_leaf_operators.dynamic()
+    )
+    () => config.remoteLeafOperators
+  }
 }

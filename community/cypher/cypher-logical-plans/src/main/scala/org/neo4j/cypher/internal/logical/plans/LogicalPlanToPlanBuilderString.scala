@@ -256,12 +256,14 @@ object LogicalPlanToPlanBuilderString {
         "pointDistanceNodeIndexSeek"
       case NodeIndexSeek(_, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _, _, _, _) =>
         "pointBoundingBoxNodeIndexSeek"
-      case _: NodeIndexSeek            => "nodeIndexOperator"
-      case _: PartitionedNodeIndexSeek => "partitionedNodeIndexOperator"
-      case _: NodeUniqueIndexSeek      => "nodeIndexOperator"
-      case _: NodeIndexContainsScan    => "nodeIndexOperator"
-      case _: NodeIndexEndsWithScan    => "nodeIndexOperator"
-      case _: MultiNodeIndexSeek       => "multiNodeIndexSeekOperator"
+      case _: NodeIndexSeek             => "nodeIndexOperator"
+      case _: RemoteNodeIndexSeek       => "remoteNodeIndexOperator"
+      case _: RemoteNodeUniqueIndexSeek => "remoteNodeIndexOperator"
+      case _: PartitionedNodeIndexSeek  => "partitionedNodeIndexOperator"
+      case _: NodeUniqueIndexSeek       => "nodeIndexOperator"
+      case _: NodeIndexContainsScan     => "nodeIndexOperator"
+      case _: NodeIndexEndsWithScan     => "nodeIndexOperator"
+      case _: MultiNodeIndexSeek        => "multiNodeIndexSeekOperator"
       case DirectedRelationshipIndexSeek(
           _,
           _,
@@ -1211,6 +1213,56 @@ object LogicalPlanToPlanBuilderString {
           indexOrder,
           paramExpr,
           unique = false,
+          queryStr,
+          indexType,
+          supportPartitionedScan
+        )
+      case RemoteNodeIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
+        val propNames = properties.map(_.propertyKeyToken.name)
+        val queryStr = queryExpressionStr(valueExpr, propNames)
+        val paramExpr = getParamExpr(valueExpr)
+        remoteNodeIndexOperator(
+          idName,
+          labelToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          paramExpr,
+          unique = false,
+          queryStr,
+          indexType,
+          supportPartitionedScan
+        )
+      case RemoteNodeUniqueIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
+        val propNames = properties.map(_.propertyKeyToken.name)
+        val queryStr = queryExpressionStr(valueExpr, propNames)
+        val paramExpr = getParamExpr(valueExpr)
+        remoteNodeIndexOperator(
+          idName,
+          labelToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          paramExpr,
+          unique = true,
           queryStr,
           indexType,
           supportPartitionedScan
@@ -2263,6 +2315,29 @@ object LogicalPlanToPlanBuilderString {
     variable.map(v => escapeIdentifier(v.name)).getOrElse("")
 
   private def nodeIndexOperator(
+    idName: LogicalVariable,
+    labelToken: LabelToken,
+    properties: Seq[IndexedProperty],
+    argumentIds: Set[LogicalVariable],
+    indexOrder: IndexOrder,
+    paramExpr: Seq[String],
+    unique: Boolean,
+    parenthesesContent: String,
+    indexType: IndexType,
+    supportPartitionedScan: Boolean
+  ) =
+    params(
+      s"${name(idName)}:${labelToken.name}($parenthesesContent)".quoted,
+      "indexOrder" -> indexOrder,
+      "paramExpr" -> paramExpr,
+      "argumentIds" -> argumentIds,
+      "getValue" -> Param.mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
+      "unique" -> unique,
+      "indexType" -> indexType,
+      "supportPartitionedScan" -> supportPartitionedScan
+    )
+
+  private def remoteNodeIndexOperator(
     idName: LogicalVariable,
     labelToken: LabelToken,
     properties: Seq[IndexedProperty],

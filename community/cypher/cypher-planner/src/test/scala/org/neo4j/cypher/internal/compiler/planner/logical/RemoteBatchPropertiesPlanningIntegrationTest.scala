@@ -119,7 +119,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest
 
     plan should equal(planner.subPlanBuilder()
       .orderedDistinct(Seq("cacheN[n.firstName]"), "cacheN[n.firstName] AS `n.firstName`")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "n:Person(firstName = 'foo')",
         indexOrder = IndexOrderAscending,
         getValue = Map("firstName" -> GetValue)
@@ -153,7 +153,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest
       .filter("friend:Person")
       .expandAll("(n)-[anon_0:KNOWS]-(friend)")
       .remoteBatchProperties("cacheNFromStore[n.lastName]")
-      .nodeIndexOperator("n:Person(firstName = 'Dave')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'Dave')", getValue = Map("firstName" -> GetValue))
       .build())
   }
 
@@ -170,7 +170,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest
       .optional()
       .limit(1)
       .projection("cacheN[msg.creationDate] AS `max(msg.creationDate)`")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "msg:Message(creationDate > ???)",
         paramExpr = Some(parameter("min_creation_date", CTAny)),
         getValue = Map("creationDate" -> GetValue),
@@ -192,7 +192,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest
       .optional()
       .limit(1)
       .projection("cacheN[msg.creationDate] AS `min(msg.creationDate)`")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "msg:Message(creationDate > ???)",
         paramExpr = Some(parameter("min_creation_date", CTAny)),
         getValue = Map("creationDate" -> GetValue),
@@ -340,7 +340,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest
       planner.subPlanBuilder()
         .produceResults("a", "b")
         .apply()
-        .|.nodeIndexOperator(
+        .|.remoteNodeIndexOperator(
           "b:B(prop = cacheN[a.prop])",
           indexOrder = IndexOrderNone,
           getValue = Map("prop" -> DoNotGetValue),
@@ -379,7 +379,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest
       planner.planBuilder()
         .produceResults("a", "b")
         .apply()
-        .|.nodeIndexOperator(
+        .|.remoteNodeIndexOperator(
           "b:B(prop = cacheN[a.prop])",
           indexOrder = IndexOrderAscending,
           getValue = Map("prop" -> GetValue),
@@ -544,6 +544,10 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       GraphDatabaseInternalSettings.cypher_remote_batch_properties_implementation,
       RemoteBatchPropertiesImplementation.PLANNER
     )
+    .withSetting(
+      GraphDatabaseInternalSettings.remote_leaf_operators,
+      true
+    )
     .setExecutionModel(executionModel)
 
   // Graph counts based on a subset of LDBC SF 1
@@ -683,7 +687,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       ))
       .projection("person AS x")
       .remoteBatchPropertiesWithFilter("cacheNFromStore[person.firstName]")("person.firstName IS NOT NULL")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "person:Person(id = ???)",
         paramExpr = Some(parameter("Person", CTAny)),
         getValue = Map("id" -> DoNotGetValue),
@@ -757,7 +761,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .expandInto("(a)-[]->(n1)")
       .filter(assertIsNode("n0"))
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "a:L0(prop = 42)",
         argumentIds = Set("n0", "n1"),
         getValue = Map("prop" -> GetValue)
@@ -811,7 +815,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .produceResults("personFirstName")
       .projection("cacheN[person.firstName] AS personFirstName")
       .remoteBatchProperties("cacheNFromStore[person.firstName]")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "person:Person(id = ???)",
         paramExpr = Some(parameter("Person", CTAny)),
         getValue = Map("id" -> DoNotGetValue),
@@ -833,7 +837,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .projection("cacheN[person.firstName] AS personFirstName")
       .remoteBatchProperties("cacheNFromStore[person.firstName]")
       .filter("NOT cacheN[person.id] = 42")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "person:Person(id = ???)",
         paramExpr = Some(parameter("Person", CTAny)),
         getValue = Map("id" -> GetValue),
@@ -855,7 +859,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .produceResults("personId", "personFirstName")
       .projection("cacheN[person.id] AS personId", "cacheN[person.firstName] AS personFirstName")
       .remoteBatchProperties("cacheNFromStore[person.firstName]")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "person:Person(id = ???)",
         paramExpr = Some(parameter("Person", CTAny)),
         getValue = Map("id" -> GetValue),
@@ -900,7 +904,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         )("cacheN[person.firstName] = friend.firstName")
         .expand("(person)-[:KNOWS*1..2]-(friend)", expandMode = ExpandAll, projectedDir = OUTGOING)
         .remoteBatchProperties("cacheNFromStore[person.firstName]")
-        .nodeIndexOperator(
+        .remoteNodeIndexOperator(
           "person:Person(id = ???)",
           paramExpr = Some(parameter("Person", CTAny)),
           getValue =
@@ -932,13 +936,13 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         ) // note how we retrieve firstName once again
         .distinct("person AS person")
         .union()
-        .|.nodeIndexOperator(
+        .|.remoteNodeIndexOperator(
           "person:Person(id = ???)",
           paramExpr = Some(parameter("Person", CTAny)),
           getValue = Map("id" -> DoNotGetValue),
           unique = true
         ) // here we get the person id, even though we don't use it later on
-        .nodeIndexOperator(
+        .remoteNodeIndexOperator(
           "person:Person(firstName = 'Dave')",
           getValue = Map("firstName" -> GetValue)
         ) // TODO: we shouldn't get the value only on one side of the union, we need some additional logic
@@ -974,10 +978,10 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       )
       .|.filter("p:Message")
       .|.expandAll("(anon_0)<-[:POST_HAS_CREATOR]-(p)")
-      .|.nodeIndexOperator("anon_0:Person(firstName = 'Smith')", getValue = Map("firstName" -> DoNotGetValue))
+      .|.remoteNodeIndexOperator("anon_0:Person(firstName = 'Smith')", getValue = Map("firstName" -> DoNotGetValue))
       .projection("p AS p")
       .remoteBatchPropertiesWithFilter("cacheNFromStore[p.creationDate]")("p.creationDate > $max_creation_date")
-      .nodeIndexOperator("p:Person(firstName = 'Smith')", getValue = Map("firstName" -> DoNotGetValue))
+      .remoteNodeIndexOperator("p:Person(firstName = 'Smith')", getValue = Map("firstName" -> DoNotGetValue))
       .build()
   }
 
@@ -1068,7 +1072,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         "cacheNFromStore[friend.lastName]"
       )("NOT cacheN[person.id] = friend.id")
       .expand("(person)-[:KNOWS*1..2]-(friend)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "person:Person(id = ???)",
         paramExpr = Some(ExplicitParameter("Person", CTAny)(InputPosition.NONE)),
         getValue = Map("id" -> GetValue),
@@ -1133,7 +1137,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .bfsPruningVarExpand(
         "(person)-[:KNOWS*1..2]-(friend)"
       )
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "person:Person(id = ???)",
         paramExpr = Some(parameter("Person", CTAny)),
         getValue = Map("id" -> DoNotGetValue),
@@ -1189,7 +1193,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .expand("(post)<-[:REPLY_OF*0..]-(reply)", expandMode = ExpandAll, projectedDir = INCOMING)
       .filter("person:Person")
       .expandAll("(post)-[:POST_HAS_CREATOR]->(person)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "post:Message(creationDate <= ???)",
         paramExpr = Some(parameter("endDate", CTAny)),
         getValue = Map("creationDate" -> DoNotGetValue)
@@ -1378,7 +1382,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
     plan should equal(planner.subPlanBuilder()
       .distinct("cacheN[n.lastName] AS `n.lastName`")
       .remoteBatchProperties("cacheNFromStore[n.lastName]")
-      .nodeIndexOperator("n:Person(firstName = 'foo')", getValue = Map("firstName" -> DoNotGetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'foo')", getValue = Map("firstName" -> DoNotGetValue))
       .build())
   }
 
@@ -1451,12 +1455,12 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         .|.nodeByLabelScan("a", "Person")
         .antiSemiApply()
         .|.expandInto("(b)-[:KNOWS]->(anon_0)")
-        .|.nodeIndexOperator(
+        .|.remoteNodeIndexOperator(
           "anon_0:Person(firstName = 'Jon')",
           argumentIds = Set("b"),
           getValue = Map("firstName" -> DoNotGetValue)
         )
-        .nodeIndexOperator("b:Person(firstName = 'John')", getValue = Map("firstName" -> GetValue))
+        .remoteNodeIndexOperator("b:Person(firstName = 'John')", getValue = Map("firstName" -> GetValue))
         .build()
     )
   }
@@ -1481,7 +1485,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .|.filter("s:Person")
       .|.expandAll("(p)-[:KNOWS]-(s)")
       .|.argument("p")
-      .nodeIndexOperator("p:Person(firstName = 'foo')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("p:Person(firstName = 'foo')", getValue = Map("firstName" -> GetValue))
       .build())
   }
 
@@ -1687,7 +1691,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         .projection("anon_1 AS distance", "cacheN[friend.firstName] AS `friend.firstName`")
         .remoteBatchPropertiesWithFilter("cacheNFromStore[friend.firstName]")("friend.firstName = $Name")
         .bfsPruningVarExpand("(anon_0)-[:KNOWS*1..3]-(friend)", depthName = Some("anon_1"), mode = ExpandAll)
-        .nodeIndexOperator(
+        .remoteNodeIndexOperator(
           "anon_0:Person(id = ???)",
           paramExpr = Some(parameter("Person", CTAny)),
           getValue = Map("id" -> DoNotGetValue),
@@ -1802,7 +1806,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .expandAll("(anon_3)<-[anon_4:POST_HAS_CREATOR]-(person)")
       .expand("(anon_1)-[anon_2:KNOWS*0..2]-(anon_3)", expandMode = ExpandAll, projectedDir = OUTGOING)
       .expandAll("(subject)<-[anon_0:POST_HAS_CREATOR]-(anon_1)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "subject:Person(firstName = ???)",
         paramExpr = Some(parameter("firstName", CTAny)),
         getValue = Map("firstName" -> DoNotGetValue)
@@ -1855,12 +1859,12 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .produceResults("`id(a)`", "`id(b)`")
       .projection("id(a) AS `id(a)`", "id(b) AS `id(b)`")
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "a:PROFILES(pets = cacheN[b.children])",
         argumentIds = Set("b"),
         getValue = Map("pets" -> DoNotGetValue)
       )
-      .nodeIndexOperator("b:PROFILES(children STARTS WITH 'x')", getValue = Map("children" -> GetValue))
+      .remoteNodeIndexOperator("b:PROFILES(children STARTS WITH 'x')", getValue = Map("children" -> GetValue))
       .build()
   }
 
@@ -1910,11 +1914,11 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .produceResults("`id(a)`", "`id(b)`")
       .projection("id(a) AS `id(a)`", "id(b) AS `id(b)`")
       .valueHashJoin("cacheN[b.children] = cacheN[a.pets]")
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "a:PROFILES(pets STARTS WITH 'x')", // reduces the number of nodes on the RHS
         getValue = Map("pets" -> GetValue)
       )
-      .nodeIndexOperator("b:PROFILES(children STARTS WITH 'x')", getValue = Map("children" -> GetValue))
+      .remoteNodeIndexOperator("b:PROFILES(children STARTS WITH 'x')", getValue = Map("children" -> GetValue))
       .build()
   }
 
@@ -1981,7 +1985,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         depthName = Some("anon_4"),
         mode = ExpandAll
       ) // we are testing that we run this operator
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "startPerson:Person(id = ???)",
         paramExpr = Some(parameter("personId", CTAny)),
         getValue = Map("id" -> DoNotGetValue),
@@ -1989,7 +1993,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       )
       .filter("anon_0:City")
       .expandAll("(anon_1)<-[:IS_PART_OF]-(anon_0)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "anon_1:Country(name = ???)",
         paramExpr = Some(parameter("country", CTAny)),
         getValue = Map("name" -> DoNotGetValue)
@@ -2018,14 +2022,14 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .remoteBatchProperties("cacheNFromStore[message.creationDate]")
       .leftOuterHashJoin("tag")
       .|.expandAll("(message)-[:MESSAGE_HAS_TAG]->(tag)")
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "message:Message(creationDate >= ???)",
         paramExpr = Some(parameter("date", CTAny)),
         getValue = Map("creationDate" -> GetValue)
       )
       .filter("tag:Tag")
       .expandAll("(anon_0)<-[:HAS_TYPE]-(tag)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "anon_0:TagClass(name = ???)",
         paramExpr = Some(parameter("tagClass", CTAny)),
         getValue = Map("name" -> DoNotGetValue)
@@ -2055,7 +2059,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .|.|.remoteBatchProperties("cacheNFromStore[tag.name]")
       .|.|.filter("tag:Tag")
       .|.|.expandAll("(anon_0)<-[:HAS_TYPE]-(tag)")
-      .|.|.nodeIndexOperator(
+      .|.|.remoteNodeIndexOperator(
         "anon_0:TagClass(name = ???)",
         paramExpr = Some(parameter("tagClass", CTAny)),
         getValue = Map("name" -> DoNotGetValue)
@@ -2065,7 +2069,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       )
       .|.filter("message:Message")
       .|.expandAll("(anon_1)<-[:MESSAGE_HAS_TAG]-(message)")
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "anon_1:Tag(name = ???)",
         paramExpr = Some(parameter("tagClass", CTAny)),
         getValue = Map("name" -> DoNotGetValue)
@@ -2087,7 +2091,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .planBuilder()
       .produceResults("city", "person")
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "person:Person(firstName = cacheN[city.name])",
         argumentIds = Set("city"),
         getValue = Map("firstName" -> DoNotGetValue)
@@ -2111,13 +2115,13 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .produceResults("`person.id`", "`friend.id`")
       .projection("cacheN[person.id] AS `person.id`", "cacheN[friend.id] AS `friend.id`")
       .apply()
-      .|.nodeIndexOperator(
+      .|.remoteNodeIndexOperator(
         "friend:Person(id = cacheN[person.id])",
         argumentIds = Set("person"),
         getValue = Map("id" -> GetValue),
         unique = true
       )
-      .nodeIndexOperator("person:Person(id < 10000)", getValue = Map("id" -> GetValue), unique = true)
+      .remoteNodeIndexOperator("person:Person(id < 10000)", getValue = Map("id" -> GetValue), unique = true)
       .build()
   }
 
@@ -2148,7 +2152,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .remoteBatchProperties("cacheNFromStore[poster.name]")
       .filter("poster:Person")
       .expand("(p)-[:KNOWS*1..3]-(poster)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "p:Person(id = ???)",
         paramExpr = Some(parameter("id", CTAny)),
         getValue = Map("id" -> DoNotGetValue),
@@ -2179,7 +2183,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .filter("reply:Message")
       .expandAll("(anon_1)<-[:REPLY_OF]-(reply)")
       .expandAll("(p)<-[anon_0:POST_HAS_CREATOR]-(anon_1)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "p:Person(id = ???)",
         paramExpr = Some(parameter("id", CTAny)),
         getValue = Map("id" -> DoNotGetValue),
@@ -2245,7 +2249,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .remoteBatchPropertiesWithFilter("cacheNFromStore[friend.lastName]")("friend.firstName = 'Patrick'")
       .expandAll("(person)-[:KNOWS]->(friend)")
       .projection("'Patrick' AS friends_name")
-      .nodeIndexOperator("person:Person(id = 'ID')", unique = true)
+      .remoteNodeIndexOperator("person:Person(id = 'ID')", unique = true)
       .build()
   }
 
@@ -2266,7 +2270,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .remoteBatchProperties("cacheRFromStore[knows.creationDate]")
       .filter("friend:Person")
       .expandAll("(person)-[knows:KNOWS]->(friend)")
-      .nodeIndexOperator("person:Person(id = 'ID')", unique = true)
+      .remoteNodeIndexOperator("person:Person(id = 'ID')", unique = true)
       .build()
   }
 
@@ -2580,7 +2584,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .filter("reply:Message")
       .expandAll("(anon_1)<-[:REPLY_OF]-(reply)")
       .expandAll("(p)<-[anon_0:POST_HAS_CREATOR]-(anon_1)")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "p:Person(id = ???)",
         paramExpr = Some(parameter("id", CTAny)),
         getValue = Map("id" -> DoNotGetValue),
@@ -2792,7 +2796,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         |""".stripMargin
     planner.plan(query) shouldEqual planner.planBuilder()
       .produceResults("p")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "p:Person(firstName = 'Spongebob', lastName = 'Squarepants')",
         getValue = Map("firstName" -> DoNotGetValue, "lastName" -> DoNotGetValue),
         supportPartitionedScan = false
@@ -2812,7 +2816,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       planner.planBuilder()
         .produceResults("p")
         .filter("cacheN[p.lastName] STARTS WITH 'Smith'")
-        .nodeIndexOperator(
+        .remoteNodeIndexOperator(
           "p:Person(firstName STARTS WITH 'J', lastName)",
           indexOrder = IndexOrderNone,
           getValue = Map("firstName" -> DoNotGetValue, "lastName" -> GetValue),
@@ -2831,7 +2835,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
     planner.plan(query) shouldEqual planner.planBuilder()
       .produceResults("p")
       .filter("cacheN[p.firstName] ENDS WITH 'bob'")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "p:Person(firstName STARTS WITH 'Sponge')",
         indexOrder = IndexOrderNone,
         getValue = Map("firstName" -> GetValue)
@@ -2856,7 +2860,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
     lowSelectivityPlanner.plan(query) shouldEqual lowSelectivityPlanner.planBuilder()
       .produceResults("`p.firstName`")
       .projection("cacheN[p.firstName] AS `p.firstName`")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "p:Person(firstName STARTS WITH '')",
         indexOrder = IndexOrderNone,
         getValue = Map("firstName" -> GetValue)
@@ -2937,7 +2941,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
     plan shouldEqual planner.subPlanBuilder()
       .produceResults("`n.firstName`")
       .projection("cacheN[n.firstName] AS `n.firstName`")
-      .nodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue))
       .build()
   }
 
@@ -2952,7 +2956,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .produceResults("`m.firstName`")
       .projection(Map("m.firstName" -> cachedNodeProp("n", "firstName", "m")))
       .projection("n AS m")
-      .nodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue))
       .build()
   }
 
@@ -2973,7 +2977,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       ))
       .remoteBatchProperties(cachedNodeProp("n", "lastName", "m", knownToAccessStore = true))
       .projection("n AS m")
-      .nodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue))
       .build()
   }
 
@@ -2991,7 +2995,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .projection("cacheN[m.lastName] AS `m.lastName`")
       .remoteBatchProperties("cacheNFromStore[m.lastName]")
       .projection("n AS m")
-      .nodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> DoNotGetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> DoNotGetValue))
       .build()
   }
 
@@ -3010,7 +3014,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .projection("cacheN[n.firstName] AS `n.firstName`")
       .remoteBatchProperties("cacheNFromStore[n.firstName]")
       .aggregation(Seq("n AS n"), Seq("count(*) AS c"))
-      .nodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue)) // DoNotGetValue?
+      .remoteNodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> GetValue)) // DoNotGetValue?
       .build()
   }
 
@@ -3026,7 +3030,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
     plan shouldEqual planner.subPlanBuilder()
       .produceResults("m", "c")
       .aggregation(Seq("n AS m"), Seq("count(*) AS c"))
-      .nodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> DoNotGetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> DoNotGetValue))
       .build()
   }
 
@@ -3042,7 +3046,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
     plan shouldEqual planner.subPlanBuilder()
       .produceResults("n")
       .projection("n AS m", "1 AS n")
-      .nodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> DoNotGetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'Me')", getValue = Map("firstName" -> DoNotGetValue))
       .build()
   }
 
@@ -3061,7 +3065,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .remoteBatchProperties(cachedNodeProp("n", "lastName", "m", knownToAccessStore = true))
       .filter(not(equals(cachedNodeProp("n", "firstName", "m"), literalString("me"))))
       .projection("n AS m")
-      .nodeIndexOperator(
+      .remoteNodeIndexOperator(
         "n:Person(firstName = ???)",
         paramExpr = Some(parameter("fn", CTAny)),
         getValue = Map("firstName" -> GetValue)
@@ -3094,7 +3098,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
     plan shouldEqual customIndexPlanner.subPlanBuilder()
       .projection("cacheN[n.firstName] AS `n.firstName`", "cacheN[n.lastName] AS `n.lastName`")
       .remoteBatchPropertiesWithFilter("cacheNFromStore[n.lastName]")("n.lastName CONTAINS 'Smith'")
-      .nodeIndexOperator("n:Person(firstName = 'John')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName = 'John')", getValue = Map("firstName" -> GetValue))
       .build()
   }
 
@@ -3170,7 +3174,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .projection("m AS k")
       .filter(not(equals(cachedNodeProp("n", "firstName", "m"), literalString("Adam"))))
       .projection("n AS m")
-      .nodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> GetValue))
       .build()
   }
 
@@ -3215,7 +3219,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .|.projection("n AS m")
       .|.argument("n")
       .remoteBatchProperties("cacheNFromStore[n.lastName]")
-      .nodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> GetValue))
       .build()
   }
 
@@ -3261,7 +3265,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
         literal("Smith")
       )))
       .|.nodeByLabelScan("m", "Person", IndexOrderNone, "n")
-      .nodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> DoNotGetValue))
+      .remoteNodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> DoNotGetValue))
       .build()
   }
 
@@ -3305,7 +3309,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .filter("p:Person")
       .expandAll("(n)-[:KNOWS]->(p)")
       .remoteBatchProperties("cacheNFromStore[n.lastName]")
-      .nodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> DoNotGetValue))
+      .remoteNodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> DoNotGetValue))
       .build()
   }
 
@@ -3348,7 +3352,7 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .|.argument("n", "p")
       .filter("p:Person")
       .expandAll("(n)-[:KNOWS]->(p)")
-      .nodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> GetValue))
+      .remoteNodeIndexOperator("n:Person(firstName STARTS WITH 'A')", getValue = Map("firstName" -> GetValue))
       .build()
   }
 
@@ -3366,9 +3370,9 @@ abstract class AbstractRemoteBatchPropertiesPlanningIntegrationTest(executionMod
       .projection("cacheN[p.lastName] AS `p.lastName`")
       .skip(0)
       .cartesianProduct()
-      .|.nodeIndexOperator("c:City(name STARTS WITH 'M')", getValue = Map("name" -> DoNotGetValue))
+      .|.remoteNodeIndexOperator("c:City(name STARTS WITH 'M')", getValue = Map("name" -> DoNotGetValue))
       .remoteBatchProperties("cacheNFromStore[p.lastName]")
-      .nodeIndexOperator("p:Person(id <= 5)", getValue = Map("id" -> DoNotGetValue), unique = true)
+      .remoteNodeIndexOperator("p:Person(id <= 5)", getValue = Map("id" -> DoNotGetValue), unique = true)
       .build()
   }
 

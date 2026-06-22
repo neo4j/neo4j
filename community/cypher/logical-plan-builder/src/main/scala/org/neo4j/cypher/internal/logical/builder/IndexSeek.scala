@@ -71,6 +71,8 @@ import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -244,6 +246,71 @@ object IndexSeek {
       createScan,
       createEndsWithScan,
       createContainsScan
+    )
+  }
+
+  /**
+   * Construct a remote node index seek operator by parsing a string.
+   */
+  def remoteNodeIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    propIds: Option[PartialFunction[String, Int]] = None,
+    labelId: Int = 0,
+    unique: Boolean = false,
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
+  )(implicit idGen: IdGen): NodeIndexLeafPlan = {
+
+    val (node, labelStr, predicateStr) =
+      indexSeekString.trim match {
+        case NODE_INDEX_SEEK_PATTERN(node, labelStr, predicateStr) =>
+          (VariableParser.unescaped(node), labelStr, predicateStr)
+        case _ => throw new IllegalStateException("Expected index seek string, got " + indexSeekString)
+      }
+    val label = LabelToken(labelStr, LabelId(labelId))
+    val predicates = predicateStr.split(',').map(_.trim)
+
+    def createSeek(properties: Seq[IndexedProperty], valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan = {
+      if (unique) {
+        RemoteNodeUniqueIndexSeek(
+          varFor(node),
+          label,
+          properties,
+          valueExpr,
+          argumentIds.map(varFor),
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )
+      } else {
+        RemoteNodeIndexSeek(
+          varFor(node),
+          label,
+          properties,
+          valueExpr,
+          argumentIds.map(varFor),
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )
+      }
+    }
+
+    createPlan[NodeIndexLeafPlan](
+      predicates,
+      NODE_TYPE,
+      getValue,
+      paramExpr,
+      propIds,
+      None,
+      createSeek,
+      _ => throw new UnsupportedOperationException("Remote node index scan is not supported"),
+      (_, _) => throw new UnsupportedOperationException("Remote node index ends with scan is not supported"),
+      (_, _) => throw new UnsupportedOperationException("Remote node index contains scan is not supported")
     )
   }
 
@@ -549,7 +616,9 @@ object IndexSeek {
           )
         case _ => throw new IllegalStateException("Expected index seek string, got " + indexSeekString)
       }
+
     def toOption(in: String) = if (in == null || in.isEmpty) None else Some(in)
+
     val (startNode, endNode, directed) = (incoming, outgoing) match {
       case ("<", "") => (toOption(rightNode), toOption(leftNode), true)
       case ("", ">") => (toOption(leftNode), toOption(rightNode), true)
@@ -697,6 +766,7 @@ object IndexSeek {
     createContainsScan: (IndexedProperty, Expression) => T
   ): T = {
     var propId = -1
+
     def nextPropId(): Int = {
       propId += 1
       propId
@@ -733,6 +803,7 @@ object IndexSeek {
     }
 
     val paramQueue = mutable.Queue.from(paramExpr)
+
     def value(value: String): Expression =
       value match {
         case INT(int)             => SignedDecimalIntegerLiteral(int)(pos.zeroLength)

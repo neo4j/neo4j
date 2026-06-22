@@ -2079,6 +2079,63 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
+  def remoteNodeIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    unique: Boolean = false,
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
+  ): IdGen => NodeIndexLeafPlan = {
+    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val propIds: PartialFunction[String, Int] = {
+      case x => resolver.getPropertyKeyId(x)
+    }
+    val planBuilder = (idGen: IdGen) => {
+      val plan = IndexSeek.remoteNodeIndexSeek(
+        indexSeekString,
+        getValue,
+        indexOrder,
+        paramExpr,
+        argumentIds,
+        Some(propIds),
+        label,
+        unique,
+        indexType,
+        supportPartitionedScan
+      )(idGen)
+      newNode(varFor(plan.idName.name))
+      plan
+    }
+    planBuilder
+  }
+
+  def remoteNodeIndexOperator(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    paramExpr: IterableOnce[Expression] = None,
+    argumentIds: Set[String] = Set.empty,
+    unique: Boolean = false,
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
+  ): IMPL = {
+    val planBuilder = (idGen: IdGen) =>
+      remoteNodeIndexSeek(
+        indexSeekString,
+        getValue,
+        indexOrder,
+        paramExpr.iterator.toSeq,
+        argumentIds,
+        unique,
+        indexType,
+        supportPartitionedScan
+      )(idGen)
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
   def partitionedNodeIndexOperator(
     indexSeekString: String,
     getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,

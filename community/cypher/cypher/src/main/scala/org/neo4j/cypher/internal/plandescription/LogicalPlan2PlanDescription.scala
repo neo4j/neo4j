@@ -265,6 +265,8 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithFilter
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RemoteNodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatAcyclic
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
@@ -929,6 +931,27 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
+      case p @ RemoteNodeIndexSeek(idName, label, properties, valueExpr, _, _, indexType, _) =>
+        val (indexMode, indexDesc) = getNodeIndexDescriptions(
+          idName,
+          label,
+          properties.map(_.propertyKeyToken),
+          indexType,
+          valueExpr,
+          unique = false,
+          readOnly,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(
+          id,
+          "Remote" + indexMode,
+          Seq.empty,
+          Seq(Details(indexDesc)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case p @ PartitionedNodeIndexSeek(idName, label, properties, valueExpr, _, indexType) =>
         val (indexMode, indexDesc) = getNodeIndexDescriptions(
           idName,
@@ -943,6 +966,27 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "Partitioned" + indexMode,
+          Seq.empty,
+          Seq(Details(indexDesc)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case p @ RemoteNodeUniqueIndexSeek(idName, label, properties, valueExpr, _, _, indexType, _) =>
+        val (indexMode, indexDesc) = getNodeIndexDescriptions(
+          idName,
+          label,
+          properties.map(_.propertyKeyToken),
+          indexType,
+          valueExpr,
+          unique = true,
+          readOnly,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(
+          id,
+          "Remote" + indexMode,
           Seq.empty,
           Seq(Details(indexDesc)),
           variables,

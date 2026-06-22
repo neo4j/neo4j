@@ -93,6 +93,7 @@ import org.neo4j.cypher.internal.logical.builder.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.builder.IndexSeek.partitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.builder.IndexSeek.partitionedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.builder.IndexSeek.relationshipIndexSeek
+import org.neo4j.cypher.internal.logical.builder.IndexSeek.remoteNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -1774,6 +1775,107 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
         Seq(details(
           "RANGE INDEX x:Label(Prop) WHERE point.withinBBox(Prop, point(0, 0, \"cartesian\"), point(10, 10, \"cartesian\"))"
         )),
+        Set("x")
+      )
+    )
+  }
+
+  test("RemoteNodeIndexSeek") {
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop = 'Andres')"), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeIndexSeek",
+        Seq.empty,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop = \"Andres\"")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop = 'Andres')", getValue = _ => GetValue), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeIndexSeek",
+        Seq.empty,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')"), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeIndexSeek",
+        Seq.empty,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop > 9)"), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeIndexSeekByRange",
+        Seq.empty,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop > 9")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop < 9)"), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeIndexSeekByRange",
+        Seq.empty,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop < 9")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(9 <= Prop <= 11)"), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeIndexSeekByRange",
+        Seq.empty,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop >= 9 AND Prop <= 11")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop = 'Andres')", unique = true), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeUniqueIndexSeek",
+        Seq.empty,
+        Seq(details("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\"")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop = 'Andres')", getValue = _ => GetValue, unique = true), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeUniqueIndexSeek",
+        Seq.empty,
+        Seq(details("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(remoteNodeIndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')", unique = true), 23.0),
+      planDescription(
+        id,
+        "RemoteNodeUniqueIndexSeek",
+        Seq.empty,
+        Seq(details("UNIQUE x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]")),
         Set("x")
       )
     )

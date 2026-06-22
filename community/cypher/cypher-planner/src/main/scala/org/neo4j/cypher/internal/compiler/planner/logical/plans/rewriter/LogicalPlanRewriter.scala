@@ -173,7 +173,10 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
       Some(AllReduceFallback(anonymousVariableNameGenerator)),
       Option.when(
         context.config.mergeOptimizationEnabled()
-      )(mergeRewriter(context.planContext.storageSupportsFastExpandInto))
+      )(mergeRewriter(context.planContext.storageSupportsFastExpandInto)),
+      Option.when(
+        context.config.remoteLeafOperators() && isShardedDatabase && readOnly
+      )(RemoteIndexSeekRewriter)
     ).flatten
 
     val (bottomUps, topDowns, others) = rewritersAfterUnnestApply.foldLeft((

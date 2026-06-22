@@ -1405,6 +1405,51 @@ case class RemoteNodeIndexSeek(
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
 
+/**
+ * Similar to [[NodeUniqueIndexSeek]] but in the context of a sharded properties database.
+ * For a node with the given label and property values, produces at most one row with that node.
+ */
+case class RemoteNodeUniqueIndexSeek(
+  idName: LogicalVariable,
+  override val label: LabelToken,
+  properties: Seq[IndexedProperty],
+  valueExpr: QueryExpression[Expression],
+  argumentIds: Set[LogicalVariable],
+  indexOrder: IndexOrder,
+  override val indexType: IndexType,
+  supportPartitionedScan: Boolean
+)(implicit idGen: IdGen) extends NodeIndexSeekSingleLabelLeafPlan(idGen) {
+  override val localAvailableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): RemoteNodeUniqueIndexSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): RemoteNodeUniqueIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
+  override def copyWithoutGettingValues: RemoteNodeUniqueIndexSeek =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): RemoteNodeUniqueIndexSeek =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+
+  override val distinctness: Distinctness = {
+    valueExpr match {
+      case _: SingleQueryExpression[_] =>
+        AtMostOneRow
+      case comp: CompositeQueryExpression[_] if comp.exact =>
+        AtMostOneRow
+      case _ =>
+        NotDistinct
+    }
+  }
+}
+
 case class PropertyKeyNameOrder(propertyKeyName: PropertyKeyName, order: PropertyKeyNameOrder.Order)
 
 object PropertyKeyNameOrder {

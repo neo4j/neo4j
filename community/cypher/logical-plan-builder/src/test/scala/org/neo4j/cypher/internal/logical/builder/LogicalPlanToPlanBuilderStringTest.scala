@@ -2255,6 +2255,18 @@ class LogicalPlanToPlanBuilderStringTest
   )
 
   testPlan(
+    "remoteNodeIndexOperator", {
+      val builder = new TestPlanBuilder().produceResults("x", "y")
+
+      builder
+        .apply()
+        .|.remoteNodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.RANGE)
+        .remoteNodeIndexOperator("x:Honey(prop = variable)", argumentIds = Set("variable"), indexType = IndexType.RANGE)
+        .build()
+    }
+  )
+
+  testPlan(
     "partitionedNodeIndexOperator", {
       val builder = new TestPlanBuilder().produceResults("x", "y")
 
