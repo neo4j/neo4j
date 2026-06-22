@@ -68,6 +68,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -91,14 +92,22 @@ import org.neo4j.io.async.AsyncBlockAccessor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
+import org.neo4j.io.pagecache.DelegatingPageSwapper;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.impl.muninn.EvictionBouncer;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapper;
+import org.neo4j.io.pagecache.impl.muninn.swapper.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.swapper.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -108,6 +117,8 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.async.SubmitEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -118,6 +129,7 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.PageCacheConfig;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -1016,6 +1028,20 @@ class GBPTreeTest {
             barrier.release();
             checkpoint.get();
             write.get();
+        }
+    }
+
+    @Test
+    void checkPointShouldForceChannelTwice() throws IOException {
+        // GIVEN
+        var forceCountingSwapper = new ForceCountingSwapperFactory();
+        try (JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+                PageCache pageCache = new MuninnPageCache(
+                        fileSystem, jobScheduler, MuninnPageCache.config(1_000).swapperFactory(forceCountingSwapper));
+                GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            forceCountingSwapper.reset();
+            index.checkpoint(FileFlushEvent.NULL, asyncBlockAccessor, NULL_CONTEXT);
+            assertThat(forceCountingSwapper.count.get()).isEqualTo(2);
         }
     }
 
@@ -2426,6 +2452,13 @@ class GBPTreeTest {
                     }
 
                     @Override
+                    public void flush(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor)
+                            throws IOException {
+                        maybeThrow();
+                        super.flush(flushEvent, asyncBlockAccessor);
+                    }
+
+                    @Override
                     public void flushAndForce(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor)
                             throws IOException {
                         maybeThrow();
@@ -2758,6 +2791,46 @@ class GBPTreeTest {
         @Override
         public long localBytesWritten() {
             return currentDelegate.localBytesWritten();
+        }
+    }
+
+    private class ForceCountingSwapperFactory implements PageSwapperFactory {
+        private final PageSwapperFactory delegate =
+                new SingleFilePageSwapperFactory(fileSystem, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE);
+        private final AtomicLong count = new AtomicLong();
+
+        @Override
+        public PageSwapper createPageSwapper(
+                Path path,
+                int filePageSize,
+                PageEvictionCallback onEviction,
+                boolean createIfNotExist,
+                boolean useDirectIO,
+                long pagesPerSegment,
+                IOController ioController,
+                EvictionBouncer evictionBouncer,
+                SwapperSet swappers)
+                throws IOException {
+            PageSwapper delegate = this.delegate.createPageSwapper(
+                    path,
+                    filePageSize,
+                    onEviction,
+                    createIfNotExist,
+                    useDirectIO,
+                    pagesPerSegment,
+                    ioController,
+                    evictionBouncer,
+                    swappers);
+            return new DelegatingPageSwapper(delegate) {
+                @Override
+                public void force() {
+                    count.incrementAndGet();
+                }
+            };
+        }
+
+        void reset() {
+            count.set(0);
         }
     }
 }

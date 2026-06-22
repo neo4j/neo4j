@@ -479,14 +479,24 @@ class DatabaseIT {
         }
 
         @Override
+        public void flush(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
+            trackFlush();
+            super.flush(flushEvent, asyncBlockAccessor);
+        }
+
+        @Override
         public void flushAndForce(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
+            trackFlush();
+            super.flushAndForce(flushEvent, asyncBlockAccessor);
+        }
+
+        private void trackFlush() {
             if (disabledIOController.get()) {
                 assertFalse(ioController.isEnabled());
                 ioControllerChecks.incrementAndGet();
             }
             globalFlushCounter.incrementAndGet();
             fileLocalFlushCounter.incrementAndGet();
-            super.flushAndForce(flushEvent, asyncBlockAccessor);
         }
 
         @Override

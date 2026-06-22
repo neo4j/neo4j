@@ -275,6 +275,12 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
+        public void flush(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
+            delegate.flush(flushEvent, asyncBlockAccessor);
+            flushTicket.use();
+        }
+
+        @Override
         public void flushAndForce(FileFlushEvent flushEvent, AsyncBlockAccessor asyncBlockAccessor) throws IOException {
             delegate.flushAndForce(flushEvent, asyncBlockAccessor);
             flushTicket.use();
