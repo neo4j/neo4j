@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
@@ -207,6 +208,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
@@ -269,6 +271,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCom
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedAllRelationshipsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipFulltextIndexSearchPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexContainsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexEndsWithScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexScanPipe
@@ -376,6 +379,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedAllRelationshipsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipFulltextIndexSearchPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexContainsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexEndsWithScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexScanPipe
@@ -1184,6 +1188,58 @@ case class InterpretedPipeMapper(
           indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.VECTOR, types, properties),
           entityFilter.map(buildExpression),
           maybePropertyFilter.map(_.map(buildExpression))
+        )(id)
+
+      case DirectedRelationshipFulltextIndexSearch(
+          relationship,
+          left,
+          right,
+          types,
+          properties,
+          score,
+          indexName,
+          queryString,
+          limit,
+          analyzer,
+          skip,
+          _
+        ) =>
+        DirectedRelationshipFulltextIndexSearchPipe(
+          relationship.map(_.name),
+          left.map(_.name),
+          right.map(_.name),
+          score.map(_.name),
+          buildExpression(queryString),
+          analyzer.map(buildExpression),
+          skip.map(buildExpression),
+          buildExpression(limit),
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
+        )(id)
+
+      case UndirectedRelationshipFulltextIndexSearch(
+          relationship,
+          left,
+          right,
+          types,
+          properties,
+          score,
+          indexName,
+          queryString,
+          limit,
+          analyzer,
+          skip,
+          _
+        ) =>
+        UndirectedRelationshipFulltextIndexSearchPipe(
+          relationship.map(_.name),
+          left.map(_.name),
+          right.map(_.name),
+          score.map(_.name),
+          buildExpression(queryString),
+          analyzer.map(buildExpression),
+          skip.map(buildExpression),
+          buildExpression(limit),
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
         )(id)
 
       case s: ShowIndexes =>

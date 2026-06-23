@@ -1367,8 +1367,6 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           limit = literalInt(5),
           analyzer = None,
           skip = None,
-          entityFilter = MatchAllQueryExpression,
-          maybePropertyFilter = None,
           argumentIds = Set.empty
         ),
         23.0
@@ -1396,8 +1394,6 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           limit = literalInt(5),
           analyzer = Some(literalString("english")),
           skip = Some(literalInt(2)),
-          entityFilter = MatchAllQueryExpression,
-          maybePropertyFilter = None,
           argumentIds = Set.empty
         ),
         23.0
@@ -1429,8 +1425,6 @@ class QueryLogicalPlan2PlanDescriptionTest extends LogicalPlan2PlanDescriptionTe
           limit = literalInt(5),
           analyzer = None,
           skip = None,
-          entityFilter = MatchAllQueryExpression,
-          maybePropertyFilter = None,
           argumentIds = Set.empty
         ),
         23.0

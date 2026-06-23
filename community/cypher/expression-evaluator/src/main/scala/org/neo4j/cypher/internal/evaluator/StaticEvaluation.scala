@@ -385,6 +385,12 @@ object StaticEvaluation {
       query: PropertyIndexQuery.FulltextSearchPredicate
     ): NodeValueIndexCursor = notAvailable()
 
+    override def relationshipFulltextIndexSeek(
+      index: IndexReadSession,
+      constraints: IndexQueryConstraints,
+      query: PropertyIndexQuery.FulltextSearchPredicate
+    ): RelationshipValueIndexCursor = notAvailable()
+
     override def nodeIndexSeekByContains(
       index: IndexReadSession,
       needsValues: Boolean,

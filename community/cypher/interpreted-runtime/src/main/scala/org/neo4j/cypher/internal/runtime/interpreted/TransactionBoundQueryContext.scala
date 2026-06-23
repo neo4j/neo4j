@@ -917,6 +917,16 @@ private[internal] class TransactionBoundReadQueryContext(
     }
   }
 
+  override def relationshipFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
+  ): RelationshipValueIndexCursor = {
+    val relCursor = allocateAndTraceRelationshipValueIndexCursor()
+    reads().relationshipIndexSeek(transactionalContext.kernelQueryContext, index, relCursor, constraints, query)
+    relCursor
+  }
+
   override def relationshipLockingUniqueIndexSeek(
     index: IndexReadSession,
     queries: Seq[PropertyIndexQuery.ExactPredicate]

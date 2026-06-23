@@ -385,8 +385,6 @@ sealed abstract class LogicalPlan(idGen: IdGen)
           _,
           _,
           _,
-          _,
-          _,
           _
         ) =>
         acc =>
@@ -401,8 +399,6 @@ sealed abstract class LogicalPlan(idGen: IdGen)
           _,
           entityTypes,
           properties,
-          _,
-          _,
           _,
           _,
           _,
@@ -2375,8 +2371,6 @@ case class DirectedRelationshipFulltextIndexSearch(
   limit: Expression,
   analyzer: Option[Expression],
   skip: Option[Expression],
-  entityFilter: EntityFilterQueryExpression[Expression],
-  maybePropertyFilter: Option[QueryExpression[Expression]],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -2386,9 +2380,7 @@ case class DirectedRelationshipFulltextIndexSearch(
     queryString.dependencies ++
       analyzer.map(_.dependencies).getOrElse(Set.empty) ++
       skip.map(_.dependencies).getOrElse(Set.empty) ++
-      limit.dependencies ++
-      entityFilter.expressions.flatMap(_.dependencies) ++
-      maybePropertyFilter.map(_.expressions.flatMap(_.dependencies)).getOrElse(Set.empty)
+      limit.dependencies
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipFulltextIndexSearch =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
@@ -2435,8 +2427,6 @@ case class UndirectedRelationshipFulltextIndexSearch(
   limit: Expression,
   analyzer: Option[Expression],
   skip: Option[Expression],
-  entityFilter: EntityFilterQueryExpression[Expression],
-  maybePropertyFilter: Option[QueryExpression[Expression]],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -2446,9 +2436,7 @@ case class UndirectedRelationshipFulltextIndexSearch(
     queryString.dependencies ++
       analyzer.map(_.dependencies).getOrElse(Set.empty) ++
       skip.map(_.dependencies).getOrElse(Set.empty) ++
-      limit.dependencies ++
-      entityFilter.expressions.flatMap(_.dependencies) ++
-      maybePropertyFilter.map(_.expressions.flatMap(_.dependencies)).getOrElse(Set.empty)
+      limit.dependencies
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipFulltextIndexSearch =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))

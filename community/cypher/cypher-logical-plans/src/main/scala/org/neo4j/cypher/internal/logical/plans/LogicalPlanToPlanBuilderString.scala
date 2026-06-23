@@ -1898,8 +1898,6 @@ object LogicalPlanToPlanBuilderString {
           limit,
           analyzer,
           skip,
-          entityFilter,
-          maybePropertyFilter,
           argumentIds
         ) =>
         params(
@@ -1913,9 +1911,7 @@ object LogicalPlanToPlanBuilderString {
           skip.map(_.quoted.some).getOrElse(Param("None")),
           score.map(_.name.quoted).getOrElse("".quoted),
           argumentIds,
-          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
-          entityFilter,
-          maybePropertyFilter
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex)
         )
 
       case UndirectedRelationshipFulltextIndexSearch(
@@ -1930,8 +1926,6 @@ object LogicalPlanToPlanBuilderString {
           limit,
           analyzer,
           skip,
-          entityFilter,
-          maybePropertyFilter,
           argumentIds
         ) =>
         params(
@@ -1945,9 +1939,7 @@ object LogicalPlanToPlanBuilderString {
           skip.map(_.quoted.some).getOrElse(Param("None")),
           score.map(_.name.quoted).getOrElse("".quoted),
           argumentIds,
-          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex),
-          entityFilter,
-          maybePropertyFilter
+          mapParam(properties)(_.propertyKeyToken, _.getValueFromIndex)
         )
 
       case RollUpApply(_, _, collectionName, variableToCollect) => params(collectionName, variableToCollect)

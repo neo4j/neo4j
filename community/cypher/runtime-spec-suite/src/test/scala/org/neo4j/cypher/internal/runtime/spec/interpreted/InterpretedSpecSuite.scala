@@ -140,6 +140,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandFuzzTe
 import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipCountFromCountStoreTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipFulltextIndexSearchTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexContainsScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexEndsWithScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexPointBoundingBoxSeekTestBase
@@ -370,6 +371,9 @@ class InterpretedNodeIndexSeekTest
 
 class InterpretedNodeFulltextIndexSearchTest
     extends NodeFulltextIndexSearchTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)
+
+class InterpretedRelationshipFulltextIndexSearchTest
+    extends RelationshipFulltextIndexSearchTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)
 
 class InterpretedRelationshipIndexSeekTest
     extends RelationshipIndexSeekTestBase(COMMUNITY.EDITION, CommunityInterpretedRuntime, SIZE_HINT)

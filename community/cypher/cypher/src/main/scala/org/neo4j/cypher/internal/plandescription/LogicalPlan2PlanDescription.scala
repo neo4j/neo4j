@@ -849,11 +849,6 @@ case class LogicalPlan2PlanDescription(
         )
 
       case s: DirectedRelationshipFulltextIndexSearch =>
-        val predicate = s.maybePropertyFilter match {
-          case Some(valueExpr) =>
-            pretty" WHERE ${indexPredicateString(s.idName, s.properties.drop(1).map(_.propertyKeyToken), valueExpr)}"
-          case None => pretty""
-        }
         val analyzerPart = s.analyzer match {
           case Some(a) => pretty" WITH ANALYZER ${asPrettyString(a)}"
           case None    => pretty""
@@ -867,7 +862,7 @@ case class LogicalPlan2PlanDescription(
           case None                => pretty""
         }
         val prettyDetails =
-          pretty"SEARCH ${relationshipPattern(s.startNode, s.idName, s.typeTokens.map(t => RelTypeName(t.name)(InputPosition.NONE)), s.endNode, OUTGOING)} IN (FULLTEXT INDEX ${asPrettyString(s.indexName)} FOR ${asPrettyString(s.queryString)}$analyzerPart$predicate$skipPart LIMIT ${asPrettyString(s.limit)})$score"
+          pretty"SEARCH ${relationshipPattern(s.startNode, s.idName, s.typeTokens.map(t => RelTypeName(t.name)(InputPosition.NONE)), s.endNode, OUTGOING)} IN (FULLTEXT INDEX ${asPrettyString(s.indexName)} FOR ${asPrettyString(s.queryString)}$analyzerPart$skipPart LIMIT ${asPrettyString(s.limit)})$score"
 
         PlanDescriptionImpl(
           id,
@@ -880,11 +875,6 @@ case class LogicalPlan2PlanDescription(
         )
 
       case s: UndirectedRelationshipFulltextIndexSearch =>
-        val predicate = s.maybePropertyFilter match {
-          case Some(valueExpr) =>
-            pretty" WHERE ${indexPredicateString(s.idName, s.properties.drop(1).map(_.propertyKeyToken), valueExpr)}"
-          case None => pretty""
-        }
         val analyzerPart = s.analyzer match {
           case Some(a) => pretty" WITH ANALYZER ${asPrettyString(a)}"
           case None    => pretty""
@@ -898,7 +888,7 @@ case class LogicalPlan2PlanDescription(
           case None                => pretty""
         }
         val prettyDetails =
-          pretty"SEARCH ${relationshipPattern(s.startNode, s.idName, s.typeTokens.map(t => RelTypeName(t.name)(InputPosition.NONE)), s.endNode, BOTH)} IN (FULLTEXT INDEX ${asPrettyString(s.indexName)} FOR ${asPrettyString(s.queryString)}$analyzerPart$predicate$skipPart LIMIT ${asPrettyString(s.limit)})$score"
+          pretty"SEARCH ${relationshipPattern(s.startNode, s.idName, s.typeTokens.map(t => RelTypeName(t.name)(InputPosition.NONE)), s.endNode, BOTH)} IN (FULLTEXT INDEX ${asPrettyString(s.indexName)} FOR ${asPrettyString(s.queryString)}$analyzerPart$skipPart LIMIT ${asPrettyString(s.limit)})$score"
 
         PlanDescriptionImpl(
           id,

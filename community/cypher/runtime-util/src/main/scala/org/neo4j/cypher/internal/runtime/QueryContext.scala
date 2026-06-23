@@ -244,6 +244,12 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
     queries: Seq[PropertyIndexQuery]
   ): RelationshipValueIndexCursor
 
+  def relationshipFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
+  ): RelationshipValueIndexCursor
+
   def relationshipLockingUniqueIndexSeek(
     index: IndexReadSession,
     queries: Seq[PropertyIndexQuery.ExactPredicate]

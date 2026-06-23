@@ -2528,9 +2528,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     skip: Option[ToExpression] = None,
     score: String = "",
     argumentIds: Set[String] = Set.empty,
-    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-    entityFilter: EntityFilterQueryExpression[Expression] = MatchAllQueryExpression,
-    propertyFilter: Option[QueryExpression[Expression]] = None
+    getValueFromIndex: String => GetValueFromIndexBehavior = _ => DoNotGetValue
   ): IMPL = {
 
     val p = patternParser.parse(pattern)
@@ -2563,8 +2561,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             toExpression(limit),
             analyzer.map(a => toExpression(a)),
             skip.map(s => toExpression(s)),
-            entityFilter,
-            propertyFilter,
             argumentIds.map(varFor)
           )(_)
         ))
@@ -2582,8 +2578,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             toExpression(limit),
             analyzer.map(a => toExpression(a)),
             skip.map(s => toExpression(s)),
-            entityFilter,
-            propertyFilter,
             argumentIds.map(varFor)
           )(_)
         ))
@@ -2601,8 +2595,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             toExpression(limit),
             analyzer.map(a => toExpression(a)),
             skip.map(s => toExpression(s)),
-            entityFilter,
-            propertyFilter,
             argumentIds.map(varFor)
           )(_)
         ))

@@ -394,6 +394,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   ): NodeValueIndexCursor =
     inner.nodeFulltextIndexSeek(index, constraints, query)
 
+  override def relationshipFulltextIndexSeek(
+    index: IndexReadSession,
+    constraints: IndexQueryConstraints,
+    query: PropertyIndexQuery.FulltextSearchPredicate
+  ): RelationshipValueIndexCursor =
+    inner.relationshipFulltextIndexSeek(index, constraints, query)
+
   override def nodeIndexScan(
     index: IndexReadSession,
     needsValues: Boolean,
