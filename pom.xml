@@ -87,8 +87,11 @@
     <bouncycastle.version>1.84</bouncycastle.version>
     <build-resources.version>2026.02.5</build-resources.version>
     <caffeine.version>3.2.4</caffeine.version>
-    <cucumber.scala.version>8.36.0</cucumber.scala.version>
+
+    <!-- Bump the cucumber dependencies together. -->
+    <cucumber.scala.version>8.39.1</cucumber.scala.version>
     <cucumber.version>7.34.3</cucumber.version>
+
     <cursor.counters.check>true</cursor.counters.check>
     <cypherdsl.version>2025.2.7</cypherdsl.version>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
