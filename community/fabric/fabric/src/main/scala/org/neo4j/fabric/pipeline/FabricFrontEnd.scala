@@ -128,7 +128,6 @@ case class FabricFrontEnd(
       resolveCallables = TryResolveCallables(signatures),
       extractLiterals = cypherConfig.extractLiterals,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params, cypherConfig.useParameterSizeHint),
-      obfuscateLiterals = cypherConfig.obfuscateLiterals,
       resolveSimpleDynamicExpressions = cypherConfig.resolveSimpleDynamicExpressions,
       enabledVirtualGraph = cypherConfig.useVirtualGraph
     )

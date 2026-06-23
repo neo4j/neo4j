@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.CommunityCypherTestSuite
 import org.neo4j.cypher.internal.util.LiteralOffset
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.api.query.QueryObfuscator.ObfuscatedQuery
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -34,10 +36,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val originalText = "not passwords here"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector.empty,
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(originalText)
@@ -48,10 +52,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here'")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
@@ -62,10 +68,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here is a\nmultiline\npassword'")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
@@ -76,10 +84,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here is a \"password\"'")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
@@ -90,10 +100,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here is a \\'password\\''")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
@@ -104,10 +116,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedText = "password is ****** and ****** // comment"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here'"), offsetOf(originalText, "'also here'")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
@@ -118,10 +132,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedText = "password is ************ // comment"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here'"), offsetOf(originalText, "'and also here'")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
@@ -131,10 +147,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val originalParams = makeParams("a" -> "b", "c" -> "d")
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector.empty,
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateParameters(originalParams) should equal(originalParams)
@@ -145,10 +163,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedParams = makeParams("a" -> "******", "c" -> "d", "e" -> "******")
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector.empty,
           Set("a", "e")
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateParameters(originalParams) should equal(expectedParams)
@@ -159,10 +179,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val expectedText = "password is ******"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "here")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
@@ -172,10 +194,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val originalText = "password is 'here"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here")),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText, 0)
@@ -185,10 +209,12 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
     val originalText = "password is 'here'"
     val ob =
       CypherQueryObfuscator(
-        ObfuscationMetadata(
+        secretMeta(
           Vector(offsetOf(originalText, "'here'"), LiteralOffset(999, 0, Some(10))),
           Set.empty
-        )
+        ),
+        obfuscateLiterals = false,
+        exposeFullView = true
       )
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText, 0)
@@ -209,7 +235,11 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
       LiteralOffset(originalText.indexOf("null"), 0, Some(4)) // null literal
     )
 
-    val ob = CypherQueryObfuscator(ObfuscationMetadata(offsets, Set.empty))
+    val ob = CypherQueryObfuscator(
+      secretMeta(offsets, Set.empty),
+      obfuscateLiterals = false,
+      exposeFullView = true
+    )
 
     ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
@@ -233,10 +263,110 @@ class CypherQueryObfuscatorTest extends CommunityCypherTestSuite {
       "x" -> "kept"
     )
 
-    val ob = CypherQueryObfuscator(ObfuscationMetadata(Vector.empty, Set("s", "i", "b", "f", "v")))
+    val ob = CypherQueryObfuscator(
+      secretMeta(Vector.empty, Set("s", "i", "b", "f", "v")),
+      obfuscateLiterals = false,
+      exposeFullView = true
+    )
 
     ob.obfuscateParameters(originalParams) should equal(expectedParams)
   }
+
+  test("both views redact sensitive literals and parameters; only the all view redacts ordinary literals") {
+    val text = "RETURN 'secret', 42"
+    val params = makeParams("p" -> "secret", "q" -> "kept")
+    val expectedParams = makeParams("p" -> "******", "q" -> "kept")
+    val secretOffset = LiteralOffset(text.indexOf("'secret'"), 0, Some(8))
+    val intOffset = LiteralOffset(text.indexOf("42"), 0, Some(2))
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector(secretOffset), Vector(secretOffset, intOffset), Set("p")),
+      obfuscateLiterals = false,
+      exposeFullView = true
+    )
+
+    ob.sensitiveObfuscatedQuery(text, params, 0).text should equal("RETURN ******, 42")
+    ob.fullyObfuscatedQuery(text, params, 0).text should equal("RETURN ******, ******")
+    ob.sensitiveObfuscatedQuery(text, params, 0).parameters should equal(expectedParams)
+    ob.fullyObfuscatedQuery(text, params, 0).parameters should equal(expectedParams)
+  }
+
+  test("defaultObfuscatedQuery redacts only sensitive literals when obfuscate_literals is false") {
+    val text = "RETURN 'secret', 42"
+    val secretOffset = LiteralOffset(text.indexOf("'secret'"), 0, Some(8))
+    val intOffset = LiteralOffset(text.indexOf("42"), 0, Some(2))
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector(secretOffset), Vector(secretOffset, intOffset), Set.empty),
+      obfuscateLiterals = false,
+      exposeFullView = true
+    )
+
+    ob.defaultObfuscatedQuery(text, MapValue.EMPTY, 0).text should equal("RETURN ******, 42")
+  }
+
+  test("with the expose-full-view fail-safe off, only the all-literals view is absent") {
+    val text = "RETURN 'secret', 42"
+    val secretOffset = LiteralOffset(text.indexOf("'secret'"), 0, Some(8))
+    val intOffset = LiteralOffset(text.indexOf("42"), 0, Some(2))
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector(secretOffset), Vector(secretOffset, intOffset), Set.empty),
+      obfuscateLiterals = false,
+      exposeFullView = false
+    )
+
+    ObfuscatedQuery.optional(ob.fullyObfuscatedQuery(text, MapValue.EMPTY, 0)).isPresent() shouldBe false
+    // The sensitive and default views are unaffected by the fail-safe.
+    ob.sensitiveObfuscatedQuery(text, MapValue.EMPTY, 0).text should equal("RETURN ******, 42")
+    ob.defaultObfuscatedQuery(text, MapValue.EMPTY, 0).text should equal("RETURN ******, 42")
+  }
+
+  test("obfuscate_literals=true re-enables the all-literals view even when the fail-safe is off") {
+    val text = "RETURN 'secret', 42"
+    val secretOffset = LiteralOffset(text.indexOf("'secret'"), 0, Some(8))
+    val intOffset = LiteralOffset(text.indexOf("42"), 0, Some(2))
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata(Vector(secretOffset), Vector(secretOffset, intOffset), Set.empty),
+      obfuscateLiterals = true,
+      exposeFullView = false
+    )
+
+    ob.fullyObfuscatedQuery(text, MapValue.EMPTY, 0).text should equal("RETURN ******, ******")
+    ob.defaultObfuscatedQuery(text, MapValue.EMPTY, 0).text should equal("RETURN ******, ******")
+  }
+
+  test("with the fail-safe off, a query with no literals exposes no all-literals view") {
+    // Empty metadata used to short-circuit to PASSTHROUGH, whose fullyObfuscatedQuery returns raw text.
+    // With the fail-safe off that raw text must not be exposed as the all-literals view.
+    val ob = CypherQueryObfuscator(
+      ObfuscationMetadata.empty(),
+      obfuscateLiterals = false,
+      exposeFullView = false
+    )
+
+    val view = ob.fullyObfuscatedQuery("MATCH (n) RETURN n", MapValue.EMPTY, 0)
+    ObfuscatedQuery.optional(view).isPresent() shouldBe false
+  }
+
+  test("uncollected metadata (None) never exposes a full-literals view, whatever the policy") {
+    // Metadata was never collected: raw text must not be served as the all-literals view, so the full view
+    // is absent by construction even with the most permissive policy.
+    val ob = CypherQueryObfuscator(None, ObfuscationPolicy.FullLiteralsAlways)
+
+    val text = "MATCH (n) RETURN n"
+    ObfuscatedQuery.optional(ob.fullyObfuscatedQuery(text, MapValue.EMPTY, 0)).isPresent() shouldBe false
+    // The default view falls back to best-effort raw text (no offsets to redact).
+    ob.defaultObfuscatedQuery(text, MapValue.EMPTY, 0).text should equal(text)
+  }
+
+  test("collected-but-empty metadata with the full view available selects PASSTHROUGH") {
+    val ob = CypherQueryObfuscator(Some(ObfuscationMetadata.empty()), ObfuscationPolicy.FullLiteralsOnDemand)
+
+    ob should be theSameInstanceAs QueryObfuscator.PASSTHROUGH
+  }
+
+  // Single-view convenience for the per-piece (sensitive) assertions: the given offsets are both the sensitive
+  // and the all view, so obfuscateText/obfuscatePosition (which use the sensitive view) behave as before.
+  private def secretMeta(offsets: Vector[LiteralOffset], params: Set[String]): ObfuscationMetadata =
+    ObfuscationMetadata(offsets, offsets, params)
 
   private def makeParams(params: (String, String)*): MapValue = {
     ValueUtils.asMapValue(Map(params: _*).asJava)

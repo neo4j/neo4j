@@ -54,6 +54,8 @@ public class QueryStatementLifecycles {
     private final QueryExecutionMonitor dbmsMonitor;
     private final ExecutingQueryFactory executingQueryFactory;
     private final boolean shardQueryLogEnabled;
+    private final Config config;
+    private final boolean exposeFullyObfuscatedQueryView;
 
     public QueryStatementLifecycles(
             DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
@@ -66,6 +68,13 @@ public class QueryStatementLifecycles {
         this.executingQueryFactory =
                 new ExecutingQueryFactory(systemNanoClock, setupCpuClockAtomicReference(config), systemLockTracer);
         this.shardQueryLogEnabled = config.get(GraphDatabaseInternalSettings.shard_query_log_enabled);
+        this.config = config;
+        this.exposeFullyObfuscatedQueryView =
+                config.get(GraphDatabaseInternalSettings.expose_fully_obfuscated_query_view);
+    }
+
+    private boolean obfuscateLiterals() {
+        return config.get(GraphDatabaseSettings.log_queries_obfuscate_literals);
     }
 
     private static AtomicReference<CpuClock> setupCpuClockAtomicReference(Config config) {
@@ -179,7 +188,10 @@ public class QueryStatementLifecycles {
 
         @Override
         public void doneFabricProcessing(FabricPlan plan, int preParserOffset) {
-            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(plan.obfuscationMetadata()), preParserOffset);
+            executingQuery.onObfuscatorReady(
+                    CypherQueryObfuscator.apply(
+                            plan.obfuscationMetadata(), obfuscateLiterals(), exposeFullyObfuscatedQueryView),
+                    preParserOffset);
             executingQuery.onFabricDeprecationNotificationsProviderReady(plan.deprecationNotificationsProvider());
 
             if (plan.inCompositeContext()) {
@@ -192,7 +204,9 @@ public class QueryStatementLifecycles {
         @Override
         public void onObfuscatorReady(ObfuscationMetadata obfuscationMetadata, InputPosition preParserOffset) {
             executingQuery.onObfuscatorReady(
-                    CypherQueryObfuscator.apply(obfuscationMetadata), preParserOffset.offset());
+                    CypherQueryObfuscator.apply(
+                            obfuscationMetadata, obfuscateLiterals(), exposeFullyObfuscatedQueryView),
+                    preParserOffset.offset());
         }
 
         @Override
@@ -201,7 +215,9 @@ public class QueryStatementLifecycles {
                 InputPosition preParserOffset,
                 boolean inCompositeContext,
                 Set<InternalNotification> notifications) {
-            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(obfuscateMetadata), preParserOffset.offset());
+            executingQuery.onObfuscatorReady(
+                    CypherQueryObfuscator.apply(obfuscateMetadata, obfuscateLiterals(), exposeFullyObfuscatedQueryView),
+                    preParserOffset.offset());
             executingQuery.onFabricDeprecationNotificationsProviderReady(
                     CypherDeprecationNotificationsProvider.fromJava(preParserOffset, notifications));
 

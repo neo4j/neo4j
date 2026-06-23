@@ -41,7 +41,7 @@ public class AggregatedQueriesTimeSlice {
     }
 
     public void add(ExecutingQuery query, ErrorGqlStatusObject errorGqlStatusObject) {
-        var obfuscatedText = query.obfuscatedQueryText().orElse("");
+        var obfuscatedText = query.fullyObfuscatedQueryText();
         var key = new UniqueKey(obfuscatedText, errorGqlStatusObject, query.queryLanguage());
         aggregations
                 .computeIfAbsent(key, k -> {

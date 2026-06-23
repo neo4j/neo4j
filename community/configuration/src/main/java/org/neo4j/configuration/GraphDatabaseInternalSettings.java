@@ -1429,6 +1429,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.cypher.extract_literals", ofEnum(ExtractLiteral.class), ExtractLiteral.ALWAYS)
             .build();
 
+    @Internal
+    @Description("Set this to expose the fully obfuscated (all-literals) view of executing queries, "
+            + "independent of db.logs.query.obfuscate_literals. Disabling this is a fail-safe that "
+            + "restores the previous behavior, where the all-literals view is only available when "
+            + "db.logs.query.obfuscate_literals is enabled.")
+    public static final Setting<Boolean> expose_fully_obfuscated_query_view = newBuilder(
+                    "internal.dbms.expose_fully_obfuscated_query_view", BOOL, true)
+            .build();
+
     public static SettingValueParser<Set<Map<String, String>>> HistogramsOfStandardBucketTypeParser =
             setOf(new SettingValueParsers.MapPattern(
                     Set.of("entityType", "labelOrType", "property", "min", "max", "selectivity"),

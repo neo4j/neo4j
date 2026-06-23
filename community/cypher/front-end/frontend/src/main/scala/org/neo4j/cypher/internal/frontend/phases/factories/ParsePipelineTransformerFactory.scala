@@ -34,7 +34,6 @@ case class ParsingConfig(
   extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
   /* TODO: This is not part of configuration - Move to BaseState */
   parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
-  obfuscateLiterals: Boolean = false,
   resolveSimpleDynamicExpressions: Boolean = false,
   enabledVirtualGraph: Boolean = false
 ) {

@@ -20,6 +20,7 @@
 package org.neo4j.fleetmanagement.queries;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.fleetmanagement.communication.QueryService;
 import org.neo4j.fleetmanagement.utils.Logger;
@@ -34,11 +35,14 @@ public class QueryInterceptor implements QueryExecutionMonitor {
     private final Log userLog;
     private final QueryService queryService;
     private final Config config;
+    private final boolean exposeFullyObfuscatedQueryView;
 
     public QueryInterceptor(QueryService queryService, Config config) {
         this.userLog = Logger.getNeo4jLogger();
         this.queryService = queryService;
         this.config = config;
+        this.exposeFullyObfuscatedQueryView =
+                config.get(GraphDatabaseInternalSettings.expose_fully_obfuscated_query_view);
     }
 
     @Override
@@ -65,9 +69,10 @@ public class QueryInterceptor implements QueryExecutionMonitor {
     public void beforeEnd(ExecutingQuery query, boolean success) {}
 
     private void processInterceptedQuery(ExecutingQuery query, ErrorGqlStatusObject errorGqlStatusObject) {
-        if (!config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)) {
+        if (!exposeFullyObfuscatedQueryView && !config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)) {
             userLog.error(String.format(
-                    "Fleet Manager requires %s=true to report queries",
+                    "Fleet Manager requires %s=true (or %s=true) to report queries",
+                    GraphDatabaseInternalSettings.expose_fully_obfuscated_query_view.name(),
                     GraphDatabaseSettings.log_queries_obfuscate_literals.name()));
             return;
         }

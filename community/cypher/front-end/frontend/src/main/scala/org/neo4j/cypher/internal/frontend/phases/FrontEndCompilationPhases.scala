@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UserTags
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractLocalDefinitions
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractSensitiveLiterals
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ParsePipelineTransformer
@@ -90,10 +89,8 @@ trait FrontEndCompilationPhases {
    */
   private def parsingBasePre(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
     Parse andThen ScopeSurveyor andThen
-      If((_: BaseState) => config.obfuscateLiterals)(
-        // Needs to be done before any other rewrites to not miss literals
-        ExtractSensitiveLiterals.andThen(ObfuscationMetadataCollection)
-      ) andThen
+      // Needs to be done before any other rewrites to not miss literals
+      ObfuscationMetadataCollection andThen
       ParsePipelineTransformer.getPreObfuscatorTransformer(config)
 
   /**

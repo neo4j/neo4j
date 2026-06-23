@@ -314,6 +314,9 @@ class CypherConfiguration private (val config: Config) {
       false
     }
 
+  val exposeFullyObfuscatedQueryView: Boolean =
+    config.get(GraphDatabaseInternalSettings.expose_fully_obfuscated_query_view).booleanValue()
+
   // dynamic configurations
   private var _obfuscateLiterals: Boolean =
     config.get(GraphDatabaseSettings.log_queries_obfuscate_literals).booleanValue()

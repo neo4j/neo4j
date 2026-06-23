@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.test.util
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ObfuscationPolicy
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractSensitiveLiterals
 import org.neo4j.cypher.internal.label_expressions.BinaryLabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.MultiOperatorLabelExpression
@@ -583,12 +583,17 @@ object ObfuscatorSanity extends Matcher[ParseResult] with AstParsing {
     }
 
     // Try to collect obfuscation metadata
-    val obfMetadata = Try((ExtractSensitiveLiterals andThen ObfuscationMetadataCollection)
+    val obfMetadata = Try(ObfuscationMetadataCollection
       .transform(InitialState(query, null, new AnonymousVariableNameGenerator).withStatement(ast), context)
       .obfuscationMetadata())
 
     // Obfuscate query
-    val obfQuery = obfMetadata.toOption.map(new CypherQueryObfuscator(_).obfuscateText(query, 0))
+    val obfQuery =
+      obfMetadata.toOption.map(m =>
+        new CypherQueryObfuscator(m, ObfuscationPolicy.FullLiteralsAlways)
+          .fullyObfuscatedQuery(query, org.neo4j.values.virtual.MapValue.EMPTY, 0)
+          .text()
+      )
 
     // Replace obfuscation chars with literals
     val paramQuery = obfQuery.map { obfQ =>
@@ -606,7 +611,7 @@ object ObfuscatorSanity extends Matcher[ParseResult] with AstParsing {
       .getOrElse("")
 
     Option.when(!parsedParamQuery.exists(_.isSuccess) ||
-      obfMetadata.toOption.exists(_.sensitiveLiteralOffsets.exists(_.length.isEmpty)) ||
+      obfMetadata.toOption.exists(_.allLiteralOffsets.exists(_.length.isEmpty)) ||
       !replacementsAreIntact)(
       Vector(
         obfMetadata,

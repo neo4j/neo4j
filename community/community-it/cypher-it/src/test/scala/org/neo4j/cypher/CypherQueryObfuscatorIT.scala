@@ -72,7 +72,7 @@ class CypherQueryObfuscatorIT extends CypherITTestSuite {
       val renderedVersion = if (version == CypherVersionOption.default) "" else "CYPHER " + version.render + " "
       test(s"$renderedVersion$rawText [text]") {
         obfuscatorFactory.obfuscatorForQuery(renderedVersion + rawText, CypherVersion.Legacy.legacyVersion())
-          .obfuscateText(rawText, 0) should equal(obfuscatedText)
+          .fullyObfuscatedQuery(rawText, org.neo4j.values.virtual.MapValue.EMPTY, 0).text() should equal(obfuscatedText)
       }
     }
   }
@@ -126,8 +126,36 @@ class CypherQueryObfuscatorIT extends CypherITTestSuite {
       val params = ValueUtils.asMapValue(rawParameters.asJava)
       val expectedParams = ValueUtils.asMapValue(obfuscatedParameters.asJava)
       val ob = obfuscatorFactory.obfuscatorForQuery(renderedVersion + rawText, CypherVersion.Legacy.legacyVersion())
-      ob.obfuscateText(rawText, 0) should equal(obfuscatedText)
-      ob.obfuscateParameters(params) should equal(expectedParams)
+      val result = ob.fullyObfuscatedQuery(rawText, params, 0)
+      result.text() should equal(obfuscatedText)
+      result.parameters() should equal(expectedParams)
     }
+  }
+
+  private val secretCommand = "CREATE USER alice SET PASSWORD 'secretpw'"
+
+  test("sensitive mode redacts the password but keeps ordinary literals visible") {
+    val ob = obfuscatorFactory.obfuscatorForQuery(secretCommand, CypherVersion.Legacy.legacyVersion())
+    val obfuscated = ob.sensitiveObfuscatedQuery(secretCommand, org.neo4j.values.virtual.MapValue.EMPTY, 0).text()
+    obfuscated should not include "secretpw" // password always redacted
+    obfuscated should include("alice") // ordinary literal (username) stays visible when obfuscate_literals is off
+  }
+
+  test("full mode redacts every literal including ordinary ones") {
+    val ob = obfuscatorFactory.obfuscatorForQuery(secretCommand, CypherVersion.Legacy.legacyVersion())
+    val obfuscated = ob.fullyObfuscatedQuery(secretCommand, org.neo4j.values.virtual.MapValue.EMPTY, 0).text()
+    obfuscated should not include "secretpw"
+    obfuscated should not include "alice"
+  }
+
+  test("LOAD CSV credential URL is redacted in sensitive mode while ordinary literals stay visible") {
+    val query = "LOAD CSV FROM 'ftp://mark:Password1@localhost/images.txt' AS line RETURN 'visible' AS keep"
+    val ob = obfuscatorFactory.obfuscatorForQuery(query, CypherVersion.Legacy.legacyVersion())
+    val obfuscated = ob.sensitiveObfuscatedQuery(query, org.neo4j.values.virtual.MapValue.EMPTY, 0).text()
+    obfuscated should not include "Password1" // credential url redacted even when obfuscate_literals is off
+    obfuscated should include("'visible'") // ordinary literal stays visible in sensitive mode
+    val fullyObfuscatedText = ob.fullyObfuscatedQuery(query, org.neo4j.values.virtual.MapValue.EMPTY, 0).text()
+    fullyObfuscatedText should not include "Password1"
+    fullyObfuscatedText should not include "'visible'" // ordinary literal redacted in the all-literals view
   }
 }

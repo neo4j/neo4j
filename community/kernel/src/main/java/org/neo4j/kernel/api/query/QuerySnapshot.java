@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.CypherVersion;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.kernel.api.query.QueryObfuscator.ObfuscatedQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.values.virtual.MapValue;
@@ -49,9 +50,7 @@ public class QuerySnapshot {
     private final long allocatedBytes;
     private final long pageHits;
     private final long pageFaults;
-    private final Optional<String> obfuscatedQueryText;
-    private final Optional<Function<InputPosition, InputPosition>> obfuscatePosition;
-    private final Optional<MapValue> obfuscatedQueryParameters;
+    private final QueryObfuscationState obfuscation;
     private final CypherVersion queryLanguage;
     private final long transactionSequenceNumber;
     private final long parentTransactionSequenceNumber;
@@ -75,9 +74,7 @@ public class QuerySnapshot {
             List<ActiveLock> waitingLocks,
             long activeLockCount,
             long allocatedBytes,
-            Optional<String> obfuscatedQueryText,
-            Optional<Function<InputPosition, InputPosition>> obfuscatePosition,
-            Optional<MapValue> obfuscatedQueryParameters,
+            QueryObfuscationState obfuscation,
             CypherVersion queryLanguage,
             long outerTransactionSequenceNumber,
             String parentDbName,
@@ -99,9 +96,7 @@ public class QuerySnapshot {
         this.waitingLocks = waitingLocks;
         this.activeLockCount = activeLockCount;
         this.allocatedBytes = allocatedBytes;
-        this.obfuscatedQueryText = obfuscatedQueryText;
-        this.obfuscatePosition = obfuscatePosition;
-        this.obfuscatedQueryParameters = obfuscatedQueryParameters;
+        this.obfuscation = obfuscation;
         this.queryLanguage = queryLanguage;
         this.transactionSequenceNumber = outerTransactionSequenceNumber;
         this.parentDbName = parentDbName;
@@ -125,11 +120,15 @@ public class QuerySnapshot {
     }
 
     public Optional<String> obfuscatedQueryText() {
-        return obfuscatedQueryText;
+        return obfuscation == null
+                ? Optional.empty()
+                : ObfuscatedQuery.optional(obfuscation.defaultView()).map(ObfuscatedQuery::text);
     }
 
     public Optional<Function<InputPosition, InputPosition>> obfuscatePosition() {
-        return obfuscatePosition;
+        return obfuscation == null
+                ? Optional.empty()
+                : ObfuscatedQuery.optional(obfuscation.defaultView()).map(ObfuscatedQuery::positionMap);
     }
 
     public MapValue rawQueryParameters() {
@@ -137,7 +136,9 @@ public class QuerySnapshot {
     }
 
     public Optional<MapValue> obfuscatedQueryParameters() {
-        return obfuscatedQueryParameters;
+        return obfuscation == null
+                ? Optional.empty()
+                : ObfuscatedQuery.optional(obfuscation.defaultView()).map(ObfuscatedQuery::parameters);
     }
 
     public CypherVersion queryLanguage() {

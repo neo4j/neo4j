@@ -41,7 +41,7 @@ class AggregatedQueriesTimeSliceTest {
         when(snapshot.databaseId()).thenReturn(Optional.empty());
         when(snapshot.transactionAnnotationData()).thenReturn(Collections.emptyMap());
 
-        when(query.obfuscatedQueryText()).thenReturn(Optional.empty());
+        when(query.fullyObfuscatedQueryText()).thenReturn("");
         when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
 
         timeSlice.add(query, null);
@@ -61,7 +61,7 @@ class AggregatedQueriesTimeSliceTest {
         when(snapshot.transactionAnnotationData()).thenReturn(Collections.emptyMap());
 
         String obfuscatedText = "MATCH (n) RETURN n";
-        when(query.obfuscatedQueryText()).thenReturn(Optional.of(obfuscatedText));
+        when(query.fullyObfuscatedQueryText()).thenReturn(obfuscatedText);
         when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
 
         timeSlice.add(query, null);
@@ -69,5 +69,26 @@ class AggregatedQueriesTimeSliceTest {
         assertThat(timeSlice.size()).isOne();
         UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
         assertThat(key.getQueryText()).isEqualTo(obfuscatedText);
+    }
+
+    @Test
+    void shouldAggregateToEmptyTextWhenObfuscationFailed() {
+        AggregatedQueriesTimeSlice timeSlice = new AggregatedQueriesTimeSlice();
+        ExecutingQuery query = mock(ExecutingQuery.class);
+        QuerySnapshot snapshot = mock(QuerySnapshot.class);
+        when(query.snapshot()).thenReturn(snapshot);
+        when(snapshot.databaseId()).thenReturn(Optional.empty());
+        when(snapshot.transactionAnnotationData()).thenReturn(Collections.emptyMap());
+
+        // Obfuscation failed: fullyObfuscatedQueryText() surfaces that as "" (never the raw query text), so the
+        // aggregation key must collapse to "".
+        when(query.fullyObfuscatedQueryText()).thenReturn("");
+        when(query.queryLanguage()).thenReturn(QueryLanguage.CYPHER_5);
+
+        timeSlice.add(query, null);
+
+        assertThat(timeSlice.size()).isOne();
+        UniqueKey key = timeSlice.getAggregations().keySet().iterator().next();
+        assertThat(key.getQueryText()).isEmpty();
     }
 }

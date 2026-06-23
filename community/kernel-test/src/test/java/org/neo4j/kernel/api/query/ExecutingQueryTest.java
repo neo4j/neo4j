@@ -37,11 +37,14 @@ import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cypher.internal.CypherVersion;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
+import org.neo4j.kernel.api.query.QueryObfuscator.ObfuscatedQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockWaitEvent;
@@ -307,6 +310,79 @@ class ExecutingQueryTest {
         // then
         assertEquals(9, snapshot.pageHits());
         assertEquals(8, snapshot.pageFaults());
+    }
+
+    @Test
+    void exposesDefaultAndFullyObfuscatedViews() {
+        QueryObfuscator obfuscator = new QueryObfuscator() {
+            @Override
+            public String obfuscateText(String rawQueryText, int preparserOffset) {
+                return rawQueryText;
+            }
+
+            @Override
+            public Function<InputPosition, InputPosition> obfuscatePosition(String rawQueryText, int preparserOffset) {
+                return Function.identity();
+            }
+
+            @Override
+            public MapValue obfuscateParameters(MapValue rawQueryParameters) {
+                return rawQueryParameters;
+            }
+
+            @Override
+            public ObfuscatedQuery defaultObfuscatedQuery(
+                    String rawQueryText, MapValue rawQueryParameters, int offset) {
+                return new ObfuscatedQuery("default-view", rawQueryParameters, Function.identity());
+            }
+
+            @Override
+            public ObfuscatedQuery fullyObfuscatedQuery(String rawQueryText, MapValue rawQueryParameters, int offset) {
+                return new ObfuscatedQuery("all-view", rawQueryParameters, Function.identity());
+            }
+        };
+
+        query.onObfuscatorReady(obfuscator, 0);
+
+        assertThat(query.obfuscatedQueryText()).contains("default-view");
+        assertThat(query.fullyObfuscatedQueryText()).isEqualTo("all-view");
+
+        QuerySnapshot snapshot = query.snapshot();
+        assertThat(snapshot.obfuscatedQueryText()).contains("default-view");
+    }
+
+    @Test
+    void obfuscatedViewsEmptyBeforeObfuscatorReady() {
+        assertThat(query.obfuscatedQueryText()).isEmpty();
+        assertThat(query.fullyObfuscatedQueryText()).isEmpty();
+    }
+
+    @Test
+    void obfuscationFailureDegradesToAbsentViewsEvenOnError() {
+        // A StackOverflowError (e.g. on a deeply nested expression) must degrade to absent views, not escape
+        // the accessors and crash the consumer building a log line or fleet slice.
+        QueryObfuscator throwingError = new QueryObfuscator() {
+            @Override
+            public String obfuscateText(String rawQueryText, int preparserOffset) {
+                throw new StackOverflowError("deeply nested");
+            }
+
+            @Override
+            public Function<InputPosition, InputPosition> obfuscatePosition(String rawQueryText, int preparserOffset) {
+                throw new StackOverflowError("deeply nested");
+            }
+
+            @Override
+            public MapValue obfuscateParameters(MapValue rawQueryParameters) {
+                throw new StackOverflowError("deeply nested");
+            }
+        };
+
+        query.onObfuscatorReady(throwingError, 0);
+
+        assertThat(query.obfuscatedQueryText()).isEmpty();
+        assertThat(query.fullyObfuscatedQueryText()).isEmpty();
+        assertThat(query.snapshot().obfuscatedQueryText()).isEmpty();
     }
 
     @Test

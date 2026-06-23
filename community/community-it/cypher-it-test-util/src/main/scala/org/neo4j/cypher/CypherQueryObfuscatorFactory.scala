@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ObfuscationPolicy
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.phases.PlannerContextImpl
@@ -37,7 +38,6 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage
 import org.neo4j.cypher.internal.frontend.phases.QueryLanguage.toCypherVersion
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ExtractSensitiveLiterals
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.notification.InternalNotificationLogger
 import org.neo4j.cypher.internal.notification.devNullLogger
@@ -63,7 +63,11 @@ import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
 class CypherQueryObfuscatorFactory {
 
-  def obfuscatorForQuery(query: String, defaultLanguage: CypherVersion): QueryObfuscator = {
+  def obfuscatorForQuery(
+    query: String,
+    defaultLanguage: CypherVersion,
+    obfuscateLiterals: Boolean = false
+  ): QueryObfuscator = {
     val preParsedQuery = preParser.preParseQuery(query, devNullLogger, defaultLanguage)
     val state = InitialState(
       preParsedQuery.statement,
@@ -74,7 +78,10 @@ class CypherQueryObfuscatorFactory {
       state,
       plannerContext(preParsedQuery.resolvedLanguage, query)
     )
-    CypherQueryObfuscator(res.obfuscationMetadata())
+    CypherQueryObfuscator(
+      res.maybeObfuscationMetadata,
+      ObfuscationPolicy.fromConfig(obfuscateLiterals, exposeFullView = true)
+    )
   }
 
   def registerComponent[T](cls: Class[T]): Unit =
@@ -100,7 +107,7 @@ class CypherQueryObfuscatorFactory {
   private val pipeline =
     Parse andThen
       ResolveCallablesFromPlanContext andThen
-      ExtractSensitiveLiterals.andThen(ObfuscationMetadataCollection)
+      ObfuscationMetadataCollection
 
   private def plannerContext(version: CypherVersion, query: String) =
     new PlannerContextImpl(

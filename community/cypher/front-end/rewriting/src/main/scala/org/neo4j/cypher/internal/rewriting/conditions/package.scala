@@ -28,7 +28,6 @@ package object conditions {
   case object PatternExpressionsHaveSemanticInfo extends Condition
   case object SizeOfCollectRewrittenToCount extends Condition
   case object SubqueryExpressionsHaveDependenciesInWithClauses extends Condition
-  case object SensitiveLiteralsExtracted extends StepSequencer.Condition
   case object LiteralsExtracted extends StepSequencer.Condition
   case object PredicatesSimplified extends StepSequencer.Condition
   case object NotsBelowBooleanOperators extends StepSequencer.Condition

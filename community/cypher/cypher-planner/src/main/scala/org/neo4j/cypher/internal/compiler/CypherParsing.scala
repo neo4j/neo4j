@@ -232,7 +232,6 @@ class CypherParsing(
       resolveCallables = StrictResolveCallables(resolver),
       extractLiterals = config.extractLiterals,
       parameterTypeMapping = paramTypes,
-      obfuscateLiterals = config.obfuscateLiterals(),
       resolveSimpleDynamicExpressions = config.resolveSimpleDynamicExpressions,
       enabledVirtualGraph = config.useVirtualGraph
     )
@@ -257,7 +256,8 @@ case class CypherParsingConfig(
   obfuscateLiterals: () => Boolean = () => false,
   queryRouterForCompositeEnabled: Boolean = false,
   resolveSimpleDynamicExpressions: Boolean = false,
-  useVirtualGraph: Boolean = false
+  useVirtualGraph: Boolean = false,
+  exposeFullyObfuscatedQueryView: Boolean = true
 )
 
 object CypherParsingConfig {
@@ -298,14 +298,22 @@ object CypherParsingConfig {
 
     val enabledVirtualGraph: Boolean = cypherConfiguration.useVirtualGraph
 
+    val exposeFullyObfuscatedQueryView: Boolean = {
+      AssertMacros3.checkOnlyWhenAssertionsAreEnabled(
+        !GraphDatabaseInternalSettings.expose_fully_obfuscated_query_view.dynamic()
+      )
+      cypherConfiguration.exposeFullyObfuscatedQueryView
+    }
+
     CypherParsingConfig(
       extractLiterals,
       useParameterSizeHint,
       enabledSemanticFeatures,
-      () => cypherConfiguration.obfuscateLiterals, // Is dynamic, but documented to not affect caching.
+      () => cypherConfiguration.obfuscateLiterals,
       cypherConfiguration.allowCompositeQueries,
       resolveSimpleDynamicExpressions,
-      enabledVirtualGraph
+      enabledVirtualGraph,
+      exposeFullyObfuscatedQueryView
     )
   }
 

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.FineToReuse
 import org.neo4j.cypher.internal.MaybeReusable
+import org.neo4j.cypher.internal.ObfuscationPolicy
 import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.PlanFingerprintReference
 import org.neo4j.cypher.internal.ReusabilityState
@@ -126,7 +127,6 @@ import org.neo4j.cypher.internal.spi.TransactionBoundIndexComparatorFactory
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.DisallowedOnSystemException
@@ -425,6 +425,12 @@ final class TransformingPlanner private[planning] (
   private val parsing = new CypherParsing(monitors, parsingConfig, internalUsageStats)
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 
+  // Obfuscator flags come from injected configuration, not from the transactional context: callers
+  // (and test harnesses) may provide a context without a graph, and resolving Config through the
+  // context costs a dependency lookup per compilation.
+  private val obfuscateLiterals: () => Boolean = parsingConfig.obfuscateLiterals
+  private val exposeFullyObfuscatedQueryView: Boolean = parsingConfig.exposeFullyObfuscatedQueryView
+
   override def clearCaches(): Long = {
     parsing.clearDFACaches()
     Math.max(caches.astCache.clear(), caches.logicalPlanCache.clear())
@@ -473,7 +479,10 @@ final class TransformingPlanner private[planning] (
         shadowedFunctions = shadowedFunctions
       )
 
-      val obfuscator = CypherQueryObfuscator(preState.maybeObfuscationMetadata.getOrElse(ObfuscationMetadata.empty()))
+      val obfuscator = CypherQueryObfuscator(
+        preState.maybeObfuscationMetadata,
+        ObfuscationPolicy.fromConfig(obfuscateLiterals(), exposeFullyObfuscatedQueryView)
+      )
       transactionalContextWrapper.kernelTransactionalContext.executingQuery
         .onObfuscatorReady(obfuscator, offset.offset)
 
@@ -722,7 +731,10 @@ final class TransformingPlanner private[planning] (
       }
 
     // Get obfuscator out ASAP to make query text available for `dbms.listQueries`, etc
-    val obfuscator = CypherQueryObfuscator(preparedQuery.obfuscationMetadata())
+    val obfuscator = CypherQueryObfuscator(
+      preparedQuery.maybeObfuscationMetadata,
+      ObfuscationPolicy.fromConfig(obfuscateLiterals(), exposeFullyObfuscatedQueryView)
+    )
     transactionalContextWrapper.kernelTransactionalContext.executingQuery.onObfuscatorReady(
       obfuscator,
       options.offset.offset
