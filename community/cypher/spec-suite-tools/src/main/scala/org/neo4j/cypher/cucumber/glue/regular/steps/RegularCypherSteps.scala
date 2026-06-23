@@ -211,6 +211,10 @@ final class RegularCypherSteps @Inject() (
 
   override def executingQuery(cypher: String): Unit = {
     lastGraphState = KernelGraphState.recordGraphState(db.database)
+    executingQueryWithoutGraphState(cypher)
+  }
+
+  def executingQueryWithoutGraphState(cypher: String): Unit = {
     lastResult = execute(conf.preparserPrefix + cypher)
   }
 

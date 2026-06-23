@@ -29,7 +29,7 @@ import org.eclipse.collections.impl.factory.primitive.LongSets
 import org.neo4j.cypher.cucumber.util.KernelOperation
 import org.neo4j.cypher.cucumber.value.ResultValueMapper
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -107,7 +107,7 @@ case class KernelGraphState(
 object KernelGraphState {
   case class Property(entityId: Long, isNode: Boolean, propKey: Int, propValue: Value)
 
-  def recordGraphState(db: GraphDatabaseFacade): KernelGraphState = KernelOperation.withKernelTx(db) { tx =>
+  def recordGraphState(db: GraphDatabaseAPI): KernelGraphState = KernelOperation.withKernelTx(db) { tx =>
     val nodeIds = LongSets.mutable.empty()
     val relIds = LongSets.mutable.empty()
     val labelIds = IntSets.mutable.empty()

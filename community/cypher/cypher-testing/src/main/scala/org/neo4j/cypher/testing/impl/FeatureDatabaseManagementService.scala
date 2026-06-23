@@ -46,8 +46,8 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.api.KernelTransactions
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 
 import scala.util.Using
 
@@ -116,8 +116,8 @@ case class FeatureDatabaseManagementService(
   private val notificationConfig: NotificationConfig = NotificationConfig.defaultConfig()
 ) {
 
-  val database: GraphDatabaseFacade =
-    databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseFacade]
+  val database: GraphDatabaseAPI =
+    databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseAPI]
 
   private val cypherExecutor = createExecutor()
 

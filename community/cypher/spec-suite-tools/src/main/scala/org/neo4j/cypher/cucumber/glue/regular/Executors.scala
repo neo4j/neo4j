@@ -37,7 +37,7 @@ import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.Result
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.util.Preconditions.checkState
 
@@ -115,10 +115,15 @@ trait ExecutorPool extends Executors {
     try {
       // We do cleanup on release to make sure the correct test fails if it stopped the db.
       assertTrue(executor.dbms.database.isAvailable, "Database is not available after test")
-      executor.dbms.dropIndexesAndConstraints()
+
       executor.dbms.terminateAllTransactions() // Can we fail test if there are open transactions instead?
-      // executor.dbms.clearQueryCaches() We could clear cache, but why
-      KernelOperation.detachDeleteAllNodes(executor.dbms.database)
+
+      if (!conf.useGraphEngine) {
+        executor.dbms.dropIndexesAndConstraints()
+        // executor.dbms.clearQueryCaches() We could clear cache, but why
+        KernelOperation.detachDeleteAllNodes(executor.dbms.database)
+      }
+
       executor.dbms.closeExecutor()
       executors.offer(Some(executor))
     } catch {
@@ -185,7 +190,7 @@ trait ExecutorPool extends Executors {
     extraSettings: Settings,
     dbName: Option[String]
   ): DbAccessor = {
-    val neo4jConf = dbms.database(dbName.getOrElse("neo4j")).asInstanceOf[GraphDatabaseFacade]
+    val neo4jConf = dbms.database(dbName.getOrElse("neo4j")).asInstanceOf[GraphDatabaseAPI]
       .getDependencyResolver
       .resolveDependency(classOf[Config])
     val executorFactory =

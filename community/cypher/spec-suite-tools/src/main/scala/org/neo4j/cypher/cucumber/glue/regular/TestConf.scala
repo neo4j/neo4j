@@ -44,6 +44,7 @@ case class TestConf(
   useBolt: Boolean,
   useEnterprise: Boolean,
   useSpd: Boolean,
+  useGraphEngine: Boolean,
   preparserOptions: Map[String, String],
   private val tagContext: Set[String],
   serverLogsConfResource: Option[String],
@@ -109,14 +110,15 @@ object TestConf {
       (if (useVirtualGraph) "graph-engine" else "graph-engine-disabled")
 
     new TestConf(
-      fullNeo4jConf,
-      useBolt,
-      useEnterprise,
-      useSpd,
-      preparserOptions,
-      tagContext,
-      serverLogsConfResource,
-      maxDbmsReuse
+      neo4jConf = fullNeo4jConf,
+      useBolt = useBolt,
+      useEnterprise = useEnterprise,
+      useSpd = useSpd,
+      useGraphEngine = useVirtualGraph,
+      preparserOptions = preparserOptions,
+      tagContext = tagContext,
+      serverLogsConfResource = serverLogsConfResource,
+      maxDbmsReuse = maxDbmsReuse
     )
   }
 
