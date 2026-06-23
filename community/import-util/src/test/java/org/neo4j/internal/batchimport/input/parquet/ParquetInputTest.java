@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -135,6 +136,51 @@ class ParquetInputTest {
     void resetGroups() {
         groups = new Groups();
         groups.getOrCreate(null);
+    }
+
+    @Test
+    void shouldHandleParquetFileWithEmptyRowGroup() throws Exception {
+        var fileUrl = Objects.requireNonNull(getClass().getResource("/parquet/empty_row_group.parquet"));
+        var nodeFile = Path.of(fileUrl.toURI());
+        Input input = createParquetInput(
+                Map.of(Set.of(), List.of(new FileGroup(new FileGroup.NumberedFile(-1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldHandleParquetFilesIncludingEmptyRowGroup() throws Exception {
+        var fileUrl = Objects.requireNonNull(getClass().getResource("/parquet/empty_row_group.parquet"));
+        var nodeFileWithEmptyRowGroup = Path.of(fileUrl.toURI());
+
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name")),
+                List.<Object[]>of(new Object[] {123L, "Mattias Persson"}));
+        Input input = createParquetInput(
+                Map.of(
+                        Set.of(),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(0, nodeFileWithEmptyRowGroup),
+                                new FileGroup.NumberedFile(1, nodeFile)))),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 123L, properties("name", "Mattias Persson"), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
     }
 
     @ParameterizedTest
@@ -3298,13 +3344,13 @@ class ParquetInputTest {
         Input input = createParquetInput(
                 Map.of(
                         Set.of("Comment"),
-                                List.of(new FileGroup(
-                                        new FileGroup.NumberedFile(-1, commentHeader),
-                                        new FileGroup.NumberedFile(-1, commentFile))),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, commentHeader),
+                                new FileGroup.NumberedFile(-1, commentFile))),
                         Set.of("Person"),
-                                List.of(new FileGroup(
-                                        new FileGroup.NumberedFile(-1, personHeader),
-                                        new FileGroup.NumberedFile(-1, personFile)))),
+                        List.of(new FileGroup(
+                                new FileGroup.NumberedFile(-1, personHeader),
+                                new FileGroup.NumberedFile(-1, personFile)))),
                 Map.of(
                         "HAS_CREATOR",
                         List.of(new FileGroup(
@@ -5094,13 +5140,13 @@ class ParquetInputTest {
         try (ParquetInput input = createParquetInput(
                         Map.of(
                                 Set.of("Person"),
-                                        List.of(new FileGroup(
-                                                new FileGroup.NumberedFile(-1, nodeHeaderFile1),
-                                                new FileGroup.NumberedFile(-1, commonFile))),
+                                List.of(new FileGroup(
+                                        new FileGroup.NumberedFile(-1, nodeHeaderFile1),
+                                        new FileGroup.NumberedFile(-1, commonFile))),
                                 Set.of("Band"),
-                                        List.of(new FileGroup(
-                                                new FileGroup.NumberedFile(-1, nodeHeaderFile2),
-                                                new FileGroup.NumberedFile(-1, nodeFile2)))),
+                                List.of(new FileGroup(
+                                        new FileGroup.NumberedFile(-1, nodeHeaderFile2),
+                                        new FileGroup.NumberedFile(-1, nodeFile2)))),
                         Map.of(
                                 "MEMBER_OF",
                                 List.of(new FileGroup(
@@ -5157,17 +5203,17 @@ class ParquetInputTest {
         try (ParquetInput input = createParquetInput(
                         Map.of(
                                 Set.of("Person"),
-                                        List.of(new FileGroup(
-                                                new FileGroup.NumberedFile(-1, nodeHeaderFile1),
-                                                new FileGroup.NumberedFile(-1, commonFile))),
+                                List.of(new FileGroup(
+                                        new FileGroup.NumberedFile(-1, nodeHeaderFile1),
+                                        new FileGroup.NumberedFile(-1, commonFile))),
                                 Set.of("Band"),
-                                        List.of(new FileGroup(
-                                                new FileGroup.NumberedFile(-1, nodeHeaderFile2),
-                                                new FileGroup.NumberedFile(-1, nodeFile2))),
+                                List.of(new FileGroup(
+                                        new FileGroup.NumberedFile(-1, nodeHeaderFile2),
+                                        new FileGroup.NumberedFile(-1, nodeFile2))),
                                 Set.of("Group"),
-                                        List.of(new FileGroup(
-                                                new FileGroup.NumberedFile(-1, nodeHeaderFile3),
-                                                new FileGroup.NumberedFile(-1, commonFile)))),
+                                List.of(new FileGroup(
+                                        new FileGroup.NumberedFile(-1, nodeHeaderFile3),
+                                        new FileGroup.NumberedFile(-1, commonFile)))),
                         Map.of(
                                 "MEMBER_OF",
                                 List.of(new FileGroup(
