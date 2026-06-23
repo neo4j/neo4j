@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.runtime.interpreted.IsMap
-import org.neo4j.cypher.internal.runtime.interpreted.LazyMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherCoercions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
@@ -41,16 +40,20 @@ case class DesugaredMapProjection(
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val variableValue = entity(row, state)
 
-    val mapOfProperties = variableValue match {
-      case v if v eq Values.NO_VALUE => return Values.NO_VALUE
-      case IsMap(m)                  => if (includeAllProps) m(state) else VirtualValues.EMPTY_MAP
+    if (variableValue eq Values.NO_VALUE) {
+      return Values.NO_VALUE
     }
 
-    // in case we get a lazy map we need to make sure it has been loaded
-    mapOfProperties match {
-      case m: LazyMap[_, _] => m.load()
-      case _                =>
-    }
+    val mapOfProperties =
+      if (includeAllProps) {
+        CypherCoercions.asMapValue(
+          variableValue,
+          state.query,
+          state.cursors.nodeCursor,
+          state.cursors.relationshipScanCursor,
+          state.cursors.propertyCursor
+        )
+      } else VirtualValues.EMPTY_MAP
 
     if (literalExpressions.nonEmpty) {
       val builder = new MapValueBuilder(literalExpressions.size)

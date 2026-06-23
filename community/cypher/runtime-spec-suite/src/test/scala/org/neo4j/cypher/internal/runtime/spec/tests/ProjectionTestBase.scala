@@ -25,6 +25,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
+import java.util.Collections
+
+object ProjectionTestBase
+
 abstract class ProjectionTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
@@ -47,5 +51,28 @@ abstract class ProjectionTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (0 until sizeHint).map(i => Array[Any](i, i * 2))
     runtimeResult should beColumns("i", "j").withRows(expected)
+  }
+
+  test("should do desugared map projection") {
+    // given
+    val nodes = givenGraph {
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("map")
+      .distinct("map AS map")
+      .unwind("range(1,10) AS i")
+      .nonFuseable()
+      .projection(" n {.*} AS map")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(node => Array[Any](Collections.singletonMap("prop", node.getId)))
+    runtimeResult should beColumns("map").withRows(expected)
   }
 }
