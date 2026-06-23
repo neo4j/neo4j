@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
@@ -745,6 +746,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   private def allocateLeaf(lp: LogicalPlan, nullable: Boolean, slots: SlotConfigurationBuilder): Unit =
     lp match {
       case leaf: NodeVectorIndexSearch =>
+        slots.newLong(leaf.idName, nullable, CTNode)
+        leaf.score.foreach(slots.newReference(_, nullable, CTInteger))
+
+      case leaf: NodeFulltextIndexSearch =>
         slots.newLong(leaf.idName, nullable, CTNode)
         leaf.score.foreach(slots.newReference(_, nullable, CTInteger))
 

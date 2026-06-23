@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.logical.plans.MergeInto
 import org.neo4j.cypher.internal.logical.plans.MergeUniqueNode
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
@@ -297,6 +298,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.LockNodesSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.LockingMergeSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.MergeIntoSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.MergeUniqueNodeSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeFulltextIndexSearchSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.KeyOffsets
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapping
@@ -458,6 +460,28 @@ class SlottedPipeMapper(
           indexRegistrator.registerNamedQueryIndex(indexName, IndexType.VECTOR, labels, properties),
           entityFilterPredicate.map(convertExpressions),
           maybeFilter.map(_.map(convertExpressions))
+        )(id)
+
+      case NodeFulltextIndexSearch(
+          node,
+          labels,
+          properties,
+          score,
+          indexName,
+          queryString,
+          analyzer,
+          skip,
+          limit,
+          _
+        ) =>
+        NodeFulltextIndexSearchSlottedPipe(
+          slots.longOffset(node.name),
+          score.map(s => slots.refOffset(s.name)),
+          convertExpressions(queryString),
+          analyzer.map(convertExpressions),
+          skip.map(convertExpressions),
+          convertExpressions(limit),
+          indexRegistrator.registerNamedQueryIndex(indexName, IndexType.FULLTEXT, labels, properties)
         )(id)
 
       case NodeIndexSeek(column, label, properties, valueExpr, _, indexOrder, indexType, _) =>
