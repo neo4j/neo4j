@@ -27,6 +27,10 @@ import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.FreeProjection
+import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SchemaCommand
@@ -42,6 +46,8 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.TableResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.UnexpectedAstNodeScopingError
 import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 
@@ -134,14 +140,19 @@ object pegCommand {
         val partsIncoming = incoming.amendedWithConstant(ci.variable)
         val functionScope = pegExpression(ci.function, partsIncoming)
         val propertiesScopes = ci.properties.map(p => pegExpression(p, partsIncoming))
-        val children = graphSelectionScope ++ Seq(functionScope) ++ propertiesScopes
-        incoming.omittedResultScope(RegularContext.unit, children.toSeq)
+        val optionsScope = scopeOptions(ci.options, incoming)
+        val children = graphSelectionScope.toSeq ++ Seq(functionScope) ++ propertiesScopes ++ optionsScope.toSeq
+        val references = WorkingScope.referencedInChildren(children).filterTargets(t => t != ci.variable)
+        incoming.omittedResultScope(RegularContext.unit, children, Some(references))
       case ci: CreateIndex =>
         val graphSelectionScope = ci.useGraph.map(gs =>
           pegExpression(gs.graphReference, incoming)
         )
         val propertiesScopes = ci.properties.map(p => pegExpression(p, incoming.amendedWithConstant(ci.variable)))
-        incoming.omittedResultScope(RegularContext.unit, (graphSelectionScope ++ propertiesScopes).toSeq)
+        val optionsScope = scopeOptions(ci.options, incoming)
+        val children = (graphSelectionScope.toSeq ++ propertiesScopes) ++ optionsScope.toSeq
+        val references = WorkingScope.referencedInChildren(children).filterTargets(t => t != ci.variable)
+        incoming.omittedResultScope(RegularContext.unit, children, Some(references))
 
       case cc: CreateConstraint =>
         val graphSelectionScope = cc.useGraph.map(gs =>
@@ -149,7 +160,10 @@ object pegCommand {
         )
         val partsIncoming = incoming.amendedWithConstant(cc.variable)
         val propertiesScopes = cc.properties.map(p => pegExpression(p, partsIncoming))
-        incoming.omittedResultScope(RegularContext.unit, (graphSelectionScope ++ propertiesScopes).toSeq)
+        val optionsScopes = scopeOptions(cc.options, incoming)
+        val children = (graphSelectionScope.toSeq ++ propertiesScopes) ++ optionsScopes.toSeq
+        val references = WorkingScope.referencedInChildren(children).filterTargets(t => t != cc.variable)
+        incoming.omittedResultScope(RegularContext.unit, children, Some(references))
 
       case agt: AlterCurrentGraphType =>
         val graphSelectionScope =
@@ -257,5 +271,18 @@ object pegCommand {
     val declarations = Declarations(Seq.empty, declaredWithIncoming)
 
     incoming.resultScope(outgoing, result, children, None, declarations)(command)
+  }
+
+  private def scopeOptions(options: Options, incoming: RegularContext)(implicit c: PegContext): Option[WorkingScope] = {
+    options match {
+      case OptionsMap(map) =>
+        val keys = map.map {
+          case (key, expression) => (PropertyKeyName(key)(expression.position), expression)
+        }.toSeq
+        val mapExpression = MapExpression(keys)(options.position)
+        Some(pegExpression(mapExpression, incoming))
+      case OptionsParam(_) => None
+      case NoOptions       => None
+    }
   }
 }

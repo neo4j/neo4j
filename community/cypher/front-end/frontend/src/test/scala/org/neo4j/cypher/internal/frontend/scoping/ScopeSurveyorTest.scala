@@ -4348,6 +4348,91 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
     )
   }
 
+  test("""CREATE VECTOR INDEX moviePlots IF NOT EXISTS
+         |FOR (m:Movie) ON (m.embedding)
+         |WITH [m.releaseDate, m.rating]
+         |OPTIONS {indexConfig: {`vector.similarity_function`: cosine}}""".stripMargin) {
+    hasScope(
+      ExpectedWorkingScope(
+        Ast("""CREATE VECTOR INDEX moviePlots IF NOT EXISTS
+              |FOR (m:Movie) ON (m.embedding)
+              |WITH [m.releaseDate, m.rating]
+              |OPTIONS {indexConfig: {`vector.similarity_function`: cosine}}""".stripMargin),
+        Referenced(Set("cosine")),
+        ExpectedResult.OmittedResult,
+        ExpectedWorkingScope(
+          Ast("""m.embedding""".stripMargin),
+          Incoming(constants = Set("m")),
+          Referenced(Set("m")),
+          ExpectedWorkingScope.varExp("m", Set("m"))
+        ),
+        ExpectedWorkingScope(
+          Ast("""{indexConfig: {`vector.similarity_function`: cosine}}""".stripMargin),
+          Referenced(Set("cosine")),
+          ExpectedWorkingScope.varExp("cosine", Set.empty)
+        )
+      ),
+      version = CypherVersion.Cypher25,
+      skipVariableChecker = true
+    )
+  }
+
+  test("""CREATE INDEX movies IF NOT EXISTS
+         |FOR (m:Movie) ON (m.title, m.year)
+         |OPTIONS {constraintConfig: {foo: "bar"}}""".stripMargin) {
+    hasScope(
+      ExpectedWorkingScope(
+        Ast("""CREATE INDEX movies IF NOT EXISTS
+              |FOR (m:Movie) ON (m.title, m.year)
+              |OPTIONS {constraintConfig: {foo: "bar"}}""".stripMargin),
+        ExpectedResult.OmittedResult,
+        ExpectedWorkingScope(
+          Ast("""m.title""".stripMargin),
+          Incoming(constants = Set("m")),
+          Referenced(Set("m")),
+          ExpectedWorkingScope.varExp("m", Set("m"))
+        ),
+        ExpectedWorkingScope(
+          Ast("""m.year""".stripMargin),
+          Incoming(constants = Set("m")),
+          Referenced(Set("m")),
+          ExpectedWorkingScope.varExp("m", Set("m"))
+        ),
+        ExpectedWorkingScope(
+          Ast("""{constraintConfig: {foo: "bar"}}""".stripMargin)
+        )
+      )
+    )
+  }
+
+  test("""CREATE CONSTRAINT movies IF NOT EXISTS
+         |FOR (m:Movie) REQUIRE (m.title, m.year) IS KEY
+         |OPTIONS {constraintConfig: {foo: "bar"}}""".stripMargin) {
+    hasScope(
+      ExpectedWorkingScope(
+        Ast("""CREATE CONSTRAINT movies IF NOT EXISTS
+              |FOR (m:Movie) REQUIRE (m.title, m.year) IS KEY
+              |OPTIONS {constraintConfig: {foo: "bar"}}""".stripMargin),
+        ExpectedResult.OmittedResult,
+        ExpectedWorkingScope(
+          Ast("""m.title""".stripMargin),
+          Incoming(constants = Set("m")),
+          Referenced(Set("m")),
+          ExpectedWorkingScope.varExp("m", Set("m"))
+        ),
+        ExpectedWorkingScope(
+          Ast("""m.year""".stripMargin),
+          Incoming(constants = Set("m")),
+          Referenced(Set("m")),
+          ExpectedWorkingScope.varExp("m", Set("m"))
+        ),
+        ExpectedWorkingScope(
+          Ast("""{constraintConfig: {foo: "bar"}}""".stripMargin)
+        )
+      )
+    )
+  }
+
   test("""MATCH (a)
          |RETURN EXISTS {
          |  MATCH (a)

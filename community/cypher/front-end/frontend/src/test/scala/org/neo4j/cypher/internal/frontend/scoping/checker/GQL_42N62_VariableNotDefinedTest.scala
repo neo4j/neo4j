@@ -492,6 +492,14 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
       compositionRestriction = NoLocalCallableBody
     ),
     TestQuery(
+      """CREATE VECTOR INDEX moviePlots IF NOT EXISTS
+        |FOR (m:Movie) ON (m.embedding) WITH [m.releaseDate, m.rating]
+        |OPTIONS {indexConfig: {`vector.similarity_function`: cosine}}""".stripMargin,
+      ignoreBeforeCypher25(E42N62("cosine")),
+      Seq.empty,
+      compositionRestriction = NoLocalCallableBody
+    ),
+    TestQuery(
       """MATCH (s)
         |  WHERE s.name = undefinedVariable AND s.age = 10
         |RETURN s""".stripMargin,
