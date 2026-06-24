@@ -153,7 +153,7 @@
     <mixed.language.allowed>false</mixed.language.allowed>
     <mockito.version>5.23.0</mockito.version>
     <neo4j-java-driver.version>6.2.0</neo4j-java-driver.version>
-    <neo4j.bolt.connection.version>11.1.0</neo4j.bolt.connection.version>
+    <neo4j.bolt.connection.version>12.0.0</neo4j.bolt.connection.version>
     <!--
      - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
      - needs updating.
@@ -1100,16 +1100,6 @@
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
         <version>${neo4j-java-driver.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.neo4j.bolt</groupId>
-            <artifactId>neo4j-bolt-connection</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.neo4j.bolt</groupId>
-            <artifactId>neo4j-bolt-connection-netty</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
