@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
@@ -108,6 +109,15 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
             StoreCursors storeCursors,
             MemoryTracker memoryTracker)
             throws KernelException;
+
+    /**
+     * Creates a {@link StorageCommand.VersionUpgradeCommand} representing a kernel version upgrade.
+     * @param from the current kernel version
+     * @param to the target kernel version
+     * @return the storage-engine specific upgrade command
+     */
+    StorageCommand.VersionUpgradeCommand createUpgradeCommand(
+            KernelVersion from, KernelVersion to, LogFormat logFormatTo);
 
     /**
      * The storage-engine specific mechanism for creating {@link EnrichmentCommand}s.

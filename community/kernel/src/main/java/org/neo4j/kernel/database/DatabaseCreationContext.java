@@ -172,4 +172,6 @@ public interface DatabaseCreationContext {
     DatabaseCreationOptions getDatabaseCreationOptions();
 
     LogPruneStrategyFactory logPruneStrategyFactory();
+
+    boolean raftTriggersUpgrade();
 }

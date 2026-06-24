@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
@@ -448,6 +449,12 @@ class ParallelRecoveryVisitorTest {
                 StoreCursors storeCursors,
                 MemoryTracker memoryTracker) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public StorageCommand.VersionUpgradeCommand createUpgradeCommand(
+                KernelVersion from, KernelVersion to, LogFormat logFormatTo) {
+            throw new UnsupportedOperationException("Not needed for this test");
         }
 
         @Override

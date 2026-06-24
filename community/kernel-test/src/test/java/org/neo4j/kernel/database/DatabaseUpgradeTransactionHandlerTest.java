@@ -52,6 +52,7 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.log.LogFormatVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -255,6 +256,7 @@ class DatabaseUpgradeTransactionHandlerTest {
                 Config.defaults(),
                 kernelMock,
                 kernelTransactions,
+                false,
                 false);
         handler.registerUpgradeListener((fromKernelVersion, toKernelVersion, tx, currentLogFormat) -> {
             // The tx being sent in here is just a mock, so we create the tx here
@@ -322,6 +324,11 @@ class DatabaseUpgradeTransactionHandlerTest {
                     realLock.writeLock().unlock();
                 }
             };
+        }
+
+        @Override
+        public Lock acquireWriteLock(LockManager.Client lockClient) {
+            throw new UnsupportedOperationException("Only used through raft triggered upgrade");
         }
 
         @Override

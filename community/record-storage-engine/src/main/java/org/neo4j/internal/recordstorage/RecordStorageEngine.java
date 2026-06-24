@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.stats.RecordDatabaseEntityCounters;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
@@ -483,6 +484,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         commandLockVerification.verifySufficientlyLocked(commands);
 
         return commands;
+    }
+
+    @Override
+    public StorageCommand.VersionUpgradeCommand createUpgradeCommand(
+            KernelVersion from, KernelVersion to, LogFormat logFormatTo) {
+        return Command.MetaDataCommand.upgradeCommand(
+                RecordStorageCommandReaderFactory.INSTANCE.get(from), from, to, logFormatTo);
     }
 
     @Override

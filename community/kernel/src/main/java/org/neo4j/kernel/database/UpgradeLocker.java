@@ -29,6 +29,8 @@ import org.neo4j.lock.ResourceType;
 interface UpgradeLocker {
     Lock acquireWriteLock(KernelTransaction tx);
 
+    Lock acquireWriteLock(LockManager.Client lockClient);
+
     Lock acquireReadLock(KernelTransaction tx);
 
     UpgradeLocker DEFAULT = new UpgradeLocker() {
@@ -37,7 +39,10 @@ interface UpgradeLocker {
 
         @Override
         public Lock acquireWriteLock(KernelTransaction tx) {
-            LockManager.Client lockClient = getLockClient(tx);
+            return acquireWriteLock(getLockClient(tx));
+        }
+
+        public Lock acquireWriteLock(LockManager.Client lockClient) {
             lockClient.acquireExclusive(LockTracer.NONE, type, ID);
             return new Lock() {
                 @Override

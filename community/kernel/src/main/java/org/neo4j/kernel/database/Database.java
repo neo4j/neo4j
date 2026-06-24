@@ -38,6 +38,7 @@ import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
 import static org.neo4j.scheduler.Group.STORAGE_MAINTENANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -51,6 +52,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
@@ -90,6 +92,7 @@ import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.prefetch.PagePrefetcher;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.DatabaseCreationOptions;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -109,6 +112,7 @@ import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsFactory;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionIdSequence;
@@ -142,6 +146,7 @@ import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.storemigration.StoreVersionStateChecker;
 import org.neo4j.kernel.impl.storemigration.UnableToMigrateException;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -155,6 +160,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
@@ -196,6 +202,7 @@ import org.neo4j.storageengine.OperationMode;
 import org.neo4j.storageengine.VectorStoreCreator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.DeprecatedFormatWarning;
+import org.neo4j.storageengine.api.Leases;
 import org.neo4j.storageengine.api.LogMetadataProvider;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -281,6 +288,7 @@ public class Database extends AbstractDatabase {
     private final ChunkedTransactionTracker chunkedTransactionTracker;
     private MultiVersionDatabaseRollbackService multiVersionDatabaseRollbackService;
     private volatile RecoveryPredicateSupplier recoveryPredicate = RecoveryPredicateSupplier.ALL;
+    private final boolean raftTriggersUpgrade;
 
     public Database(DatabaseCreationContext context) {
         super(
@@ -338,6 +346,7 @@ public class Database extends AbstractDatabase {
         this.databaseCreationOptions = context.getDatabaseCreationOptions();
         this.logPruneStrategyFactory = context.logPruneStrategyFactory();
         this.chunkedTransactionTracker = new ChunkedTransactionTracker();
+        this.raftTriggersUpgrade = context.raftTriggersUpgrade();
     }
 
     /**
@@ -816,7 +825,8 @@ public class Database extends AbstractDatabase {
                 databaseConfig,
                 kernelModule.kernelAPI(),
                 kernelModule.kernelTransactions(),
-                isMultiVersioned(storageEngineFactory, namedDatabaseId));
+                isMultiVersioned(storageEngineFactory, namedDatabaseId),
+                raftTriggersUpgrade);
 
         handler.registerUpgradeListener((fromKernelVersion, toKernelVersion, tx, currentLogFormat) -> {
             tx.upgrade()
@@ -1432,6 +1442,31 @@ public class Database extends AbstractDatabase {
         }
     }
 
+    public CompleteCommandBatch createUpgradeCommandBatch(KernelVersion to, int leaseId) {
+        LogMetadataProvider logMetadataProvider = databaseDependencies.resolveDependency(LogMetadataProvider.class);
+        KernelVersion from = logMetadataProvider.kernelVersion();
+        LogFormat logFormatTo =
+                pickLogFormatOnUpgrade(from, to, databaseConfig, logMetadataProvider.getCurrentLogFormat());
+        long now = clock.millis();
+        return new CompleteCommandBatch(
+                List.of(storageEngine.createUpgradeCommand(from, to, logFormatTo)),
+                TransactionIdStore.UNKNOWN_CONSENSUS_INDEX,
+                now,
+                logMetadataProvider.getLastCommittedTransactionId(),
+                now,
+                leaseId,
+                Leases.NO_LEASES, // Skipped for now since not using this upgrade for SPD yet
+                from,
+                Subject.AUTH_DISABLED);
+    }
+
+    public UpgradeLock lockForUpgrade(LeaseClient leaseClient) {
+        LockManager.Client lockClient = databaseLockManager.newClient();
+        lockClient.initialize(
+                leaseClient, LockManager.Client.INVALID_TRANSACTION_ID, otherDatabaseMemoryTracker, databaseConfig);
+        return new UpgradeLock(lockClient, UpgradeLocker.DEFAULT.acquireWriteLock(lockClient));
+    }
+
     private void prepareStop(Predicate<PagedFile> deleteFilePredicate) {
         databasePageCache.listExistingMappings().stream()
                 .filter(deleteFilePredicate)
@@ -1508,6 +1543,13 @@ public class Database extends AbstractDatabase {
         @Override
         public long youngestObservableHorizon() {
             return kernelModule.transactionMonitor().youngestObservableHorizon();
+        }
+    }
+
+    public record UpgradeLock(LockManager.Client lockClient, org.neo4j.lock.Lock lock) implements Closeable {
+        @Override
+        public void close() {
+            lockClient.close();
         }
     }
 

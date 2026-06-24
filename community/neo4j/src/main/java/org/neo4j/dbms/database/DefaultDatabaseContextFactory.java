@@ -135,7 +135,8 @@ public class DefaultDatabaseContextFactory
                     databaseMonitorsFactory(databaseLogIdentifier),
                     globalModule.getExceptionHandlerService(),
                     EMPTY_CREATION_OPTIONS,
-                    new LogPruneStrategyFactory());
+                    new LogPruneStrategyFactory(),
+                    false);
             kernelDatabase = new Database(creationContext);
             context = new StandaloneDatabaseContext(kernelDatabase);
         }

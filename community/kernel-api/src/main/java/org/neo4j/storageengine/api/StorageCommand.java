@@ -78,7 +78,12 @@ public interface StorageCommand extends KernelVersionProvider, Mask.Maskable {
     }
 
     /**
-     * A marker interface for commands upgrading kernel version.
+     * An interface for commands upgrading kernel version.
      */
-    interface VersionUpgradeCommand extends StorageCommand {}
+    interface VersionUpgradeCommand extends StorageCommand {
+        /**
+         * Returns the target kernel version this command upgrades to.
+         */
+        KernelVersion toVersion();
+    }
 }

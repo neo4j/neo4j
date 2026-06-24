@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.transaction.log.distributed.ReplicatedTransa
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.EMPTY_TX;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.KERNEL_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.REPLICATED_TX_CONTENT_TYPE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.VERSION_UPGRADE_CONTENT_TYPE;
 import static org.neo4j.kernel.impl.transaction.log.entry.TailUtils.checkSmallChunkOfTail;
 import static org.neo4j.kernel.impl.transaction.log.entry.TailUtils.checkTail;
 
@@ -99,7 +100,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
                         switch (contentType) {
                             case KERNEL_CONTENT_TYPE, UNSPECIFIED_CONTENT_TYPE -> channel.get();
 
-                            case REPLICATED_TX_CONTENT_TYPE -> {
+                            case REPLICATED_TX_CONTENT_TYPE, VERSION_UPGRADE_CONTENT_TYPE -> {
                                 skipDistributedHeader(channel);
 
                                 yield channel.get();

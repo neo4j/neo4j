@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -276,6 +277,22 @@ public abstract class Command implements StorageCommand {
     public static class MetaDataCommand extends BaseCommand<MetaDataRecord> implements VersionUpgradeCommand {
         MetaDataCommand(LogCommandSerialization serialization, MetaDataRecord before, MetaDataRecord after) {
             super(serialization, before, after);
+        }
+
+        public static MetaDataCommand upgradeCommand(
+                LogCommandSerialization serialization, KernelVersion from, KernelVersion to, LogFormat logFormatTo) {
+            MetaDataRecord before = new MetaDataRecord();
+            before.initialize(true, from.version());
+            MetaDataRecord after = new MetaDataRecord();
+            long versionLong = to.versionAsInt();
+            versionLong |= ((long) logFormatTo.getVersionByte()) << Byte.SIZE;
+            after.initialize(true, versionLong);
+            return new MetaDataCommand(serialization, before, after);
+        }
+
+        @Override
+        public KernelVersion toVersion() {
+            return KernelVersion.getForVersion((byte) (getAfter().getValue() & 0xFF));
         }
 
         @Override

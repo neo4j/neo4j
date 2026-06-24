@@ -138,6 +138,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final ExceptionHandlerService exceptionHandlerService;
     private final DatabaseCreationOptions databaseCreationOptions;
     private final LogPruneStrategyFactory logPruneStrategyFactory;
+    private final boolean raftTriggersUpgrade;
 
     public ModularDatabaseCreationContext(
             HostedOnMode mode,
@@ -173,7 +174,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             DatabaseMonitorsFactory databaseMonitorsFactory,
             ExceptionHandlerService exceptionHandlerService,
             DatabaseCreationOptions databaseCreationOptions,
-            LogPruneStrategyFactory logPruneStrategyFactory) {
+            LogPruneStrategyFactory logPruneStrategyFactory,
+            boolean raftTriggersUpgrade) {
         this.serverIdentity = serverIdentity;
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
@@ -191,6 +193,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.exceptionHandlerService = exceptionHandlerService;
         this.databaseCreationOptions = databaseCreationOptions;
         this.logPruneStrategyFactory = logPruneStrategyFactory;
+        this.raftTriggersUpgrade = raftTriggersUpgrade;
         this.databaseLogService = new DatabaseLogService(databaseLogIdentifier, globalModule.getLogService());
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
@@ -479,6 +482,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public VectorStoreCreator getVectorStoreCreator() {
         return vectorStoreCreator;
+    }
+
+    @Override
+    public boolean raftTriggersUpgrade() {
+        return raftTriggersUpgrade;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory(

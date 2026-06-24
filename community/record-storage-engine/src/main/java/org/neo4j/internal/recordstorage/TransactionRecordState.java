@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -323,16 +322,11 @@ public class TransactionRecordState implements RecordState {
         }
 
         if (upgrade != null) {
-            MetaDataRecord before = new MetaDataRecord();
-            before.initialize(true, upgrade.from().version());
-            MetaDataRecord after = new MetaDataRecord();
-            long versionLong = upgrade.to().versionAsInt();
-            versionLong |= ((long) upgrade.logFormatTo().getVersionByte()) << Byte.SIZE;
-            after.initialize(true, versionLong);
             // This command will be the last one in the "old" version, indicating the switch and writing it to the
             // KernelVersionRepository. The KernelVersionRepository update will make the transaction that triggered
             // upgrade be written in the "new" version
-            commands.add(new Command.MetaDataCommand(commandSerialization, before, after));
+            commands.add(Command.MetaDataCommand.upgradeCommand(
+                    commandSerialization, upgrade.from(), upgrade.to(), upgrade.logFormatTo()));
         }
 
         prepared = true;
