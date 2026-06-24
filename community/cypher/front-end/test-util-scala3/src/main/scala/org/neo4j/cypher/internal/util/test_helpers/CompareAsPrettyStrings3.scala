@@ -22,7 +22,7 @@ import org.scalatest.Assertion
 trait CompareAsPrettyStrings3 {
   self: CypherFunSuite3 =>
 
-  extension(lhs: Any) {
+  extension (lhs: Any) {
 
     def asPrettyString: String = {
       pprint.PPrinter.BlackWhite(lhs).render

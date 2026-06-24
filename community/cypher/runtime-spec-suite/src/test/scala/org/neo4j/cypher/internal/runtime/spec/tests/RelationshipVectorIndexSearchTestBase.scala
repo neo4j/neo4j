@@ -23,26 +23,16 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.helpers.QueryExpressionConstructionTestSupport.matchEntities
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.AllQueryExpression
-import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
-import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
-import org.neo4j.cypher.internal.logical.plans.InclusiveBound
-import org.neo4j.cypher.internal.logical.plans.InequalitySeekRange
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.NonExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
-import org.neo4j.cypher.internal.logical.plans.RangeBetween
-import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
-import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
-import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.GqlExceptionMatchers.gqlStatus
 import org.neo4j.exceptions.CypherTypeException
@@ -570,10 +560,6 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
       ).build()
 
     // then
-    val error = the[CypherTypeException] thrownBy consume(execute(
-      logicalQuery,
-      runtime
-    ))
     the[CypherTypeException] thrownBy consume(execute(logicalQuery, runtime)) shouldBe gqlStatus(
       GqlStatusInfoCodes.STATUS_22G03,
       "error: data exception - invalid value type"
@@ -4510,7 +4496,7 @@ abstract class RelationshipVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
 
   private def executeBooleanPlan(
     rangePredicate: RangeQueryExpression[InequalitySeekRangeWrapper],
-    min: Boolean = false,
+    min: Boolean,
     max: Boolean = true
   ) = {
     val logicalQuery = new LogicalQueryBuilder(this)

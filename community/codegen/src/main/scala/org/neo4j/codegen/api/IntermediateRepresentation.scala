@@ -593,7 +593,7 @@ case class OneTime(inner: IntermediateRepresentation)(private var used: Boolean)
  * A mutable block that can be updated at a later point, but only before its operations are first read.
  */
 case class PlaceHolder(
-  private var originalOps: collection.Seq[IntermediateRepresentation],
+  private val originalOps: collection.Seq[IntermediateRepresentation],
   private var prependOps: collection.Seq[IntermediateRepresentation] = Seq.empty[IntermediateRepresentation],
   private var appendOps: collection.Seq[IntermediateRepresentation] = Seq.empty[IntermediateRepresentation]
 ) extends IntermediateRepresentation {

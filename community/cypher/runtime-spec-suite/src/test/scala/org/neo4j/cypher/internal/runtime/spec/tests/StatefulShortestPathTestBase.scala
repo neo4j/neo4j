@@ -49,6 +49,8 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualValues.pathReference
 
+import scala.annotation.unused
+
 object StatefulShortestPathTestBase
 
 abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
@@ -3577,6 +3579,8 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("s")
       .build()
 
+    // TODO test assertion missing
+    @unused
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
@@ -3618,6 +3622,7 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
     // Exactly the reverse of the paths starting in corner and ending in middle, 2 for each corner
     val nRowsStartingInTheMiddle = 4 * 2
 
+    @unused
     val expectedRowCount = nRowsStartingInACorner + nRowsStartingAtSide + nRowsStartingInTheMiddle
   }
 

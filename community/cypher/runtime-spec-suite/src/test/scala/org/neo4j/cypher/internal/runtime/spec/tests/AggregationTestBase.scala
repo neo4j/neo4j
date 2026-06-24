@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.functions.StdDev
 import org.neo4j.cypher.internal.expressions.functions.StdDevP
 import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CollectDistinctIds
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite

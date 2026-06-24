@@ -19,12 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_NANOS
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExponentialBackoffRetryLogic.ExponentialBackoffRetryState
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExponentialBackoffRetryLogic.INITIAL_RETRY_DELAY_NANOS
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExponentialBackoffRetryLogic.MAX_RETRY_DELAY_NANOS
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExponentialBackoffRetryLogic.RETRY_DELAY_JITTER_FACTOR
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExponentialBackoffRetryLogic.RETRY_DELAY_MULTIPLIER
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionRetryLogic.RetryState
 
 import java.util.concurrent.ThreadLocalRandom
@@ -62,11 +57,11 @@ trait TransactionRetryLogic {
  * A stateful retry logic that implements exponential backoff with jitter.
  */
 case class ExponentialBackoffRetryLogic(
-  maxRetryTimeNanos: Long = DEFAULT_MAX_RETRY_TIME_NANOS,
-  initialRetryDelayNanos: Long = INITIAL_RETRY_DELAY_NANOS,
-  multiplier: Double = RETRY_DELAY_MULTIPLIER,
-  jitterFactor: Double = RETRY_DELAY_JITTER_FACTOR,
-  maxRetryDelayNanos: Long = MAX_RETRY_DELAY_NANOS
+  maxRetryTimeNanos: Long = ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_NANOS,
+  initialRetryDelayNanos: Long = ExponentialBackoffRetryLogic.INITIAL_RETRY_DELAY_NANOS,
+  multiplier: Double = ExponentialBackoffRetryLogic.RETRY_DELAY_MULTIPLIER,
+  jitterFactor: Double = ExponentialBackoffRetryLogic.RETRY_DELAY_JITTER_FACTOR,
+  maxRetryDelayNanos: Long = ExponentialBackoffRetryLogic.MAX_RETRY_DELAY_NANOS
 ) extends TransactionRetryLogic {
 
   require(maxRetryTimeNanos >= 0, s"maxRetryTimeNanos should be >= 0: $maxRetryTimeNanos")

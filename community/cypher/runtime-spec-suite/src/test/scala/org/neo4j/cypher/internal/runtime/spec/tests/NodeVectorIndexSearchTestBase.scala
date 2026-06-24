@@ -3047,7 +3047,7 @@ abstract class NodeVectorIndexSearchTestBase[CONTEXT <: RuntimeContext](
 
   private def executeBooleanPlan(
     rangePredicate: RangeQueryExpression[InequalitySeekRangeWrapper],
-    min: Boolean = false,
+    min: Boolean,
     max: Boolean = true
   ) = {
     val logicalQuery = new LogicalQueryBuilder(this)

@@ -169,7 +169,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-macros-scala3</artifactId>
+      <artifactId>neo4j-cypher-macros</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -391,43 +391,6 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>${scala-maven-plugin.version}</version>
-
-        <configuration>
-          <scalaVersion>${scala3.version}</scalaVersion>
-          <scalaCompatVersion>3</scalaCompatVersion>
-          <recompileMode>${scala.plugin.recompileMode}</recompileMode>
-          <args>
-            <!-- Silence Scala 3 syntax deprecation warnings -->
-            <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
-          </args>
-          <jvmArgs>
-            <jvmArg>-Xms256m</jvmArg>
-            <jvmArg>-Xmx1024m</jvmArg>
-            <jvmArg>-Xss4M</jvmArg>
-          </jvmArgs>
-          <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.diffplug.spotless</groupId>
-        <artifactId>spotless-maven-plugin</artifactId>
-        <configuration>
-          <scala>
-            <scalafmt>
-              <scalaMajorVersion>2.13</scalaMajorVersion>
-              <file>${maven.multiModuleProjectDirectory}/public/build-resources/scalafmt3.conf</file>
-            </scalafmt>
-          </scala>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <profiles>
     <profile>
       <id>skip-cypher-it</id>
@@ -493,13 +456,10 @@
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
             <configuration>
-              <args combine.self="override">
+              <args combine.children="append">
                 <arg>-Xfatal-warnings</arg>
                 <arg>-feature</arg>
-                <!-- Silence Scala 3 syntax deprecation warnings; this module also keeps its
-                     pre-migration suppression of match analysis warnings and does not enable
-                     -Wunused (it previously suppressed cat=unused) -->
-                <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s,msg=match may not be exhaustive:s,msg=Unreachable case:s</arg>
+                <arg>-Wconf:msg=match may not be exhaustive:s,msg=Unreachable case:s</arg>
               </args>
             </configuration>
           </plugin>

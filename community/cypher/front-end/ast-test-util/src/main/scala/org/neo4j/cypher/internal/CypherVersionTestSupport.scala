@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.scalatest.Assertions
-import org.scalatest.Assertions.withClue
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should.Matchers
 

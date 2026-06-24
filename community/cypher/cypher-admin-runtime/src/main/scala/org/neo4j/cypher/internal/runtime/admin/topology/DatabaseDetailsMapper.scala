@@ -57,7 +57,6 @@ import org.neo4j.values.storable.DateTimeValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.ListValueBuilder
-import org.neo4j.values.virtual.MapValueBuilder
 
 object DatabaseDetailsMapper {
 

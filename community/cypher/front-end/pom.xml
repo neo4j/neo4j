@@ -53,25 +53,6 @@
     <scala3.migration.wconf>w</scala3.migration.wconf>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>${scala-maven-plugin.version}</version>
-        <configuration>
-          <args combine.self="append">
-            <arg>-Ytasty-reader</arg>
-            <arg>-Xsource:3</arg>
-            <arg>-Ymacro-annotations</arg>
-            <arg>-Wconf:cat=scala3-migration:${scala3.migration.wconf}</arg>
-          </args>
-          <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <profiles>
     <profile>
       <id>scala-fatal-warnings</id>

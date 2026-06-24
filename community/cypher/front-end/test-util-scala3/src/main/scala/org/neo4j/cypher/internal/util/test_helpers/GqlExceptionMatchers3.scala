@@ -146,7 +146,7 @@ trait GqlExceptionMatchers3 {
     private def positionCheck(left: ErrorGqlStatusObject): Option[MatchResult] = {
       if (offset.nonEmpty || line.nonEmpty || column.nonEmpty) {
         left.diagnosticRecord().get("_position") match {
-          case position: java.util.Map[String, Int] =>
+          case position: java.util.Map[String, Int] @unchecked =>
             offset.flatMap(validateOffset(position)).orElse(
               line.flatMap(validateLine(position)).orElse(
                 column.flatMap(validateColumn(position))

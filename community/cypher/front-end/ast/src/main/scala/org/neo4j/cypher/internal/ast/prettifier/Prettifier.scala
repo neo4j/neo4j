@@ -700,7 +700,9 @@ case class Prettifier(
       case x @ ShowRoles(withUsers, withAuthRules, _, asCommands, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         val asCommandString = if (asCommands) " AS COMMANDS" else ""
-        s"${x.name}${if (withUsers) " WITH USERS" else ""}${if (withAuthRules) " WITH AUTH RULES" else ""}$asCommandString$y$r"
+        s"${x.name}${if (withUsers) " WITH USERS" else ""}${
+            if (withAuthRules) " WITH AUTH RULES" else ""
+          }$asCommandString$y$r"
 
       case x @ CreateRole(roleName, _, None, ifExistsDo) =>
         ifExistsDo match {
@@ -1231,8 +1233,10 @@ case class Prettifier(
     def asString(c: ScopeClauseSubqueryCall): String = {
       val optional = if (c.optional) "OPTIONAL " else ""
       val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
-      s"""$INDENT${optional}CALL (${if (c.isImportingAll) "*"
-        else c.importedVariables.map(expr(_, shouldBacktickEmpty = true)).mkString("", ",", "")}) {
+      s"""$INDENT${optional}CALL (${
+          if (c.isImportingAll) "*"
+          else c.importedVariables.map(expr(_, shouldBacktickEmpty = true)).mkString("", ",", "")
+        }) {
          |${indented().query(c.innerQuery)}
          |$INDENT}$inTxParams""".stripMargin
     }

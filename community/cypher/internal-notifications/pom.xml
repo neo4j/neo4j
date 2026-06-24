@@ -56,15 +56,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <configuration>
-          <scalaVersion>${scala3.version}</scalaVersion>
-          <scalaCompatVersion>3</scalaCompatVersion>
-          <args combine.self="override" />
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>

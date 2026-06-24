@@ -185,6 +185,10 @@
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala3-library_3</artifactId>
+    </dependency>
 
     <!-- Runtime dependencies -->
     <dependency>

@@ -85,7 +85,7 @@
     <awaitility.version>4.3.0</awaitility.version>
     <awssdk.version>2.46.6</awssdk.version>
     <bouncycastle.version>1.84</bouncycastle.version>
-    <build-resources.version>2026.02.5</build-resources.version>
+    <build-resources.version>2026.06.1</build-resources.version>
     <caffeine.version>3.2.4</caffeine.version>
 
     <!-- Bump the cucumber dependencies together. -->
@@ -1673,16 +1673,13 @@
           <version>${scala-maven-plugin.version}</version>
 
           <configuration>
-            <scalaVersion>${scala.version}</scalaVersion>
-            <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+            <scalaVersion>${scala3.version}</scalaVersion>
+            <scalaCompatVersion>3</scalaCompatVersion>
             <recompileMode>${scala.plugin.recompileMode}</recompileMode>
             <args>
-              <arg>-Xlint:_,-missing-interpolator</arg>
-              <arg>-target:jvm-${scala.target.vm}</arg>
-              <arg>-nobootcp</arg>
-              <arg>-Ytasty-reader</arg>
-              <!-- We need to be able to deprecate APIs and have some time for all teams to adapt. -->
-              <arg>-Wconf:cat=deprecation:is</arg>
+              <arg>-Wunused:imports,privates,locals</arg>
+              <!-- Silence Scala 3 syntax deprecation warnings -->
+              <arg>-Wconf:cat=deprecation:s,id=E147:s,msg=.*can be rewritten automatically.*:s</arg>
             </args>
             <jvmArgs>
               <jvmArg>-Xms256m</jvmArg>
@@ -2014,7 +2011,7 @@
             <scalafmt>
               <version>3.8.4-RC3</version>
               <scalaMajorVersion>2.13</scalaMajorVersion>
-              <file>scalafmt/scalafmt.conf</file>
+              <file>scalafmt/scalafmt3.conf</file>
             </scalafmt>
           </scala>
           <antlr4>

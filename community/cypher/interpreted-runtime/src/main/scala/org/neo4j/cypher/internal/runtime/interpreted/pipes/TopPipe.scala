@@ -59,7 +59,6 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, scopedMemoryTracker)
     state.query.resources.trace(topTable)
 
-    var i = 1L
     while (input.hasNext) {
       val row = input.next()
       val evictedRow = topTable.addAndGetEvicted(row)
@@ -69,7 +68,6 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
         if (evictedRow != null)
           scopedMemoryTracker.releaseHeap(evictedRow.estimatedHeapUsage())
       }
-      i += 1
     }
 
     topTable.sort()
