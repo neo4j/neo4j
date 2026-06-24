@@ -31,6 +31,8 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.dbms.archive.ArchiveInput.FileInput;
+import org.neo4j.dbms.archive.ArchiveInput.StreamInput;
 import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
@@ -55,11 +57,8 @@ public final class IOCommon {
 
             Loader.DumpMetaData metaData = new Loader(fileSystem, System.out)
                     .getMetaData(
-                            backup,
-                            fileSystem,
-                            () -> fileSystem.openAsInputStream(backup),
-                            (p, fs, streamSupplier) ->
-                                    DumpFormatSelector.decompressWithBackupSupport(p, fs, streamSupplier, bd -> {}));
+                            FileInput.of(fileSystem, backup),
+                            in -> DumpFormatSelector.decompressWithBackupSupport(in, bd -> {}));
 
             Loader.SizeMeta sizeMeta = metaData.sizeMeta();
             if (sizeMeta != null) {
@@ -77,10 +76,13 @@ public final class IOCommon {
         try (TarArchiveInputStream tais = new TarArchiveInputStream(maybeGzipped(tar, fileSystem), UTF_8.name())) {
             TarArchiveEntry entry;
             while ((entry = tais.getNextEntry()) != null) {
-                if (entry.getName().endsWith(dbName + Dumper.DUMP_EXTENSION)) {
+                var name = entry.getName();
+                if (name.endsWith(dbName + Dumper.DUMP_EXTENSION)) {
 
                     Loader.DumpMetaData metaData = new Loader(fileSystem, System.out)
-                            .getMetaData(entry.getPath(), fileSystem, () -> tais, DumpFormatSelector::decompress);
+                            .getMetaData(
+                                    StreamInput.of(tais, "tar+file://" + tar.toAbsolutePath() + "!" + name),
+                                    DumpFormatSelector::decompress);
                     Loader.SizeMeta sizeMeta = metaData.sizeMeta();
                     if (sizeMeta != null) {
                         return sizeMeta.bytes();

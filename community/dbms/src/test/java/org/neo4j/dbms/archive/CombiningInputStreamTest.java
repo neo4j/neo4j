@@ -25,13 +25,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomSupportExtension;
@@ -95,10 +96,11 @@ class CombiningInputStreamTest {
         Path firstPart = writeSplitArchive("test.dump", new byte[500]);
         Files.delete(firstPart.resolveSibling("test.dump.2"));
 
-        assertThatThrownBy(() -> open(firstPart))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(
-                        "All parts for artifact test.dump are not present in the same location. Expected: 5 files, actual: 4");
+        try (CombiningInputStream in = open(firstPart)) {
+            assertThatThrownBy(in::readAllBytes)
+                    .isInstanceOf(NoSuchFileException.class)
+                    .hasMessageContainingAll("test.dump.2");
+        }
     }
 
     @Test
@@ -109,32 +111,9 @@ class CombiningInputStreamTest {
 
         try (CombiningInputStream in = open(firstPart)) {
             assertThatThrownBy(in::readAllBytes)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Missing part of archive file with index: 2");
+                    .isInstanceOf(NoSuchFileException.class)
+                    .hasMessageContainingAll("test.dump.2");
         }
-    }
-
-    @Test
-    void shouldThrowWhenOpeningNonFirstPart() throws IOException {
-        Path firstPart = writeSplitArchive("test.dump", new byte[250]);
-        Path secondPart = firstPart.resolveSibling("test.dump.1");
-        assertThatThrownBy(() -> open(secondPart))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(
-                        "First artifact in split archive must be base part ending with .backup or .dump, but was: test.dump.1");
-    }
-
-    @Test
-    void shouldThrowWhenFileHasWrongFormat() throws IOException {
-        Path base = testDirectory.file("test.dump");
-        writeSplitArchive("test.dump", new byte[250]);
-
-        fileSystem.renameFile(base, base.resolveSibling("test.testing"));
-        Path file = base.resolveSibling("test.testing");
-        assertThatThrownBy(() -> open(file))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(
-                        "First artifact in split archive must be base part ending with .backup or .dump, but was: test.testing");
     }
 
     @Test
@@ -313,7 +292,7 @@ class CombiningInputStreamTest {
         }
 
         Path firstPart = writeSplitArchive("test.dump", expected);
-        try (CombiningInputStream in = openWithSupplier(firstPart)) {
+        try (CombiningInputStream in = open(firstPart)) {
             assertThat(in.readAllBytes()).isEqualTo(expected);
         }
     }
@@ -326,7 +305,7 @@ class CombiningInputStreamTest {
         }
 
         Path firstPart = writeSplitArchive("test.dump", expected);
-        try (CombiningInputStream in = openWithSupplier(firstPart)) {
+        try (CombiningInputStream in = open(firstPart)) {
             assertThat(in.readAllBytes()).isEqualTo(expected);
         }
     }
@@ -337,23 +316,28 @@ class CombiningInputStreamTest {
         byte[] expected = random.nextBytes(parts * PART_SIZE);
 
         Path firstPart = writeSplitArchive("test.dump", expected);
-        try (CombiningInputStream in = openWithSupplier(firstPart)) {
+        try (CombiningInputStream in = open(firstPart)) {
             assertThat(in.readAllBytes()).isEqualTo(expected);
         }
     }
 
     @Test
     void shouldThrowWhenSupplierReturnsPartWithUnexpectedIndex() throws IOException {
-        Path firstPart = writeSplitArchive("test.dump", new byte[250]);
-        Path dir = firstPart.getParent();
+        Path firstPart = writeSplitArchive("test.dump", new byte[250]); // test.dump, test.dump.1, test.dump.2
 
-        CombiningInputStream.PartSupplier parts = version -> fileSystem.openAsInputStream(dir.resolve("test.dump.1"));
-        InputStream stream = fileSystem.openAsInputStream(firstPart);
-        stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
-        try (CombiningInputStream in = CombiningInputStream.forParts(stream, parts)) {
-            assertThatThrownBy(in::readAllBytes)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Unexpected part index in split archive");
+        // Swap the file names, to confuse the file index
+        FileUtils.moveFile(firstPart.resolveSibling("test.dump.1"), firstPart.resolveSibling("tmp"));
+        FileUtils.moveFile(firstPart.resolveSibling("test.dump.2"), firstPart.resolveSibling("test.dump.1"));
+        FileUtils.moveFile(firstPart.resolveSibling("tmp"), firstPart.resolveSibling("test.dump.2"));
+
+        var source = StreamSource.siblingsOf(fileSystem, firstPart);
+        try (var metadataStream = source.next()) {
+            metadataStream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+            try (var in = CombiningInputStream.of(metadataStream, source, "test")) {
+                assertThatThrownBy(in::readAllBytes)
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContaining("Unexpected part index in split archive");
+            }
         }
     }
 
@@ -366,20 +350,9 @@ class CombiningInputStreamTest {
     }
 
     private CombiningInputStream open(Path firstPart) throws IOException {
-        InputStream stream = fileSystem.openAsInputStream(firstPart);
-        stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
-        return CombiningInputStream.forArtifact(firstPart, stream, fileSystem);
-    }
-
-    private CombiningInputStream openWithSupplier(Path firstPart) throws IOException {
-        // Resolves the data parts the same way a remote caller would: by swapping the trailing ".<version>" of the
-        // metadata file (version 0) for the requested version.
-        String baseName = firstPart.getFileName().toString();
-        CombiningInputStream.PartSupplier parts =
-                version -> fileSystem.openAsInputStream(firstPart.getParent().resolve(baseName + "." + version));
-
-        InputStream stream = fileSystem.openAsInputStream(firstPart);
-        stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
-        return CombiningInputStream.forParts(stream, parts);
+        var source = StreamSource.siblingsOf(fileSystem, firstPart);
+        var metadata = source.next();
+        metadata.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
+        return CombiningInputStream.of(metadata, source, "test");
     }
 }

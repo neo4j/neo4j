@@ -19,17 +19,12 @@
  */
 package org.neo4j.dbms.archive;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 import org.neo4j.dbms.archive.Dumper.SplitFileOutput;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.filename.SequentialFileNameHelper;
 import org.neo4j.util.Preconditions;
 
 public class CombiningInputStream extends InputStream {
@@ -37,90 +32,37 @@ public class CombiningInputStream extends InputStream {
     private static final int INDEX_BYTES = 4;
     private static final int ID_BYTES = 16;
 
-    private final PartSupplier parts;
     private final int numParts;
     private final byte[] archiveId;
+    private final StreamSource src;
 
     // The data part currently being read, and the one-based index of the part that opened it. Parts are opened lazily,
     // so until the first read both are in their initial state.
     private InputStream current;
     private int openIndex;
 
-    private CombiningInputStream(PartSupplier parts, int numParts, byte[] archiveId) {
+    private CombiningInputStream(int numParts, byte[] archiveId, StreamSource src) {
         Preconditions.checkArgument(archiveId.length == ID_BYTES, "The archive id should be " + ID_BYTES + " bytes");
-        this.parts = parts;
-        this.numParts = numParts;
+        Preconditions.checkArgument(numParts > 0, "The number of parts should be greater than zero" + numParts);
         this.archiveId = archiveId;
+        this.src = src;
+        this.numParts = numParts;
     }
 
-    /**
-     * Combines a split archive, written by {@link SplitFileOutput}, back into a single stream.
-     *
-     * <p>A split archive consists of a metadata file (version {@code 0}) holding only the magic header, the number of
-     * data parts and the archive id, followed by the data files (versions {@code 1..numParts}). Each data file is
-     * prefixed with the magic header, its own one-based index and the archive id before the actual archive data.
-     *
-     * <p>The metadata file is read eagerly to validate that all parts are present, but the data parts themselves are
-     * only opened on demand as the stream is consumed.
-     *
-     * @param firstArtifact the metadata file (version {@code 0}) of the split archive.
-     * @param inputStream    the stream of the metadata file, positioned right after the magic header.
-     * @param fileSystem     the file system the parts live on.
-     */
-    public static CombiningInputStream forArtifact(
-            Path firstArtifact, InputStream inputStream, FileSystemAbstraction fileSystem) throws IOException {
-        try (inputStream) {
-            String fileName = firstArtifact.getFileName().toString();
-            if (!(fileName.endsWith(".backup") || fileName.endsWith(".dump"))) {
-                throw new IllegalArgumentException(
-                        "First artifact in split archive must be base part ending with .backup or .dump, but was: "
-                                + fileName);
-            }
-            SequentialFileNameHelper fileHelper = new SequentialFileNameHelper(firstArtifact.getParent(), fileName);
-            Path[] partFiles = fileHelper.getFiles(fileSystem);
-
+    public static CombiningInputStream of(InputStream metadataStream, StreamSource src, String description)
+            throws IOException {
+        try (metadataStream) {
             // The metadata file only contains the part count and archive id, the magic header was already consumed.
-            byte[] numPartsBytes = inputStream.readNBytes(INDEX_BYTES);
-            byte[] archiveId = inputStream.readNBytes(ID_BYTES);
+            byte[] numPartsBytes = metadataStream.readNBytes(INDEX_BYTES);
+            byte[] archiveId = metadataStream.readNBytes(ID_BYTES);
 
             if (numPartsBytes.length != INDEX_BYTES || archiveId.length != ID_BYTES) {
                 throw new IOException(
-                        "Unexpected end of stream while reading metadata for split archive part: " + fileName);
+                        "Unexpected end of stream while reading metadata for split archive part: " + description);
             }
 
             int numParts = intFromBytes(numPartsBytes);
-            if (numParts != partFiles.length) {
-                throw new IllegalArgumentException(format(
-                        "All parts for artifact %s are not present in the same location. Expected: %d files, actual: %d",
-                        fileName, numParts, partFiles.length));
-            }
-            PartSupplier parts = version -> {
-                Path nextPart = partFiles[version - 1];
-                if (SequentialFileNameHelper.getVersion(nextPart) != version) {
-                    throw new IllegalArgumentException("Missing part of archive file with index: " + version);
-                }
-                return fileSystem.openAsInputStream(nextPart);
-            };
-            return new CombiningInputStream(parts, numParts, archiveId);
-        }
-    }
-
-    /**
-     * Combines a split archive back into a single stream by opening its data parts through the supplied
-     * {@link PartSupplier}.
-     *
-     * @param metadataStream the stream of the metadata part (version {@code 0}), positioned right after the magic header.
-     * @param parts          opens the data parts (versions {@code 1..numParts}) on demand.
-     */
-    public static CombiningInputStream forParts(InputStream metadataStream, PartSupplier parts) throws IOException {
-        try (metadataStream) {
-            byte[] numPartsBytes = metadataStream.readNBytes(INDEX_BYTES);
-            byte[] archiveId = metadataStream.readNBytes(ID_BYTES);
-            if (numPartsBytes.length != INDEX_BYTES || archiveId.length != ID_BYTES) {
-                throw new IOException("Unexpected end of stream while reading metadata for split archive");
-            }
-            int numParts = intFromBytes(numPartsBytes);
-            return new CombiningInputStream(parts, numParts, archiveId);
+            return new CombiningInputStream(numParts, archiveId, src);
         }
     }
 
@@ -132,8 +74,10 @@ public class CombiningInputStream extends InputStream {
         if (openIndex >= numParts) {
             return false;
         }
+
         openIndex++;
-        InputStream in = parts.open(openIndex);
+
+        InputStream in = src.next();
         try {
             byte[] header = in.readNBytes(MAGIC_LENGTH);
             byte[] indexBytes = in.readNBytes(INDEX_BYTES);
@@ -230,10 +174,5 @@ public class CombiningInputStream extends InputStream {
 
     private static int intFromBytes(byte[] bytes) {
         return ((bytes[0] & 0xFF) << 24) | ((bytes[1] & 0xFF) << 16) | ((bytes[2] & 0xFF) << 8) | (bytes[3] & 0xFF);
-    }
-
-    @FunctionalInterface
-    public interface PartSupplier {
-        InputStream open(int version) throws IOException;
     }
 }

@@ -48,10 +48,10 @@ import org.junit.jupiter.api.condition.OS;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.archive.ArchiveInput.FileInput;
 import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.dbms.archive.Loader.FileInput;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -231,7 +231,7 @@ public class LoadDumpExecutorTest {
         LoadDumpExecutor loadDumpExecutor = new LoadDumpExecutor(
                 config, testDirectory.getFileSystem(), System.err, System.out, loader, DumpFormatSelector::decompress);
 
-        loadDumpExecutor.execute(new FileInput(fs, archive), database, force);
+        loadDumpExecutor.execute(FileInput.of(fs, archive), database, force);
     }
 
     private void execute(String database, Path archive) throws IOException {

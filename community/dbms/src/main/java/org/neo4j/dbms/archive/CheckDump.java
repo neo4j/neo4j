@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.ArchiveInput.FileInput;
 import org.neo4j.dbms.archive.CheckDatabase.Source.PathSource;
 import org.neo4j.dbms.archive.Loader.SizeMeta;
 import org.neo4j.io.ByteUnit;
@@ -108,8 +109,7 @@ public class CheckDump implements CheckDatabase {
             return; // implies the usable space cannot be obtained
         }
 
-        final var dumpMeta =
-                loader.getMetaData(dump, fs, () -> fs.openAsInputStream(dump), DumpFormatSelector::decompress);
+        final var dumpMeta = loader.getMetaData(FileInput.of(fs, dump), DumpFormatSelector::decompress);
         SizeMeta sizeMeta = dumpMeta.sizeMeta();
         if (sizeMeta == null) {
             return;

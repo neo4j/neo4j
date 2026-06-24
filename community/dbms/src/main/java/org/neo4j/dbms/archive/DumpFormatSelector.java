@@ -26,15 +26,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PushbackInputStream;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.dbms.archive.Dumper.DumpFormat;
 import org.neo4j.dbms.archive.backup.BackupDescription;
 import org.neo4j.dbms.archive.backup.BackupFormatSelector;
-import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class DumpFormatSelector {
 
@@ -46,24 +43,12 @@ public class DumpFormatSelector {
                 new DumpZstdFormatVLegacy());
     }
 
-    public static InputStream decompress(
-            Path firstArtifact,
-            FileSystemAbstraction fileSystem,
-            ThrowingSupplier<InputStream, IOException> streamSupplier)
-            throws IOException {
-        var input = streamSupplier.get();
+    public static InputStream decompress(ArchiveInput input) throws IOException {
+        var opened = input.open();
         try {
-            var bytes = input.readNBytes(MAGIC_PREFIX_LENGTH);
-            if (Dumper.SplitFileOutput.MAGIC_HEADER.matches(bytes)) {
-                if (firstArtifact == null) {
-                    throw new IllegalArgumentException("Found split file format, but not supplied in split files");
-                }
-                input = CombiningInputStream.forArtifact(firstArtifact, input, fileSystem);
-                bytes = input.readNBytes(MAGIC_PREFIX_LENGTH);
-            }
-            return decompress0(input, bytes);
+            return decompress0(opened.stream(), opened.magic());
         } catch (IOException | IllegalArgumentException exc) {
-            input.close();
+            opened.stream().close();
             throw exc;
         }
     }
@@ -72,32 +57,20 @@ public class DumpFormatSelector {
      * This method supports decompression of dumps and backups
      */
     public static InputStream decompressWithBackupSupport(
-            Path firstArtifact,
-            FileSystemAbstraction fileSystem,
-            ThrowingSupplier<InputStream, IOException> streamSupplier,
-            Consumer<BackupDescription> backupDescriptionConsumer)
-            throws IOException {
-        var input = streamSupplier.get();
+            ArchiveInput input, Consumer<BackupDescription> backupDescriptionConsumer) throws IOException {
+        var opened = input.open();
         try {
-            var bytes = input.readNBytes(MAGIC_PREFIX_LENGTH);
-            if (Dumper.SplitFileOutput.MAGIC_HEADER.matches(bytes)) {
-                if (firstArtifact == null) {
-                    throw new IllegalArgumentException("Found split file format, but not supplied in split files");
-                }
-                input = CombiningInputStream.forArtifact(firstArtifact, input, fileSystem);
-                bytes = input.readNBytes(MAGIC_PREFIX_LENGTH);
-            }
             // Note: num read bytes may be less than MAGIC_PREFIX_LENGTH
-            var backupFormat = BackupFormatSelector.selectReadFormat(bytes);
+            var backupFormat = BackupFormatSelector.selectReadFormat(opened.magic());
             if (backupFormat != null) {
-                var streamWithDescription = backupFormat.decompressAndDescribe(input);
+                var streamWithDescription = backupFormat.decompressAndDescribe(opened.stream());
                 backupDescriptionConsumer.accept(streamWithDescription.backupDescription());
                 return streamWithDescription.inputStream();
             }
 
-            return decompress0(input, bytes);
+            return decompress0(opened.stream(), opened.magic());
         } catch (IOException | IllegalArgumentException exc) {
-            input.close();
+            opened.stream().close();
             throw exc;
         }
     }

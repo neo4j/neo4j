@@ -49,14 +49,14 @@ import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
+import org.neo4j.dbms.archive.ArchiveInput;
+import org.neo4j.dbms.archive.ArchiveInput.FileInput;
+import org.neo4j.dbms.archive.ArchiveInput.StreamInput;
 import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.dbms.archive.Loader.FileInput;
 import org.neo4j.dbms.archive.Loader.SizeMeta;
-import org.neo4j.dbms.archive.Loader.StdinInput;
 import org.neo4j.dbms.archive.backup.BackupDescription;
 import org.neo4j.dbms.archive.backup.BackupFormatSelector;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -187,39 +187,26 @@ public class LoadCommand extends AbstractAdminCommand {
         List<FailedLoad> failedLoads = new ArrayList<>();
         for (DumpInfo dumpInfo : dbNames) {
             if (source.stdIn) {
-                inspectOne(dumpInfo.dbName, new StdinInput(ctx), fs, loader, failedLoads);
+                inspectOne(dumpInfo.dbName, StreamInput.stdin(ctx), loader, failedLoads);
             } else {
                 for (Path path : dumpInfo.archives) {
-                    inspectOne(dumpInfo.dbName, new FileInput(fs, path), fs, loader, failedLoads);
+                    inspectOne(dumpInfo.dbName, FileInput.of(fs, path), loader, failedLoads);
                 }
             }
         }
         checkFailure(failedLoads, "Print metadata failed for databases: '");
     }
 
-    private void inspectOne(
-            String dbName,
-            Loader.DumpInput input,
-            FileSystemAbstraction fileSystem,
-            Loader loader,
-            List<FailedLoad> failedLoads) {
+    private void inspectOne(String dbName, ArchiveInput input, Loader loader, List<FailedLoad> failedLoads) {
         try {
             MutableBoolean backup = new MutableBoolean(false);
             MutableBoolean fullBackup = new MutableBoolean(false);
-            Path path = null;
-            if (input instanceof FileInput(FileSystemAbstraction fs, Path p)) {
-                path = p;
-                fileSystem = fs;
-            }
             Loader.DumpMetaData metaData = loader.getMetaData(
-                    path,
-                    fileSystem,
-                    input.streamSupplier(),
-                    (p, fs, streamSupplier) ->
-                            DumpFormatSelector.decompressWithBackupSupport(p, fs, streamSupplier, bd -> {
-                                backup.setTrue();
-                                fullBackup.setValue(bd.isFull());
-                            }));
+                    input,
+                    in -> DumpFormatSelector.decompressWithBackupSupport(in, bd -> {
+                        backup.setTrue();
+                        fullBackup.setValue(bd.isFull());
+                    }));
             String archiveFormat =
                     getArchiveFormat(backup.booleanValue(), fullBackup.booleanValue(), metaData.compressed());
             SizeMeta sizeMeta = metaData.sizeMeta();
@@ -287,7 +274,7 @@ public class LoadCommand extends AbstractAdminCommand {
                     }
                 }
 
-                var input = (source.stdIn ? new StdinInput(ctx) : new FileInput(fs, dumpPath));
+                var input = (source.stdIn ? StreamInput.stdin(ctx) : FileInput.of(fs, dumpPath));
                 loadDumpExecutor.execute(input, dbName.dbName, force);
             } catch (Exception e) {
                 ctx.err().printf("Failed to load database '%s': %s%n", dbName.dbName, e.getMessage());
@@ -352,8 +339,7 @@ public class LoadCommand extends AbstractAdminCommand {
                                     .add(path);
                         }
                     } else if (fileName.endsWith(BACKUP_EXTENSION)) {
-                        BackupDescription backupDescription =
-                                BackupFormatSelector.readDescription(path, fs, () -> fs.openAsInputStream(path));
+                        BackupDescription backupDescription = BackupFormatSelector.readDescription(fs, path);
                         String dbName = backupDescription.getDatabaseName();
                         if (pattern.matches(dbName) && (includeDiff || backupDescription.isFull())) {
                             result.computeIfAbsent(dbName, name -> new ArrayList<>())
@@ -372,10 +358,8 @@ public class LoadCommand extends AbstractAdminCommand {
         return createPrefilledConfigBuilder().build();
     }
 
-    private static InputStream decompress(
-            Path path, FileSystemAbstraction fs, ThrowingSupplier<InputStream, IOException> streamSupplier)
-            throws IOException {
-        return DumpFormatSelector.decompressWithBackupSupport(path, fs, streamSupplier, bd -> {
+    private static InputStream decompress(ArchiveInput input) throws IOException {
+        return DumpFormatSelector.decompressWithBackupSupport(input, bd -> {
             if (!bd.isFull()) {
                 throw new CommandFailedException(
                         "Loading of differential Neo4j backup is not supported. Use restore database instead.");

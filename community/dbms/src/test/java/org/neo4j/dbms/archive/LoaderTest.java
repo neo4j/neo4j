@@ -50,6 +50,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.ArchiveInput.FileInput;
 import org.neo4j.dbms.archive.backup.BackupDescription;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -240,8 +241,7 @@ class LoaderTest {
             compressed.write(expected);
         }
 
-        try (InputStream in =
-                DumpFormatSelector.decompress(base, fileSystem, () -> fileSystem.openAsInputStream(base))) {
+        try (InputStream in = DumpFormatSelector.decompress(FileInput.of(fileSystem, base))) {
             assertThat(in.readAllBytes()).isEqualTo(expected);
         }
     }
@@ -256,8 +256,7 @@ class LoaderTest {
             compressed.write(expected);
         }
 
-        try (InputStream in =
-                DumpFormatSelector.decompress(null, fileSystem, () -> fileSystem.openAsInputStream(archive))) {
+        try (InputStream in = DumpFormatSelector.decompress(FileInput.of(fileSystem, archive))) {
             assertThat(in.readAllBytes()).isEqualTo(expected);
         }
     }
@@ -274,8 +273,8 @@ class LoaderTest {
         }
 
         AtomicReference<BackupDescription> captured = new AtomicReference<>();
-        try (InputStream in = DumpFormatSelector.decompressWithBackupSupport(
-                base, fileSystem, () -> fileSystem.openAsInputStream(base), captured::set)) {
+        try (InputStream in =
+                DumpFormatSelector.decompressWithBackupSupport(FileInput.of(fileSystem, base), captured::set)) {
             assertThat(in.readAllBytes()).isEqualTo(expected);
         }
         assertThat(captured.get()).isNull();

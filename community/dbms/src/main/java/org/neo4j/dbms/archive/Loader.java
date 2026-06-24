@@ -38,13 +38,11 @@ import java.nio.file.Path;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.io.input.CloseShieldInputStream;
-import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.dbms.StoreVersionLoader;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.ArchiveInput.FileInput;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -93,7 +91,7 @@ public class Loader {
                 validateDatabaseExistence,
                 validateLogsExistence,
                 selector,
-                new FileInput(filesystem, archive));
+                FileInput.of(filesystem, archive));
     }
 
     public void load(
@@ -101,7 +99,7 @@ public class Loader {
             boolean validateDatabaseExistence,
             boolean validateLogsExistence,
             DecompressionSelector selector,
-            DumpInput input)
+            ArchiveInput input)
             throws IOException, IncorrectFormat {
         Path databaseDestination = databaseLayout.databaseDirectory();
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
@@ -134,13 +132,8 @@ public class Loader {
         }
     }
 
-    public DumpMetaData getMetaData(
-            Path path,
-            FileSystemAbstraction fs,
-            ThrowingSupplier<InputStream, IOException> streamSupplier,
-            DecompressionSelector selector)
-            throws IOException {
-        try (InputStream decompressor = selector.decompress(path, fs, streamSupplier)) {
+    public DumpMetaData getMetaData(ArchiveInput input, DecompressionSelector selector) throws IOException {
+        try (InputStream decompressor = selector.decompress(input)) {
             return readDumpMetadata(decompressor);
         }
     }
@@ -211,15 +204,11 @@ public class Loader {
         }
     }
 
-    private ArchiveInputStream<?> openArchiveIn(DecompressionSelector selector, DumpInput input)
+    private ArchiveInputStream<?> openArchiveIn(DecompressionSelector selector, ArchiveInput input)
             throws IOException, IncorrectFormat {
         InputStream decompressor = null;
         try {
-            if (input instanceof FileInput(FileSystemAbstraction fs, Path path)) {
-                decompressor = selector.decompress(path, fs, input.streamSupplier());
-            } else {
-                decompressor = selector.decompress(null, filesystem, input.streamSupplier());
-            }
+            decompressor = selector.decompress(input);
 
             if (StandardCompressionFormat.ZSTD.isFormat(decompressor)) {
                 // Important: Only the ZSTD compressed archives have any archive metadata.
@@ -262,36 +251,4 @@ public class Loader {
     public record SizeMeta(long files, long bytes) {}
 
     public record DumpMetaData(boolean compressed, SizeMeta sizeMeta) {}
-
-    public sealed interface DumpInput {
-        ThrowingSupplier<InputStream, IOException> streamSupplier();
-
-        String description();
-    }
-
-    public record FileInput(FileSystemAbstraction fs, Path path) implements DumpInput {
-
-        @Override
-        public ThrowingSupplier<InputStream, IOException> streamSupplier() {
-            return () -> fs.openAsInputStream(path);
-        }
-
-        @Override
-        public String description() {
-            return path.toString();
-        }
-    }
-
-    public record StdinInput(ExecutionContext ctx) implements DumpInput {
-        @Override
-        public ThrowingSupplier<InputStream, IOException> streamSupplier() {
-            // We should never go around closing the stdin stream.
-            return () -> CloseShieldInputStream.wrap(ctx.in());
-        }
-
-        @Override
-        public String description() {
-            return "reading from stdin";
-        }
-    }
 }

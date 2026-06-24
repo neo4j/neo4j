@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.ArchiveInput.FileInput;
 import org.neo4j.dbms.archive.Dumper.DumpFormat;
 import org.neo4j.dbms.archive.Dumper.FileOutput;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -240,8 +241,7 @@ class ArchiveTest {
         dumper.dump(FileOutput.of(filesystem, archive), new DumpZstdFormatV1(), manifest);
 
         Loader loader = new Loader(filesystem);
-        var metadata = loader.getMetaData(
-                archive, filesystem, () -> filesystem.openAsInputStream(archive), DumpFormatSelector::decompress);
+        var metadata = loader.getMetaData(FileInput.of(filesystem, archive), DumpFormatSelector::decompress);
         assertThat(metadata.sizeMeta()).isNotNull();
         assertThat(metadata.sizeMeta().bytes()).isEqualTo(data.length);
         assertThat(metadata.sizeMeta().files()).isEqualTo(1);

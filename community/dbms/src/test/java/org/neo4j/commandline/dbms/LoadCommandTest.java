@@ -45,9 +45,9 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.archive.ArchiveInput;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.dbms.archive.Loader.DumpInput;
 import org.neo4j.dbms.archive.Loader.SizeMeta;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -161,7 +161,7 @@ class LoadCommandTest {
         createDummyDump("foo", archive);
         doThrow(FileAlreadyExistsException.class)
                 .when(loader)
-                .load(any(), anyBoolean(), anyBoolean(), any(), any(DumpInput.class));
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(ArchiveInput.class));
         assertThatThrownBy(() -> execute("foo", archive))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("Load failed for databases: 'foo'")
@@ -173,7 +173,7 @@ class LoadCommandTest {
         createDummyDump("foo", archive);
         doThrow(AccessDeniedException.class)
                 .when(loader)
-                .load(any(), anyBoolean(), anyBoolean(), any(), any(DumpInput.class));
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(ArchiveInput.class));
         assertThatThrownBy(() -> execute("foo", archive))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("Load failed for databases: 'foo'")
@@ -186,7 +186,7 @@ class LoadCommandTest {
         createDummyDump("foo", archive);
         doThrow(new FileSystemException("the-message"))
                 .when(loader)
-                .load(any(), anyBoolean(), anyBoolean(), any(), any(DumpInput.class));
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(ArchiveInput.class));
         assertThatThrownBy(() -> execute("foo", archive))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("Load failed for databases: 'foo'")
@@ -198,7 +198,7 @@ class LoadCommandTest {
         createDummyDump("foo", archive);
         doThrow(IncorrectFormat.class)
                 .when(loader)
-                .load(any(), anyBoolean(), anyBoolean(), any(), any(DumpInput.class));
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(ArchiveInput.class));
         assertThatThrownBy(() -> execute("foo", archive))
                 .isInstanceOf(CommandFailedException.class)
                 .hasMessageContaining("Load failed for databases: 'foo'")
@@ -210,8 +210,7 @@ class LoadCommandTest {
     @Test
     void infoMustPrintArchiveMetaData() throws IOException {
         createDummyDump("foo", archive);
-        when(loader.getMetaData(any(), any(), any(), any()))
-                .thenReturn(new Loader.DumpMetaData(true, new SizeMeta(42, 1337)));
+        when(loader.getMetaData(any(), any())).thenReturn(new Loader.DumpMetaData(true, new SizeMeta(42, 1337)));
         var baos = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(baos)) {
             var command =
