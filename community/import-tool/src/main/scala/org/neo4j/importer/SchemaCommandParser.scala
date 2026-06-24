@@ -76,7 +76,8 @@ class SchemaCommandParser(
       sessionDatabase = SchemaCommandParser.noDatabaseReference,
       semanticFeatures = parsingConfig.semanticFeatures,
       isScopeQuery = false,
-      shadowedFunctions = Set.empty
+      shadowedFunctions = Set.empty,
+      isDebugSession = false
     )
     val state = InitialState(query, SchemaCommandParser.noPlannerName, new AnonymousVariableNameGenerator)
     val cypherLanguageAstParser = AstParserFactory(preparsed.resolvedLanguage)

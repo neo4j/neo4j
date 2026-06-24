@@ -89,6 +89,7 @@ class ExistsScopedDependenciesTest extends CommunityCypherTestSuite with AstCons
     override def semanticFeatures: Seq[SemanticFeature] = Seq()
     override def isScopeQuery: Boolean = false
     override def shadowedFunctions: Set[String] = Set.empty
+    override def isDebugSession: Boolean = false
   }
 
   test(

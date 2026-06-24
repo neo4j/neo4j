@@ -28,6 +28,7 @@
     <module>ast-test</module>
     <module>rewriting</module>
     <module>frontend</module>
+    <module>frontend-inspector</module>
     <module>util</module>
     <module>test-util</module>
     <module>test-util-scala3</module>

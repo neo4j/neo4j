@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.LocalDefinitionsDirectory
+import org.neo4j.cypher.internal.frontend.phases.PipelineDebugInfo
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -46,6 +47,7 @@ case class InputDataStreamTestInitialState(
   accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
   maybeReturnColumns: Option[Seq[String]] = None,
   maybeObfuscationMetadata: Option[ObfuscationMetadata] = None,
+  maybeDebugInfo: Option[PipelineDebugInfo] = None,
   semanticsUpToDate: Boolean = false
 ) extends BaseState {
 
@@ -79,6 +81,9 @@ case class InputDataStreamTestInitialState(
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): InputDataStreamTestInitialState =
     copy(maybeObfuscationMetadata = Some(o))
+
+  override def withDebugInfo(debugInfo: PipelineDebugInfo): InputDataStreamTestInitialState =
+    copy(maybeDebugInfo = Some(debugInfo))
 
   override def withProcedureSignatureVersion(signatureVersion: Option[Long]): InputDataStreamTestInitialState =
     copy(maybeProcedureSignatureVersion = signatureVersion)

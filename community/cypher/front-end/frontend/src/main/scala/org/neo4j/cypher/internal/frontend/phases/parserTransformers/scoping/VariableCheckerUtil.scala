@@ -54,180 +54,180 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CallableName
 import org.neo4j.cypher.internal.util.InputPosition
 
+sealed trait ReturnContext
+case object Unopinionated extends ReturnContext
+sealed trait Opinionated extends ReturnContext { val constants: Set[LogicalVariable] }
+case class SubqueryExpression(override val constants: Set[LogicalVariable]) extends Opinionated
+case class NextStatement(override val constants: Set[LogicalVariable]) extends Opinionated
+
+sealed trait VariableContext {
+
+  def inMatch: VariableContext = this match {
+    case d: DeclaringContext => d.inMatchingPattern
+    case vc                  => vc
+  }
+}
+case object Default extends VariableContext
+
+sealed trait DeclaringContext extends VariableContext {
+  def declared: Set[LogicalVariable]
+  def patternVariables: Set[LogicalVariable]
+  def ast: Clause
+  def inRelationship: Boolean
+
+  def inMatchingPattern: MatchingPattern = MatchingPattern(declared, patternVariables, ast, inRelationship)
+
+  def updateDeclared(remove: Set[LogicalVariable]): DeclaringContext = this match {
+    case up @ UpdatingPattern(d, _, _, _) => up.copy(declared = d.filterNot(remove))
+    case mp @ MatchingPattern(d, _, _, _) => mp.copy(declared = d.filterNot(remove))
+  }
+
+}
+
+case class MatchingPattern(
+  declared: Set[LogicalVariable],
+  patternVariables: Set[LogicalVariable],
+  ast: Clause,
+  inRelationship: Boolean = false
+) extends DeclaringContext
+
+case class UpdatingPattern(
+  declared: Set[LogicalVariable],
+  patternVariables: Set[LogicalVariable],
+  ast: Clause,
+  inRelationship: Boolean = false
+) extends DeclaringContext
+
+sealed trait ProjectionContext {
+
+  def dropNonImportedVariables(imports: Set[LogicalVariable]): ProjectionContext =
+    this match {
+      case Aggregating(incomingToClause) => Aggregating(incomingToClause filter imports)
+      case NonAggregating                => NonAggregating
+    }
+}
+case class Aggregating(incomingToClause: Set[LogicalVariable]) extends ProjectionContext
+case object NonAggregating extends ProjectionContext
+
+sealed trait ForeachContext { val allowedToShadow: Set[LogicalVariable] = Set.empty }
+case class InForeach(override val allowedToShadow: Set[LogicalVariable]) extends ForeachContext
+case object NotInForeach extends ForeachContext
+
+case class Acc(
+  scopeContext: ReturnContext,
+  variableContext: VariableContext,
+  projectionContext: ProjectionContext,
+  foreachContext: ForeachContext,
+  definedLocalCallableNames: Set[CallableName],
+  errors: Set[SemanticError]
+) {
+  def apply(errors: Iterable[SemanticError]): Acc = copy(errors = this.errors ++ errors)
+  def apply(errors: SemanticError): Acc = copy(errors = this.errors + errors)
+  def inReturnContext(context: ReturnContext): Acc = copy(scopeContext = context)
+  def inVariableContext(context: VariableContext): Acc = copy(variableContext = context)
+  def inMatchingPattern: Acc = copy(variableContext = variableContext.inMatch)
+  def inForeachClause(context: ForeachContext): Acc = copy(foreachContext = context)
+
+  def withForeachClause(incomingVariables: Set[LogicalVariable]): Acc =
+    copy(foreachContext = InForeach(incomingVariables))
+
+  def inProjectionContext(context: ProjectionContext): Acc = copy(projectionContext = context)
+
+  def dropIncomingVariablesToClause(imports: Set[LogicalVariable]): Acc =
+    copy(projectionContext = projectionContext.dropNonImportedVariables(imports))
+
+  def withDefinedLocalCallableName(name: CallableName): Acc =
+    copy(definedLocalCallableNames = this.definedLocalCallableNames + name)
+
+  def withDefinedLocalCallableNames(names: Set[CallableName]): Acc =
+    copy(definedLocalCallableNames = this.definedLocalCallableNames union names)
+
+  def withPatternVariables(vars: Set[LogicalVariable], inRelationship: Boolean = false): Acc =
+    variableContext match {
+      case u: UpdatingPattern =>
+        copy(variableContext = u.copy(patternVariables = vars, inRelationship = inRelationship))
+      case _ => this
+    }
+
+  def hasPatternVariables: Boolean = variableContext match {
+    case UpdatingPattern(_, vars, _, _) if vars.nonEmpty => true
+    case _                                               => false
+  }
+}
+
+case object Acc {
+  def init: Acc = Acc(Unopinionated, Default, NonAggregating, NotInForeach, Set.empty, Set.empty)
+
+  object InRelationshipChain {
+
+    def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
+      case Acc(_, UpdatingPattern(_, _, _, false), _, foreachContext, _, _) =>
+        Some((acc, foreachContext.allowedToShadow))
+      case _ => None
+    }
+  }
+
+  object UpdatingContext {
+
+    def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
+      case Acc(_, UpdatingPattern(_, _, _, _), _, foreachContext, _, _) => Some((acc, foreachContext.allowedToShadow))
+      case _                                                            => None
+    }
+  }
+
+  object CreatePattern {
+
+    def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable], Set[LogicalVariable], CreateOrInsert, Boolean)] =
+      acc match {
+        case Acc(returnContext, MatchingPattern(topo, patternVariables, c: CreateOrInsert, _), _, _, _, _) =>
+          val inScalarSubquery = returnContext.isInstanceOf[SubqueryExpression]
+          Some((acc, topo, patternVariables, c, inScalarSubquery))
+        case Acc(returnContext, UpdatingPattern(topo, patternVariables, c: CreateOrInsert, _), _, _, _, _) =>
+          val inScalarSubquery = returnContext.isInstanceOf[SubqueryExpression]
+          Some((acc, topo, patternVariables, c, inScalarSubquery))
+        case _ => None
+      }
+  }
+
+  object MergePattern {
+
+    def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable], Merge)] = acc match {
+      case Acc(_, MatchingPattern(topo, _, merge: Merge, _), _, _, _, _) => Some((acc, topo, merge))
+      case Acc(_, UpdatingPattern(topo, _, merge: Merge, _), _, _, _, _) => Some((acc, topo, merge))
+      case _                                                             => None
+    }
+  }
+
+  object Aggregation {
+
+    def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
+      case Acc(_, _, Aggregating(incomingToClause), _, _, _) => Some((acc, incomingToClause))
+      case _                                                 => None
+    }
+  }
+
+  object Opinionated {
+
+    def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
+      case Acc(o: Opinionated, _, _, _, _, _) => Some((acc, o.constants))
+      case _                                  => None
+    }
+
+  }
+
+  object SubqueryExpr {
+
+    def unapply(acc: Acc): Option[Acc] = acc match {
+      case Acc(SubqueryExpression(_), _, _, _, _, _) => Some(acc)
+      case _                                         => None
+    }
+
+  }
+}
+
 trait VariableCheckerUtil {
 
   protected type SimpleVariableCheck = PartialFunction[WorkingScope, Set[SemanticError]]
-
-  sealed trait ReturnContext
-  case object Unopinionated extends ReturnContext
-  sealed trait Opinionated extends ReturnContext { val constants: Set[LogicalVariable] }
-  case class SubqueryExpression(override val constants: Set[LogicalVariable]) extends Opinionated
-  case class NextStatement(override val constants: Set[LogicalVariable]) extends Opinionated
-
-  sealed trait VariableContext {
-
-    def inMatch: VariableContext = this match {
-      case d: DeclaringContext => d.inMatchingPattern
-      case vc                  => vc
-    }
-  }
-  case object Default extends VariableContext
-
-  sealed trait DeclaringContext extends VariableContext {
-    def declared: Set[LogicalVariable]
-    def patternVariables: Set[LogicalVariable]
-    def ast: Clause
-    def inRelationship: Boolean
-
-    def inMatchingPattern: MatchingPattern = MatchingPattern(declared, patternVariables, ast, inRelationship)
-
-    def updateDeclared(remove: Set[LogicalVariable]): DeclaringContext = this match {
-      case up @ UpdatingPattern(d, _, _, _) => up.copy(declared = d.filterNot(remove))
-      case mp @ MatchingPattern(d, _, _, _) => mp.copy(declared = d.filterNot(remove))
-    }
-
-  }
-
-  protected case class MatchingPattern(
-    declared: Set[LogicalVariable],
-    patternVariables: Set[LogicalVariable],
-    ast: Clause,
-    inRelationship: Boolean = false
-  ) extends DeclaringContext
-
-  protected case class UpdatingPattern(
-    declared: Set[LogicalVariable],
-    patternVariables: Set[LogicalVariable],
-    ast: Clause,
-    inRelationship: Boolean = false
-  ) extends DeclaringContext
-
-  sealed trait ProjectionContext {
-
-    def dropNonImportedVariables(imports: Set[LogicalVariable]): ProjectionContext =
-      this match {
-        case Aggregating(incomingToClause) => Aggregating(incomingToClause filter imports)
-        case NonAggregating                => NonAggregating
-      }
-  }
-  case class Aggregating(incomingToClause: Set[LogicalVariable]) extends ProjectionContext
-  case object NonAggregating extends ProjectionContext
-
-  sealed trait ForeachContext { val allowedToShadow: Set[LogicalVariable] = Set.empty }
-  case class InForeach(override val allowedToShadow: Set[LogicalVariable]) extends ForeachContext
-  case object NotInForeach extends ForeachContext
-
-  case class Acc(
-    scopeContext: ReturnContext,
-    variableContext: VariableContext,
-    projectionContext: ProjectionContext,
-    foreachContext: ForeachContext,
-    definedLocalCallableNames: Set[CallableName],
-    errors: Set[SemanticError]
-  ) {
-    def apply(errors: Iterable[SemanticError]): Acc = copy(errors = this.errors ++ errors)
-    def apply(errors: SemanticError): Acc = copy(errors = this.errors + errors)
-    def inReturnContext(context: ReturnContext): Acc = copy(scopeContext = context)
-    def inVariableContext(context: VariableContext): Acc = copy(variableContext = context)
-    def inMatchingPattern: Acc = copy(variableContext = variableContext.inMatch)
-    def inForeachClause(context: ForeachContext): Acc = copy(foreachContext = context)
-
-    def withForeachClause(incomingVariables: Set[LogicalVariable]): Acc =
-      copy(foreachContext = InForeach(incomingVariables))
-
-    def inProjectionContext(context: ProjectionContext): Acc = copy(projectionContext = context)
-
-    def dropIncomingVariablesToClause(imports: Set[LogicalVariable]): Acc =
-      copy(projectionContext = projectionContext.dropNonImportedVariables(imports))
-
-    def withDefinedLocalCallableName(name: CallableName): Acc =
-      copy(definedLocalCallableNames = this.definedLocalCallableNames + name)
-
-    def withDefinedLocalCallableNames(names: Set[CallableName]): Acc =
-      copy(definedLocalCallableNames = this.definedLocalCallableNames union names)
-
-    def withPatternVariables(vars: Set[LogicalVariable], inRelationship: Boolean = false): Acc =
-      variableContext match {
-        case u: UpdatingPattern =>
-          copy(variableContext = u.copy(patternVariables = vars, inRelationship = inRelationship))
-        case _ => this
-      }
-
-    def hasPatternVariables: Boolean = variableContext match {
-      case UpdatingPattern(_, vars, _, _) if vars.nonEmpty => true
-      case _                                               => false
-    }
-  }
-
-  case object Acc {
-    def init: Acc = Acc(Unopinionated, Default, NonAggregating, NotInForeach, Set.empty, Set.empty)
-
-    object InRelationshipChain {
-
-      def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
-        case Acc(_, UpdatingPattern(_, _, _, false), _, foreachContext, _, _) =>
-          Some((acc, foreachContext.allowedToShadow))
-        case _ => None
-      }
-    }
-
-    object UpdatingContext {
-
-      def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
-        case Acc(_, UpdatingPattern(_, _, _, _), _, foreachContext, _, _) => Some((acc, foreachContext.allowedToShadow))
-        case _                                                            => None
-      }
-    }
-
-    object CreatePattern {
-
-      def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable], Set[LogicalVariable], CreateOrInsert, Boolean)] =
-        acc match {
-          case Acc(returnContext, MatchingPattern(topo, patternVariables, c: CreateOrInsert, _), _, _, _, _) =>
-            val inScalarSubquery = returnContext.isInstanceOf[SubqueryExpression]
-            Some((acc, topo, patternVariables, c, inScalarSubquery))
-          case Acc(returnContext, UpdatingPattern(topo, patternVariables, c: CreateOrInsert, _), _, _, _, _) =>
-            val inScalarSubquery = returnContext.isInstanceOf[SubqueryExpression]
-            Some((acc, topo, patternVariables, c, inScalarSubquery))
-          case _ => None
-        }
-    }
-
-    object MergePattern {
-
-      def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable], Merge)] = acc match {
-        case Acc(_, MatchingPattern(topo, _, merge: Merge, _), _, _, _, _) => Some((acc, topo, merge))
-        case Acc(_, UpdatingPattern(topo, _, merge: Merge, _), _, _, _, _) => Some((acc, topo, merge))
-        case _                                                             => None
-      }
-    }
-
-    object Aggregation {
-
-      def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
-        case Acc(_, _, Aggregating(incomingToClause), _, _, _) => Some((acc, incomingToClause))
-        case _                                                 => None
-      }
-    }
-
-    object Opinionated {
-
-      def unapply(acc: Acc): Option[(Acc, Set[LogicalVariable])] = acc match {
-        case Acc(o: Opinionated, _, _, _, _, _) => Some((acc, o.constants))
-        case _                                  => None
-      }
-
-    }
-
-    object SubqueryExpr {
-
-      def unapply(acc: Acc): Option[Acc] = acc match {
-        case Acc(SubqueryExpression(_), _, _, _, _, _) => Some(acc)
-        case _                                         => None
-      }
-
-    }
-  }
 
   object Scope {
 

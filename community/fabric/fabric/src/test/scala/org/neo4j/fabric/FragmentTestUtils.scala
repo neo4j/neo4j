@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InternalUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.LocalDefinitionsDirectory
+import org.neo4j.cypher.internal.frontend.phases.PipelineDebugInfo
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.notification.devNullLogger
@@ -117,6 +118,7 @@ trait FragmentTestUtils {
     override val maybeResolvedParams: Option[Set[String]] = Option.empty
     override val maybeSemanticTable: Option[SemanticTable] = Option.empty
     override val maybeObfuscationMetadata: Option[ObfuscationMetadata] = Option.empty
+    override val maybeDebugInfo: Option[PipelineDebugInfo] = Option.empty
     override val accumulatedConditions: Set[StepSequencer.Condition] = Set.empty
     override val anonymousVariableNameGenerator: AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     override val semanticsUpToDate: Boolean = false
@@ -129,6 +131,7 @@ trait FragmentTestUtils {
     override def withParams(p: Map[AutoExtractedParameter, Expression]): BaseState = this
     override protected def withResolvedParams(p: Set[String]): BaseState = this
     override def withObfuscationMetadata(o: ObfuscationMetadata): BaseState = this
+    override def withDebugInfo(d: PipelineDebugInfo): BaseState = this
     override def withProcedureSignatureVersion(signatureVersion: Option[Long]): BaseState = this
     override def withSemanticsUpToDate(b: Boolean): BaseState = this
   }

@@ -144,7 +144,8 @@ case class FabricFrontEnd(
       sessionDatabase,
       semanticFeatures,
       query.options.queryOptions.planMode.isScope,
-      shadowedFunctions = shadowedFunctions
+      shadowedFunctions = shadowedFunctions,
+      isDebugSession = false
     )
 
     object parseAndPrepare {

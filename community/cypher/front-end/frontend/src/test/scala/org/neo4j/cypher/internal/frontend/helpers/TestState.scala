@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.LocalDefinitionsDirectory
+import org.neo4j.cypher.internal.frontend.phases.PipelineDebugInfo
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 
@@ -58,6 +59,8 @@ case class TestState(
 
   override def maybeObfuscationMetadata: Option[ObfuscationMetadata] = None
 
+  override def maybeDebugInfo: Option[PipelineDebugInfo] = None
+
   override def accumulatedConditions = Set.empty
 
   override def semanticsUpToDate: Boolean = true
@@ -82,6 +85,8 @@ case class TestState(
   override protected def withResolvedParams(p: Set[String]): TestState = fail("not implemented")
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): TestState = fail("not implemented")
+
+  override def withDebugInfo(d: PipelineDebugInfo): TestState = fail("not implemented")
 
   override val anonymousVariableNameGenerator: AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
 

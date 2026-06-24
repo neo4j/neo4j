@@ -49,4 +49,5 @@ case class TestContext(
   override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
   override def internalUsageStats: InternalUsageStats = InternalUsageStatsNoOp
   override def isScopeQuery: Boolean = false
+  override def isDebugSession: Boolean = false
 }

@@ -224,7 +224,8 @@ class CypherParsing(
       sessionDatabase,
       semanticFeatures,
       isScopeQuery,
-      shadowedFunctions
+      shadowedFunctions,
+      isDebugSession = false
     )
     val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint)
 

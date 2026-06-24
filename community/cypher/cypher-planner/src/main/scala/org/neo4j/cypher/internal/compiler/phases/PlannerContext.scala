@@ -100,7 +100,8 @@ class BaseContextImpl(
   final override val sessionDatabase: DatabaseReference,
   final override val semanticFeatures: Seq[SemanticFeature],
   final override val isScopeQuery: Boolean,
-  final override val shadowedFunctions: Set[String]
+  final override val shadowedFunctions: Set[String],
+  final override val isDebugSession: Boolean
 ) extends BaseContext {
 
   final override val errorHandler: Seq[SemanticErrorDef] => Unit =
@@ -123,7 +124,8 @@ object BaseContextImpl {
     sessionDatabase: DatabaseReference,
     semanticFeatures: Seq[SemanticFeature],
     isScopeQuery: Boolean,
-    shadowedFunctions: Set[String]
+    shadowedFunctions: Set[String],
+    isDebugSession: Boolean
   ): BaseContextImpl = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
     new BaseContextImpl(
@@ -137,7 +139,8 @@ object BaseContextImpl {
       sessionDatabase,
       semanticFeatures,
       isScopeQuery,
-      shadowedFunctions
+      shadowedFunctions,
+      isDebugSession
     )
   }
 }
@@ -218,6 +221,7 @@ final class PlannerContextImpl(
   )
 
   override def isScopeQuery: Boolean = false
+  override def isDebugSession: Boolean = false
 }
 
 object PlannerContext {

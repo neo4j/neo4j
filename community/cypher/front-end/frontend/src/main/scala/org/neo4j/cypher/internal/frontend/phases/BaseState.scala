@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableCheckerDebugLogger
 import org.neo4j.cypher.internal.rewriting.SimpleBaseState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.FunctionName
@@ -45,6 +46,7 @@ trait BaseState extends SimpleBaseState {
   def maybeResolvedParams: Option[Set[String]]
   def maybeSemanticTable: Option[SemanticTable]
   def maybeObfuscationMetadata: Option[ObfuscationMetadata]
+  def maybeDebugInfo: Option[PipelineDebugInfo]
   def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
 
   def accumulatedConditions: Set[StepSequencer.Condition]
@@ -57,6 +59,7 @@ trait BaseState extends SimpleBaseState {
   def semanticTable(): SemanticTable = maybeSemanticTable getOrElse fail("Semantic table")
   def obfuscationMetadata(): ObfuscationMetadata = maybeObfuscationMetadata getOrElse fail("Obfuscation metadata")
   def scopeState(): ScopeState = maybeScopeState getOrElse fail("Scope state")
+  def debugInfo(): PipelineDebugInfo = maybeDebugInfo getOrElse fail("Debug info")
 
   protected def fail(what: String) = {
     throw new IllegalStateException(s"$what not yet initialised")
@@ -76,6 +79,7 @@ trait BaseState extends SimpleBaseState {
   protected def withResolvedParams(p: Set[String]): BaseState
   def withObfuscationMetadata(o: ObfuscationMetadata): BaseState
   def withSemanticsUpToDate(b: Boolean): BaseState
+  def withDebugInfo(debugInfo: PipelineDebugInfo): BaseState
 }
 
 case class InitialState(
@@ -93,6 +97,7 @@ case class InitialState(
   accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
   maybeReturnColumns: Option[Seq[String]] = None,
   maybeObfuscationMetadata: Option[ObfuscationMetadata] = None,
+  maybeDebugInfo: Option[PipelineDebugInfo] = None,
   semanticsUpToDate: Boolean = false
 ) extends BaseState {
 
@@ -116,6 +121,8 @@ case class InitialState(
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): InitialState = copy(maybeObfuscationMetadata = Some(o))
 
+  override def withDebugInfo(debugInfo: PipelineDebugInfo): InitialState = copy(maybeDebugInfo = Some(debugInfo))
+
   override def withProcedureSignatureVersion(signatureVersion: Option[Long]): BaseState =
     copy(maybeProcedureSignatureVersion = signatureVersion)
 
@@ -130,3 +137,5 @@ case class LocalDefinitionsDirectory(
 object LocalDefinitionsDirectory {
   val empty: LocalDefinitionsDirectory = LocalDefinitionsDirectory(Map.empty, Map.empty)
 }
+
+case class PipelineDebugInfo(maybeVariableCheckerDebugLogger: Option[VariableCheckerDebugLogger])

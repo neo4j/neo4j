@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ScopeQueries
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
 import org.neo4j.cypher.internal.ast.semantics.scoping.PatternScope
@@ -67,8 +66,10 @@ import org.neo4j.cypher.internal.util.StepSequencer
 
 case class VariableChecker(
   version: CypherVersion,
-  logger: InternalNotificationLogger
+  logger: InternalNotificationLogger,
+  debug: Option[VariableCheckerDebugLogger] = None
 ) extends VariableCheckerUtil {
+  private val isDebugEnabled = debug.isDefined
 
   private def redeclarationOfVariable(acc: Acc, ss: StatementScope): Acc = ss match {
     case Scope.Clause.Declaring(astNode, incoming, Declarations(constants, variables, _), children)
@@ -309,11 +310,16 @@ case class VariableChecker(
   private def runChecks[S <: WorkingScope](acc: Acc, scope: S, checks: Seq[(Acc, S) => Acc]): Acc =
     checks.foldLeft(acc)((a, check) => check(a, scope))
 
-  private def checkWorkingScope(acc: Acc, workingScope: WorkingScope): Acc = workingScope match {
-    case ss: StatementScope  => runChecks(acc, ss, statementChecks)
-    case es: ExpressionScope => runChecks(acc, es, expressionChecks)
-    case ps: PatternScope    => runChecks(acc, ps, patternChecks)
-    case _                   => acc
+  private def checkWorkingScope(acc: Acc, workingScope: WorkingScope): Acc = {
+    if (isDebugEnabled) debug.foreach(_.logBeforeCheck(workingScope, acc))
+    val checkResult = workingScope match {
+      case ss: StatementScope  => runChecks(acc, ss, statementChecks)
+      case es: ExpressionScope => runChecks(acc, es, expressionChecks)
+      case ps: PatternScope    => runChecks(acc, ps, patternChecks)
+      case _                   => acc
+    }
+    if (isDebugEnabled) debug.foreach(_.logAfterCheck(workingScope, checkResult))
+    checkResult
   }
 
   private def updateAccAndTraverse(
@@ -344,123 +350,132 @@ case class VariableChecker(
 
   private def collectSemanticErrors(workingScope: WorkingScope): Acc = walk(Acc.init, workingScope)
 
-  private def visitWorkingScope(ws: WorkingScope, acc: Acc): FoldingBehavior[Acc] = ws match {
-    case s @ ExpressionScope(_: IterableExpression, _, _, d, _) =>
-      acc match {
-        case Acc(_, dCtx: DeclaringContext, _, _, _, _) if dCtx.declared.nonEmpty =>
-          updateAccAndTraverse(acc, s)(_acc =>
-            TraverseChildrenNewAccForSiblings(
-              _acc.inVariableContext(dCtx.updateDeclared(d.constants.toSet)),
-              acc => acc.inVariableContext(_acc.variableContext)
+  private def visitWorkingScope(ws: WorkingScope, acc: Acc): FoldingBehavior[Acc] = {
+    if (isDebugEnabled) debug.foreach(_.logVisit(ws, acc))
+    ws match {
+      case s @ ExpressionScope(_: IterableExpression, _, _, d, _) =>
+        acc match {
+          case Acc(_, dCtx: DeclaringContext, _, _, _, _) if dCtx.declared.nonEmpty =>
+            updateAccAndTraverse(acc, s)(_acc =>
+              TraverseChildrenNewAccForSiblings(
+                _acc.inVariableContext(dCtx.updateDeclared(d.constants.toSet)),
+                acc => acc.inVariableContext(_acc.variableContext)
+              )
             )
+          case _ => updateAccAndTraverse(acc, s)(_acc => TraverseChildren(_acc))
+        }
+
+      case s @ ExpressionScope(_: FullSubqueryExpression, in, _, _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.inReturnContext(SubqueryExpression(in.allSymbols)),
+            acc => acc.inReturnContext(_acc.scopeContext)
           )
-        case _ => updateAccAndTraverse(acc, s)(_acc => TraverseChildren(_acc))
-      }
-
-    case s @ ExpressionScope(_: FullSubqueryExpression, in, _, _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.inReturnContext(SubqueryExpression(in.allSymbols)),
-          acc => acc.inReturnContext(_acc.scopeContext)
         )
-      )
 
-    case s @ StatementScope(_: NextStatement, in, _, _, _, _, children, _) =>
-      updateAccAndTraverse(acc, s)(_acc => {
-        val trunkAcc = folderWorkingScopes(_acc.inReturnContext(NextStatement(in.constants)), children.dropRight(1))
-        val tailAcc =
-          folderWorkingScopes(_acc.withDefinedLocalCallableNames(trunkAcc.definedLocalCallableNames), children.tail)
-        SkipChildren(Acc(
-          tailAcc.scopeContext,
-          tailAcc.variableContext,
-          tailAcc.projectionContext,
-          tailAcc.foreachContext,
-          tailAcc.definedLocalCallableNames,
-          trunkAcc.errors ++ tailAcc.errors
-        ))
-      })
+      case s @ StatementScope(_: NextStatement, in, _, _, _, _, children, _) =>
+        updateAccAndTraverse(acc, s)(_acc => {
+          val trunkAcc = folderWorkingScopes(_acc.inReturnContext(NextStatement(in.constants)), children.dropRight(1))
+          val tailAcc =
+            folderWorkingScopes(_acc.withDefinedLocalCallableNames(trunkAcc.definedLocalCallableNames), children.tail)
+          SkipChildren(Acc(
+            tailAcc.scopeContext,
+            tailAcc.variableContext,
+            tailAcc.projectionContext,
+            tailAcc.foreachContext,
+            tailAcc.definedLocalCallableNames,
+            trunkAcc.errors ++ tailAcc.errors
+          ))
+        })
 
-    case s @ StatementScope(_: LocalCallableDefinition, _, _, _, _, _, _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.inReturnContext(Unopinionated),
-          acc => acc.inReturnContext(_acc.scopeContext)
+      case s @ StatementScope(_: LocalCallableDefinition, _, _, _, _, _, _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.inReturnContext(Unopinionated),
+            acc => acc.inReturnContext(_acc.scopeContext)
+          )
         )
-      )
 
-    case s @ StatementScope(c: CreateOrInsert, _, _, declared, _, _, _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.inVariableContext(UpdatingPattern(declared.variables.toSet, Set.empty, c)),
-          acc => acc.inVariableContext(_acc.variableContext)
+      case s @ StatementScope(c: CreateOrInsert, _, _, declared, _, _, _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.inVariableContext(UpdatingPattern(declared.variables.toSet, Set.empty, c)),
+            acc => acc.inVariableContext(_acc.variableContext)
+          )
         )
-      )
 
-    case s @ StatementScope(m: Merge, _, _, declared, _, _, _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.inVariableContext(UpdatingPattern(declared.variables.toSet, Set.empty, m)),
-          acc => acc.inVariableContext(_acc.variableContext)
+      case s @ StatementScope(m: Merge, _, _, declared, _, _, _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.inVariableContext(UpdatingPattern(declared.variables.toSet, Set.empty, m)),
+            acc => acc.inVariableContext(_acc.variableContext)
+          )
         )
-      )
 
-    case s @ StatementScope(_: Match, _, _, _, _, _, _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.inMatchingPattern,
-          acc => acc.inVariableContext(_acc.variableContext)
+      case s @ StatementScope(_: Match, _, _, _, _, _, _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.inMatchingPattern,
+            acc => acc.inVariableContext(_acc.variableContext)
+          )
         )
-      )
 
-    case s @ StatementScope(f: Foreach, incoming, _, _, _, _, _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.withForeachClause(incoming.allSymbols filterNot (_.name == f.variable.name)),
-          acc => acc.inForeachClause(_acc.foreachContext)
+      case s @ StatementScope(f: Foreach, incoming, _, _, _, _, _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.withForeachClause(incoming.allSymbols filterNot (_.name == f.variable.name)),
+            acc => acc.inForeachClause(_acc.foreachContext)
+          )
         )
-      )
 
-    case s @ StatementScope(p: ProjectionClause, incoming, _, _, _, _, _, _) if p.isAggregating =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.inProjectionContext(Aggregating(incoming.variables)),
-          acc => acc.inProjectionContext(_acc.projectionContext)
+      case s @ StatementScope(p: ProjectionClause, incoming, _, _, _, _, _, _) if p.isAggregating =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.inProjectionContext(Aggregating(incoming.variables)),
+            acc => acc.inProjectionContext(_acc.projectionContext)
+          )
         )
-      )
 
-    case s @ StatementScope(call: SubqueryCall, outerIncoming, _, _, _, _, _, _) =>
-      val importedSymbols: Set[LogicalVariable] = call match {
-        case ImportingWithSubqueryCall(query, _, _) =>
-          if (query.isCorrelated && query.importColumns.isEmpty) outerIncoming.allSymbols
-          else outerIncoming.allSymbols.filter(s => query.importColumns.exists(_.name == s.name))
-        case ScopeClauseSubqueryCall(_, isImportingAll, importedVars, _, _, _) =>
-          if (isImportingAll) outerIncoming.allSymbols
-          else outerIncoming.allSymbols.filter(s => importedVars.exists(_.name == s.name))
-      }
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          _acc.dropIncomingVariablesToClause(importedSymbols),
-          acc => acc.inProjectionContext(_acc.projectionContext)
+      case s @ StatementScope(call: SubqueryCall, outerIncoming, _, _, _, _, _, _) =>
+        val importedSymbols: Set[LogicalVariable] = call match {
+          case ImportingWithSubqueryCall(query, _, _) =>
+            if (query.isCorrelated && query.importColumns.isEmpty) {
+              outerIncoming.allSymbols
+            } else {
+              outerIncoming.allSymbols.filter(s => query.importColumns.exists(_.name == s.name))
+            }
+          case ScopeClauseSubqueryCall(_, isImportingAll, importedVars, _, _, _) =>
+            if (isImportingAll) {
+              outerIncoming.allSymbols
+            } else {
+              outerIncoming.allSymbols.filter(s => importedVars.exists(_.name == s.name))
+            }
+        }
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            _acc.dropIncomingVariablesToClause(importedSymbols),
+            acc => acc.inProjectionContext(_acc.projectionContext)
+          )
         )
-      )
 
-    case s @ PatternScope(_: RelationshipChain, _, _, Declarations(_, variables, _), _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet, inRelationship = true),
-          acc => acc.inVariableContext(_acc.variableContext)
+      case s @ PatternScope(_: RelationshipChain, _, _, Declarations(_, variables, _), _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet, inRelationship = true),
+            acc => acc.inVariableContext(_acc.variableContext)
+          )
         )
-      )
 
-    case s @ PatternScope(_: NodePattern, _, _, Declarations(_, variables, _), _, _) =>
-      updateAccAndTraverse(acc, s)(_acc =>
-        TraverseChildrenNewAccForSiblings(
-          if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet),
-          acc => acc.inVariableContext(_acc.variableContext)
+      case s @ PatternScope(_: NodePattern, _, _, Declarations(_, variables, _), _, _) =>
+        updateAccAndTraverse(acc, s)(_acc =>
+          TraverseChildrenNewAccForSiblings(
+            if (_acc.hasPatternVariables) _acc else _acc.withPatternVariables(variables.toSet),
+            acc => acc.inVariableContext(_acc.variableContext)
+          )
         )
-      )
 
-    case _ => TraverseChildren(checkWorkingScope(acc, ws))
+      case _ => TraverseChildren(checkWorkingScope(acc, ws))
+    }
   }
 
   private def collectAll(workingScope: WorkingScope): Iterable[SemanticError] = {
@@ -471,18 +486,28 @@ case class VariableChecker(
 case object VariableChecker extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    if (context.semanticFeatures contains ScopeQueries) {
-      val semanticsErrors = from.maybeScopeState.map(s =>
-        VariableChecker(context.cypherVersion, logger = context.notificationLogger).collectAll(s.workingScope)
-      )
-      semanticsErrors.foreach(errors => context.errorHandler(errors.toSeq))
-    }
+    val isDebug = context.isDebugSession
+    val maybeDebugLogger = if (isDebug) from.maybeDebugInfo.flatMap(_.maybeVariableCheckerDebugLogger) else None
+    val semanticsErrors = from.maybeScopeState.map(s =>
+      VariableChecker(
+        context.cypherVersion,
+        logger = context.notificationLogger,
+        debug = maybeDebugLogger
+      ).collectAll(s.workingScope)
+    )
+    semanticsErrors.foreach(errors => context.errorHandler(errors.toSeq))
     from
   }
 
-  def gatherAllErrors(from: BaseState, context: BaseContext): Seq[SemanticError] = {
+  def gatherAllErrors(
+    from: BaseState,
+    context: BaseContext
+  ): Seq[SemanticError] = {
     val errors = from.maybeScopeState.map(s =>
-      VariableChecker(context.cypherVersion, logger = context.notificationLogger).collectAll(s.workingScope).toSeq
+      VariableChecker(
+        context.cypherVersion,
+        logger = context.notificationLogger
+      ).collectAll(s.workingScope).toSeq
     ).getOrElse(Seq.empty)
     errors.distinct
   }

@@ -251,4 +251,5 @@ class TestContext(
   override def internalUsageStats: InternalUsageStats = InternalUsageStatsNoOp
   override def sessionDatabase: DatabaseReference = null
   override def isScopeQuery: Boolean = false
+  override def isDebugSession: Boolean = false
 }

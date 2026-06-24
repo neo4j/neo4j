@@ -39,4 +39,5 @@ trait BaseContext {
   def semanticFeatures: Seq[SemanticFeature]
   def isScopeQuery: Boolean
   def shadowedFunctions: Set[String]
+  def isDebugSession: Boolean
 }

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.LocalDefinitionsDirectory
+import org.neo4j.cypher.internal.frontend.phases.PipelineDebugInfo
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.ImmutablePlanningAttribute
@@ -72,6 +73,7 @@ case class LogicalPlanState(
   hasLoadCSV: Boolean = false,
   maybeReturnColumns: Option[Seq[String]] = None,
   maybeObfuscationMetadata: Option[ObfuscationMetadata] = None,
+  maybeDebugInfo: Option[PipelineDebugInfo] = None,
   semanticsUpToDate: Boolean = false
 ) extends BaseState with SimplePlanState {
 
@@ -118,6 +120,8 @@ case class LogicalPlanState(
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): LogicalPlanState =
     copy(maybeObfuscationMetadata = Some(o))
+
+  override def withDebugInfo(d: PipelineDebugInfo): LogicalPlanState = copy(maybeDebugInfo = Some(d))
 
   def withMaybeLogicalPlan(p: Option[LogicalPlan]): LogicalPlanState = copy(maybeLogicalPlan = p)
   def withMaybeQuery(q: Option[PlannerQuery]): LogicalPlanState = copy(maybeQuery = q)

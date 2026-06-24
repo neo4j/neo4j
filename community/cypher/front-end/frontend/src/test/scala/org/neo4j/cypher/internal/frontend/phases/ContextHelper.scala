@@ -60,6 +60,7 @@ object ContextHelper extends MockitoSugar {
       override def internalUsageStats: InternalUsageStats = InternalUsageStatsNoOp
       override def isScopeQuery: Boolean = false
       override def shadowedFunctions: Set[String] = Set.empty
+      override def isDebugSession: Boolean = false
     }
   }
 }
