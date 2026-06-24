@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
@@ -164,6 +165,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
@@ -273,6 +275,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateNodeSlottedCommand
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateRelationshipSlottedCommand
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedAllRelationshipsScanSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipFulltextIndexSearchSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexContainsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexEndsWithScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexScanSlottedPipe
@@ -337,6 +340,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.SubtractionNodesByLabelsS
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionForeachSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedAllRelationshipsScanSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipFulltextIndexSearchSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexContainsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexEndsWithScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexScanSlottedPipe
@@ -1120,6 +1124,58 @@ class SlottedPipeMapper(
           indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.VECTOR, types, properties),
           entityFilter.map(convertExpressions),
           maybePropertyFilter.map(_.map(convertExpressions))
+        )(id)
+
+      case DirectedRelationshipFulltextIndexSearch(
+          relationship,
+          left,
+          right,
+          types,
+          properties,
+          score,
+          indexName,
+          queryString,
+          limit,
+          analyzer,
+          skip,
+          _
+        ) =>
+        DirectedRelationshipFulltextIndexSearchSlottedPipe(
+          relationship.map(r => slots.longOffset(r.name)),
+          left.map(n => slots.longOffset(n.name)),
+          right.map(n => slots.longOffset(n.name)),
+          score.map(s => slots.refOffset(s.name)),
+          convertExpressions(queryString),
+          analyzer.map(convertExpressions),
+          skip.map(convertExpressions),
+          convertExpressions(limit),
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
+        )(id)
+
+      case UndirectedRelationshipFulltextIndexSearch(
+          relationship,
+          left,
+          right,
+          types,
+          properties,
+          score,
+          indexName,
+          queryString,
+          limit,
+          analyzer,
+          skip,
+          _
+        ) =>
+        UndirectedRelationshipFulltextIndexSearchSlottedPipe(
+          relationship.map(r => slots.longOffset(r.name)),
+          left.map(n => slots.longOffset(n.name)),
+          right.map(n => slots.longOffset(n.name)),
+          score.map(s => slots.refOffset(s.name)),
+          convertExpressions(queryString),
+          analyzer.map(convertExpressions),
+          skip.map(convertExpressions),
+          convertExpressions(limit),
+          indexRegistrator.registerNamedRelationshipQueryIndex(indexName, IndexType.FULLTEXT, types, properties)
         )(id)
 
       case _: Argument =>

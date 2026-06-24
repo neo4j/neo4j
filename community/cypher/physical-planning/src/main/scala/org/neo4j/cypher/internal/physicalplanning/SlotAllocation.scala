@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -156,6 +157,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipFulltextIndexSearch
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipVectorIndexSearch
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -761,6 +763,20 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         leaf.score.foreach(slots.newReference(_, nullable, CTInteger))
 
       case leaf: UndirectedRelationshipVectorIndexSearch =>
+        leaf.idName.foreach(r => slots.newLong(r, nullable, CTRelationship))
+        leaf.leftNode.foreach(n => slots.newLong(n, nullable, CTNode))
+        leaf.rightNode.foreach(n => slots.newLong(n, nullable, CTNode))
+        leaf.cachedProperties.foreach(cp => slots.newCachedProperty(cp.runtimeKey))
+        leaf.score.foreach(slots.newReference(_, nullable, CTInteger))
+
+      case leaf: DirectedRelationshipFulltextIndexSearch =>
+        leaf.idName.foreach(r => slots.newLong(r, nullable, CTRelationship))
+        leaf.leftNode.foreach(n => slots.newLong(n, nullable, CTNode))
+        leaf.rightNode.foreach(n => slots.newLong(n, nullable, CTNode))
+        leaf.cachedProperties.foreach(cp => slots.newCachedProperty(cp.runtimeKey))
+        leaf.score.foreach(slots.newReference(_, nullable, CTInteger))
+
+      case leaf: UndirectedRelationshipFulltextIndexSearch =>
         leaf.idName.foreach(r => slots.newLong(r, nullable, CTRelationship))
         leaf.leftNode.foreach(n => slots.newLong(n, nullable, CTNode))
         leaf.rightNode.foreach(n => slots.newLong(n, nullable, CTNode))
