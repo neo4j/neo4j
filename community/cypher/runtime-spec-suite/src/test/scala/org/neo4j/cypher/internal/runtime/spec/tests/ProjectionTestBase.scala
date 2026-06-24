@@ -24,6 +24,10 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Collections
 
@@ -74,5 +78,36 @@ abstract class ProjectionTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = nodes.map(node => Array[Any](Collections.singletonMap("prop", node.getId)))
     runtimeResult should beColumns("map").withRows(expected)
+  }
+
+  test("should not leak property values for a node map projection over a -1 id in a non-nullable slot") {
+    // given the property tokens, so the projection resolves to the from-store path
+    givenGraph {
+      nodePropertyGraph(1, { case _ => Map("p1" -> 1L, "p2" -> 2L, "p3" -> 3L, "p4" -> 4L) })
+    }
+    val input = inputValues((0 until sizeHint).map(_ => Array[Any](VirtualValues.node(-1L))): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("m")
+      .projection("n { .p1, .p2, .p3, .p4 } AS m")
+      .input(nodes = Seq("n"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then: no crash, and the projection of a non-existent node yields only NO_VALUE -- either the
+    // whole map (the from-store path) or every entry -- never a value belonging to another node.
+    runtimeResult.awaitAll().foreach { row =>
+      withClue(s"map projection over a -1 node leaked a real property value: ${row(0)}") {
+        onlyNoValues(row(0)) shouldBe true
+      }
+    }
+  }
+
+  private def onlyNoValues(value: AnyValue): Boolean = value match {
+    case v if v eq Values.NO_VALUE => true
+    case m: MapValue               => Seq("p1", "p2", "p3", "p4").forall(key => m.get(key) eq Values.NO_VALUE)
+    case _                         => false
   }
 }
