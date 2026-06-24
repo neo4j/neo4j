@@ -91,6 +91,7 @@ Apache Software License, Version 2.0
   json4s-native-core
   JSpecify annotations
   magnolia
+  mockito-4.6
   Neo4j Java Driver
   net.javacrumbs.json-unit:json-unit-assertj
   net.javacrumbs.json-unit:json-unit-core
@@ -113,10 +114,17 @@ Apache Software License, Version 2.0
   picocli
   Scala Reflect
   scala-collection-contrib
+  scala-xml
   scala3-compiler-bootstrapped
   scala3-interfaces
   scala3-library-bootstrapped
   scala3-staging
+  scalacheck-1.16
+  scalatest-compatible
+  scalatest-core
+  scalatest-funsuite
+  scalatest-matchers-core
+  scalatest-shouldmatchers
   snappy-java
   Strategic Blue Parquet Floor
   tasty-core-bootstrapped
@@ -378,12 +386,15 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  Hamcrest
   Hamcrest Core
   JLine JNI Terminal
   JLine Native Library
   JLine Reader
   JLine Terminal
   scala-asm
+  scalacheck
+  test-interface
   Zstandard
 ------------------------------------------------------------------------------
 
@@ -965,6 +976,7 @@ Eclipse Public License v2.0
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Platform Launcher
+  JUnit Platform Test Kit
   OSGi resource locator
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
@@ -1633,6 +1645,7 @@ version.
 
 ------------------------------------------------------------------------------
 MIT License
+  co.helmethair:scalatest-junit-runner
   Cucumber CiEnvironment
   Cucumber Expressions
   Cucumber HTML Formatter
@@ -1649,6 +1662,7 @@ MIT License
   Cucumber-JVM: Plugin
   Cucumber-JVN: DataTable
   cucumber-scala
+  fansi_2.13
   fastparse_3
   geny_3
   Gherkin
@@ -1660,8 +1674,10 @@ MIT License
   JUnit XML Formatter
   Messages NDJSON
   mockito-core
+  pprint_2.13
   Pretty Formatter
   SLF4J API Module
+  sourcecode_2.13
   sourcecode_3
   TeamCity Formatter
   TestNG XML Formatter

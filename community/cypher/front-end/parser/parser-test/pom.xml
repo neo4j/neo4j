@@ -29,26 +29,16 @@
     <dependency>
       <groupId>co.helmethair</groupId>
       <artifactId>scalatest-junit-runner</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.lihaoyi</groupId>
-      <artifactId>pprint_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.scalatestplus</groupId>
-      <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.lihaoyi</groupId>
       <artifactId>fansi_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>pprint_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -59,6 +49,11 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -231,6 +226,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
       <scope>test</scope>
@@ -258,6 +258,11 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

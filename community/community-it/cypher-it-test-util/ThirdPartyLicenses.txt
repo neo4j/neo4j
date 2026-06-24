@@ -100,6 +100,7 @@ Apache Software License, Version 2.0
   scala-collection-contrib
   scala-xml
   scala3-library-bootstrapped
+  scalacheck-1.16
   scalactic
   scalatest
   scalatest-compatible
@@ -111,6 +112,7 @@ Apache Software License, Version 2.0
   scalatest-funspec
   scalatest-funsuite
   scalatest-matchers-core
+  scalatest-mustmatchers
   scalatest-propspec
   scalatest-refspec
   scalatest-shouldmatchers
@@ -375,6 +377,8 @@ BSD License
   asm-tree
   asm-util
   Hamcrest
+  scalacheck
+  test-interface
   Zstandard
 ------------------------------------------------------------------------------
 
@@ -951,11 +955,14 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
+  JUnit Jupiter (Aggregator)
   JUnit Jupiter API
   JUnit Jupiter Engine
+  JUnit Jupiter Params
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Platform Launcher
+  JUnit Platform Test Kit
   OSGi resource locator
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
@@ -1624,13 +1631,17 @@ version.
 
 ------------------------------------------------------------------------------
 MIT License
+  co.helmethair:scalatest-junit-runner
+  fansi_2.13
   java jwt
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
   mockito-core
+  pprint_2.13
   SLF4J API Module
+  sourcecode_2.13
   sourcecode_3
 ------------------------------------------------------------------------------
 

@@ -30,21 +30,14 @@
     <dependency>
       <groupId>co.helmethair</groupId>
       <artifactId>scalatest-junit-runner</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.lihaoyi</groupId>
       <artifactId>fansi_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.lihaoyi</groupId>
       <artifactId>pprint_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -109,48 +102,35 @@
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-compatible</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-core_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.binary.version}</artifactId>
     </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>
       <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
       <version>${scala.test.version}.0</version>
-      <scope>compile</scope>
       <exclusions>
         <exclusion>
           <groupId>org.mockito</groupId>
@@ -161,7 +141,17 @@
     <dependency>
       <groupId>org.scalatestplus</groupId>
       <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

@@ -27,10 +27,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.github.json4s</groupId>
       <artifactId>json4s-ast_${scala.binary.version}</artifactId>
       <version>${json4s.version}</version>
@@ -86,8 +82,9 @@
       <artifactId>scala3-library_3</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
+      <groupId>co.helmethair</groupId>
+      <artifactId>scalatest-junit-runner</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -108,6 +105,11 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-core_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

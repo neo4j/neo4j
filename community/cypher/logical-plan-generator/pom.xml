@@ -100,14 +100,6 @@
       <artifactId>scalacheck_${scala.binary.version}</artifactId>
       <scope>compile</scope>
     </dependency>
-    <dependency>
-      <groupId>org.scalactic</groupId>
-      <artifactId>scalactic_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest-compatible</artifactId>
-    </dependency>
 
     <!-- neo4j testing -->
 
@@ -153,6 +145,16 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-test-util</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalactic</groupId>
+      <artifactId>scalactic_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-compatible</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

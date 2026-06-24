@@ -32,6 +32,7 @@ Apache Software License, Version 2.0
   scalatest-funspec
   scalatest-funsuite
   scalatest-matchers-core
+  scalatest-mustmatchers
   scalatest-propspec
   scalatest-refspec
   scalatest-shouldmatchers

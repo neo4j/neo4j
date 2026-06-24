@@ -27,20 +27,12 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-    </dependency>
 
     <!-- other -->
 
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
     </dependency>
 
     <!-- neo4j -->
@@ -115,6 +107,16 @@
       <groupId>org.scala-lang.modules</groupId>
       <artifactId>scala-collection-contrib_2.13</artifactId>
     </dependency>
+    <dependency>
+      <groupId>co.helmethair</groupId>
+      <artifactId>scalatest-junit-runner</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- test dependencies -->
 
@@ -156,7 +158,6 @@
           <artifactId>neo4j-test-util</artifactId>
         </exclusion>
       </exclusions>
-
     </dependency>
     <dependency>
       <groupId>org.reflections</groupId>

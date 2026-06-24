@@ -30,17 +30,14 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -114,43 +111,35 @@
     <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-compatible</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-core_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatestplus</groupId>
       <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
       <version>${scala.test.version}.0</version>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 

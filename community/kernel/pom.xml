@@ -57,10 +57,6 @@
       <artifactId>jctools-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>annotations</artifactId>
     </dependency>
@@ -213,6 +209,11 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-wal</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

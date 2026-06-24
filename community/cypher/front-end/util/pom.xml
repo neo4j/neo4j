@@ -29,10 +29,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>co.helmethair</groupId>
-      <artifactId>scalatest-junit-runner</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
@@ -75,14 +71,6 @@
       <artifactId>scala3-library_3</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.teavm</groupId>
       <artifactId>teavm-interop</artifactId>
       <version>${teavm.version}</version>
@@ -93,6 +81,11 @@
       <artifactId>teavm-metaprogramming-api</artifactId>
       <version>${teavm.version}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>co.helmethair</groupId>
+      <artifactId>scalatest-junit-runner</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- Tests: neo4j-test-util supplies CypherFunSuite etc.; neo4j-test-util-scala3 supplies Scala 3 ScalaTest stack. -->
@@ -131,6 +124,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
       <scope>test</scope>
@@ -143,6 +141,11 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-core_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

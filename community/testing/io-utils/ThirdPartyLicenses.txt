@@ -7,6 +7,7 @@ Apache Software License, Version 2.0
   Apache Commons Codec
   Apache Commons Lang
   Apache Commons Text
+  Awaitility
   Byte Buddy (without dependencies)
   Caffeine cache
   Java Native Access
@@ -222,6 +223,7 @@ Apache Software License, Version 2.0
 ------------------------------------------------------------------------------
 BSD License
   asm
+  Hamcrest
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -388,7 +390,9 @@ This Agreement is governed by the laws of the State of New York and the intellec
 
 ------------------------------------------------------------------------------
 Eclipse Public License v2.0
+  JUnit Jupiter (Aggregator)
   JUnit Jupiter Engine
+  JUnit Jupiter Params
 ------------------------------------------------------------------------------
 
 Eclipse Public License - v 2.0

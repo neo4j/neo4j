@@ -32,6 +32,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   AssertJ Core
+  Awaitility
   Byte Buddy (without dependencies)
   Byte Buddy agent
   Caffeine cache
@@ -355,6 +356,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  Hamcrest
   Zstandard
 ------------------------------------------------------------------------------
 
@@ -931,6 +933,7 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
+  JUnit Jupiter (Aggregator)
   JUnit Jupiter Engine
   JUnit Platform Launcher
   OSGi resource locator

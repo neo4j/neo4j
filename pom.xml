@@ -301,6 +301,11 @@
         <version>${parquet-floor.version}</version>
       </dependency>
       <dependency>
+        <groupId>co.helmethair</groupId>
+        <artifactId>scalatest-junit-runner</artifactId>
+        <version>0.2.0</version>
+      </dependency>
+      <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
         <version>${jackson.annotations.version}</version>
@@ -376,6 +381,11 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava-testlib</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java</artifactId>
         <version>${protobuf.version}</version>
@@ -384,6 +394,33 @@
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java-util</artifactId>
         <version>${protobuf.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.testing.compile</groupId>
+        <artifactId>compile-testing</artifactId>
+        <version>0.23.0</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.truth</groupId>
+            <artifactId>truth</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.truth.extensions</groupId>
+            <artifactId>truth-java8-extension</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.auto</groupId>
+            <artifactId>auto-common</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.truth</groupId>
@@ -403,6 +440,16 @@
             <artifactId>jspecify</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.lihaoyi</groupId>
+        <artifactId>fansi_${scala.binary.version}</artifactId>
+        <version>0.5.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.lihaoyi</groupId>
+        <artifactId>pprint_${scala.binary.version}</artifactId>
+        <version>0.9.6</version>
       </dependency>
       <dependency>
         <groupId>com.lihaoyi</groupId>
@@ -442,6 +489,21 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>io.circe</groupId>
+        <artifactId>circe-core_${scala.binary.version}</artifactId>
+        <version>0.14.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.circe</groupId>
+        <artifactId>circe-generic_${scala.binary.version}</artifactId>
+        <version>0.14.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.circe</groupId>
+        <artifactId>circe-parser_${scala.binary.version}</artifactId>
+        <version>0.14.1</version>
+      </dependency>
+      <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${metrics.version}</version>
@@ -461,6 +523,11 @@
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-jmx</artifactId>
         <version>${metrics.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.github.json4s</groupId>
+        <artifactId>json4s-native_${scala.binary.version}</artifactId>
+        <version>${json4s.version}</version>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
@@ -552,6 +619,18 @@
         <artifactId>jakarta.xml.bind-api</artifactId>
         <version>2.3.2</version>
       </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.13.2</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
@@ -626,6 +705,21 @@
         <version>${apache.directory.server.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-server-integ</artifactId>
+        <version>${apache.directory.server.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>ldapsdk</groupId>
+            <artifactId>ldapsdk</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
         <version>${log4j.version}</version>
@@ -663,6 +757,11 @@
       <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-core</artifactId>
+        <version>${lucene.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-memory</artifactId>
         <version>${lucene.version}</version>
       </dependency>
       <dependency>
@@ -739,6 +838,29 @@
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-lang</artifactId>
         <version>${shiro.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>3.27.7</version>
+        <exclusions>
+          <exclusion>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.bitbucket.b_c</groupId>
@@ -899,6 +1021,11 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest</artifactId>
+        <version>3.0</version>
+      </dependency>
+      <dependency>
         <groupId>org.hdrhistogram</groupId>
         <artifactId>HdrHistogram</artifactId>
         <version>2.2.2</version>
@@ -915,9 +1042,43 @@
       </dependency>
 
       <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-testkit</artifactId>
+        <version>${junit.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockftpserver</groupId>
+        <artifactId>MockFtpServer</artifactId>
+        <version>3.2.0</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${mockito.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>${mockito.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.neo4j</groupId>
@@ -949,6 +1110,18 @@
             <artifactId>neo4j-bolt-connection-netty</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.netbeans.modules</groupId>
+        <artifactId>org-netbeans-lib-profiler</artifactId>
+        <version>RELEASE270</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.openjdk.jol</groupId>
+        <artifactId>jol-core</artifactId>
+        <version>0.17</version>
       </dependency>
       <dependency>
         <groupId>org.reactivestreams</groupId>
@@ -982,6 +1155,71 @@
         <artifactId>scala-collection-contrib_2.13</artifactId>
         <version>0.3.0</version>
       </dependency>
+      <dependency>
+        <groupId>org.scalacheck</groupId>
+        <artifactId>scalacheck_${scala.binary.version}</artifactId>
+        <version>1.16.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalactic</groupId>
+        <artifactId>scalactic_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalactic</groupId>
+        <artifactId>scalactic_3</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-compatible</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-core_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-core_3</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-funsuite_3</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-matchers-core_3</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-mustmatchers_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-shouldmatchers_3</artifactId>
+        <version>${scala.test.version}</version>
+      </dependency>
 
       <!-- scala test dependencies -->
       <dependency>
@@ -999,313 +1237,31 @@
           </exclusion>
         </exclusions>
       </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.13.2</version>
-        <scope>provided</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>co.helmethair</groupId>
-        <artifactId>scalatest-junit-runner</artifactId>
-        <version>0.2.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava-testlib</artifactId>
-        <version>${guava.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.google.testing.compile</groupId>
-        <artifactId>compile-testing</artifactId>
-        <version>0.23.0</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>com.google.truth</groupId>
-            <artifactId>truth</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.truth.extensions</groupId>
-            <artifactId>truth-java8-extension</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.auto</groupId>
-            <artifactId>auto-common</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker-qual</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>com.lihaoyi</groupId>
-        <artifactId>fansi_${scala.binary.version}</artifactId>
-        <version>0.5.1</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.lihaoyi</groupId>
-        <artifactId>pprint_${scala.binary.version}</artifactId>
-        <version>0.9.6</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.circe</groupId>
-        <artifactId>circe-core_${scala.binary.version}</artifactId>
-        <version>0.14.1</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.circe</groupId>
-        <artifactId>circe-generic_${scala.binary.version}</artifactId>
-        <version>0.14.1</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.circe</groupId>
-        <artifactId>circe-parser_${scala.binary.version}</artifactId>
-        <version>0.14.1</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.github.json4s</groupId>
-        <artifactId>json4s-native_${scala.binary.version}</artifactId>
-        <version>${json4s.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.directory.server</groupId>
-        <artifactId>apacheds-server-integ</artifactId>
-        <version>${apache.directory.server.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>ldapsdk</groupId>
-            <artifactId>ldapsdk</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-memory</artifactId>
-        <version>${lucene.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.assertj</groupId>
-        <artifactId>assertj-core</artifactId>
-        <version>3.27.7</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.awaitility</groupId>
-        <artifactId>awaitility</artifactId>
-        <version>${awaitility.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest</artifactId>
-        <version>3.0</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>${junit.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-testkit</artifactId>
-        <version>${junit.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mockftpserver</groupId>
-        <artifactId>MockFtpServer</artifactId>
-        <version>3.2.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-junit-jupiter</artifactId>
-        <version>${mockito.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.netbeans.modules</groupId>
-        <artifactId>org-netbeans-lib-profiler</artifactId>
-        <version>RELEASE270</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.openjdk.jol</groupId>
-        <artifactId>jol-core</artifactId>
-        <version>0.17</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalacheck</groupId>
-        <artifactId>scalacheck_${scala.binary.version}</artifactId>
-        <version>1.16.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalactic</groupId>
-        <artifactId>scalactic_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalactic</groupId>
-        <artifactId>scalactic_3</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-compatible</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-core_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-core_3</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-funsuite_3</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-matchers-core_3</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-mustmatchers_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-shouldmatchers_3</artifactId>
-        <version>${scala.test.version}</version>
-        <scope>test</scope>
-      </dependency>
       <!-- scalatest_3 -->
       <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_3</artifactId>
         <version>${scala.test.version}</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.scalatestplus</groupId>
         <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
         <version>${scala.test.version}.0</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.scalatestplus</groupId>
         <artifactId>mockito-4-6_3</artifactId>
         <version>${scala.test.version}.0</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.scalatestplus</groupId>
         <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
         <version>${scala.test.version}.0</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.scalautils</groupId>
         <artifactId>scalautils_${scala.binary.version}</artifactId>
         <version>2.1.7</version>
-        <scope>test</scope>
         <exclusions>
           <exclusion>
             <groupId>org.scala-lang</groupId>
@@ -1316,6 +1272,11 @@
             <artifactId>scala-reflect</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

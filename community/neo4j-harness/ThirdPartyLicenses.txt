@@ -31,6 +31,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Cryptography :: Hashing
   Apache Shiro :: Event
   Apache Shiro :: Lang
+  Awaitility
   Byte Buddy (without dependencies)
   Caffeine cache
   Commons Pool
@@ -348,6 +349,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  Hamcrest
   Zstandard
 ------------------------------------------------------------------------------
 
@@ -927,6 +929,7 @@ Eclipse Public License v2.0
   JUnit Jupiter Engine
   JUnit Platform Commons
   JUnit Platform Engine API
+  JUnit Platform Test Kit
   OSGi resource locator
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------

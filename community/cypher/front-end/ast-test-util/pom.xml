@@ -29,7 +29,6 @@
     <dependency>
       <groupId>co.helmethair</groupId>
       <artifactId>scalatest-junit-runner</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -96,37 +95,30 @@
     <dependency>
       <groupId>org.scalactic</groupId>
       <artifactId>scalactic_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-compatible</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-core_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-matchers-core_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest-shouldmatchers_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 
