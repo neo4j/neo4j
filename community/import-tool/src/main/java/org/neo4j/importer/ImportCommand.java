@@ -323,7 +323,7 @@ public class ImportCommand {
                 description = "Whether or not a backslash-escaped quote e.g. \\\" is interpreted as an inner quote.")
         private boolean legacyStyleQuoting = DEFAULT_CSV_CONFIG.legacyStyleQuoting();
 
-        private static final String DELIMITER_WARNING =
+        private static final String DELIMITER_WARNING_CSV =
                 "For CSV data, this value must be different from the one specified in the `--delimiter` option.";
 
         @Option(
@@ -350,7 +350,8 @@ public class ImportCommand {
                 converter = EscapedCharacterConverter.class,
                 description = "Delimiter character between array elements within a value in CSV data. "
                         + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying a character using Unicode. "
-                        + DELIMITER_WARNING)
+                        + DELIMITER_WARNING_CSV
+                        + "For Parquet data, this is only needed if the array is encoded as a string.")
         private char arrayDelimiter = DEFAULT_CSV_CONFIG.arrayDelimiter();
 
         @Option(
@@ -359,7 +360,8 @@ public class ImportCommand {
                 converter = EscapedCharacterConverter.class,
                 description = "Delimiter character between vector coordinates within a value in CSV data. "
                         + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying a character using Unicode. "
-                        + DELIMITER_WARNING)
+                        + DELIMITER_WARNING_CSV
+                        + "For Parquet data, this is only needed if the vector is encoded as a string.")
         private char vectorDelimiter = DEFAULT_CSV_CONFIG.vectorDelimiter();
 
         @Option(
@@ -369,7 +371,7 @@ public class ImportCommand {
                 description =
                         "Character to treat as a quotation mark for values in CSV data. For example, quotes can be escaped as per RFC 4180 by doubling them. "
                                 + "Thus \"\" would be interpreted as a literal \". You cannot escape using \\. "
-                                + DELIMITER_WARNING)
+                                + DELIMITER_WARNING_CSV)
         private char quote = DEFAULT_CSV_CONFIG.quotationCharacter();
 
         @Option(
@@ -631,6 +633,7 @@ public class ImportCommand {
         /**
          * (Optionally) decorates the import context monitor to receive callbacks about the various stages of the
          * import process.
+         *
          * @param contextMonitor the import context monitor to decorate
          * @return the monitor to be used during the import process
          */
