@@ -229,7 +229,44 @@
       "deprecated": false
     },
     "enterpriseOnly": true,
-    "cypherVersionScope": [5, 25]
+    "cypherVersionScope": [5]
+  },
+  {
+    "name": "db.cdc.current",
+    "description": "Returns the current change identifier and commit time that can be used to stream changes from.",
+    "mode": "READ",
+    "worksOnSystem": false,
+    "signature": "db.cdc.current() :: (id :: STRING, txCommitTime :: ZONED DATETIME)",
+    "argumentDescription": [],
+    "returnDescription" : [
+      {
+        "name": "id",
+        "description": "The change identifier.",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "txCommitTime",
+        "description": "The commit time of the last committed transaction.",
+        "type": "ZONED DATETIME",
+        "isDeprecated": false
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true,
+    "cypherVersionScope": [25]
   },
   {
     "name": "db.cdc.earliest",
