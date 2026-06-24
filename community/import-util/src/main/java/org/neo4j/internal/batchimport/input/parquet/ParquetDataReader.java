@@ -28,6 +28,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,6 +41,7 @@ import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.ColumnReader;
 import org.apache.parquet.column.impl.ColumnReadStoreImpl;
 import org.apache.parquet.example.DummyRecordConverter;
+import org.apache.parquet.hadoop.ParquetEmptyBlockException;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.GroupConverter;
@@ -115,7 +117,12 @@ class ParquetDataReader implements Closeable {
         if (nextRowGroupIndex >= metadataReader.getRowGroups().size()) {
             return null;
         }
-        return new ParquetRowGroupReader(nextRowGroupIndex);
+        try {
+            return new ParquetRowGroupReader(nextRowGroupIndex);
+        } catch (ParquetEmptyBlockException e) {
+            // This row group does not contain any records, so let's just return an empty iterator
+            return Collections.emptyIterator();
+        }
     }
 
     public ParquetData getParquetDataFile() {

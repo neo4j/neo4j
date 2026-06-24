@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -131,6 +132,43 @@ class ParquetInputTest {
     void resetGroups() {
         groups = new Groups();
         groups.getOrCreate(null);
+    }
+
+    @Test
+    void shouldHandleParquetFileWithEmptyRowGroup() throws Exception {
+        var fileUrl = Objects.requireNonNull(getClass().getResource("/parquet/empty_row_group.parquet"));
+        var nodeFile = Path.of(fileUrl.toURI());
+        Input input = createParquetInput(
+                Map.of(Set.of(""), List.<Path[]>of(new Path[] {nodeFile})), Map.of(), INTEGER, groups, MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertThat(readNext(nodes)).isFalse();
+        }
+    }
+
+    @Test
+    void shouldHandleParquetFilesIncludingEmptyRowGroup() throws Exception {
+        var fileUrl = Objects.requireNonNull(getClass().getResource("/parquet/empty_row_group.parquet"));
+        var nodeFileWithEmptyRowGroup = Path.of(fileUrl.toURI());
+
+        Path nodeFile = createParquetFile(
+                List.of(
+                        Types.required(PrimitiveType.PrimitiveTypeName.INT64).named(":ID"),
+                        Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                                .as(LogicalTypeAnnotation.stringType())
+                                .named("name")),
+                List.<Object[]>of(new Object[] {123L, "Mattias Persson"}));
+        Input input = createParquetInput(
+                Map.of(Set.of(), List.<Path[]>of(new Path[] {nodeFileWithEmptyRowGroup, nodeFile})),
+                Map.of(),
+                INTEGER,
+                groups,
+                MONITOR);
+        // WHEN/THEN
+        try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
+            assertNextNode(nodes, 123L, properties("name", "Mattias Persson"), labels());
+            assertThat(readNext(nodes)).isFalse();
+        }
     }
 
     @ParameterizedTest
