@@ -33,6 +33,7 @@ import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.http.HttpCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.driver.AuthTokens
 import org.neo4j.driver.NotificationConfig
 import org.neo4j.fabric.executor.FabricExecutor
 import org.neo4j.function.ThrowingFunction
@@ -78,7 +79,9 @@ object FeatureDatabaseManagementService {
         .set(BoltConnector.listen_address, new SocketAddress("localhost", 0))
         .build()
       val managementService = createBackingDbms(config)
-      val executorFactory = DriverCypherExecutorFactory(managementService, config)
+      managementService.database("system").executeTransactionally("ALTER USER neo4j SET PASSWORD CHANGE NOT REQUIRED")
+      val executorFactory =
+        DriverCypherExecutorFactory(managementService, config, Some(AuthTokens.basic("neo4j", "neo4j")))
       FeatureDatabaseManagementService(managementService, executorFactory)
     }
   }
@@ -119,7 +122,8 @@ case class FeatureDatabaseManagementService(
   val database: GraphDatabaseAPI =
     databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseAPI]
 
-  private val cypherExecutor = createExecutor()
+  private val cypherExecutor: CypherExecutor = createExecutor()
+  val restrictedCypherExecutor: CypherExecutor = createRestrictedExecutor()
 
   private lazy val maybeFabricExecutor = {
     val resolver = database.getDependencyResolver
@@ -136,6 +140,11 @@ case class FeatureDatabaseManagementService(
   private def createExecutor() = databaseName match {
     case Some(name) => executorFactory.executor(name)
     case None       => executorFactory.executor()
+  }
+
+  private def createRestrictedExecutor() = databaseName match {
+    case Some(name) => executorFactory.restrictedExecutor(name)
+    case None       => executorFactory.restrictedExecutor()
   }
 
   def registerProcedure(procedure: BasicProcedure): Unit = kernel.registerProcedure(procedure)
@@ -170,8 +179,8 @@ case class FeatureDatabaseManagementService(
 
   def dropIndexesAndConstraints(): Unit = Using.resource(database.beginTx()) { tx =>
     val schema = tx.schema()
-    schema.getConstraints.forEach(c => c.drop());
-    schema.getIndexes.forEach(i => if (shouldDrop(i)) i.drop());
+    schema.getConstraints.forEach(c => c.drop())
+    schema.getIndexes.forEach(i => if (shouldDrop(i)) i.drop())
     tx.commit()
   }
 
@@ -203,7 +212,12 @@ case class FeatureDatabaseManagementService(
    */
   def withNewSession(): CypherExecutor = if (cypherExecutor.sessionBased) createExecutor() else cypherExecutor
 
-  def execute[T](statement: String, parameters: Map[String, Object], converter: StatementResult => T): T =
+  def execute[T](
+    statement: String,
+    parameters: Map[String, Object],
+    converter: StatementResult => T,
+    cypherExecutor: CypherExecutor = this.cypherExecutor
+  ): T =
     cypherExecutor.execute(statement, parameters, converter)
 
   def execute[T](statement: String, converter: StatementResult => T): T =

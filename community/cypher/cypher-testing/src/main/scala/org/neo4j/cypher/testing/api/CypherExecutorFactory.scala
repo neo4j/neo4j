@@ -24,4 +24,8 @@ trait CypherExecutorFactory extends AutoCloseable {
   def executor(): CypherExecutor
 
   def executor(databaseName: String): CypherExecutor
+
+  def restrictedExecutor(): CypherExecutor = executor()
+
+  def restrictedExecutor(databaseName: String): CypherExecutor = executor(databaseName)
 }

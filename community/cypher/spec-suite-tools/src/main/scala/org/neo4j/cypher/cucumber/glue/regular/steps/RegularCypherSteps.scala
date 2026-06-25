@@ -215,7 +215,7 @@ final class RegularCypherSteps @Inject() (
   }
 
   def executingQueryWithoutGraphState(cypher: String): Unit = {
-    lastResult = execute(conf.preparserPrefix + cypher)
+    lastResult = executeRestricted(conf.preparserPrefix + cypher)
   }
 
   override def executingControlQuery(cypher: String): Unit = {
@@ -224,6 +224,13 @@ final class RegularCypherSteps @Inject() (
 
   private def execute(cypher: String): QueryExecution = {
     convertConsumedResult(cypher, Try(db.execute(cypher, parameters, _.consume(ResultValueMapper))))
+  }
+
+  private def executeRestricted(cypher: String): QueryExecution = {
+    convertConsumedResult(
+      cypher,
+      Try(db.execute(cypher, parameters, _.consume(ResultValueMapper), db.restrictedCypherExecutor))
+    )
   }
 
   private def executeInOpenTx(cypher: String): QueryExecution = {

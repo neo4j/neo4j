@@ -45,6 +45,7 @@ case class TestConf(
   useEnterprise: Boolean,
   useSpd: Boolean,
   useGraphEngine: Boolean,
+  readOnlyUser: Boolean,
   preparserOptions: Map[String, String],
   private val tagContext: Set[String],
   serverLogsConfResource: Option[String],
@@ -69,6 +70,7 @@ object TestConf {
     useBolt: Boolean = false,
     useEnterprise: Boolean = true,
     useSpd: Boolean = false,
+    readOnlyUser: Boolean = false,
     preparserOptions: Map[String, String] = Map.empty,
     additionalTagContext: Set[String] = Set.empty,
     serverLogsConfResource: Option[String] = None,
@@ -79,6 +81,7 @@ object TestConf {
       Some("internal.cypher.enable_non_fused_merge" -> "true"),
       Some("internal.dbms.debug.track_cursor_close" -> "true"),
       Some("internal.dbms.debug.track_tx_statement_close" -> "true"),
+      Some("dbms.security.auth_enabled" -> "true"),
       Option.when(useEnterprise)("server.metrics.enabled" -> "false"),
       Option.when(useBolt)("server.bolt.enabled" -> "true"),
       // This setting is overridden in Executors (but provided here for visibility in test failures)
@@ -115,6 +118,7 @@ object TestConf {
       useEnterprise = useEnterprise,
       useSpd = useSpd,
       useGraphEngine = useVirtualGraph,
+      readOnlyUser = readOnlyUser,
       preparserOptions = preparserOptions,
       tagContext = tagContext,
       serverLogsConfResource = serverLogsConfResource,
@@ -131,6 +135,11 @@ object TestConf {
       "db.query.default_language" -> "cypher_25"
     ),
     tagContext = base.tagContext.incl("cypher-25")
+  )
+
+  def withReadOnlyUser(base: TestConf): TestConf = base.copy(
+    readOnlyUser = true,
+    tagContext = base.tagContext.incl("read-only-user")
   )
 
   object Default {
@@ -575,6 +584,28 @@ object TestConf {
         final override val conf: TestConf = TestConf.withCypher5(baseConf)
         final class ObjectFactory extends SingletonInjector(injector)
       }
+    }
+  }
+
+  object ReadOnlyUser {
+
+    private def baseConf: TestConf = TestConf(
+      neo4jConf = Map("server.bolt.enabled" -> "true"),
+      useBolt = true
+    )
+
+    object Cypher25 extends InjectedTestConf {
+      final val FactoryName = "org.neo4j.cypher.cucumber.glue.regular.TestConf$ReadOnlyUser$Cypher25$ObjectFactory"
+      final override val conf: TestConf = withReadOnlyUser(TestConf.withCypher25(baseConf))
+
+      final class ObjectFactory extends SingletonInjector(injector)
+    }
+
+    object Cypher5 extends InjectedTestConf {
+      final val FactoryName = "org.neo4j.cypher.cucumber.glue.regular.TestConf$ReadOnlyUser$Cypher5$ObjectFactory"
+      final override val conf: TestConf = withReadOnlyUser(TestConf.withCypher5(baseConf))
+
+      final class ObjectFactory extends SingletonInjector(injector)
     }
   }
 

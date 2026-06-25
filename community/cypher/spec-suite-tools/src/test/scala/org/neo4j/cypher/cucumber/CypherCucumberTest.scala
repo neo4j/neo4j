@@ -349,6 +349,8 @@ class CypherCucumberTest extends CypherFunSuiteWithMacroShadowing with LoneEleme
       TestConf.Planner.UpdateStrategyEager.FactoryName -> TestConf.Planner.UpdateStrategyEager.conf,
       TestConf.PlannerVersion.Experimental.Cypher25.FactoryName -> TestConf.PlannerVersion.Experimental.Cypher25.conf,
       TestConf.PlannerVersion.Experimental.Cypher5.FactoryName -> TestConf.PlannerVersion.Experimental.Cypher5.conf,
+      TestConf.ReadOnlyUser.Cypher5.FactoryName -> TestConf.ReadOnlyUser.Cypher5.conf,
+      TestConf.ReadOnlyUser.Cypher25.FactoryName -> TestConf.ReadOnlyUser.Cypher25.conf,
       ObfuscatorSteps.Conf.FactoryName -> ObfuscatorSteps.Conf.conf
     )
 

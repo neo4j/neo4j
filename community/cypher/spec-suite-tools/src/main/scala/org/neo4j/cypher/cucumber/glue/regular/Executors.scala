@@ -35,6 +35,7 @@ import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.driver.AuthTokens
 import org.neo4j.graphdb.Result
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
@@ -190,11 +191,16 @@ trait ExecutorPool extends Executors {
     extraSettings: Settings,
     dbName: Option[String]
   ): DbAccessor = {
+    setupSecurity(dbms)
     val neo4jConf = dbms.database(dbName.getOrElse("neo4j")).asInstanceOf[GraphDatabaseAPI]
       .getDependencyResolver
       .resolveDependency(classOf[Config])
+    val authToken =
+      if (conf.readOnlyUser && conf.useEnterprise) AuthTokens.basic("readonly", "readonly")
+      else AuthTokens.basic("neo4j", "neo4j")
     val executorFactory =
-      if (conf.useBolt) DriverCypherExecutorFactory(dbms, neo4jConf)
+      if (conf.useBolt)
+        DriverCypherExecutorFactory(dbms, neo4jConf, Some(AuthTokens.basic("neo4j", "neo4j")), Some(authToken))
       else EmbeddedCypherExecutorFactory(dbms, neo4jConf)
 
     DbAccessor(
@@ -202,6 +208,17 @@ trait ExecutorPool extends Executors {
       extraSettings = extraSettings,
       reUseCount = 0
     )
+  }
+
+  private def setupSecurity(dbms: DatabaseManagementService): Unit = {
+    Using.resource(dbms.database(SYSTEM_DATABASE_NAME).beginTx()) { tx =>
+      tx.execute("ALTER USER neo4j SET PASSWORD CHANGE NOT REQUIRED")
+      if (conf.useEnterprise) {
+        tx.execute("CREATE USER readonly SET PASSWORD 'readonly' CHANGE NOT REQUIRED")
+        tx.execute("GRANT ROLE reader to readonly")
+      }
+      tx.commit()
+    }
   }
 
   private def extraSettingsFor(scenario: Scenario): Settings = {

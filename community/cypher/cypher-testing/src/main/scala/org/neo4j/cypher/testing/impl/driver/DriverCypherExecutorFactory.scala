@@ -40,12 +40,13 @@ import java.net.URI
 case class DriverCypherExecutorFactory(
   private val databaseManagementService: DatabaseManagementService,
   private val config: Config,
-  token: Option[AuthToken] = None
+  token: Option[AuthToken] = None,
+  restrictedToken: Option[AuthToken] = None
 ) extends CypherExecutorFactory {
 
   private var notificationConfig = NotificationConfig.defaultConfig()
 
-  val driver: Driver = {
+  val (driver, restrictedDriver): (Driver, Driver) = {
     val connectorPortRegister = databaseManagementService
       .database(config.get(GraphDatabaseSettings.initial_default_database)).asInstanceOf[GraphDatabaseAPI]
       .getDependencyResolver
@@ -56,7 +57,10 @@ case class DriverCypherExecutorFactory(
         URI.create(s"neo4j://${connectorPortRegister.getLocalAddress(ConnectorType.BOLT)}/")
       else throw new IllegalStateException("Bolt connector is not configured")
     val driverConfig = org.neo4j.driver.Config.builder().withTelemetryDisabled(true).build()
-    GraphDatabase.driver(boltURI, token.getOrElse(AuthTokens.none()), driverConfig)
+    (
+      GraphDatabase.driver(boltURI, token.getOrElse(AuthTokens.none()), driverConfig),
+      GraphDatabase.driver(boltURI, restrictedToken.getOrElse(AuthTokens.none()), driverConfig)
+    )
   }
 
   def setNotificationConfig(config: NotificationConfig): Unit =
@@ -68,6 +72,17 @@ case class DriverCypherExecutorFactory(
 
   override def executor(databaseName: String): CypherExecutor =
     DriverCypherExecutor(driver.session(
+      SessionConfig.builder().withDatabase(databaseName).withNotificationConfig(notificationConfig).build()
+    ))
+
+  override def restrictedExecutor(): CypherExecutor = {
+    DriverCypherExecutor(
+      restrictedDriver.session(SessionConfig.builder().withNotificationConfig(notificationConfig).build())
+    )
+  }
+
+  override def restrictedExecutor(databaseName: String): CypherExecutor =
+    DriverCypherExecutor(restrictedDriver.session(
       SessionConfig.builder().withDatabase(databaseName).withNotificationConfig(notificationConfig).build()
     ))
 
