@@ -23,7 +23,7 @@ import org.neo4j.lang.AutoCloseablePlus;
 import org.neo4j.lang.CloseListener;
 
 public abstract class DoNothingCloseListenable implements AutoCloseablePlus {
-    private int token = UNTRACKED;
+    private int trackingHandle = UNTRACKED;
 
     @Override
     public final void setCloseListener(CloseListener closeListener) {}
@@ -34,12 +34,12 @@ public abstract class DoNothingCloseListenable implements AutoCloseablePlus {
     }
 
     @Override
-    public final void setToken(int token) {
-        this.token = token;
+    public final void setTrackingHandle(int handle) {
+        this.trackingHandle = handle;
     }
 
     @Override
-    public final int getToken() {
-        return token;
+    public final int getTrackingHandle() {
+        return trackingHandle;
     }
 }

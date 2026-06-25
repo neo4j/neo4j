@@ -44,7 +44,7 @@ class ResourceManagerTest extends RuntimeUtilTestSuite {
     verifyMonitorClose(resource, monitor)
 
     resources.close()
-    resource.getToken shouldBe UNTRACKED
+    resource.getTrackingHandle shouldBe UNTRACKED
     verifyNoMoreInteractions(monitor)
   }
 
@@ -167,7 +167,7 @@ class ResourceManagerTest extends RuntimeUtilTestSuite {
 
     // then
     pool.all().size shouldBe 1
-    resource.getToken shouldBe 0
+    resource.getTrackingHandle shouldBe 0
   }
 
   test("Should handle removing the same item multiple times") {
@@ -186,7 +186,7 @@ class ResourceManagerTest extends RuntimeUtilTestSuite {
 
     // then
     pool.all().size shouldBe 0
-    resource.getToken shouldBe UNTRACKED
+    resource.getTrackingHandle shouldBe UNTRACKED
   }
 
   test("Should be able to remove resource") {
@@ -281,7 +281,7 @@ object DummyResource extends RuntimeUtilTestSuite {
   def verifyTrace(resource: DummyResource, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
     resources.trace(resource)
     resource.getCloseListener should equal(resources)
-    resource.getToken should be >= 0
+    resource.getTrackingHandle should be >= 0
     verify(monitor).trace(resource)
   }
 
@@ -298,7 +298,7 @@ object DummyResource extends RuntimeUtilTestSuite {
   def verifyClose(resource: DummyResource): Unit = {
     resource.getCloseListener shouldBe null
     resource.isClosed shouldBe true
-    resource.getToken shouldBe UNTRACKED
+    resource.getTrackingHandle shouldBe UNTRACKED
   }
 }
 

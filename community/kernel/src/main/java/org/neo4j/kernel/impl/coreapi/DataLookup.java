@@ -937,13 +937,13 @@ public abstract class DataLookup {
         }
 
         @Override
-        public void setToken(int token) {
-            originalCursor.setToken(token);
+        public void setTrackingHandle(int handle) {
+            originalCursor.setTrackingHandle(handle);
         }
 
         @Override
-        public int getToken() {
-            return originalCursor.getToken();
+        public int getTrackingHandle() {
+            return originalCursor.getTrackingHandle();
         }
 
         @Override

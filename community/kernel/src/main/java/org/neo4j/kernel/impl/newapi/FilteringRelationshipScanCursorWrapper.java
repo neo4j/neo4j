@@ -92,13 +92,13 @@ public class FilteringRelationshipScanCursorWrapper implements RelationshipScanC
     }
 
     @Override
-    public void setToken(int token) {
-        delegate.setToken(token);
+    public void setTrackingHandle(int handle) {
+        delegate.setTrackingHandle(handle);
     }
 
     @Override
-    public int getToken() {
-        return delegate.getToken();
+    public int getTrackingHandle() {
+        return delegate.getTrackingHandle();
     }
 
     @Override

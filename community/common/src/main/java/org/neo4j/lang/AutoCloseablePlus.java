@@ -41,13 +41,14 @@ public interface AutoCloseablePlus extends AutoCloseable {
     void setCloseListener(CloseListener closeListener);
 
     /**
-     * Assigns a token to the AutoCloseable that can be used to as an index for faster lookups.
-     * @param token the token to assign to the AutoCloseable
+     * Sets this resource's tracking handle: opaque bookkeeping owned by the {@code ResourcePool} that tracks it.
+     * Only the owning pool may set it, and implementations must not reuse it as scratch storage. The value is
+     * {@link #UNTRACKED} when not tracked by any pool.
      */
-    void setToken(int token);
+    void setTrackingHandle(int handle);
 
     /**
-     * Retrieves the token associated with the AutoCloseable
+     * Returns the tracking handle set via {@link #setTrackingHandle(int)}, or {@link #UNTRACKED} if untracked.
      */
-    int getToken();
+    int getTrackingHandle();
 }

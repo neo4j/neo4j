@@ -34,6 +34,6 @@ class DelegatingReferenceCursor(
   def closeInternal(): Unit = inner.closeInternal()
   def isClosed: Boolean = inner.isClosed
   def setCloseListener(closeListener: CloseListener): Unit = inner.setCloseListener(closeListener)
-  def setToken(token: Int): Unit = inner.setToken(token)
-  def getToken: Int = inner.getToken
+  def setTrackingHandle(token: Int): Unit = inner.setTrackingHandle(token)
+  def getTrackingHandle: Int = inner.getTrackingHandle
 }

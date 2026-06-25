@@ -272,7 +272,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         @Unmetered
         private final Read read;
 
-        private int token = UNTRACKED;
+        private int trackingHandle = UNTRACKED;
 
         private final long firstNode;
         private final long secondNode;
@@ -342,13 +342,13 @@ public class CachingExpandInto extends DefaultCloseListenable {
         }
 
         @Override
-        public void setToken(int token) {
-            this.token = token;
+        public void setTrackingHandle(int handle) {
+            this.trackingHandle = handle;
         }
 
         @Override
-        public int getToken() {
-            return token;
+        public int getTrackingHandle() {
+            return trackingHandle;
         }
 
         @Override

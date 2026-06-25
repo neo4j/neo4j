@@ -171,11 +171,11 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
   memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize)
 
   def add(resource: AutoCloseablePlus): Unit = {
-    val i = resource.getToken
+    val i = resource.getTrackingHandle
     if (i == UNTRACKED) {
       ensureCapacity()
       closeables(highMark) = resource
-      resource.setToken(highMark)
+      resource.setTrackingHandle(highMark)
       highMark += 1
     } else {
       // resource already there, make sure it is the same object though
@@ -186,13 +186,13 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
   }
 
   def remove(resource: AutoCloseablePlus): Boolean = {
-    val i = resource.getToken
+    val i = resource.getTrackingHandle
     if (i < highMark && i != UNTRACKED) {
       // If we don't close the expected resource something have gone terribly wrong
       if (!(closeables(i) eq resource)) {
         throw new IllegalStateException(s"$resource does not match ${closeables(i)}")
       }
-      resource.setToken(UNTRACKED)
+      resource.setTrackingHandle(UNTRACKED)
       closeables(i) = null
 
       if (i == highMark - 1) {
@@ -247,7 +247,7 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
           val resource = closeables(i)
           if (resource != null) {
             monitor.close(resource)
-            resource.setToken(UNTRACKED)
+            resource.setTrackingHandle(UNTRACKED)
             resource.setCloseListener(null) // We don't want a call to onClosed any longer
             resource.close()
           }
