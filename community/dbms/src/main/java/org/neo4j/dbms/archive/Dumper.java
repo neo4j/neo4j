@@ -207,7 +207,10 @@ public class Dumper {
 
     public record SplitFileOutput(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize)
             implements DumpOutput {
-        public static final MagicSignature MAGIC_HEADER = MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "FV1");
+        public static final MagicSignature MAGIC_MANIFEST_HEADER =
+                MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "MV1");
+        public static final MagicSignature MAGIC_DATA_HEADER =
+                MagicSignature.of(ArchiveFormat.SPLIT_FILE_PREFIX + "DV1");
 
         public static SplitFileOutput of(FileSystemAbstraction fs, Path baseArtifact, long maxArtifactSize) {
             return new SplitFileOutput(fs, baseArtifact, maxArtifactSize);
@@ -259,7 +262,7 @@ public class Dumper {
                     count++;
                     Path p = fileNameHelper.getFileForVersion(count);
                     stream = fs.openAsOutputStream(p, Set.of(WRITE, CREATE_NEW));
-                    stream.write(MAGIC_HEADER.getBytes()); // header to signal split artifact
+                    stream.write(MAGIC_DATA_HEADER.getBytes()); // header to signal split artifact
                     stream.write(intToByteArray(count)); // index of this file in the split artifact, starting from 1
                     stream.write(uuidBytes()); // unique id of the split artifacts
                     return stream;
@@ -289,7 +292,7 @@ public class Dumper {
             void writeCountToFirstFile() throws IOException {
                 // The first file contains header, total artifact count and uuid
                 try (var stream = fs.openAsOutputStream(baseArtifact, Set.of(WRITE, CREATE_NEW))) {
-                    stream.write(MAGIC_HEADER.getBytes());
+                    stream.write(MAGIC_MANIFEST_HEADER.getBytes());
                     stream.write(intToByteArray(count));
                     stream.write(uuidBytes());
                 }

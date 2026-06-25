@@ -78,7 +78,7 @@ class SplitFileOutputTest {
 
         byte[] part1 = Files.readAllBytes(base);
         // First part: 4 byte magic + 4 byte total part count + 16 bytes UUID + data
-        assertThat(Arrays.copyOfRange(part1, 0, 4)).isEqualTo(Dumper.SplitFileOutput.MAGIC_HEADER.getBytes());
+        assertThat(Arrays.copyOfRange(part1, 0, 4)).isEqualTo(Dumper.SplitFileOutput.MAGIC_MANIFEST_HEADER.getBytes());
         assertThat(intFromBytes(Arrays.copyOfRange(part1, 4, 8))).isEqualTo(3);
     }
 
@@ -91,13 +91,15 @@ class SplitFileOutputTest {
         }
 
         for (int i = 0; i <= 3; i++) {
-            byte[] bytes;
             if (i == 0) {
-                bytes = Files.readAllBytes(base);
+                byte[] bytes = Files.readAllBytes(base);
+                assertThat(Arrays.copyOfRange(bytes, 0, 4))
+                        .isEqualTo(Dumper.SplitFileOutput.MAGIC_MANIFEST_HEADER.getBytes());
             } else {
-                bytes = Files.readAllBytes(base.resolveSibling("test.dump." + i));
+                byte[] bytes = Files.readAllBytes(base.resolveSibling("test.dump." + i));
+                assertThat(Arrays.copyOfRange(bytes, 0, 4))
+                        .isEqualTo(Dumper.SplitFileOutput.MAGIC_DATA_HEADER.getBytes());
             }
-            assertThat(Arrays.copyOfRange(bytes, 0, 4)).isEqualTo(Dumper.SplitFileOutput.MAGIC_HEADER.getBytes());
         }
     }
 

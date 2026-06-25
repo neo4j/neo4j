@@ -86,8 +86,8 @@ public class CombiningInputStream extends InputStream {
                 throw new IOException(
                         "Unexpected end of stream while reading metadata for split archive part: " + openIndex);
             }
-            if (!SplitFileOutput.MAGIC_HEADER.matches(header)) {
-                throw new IllegalArgumentException("Unexpected format of split archive part: " + openIndex);
+            if (!SplitFileOutput.MAGIC_DATA_HEADER.matches(header)) {
+                throw new IllegalArgumentException("Unexpected format magic in split archive part: " + openIndex);
             }
             int partIndex = intFromBytes(indexBytes);
             if (partIndex != openIndex) {

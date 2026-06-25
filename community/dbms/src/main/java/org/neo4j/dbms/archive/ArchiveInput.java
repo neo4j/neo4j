@@ -59,7 +59,7 @@ public sealed interface ArchiveInput {
                 throw new IOException("invalid magic - expected %d bytes, but was %s"
                         .formatted(ArchiveFormat.MAGIC_PREFIX_LENGTH, Arrays.toString(magic)));
             }
-            if (Dumper.SplitFileOutput.MAGIC_HEADER.matches(magic)) {
+            if (Dumper.SplitFileOutput.MAGIC_MANIFEST_HEADER.matches(magic)) {
                 stream = combine(stream);
                 magic = stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
             }

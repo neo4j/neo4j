@@ -99,7 +99,7 @@ class CombiningInputStreamTest {
         try (CombiningInputStream in = open(firstPart)) {
             assertThatThrownBy(in::readAllBytes)
                     .isInstanceOf(NoSuchFileException.class)
-                    .hasMessageContainingAll("test.dump.2");
+                    .hasMessageContaining("test.dump.2");
         }
     }
 
@@ -112,8 +112,20 @@ class CombiningInputStreamTest {
         try (CombiningInputStream in = open(firstPart)) {
             assertThatThrownBy(in::readAllBytes)
                     .isInstanceOf(NoSuchFileException.class)
-                    .hasMessageContainingAll("test.dump.2");
+                    .hasMessageContaining("test.dump.2");
         }
+    }
+
+    @Test
+    void shouldThrowWhenDataMagicIsWrong() throws IOException {
+        Path firstPart = writeSplitArchive("test.dump", new byte[250]);
+        Path secondPart = firstPart.resolveSibling("test.dump.1");
+        fileSystem.renameFile(firstPart, secondPart.resolveSibling("test.dump.1.1"));
+        // Note: By construction, we only select split archive if the first file
+        // has the matching header.
+        assertThatThrownBy(() -> open(secondPart).readAllBytes())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unexpected format magic in split archive part:");
     }
 
     @Test
@@ -353,6 +365,6 @@ class CombiningInputStreamTest {
         var source = StreamSource.siblingsOf(fileSystem, firstPart);
         var metadata = source.next();
         metadata.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
-        return CombiningInputStream.of(metadata, source, "test");
+        return CombiningInputStream.of(metadata, source, "desc");
     }
 }
