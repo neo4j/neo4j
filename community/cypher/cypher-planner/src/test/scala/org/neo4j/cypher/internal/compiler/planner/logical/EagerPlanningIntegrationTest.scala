@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.DatabaseFormat
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -3444,6 +3445,94 @@ class EagerPlanningIntegrationTest extends CypherPlannerTestSuite
         .|.expandAll("(n)-[r:T]->()")
         .|.argument("n")
         .nodeByLabelScan("n", "N", IndexOrderNone)
+        .build()
+    )
+  }
+
+  private def mvccPlanner(txStateHasChanges: Boolean) =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 50)
+      .setDatabaseFormat(DatabaseFormat.Mvcc)
+      .setTxStateHasChanges(txStateHasChanges)
+      .build()
+
+  test("MVCC with non-empty tx state: Eager before the unstable AllNodesScan in MATCH (n) CREATE (:N)") {
+    val planner = mvccPlanner(txStateHasChanges = true)
+
+    val plan = planner.plan("MATCH (n) CREATE (:N)")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .create(createNode("anon_0", "N"))
+        .eager(ListSet(LabelReadSetConflict(labelName("N")).withConflict(Conflict(Id(2), Id(4)))))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("MVCC with empty tx state: no Eager in MATCH (n) CREATE (:N)") {
+    val planner = mvccPlanner(txStateHasChanges = false)
+
+    val plan = planner.plan("MATCH (n) CREATE (:N)")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .create(createNode("anon_0", "N"))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("non-MVCC format with non-empty tx state: no Eager in MATCH (n) CREATE (:N)") {
+    val planner =
+      plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setLabelCardinality("N", 50)
+        .setTxStateHasChanges(true)
+        .build()
+
+    val plan = planner.plan("MATCH (n) CREATE (:N)")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .create(createNode("anon_0", "N"))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("MVCC with non-empty tx state: Eager before the unstable NodeByLabelScan in MATCH (n:N) CREATE (:N)") {
+    val planner = mvccPlanner(txStateHasChanges = true)
+
+    val plan = planner.plan("MATCH (n:N) CREATE (:N)")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .create(createNode("anon_0", "N"))
+        .eager(ListSet(LabelReadSetConflict(labelName("N")).withConflict(Conflict(Id(2), Id(4)))))
+        .nodeByLabelScan("n", "N", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("MVCC with non-empty tx state: no Eager for the read-only query MATCH (n) RETURN n") {
+    val planner = mvccPlanner(txStateHasChanges = true)
+
+    val plan = planner.plan("MATCH (n) RETURN n")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .allNodeScan("n")
         .build()
     )
   }

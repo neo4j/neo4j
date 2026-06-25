@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.ValueMergeJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
@@ -65,6 +66,7 @@ import scala.collection.mutable
  */
 case class EagerWhereNeededRewriter(
   cardinalities: Cardinalities,
+  stableLeafPlans: StableLeafPlans,
   attributes: Attributes[LogicalPlan],
   shouldCompressReasons: Boolean,
   cancellationChecker: CancellationChecker
@@ -83,7 +85,8 @@ case class EagerWhereNeededRewriter(
       collectReadsAndWrites(plan, semanticTable, anonymousVariableNameGenerator, childrenIds, cancellationChecker)
 
     // Step 2: Find conflicting plans
-    val conflicts = ConflictFinder.withCaching().findConflictingPlans(readsAndWrites, plan)
+    val conflicts =
+      ConflictFinder.withCaching().findConflictingPlans(readsAndWrites, plan)(childrenIds, stableLeafPlans)
 
     // Step 3: Find candidate lists where Eager can be planned
     val candidateLists = findCandidateLists(plan, conflicts, cancellationChecker)

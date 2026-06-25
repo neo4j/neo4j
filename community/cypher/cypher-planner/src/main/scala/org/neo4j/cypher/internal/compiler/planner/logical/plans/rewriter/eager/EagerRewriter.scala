@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -67,6 +68,7 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
     val attributes: Attributes[LogicalPlan] = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
     val cardinalities = from.planningAttributes.cardinalities
+    val stableLeafPlans = from.planningAttributes.stableLeafPlans
     val lPStateWithEagerProcedureCall = eagerizeProcedureCalls(from, cardinalities, attributes.without(cardinalities))
 
     val newPlan = context.updateStrategy match {
@@ -79,9 +81,21 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
         val rewriter = {
           val shouldCompressReasons = !context.debugOptions.verboseEagernessReasons
           if (context.config.lpEagerFallbackEnabled())
-            defaultRewriterWithFallback(cardinalities, attributes, shouldCompressReasons, context.cancellationChecker)
+            defaultRewriterWithFallback(
+              cardinalities,
+              stableLeafPlans,
+              attributes,
+              shouldCompressReasons,
+              context.cancellationChecker
+            )
           else
-            defaultRewriter(cardinalities, attributes, shouldCompressReasons, context.cancellationChecker)
+            defaultRewriter(
+              cardinalities,
+              stableLeafPlans,
+              attributes,
+              shouldCompressReasons,
+              context.cancellationChecker
+            )
         }
 
         rewriter.eagerize(
@@ -96,21 +110,23 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   def defaultRewriter(
     cardinalities: Cardinalities,
+    stableLeafPlans: StableLeafPlans,
     attributes: Attributes[LogicalPlan],
     shouldCompressReasons: Boolean,
     cancellationChecker: CancellationChecker
   ): EagerWhereNeededRewriter = {
-    EagerWhereNeededRewriter(cardinalities, attributes, shouldCompressReasons, cancellationChecker)
+    EagerWhereNeededRewriter(cardinalities, stableLeafPlans, attributes, shouldCompressReasons, cancellationChecker)
   }
 
   def defaultRewriterWithFallback(
     cardinalities: Cardinalities,
+    stableLeafPlans: StableLeafPlans,
     attributes: Attributes[LogicalPlan],
     shouldCompressReasons: Boolean,
     cancellationChecker: CancellationChecker
   ): EagerRewriterWithFallback = {
     EagerRewriterWithFallback(
-      defaultRewriter(cardinalities, attributes, shouldCompressReasons, cancellationChecker),
+      defaultRewriter(cardinalities, stableLeafPlans, attributes, shouldCompressReasons, cancellationChecker),
       EagerEverywhereRewriter(attributes),
       attributes
     )

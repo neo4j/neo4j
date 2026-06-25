@@ -69,6 +69,8 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.planner.spi.LeafStability
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
@@ -90,7 +92,10 @@ sealed trait ConflictFinder {
     leftMostLeaf: LogicalPlan,
     writtenProperties: ReadsAndWritesFinder.Sets => Iterator[(Option[PropertyKeyName], Set[PlanWithAccessor])],
     plansReadingProperty: (ReadsAndWritesFinder.Reads, Option[PropertyKeyName]) => Iterator[PlanWithAccessor]
-  )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
+  )(
+    implicit planChildrenLookup: PlanChildrenLookup,
+    stableLeafPlans: StableLeafPlans
+  ): Iterator[ConflictingPlanPair] = {
     for {
       (prop, writePlans) <- writtenProperties(readsAndWrites.writes.sets)
       read @ PlanWithAccessor(Ref(readPlan), _) <- plansReadingProperty(readsAndWrites.reads, prop)
@@ -132,8 +137,10 @@ sealed trait ConflictFinder {
     } ++ Seq((Option.empty, readsAndWrites.writes.sets.writtenUnknownLabels))
   }
 
-  private def labelConflicts(readsAndWrites: ReadsAndWrites, leftMostLeaf: LogicalPlan)(implicit
-    planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
+  private def labelConflicts(readsAndWrites: ReadsAndWrites, leftMostLeaf: LogicalPlan)(
+    implicit planChildrenLookup: PlanChildrenLookup,
+    stableLeafPlans: StableLeafPlans
+  ): Iterator[ConflictingPlanPair] = {
     for {
       (maybeLabel, writePlans) <- allWrittenLabels(readsAndWrites)
       read @ PlanWithAccessor(Ref(readPlan), _) <- readsAndWrites.reads.plansReadingLabel(maybeLabel)
@@ -193,7 +200,7 @@ sealed trait ConflictFinder {
   private def createNodeConflicts(
     readsAndWrites: ReadsAndWrites,
     leftMostLeaf: LogicalPlan
-  )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] =
+  )(implicit planChildrenLookup: PlanChildrenLookup, stableLeafPlans: StableLeafPlans): Iterator[ConflictingPlanPair] =
     for {
       (Ref(writePlan), createdNodes) <- readsAndWrites.writes.creates.createdNodes.iterator
 
@@ -221,7 +228,7 @@ sealed trait ConflictFinder {
   private def createRelationshipConflicts(
     readsAndWrites: ReadsAndWrites,
     leftMostLeaf: LogicalPlan
-  )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] =
+  )(implicit planChildrenLookup: PlanChildrenLookup, stableLeafPlans: StableLeafPlans): Iterator[ConflictingPlanPair] =
     for {
       (Ref(writePlan), createdRelationships) <- readsAndWrites.writes.creates.createdRelationships.iterator
 
@@ -351,7 +358,10 @@ sealed trait ConflictFinder {
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans],
     entityType: EntityType
-  )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
+  )(
+    implicit planChildrenLookup: PlanChildrenLookup,
+    stableLeafPlans: StableLeafPlans
+  ): Iterator[ConflictingPlanPair] = {
     for {
       (wpref @ Ref(writePlan), deletedEntities) <- deletedEntities(readsAndWrites.writes.deletes).iterator
 
@@ -404,7 +414,10 @@ sealed trait ConflictFinder {
       ReadsAndWritesFinder.Deletes,
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans]
-  )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
+  )(
+    implicit planChildrenLookup: PlanChildrenLookup,
+    stableLeafPlans: StableLeafPlans
+  ): Iterator[ConflictingPlanPair] = {
     for {
       Ref(writePlan) <-
         deleteExpressions(
@@ -538,7 +551,7 @@ sealed trait ConflictFinder {
   private[eager] def findConflictingPlans(
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan
-  )(implicit planChildrenLookup: PlanChildrenLookup): Seq[ConflictingPlanPair] = {
+  )(implicit planChildrenLookup: PlanChildrenLookup, stableLeafPlans: StableLeafPlans): Seq[ConflictingPlanPair] = {
     val leftMostLeaf = wholePlan.leftmostLeaf
     val map = mutable.Map[ConflictingPlans, mutable.Set[EagernessReason]]()
 
@@ -652,7 +665,7 @@ sealed trait ConflictFinder {
     readPlan: LogicalPlan,
     writePlan: LogicalPlan,
     leftMostLeaf: LogicalPlan
-  )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
+  )(implicit planChildrenLookup: PlanChildrenLookup, stableLeafPlans: StableLeafPlans): Boolean = {
     // A plan can never conflict with itself
     def conflictsWithItself = writePlan eq readPlan
 
@@ -680,10 +693,12 @@ sealed trait ConflictFinder {
       false
     }
 
-    // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
+    // We consider the leftmost plan to be potentially stable unless we are in a call in transactions, or, on an
+    // MVCC store, the transaction state is non-empty (in which case the leftmost iterator cannot be stable).
     def conflictsWithUnstablePlan =
       (readPlan ne leftMostLeaf) ||
         !readPlan.isInstanceOf[StableLeafPlan] ||
+        stableLeafPlans.get(readPlan.id) == LeafStability.MvccNonEmptyTx ||
         planChildrenLookup.isInTransactionalApply(writePlan)
 
     /**

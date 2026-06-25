@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.StableLeafPlans
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -114,6 +115,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
   ): LogicalPlan =
     EagerWhereNeededRewriter(
       planBuilder.cardinalities,
+      new StableLeafPlans,
       Attributes(planBuilder.idGen),
       shouldCompressReasons,
       CancellationChecker.neverCancelled()
@@ -220,6 +222,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
+        new StableLeafPlans,
         Attributes(planBuilder.idGen),
         shouldCompressReasons = false,
         CancellationChecker.neverCancelled()
@@ -244,6 +247,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
 
     val rewriter = EagerRewriter.defaultRewriterWithFallback(
       planBuilder.cardinalities,
+      new StableLeafPlans,
       Attributes(planBuilder.idGen),
       shouldCompressReasons = false,
       CancellationChecker.neverCancelled()
@@ -278,6 +282,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
+        new StableLeafPlans,
         Attributes(planBuilder.idGen),
         shouldCompressReasons = false,
         CancellationChecker.neverCancelled()
@@ -302,6 +307,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
 
     val rewriter = EagerRewriter.defaultRewriterWithFallback(
       planBuilder.cardinalities,
+      new StableLeafPlans,
       Attributes(planBuilder.idGen),
       shouldCompressReasons = false,
       CancellationChecker.neverCancelled()
@@ -3672,6 +3678,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
+        new StableLeafPlans,
         Attributes(planBuilder.idGen),
         shouldCompressReasons = false,
         CancellationChecker.neverCancelled()
@@ -3695,6 +3702,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
 
     val rewriter = EagerRewriter.defaultRewriterWithFallback(
       planBuilder.cardinalities,
+      new StableLeafPlans,
       Attributes(planBuilder.idGen),
       shouldCompressReasons = false,
       CancellationChecker.neverCancelled()
@@ -3734,6 +3742,7 @@ class EagerWhereNeededRewriterTest extends CypherPlannerTestSuite with LogicalPl
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
+        new StableLeafPlans,
         Attributes(planBuilder.idGen),
         shouldCompressReasons = false,
         CancellationChecker.neverCancelled()
