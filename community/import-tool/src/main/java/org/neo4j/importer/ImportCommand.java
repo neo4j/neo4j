@@ -84,6 +84,7 @@ import org.neo4j.importer.SchemaCommandSource.ResolvedSchemaCommands;
 import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.schema.SchemaCommand.SchemaCommandReaderException;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction.PatternStyle;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -1051,6 +1052,14 @@ public class ImportCommand {
                 @Override
                 public boolean instrumentationCaptureThreadDumps() {
                     return captureThreadDumps;
+                }
+
+                @Override
+                public int intermediaryBufferSize() {
+                    if (superFast) {
+                        return (int) ByteUnit.mebiBytes(1);
+                    }
+                    return super.intermediaryBufferSize();
                 }
 
                 @Override
