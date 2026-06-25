@@ -24,19 +24,21 @@ import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimi
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.Next
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.V2026_03
 import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.V2026_04
+import org.neo4j.cypher.internal.compiler.planner.CypherPlannerVersionWithOptimisations.V2026_05
 import org.neo4j.cypher.internal.compiler.planner.Optimisation.MergeLabelInfo
 import org.neo4j.cypher.internal.options.CypherPlannerVersionOption
 
 class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
 
-  test("latest version is V2026_04") {
-    CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.latest) should be(V2026_04)
+  test("latest version is V2026_05") {
+    CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.latest) should be(V2026_05)
   }
 
   test("fromQueryOption should convert versions correctly") {
     CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.v2026_03) shouldEqual V2026_03
     CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.v2026_04) shouldEqual V2026_04
-    CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.latest) shouldEqual V2026_04
+    CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.v2026_05) shouldEqual V2026_05
+    CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.latest) shouldEqual V2026_05
     CypherPlannerVersionWithOptimisations.fromQueryOption(CypherPlannerVersionOption.next) shouldEqual Next
     CypherPlannerVersionWithOptimisations.fromQueryOption(
       CypherPlannerVersionOption.experimental
@@ -47,6 +49,7 @@ class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
       Seq(
         Experimental,
         Next,
+        V2026_05,
         V2026_04,
         V2026_03
       )
@@ -55,13 +58,15 @@ class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
   test("version chain is properly linked") {
     V2026_03.previous shouldEqual None
     V2026_04.previous shouldEqual Some(V2026_03)
-    Next.previous shouldEqual Some(V2026_04)
+    V2026_05.previous shouldEqual Some(V2026_04)
+    Next.previous shouldEqual Some(V2026_05)
     Experimental.previous shouldEqual Some(Next)
   }
 
   test("allSupportedOptimisations traverses the version chain correctly") {
     V2026_03.allSupportedOptimisations shouldBe empty
     V2026_04.allSupportedOptimisations shouldBe empty
+    V2026_05.allSupportedOptimisations shouldBe empty
     Next.allSupportedOptimisations shouldBe empty
     Experimental.allSupportedOptimisations shouldEqual Set(MergeLabelInfo)
   }
@@ -69,6 +74,7 @@ class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
   test("allSupportedOptimisations on companion object returns correct results") {
     CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.v2026_03) shouldBe empty
     CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.v2026_04) shouldBe empty
+    CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.v2026_05) shouldBe empty
     CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.next) shouldBe empty
     CypherPlannerVersionWithOptimisations.allSupportedOptimisations(
       CypherPlannerVersionOption.experimental
@@ -76,6 +82,6 @@ class CypherPlannerVersionWithOptimisationsTest extends CypherPlannerTestSuite {
       MergeLabelInfo
     )
     CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.latest) shouldEqual
-      CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.v2026_04)
+      CypherPlannerVersionWithOptimisations.allSupportedOptimisations(CypherPlannerVersionOption.v2026_05)
   }
 }

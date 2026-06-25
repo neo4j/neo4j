@@ -39,6 +39,7 @@ class CypherPlannerVersionOptionTest extends CypherFunSuite3 {
     resolve("experimental") shouldBe experimental
     resolve("next") shouldBe next
     resolve("latest") shouldBe CypherPlannerVersionOption.latest
+    resolve("v2026_05") shouldBe v2026_05
     resolve("v2026_04") shouldBe v2026_04
     resolve("v2026_03") shouldBe v2026_03
 

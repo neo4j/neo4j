@@ -59,6 +59,14 @@ object CypherPlannerVersionWithOptimisations {
 
   // Planner version update: change this to the new version and create a new case object for next pointing to the new version.
   case object Next extends CypherPlannerVersionWithOptimisations {
+    // Any optimisations accumulated here during development must be transferred to the newly cut release
+    // version (and this reset to Set.empty) when bumping the planner version.
+    override def introducedOptimisations: Set[Optimisation] = Set.empty
+
+    override def previous: Option[CypherPlannerVersionWithOptimisations] = Some(V2026_05)
+  }
+
+  case object V2026_05 extends CypherPlannerVersionWithOptimisations {
     override def introducedOptimisations: Set[Optimisation] = Set.empty
 
     override def previous: Option[CypherPlannerVersionWithOptimisations] = Some(V2026_04)
@@ -80,6 +88,7 @@ object CypherPlannerVersionWithOptimisations {
     queryOption match {
       case CypherPlannerVersionOption.experimental => Experimental
       case CypherPlannerVersionOption.next         => Next
+      case CypherPlannerVersionOption.v2026_05     => V2026_05
       case CypherPlannerVersionOption.v2026_04     => V2026_04
       case CypherPlannerVersionOption.v2026_03     => V2026_03
     }
