@@ -32,4 +32,12 @@ trait FunctionInvocationLike extends Expression {
   def isAggregate: Boolean
   def isUserDefined: Boolean
   def asUnresolvedFunction: FunctionInvocation
+
+  /**
+   * True if and only if this call resolves to a built-in function — a compiler built-in
+   * ([[FunctionInvocation]]) or a registered built-in user function
+   * (org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation) — and is not
+   * shadowed by a user-defined function. Requires function resolution to have run.
+   */
+  def isBuiltIn: Boolean
 }

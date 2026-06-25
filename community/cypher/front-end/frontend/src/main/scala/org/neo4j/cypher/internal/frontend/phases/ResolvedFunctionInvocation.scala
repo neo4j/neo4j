@@ -91,10 +91,9 @@ case class ResolvedFunctionInvocation(
 )(val position: InputPosition)
     extends Expression with FunctionInvocationLike with UserDefinedFunctionInvocation with SemanticCheckableExpression {
 
-  override def isUserDefined: Boolean = fcnSignature match {
-    case Some(signature) => signature.builtIn
-    case None            => false
-  }
+  override def isUserDefined: Boolean = fcnSignature.exists(!_.builtIn)
+
+  override def isBuiltIn: Boolean = fcnSignature.exists(_.builtIn)
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>

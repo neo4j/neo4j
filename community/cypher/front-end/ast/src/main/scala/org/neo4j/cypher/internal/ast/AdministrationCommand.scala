@@ -1138,11 +1138,11 @@ sealed trait AuthRules extends SemanticAnalysisTooling {
   protected def checkAllowlist(functionInvocation: FunctionInvocationLike): SemanticCheck = {
 
     val name = functionInvocation.functionName.fullName
-    // TODO: once function resolution runs before this semantic check, also verify the resolved
-    //  identity, not just the name. Unlike the property-rule check, builtIn=true is not enough
-    //  here: abac.oidc.user_attribute and abac.native.user_tags are registered CallableUserFunctions,
-    //  not compiler built-ins, so they must be allowed to resolve to the genuine abac functions.
-    if (authRuleAllowListedFunctions.contains(name.toLowerCase))
+    // Reject an allow-listed name only when it resolved to a user-defined function (a UDF
+    // shadowing the name). Compiler built-ins, the genuine resolved abac functions, and abac
+    // names whose provider is not enabled (so they don't resolve to a signature) are all
+    // accepted here; a disabled-but-genuine abac function is then rejected at evaluation time.
+    if (authRuleAllowListedFunctions.contains(name.toLowerCase) && !functionInvocation.isUserDefined)
       SemanticCheck.success
     else
       SemanticCheck.error(SemanticError.authRuleConditionHaveInvalidFunctionInCondition(
@@ -1570,8 +1570,7 @@ sealed abstract class PrivilegeCommand(
       value match {
         case _: Literal | _: ExplicitParameter => SemanticCheck.success
         case f: FunctionInvocationLike
-          // TODO: once function resolution runs before this semantic check, also check that builtIn=true
-          if propertyRuleAllowedTemporalFunctions.contains(f.functionName.fullName.toLowerCase) =>
+          if f.isBuiltIn && propertyRuleAllowedTemporalFunctions.contains(f.functionName.fullName.toLowerCase) =>
           SemanticCheck.success
         case _ =>
           AdministrationCommandSemanticAnalysis.invalidPropertyBasedAccessControlRuleInvolvingNontrivialPredicatesError(

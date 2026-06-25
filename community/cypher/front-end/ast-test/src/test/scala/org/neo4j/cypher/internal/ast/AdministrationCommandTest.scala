@@ -620,50 +620,36 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
           e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
         }
 
-        // e.g. FOR (n) WHERE n.prop1 = date('2024-08-23'), one case per allow-listed temporal
+        // e.g. FOR (n) WHERE n.prop1 = point({x: 1, y: 2})
+        // `point` is the only allow-listed function that is a compiler built-in; the temporal
+        // functions (date, datetime, ...) only become built-ins once resolved, so they are covered
+        // in AdministrationCommandResolvedFunctionSemanticAnalysisTest.
         test(
-          s"property rules using WHERE syntax with allow-listed temporal functions should pass semantic checking ($qualifierDescription)($operator)"
+          s"property rules using WHERE syntax with an allow-listed built-in function should pass semantic checking ($qualifierDescription)($operator)"
         ) {
-          val cases = Seq[(String, Expression)](
-            ("date", function("date", literalString("2024-08-23"))),
-            ("datetime", function("datetime", literalString("2024-08-24T12:50:35+01:00"))),
-            ("localdatetime", function("localdatetime", literalString("2024-08-24T12:50:35"))),
-            ("localtime", function("localtime", literalString("12:50:35"))),
-            ("time", function("time", literalString("12:50:35+01:00"))),
-            ("duration", function("duration", literalString("PT30S"))),
-            ("point", function("point", mapOfInt("x" -> 1, "y" -> 2)))
-          )
-          cases.map(_._1) should contain theSameElementsAs
-            AdministrationCommand.propertyRuleAllowedTemporalFunctions
-          cases.foreach { case (name, call) =>
-            withClue(s"$name: ") {
-              val privilege = new GrantPrivilege(
-                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-                false,
-                None,
-                qualifierFn(
-                  Some(varFor("n", p)),
-                  op(
-                    prop(varFor("n"), "prop1"),
-                    call
-                  )
-                ),
-                Seq(literalString("role1"))
-              )(p)
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(varFor("n", p)),
+              op(
+                prop(varFor("n"), "prop1"),
+                function("point", mapOfInt("x" -> 1, "y" -> 2))
+              )
+            ),
+            Seq(literalString("role1"))
+          )(p)
 
-              val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
-              result.errors.isEmpty shouldBe true
-            }
-          }
+          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
+          result.errors.isEmpty shouldBe true
         }
 
-        // e.g. FOR (n) WHERE n.prop1 = DATE('2024-08-23')
+        // e.g. FOR (n) WHERE n.prop1 = POINT({x: 1, y: 2})
         test(
-          s"property rules using WHERE syntax with allow-listed temporal functions are case-insensitive ($qualifierDescription)($operator)"
+          s"property rules using WHERE syntax with an allow-listed built-in function are case-insensitive ($qualifierDescription)($operator)"
         ) {
           Seq[(String, Expression)](
-            ("DATE", function("DATE", literalString("2024-08-23"))),
-            ("DateTime", function("DateTime", literalString("2024-08-24T12:50:35+01:00"))),
             ("POINT", function("POINT", mapOfInt("x" -> 1, "y" -> 2)))
           ).foreach { case (name, call) =>
             withClue(s"$name: ") {
@@ -765,6 +751,35 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
               op(
                 prop(varFor("n"), "prop1"),
                 function(Seq("my", "test"), "date")
+              )
+            ),
+            Seq(literalString("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialStateWithFeatureFlags, arbitrarySemanticContext())
+          result.errors.size shouldBe 1
+          val e = result.errors.head
+          e.gqlStatusObject.gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA0.getStatusString
+          e.gqlStatusObject.cause().get().gqlStatus() shouldBe GqlStatusInfoCodes.STATUS_22NA7.getStatusString
+          e.msg should startWith("Failed to administer property rule.")
+          e.msg should include(
+            "is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+          )
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = point({x: 1, y: 2}) where point() is shadowed
+        test(
+          s"property rules using WHERE syntax with a shadowed allow-listed built-in function should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(varFor("n", p)),
+              op(
+                prop(varFor("n"), "prop1"),
+                function("point", mapOfInt("x" -> 1, "y" -> 2)).copy(isShadowed = true)(p)
               )
             ),
             Seq(literalString("role1"))
@@ -1304,33 +1319,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
           In(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1)))(p), // n.prop IN [1.1]
           Not(In(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1)))(p))(p), // NOT n.prop IN [1.1]
 
-          // List of temporal values
-          In(
-            prop(varFor("n"), "prop1"),
-            listOf(function("date", literalString("2024-10-09")))
-          )(p), // n.prop IN [date("2024-10-09")]
-          Not(In(
-            prop(varFor("n"), "prop1"),
-            listOf(function("datetime", literalString("2024-10-09T12:10:09:40+02:00")))
-          )(p))(p), // NOT n.prop IN [datetime("2024-10-09T12:10:09:40+02:00")]
-          In(
-            prop(varFor("n"), "prop1"),
-            listOf(function("localdatetime", literalString("2024-10-09T12:50:35.5")))
-          )(p), // n.prop IN [localdatetime("2024-10-09T12:50:35.5")]
-          Not(In(
-            prop(varFor("n"), "prop1"),
-            listOf(function("time", literalString("12:10:09:40+02:00")))
-          )(p))(p), // NOT n.prop IN [time("12:10:09:40+02:00")]
-          In(
-            prop(varFor("n"), "prop1"),
-            listOf(function("localtime", literalString("12:50:35.5")))
-          )(p), // n.prop IN [localtime("2024-10-09T12:50:35.5")]
-          Not(In(
-            prop(varFor("n"), "prop1"),
-            listOf(function("duration", literalString("PT1S")))
-          )(p))(p), // NOT n.prop IN [duration("PT1S")]
-
-          // List of points
+          // List of built-in function values (point is the only allow-listed compiler built-in;
+          // the temporal functions are covered as resolved functions in
+          // AdministrationCommandResolvedFunctionSemanticAnalysisTest)
           In(
             prop(varFor("n"), "prop1"),
             listOf(function("point", mapOfInt("x" -> 1, "y" -> 2)))
@@ -1392,53 +1383,9 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
             listOf(literalFloat(1.1), literalFloat(2.2))
           )(p))(p), // NOT n.prop IN [1.1, 2.2]
 
-          // List of temporal values
-          In(
-            prop(varFor("n"), "prop1"),
-            listOf(
-              function("date", literalString("2024-10-09")),
-              function("date", literalString("2024-10-11"))
-            )
-          )(p), // n.prop IN [date("2024-10-09"), date("2024-10-11")]
-          Not(In(
-            prop(varFor("n"), "prop1"),
-            listOf(
-              function("datetime", literalString("2024-10-09T12:10:09:40+02:00")),
-              function("datetime", literalString("2024-10-11T11:10:09:40+02:00"))
-            )
-          )(p))(
-            p
-          ), // NOT n.prop IN [datetime("2024-10-09T12:10:09:40+02:00"), datetime("2024-10-11T11:10:09:40+02:00")]
-          In(
-            prop(varFor("n"), "prop1"),
-            listOf(
-              function("localdatetime", literalString("2024-10-09T12:50:35.5")),
-              function("localdatetime", literalString("2024-10-09T12:55:35.5"))
-            )
-          )(p), // n.prop IN [localdatetime("2024-10-09T12:50:35.5"), localdatetime("2024-10-09T12:55:35.5")]
-          Not(In(
-            prop(varFor("n"), "prop1"),
-            listOf(
-              function("time", literalString("12:10:09:40+02:00")),
-              function("time", literalString("11:10:09:40+02:00"))
-            )
-          )(p))(p), // NOT n.prop IN [time("12:10:09:40+02:00"), time("11:10:09:40+02:00")]
-          In(
-            prop(varFor("n"), "prop1"),
-            listOf(
-              function("localtime", literalString("12:50:35.5")),
-              function("localtime", literalString("12:55:35.5"))
-            )
-          )(p), // n.prop IN [localtime("2024-10-09T12:50:35.5"), localtime("2024-10-09T12:55:35.5")]
-          Not(In(
-            prop(varFor("n"), "prop1"),
-            listOf(
-              function("duration", literalString("PT1S")),
-              function("duration", literalString("PT2S"))
-            )
-          )(p))(p), // NOT n.prop IN [duration("PT1S"), duration("PT2S")]
-
-          // List of points
+          // List of built-in function values (point is the only allow-listed compiler built-in;
+          // the temporal functions are covered as resolved functions in
+          // AdministrationCommandResolvedFunctionSemanticAnalysisTest)
           In(
             prop(varFor("n"), "prop1"),
             listOf(
@@ -3752,24 +3699,6 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
     authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
-  test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country') = 'SE'") {
-    val authRule = CreateAuthRule(
-      literalString("authRule"),
-      IfExistsThrowError,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = literalString("country")
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-  }
-
   test("CREATE AUTH RULE authRule SET CONDITION $param") {
     val param = parameter("param", CTAny)
     val authRule = CreateAuthRule(
@@ -3789,191 +3718,6 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         initialStateWithFeatureFlags,
         SemanticError.authRuleConditionCannotContainParameter(param)
       ).errors
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute($param) = 'SE'") {
-    val param = parameter("param", CTAny)
-    val authRule = CreateAuthRule(
-      literalString("authRule"),
-      IfExistsThrowError,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = param
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    // This is not supported yet
-    authRule.semanticCheck.run(
-      initialStateWithFeatureFlags,
-      semanticContextCypher25
-    ).errors shouldBe SemanticCheckResult
-      .error(
-        initialStateWithFeatureFlags,
-        SemanticError.authRuleConditionCannotContainParameter(param)
-      ).errors
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('hello' + 1) = 'SE'") {
-    val authRule = CreateAuthRule(
-      literalString("authRule"),
-      IfExistsThrowError,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = Add(literalString("hello"), literalInt(1))(p)
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(1 + 1) = 'SE'") {
-    val authRule = CreateAuthRule(
-      literalString("authRule"),
-      IfExistsThrowError,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = Add(literalInt(1), literalInt(1))(p)
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    // Does not fail since we don't evaluate the inner expression
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION accepts every allow-listed function") {
-    val allowListed = Seq(
-      "abac.oidc.user_attribute",
-      "abac.native.user_tags",
-      "range",
-      "reduce",
-      "reverse",
-      "tail",
-      "toBooleanList",
-      "toFloatList",
-      "toIntegerList",
-      "toStringList",
-      "abs",
-      "ceil",
-      "floor",
-      "isNaN",
-      "round",
-      "sign",
-      "all",
-      "any",
-      "isEmpty",
-      "none",
-      "single",
-      "char_length",
-      "character_length",
-      "coalesce",
-      "head",
-      "last",
-      "nullIf",
-      "size",
-      "toBoolean",
-      "toBooleanOrNull",
-      "toFloat",
-      "toFloatOrNull",
-      "toInteger",
-      "toIntegerOrNull",
-      "btrim",
-      "left",
-      "lower",
-      "ltrim",
-      "replace",
-      "right",
-      "rtrim",
-      "split",
-      "substring",
-      "toLower",
-      "toString",
-      "toStringOrNull",
-      "toUpper",
-      "trim",
-      "upper",
-      "duration",
-      "duration.between",
-      "duration.inDays",
-      "duration.inMonths",
-      "duration.inSeconds",
-      "date",
-      "date.transaction",
-      "date.truncate",
-      "datetime",
-      "datetime.transaction",
-      "datetime.fromEpoch",
-      "datetime.fromEpochMillis",
-      "datetime.truncate",
-      "localdatetime",
-      "localdatetime.transaction",
-      "localdatetime.truncate",
-      "localtime",
-      "localtime.transaction",
-      "localtime.truncate",
-      "time",
-      "time.transaction",
-      "time.truncate"
-    )
-
-    allowListed.map(_.toLowerCase) should contain theSameElementsAs
-      AdministrationCommand.authRuleAllowListedFunctions
-
-    allowListed.foreach { fnName =>
-      withClue(s"$fnName: ") {
-        val authRule = CreateAuthRule(
-          literalString("authRule"),
-          IfExistsThrowError,
-          List(
-            AuthRuleCondition(Equals(
-              FunctionInvocation(
-                name = FunctionName(fnName)(p),
-                argument = literalString("x")
-              )(p),
-              literalString("v")
-            )(p))(p)
-          )
-        )(p)
-
-        authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-      }
-    }
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION accepts uppercase variants of allow-listed functions") {
-    Seq("DATE", "DateTime", "TOLOWER").foreach { fnName =>
-      withClue(s"$fnName: ") {
-        val authRule = CreateAuthRule(
-          literalString("authRule"),
-          IfExistsThrowError,
-          List(
-            AuthRuleCondition(Equals(
-              FunctionInvocation(
-                name = FunctionName(fnName)(p),
-                argument = literalString("x")
-              )(p),
-              literalString("v")
-            )(p))(p)
-          )
-        )(p)
-
-        authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-      }
-    }
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION my.test.date('x') = 'v' — UDF shadowing an allow-listed name") {
@@ -4084,269 +3828,6 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
           |22N05: Invalid input 'graph.byName' for function in auth rule condition.""".stripMargin,
         pos1
       ).errors)
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(toLower('HELLO')) = 'SE'") {
-    val innerFunctionInvocation = FunctionInvocation(
-      name = FunctionName("toLower")(p),
-      argument = literalString("HELLO")
-    )(p)
-    val authRule = CreateAuthRule(
-      literalString("authRule"),
-      IfExistsThrowError,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = innerFunctionInvocation
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country', 'city') = 'SE_MALMÖ'") {
-    val authRule = CreateAuthRule(
-      literalString("authRule"),
-      IfExistsThrowError,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(pos1),
-            argument = listOf(literalString("country"), literalString("city"))
-          )(pos1),
-          literalString("SE_MALMÖ")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(
-      initialStateWithFeatureFlags,
-      semanticContextCypher25
-    ).errors should equal(SemanticCheckResult
-      .error(
-        GqlHelper.getGql42001_42I13(
-          1,
-          2,
-          "abac.oidc.user_attribute",
-          "abac.oidc.user_attribute(attributeKey :: STRING) :: ANY",
-          pos1.offset,
-          pos1.line,
-          pos1.column
-        ),
-        initialStateWithFeatureFlags,
-        """Function call does not provide the required number of arguments: expected 1 got 2.
-          |
-          |Function abac.oidc.user_attribute has signature: abac.oidc.user_attribute(attributeKey :: STRING) :: ANY
-          |meaning that it expects 1 [country, city]""".stripMargin,
-        pos1
-      ).errors)
-  }
-
-  test("CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(1) = 'SE_MALMÖ'") {
-    val functionInvocation = FunctionInvocation(
-      name = FunctionName("abac.oidc.user_attribute")(p),
-      argument = literalInt(1, pos1)
-    )(p)
-    val authRule = CreateAuthRule(
-      literalString("authRule"),
-      IfExistsThrowError,
-      List(
-        AuthRuleCondition(Equals(functionInvocation, literalString("SE_MALMÖ"))(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(
-      initialStateWithFeatureFlags,
-      semanticContextCypher25
-    ).errors shouldBe SemanticCheckResult
-      .error(
-        GqlHelper.getGql42001_22NB1(
-          java.util.List.of(CTString.toCypherTypeString),
-          "INTEGER",
-          pos1.offset,
-          pos1.line,
-          pos1.column
-        ),
-        initialStateWithFeatureFlags,
-        "Type mismatch: expected String but was Integer",
-        pos1.withInputLength(1)
-      ).errors
-  }
-
-  Seq("date", "datetime", "localtime", "localdatetime", "time").foreach { functionName =>
-    test(
-      s"CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName('2024-11-18')"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        name = FunctionName(functionName)(p),
-        argument = literalString("2024-11-18") // Any string here is valid even if it will fail at runtime
-      )(p)
-      val authRule = CreateAuthRule(
-        literalString("authRule"),
-        IfExistsThrowError,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-    }
-
-    test(s"CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName()") {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(functionName)(pos1),
-        distinct = false,
-        IndexedSeq.empty
-      )(pos1)
-
-      val authRule = CreateAuthRule(
-        literalString("authRule"),
-        IfExistsThrowError,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(
-        initialStateWithFeatureFlags,
-        semanticContextCypher25
-      ).errors should equal(SemanticCheckResult
-        .error(
-          ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-            .atPosition(pos1.offset, pos1.line, pos1.column)
-            .withCause(
-              ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N05)
-                .atPosition(pos1.offset, pos1.line, pos1.column)
-                .withParam(GqlParams.StringParam.input, functionName)
-                .withParam(GqlParams.StringParam.context, "function in auth rule condition")
-                .build()
-            ).build(),
-          initialStateWithFeatureFlags,
-          s"""42001
-             |22N05: Invalid input '$functionName' for function in auth rule condition.""".stripMargin,
-          pos1
-        ).errors)
-    }
-
-    test(
-      s"CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName({timezone: 'UTC'})"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(functionName)(pos1),
-        distinct = false,
-        IndexedSeq(MapExpression(Seq(PropertyKeyName("timezone")(pos1) -> literalString("UTC")))(pos1))
-      )(pos1)
-
-      val authRule = CreateAuthRule(
-        literalString("authRule"),
-        IfExistsThrowError,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(
-        initialStateWithFeatureFlags,
-        semanticContextCypher25
-      ).errors should equal(SemanticCheckResult
-        .error(
-          ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-            .atPosition(pos1.offset, pos1.line, pos1.column)
-            .withCause(
-              ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42NAM)
-                .atPosition(pos1.offset, pos1.line, pos1.column)
-                .withParam(GqlParams.StringParam.input, s"""$functionName({timezone: 'UTC'})""")
-                .withParam(GqlParams.StringParam.input1, s"""$functionName.transaction('UTC')""")
-                .build()
-            ).build(),
-          initialStateWithFeatureFlags,
-          s"""42001
-             |42NAM: '$functionName({timezone: 'UTC'})' cannot be used in auth rule conditions as it retrieves the current time. Only transaction start time is available at the time of auth rule evaluation. Use '$functionName.transaction('UTC')' instead.""".stripMargin,
-          pos1
-        ).errors)
-    }
-
-    test(
-      s"CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName({timezone: 1})"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(functionName)(pos1),
-        distinct = false,
-        IndexedSeq(MapExpression(Seq(PropertyKeyName("timezone")(pos1) -> literalInt(1, pos1)))(pos1))
-      )(pos1)
-
-      val authRule = CreateAuthRule(
-        literalString("authRule"),
-        IfExistsThrowError,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(
-        initialStateWithFeatureFlags,
-        semanticContextCypher25
-      ).errors should equal(SemanticCheckResult
-        .error(
-          ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-            .atPosition(pos1.offset, pos1.line, pos1.column)
-            .withCause(
-              ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42NAM)
-                .atPosition(pos1.offset, pos1.line, pos1.column)
-                .withParam(GqlParams.StringParam.input, s"""$functionName({timezone: 1})""")
-                .withParam(GqlParams.StringParam.input1, s"""$functionName.transaction()""")
-                .build()
-            ).build(),
-          initialStateWithFeatureFlags,
-          s"""42001
-             |42NAM: '$functionName({timezone: 1})' cannot be used in auth rule conditions as it retrieves the current time. Only transaction start time is available at the time of auth rule evaluation. Use '$functionName.transaction()' instead.""".stripMargin,
-          pos1
-        ).errors)
-    }
-
-    test(
-      s"CREATE AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName.transaction('UTC')"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(s"$functionName.transaction")(pos1),
-        distinct = false,
-        IndexedSeq(literalString("UTC"))
-      )(pos1)
-
-      val authRule = CreateAuthRule(
-        literalString("authRule"),
-        IfExistsThrowError,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-    }
   }
 
   test("RENAME AUTH RULE authRule TO authRule2") {
@@ -4477,24 +3958,6 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
     authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
-  test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country') = 'SE'") {
-    val authRule = AlterAuthRule(
-      literalString("authRule"),
-      ifExists = false,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = literalString("country")
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-  }
-
   test("ALTER AUTH RULE authRule SET CONDITION $param") {
     val param = parameter("param", CTAny)
     val authRule = AlterAuthRule(
@@ -4514,70 +3977,6 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
         initialStateWithFeatureFlags,
         SemanticError.authRuleConditionCannotContainParameter(param)
       ).errors
-  }
-
-  test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute($param) = 'SE'") {
-    val param = parameter("param", CTAny)
-    val authRule = AlterAuthRule(
-      literalString("authRule"),
-      ifExists = false,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = param
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    // This is not supported yet
-    authRule.semanticCheck.run(
-      initialStateWithFeatureFlags,
-      semanticContextCypher25
-    ).errors shouldBe SemanticCheckResult
-      .error(
-        initialStateWithFeatureFlags,
-        SemanticError.authRuleConditionCannotContainParameter(param)
-      ).errors
-  }
-
-  test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('hello' + 1) = 'SE'") {
-    val authRule = AlterAuthRule(
-      literalString("authRule"),
-      ifExists = false,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = Add(literalString("hello"), literalInt(1))(p)
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-  }
-
-  test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(1 + 1) = 'SE'") {
-    val authRule = AlterAuthRule(
-      literalString("authRule"),
-      ifExists = false,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = Add(literalInt(1), literalInt(1))(p)
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    // Does not fail since we don't evaluate the inner expression
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
   }
 
   test("ALTER AUTH RULE authRule SET CONDITION unknown.function('HELLO') = 'SE'") {
@@ -4650,269 +4049,6 @@ class AdministrationCommandTest extends CypherFunSuite3 with AstConstructionTest
           |22N05: Invalid input 'graph.byName' for function in auth rule condition.""".stripMargin,
         pos1
       ).errors)
-  }
-
-  test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(toLower('HELLO')) = 'SE'") {
-    val innerFunctionInvocation = FunctionInvocation(
-      name = FunctionName("toLower")(p),
-      argument = literalString("HELLO")
-    )(p)
-    val authRule = AlterAuthRule(
-      literalString("authRule"),
-      ifExists = false,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(p),
-            argument = innerFunctionInvocation
-          )(p),
-          literalString("SE")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-  }
-
-  test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('country', 'city') = 'SE_MALMÖ'") {
-    val authRule = AlterAuthRule(
-      literalString("authRule"),
-      ifExists = false,
-      List(
-        AuthRuleCondition(Equals(
-          FunctionInvocation(
-            name = FunctionName("abac.oidc.user_attribute")(pos1),
-            argument = listOf(literalString("country"), literalString("city"))
-          )(pos1),
-          literalString("SE_MALMÖ")
-        )(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(
-      initialStateWithFeatureFlags,
-      semanticContextCypher25
-    ).errors should equal(SemanticCheckResult
-      .error(
-        GqlHelper.getGql42001_42I13(
-          1,
-          2,
-          "abac.oidc.user_attribute",
-          "abac.oidc.user_attribute(attributeKey :: STRING) :: ANY",
-          pos1.offset,
-          pos1.line,
-          pos1.column
-        ),
-        initialStateWithFeatureFlags,
-        """Function call does not provide the required number of arguments: expected 1 got 2.
-          |
-          |Function abac.oidc.user_attribute has signature: abac.oidc.user_attribute(attributeKey :: STRING) :: ANY
-          |meaning that it expects 1 [country, city]""".stripMargin,
-        pos1
-      ).errors)
-  }
-
-  test("ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute(1) = 'SE_MALMÖ'") {
-    val functionInvocation = FunctionInvocation(
-      name = FunctionName("abac.oidc.user_attribute")(p),
-      argument = literalInt(1, pos1)
-    )(p)
-    val authRule = AlterAuthRule(
-      literalString("authRule"),
-      ifExists = false,
-      List(
-        AuthRuleCondition(Equals(functionInvocation, literalString("SE_MALMÖ"))(p))(p)
-      )
-    )(p)
-
-    authRule.semanticCheck.run(
-      initialStateWithFeatureFlags,
-      semanticContextCypher25
-    ).errors shouldBe SemanticCheckResult
-      .error(
-        GqlHelper.getGql42001_22NB1(
-          java.util.List.of(CTString.toCypherTypeString),
-          "INTEGER",
-          pos1.offset,
-          pos1.line,
-          pos1.column
-        ),
-        initialStateWithFeatureFlags,
-        "Type mismatch: expected String but was Integer",
-        pos1.withInputLength(1)
-      ).errors
-  }
-
-  Seq("date", "datetime", "localtime", "localdatetime", "time").foreach { functionName =>
-    test(
-      s"ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName('2024-11-18')"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        name = FunctionName(functionName)(p),
-        argument = literalString("2024-11-18") // Any string here is valid even if it will fail at runtime
-      )(p)
-      val authRule = AlterAuthRule(
-        literalString("authRule"),
-        ifExists = false,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-    }
-
-    test(s"ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName()") {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(functionName)(pos1),
-        distinct = false,
-        IndexedSeq.empty
-      )(pos1)
-
-      val authRule = AlterAuthRule(
-        literalString("authRule"),
-        ifExists = false,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(
-        initialStateWithFeatureFlags,
-        semanticContextCypher25
-      ).errors should equal(SemanticCheckResult
-        .error(
-          ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-            .atPosition(pos1.offset, pos1.line, pos1.column)
-            .withCause(
-              ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N05)
-                .atPosition(pos1.offset, pos1.line, pos1.column)
-                .withParam(GqlParams.StringParam.input, functionName)
-                .withParam(GqlParams.StringParam.context, "function in auth rule condition")
-                .build()
-            ).build(),
-          initialStateWithFeatureFlags,
-          s"""42001
-             |22N05: Invalid input '$functionName' for function in auth rule condition.""".stripMargin,
-          pos1
-        ).errors)
-    }
-
-    test(
-      s"ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName({timezone: 'UTC'})"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(functionName)(pos1),
-        distinct = false,
-        IndexedSeq(MapExpression(Seq(PropertyKeyName("timezone")(pos1) -> literalString("UTC")))(pos1))
-      )(pos1)
-
-      val authRule = AlterAuthRule(
-        literalString("authRule"),
-        ifExists = false,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(
-        initialStateWithFeatureFlags,
-        semanticContextCypher25
-      ).errors should equal(SemanticCheckResult
-        .error(
-          ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-            .atPosition(pos1.offset, pos1.line, pos1.column)
-            .withCause(
-              ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42NAM)
-                .atPosition(pos1.offset, pos1.line, pos1.column)
-                .withParam(GqlParams.StringParam.input, s"""$functionName({timezone: 'UTC'})""")
-                .withParam(GqlParams.StringParam.input1, s"""$functionName.transaction('UTC')""")
-                .build()
-            ).build(),
-          initialStateWithFeatureFlags,
-          s"""42001
-             |42NAM: '$functionName({timezone: 'UTC'})' cannot be used in auth rule conditions as it retrieves the current time. Only transaction start time is available at the time of auth rule evaluation. Use '$functionName.transaction('UTC')' instead.""".stripMargin,
-          pos1
-        ).errors)
-    }
-
-    test(
-      s"ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName({timezone: 1})"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(functionName)(pos1),
-        distinct = false,
-        IndexedSeq(MapExpression(Seq(PropertyKeyName("timezone")(pos1) -> literalInt(1, pos1)))(pos1))
-      )(pos1)
-
-      val authRule = AlterAuthRule(
-        literalString("authRule"),
-        ifExists = false,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(
-        initialStateWithFeatureFlags,
-        semanticContextCypher25
-      ).errors should equal(SemanticCheckResult
-        .error(
-          ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-            .atPosition(pos1.offset, pos1.line, pos1.column)
-            .withCause(
-              ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42NAM)
-                .atPosition(pos1.offset, pos1.line, pos1.column)
-                .withParam(GqlParams.StringParam.input, s"""$functionName({timezone: 1})""")
-                .withParam(GqlParams.StringParam.input1, s"""$functionName.transaction()""")
-                .build()
-            ).build(),
-          initialStateWithFeatureFlags,
-          s"""42001
-             |42NAM: '$functionName({timezone: 1})' cannot be used in auth rule conditions as it retrieves the current time. Only transaction start time is available at the time of auth rule evaluation. Use '$functionName.transaction()' instead.""".stripMargin,
-          pos1
-        ).errors)
-    }
-
-    test(
-      s"ALTER AUTH RULE authRule SET CONDITION abac.oidc.user_attribute('start_date') > $functionName.transaction('UTC')"
-    ) {
-      val functionInvocation = FunctionInvocation(
-        name = FunctionName("abac.oidc.user_attribute")(p),
-        argument = literalString("start_date")
-      )(p)
-      val dateFunctionInvocation = FunctionInvocation(
-        FunctionName(s"$functionName.transaction")(pos1),
-        distinct = false,
-        IndexedSeq(literalString("UTC"))
-      )(pos1)
-
-      val authRule = AlterAuthRule(
-        literalString("authRule"),
-        ifExists = false,
-        List(
-          AuthRuleCondition(GreaterThan(functionInvocation, dateFunctionInvocation)(p))(p)
-        )
-      )(p)
-
-      authRule.semanticCheck.run(initialStateWithFeatureFlags, semanticContextCypher25).errors shouldBe empty
-    }
   }
 
   test("DROP AUTH RULE authRule") {

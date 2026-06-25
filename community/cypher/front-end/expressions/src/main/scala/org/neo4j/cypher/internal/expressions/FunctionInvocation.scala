@@ -84,6 +84,7 @@ case class FunctionInvocation(
   override def callArguments: Seq[Expression] = args
   override def isAggregate: Boolean = distinct || function.isInstanceOf[AggregatingFunction]
   override def isUserDefined: Boolean = false
+  override def isBuiltIn: Boolean = !needsToBeResolved
   override def asUnresolvedFunction: FunctionInvocation = this
 
   def function: functions.Function =
