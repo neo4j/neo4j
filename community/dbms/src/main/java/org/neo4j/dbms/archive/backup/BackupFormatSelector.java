@@ -54,9 +54,8 @@ public class BackupFormatSelector {
     }
 
     public static BackupDescription readDescription(ArchiveInput input) throws IOException {
-        ArchiveInput.OpenedArchive opened = input.open();
-        try (InputStream stream = opened.stream()) {
-            return requireFormat(opened.magic()).readMetadata(stream);
+        try (ArchiveInput.OpenedArchive opened = input.open()) {
+            return requireFormat(opened.magic()).readMetadata(opened.stream());
         }
     }
 

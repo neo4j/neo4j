@@ -19,10 +19,10 @@
  */
 package org.neo4j.dbms.archive;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.neo4j.cli.ExecutionContext;
@@ -55,10 +55,6 @@ public sealed interface ArchiveInput {
                 };
         try {
             byte[] magic = stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
-            if (magic.length != ArchiveFormat.MAGIC_PREFIX_LENGTH) {
-                throw new IOException("invalid magic - expected %d bytes, but was %s"
-                        .formatted(ArchiveFormat.MAGIC_PREFIX_LENGTH, Arrays.toString(magic)));
-            }
             if (Dumper.SplitFileOutput.MAGIC_MANIFEST_HEADER.matches(magic)) {
                 stream = combine(stream);
                 magic = stream.readNBytes(ArchiveFormat.MAGIC_PREFIX_LENGTH);
@@ -74,7 +70,12 @@ public sealed interface ArchiveInput {
         }
     }
 
-    record OpenedArchive(InputStream stream, byte[] magic) {}
+    record OpenedArchive(InputStream stream, byte[] magic) implements Closeable {
+        @Override
+        public void close() throws IOException {
+            stream.close();
+        }
+    }
 
     /**
      * An archive in a file; the parts of a split archive are located as sibling files.
