@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
+import org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.notification.InternalNotification
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
@@ -206,6 +207,7 @@ trait SemanticCheckContext {
   def cypherVersion: CypherVersion
   def errorMessageProvider: ErrorMessageProvider
   def sessionDatabaseReference: Option[DatabaseReference]
+  def scopeState: Option[ScopeState]
 }
 
 object SemanticCheckContext {
@@ -213,20 +215,21 @@ object SemanticCheckContext {
   private case class Impl(
     override val cypherVersion: CypherVersion,
     override val errorMessageProvider: ErrorMessageProvider,
-    override val sessionDatabaseReference: Option[DatabaseReference]
+    override val sessionDatabaseReference: Option[DatabaseReference],
+    override val scopeState: Option[ScopeState]
   ) extends SemanticCheckContext
 
   def apply(
     language: CypherVersion,
-    errorMessages: ErrorMessageProvider,
-    sessionDb: DatabaseReference
-  ): SemanticCheckContext = Impl(language, errorMessages, Some(sessionDb))
+    errorMessages: ErrorMessageProvider
+  ): SemanticCheckContext = Impl(language, errorMessages, None, None)
 
   def apply(
     language: CypherVersion,
-    errorMessages: ErrorMessageProvider
-  ): SemanticCheckContext =
-    Impl(language, errorMessages, None)
+    errorMessages: ErrorMessageProvider,
+    sessionDb: Option[DatabaseReference],
+    scopeState: Option[ScopeState]
+  ): SemanticCheckContext = Impl(language, errorMessages, sessionDb, scopeState)
 }
 
 class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {

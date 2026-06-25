@@ -36,6 +36,9 @@ object CypherVersionHelpers {
   def arbitrarySemanticContext(): SemanticCheckContext =
     SemanticCheckContext(randomVersion(), NotImplementedErrorMessageProvider)
 
+  def versionedSemanticContext(language: CypherVersion): SemanticCheckContext =
+    SemanticCheckContext(language, NotImplementedErrorMessageProvider)
+
   def equalInVersions[T](versions: CypherVersion*)(f: CypherVersion => T): T = {
     val baselineVersion = versions(Random.nextInt(versions.size))
     versions.foldLeft(f(baselineVersion)) {

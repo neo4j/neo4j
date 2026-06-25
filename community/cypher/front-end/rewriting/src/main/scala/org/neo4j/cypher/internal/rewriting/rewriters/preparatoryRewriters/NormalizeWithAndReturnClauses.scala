@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.ConditionalQueryBranch
@@ -89,8 +90,11 @@ case object ExpressionsInOrderByAndWhereUseAliases extends Condition
  * RETURN prop AS prop
  */
 case class NormalizeWithAndReturnClauses(
-  cypherExceptionFactory: CypherExceptionFactory
+  cypherExceptionFactory: CypherExceptionFactory,
+  versionOpt: Option[CypherVersion]
 ) extends Rewriter {
+
+  private val isCypher5: Boolean = versionOpt.contains(CypherVersion.Cypher5)
 
   def apply(that: AnyRef): AnyRef = that match {
     case q: Query => rewriteTopLevelQuery(q)
@@ -245,20 +249,26 @@ case class NormalizeWithAndReturnClauses(
 
     // Alias return items and rewrite ORDER BY and WHERE
     case clause @ ProjectionClause(_, ri: ReturnItems, _, orderBy, _, _, where) =>
-      clause.verifyOrderByAggregationUse((s, i) => throw cypherExceptionFactory.invalidUseOfAggregationInOrderBy(s, i))
+      if (isCypher5) {
+        clause.verifyOrderByAggregationUse((s, i) =>
+          throw cypherExceptionFactory.invalidUseOfAggregationInOrderBy(s, i)
+        )
 
-      val existingAliases = ri.items.collect {
-        case AliasedReturnItem(expression, variable) => expression -> variable
-      }.toMap
+        val existingAliases = ri.items.collect {
+          case AliasedReturnItem(expression, variable) => expression -> variable
+        }.toMap
 
-      val updatedOrderBy = orderBy.map(aliasOrderBy(existingAliases, _))
-      val updatedWhere = where.map(aliasWhere(existingAliases, _))
+        val updatedOrderBy = orderBy.map(aliasOrderBy(existingAliases, _))
+        val updatedWhere = where.map(aliasWhere(existingAliases, _))
 
-      clause.copyProjection(
-        returnItems = aliasImplicitlyAliasedReturnItems(ri),
-        orderBy = updatedOrderBy,
-        where = updatedWhere
-      )
+        clause.copyProjection(
+          returnItems = aliasImplicitlyAliasedReturnItems(ri),
+          orderBy = updatedOrderBy,
+          where = updatedWhere
+        )
+      } else {
+        clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(clause.returnItems))
+      }
   })
 
   /**
@@ -335,8 +345,11 @@ case class NormalizeWithAndReturnClauses(
 
 case object NormalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = {
-    NormalizeWithAndReturnClauses(cypherExceptionFactory)
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    versionOpt: Option[CypherVersion]
+  ): Rewriter = {
+    NormalizeWithAndReturnClauses(cypherExceptionFactory, versionOpt)
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set()

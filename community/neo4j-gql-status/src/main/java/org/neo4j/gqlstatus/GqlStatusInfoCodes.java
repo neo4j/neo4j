@@ -2007,6 +2007,14 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             },
             "unsupported procedure or function in language version",
             ErrorClassification.CLIENT_ERROR),
+    STATUS_42I79(
+            "Aggregation in subclause expression is not allowed to reference variables declared in the same clause: { %s }.",
+            new GqlParams.GqlParam[] {
+                new NonSensitiveGqlParam(GqlParams.ListParam.variableList, List.of(CYPHER_VARIABLE))
+            },
+            Map.of(GqlParams.ListParam.variableList, GqlParams.JoinStyle.ANDED),
+            "invalid reference in subclause expression",
+            ErrorClassification.CLIENT_ERROR),
     STATUS_42N00(
             "A graph reference with the name { %s } was not found. Verify that the spelling is correct.",
             new GqlParams.GqlParam[] {new NonSensitiveGqlParam(GqlParams.StringParam.db, List.of(TOPOLOGY))},

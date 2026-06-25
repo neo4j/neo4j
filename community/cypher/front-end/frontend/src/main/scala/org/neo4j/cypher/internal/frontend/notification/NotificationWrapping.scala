@@ -22,7 +22,10 @@ import org.neo4j.cypher.internal.notification.AuthProviderNotDefined
 import org.neo4j.cypher.internal.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.notification.CodeGenerationFailedNotification
 import org.neo4j.cypher.internal.notification.CordonedServersExistedDuringAllocation
+import org.neo4j.cypher.internal.notification.DeprecatedAmbiguousReferenceInSubclauseExpression
 import org.neo4j.cypher.internal.notification.DeprecatedBooleanCoercion
+import org.neo4j.cypher.internal.notification.DeprecatedComplexAndAmbiguousReferenceInSubclauseExpression
+import org.neo4j.cypher.internal.notification.DeprecatedComplexGroupingExpressionInSubclauseExpression
 import org.neo4j.cypher.internal.notification.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.notification.DeprecatedEagerAnalyzerPreParserOption
 import org.neo4j.cypher.internal.notification.DeprecatedExistingDataOption
@@ -308,6 +311,30 @@ object NotificationWrapping {
     case RedundantOptionalSubquery(pos) =>
       NotificationCodeWithDescription.redundantOptionalSubquery(
         pos.withOffset(offset).asInputPosition
+      )
+    case DeprecatedComplexGroupingExpressionInSubclauseExpression(pos, subclauseExpr, groupingExpr) =>
+      NotificationCodeWithDescription.deprecatedComplexSubclauseExpression(
+        pos.withOffset(offset).asInputPosition,
+        subclauseExpr,
+        groupingExpr
+      )
+    case DeprecatedAmbiguousReferenceInSubclauseExpression(pos, subclauseExpr, variablesStr) =>
+      NotificationCodeWithDescription.deprecatedAmbiguousSubclauseExpression(
+        pos.withOffset(offset).asInputPosition,
+        subclauseExpr,
+        variablesStr
+      )
+    case DeprecatedComplexAndAmbiguousReferenceInSubclauseExpression(
+        pos,
+        subclauseExpr,
+        variablesStr,
+        groupingExpr
+      ) =>
+      NotificationCodeWithDescription.deprecatedAmbiguousAndComplexSubclauseExpression(
+        pos.withOffset(offset).asInputPosition,
+        subclauseExpr,
+        variablesStr,
+        groupingExpr
       )
     case DeprecatedImportingWithInSubqueryCall(pos, subqueryType, varName) =>
       NotificationCodeWithDescription.deprecatedImportingWithInSubqueryCall(

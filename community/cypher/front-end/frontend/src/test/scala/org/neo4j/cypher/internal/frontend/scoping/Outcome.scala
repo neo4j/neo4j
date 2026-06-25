@@ -28,6 +28,9 @@ object Versioned {
 
   def passesCypher25Onwards(beforeCypher25: Outcome): Outcome =
     Versioned(Passes, CypherVersion.Cypher5 -> beforeCypher25)
+
+  def differentOutcomeCypher25Onwards(outcome: Outcome, beforeCypher25: Outcome): Outcome =
+    Versioned(outcome, CypherVersion.Cypher5 -> beforeCypher25)
 }
 
 sealed trait Unversioned extends Outcome
@@ -128,6 +131,12 @@ case class E42I18(variables: String*) extends GqlError {
     s"The expression contains a non-grouping sub-expression ${GqlError.ander(variables)}. In an aggregating context only grouping sub-expressions and constants are allowed."
 }
 
+case class E42I24(function: String) extends GqlError {
+  override val num: String = "42I24"
+
+  override val msg: String = s"Aggregate expression '$function' is not allowed in this context."
+}
+
 case object E42I37 extends GqlError {
   override val num: String = "42I37"
 
@@ -146,4 +155,11 @@ case class E42I77(name: String) extends GqlError {
 
   override val msg: String =
     s"Local callable $name() is already defined."
+}
+
+case class E42I79(variables: String*) extends GqlError {
+  override val num: String = "42I79"
+
+  override val msg: String =
+    s"Aggregation in subclause expression is not allowed to reference variables declared in the same clause: ${GqlError.ander(variables)}."
 }

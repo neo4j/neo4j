@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
+  // Only used by Cypher 5, see checkOrderBy in Clause.scala for Cypher 25 behavior.
   override def semanticCheck: SemanticCheck = sortItems.semanticCheck
 
   def checkIllegalOrdering(returnItems: ReturnItems): Option[SemanticError] = {

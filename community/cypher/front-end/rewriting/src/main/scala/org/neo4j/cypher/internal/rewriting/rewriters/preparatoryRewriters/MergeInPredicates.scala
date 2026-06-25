@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -89,7 +90,10 @@ case object MergeInPredicates extends Step with DefaultPostCondition with Prepar
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    versionOpt: Option[CypherVersion]
+  ): Rewriter = instance
 
   // Rewrites AND / OR that directly contain IN or NOT IN. Binary operators are simplified where
   // one or more operands are TRUE or FALSE e.g. FALSE AND p => FALSE, FALSE OR p => p.

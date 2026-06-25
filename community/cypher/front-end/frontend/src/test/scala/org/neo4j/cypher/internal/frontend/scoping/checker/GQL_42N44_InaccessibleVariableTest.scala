@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.scoping.checker
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AmbiguousAggregationAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AggregationAnalysis
 import org.neo4j.cypher.internal.frontend.scoping.E42N44
 import org.neo4j.cypher.internal.frontend.scoping.Passes
 import org.neo4j.cypher.internal.frontend.scoping.Versioned.ignoreBeforeCypher25
@@ -32,7 +32,7 @@ class GQL_42N44_InaccessibleVariableTest extends VariableCheckingWithLocalCallab
 
   // Thrown by AggregationChecker
   override val checkersUnderTest: Seq[Transformer[BaseContext, BaseState, BaseState]] =
-    Seq(AmbiguousAggregationAnalysis)
+    Seq(AggregationAnalysis)
 
   override def testCases(): Seq[TestQuery] = Seq(
     // Negative tests
@@ -122,15 +122,6 @@ class GQL_42N44_InaccessibleVariableTest extends VariableCheckingWithLocalCallab
       E42N44("m", "WITH"),
       Seq("n", "ages")
     ),
-    TestQuery(
-      """WITH 10 AS a
-        |UNWIND [1, 2, 3] AS x
-        |RETURN a, SUM(x / a) + a * 5 AS s
-        |  ORDER BY s * MAX(a * x) - a ASCENDING""".stripMargin,
-      E42N44("x", "RETURN"),
-      Seq("a", "`SUM(x / a) + a * 5`")
-    ),
-
     // Distinct
     TestQuery(
       """UNWIND [1, 2, 3] AS x
@@ -205,16 +196,6 @@ class GQL_42N44_InaccessibleVariableTest extends VariableCheckingWithLocalCallab
       Seq("n", "ages")
     ),
     TestQuery(
-      """MATCH (a:A)
-        |WITH a, a.num + a.num2 AS sum
-        |WITH a.num2 % 3 AS mod, min(sum) AS min
-        |  ORDER BY sum(sum)
-        |  LIMIT 2
-        |RETURN mod, min""".stripMargin,
-      E42N44("sum", "WITH"),
-      Seq("mod", "min")
-    ),
-    TestQuery(
       """MATCH p = (x)-[r:R]->(n:L)
         |WITH DISTINCT p
         |  WHERE COUNT{ MATCH (n) WITH x.p AS a } >= 0
@@ -245,6 +226,36 @@ class GQL_42N44_InaccessibleVariableTest extends VariableCheckingWithLocalCallab
         |RETURN ap, bp""".stripMargin,
       E42N44("b", "WITH"),
       Seq("ap", "bp")
+    ),
+    TestQuery(
+      "MATCH (p) WITH DISTINCT p.email AS mail ORDER BY p.name RETURN mail AS mail",
+      E42N44("p", "WITH"),
+      Seq("mail")
+    ),
+    TestQuery(
+      "MATCH (p) WITH collect(p.email) AS mail ORDER BY p.name RETURN mail AS mail",
+      E42N44("p", "WITH"),
+      Seq("mail")
+    ),
+    TestQuery(
+      "MATCH (p) RETURN DISTINCT p.email AS mail ORDER BY p.name",
+      E42N44("p", "RETURN"),
+      Seq("mail")
+    ),
+    TestQuery(
+      "MATCH (p) RETURN collect(p.email) AS mail ORDER BY p.name",
+      E42N44("p", "RETURN"),
+      Seq("mail")
+    ),
+    TestQuery(
+      "MATCH (p) WITH DISTINCT p.email AS mail WHERE p.name IS NOT NULL RETURN mail AS mail",
+      E42N44("p", "WITH"),
+      Seq("mail")
+    ),
+    TestQuery(
+      "MATCH (p) WITH collect(p.email) AS mail WHERE p.name IS NOT NULL RETURN mail AS mail",
+      E42N44("p", "WITH"),
+      Seq("mail")
     ),
 
     // Positive tests

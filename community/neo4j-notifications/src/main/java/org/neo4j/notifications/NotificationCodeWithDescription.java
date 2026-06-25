@@ -238,6 +238,18 @@ public enum NotificationCodeWithDescription {
             Status.Statement.FeatureDeprecationWarning,
             GqlStatusInfoCodes.STATUS_01N00,
             "%s subquery without a variable scope clause is deprecated. " + "Use %s (%s) { ... }"),
+    DEPRECATED_COMPLEX_SUBCLAUSE_EXPRESSION(
+            Status.Statement.FeatureDeprecationWarning,
+            GqlStatusInfoCodes.STATUS_01N01,
+            "The subclause expression `%s` contains a reference to the complex projection item expression `%s` and is deprecated. It is replaced by referencing the projection item expression by an alias."),
+    DEPRECATED_AMBIGUOUS_SUBCLAUSE_EXPRESSION(
+            Status.Statement.FeatureDeprecationWarning,
+            GqlStatusInfoCodes.STATUS_01N01,
+            "The subclause expression `%s` contains an ambiguous reference to variable `%s` and is deprecated. It is replaced by referencing the projection item expression by an alias or using the `GROUP BY` clause."),
+    DEPRECATED_AMBIGUOUS_AND_COMPLEX_SUBCLAUSE_EXPRESSION(
+            Status.Statement.FeatureDeprecationWarning,
+            GqlStatusInfoCodes.STATUS_01N01,
+            "The subclause expression `%s` contains an ambiguous reference to variable `%s` and a reference to the complex projection item expression `%s` and is deprecated. It is replaced by referencing the projection item expression by an alias or using the `GROUP BY` clause."),
     DEPRECATED_WHERE_VARIABLE_IN_NODE_PATTERN(
             Status.Statement.FeatureDeprecationWarning,
             GqlStatusInfoCodes.STATUS_01N01,
@@ -747,6 +759,39 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation redundantOptionalSubquery(InputPosition position) {
         return REDUNDANT_OPTIONAL_SUBQUERY.notificationWithParameters(position, new String[] {}, new String[] {});
+    }
+
+    public static NotificationImplementation deprecatedComplexSubclauseExpression(
+            InputPosition position, String subclauseExpr, String groupingExpr) {
+        return DEPRECATED_COMPLEX_SUBCLAUSE_EXPRESSION.notificationWithParameters(
+                position, new String[] {subclauseExpr, groupingExpr}, new String[] {
+                    String.format(
+                            "The subclause expression `%s` contains a reference to the complex projection item expression `%s` and",
+                            subclauseExpr, groupingExpr),
+                    "referencing the projection item expression by an alias"
+                });
+    }
+
+    public static NotificationImplementation deprecatedAmbiguousSubclauseExpression(
+            InputPosition position, String subclauseExpr, String variable) {
+        return DEPRECATED_AMBIGUOUS_SUBCLAUSE_EXPRESSION.notificationWithParameters(
+                position, new String[] {subclauseExpr, variable}, new String[] {
+                    String.format(
+                            "The subclause expression `%s` contains an ambiguous reference to variable `%s` and",
+                            subclauseExpr, variable),
+                    "referencing the projection item expression by an alias or using the `GROUP BY` clause"
+                });
+    }
+
+    public static NotificationImplementation deprecatedAmbiguousAndComplexSubclauseExpression(
+            InputPosition position, String subclauseExpr, String variable, String groupingExpr) {
+        return DEPRECATED_AMBIGUOUS_AND_COMPLEX_SUBCLAUSE_EXPRESSION.notificationWithParameters(
+                position, new String[] {subclauseExpr, variable, groupingExpr}, new String[] {
+                    String.format(
+                            "The subclause expression `%s` contains an ambiguous reference to variable `%s` and a reference to the complex projection item expression `%s` and",
+                            subclauseExpr, variable, groupingExpr),
+                    "referencing the projection item expression by an alias or using the `GROUP BY` clause"
+                });
     }
 
     public static NotificationImplementation deprecatedImportingWithInSubqueryCall(

@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.CypherVersionHelpers.arbitrarySemanticContext
 import org.neo4j.cypher.internal.ast.AddedInRewriteGeneral
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -600,7 +601,8 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   override protected def parseForRewriting(queryText: String): Statement = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, Some(pos))
     super.parseForRewriting(queryText).endoRewrite(inSequence(NormalizeWithAndReturnClauses(
-      exceptionFactory
+      exceptionFactory,
+      Some(CypherVersion.Cypher5)
     )))
   }
 

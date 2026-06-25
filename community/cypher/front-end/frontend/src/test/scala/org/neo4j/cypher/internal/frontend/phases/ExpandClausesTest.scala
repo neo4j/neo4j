@@ -5686,12 +5686,12 @@ class ExpandCommandClauseTest extends CypherFunSuite with AstRewritingTestSuppor
     val rewriter =
       if (rewriteShowCommand)
         inSequence(
-          NormalizeWithAndReturnClauses(exceptionFactory),
+          NormalizeWithAndReturnClauses(exceptionFactory, Some(CypherVersion.Cypher25)),
           RewriteShowQuery.instance,
           ExpandShowWhere.instance
         )
       else
-        inSequence(NormalizeWithAndReturnClauses(exceptionFactory))
+        inSequence(NormalizeWithAndReturnClauses(exceptionFactory, Some(CypherVersion.Cypher25)))
     parse(q, exceptionFactory).endoRewrite(rewriter)
   }
 

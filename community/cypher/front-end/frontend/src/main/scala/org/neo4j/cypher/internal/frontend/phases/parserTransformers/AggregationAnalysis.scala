@@ -16,9 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionExpressionContext
+import org.neo4j.cypher.internal.ast.semantics.scoping.SubclausePart
+import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -29,52 +34,68 @@ import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.AggregationChecker
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.SubclauseExpressionClassifier
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.SubclauseExpressionClassifier.Classification
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.UpToDateScopes
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.VariableChecker
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 
-/**
- * Verify aggregation expressions and make sure there are no ambiguous grouping keys.
- */
-
 case object AggregationsChecked extends Condition
 
-case object AmbiguousAggregationAnalysis extends VisitorPhase[BaseContext, BaseState]
+/**
+ * Runs semantic checks related to aggregating functions and expressions.
+ * Errors controlled by AggregationAnalysis:
+ * - 42N44 - inaccessible variable
+ * - 42I18 - reference to non-grouping sub-expression
+ * - 42I24 - invalid use of aggregate function
+ * - 42I79 - invalid reference in subclause expression
+ */
+case object AggregationAnalysis extends VisitorPhase[BaseContext, BaseState]
     with StepSequencer.Step
     with ParsePipelineTransformerFactory {
 
-  def findErrors(from: BaseState): Seq[SemanticErrorDef] = {
-    val errors = from.statement().folder.treeFold(Set.empty[SemanticErrorDef]) {
-      case projectionClause: ProjectionClause if projectionClause.isAggregating =>
-        acc => TraverseChildren(acc ++ AggregationChecker.checkAggregatingClause(from, projectionClause))
-      case projectionClause: ProjectionClause =>
-        acc => TraverseChildren(acc ++ AggregationChecker.checkNonAggregatingClause(projectionClause))
-    }
-    errors.toSeq
-  }
-
-  // TODO `skip42I18` is a transitional flag that will be used until a future PR
-  //  with notifications and changed rules for aggregations is merged
-  def collectErrors(from: BaseState, skip42I18: Boolean): Seq[SemanticErrorDef] = {
-    val errors = findErrors(from)
-    if (skip42I18)
-      errors.filter(_.gqlStatusObject.cause().get.gqlStatus() != "42I18")
-    else errors
-  }
-
   override def visit(from: BaseState, context: BaseContext): Unit = {
-    context.errorHandler(collectErrors(from, skip42I18 = false))
+    // Cypher 5 keeps the legacy behaviour and does not classify subclause expressions (CIP-248).
+    val classifySubclauses = context.cypherVersion != CypherVersion.Cypher5
+
+    val aggregationErrors = from.scopeState().recordedScopes.collect {
+      case (Ref(clause: ProjectionClause), scope) =>
+        val acErrors = AggregationChecker.checkClause(from, clause, scope, context.cypherVersion)
+        val scErrors =
+          if (classifySubclauses) classifyChildren(from, scope).collect {
+            case classification: Classification =>
+              classification.notifications.foreach(context.notificationLogger.log)
+              classification.errors
+          }.flatten
+          else Seq.empty
+        acErrors ++ scErrors
+    }.flatten.toSeq
+
+    context.errorHandler(aggregationErrors.sortBy(e => VariableChecker.getErrorOrder(e)))
+
   }
+
+  /**
+   * Per CIP-248: classify each subclause expression (sort key, WHERE predicate) of a projection
+   * clause via the shared [[SubclauseExpressionClassifier]]. Runs only for Cypher 25+.
+   */
+  private def classifyChildren(
+    from: BaseState,
+    scope: WorkingScope
+  ): Seq[SubclauseExpressionClassifier.Classification] =
+    scope.children.collect {
+      case es @ ExpressionScope(x: Expression, ProjectionExpressionContext(_, _, _, spec, _: SubclausePart), _, _, _) =>
+        SubclauseExpressionClassifier(x, es, scope, spec, from.scopeState())
+    }
 
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement](),
-    // This is needed, because ExpressionWithComputedDependencies will otherwise have an incorrect
-    // `.introducedVariables`, which is called in this Phase.
     ExpressionsHaveComputedDependencies,
     FunctionInvocationsResolved,
     UpToDateScopes

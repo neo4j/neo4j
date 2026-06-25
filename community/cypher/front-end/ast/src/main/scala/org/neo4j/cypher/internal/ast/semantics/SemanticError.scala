@@ -819,6 +819,19 @@ object SemanticError {
     SemanticError(gql, errorMsg, position)
   }
 
+  def invalidReferenceInSubclauseExpression(variables: Seq[String], position: InputPosition): SemanticError = {
+    val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
+      .atPosition(position.offset, position.line, position.column)
+      .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42I79)
+        .atPosition(position.offset, position.line, position.column)
+        .withParam(GqlParams.ListParam.variableList, variables.asJava)
+        .build())
+      .build()
+
+    val errorMsg = gql.getMessage
+    SemanticError(gql, errorMsg, position)
+  }
+
   def invalidForeach(clause: String, position: InputPosition): SemanticError = {
     val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
       .atPosition(position.offset, position.line, position.column)
@@ -883,6 +896,16 @@ object SemanticError {
         "If an aggregation expression is used in order by, it also needs to be a projection item on it's own. " +
         "For example, in 'RETURN n.a, 1 + count(*) ORDER BY count(*) + 1' the aggregation expression 'count(*) + 1' is not a projection " +
         "item on its own, but it could be rewritten to 'RETURN n.a, 1 + count(*) AS cnt ORDER BY 1 + count(*)'.",
+      position
+    )
+
+  def aggregateExpressionInSubclauseExpression(aggregateExpressions: Seq[String], position: InputPosition)
+    : SemanticError =
+    aggregateExpressionsNotAllowed(
+      aggregateExpressions.head,
+      s"Illegal aggregation expression(s) in subclause expression: ${aggregateExpressions.mkString(", ")}. " +
+        "If an aggregation expression is used in a subclause (e.g. ORDER BY or WHERE), the clause must " +
+        "already be aggregating.",
       position
     )
 

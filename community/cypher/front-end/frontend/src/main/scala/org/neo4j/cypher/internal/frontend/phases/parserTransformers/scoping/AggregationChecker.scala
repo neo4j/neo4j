@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.ProjectionClause.Elements
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.ast.semantics.scoping.WorkingScope
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.util.Ref
 
 /**
  * Runs all checks requiring the resolution of callables to be complete.
@@ -54,7 +54,7 @@ case object AggregationChecker extends VariableCheckerUtil {
     )
 
   // 42N44
-  private def inaccessibleVariable(clauseName: String): SimpleVariableCheck = {
+  private def inaccessibleVariable(clauseName: String, from: BaseState): SimpleVariableCheck = {
     case ExpressionScope(lv: LogicalVariable, ctx, _, _, _)
       if !ctx.isConstantForPart(lv, NonAggregatingSubclausePart) =>
       Set(SemanticError.inaccessibleVariable(lv.name, clauseName, lv.position))
@@ -62,6 +62,29 @@ case object AggregationChecker extends VariableCheckerUtil {
       if !scs.importedVariables.forall(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart)) =>
       scs.importedVariables.filterNot(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart))
         .map(lv => SemanticError.inaccessibleVariable(lv.name, clauseName, lv.position)).toSet
+    // Subquery expression matched as a sub-expression of a larger sort/WHERE:
+    // recognition wraps it in a `recognizedLeafScope` with empty children, so the
+    // inner Query's `a`-references aren't reachable via the leaf's own scope.
+    // Look up the matching projection item via the spec and read its recorded
+    // scope's references (the item's own scope, built without recognition, has
+    // the inner refs).
+    case ExpressionScope(fse: FullSubqueryExpression, ctx: ProjectionExpressionContext, _, _, _) =>
+      ctx.projectionSpecification.allItems.find(_.expression == fse)
+        .map(item =>
+          from.scopeState().getReferenced(item.expression)
+            .filterNot(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart))
+            .map(lv => SemanticError.inaccessibleVariable(lv.name, clauseName, lv.position))
+        )
+        .getOrElse(Set.empty)
+    // Recognized-leaf scope (non-variable expression matched via sub-expression).
+    // Per CIP-248 Rule 2 the variables the user actually wrote live in
+    // `internalReferences`; the public `referenced` only carries the resolved
+    // alias. Flag any caller whose target isn't constant in this subclause part.
+    case scope @ ExpressionScope(_, ctx, _, _, _) if scope.internalReferences.getVariables.nonEmpty =>
+      scope.internalReferences.getVariables
+        .filterNot(lv => ctx.isConstantForPart(lv, NonAggregatingSubclausePart))
+        .map(lv => SemanticError.inaccessibleVariable(lv.name, clauseName, lv.position))
+        .toSet
   }
 
   // 42I18
@@ -86,17 +109,27 @@ case object AggregationChecker extends VariableCheckerUtil {
     case _ => Set.empty
   }
 
-  private def checkScope(scope: WorkingScope, check: SimpleVariableCheck): Set[SemanticError] = {
+  private def checkScope(
+    scope: WorkingScope,
+    check: SimpleVariableCheck,
+    isTopLevel: Boolean = true
+  ): Set[SemanticError] = {
     scope match {
+      // Top-level subclause expression that the user wrote identically to a
+      // projection item (alias / exact full match / recognizable form) is
+      // allowed by CIP-248 Rule 2 — no traversal, no check. Sub-level recognized
+      // leaves below the top are NOT skipped: they represent sub-expression
+      // matches and their inner variables may still be inaccessible.
       case ExpressionScope(expr: Expression, ProjectionExpressionContext(_, _, _, spec, _), _, _, _)
-        if spec.isSubclauseRecognizable(expr) => Set.empty
+        if isTopLevel && (spec.isSubclauseRecognizable(expr) || spec.allItems.exists(_.expression == expr)) =>
+        Set.empty
       case _ =>
         check.applyOrElse(scope, (_: WorkingScope) => Set.empty) ++
-          scope.children.flatMap(ws => checkScope(ws, check))
+          scope.children.flatMap(ws => checkScope(ws, check, isTopLevel = false))
     }
   }
 
-  private def traverseScope(clauseName: String, scope: WorkingScope): Set[SemanticError] = {
+  private def traverseScope(from: BaseState, clauseName: String, scope: WorkingScope): Set[SemanticError] = {
 
     val groups = scope.children.groupBy(_.incoming match {
       case ProjectionExpressionContext(_, _, _, _, part) => part
@@ -108,18 +141,24 @@ case object AggregationChecker extends VariableCheckerUtil {
         findAllInvalidReferences(s, AggregatingPart, inSubExpression = false).toSeq
       )
 
+    val invalidReferencesInSubclauseAggregations =
+      groups.getOrElse(AggregatingSubclausePart, Seq.empty).flatMap(s =>
+        findAllInvalidReferences(s, AggregatingSubclausePart, inSubExpression = false).toSeq
+      ).toSeq
+
+    val invalidReferences = invalidReferencesInAggregationItems ++ invalidReferencesInSubclauseAggregations
+
     val ambiguousReferences =
-      Option.when(invalidReferencesInAggregationItems.nonEmpty) {
+      Option.when(invalidReferences.nonEmpty) {
         SemanticError.invalidReferenceToNonGroupingExpression(
-          invalidReferencesInAggregationItems.sortBy(_.position).map(_.name).distinct,
-          invalidReferencesInAggregationItems.head.position
+          invalidReferences.sortBy(_.position).map(_.name).distinct,
+          invalidReferences.head.position
         )
       }
 
-    val subclausesScopes =
-      groups.getOrElse(NonAggregatingSubclausePart, Seq.empty) ++
-        groups.getOrElse(AggregatingSubclausePart, Seq.empty)
-    val subclauseInaccessibleVariable = subclausesScopes.flatMap(s => checkScope(s, inaccessibleVariable(clauseName)))
+    val subclausesScopes = groups.getOrElse(NonAggregatingSubclausePart, Seq.empty)
+    val subclauseInaccessibleVariable =
+      subclausesScopes.flatMap(s => checkScope(s, inaccessibleVariable(clauseName, from)))
 
     (ambiguousReferences ++ subclauseInaccessibleVariable).toSet
 
@@ -129,11 +168,23 @@ case object AggregationChecker extends VariableCheckerUtil {
     clause.orderBy.toSeq.flatMap(_.checkIllegalOrdering(clause.returnItems)).toSet
   }
 
-  def checkAggregatingClause(from: BaseState, clause: ProjectionClause): Set[SemanticError] = {
-    val scopeOpt = from.scopeState().recordedScopes.get(Ref(clause))
-    scopeOpt.fold(Set.empty[SemanticError]) { s => traverseScope(clause.name, s) } ++
-      legacyIllegalAggregationCheck(clause)
-  }
+  def checkClause(
+    from: BaseState,
+    clause: ProjectionClause,
+    scope: WorkingScope,
+    version: CypherVersion
+  ): Set[SemanticError] =
+    if (clause.isAggregating) checkAggregatingClause(from, clause, scope, version)
+    else checkNonAggregatingClause(clause)
+
+  def checkAggregatingClause(
+    from: BaseState,
+    clause: ProjectionClause,
+    scope: WorkingScope,
+    version: CypherVersion
+  ): Set[SemanticError] =
+    traverseScope(from, clause.name, scope) ++
+      (if (version == CypherVersion.Cypher5) legacyIllegalAggregationCheck(clause) else Set.empty)
 
   def checkNonAggregatingClause(clause: ProjectionClause): Set[SemanticError] =
     Elements(clause).subclauses.sortAndPredicateExpressions.flatMap(invalidUseOfAggregation).toSet ++

@@ -3568,8 +3568,8 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           ),
           ExpectedWorkingScope(
             Ast("COUNT(1)"),
-            ProjectionIncoming(constants = Set("s")),
-            ExpectedWorkingScope.constExp("1", Set("s"))
+            ProjectionIncoming(variables = Set("s", "x")),
+            ExpectedWorkingScope.constExp("1", Set("x", "s"))
           )
         )
       ),
@@ -3772,23 +3772,23 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           ),
           ExpectedWorkingScope(
             Ast("-1 * MAX(a * x) - a"),
-            ProjectionIncoming(constants = Set("a", "s"), groupingKeys = Set(gk("a"))),
+            ProjectionIncoming(variables = Set("a", "x", "s"), groupingKeys = Set(gk("a"))),
             Referenced(Set("a", "x")),
             ExpectedWorkingScope(
               Ast("MAX(a * x)"),
-              ProjectionIncoming(constants = Set("a", "s"), groupingKeys = Set(gk("a"))),
+              ProjectionIncoming(variables = Set("a", "x", "s"), groupingKeys = Set(gk("a"))),
               Referenced(Set("a", "x")),
               ExpectedWorkingScope(
                 Ast("a * x"),
-                Incoming(constants = Set("a", "s")),
+                Incoming(constants = Set("a", "x", "s")),
                 Referenced(Set("a", "x")),
-                ExpectedWorkingScope.varExp("a", Set("a", "s")),
-                ExpectedWorkingScope.varExp("x", Set("a", "s"))
+                ExpectedWorkingScope.varExp("a", Set("a", "x", "s")),
+                ExpectedWorkingScope.varExp("x", Set("a", "x", "s"))
               )
             ),
             ExpectedWorkingScope.varProjExp(
               "a",
-              incomingConstants = Set("a", "s"),
+              incomingVariables = Set("a", "x", "s"),
               incomingKeys = Set(gk("a"))
             )
           )
@@ -3851,28 +3851,28 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           ),
           ExpectedWorkingScope(
             Ast("s * MAX(a * x) - a"),
-            ProjectionIncoming(constants = Set("a", "s"), groupingKeys = Set(gk("a"))),
+            ProjectionIncoming(variables = Set("a", "x", "s"), groupingKeys = Set(gk("a"))),
             Referenced(Set("a", "s", "x")),
             ExpectedWorkingScope.varProjExp(
               "s",
-              incomingConstants = Set("a", "s"),
+              incomingVariables = Set("a", "x", "s"),
               incomingKeys = Set(gk("a"))
             ),
             ExpectedWorkingScope(
               Ast("MAX(a * x)"),
-              ProjectionIncoming(constants = Set("a", "s"), groupingKeys = Set(gk("a"))),
+              ProjectionIncoming(variables = Set("a", "x", "s"), groupingKeys = Set(gk("a"))),
               Referenced(Set("a", "x")),
               ExpectedWorkingScope(
                 Ast("a * x"),
-                Incoming(constants = Set("a", "s")),
+                Incoming(constants = Set("a", "x", "s")),
                 Referenced(Set("a", "x")),
-                ExpectedWorkingScope.varExp("a", Set("a", "s")),
-                ExpectedWorkingScope.varExp("x", Set("a", "s"))
+                ExpectedWorkingScope.varExp("a", Set("a", "x", "s")),
+                ExpectedWorkingScope.varExp("x", Set("a", "x", "s"))
               )
             ),
             ExpectedWorkingScope.varProjExp(
               "a",
-              incomingConstants = Set("a", "s"),
+              incomingVariables = Set("a", "x", "s"),
               incomingKeys = Set(gk("a"))
             )
           )
@@ -3939,28 +3939,28 @@ class ScopeSurveyorTest extends VariableCheckingTestSuite {
           ),
           ExpectedWorkingScope(
             Ast("s * MAX(g * x) - a"),
-            ProjectionIncoming(constants = Set("g", "s"), groupingKeys = Set(gk("g"))),
+            ProjectionIncoming(variables = Set("a", "x", "g", "s"), groupingKeys = Set(gk("g"))),
             Referenced(Set("a", "g", "s", "x")),
             ExpectedWorkingScope.varProjExp(
               "s",
-              incomingConstants = Set("g", "s"),
+              incomingVariables = Set("a", "x", "g", "s"),
               incomingKeys = Set(gk("g"))
             ),
             ExpectedWorkingScope(
               Ast("MAX(g * x)"),
-              ProjectionIncoming(constants = Set("g", "s"), groupingKeys = Set(gk("g"))),
+              ProjectionIncoming(variables = Set("a", "x", "g", "s"), groupingKeys = Set(gk("g"))),
               Referenced(Set("g", "x")),
               ExpectedWorkingScope(
                 Ast("g * x"),
-                Incoming(constants = Set("g", "s")),
+                Incoming(constants = Set("a", "x", "g", "s")),
                 Referenced(Set("g", "x")),
-                ExpectedWorkingScope.varExp("g", Set("g", "s")),
-                ExpectedWorkingScope.varExp("x", Set("g", "s"))
+                ExpectedWorkingScope.varExp("g", Set("a", "x", "g", "s")),
+                ExpectedWorkingScope.varExp("x", Set("a", "x", "g", "s"))
               )
             ),
             ExpectedWorkingScope.varProjExp(
               "a",
-              incomingConstants = Set("g", "s"),
+              incomingVariables = Set("a", "x", "g", "s"),
               incomingKeys = Set(gk("g"))
             )
           )

@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.CypherVersionHelpers
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -78,11 +79,13 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite3 with AstRewritin
   def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     test(originalQuery + " is rewritten to " + expectedQuery) {
       def rewrite(q: String): Statement = {
+        val version = CypherVersionHelpers.arbitrarySemanticContext()
         val exceptionFactory = Neo4jCypherExceptionFactory(originalQuery, None)
-        val sequence: Rewriter = inSequence(NormalizeWithAndReturnClauses(exceptionFactory))
+        val sequence: Rewriter =
+          inSequence(NormalizeWithAndReturnClauses(exceptionFactory, Some(version.cypherVersion)))
         val originalAst = parse(q, exceptionFactory).endoRewrite(sequence)
         val semanticCheckResult =
-          originalAst.semanticCheck.run(SemanticState.clean, CypherVersionHelpers.arbitrarySemanticContext())
+          originalAst.semanticCheck.run(SemanticState.clean, version)
         val withScopes = originalAst.endoRewrite(computeDependenciesForExpressions(semanticCheckResult.state))
 
         withScopes.endoRewrite(DesugarMapProjection.instance)

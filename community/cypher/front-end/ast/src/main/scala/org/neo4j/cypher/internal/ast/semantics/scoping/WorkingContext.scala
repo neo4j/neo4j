@@ -80,6 +80,9 @@ sealed trait RegularContext extends WorkingContext {
   /** Add `amendment` as constants, dropping any same-name entries from `constants`/`variables` first. */
   def amendedWithShadowingConstant(amendment: Set[LogicalVariable]): RegularContext
 
+  /** Add `amendment` as variables, dropping any same-name entries from `constants`/`variables` first. */
+  def amendedWithShadowingVariables(amendment: Set[LogicalVariable]): RegularContext
+
   @inline def amendedWithProjectionSpecification(
     projectionSpecification: ProjectionSpecification,
     projectionPart: ProjectionPart
@@ -92,6 +95,17 @@ sealed trait RegularContext extends WorkingContext {
     RegularContext(constants union variables, unitVariables, localCallables)
 
   @inline def aggregatingConstantChildContext: RegularContext
+
+  /**
+   * Like [[aggregatingConstantChildContext]] in the constants/variables it produces, but for a
+   * [[ProjectionExpressionContext]] this preserves the [[projectionSpecification]] and
+   * [[projectionPart]]. This lets non-aggregating subclause expressions (WHERE, ORDER BY, …)
+   * keep their `NonAggregatingSubclausePart` tag so the [[AggregationChecker]] can route them
+   * to the inaccessible-variable check. Inside subquery expressions the boundary in
+   * [[pegExpression]] still calls `constantChildContext()` and produces a plain `CommonContext`,
+   * so behavior inside the subquery body is unchanged.
+   */
+  @inline def subclauseChildContext: RegularContext = aggregatingConstantChildContext
 
   @inline def replaceWith(replacement: Set[LogicalVariable]): RegularContext =
     RegularContext(constants, replacement, localCallables)
@@ -285,6 +299,17 @@ case class CommonContext(
       variables = variables.filterNot(v => shadowedNames.contains(v.name))
     )
   }
+
+  override def amendedWithShadowingVariables(amendment: Set[LogicalVariable]): RegularContext = {
+    if (amendment.isEmpty) this
+    else {
+      val shadowedNames = amendment.iterator.map(_.name).toSet
+      copy(
+        constants = constants,
+        variables = variables.filterNot(v => shadowedNames.contains(v.name)) union amendment
+      )
+    }
+  }
 }
 
 sealed trait ProjectionPart {
@@ -324,7 +349,8 @@ case class ProjectionExpressionContext(
     }
   }
 
-  def isSubclauseAggregation: RegularContext = copy(projectionPart = AggregatingSubclausePart)
+  def isSubclauseAggregation: RegularContext =
+    copy(variables = variables union projectionSpecification.aliases, projectionPart = AggregatingSubclausePart)
 
   def getProjectionSpecification: Option[ProjectionSpecification] = Some(projectionSpecification)
 
@@ -349,6 +375,18 @@ case class ProjectionExpressionContext(
       variables = variables.filterNot(v => shadowedNames.contains(v.name)),
       projectionSpecification = projectionSpecification.shadowGroupingKeys(shadowedNames)
     )
+  }
+
+  override def amendedWithShadowingVariables(amendment: Set[LogicalVariable]): RegularContext = {
+    if (amendment.isEmpty) this
+    else {
+      val shadowedNames = amendment.iterator.map(_.name).toSet
+      copy(
+        constants = constants,
+        variables = variables.filterNot(v => shadowedNames.contains(v.name)) union amendment,
+        projectionSpecification = projectionSpecification.shadowGroupingKeys(shadowedNames)
+      )
+    }
   }
 
   def groupByContext(): ProjectionExpressionContext = {
@@ -427,7 +465,7 @@ case class ProjectionExpressionContext(
 
   /**
    * Inside an aggregating function's arguments we operate using the incoming constants and variables.
-   * No recognition of grouping keys available here thus we return to the CommonContext. 
+   * No recognition of grouping keys available here thus we return to the CommonContext.
    */
   override def aggregatingConstantChildContext: RegularContext = {
     val newConstants = projectionPart match {
@@ -440,6 +478,24 @@ case class ProjectionExpressionContext(
     }
 
     CommonContext(newConstants, unitVariables, localCallables)
+  }
+
+  /**
+   * Same fold as [[aggregatingConstantChildContext]] but preserves the [[projectionSpecification]]
+   * and [[projectionPart]] tags. Used for non-aggregating subclause expressions on Cypher 25 so the
+   * [[AggregationChecker]] can recognise the resulting scope as a subclause.
+   */
+  override def subclauseChildContext: ProjectionExpressionContext = {
+    val newConstants = projectionPart match {
+      case NonAggregatingSubclausePart =>
+        constants union projectionSpecification.aliases
+      case AggregatingSubclausePart =>
+        constants union variables union projectionSpecification.aliases
+      case _ =>
+        constants union variables
+    }
+
+    copy(constants = newConstants, variables = unitVariables)
   }
 
 }

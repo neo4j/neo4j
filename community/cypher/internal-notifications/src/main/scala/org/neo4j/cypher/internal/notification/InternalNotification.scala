@@ -119,7 +119,10 @@ object InternalNotifications {
     "DeprecatedProcedureNamespaceUsed",
     "ShadowingInternalFunction",
     "IdentifierShadowsVariableNotification",
-    "VirtualGraphPostProcessingNotification"
+    "VirtualGraphPostProcessingNotification",
+    "DeprecatedAmbiguousReferenceInSubclauseExpression",
+    "DeprecatedComplexAndAmbiguousReferenceInSubclauseExpression",
+    "DeprecatedComplexGroupingExpressionInSubclauseExpression"
   )
 
   def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
@@ -155,6 +158,25 @@ case class SubqueryVariableShadowing(position: InputPosition, subqueryType: Stri
 case class RedundantOptionalProcedure(position: InputPosition, proc: String) extends InternalNotification
 
 case class RedundantOptionalSubquery(position: InputPosition) extends InternalNotification
+
+case class DeprecatedComplexGroupingExpressionInSubclauseExpression(
+  position: InputPosition,
+  subclauseExpression: String,
+  groupingExpression: String
+) extends InternalNotification
+
+case class DeprecatedAmbiguousReferenceInSubclauseExpression(
+  position: InputPosition,
+  subclauseExpression: String,
+  variables: String
+) extends InternalNotification
+
+case class DeprecatedComplexAndAmbiguousReferenceInSubclauseExpression(
+  position: InputPosition,
+  subclauseExpression: String,
+  variables: String,
+  groupingExpression: String
+) extends InternalNotification
 
 case class DeprecatedImportingWithInSubqueryCall(position: InputPosition, subqueryType: String, variable: String)
     extends InternalNotification

@@ -102,7 +102,8 @@ trait RewritePhaseTest extends CypherVersionTestSupport {
   def preProcessRewriterSequence: Transformer[BaseContext, BaseState, BaseState] =
     new Transformer[BaseContext, BaseState, BaseState] {
       override def transform(from: BaseState, context: BaseContext): BaseState = {
-        val rewriters = preProcessRewriters.map { _.getRewriter(context.cypherExceptionFactory) }
+        val rewriters =
+          preProcessRewriters.map { _.getRewriter(context.cypherExceptionFactory, Some(context.cypherVersion)) }
         val rewrittenStatement = from.statement().endoRewrite(inSequence(rewriters: _*))
         from.withStatement(rewrittenStatement)
       }

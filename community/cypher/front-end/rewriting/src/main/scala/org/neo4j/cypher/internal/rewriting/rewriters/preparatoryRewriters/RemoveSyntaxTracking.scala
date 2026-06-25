@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
@@ -30,7 +31,10 @@ import org.neo4j.cypher.internal.util.bottomUp
 
 case object RemoveSyntaxTracking extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    versionOpt: Option[CypherVersion]
+  ): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

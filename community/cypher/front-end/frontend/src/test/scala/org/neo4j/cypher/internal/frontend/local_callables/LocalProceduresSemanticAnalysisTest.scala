@@ -1603,4 +1603,17 @@ class LocalProceduresSemanticAnalysisTest extends LocalCallablesSemanticAnalysis
           |RETURN n, m""".stripMargin) {
     runWithLC().hasNoErrors.hasNoNotifications
   }
+
+  test(
+    """DEFINE PROCEDURE local.proc0() {
+      |  WHEN EXISTS { MATCH (n) } = 1 THEN {
+      |    WHEN $cond = 1 THEN RETURN 86 AS x80
+      |    ELSE RETURN 85 AS x80
+      |  }
+      |}
+      |FILTER WHERE COUNT { RETURN 120 AS x120 } IS NOT NULL
+      |RETURN 1 AS x""".stripMargin
+  ) {
+    runWithLC().hasNoErrors
+  }
 }

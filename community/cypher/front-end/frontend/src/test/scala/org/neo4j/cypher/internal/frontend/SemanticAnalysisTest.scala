@@ -757,104 +757,10 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite with AstConstructio
     )
   }
 
-  // positive tests that we get the error message
-  // "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN"
-
-  test("Should give helpful error when accessing illegal variable in ORDER BY after WITH DISTINCT") {
-    run("MATCH (p) WITH DISTINCT p.email AS mail ORDER BY p.name RETURN mail AS mail")
-      .hasError(
-        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-          .atPosition(49, 1, 50)
-          .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N44)
-            .atPosition(49, 1, 50)
-            .withParam(GqlParams.StringParam.variable, "p")
-            .withParam(GqlParams.StringParam.clause, "WITH")
-            .build())
-          .build(),
-        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p",
-        p(49, 1, 50)
-      )
-  }
-
-  test("Should give helpful error when accessing illegal variable in ORDER BY after WITH with aggregation") {
-    run("MATCH (p) WITH collect(p.email) AS mail ORDER BY p.name RETURN mail AS mail")
-      .hasError(
-        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-          .atPosition(49, 1, 50)
-          .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N44)
-            .atPosition(49, 1, 50)
-            .withParam(GqlParams.StringParam.variable, "p")
-            .withParam(GqlParams.StringParam.clause, "WITH")
-            .build())
-          .build(),
-        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p",
-        p(49, 1, 50)
-      )
-  }
-
-  test("Should give helpful error when accessing illegal variable in ORDER BY after RETURN DISTINCT") {
-    run("MATCH (p) RETURN DISTINCT p.email AS mail ORDER BY p.name")
-      .hasError(
-        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-          .atPosition(51, 1, 52)
-          .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N44)
-            .atPosition(51, 1, 52)
-            .withParam(GqlParams.StringParam.variable, "p")
-            .withParam(GqlParams.StringParam.clause, "RETURN")
-            .build())
-          .build(),
-        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p",
-        p(51, 1, 52)
-      )
-  }
-
-  test("Should give helpful error when accessing illegal variable in ORDER BY after RETURN with aggregation") {
-    run("MATCH (p) RETURN collect(p.email) AS mail ORDER BY p.name")
-      .hasError(
-        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-          .atPosition(51, 1, 52)
-          .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N44)
-            .atPosition(51, 1, 52)
-            .withParam(GqlParams.StringParam.variable, "p")
-            .withParam(GqlParams.StringParam.clause, "RETURN")
-            .build())
-          .build(),
-        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p",
-        p(51, 1, 52)
-      )
-  }
-
-  test("Should give helpful error when accessing illegal variable in WHERE after WITH DISTINCT") {
-    run("MATCH (p) WITH DISTINCT p.email AS mail WHERE p.name IS NOT NULL RETURN mail AS mail")
-      .hasError(
-        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-          .atPosition(46, 1, 47)
-          .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N44)
-            .atPosition(46, 1, 47)
-            .withParam(GqlParams.StringParam.variable, "p")
-            .withParam(GqlParams.StringParam.clause, "WITH")
-            .build())
-          .build(),
-        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p",
-        p(46, 1, 47)
-      )
-  }
-
-  test("Should give helpful error when accessing illegal variable in WHERE after WITH with aggregation") {
-    run("MATCH (p) WITH collect(p.email) AS mail WHERE p.name IS NOT NULL RETURN mail AS mail")
-      .hasError(
-        ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42001)
-          .atPosition(46, 1, 47)
-          .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42N44)
-            .atPosition(46, 1, 47)
-            .withParam(GqlParams.StringParam.variable, "p")
-            .withParam(GqlParams.StringParam.clause, "WITH")
-            .build())
-          .build(),
-        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p",
-        p(46, 1, 47)
-      )
-  }
+  // Positive tests for 42N44 ("In a WITH/RETURN with DISTINCT or an aggregation,
+  // it is not possible to access variables declared before the WITH/RETURN")
+  // have moved to GQL_42N44_InaccessibleVariableTest — 42N44 is emitted by
+  // AggregationAnalysis, not SemanticAnalysis alone.
 
   // negative tests that we do not get this error message otherwise
 

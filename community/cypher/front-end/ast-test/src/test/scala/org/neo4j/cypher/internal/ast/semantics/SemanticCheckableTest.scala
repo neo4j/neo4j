@@ -389,6 +389,8 @@ class SemanticCheckableTest extends CypherFunSuite3 with SemanticAnalysisTooling
       }
 
       override def sessionDatabaseReference: Option[DatabaseReference] = None
+
+      override def scopeState: Option[org.neo4j.cypher.internal.ast.semantics.scoping.ScopeState] = None
     }
 
     check.run(SemanticState.clean, context).errors.map(_.msg) shouldBe Seq(missingMsg, selfReferenceMsg)

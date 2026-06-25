@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.expressions.functions.AllReduce
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AmbiguousAggregationAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -95,7 +95,7 @@ class AllReducePredicateSemanticAnalysisTest extends CypherFunSuite with Semanti
       """MATCH (a)-[r]->+(b)
         |RETURN allReduce(acc = count(*), rel IN r | acc + rel.prop, acc <= 5) AS result
         |""".stripMargin,
-      pipeline = semanticAnalysisTwice() andThen ScopeSurveyor andThen AmbiguousAggregationAnalysis,
+      pipeline = semanticAnalysisTwice() andThen ScopeSurveyor andThen AggregationAnalysis,
       disabledVersions = Set(CypherVersion.Cypher5)
     ).hasErrorMessages(SemanticError.implicitGroupingExpressionInAggregationColumnErrorMessage(Seq("r")))
   }

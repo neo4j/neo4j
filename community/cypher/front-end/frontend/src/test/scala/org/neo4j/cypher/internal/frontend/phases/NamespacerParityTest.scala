@@ -501,4 +501,40 @@ class NamespacerParityTest
         |MATCH (a) RETURN 0 AS gk, 1 AS c""".stripMargin
     )
   }
+
+  test("alias shadowing incoming variable used in ORDER BY (non-aggregating)") {
+    assertParity(
+      """MATCH (n)
+        |WITH [n] AS n
+        |  ORDER BY size(n), last(n).foo
+        |RETURN n""".stripMargin
+    )
+  }
+
+  test("alias shadowing incoming variable used in WHERE") {
+    assertParity(
+      """MATCH (n)
+        |WITH [n] AS n
+        |  WHERE size(n) > 0
+        |RETURN n""".stripMargin
+    )
+  }
+
+  test("two aliases each shadowing their own incoming variable used in ORDER BY") {
+    assertParity(
+      """MATCH (a), (b)
+        |WITH [a] AS a, [b] AS b
+        |  ORDER BY last(a), last(b).foo
+        |RETURN a, b""".stripMargin
+    )
+  }
+
+  test("aggregating alias shadowing incoming used in ORDER BY") {
+    assertParity(
+      """MATCH (n)
+        |WITH collect(n) AS n
+        |  ORDER BY size(n)
+        |RETURN n""".stripMargin
+    )
+  }
 }

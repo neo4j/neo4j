@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AlterCurrentGraphType
 import org.neo4j.cypher.internal.ast.AlterCurrentGraphType.AlterOperation
 import org.neo4j.cypher.internal.ast.EdgeType
@@ -368,7 +369,10 @@ case class RewriteGraphTypeReferences(cypherExceptionFactory: CypherExceptionFac
 
 object RewriteGraphTypeReferences extends Step with DefaultPostCondition with PreparatoryRewritingRewriterFactory {
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter =
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    versionOpt: Option[CypherVersion]
+  ): Rewriter =
     RewriteGraphTypeReferences(cypherExceptionFactory: CypherExceptionFactory).instance
 
   /**

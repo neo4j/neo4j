@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AddedInRewriteGeneral
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -75,7 +76,6 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.WithType
 import org.neo4j.cypher.internal.ast.YieldType
 import org.neo4j.cypher.internal.ast.semantics.scoping.AggregatingPart
-import org.neo4j.cypher.internal.ast.semantics.scoping.CommonContext
 import org.neo4j.cypher.internal.ast.semantics.scoping.Declarations
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionResult
 import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
@@ -343,20 +343,20 @@ object pegClause {
         val patternScope = pegPattern(pattern, incoming.constantChildContext(), foreachIterVar)
         val children = Seq(patternScope)
         val declared = patternScope.declared
-        val outgoing = amendedWithShadowingVariables(incoming, patternScope.outgoing.variables)
+        val outgoing = incoming.amendedWithShadowingVariables(patternScope.outgoing.variables)
         incoming.omittedResultScope(outgoing, children, declared = declared)
       case Insert(pattern) =>
         val patternScope = pegPattern(pattern, incoming.constantChildContext(), foreachIterVar)
         val children = Seq(patternScope)
         val declared = patternScope.declared
-        val outgoing = amendedWithShadowingVariables(incoming, patternScope.outgoing.variables)
+        val outgoing = incoming.amendedWithShadowingVariables(patternScope.outgoing.variables)
         incoming.omittedResultScope(outgoing, children, declared = declared)
 
       case Merge(pattern, actions, whereOpt) =>
         val patternScope = pegPattern(pattern, incoming.constantChildContext(), foreachIterVar)
         // note that the `where` attribute of merge is only populated by rewriters
         // but is populated with predicate that see the variable bound by the pattern
-        val inner = amendedWithShadowingVariables(incoming, patternScope.outgoing.variables)
+        val inner = incoming.amendedWithShadowingVariables(patternScope.outgoing.variables)
         val whereScopeOpt = whereOpt.map(where =>
           pegExpression(where.expression, inner.constantChildContext())
         )
@@ -364,7 +364,7 @@ object pegClause {
         val children = Seq(Some(patternScope), actionsScoped, whereScopeOpt).flatten
         val declared = patternScope.declared
         incoming.omittedResultScope(
-          amendedWithShadowingVariables(incoming, patternScope.outgoing.variables),
+          incoming.amendedWithShadowingVariables(patternScope.outgoing.variables),
           children,
           declared = declared
         )
@@ -465,10 +465,13 @@ object pegClause {
     incoming: RegularContext
   )(implicit c: PegContext): WorkingScope = {
 
-    val updatedIncoming = incoming match {
-      case pec: ProjectionExpressionContext => pec.projectionChildContext()
-      case cc: CommonContext                => cc.constantChildContext()
-    }
+    val updatedIncoming =
+      if (c.language != CypherVersion.Cypher5 && expression.containsAggregate)
+        incoming.isSubclauseAggregation
+      else if (!expression.containsAggregate)
+        incoming.subclauseChildContext
+      else
+        incoming.aggregatingConstantChildContext
 
     updatedIncoming.recognizeExpression(expression, isSubExpression = false) match {
       case Some(item) => updatedIncoming.recognizedLeafScope(expression, item)
@@ -785,7 +788,7 @@ object pegClause {
     val subclauseIncoming = (clauseType match {
       case DefaultYield => incoming.replaceWith(introducedVariables.toSet)
       case _            => incoming
-    }).amendedWith(items.flatMap(_.alias).toSet).constantChildContext()
+    }).amendedWithShadowingVariables(items.flatMap(_.alias).toSet).constantChildContext()
 
     ProjectionContexts(
       incoming.constantChildContext().amendedWithProjectionSpecification(spec, NonAggregatingPart),
@@ -797,21 +800,6 @@ object pegClause {
 
   private def returnItemAliases(items: Seq[ReturnItem]): Seq[LogicalVariable] =
     items.map(item => item.alias.getOrElse(UnPositionedVariable.varFor(item.name)))
-
-  private def amendedWithShadowingVariables(
-    incoming: RegularContext,
-    newVariables: Set[LogicalVariable]
-  ): RegularContext = {
-    if (newVariables.isEmpty) incoming
-    else {
-      val shadowedNames = newVariables.map(_.name)
-      RegularContext(
-        constants = incoming.constants,
-        variables = incoming.variables.filterNot(v => shadowedNames(v.name)) union newVariables,
-        localCallables = incoming.localCallables
-      )
-    }
-  }
 
   private def scopeInlineSubquery(
     callClause: SubqueryCall,

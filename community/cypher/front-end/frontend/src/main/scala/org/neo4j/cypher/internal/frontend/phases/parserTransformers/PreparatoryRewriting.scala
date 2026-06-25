@@ -69,7 +69,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
     val rewriters = orderedSteps.map { step =>
-      val rewriter = step.getRewriter(context.cypherExceptionFactory)
+      val rewriter = step.getRewriter(context.cypherExceptionFactory, Some(context.cypherVersion))
       RewriterStep.validatingRewriter(rewriter, step, context.cancellationChecker)
     }
 

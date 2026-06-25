@@ -66,12 +66,12 @@ case class SemanticAnalysis(warn: Option[Boolean])
         .semanticCheckHasRunOnce(from.maybeSemanticTable.isDefined)
 
     val checkContext =
-      Option(context.sessionDatabase) match {
-        case Some(db) =>
-          SemanticCheckContext(context.cypherVersion, context.errorMessageProvider, db)
-        case None =>
-          SemanticCheckContext(context.cypherVersion, context.errorMessageProvider)
-      }
+      SemanticCheckContext(
+        context.cypherVersion,
+        context.errorMessageProvider,
+        Option(context.sessionDatabase),
+        from.maybeScopeState
+      )
 
     val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), startState, checkContext)
     if (warn.getOrElse(!from.maybeSemantics.exists(_.semanticCheckHasRunOnce)))
@@ -83,11 +83,7 @@ case class SemanticAnalysis(warn: Option[Boolean])
         // When we have disconnected the error checking parts from scoping and type checking in SemanticAnalysis
         // The ScopeSurveyor can be run in the normal pipeline instead of manually here.
         val upToDateScopes = ScopeSurveyor.process(from, context)
-        val vErrors = VariableChecker.gatherAllErrors(upToDateScopes, context)
-        if (vErrors.isEmpty) {
-          // This is a transitional patch until AmbiguousAggregationAnalysis can be run independently of SA
-          AmbiguousAggregationAnalysis.collectErrors(upToDateScopes, skip42I18 = true)
-        } else vErrors
+        VariableChecker.gatherAllErrors(upToDateScopes, context)
       } else Seq.empty
       (vcErrors ++ saErrors).sortBy(e => VariableChecker.getErrorOrder(e))
     }
@@ -117,7 +113,7 @@ case class SemanticAnalysis(warn: Option[Boolean])
     }
 
     val rewrittenStatement =
-      if (errors.isEmpty) {
+      if (allErrors.isEmpty) {
         // Some expressions record some semantic information in themselves.
         // This is done by the computeDependenciesForExpressions rewriter.
         // We need to apply it after each pass of SemanticAnalysis.

@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AddedInRewriteGeneral
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -74,7 +75,7 @@ class ProjectNamedPathsTest extends CypherFunSuite3 with AstRewritingTestSupport
   private def ast(queryText: String) = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, Some(pos))
     val parsed = parse(queryText, exceptionFactory)
-    parsed.endoRewrite(inSequence(NormalizeWithAndReturnClauses(exceptionFactory)))
+    parsed.endoRewrite(inSequence(NormalizeWithAndReturnClauses(exceptionFactory, Some(CypherVersion.Cypher5))))
   }
 
   private def findReturnPExp(query: Statement): Expression = {

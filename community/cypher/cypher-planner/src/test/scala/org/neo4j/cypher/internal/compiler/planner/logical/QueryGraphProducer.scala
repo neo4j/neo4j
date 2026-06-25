@@ -85,7 +85,7 @@ trait QueryGraphProducer {
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
     val ast = parse(q, exceptionFactory)
     val cleanedStatement: Statement =
-      ast.endoRewrite(inSequence(NormalizeWithAndReturnClauses(exceptionFactory)))
+      ast.endoRewrite(inSequence(NormalizeWithAndReturnClauses(exceptionFactory, Some(version))))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val semanticContext = SemanticCheckContext(version, NotImplementedErrorMessageProvider)
     val SemanticCheckResult(semanticState, errors) =

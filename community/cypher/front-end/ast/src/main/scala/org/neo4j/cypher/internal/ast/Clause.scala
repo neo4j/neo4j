@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromState
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -84,6 +85,8 @@ import org.neo4j.cypher.internal.ast.semantics.SymbolUse
 import org.neo4j.cypher.internal.ast.semantics.TypeGenerator
 import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
 import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
+import org.neo4j.cypher.internal.ast.semantics.scoping.ExpressionScope
+import org.neo4j.cypher.internal.ast.semantics.scoping.ProjectionExpressionContext
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Contains
@@ -1874,6 +1877,10 @@ sealed trait ProjectionClause extends HorizonClause {
     LazyVal(returnItems.directlyContainsAggregate || distinct || groupBy.isDefined)
   def isAggregating: Boolean = isAggregatingLazy.value
 
+  private val hasExpandableSubclauseLazy: LazyVal[Boolean] =
+    LazyVal(groupBy.isDefined || orderBy.isDefined || where.isDefined)
+  def hasExpandableSubclause: Boolean = hasExpandableSubclauseLazy.value
+
   def groupBy: Option[GroupBy]
 
   def orderBy: Option[OrderBy]
@@ -1934,10 +1941,10 @@ sealed trait ProjectionClause extends HorizonClause {
         def runChecks(scopeToImportVariablesFrom: Scope): SemanticCheck = {
           returnItems.declareVariables(scopeToImportVariablesFrom) chain
             groupBy.semanticCheck chain
-            orderBy.semanticCheck chain
+            checkOrderBy chain
             limit.semanticCheck chain
             skip.semanticCheck chain
-            where.semanticCheck
+            where.foldSemanticCheck(checkWhere)
         }
 
         // The two clauses ORDER BY and WHERE, following a WITH clause where there is no DISTINCT nor aggregation, have a special scope such that they
@@ -2061,6 +2068,50 @@ sealed trait ProjectionClause extends HorizonClause {
         error.withMsg(SemanticError.inaccessibleVariable(name, this.name, error.position))
     }.getOrElse(error)
   }
+
+  private def cypher25SubclauseExpressionCheck(
+    expression: Expression,
+    ctx: SemanticCheckContext
+  ): SemanticCheck = {
+    val standardCheck = SemanticExpressionCheck.check(SemanticContext.Results, expression)
+    val alias = ctx.scopeState.flatMap { scopeState =>
+      scopeState.scopeOfOpt(expression).collect {
+        case ExpressionScope(_, pec: ProjectionExpressionContext, _, _, _) => pec.projectionSpecification
+      }.flatMap(spec =>
+        spec.substituteFullExpression(expression, useLegacySubstitution = !spec.hasGroupBy, scopeState)
+      ).collect { case lv: LogicalVariable => lv }
+    }
+    alias match {
+      case Some(a) =>
+        standardCheck.map(result => SemanticCheckResult(result.state, Seq.empty)) chain
+          specifyType(types(a), expression)
+      case None =>
+        standardCheck
+    }
+  }
+
+  private def checkOrderBy: SemanticCheck =
+    SemanticCheck.fromContext { ctx =>
+      if (ctx.cypherVersion == CypherVersion.Cypher5) orderBy.semanticCheck
+      else orderBy.foldSemanticCheck(_.sortItems.foldSemanticCheck { si =>
+        cypher25SubclauseExpressionCheck(si.expression, ctx) chain
+          SemanticPatternCheck.checkValidPropertyKeyNames(
+            si.expression.folder.findAllByClass[Property].map(_.propertyKey)
+          )
+      })
+    }
+
+  private def checkWhere(wh: Where): SemanticCheck =
+    SemanticCheck.fromContext { ctx =>
+      if (ctx.cypherVersion == CypherVersion.Cypher5)
+        Where.checkExpression(wh.expression)
+      else
+        cypher25SubclauseExpressionCheck(wh.expression, ctx) chain
+          SemanticPatternCheck.checkValidPropertyKeyNames(
+            wh.expression.folder.findAllByClass[Property].map(_.propertyKey)
+          ) chain
+          SemanticExpressionCheck.expectType(CTBoolean.covariant, wh.expression)
+    }
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate

@@ -37,10 +37,11 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite3 with RewriteTest
 
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
-  def rewriterUnderTest: Rewriter = NormalizeWithAndReturnClauses(Neo4jCypherExceptionFactory("test", None))
+  def rewriterUnderTest: Rewriter =
+    NormalizeWithAndReturnClauses(Neo4jCypherExceptionFactory("test", None), Some(CypherVersion.Cypher5))
 
   override def rewriterUnderTest(query: String): Rewriter =
-    NormalizeWithAndReturnClauses(Neo4jCypherExceptionFactory(query, None))
+    NormalizeWithAndReturnClauses(Neo4jCypherExceptionFactory(query, None), Some(CypherVersion.Cypher5))
 
   test("ensure variables are aliased") {
     assertRewrite(
@@ -1343,6 +1344,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite3 with RewriteTest
   test("does not introduce alias for WHERE containing aggregate") {
     // Note: aggregations in WHERE are invalid, and will be caught during semantic check
     assertNotRewrittenAndSemanticErrors(
+      CypherVersion.Cypher5,
       """MATCH (n)
         |WITH n.prop AS prop WHERE max(n.foo)
         |RETURN prop AS prop
@@ -1826,7 +1828,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite3 with RewriteTest
     )
     result.semanticCheck.run(
       SemanticState.clean.withFeatures((MultipleDatabases +: semanticFeature)),
-      CypherVersionHelpers.arbitrarySemanticContext()
+      CypherVersionHelpers.versionedSemanticContext(version)
     )
   }
 

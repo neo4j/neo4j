@@ -66,12 +66,13 @@ case object ParsePipelineTransformer extends StepSequencer.Step {
     SemanticAnalysis,
     SemanticTypeCheck,
     SyntaxDeprecationWarningsAndReplacements(Deprecations.SemanticallyDeprecatedFeatures),
-    AmbiguousAggregationAnalysis,
+    AggregationAnalysis,
     ProcedureAndFunctionDeprecationWarnings,
     ProcedureWarnings,
     IsolateSubqueriesInMutatingPatterns,
     ReplacePatternComprehensionWithCollectSubqueryRewriter,
-    ExpandClauses
+    ExpandClauses,
+    ExpandSubclauses
   )
 
   val AccumulatedSteps(preObfuscatorSteps, preObfuscatorPostConditions) =

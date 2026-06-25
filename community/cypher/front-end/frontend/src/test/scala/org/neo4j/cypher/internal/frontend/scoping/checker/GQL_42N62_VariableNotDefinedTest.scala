@@ -1434,6 +1434,12 @@ class GQL_42N62_VariableNotDefinedTest extends VariableCheckingWithLocalCallable
         |  GROUP BY x, y""".stripMargin,
       ignoreBeforeCypher25(Passes),
       Seq("x", "y", "z")
+    ),
+    TestQuery(
+      """UNWIND [1, 2, 3] AS x
+        |RETURN SUM(x) AS s ORDER BY s + SUM(x) ASCENDING""".stripMargin,
+      Passes,
+      Seq("s")
     )
   )
 }

@@ -173,7 +173,7 @@ class GQL_42N67_DuplicateParameterTest extends VariableCheckingWithLocalCallable
              |}
              |ELSE RETURN 1 AS a""".stripMargin,
           ignoreBeforeCypher25(outcome),
-          Seq.empty
+          Seq("a")
         ),
         TestQuery(
           s"""WHEN true THEN RETURN 1 AS a
@@ -181,7 +181,7 @@ class GQL_42N67_DuplicateParameterTest extends VariableCheckingWithLocalCallable
              |  $queryWithDefinition
              |}""".stripMargin,
           ignoreBeforeCypher25(outcome),
-          Seq.empty
+          Seq("a")
         )
       ) ++ (
         for {

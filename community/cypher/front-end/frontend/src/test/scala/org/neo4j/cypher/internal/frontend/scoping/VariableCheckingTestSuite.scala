@@ -68,7 +68,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.NoOp
 import org.neo4j.cypher.internal.frontend.phases.Transformer
-import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AmbiguousAggregationAnalysis
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.AggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.Parse
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.scoping.ScopeSurveyor
@@ -101,7 +101,7 @@ trait VariableCheckingTestSuite extends CypherFunSuite with TestName with Before
   val feature: Set[SemanticFeature] = Set.empty
 
   val allCheckerTransformer: Transformer[BaseContext, BaseState, BaseState] =
-    VariableChecker andThen AmbiguousAggregationAnalysis
+    VariableChecker andThen AggregationAnalysis
   val checkersUnderTest: Seq[Transformer[BaseContext, BaseState, BaseState]] = Seq(VariableChecker)
 
   def varOf(name: String, offset: Int): Variable =

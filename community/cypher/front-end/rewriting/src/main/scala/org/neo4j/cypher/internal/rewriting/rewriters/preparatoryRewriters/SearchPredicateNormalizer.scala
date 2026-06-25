@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters.preparatoryRewriters
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Search
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.BooleanExpression
@@ -64,7 +65,10 @@ case object SearchPredicateNormalizer extends Step with DefaultPostCondition wit
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
+  override def getRewriter(
+    cypherExceptionFactory: CypherExceptionFactory,
+    versionOpt: Option[CypherVersion]
+  ): Rewriter = instance
 
   val instance: Rewriter = bottomUp {
     Rewriter.lift {
