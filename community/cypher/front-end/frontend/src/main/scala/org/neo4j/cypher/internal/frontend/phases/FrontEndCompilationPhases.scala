@@ -135,7 +135,6 @@ trait FrontEndCompilationPhases {
   ): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBasePre(config) andThen
       parsingBasePost(config, parameters) andThen
-      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
       SemanticAnalysis(warn = Some(true)) andThen
       SetReturnColumns
   }
@@ -148,6 +147,8 @@ trait FrontEndCompilationPhases {
     ScopeSurveyor andThen
       StrictResolveCallables(resolver) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
+      SemanticAnalysis(warn = Some(true)) andThen
+      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
       SemanticAnalysis(warn = Some(true)) andThen
       ObfuscationMetadataCollection andThen
       ExtractLocalDefinitions
