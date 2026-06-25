@@ -66,19 +66,19 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
     private final int payloadSize;
 
     LeafNodeFixedSize(int pageSize, Layout<KEY, VALUE> layout) {
-        this(pageSize, layout, 0, 0);
+        this(pageSize, layout, 0);
     }
 
     /**
      * @param payloadSize - page size
      * @param layout - layout
-     * @param additionalValueSize - extra bytes allocated for each value, can be used by descendants to store additional data
+     * @param additionalHeaderSize - extra bytes allocated in the leaf header, can be used by descendants to store additional data
      */
-    LeafNodeFixedSize(int payloadSize, Layout<KEY, VALUE> layout, int additionalValueSize, int additionalHeaderSize) {
+    LeafNodeFixedSize(int payloadSize, Layout<KEY, VALUE> layout, int additionalHeaderSize) {
         this.payloadSize = payloadSize;
         this.layout = layout;
         this.keySize = layout.keySize(null);
-        this.valueSize = layout.valueSize(null) + additionalValueSize;
+        this.valueSize = layout.valueSize(null);
         this.headerSize = BASE_HEADER_LENGTH + additionalHeaderSize;
         this.maxKeyCount = Math.floorDiv(payloadSize - headerSize, keySize + valueSize);
         int halfKeyCount = (maxKeyCount + 1) / 2;
