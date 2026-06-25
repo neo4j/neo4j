@@ -68,6 +68,8 @@ public interface TxStateVisitor extends AutoCloseable {
 
     void visitCreateVectorStore(VectorStoreIdType vectorStoreToCreate);
 
+    void finishVisit() throws KernelException;
+
     @Override
     void close() throws KernelException;
 
@@ -119,6 +121,9 @@ public interface TxStateVisitor extends AutoCloseable {
 
         @Override
         public void visitCreateVectorStore(VectorStoreIdType vectorStoreToCreate) {}
+
+        @Override
+        public void finishVisit() {}
 
         @Override
         public void close() {}
@@ -210,6 +215,11 @@ public interface TxStateVisitor extends AutoCloseable {
         @Override
         public void visitCreateVectorStore(VectorStoreIdType vectorStoreToCreate) {
             actual.visitCreateVectorStore(vectorStoreToCreate);
+        }
+
+        @Override
+        public void finishVisit() throws KernelException {
+            actual.finishVisit();
         }
 
         @Override

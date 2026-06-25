@@ -344,6 +344,12 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
     }
 
     @Override
+    public void finishVisit() throws KernelException {
+        ensureParticipantsWritten();
+        super.finishVisit();
+    }
+
+    @Override
     public void close() throws KernelException {
         IOUtils.closeAllUnchecked(
                 this::ensureParticipantsWritten,

@@ -275,6 +275,8 @@ public class TxState implements TransactionState {
         if (upgrade != null) {
             visitor.visitKernelUpgrade(upgrade);
         }
+
+        visitor.finishVisit();
     }
 
     private static class RelationshipModificationsImpl implements RelationshipModifications, AutoCloseable {
