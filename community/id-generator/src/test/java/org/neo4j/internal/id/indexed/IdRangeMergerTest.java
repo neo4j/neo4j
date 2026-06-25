@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -45,7 +45,7 @@ class IdRangeMergerTest {
         v2.setGeneration(2);
         DEFAULT.merge(K, K, v1, v2);
         verify(v1).normalize();
-        assertEquals(2, v1.getGeneration());
+        assertThat(v1.getGeneration()).isEqualTo(2);
     }
 
     @Test

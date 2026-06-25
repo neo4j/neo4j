@@ -24,9 +24,7 @@ import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.io.ByteUnit.KibiByte;
@@ -140,7 +138,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
                         entry -> entry.getFileName().toString().startsWith(file.getFileName() + "-"))) {
                     paths.forEach(p -> numberOfFiles.increment());
                 }
-                assertEquals(min(i + 1, 4), numberOfFiles.getValue());
+                assertThat(numberOfFiles.getValue()).isEqualTo(min(i + 1, 4));
             }
         }
     }
@@ -183,14 +181,14 @@ class LoggingIndexedIdGeneratorMonitorTest {
             @Override
             public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id) {
                 int intId = toIntExact(id);
-                assertFalse(ids.get(intId));
+                assertThat(ids.get(intId)).isFalse();
                 ids.set(intId);
             }
 
             @Override
             public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, long numberOfIds) {
                 int intId = toIntExact(id);
-                assertFalse(ids.get(intId));
+                assertThat(ids.get(intId)).isFalse();
                 ids.set(intId);
             }
 
@@ -200,9 +198,9 @@ class LoggingIndexedIdGeneratorMonitorTest {
         LoggingIndexedIdGeneratorMonitor.dump(fs, file, dumper);
         int totalNumberOfIds = idsPerThread * numberOfThreads;
         for (int id = 0; id < totalNumberOfIds; id++) {
-            assertTrue(ids.get(id));
+            assertThat(ids.get(id)).isTrue();
         }
-        assertFalse(ids.get(totalNumberOfIds));
+        assertThat(ids.get(totalNumberOfIds)).isFalse();
     }
 
     @Test
@@ -228,10 +226,10 @@ class LoggingIndexedIdGeneratorMonitorTest {
 
             @Override
             public void path(Path dumpFile) {
-                assertFalse(lastFileWasTheBaseFile);
+                assertThat(lastFileWasTheBaseFile).isFalse();
                 long timestamp = LoggingIndexedIdGeneratorMonitor.millisOf(dumpFile);
                 if (lastFileMillis != -1) {
-                    assertTrue(timestamp > lastFileMillis);
+                    assertThat(timestamp > lastFileMillis).isTrue();
                 }
                 lastFileMillis = timestamp;
                 if (dumpFile.equals(file)) {
@@ -245,7 +243,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
             @Override
             public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id) {
                 if (lastId.longValue() != -1) {
-                    assertTrue(id > lastId.longValue());
+                    assertThat(id > lastId.longValue()).isTrue();
                 }
                 lastId.setValue(id);
             }
@@ -253,7 +251,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
             @Override
             public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, long numberOfIds) {
                 if (lastId.longValue() != -1) {
-                    assertTrue(id > lastId.longValue());
+                    assertThat(id > lastId.longValue()).isTrue();
                 }
                 lastId.setValue(id);
             }
@@ -262,6 +260,6 @@ class LoggingIndexedIdGeneratorMonitorTest {
             public void typeAndTwoIds(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id1, long id2) {}
         };
         LoggingIndexedIdGeneratorMonitor.dump(fs, file, dumper);
-        assertEquals(numberOfIds - 1, lastId.getValue());
+        assertThat(lastId.getValue()).isEqualTo(numberOfIds - 1);
     }
 }

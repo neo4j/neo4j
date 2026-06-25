@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
@@ -147,7 +147,7 @@ class LargeFreelistCreationDeletionIT {
         MutableLongSet set = LongSets.mutable.empty();
         for (long[] allocatedId : allocatedIds) {
             for (long id : allocatedId) {
-                assertTrue(set.add(id));
+                assertThat(set.add(id)).isTrue();
             }
         }
     }

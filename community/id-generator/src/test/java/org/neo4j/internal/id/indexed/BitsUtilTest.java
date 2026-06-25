@@ -21,7 +21,7 @@ package org.neo4j.internal.id.indexed;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ class BitsUtilTest {
         for (int i = 0; i < Long.SIZE; i++) {
             long mask = 1L << i;
             long expected = i >= start && i < start + slots ? mask : 0;
-            assertEquals(expected, bits & mask);
+            assertThat(bits & mask).isEqualTo(expected);
         }
     }
 

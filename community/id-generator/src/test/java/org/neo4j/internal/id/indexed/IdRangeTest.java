@@ -21,8 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_ALL;
@@ -62,29 +60,29 @@ class IdRangeTest {
     @Test
     void defaultStateIsUsed() {
         final var idRange = new IdRange(1);
-        assertEquals(USED, idRange.getState(0));
+        assertThat(idRange.getState(0)).isEqualTo(USED);
     }
 
     @Test
     void setAndGet() {
         IdRange idRange = new IdRange(1);
         IdRange merger = new IdRange(1);
-        assertEquals(USED, idRange.getState(0));
+        assertThat(idRange.getState(0)).isEqualTo(USED);
 
         merger.clear(1, true);
         merger.setBits(BITSET_COMMIT, 0, 1);
         idRange.mergeFrom(null, merger, false);
-        assertEquals(DELETED, idRange.getState(0));
+        assertThat(idRange.getState(0)).isEqualTo(DELETED);
 
         merger.clear(1, true);
         merger.setBits(BITSET_REUSE, 0, 1);
         idRange.mergeFrom(null, merger, false);
-        assertEquals(FREE, idRange.getState(0));
+        assertThat(idRange.getState(0)).isEqualTo(FREE);
 
         merger.clear(1, false);
         merger.setBits(BITSET_ALL, 0, 1);
         idRange.mergeFrom(null, merger, false);
-        assertEquals(USED, idRange.getState(0));
+        assertThat(idRange.getState(0)).isEqualTo(USED);
     }
 
     @Test
@@ -93,9 +91,9 @@ class IdRangeTest {
         idRange.setBits(BITSET_REUSE, 0, 1);
         idRange.setBits(BITSET_COMMIT, 1, 1);
         idRange.clear(1, false);
-        assertEquals(USED, idRange.getState(0));
-        assertEquals(USED, idRange.getState(1));
-        assertEquals(USED, idRange.getState(2));
+        assertThat(idRange.getState(0)).isEqualTo(USED);
+        assertThat(idRange.getState(1)).isEqualTo(USED);
+        assertThat(idRange.getState(2)).isEqualTo(USED);
     }
 
     @TestFactory
@@ -139,27 +137,27 @@ class IdRangeTest {
     @Test
     void shouldDetermineCorrectStateForBitsCombinations() {
         // COMMIT, REUSE, RESERVED
-        assertEquals(USED, idStateGetsDeterminedAs(0, 0, 0));
-        assertEquals(USED, idStateGetsDeterminedAs(0, 0, 1));
-        assertEquals(USED, idStateGetsDeterminedAs(0, 1, 0));
-        assertEquals(USED, idStateGetsDeterminedAs(0, 1, 1));
-        assertEquals(DELETED, idStateGetsDeterminedAs(1, 0, 0));
-        assertEquals(DELETED, idStateGetsDeterminedAs(1, 0, 1));
-        assertEquals(FREE, idStateGetsDeterminedAs(1, 1, 0));
-        assertEquals(DELETED, idStateGetsDeterminedAs(1, 1, 1));
+        assertThat(idStateGetsDeterminedAs(0, 0, 0)).isEqualTo(USED);
+        assertThat(idStateGetsDeterminedAs(0, 0, 1)).isEqualTo(USED);
+        assertThat(idStateGetsDeterminedAs(0, 1, 0)).isEqualTo(USED);
+        assertThat(idStateGetsDeterminedAs(0, 1, 1)).isEqualTo(USED);
+        assertThat(idStateGetsDeterminedAs(1, 0, 0)).isEqualTo(DELETED);
+        assertThat(idStateGetsDeterminedAs(1, 0, 1)).isEqualTo(DELETED);
+        assertThat(idStateGetsDeterminedAs(1, 1, 0)).isEqualTo(FREE);
+        assertThat(idStateGetsDeterminedAs(1, 1, 1)).isEqualTo(DELETED);
     }
 
     @Test
     void shouldNormalizeAllPossibleStatesCorrectly() {
         // COMMIT, REUSE, RESERVED
-        assertEquals(USED, idStateGetsNormalizedAs(0, 0, 0));
-        assertEquals(USED, idStateGetsNormalizedAs(0, 0, 1));
-        assertEquals(USED, idStateGetsNormalizedAs(0, 1, 0));
-        assertEquals(USED, idStateGetsNormalizedAs(0, 1, 1));
-        assertEquals(FREE, idStateGetsNormalizedAs(1, 0, 0));
-        assertEquals(FREE, idStateGetsNormalizedAs(1, 0, 1));
-        assertEquals(FREE, idStateGetsNormalizedAs(1, 1, 0));
-        assertEquals(FREE, idStateGetsNormalizedAs(1, 1, 1));
+        assertThat(idStateGetsNormalizedAs(0, 0, 0)).isEqualTo(USED);
+        assertThat(idStateGetsNormalizedAs(0, 0, 1)).isEqualTo(USED);
+        assertThat(idStateGetsNormalizedAs(0, 1, 0)).isEqualTo(USED);
+        assertThat(idStateGetsNormalizedAs(0, 1, 1)).isEqualTo(USED);
+        assertThat(idStateGetsNormalizedAs(1, 0, 0)).isEqualTo(FREE);
+        assertThat(idStateGetsNormalizedAs(1, 0, 1)).isEqualTo(FREE);
+        assertThat(idStateGetsNormalizedAs(1, 1, 0)).isEqualTo(FREE);
+        assertThat(idStateGetsNormalizedAs(1, 1, 1)).isEqualTo(FREE);
     }
 
     @MethodSource("slotSizesAndOffsets")
@@ -452,7 +450,7 @@ class IdRangeTest {
         range.normalize();
 
         // then
-        assertEquals(afterState, range.getState(0));
+        assertThat(range.getState(0)).isEqualTo(afterState);
     }
 
     private static void testNormalize(int beforeState, IdState afterState) {
@@ -470,16 +468,14 @@ class IdRangeTest {
         range.normalize();
 
         // then
-        assertEquals(afterState, range.getState(0));
+        assertThat(range.getState(0)).isEqualTo(afterState);
     }
 
     private static void testFailMerge(IdState intoState, IdState fromState) {
         var into = initialIdRange(intoState);
         var from = idRange(intoState, fromState);
-        assertThrows(
-                IllegalStateException.class,
-                () -> into.mergeFrom(new IdRangeKey(0), from, false),
-                intoState + "!" + fromState);
+        assertThatThrownBy(() -> into.mergeFrom(new IdRangeKey(0), from, false), intoState + "!" + fromState)
+                .isInstanceOf(IllegalStateException.class);
     }
 
     private static void testMerge(IdState intoState, IdState fromState, IdState expected, boolean recoveryMode) {
@@ -487,7 +483,7 @@ class IdRangeTest {
         var from = idRange(intoState, fromState);
         into.mergeFrom(new IdRangeKey(0), from, recoveryMode);
         var actual = into.getState(0);
-        assertEquals(expected, actual);
+        assertThat(actual).isEqualTo(expected);
     }
 
     private static IdRange initialIdRange(IdState state) {

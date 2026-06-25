@@ -20,8 +20,6 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,27 +34,27 @@ class LockedPagesTest {
     void addDifferentNotLockedPage() {
         LockedPages lockedPages = new LockedPages();
         CursorContext context = cursorContext(1, 2);
-        assertTrue(lockedPages.add(1, context));
-        assertTrue(lockedPages.add(2, context));
-        assertTrue(lockedPages.add(3, context));
+        assertThat(lockedPages.add(1, context)).isTrue();
+        assertThat(lockedPages.add(2, context)).isTrue();
+        assertThat(lockedPages.add(3, context)).isTrue();
     }
 
     @Test
     void addLockedPage() {
         LockedPages lockedPages = new LockedPages();
         CursorContext context = cursorContext(3, 4);
-        assertTrue(lockedPages.add(1, context));
-        assertFalse(lockedPages.add(1, context));
+        assertThat(lockedPages.add(1, context)).isTrue();
+        assertThat(lockedPages.add(1, context)).isFalse();
     }
 
     @Test
     void tryAddLockedPageWithDifferentBoundaries() {
         LockedPages lockedPages = new LockedPages();
         CursorContext context = cursorContext(30, 31);
-        assertTrue(lockedPages.add(1, context));
+        assertThat(lockedPages.add(1, context)).isTrue();
 
         CursorContext olderContext = cursorContext(28, 29);
-        assertFalse(lockedPages.add(1, olderContext));
+        assertThat(lockedPages.add(1, olderContext)).isFalse();
     }
 
     @Test
@@ -66,13 +64,13 @@ class LockedPagesTest {
         CursorContext releaseContext = cursorContext(30, 32);
         CursorContext postReleaseContext = cursorContext(33, 0);
 
-        assertTrue(lockedPages.add(1, context));
+        assertThat(lockedPages.add(1, context)).isTrue();
 
         lockedPages.remove(1, releaseContext);
 
-        assertFalse(lockedPages.add(1, context));
-        assertFalse(lockedPages.add(1, releaseContext));
-        assertTrue(lockedPages.add(1, postReleaseContext));
+        assertThat(lockedPages.add(1, context)).isFalse();
+        assertThat(lockedPages.add(1, releaseContext)).isFalse();
+        assertThat(lockedPages.add(1, postReleaseContext)).isTrue();
     }
 
     @Test

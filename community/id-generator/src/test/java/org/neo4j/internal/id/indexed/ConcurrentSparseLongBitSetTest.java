@@ -20,8 +20,7 @@
 package org.neo4j.internal.id.indexed;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -55,7 +54,7 @@ class ConcurrentSparseLongBitSetTest {
         for (int i = 0; i < 128; i++) {
             int arrayIndex = i / Long.SIZE;
             int offset = i % Long.SIZE;
-            assertEquals(key.get(i), (snapshot[arrayIndex] & (1L << offset)) != 0);
+            assertThat((snapshot[arrayIndex] & (1L << offset)) != 0).isEqualTo(key.get(i));
         }
     }
 
@@ -63,14 +62,14 @@ class ConcurrentSparseLongBitSetTest {
     void shouldSetRemoveSet() {
         // given
         ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet(128);
-        assertTrue(set.set(0, 8, true));
-        assertTrue(set.set(0, 8, false));
+        assertThat(set.set(0, 8, true)).isTrue();
+        assertThat(set.set(0, 8, false)).isTrue();
 
         // when
         boolean reset = set.set(0, 8, true);
 
         // then
-        assertTrue(reset);
+        assertThat(reset).isTrue();
     }
 
     @Test
@@ -101,7 +100,7 @@ class ConcurrentSparseLongBitSetTest {
                 () -> {
                     boolean wasSet = set.set(3, 10, true);
                     if (wasSet) {
-                        assertTrue(isSet.compareAndSet(false, true));
+                        assertThat(isSet.compareAndSet(false, true)).isTrue();
                     }
                 },
                 1);
@@ -110,7 +109,7 @@ class ConcurrentSparseLongBitSetTest {
         race.go();
 
         // then
-        assertTrue(isSet.get());
+        assertThat(isSet.get()).isTrue();
     }
 
     @Test
@@ -119,17 +118,17 @@ class ConcurrentSparseLongBitSetTest {
         ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet(128);
         set.set(5, 2, true);
         set.set(7, 2, true);
-        assertEquals(1, set.size());
+        assertThat(set.size()).isEqualTo(1);
 
         // when
         set.set(5, 4, false);
 
         // then
-        assertEquals(0, set.size());
+        assertThat(set.size()).isEqualTo(0);
 
         // and when
         set.set(9, 5, true);
-        assertEquals(1, set.size());
+        assertThat(set.size()).isEqualTo(1);
     }
 
     private static Runnable setter(
@@ -150,11 +149,11 @@ class ConcurrentSparseLongBitSetTest {
                 set.snapshotRange(id / set.getIdsPerEntry(), reader);
                 Arrays.fill(temp, 0);
                 BitsUtil.setBits(temp, id % set.getIdsPerEntry(), idsPerChunk, 0);
-                assertTrue(bitsMatches(reader, temp, isSet));
+                assertThat(bitsMatches(reader, temp, isSet)).isTrue();
 
                 // write
                 boolean actuallySet = set.set(id, idsPerChunk, !isSet);
-                assertTrue(actuallySet);
+                assertThat(actuallySet).isTrue();
                 key.set(chunk, !isSet);
             }
         };
@@ -162,7 +161,7 @@ class ConcurrentSparseLongBitSetTest {
 
     private static void set(ConcurrentSparseLongBitSet set, BitSet key, long id, int slots, boolean value) {
         boolean actuallySet = set.set(id, slots, value);
-        assertTrue(actuallySet);
+        assertThat(actuallySet).isTrue();
         for (int i = 0; i < slots; i++) {
             key.set((int) (id + i), value);
         }

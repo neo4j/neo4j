@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.id.range;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.id.IdGenerator.NO_ID;
 
 import org.junit.jupiter.api.Test;
@@ -33,23 +32,23 @@ class PageIdRangeTest {
         continuousIdRange.mark();
 
         for (int i = 0; i < 5; i++) {
-            assertEquals(5, continuousIdRange.nextId());
-            assertEquals(6, continuousIdRange.nextId());
-            assertEquals(7, continuousIdRange.nextId());
-            assertEquals(8, continuousIdRange.nextId());
+            assertThat(continuousIdRange.nextId()).isEqualTo(5);
+            assertThat(continuousIdRange.nextId()).isEqualTo(6);
+            assertThat(continuousIdRange.nextId()).isEqualTo(7);
+            assertThat(continuousIdRange.nextId()).isEqualTo(8);
 
             continuousIdRange.resetToMark();
         }
 
-        assertEquals(5, continuousIdRange.nextId());
+        assertThat(continuousIdRange.nextId()).isEqualTo(5);
 
         continuousIdRange.mark();
 
         for (int i = 0; i < 5; i++) {
-            assertEquals(6, continuousIdRange.nextId());
-            assertEquals(7, continuousIdRange.nextId());
-            assertEquals(8, continuousIdRange.nextId());
-            assertEquals(9, continuousIdRange.nextId());
+            assertThat(continuousIdRange.nextId()).isEqualTo(6);
+            assertThat(continuousIdRange.nextId()).isEqualTo(7);
+            assertThat(continuousIdRange.nextId()).isEqualTo(8);
+            assertThat(continuousIdRange.nextId()).isEqualTo(9);
 
             continuousIdRange.resetToMark();
         }
@@ -61,23 +60,23 @@ class PageIdRangeTest {
         arrayIdRange.mark();
 
         for (int i = 0; i < 5; i++) {
-            assertEquals(5, arrayIdRange.nextId());
-            assertEquals(6, arrayIdRange.nextId());
-            assertEquals(7, arrayIdRange.nextId());
-            assertEquals(8, arrayIdRange.nextId());
+            assertThat(arrayIdRange.nextId()).isEqualTo(5);
+            assertThat(arrayIdRange.nextId()).isEqualTo(6);
+            assertThat(arrayIdRange.nextId()).isEqualTo(7);
+            assertThat(arrayIdRange.nextId()).isEqualTo(8);
 
             arrayIdRange.resetToMark();
         }
 
-        assertEquals(5, arrayIdRange.nextId());
+        assertThat(arrayIdRange.nextId()).isEqualTo(5);
 
         arrayIdRange.mark();
 
         for (int i = 0; i < 5; i++) {
-            assertEquals(6, arrayIdRange.nextId());
-            assertEquals(7, arrayIdRange.nextId());
-            assertEquals(8, arrayIdRange.nextId());
-            assertEquals(9, arrayIdRange.nextId());
+            assertThat(arrayIdRange.nextId()).isEqualTo(6);
+            assertThat(arrayIdRange.nextId()).isEqualTo(7);
+            assertThat(arrayIdRange.nextId()).isEqualTo(8);
+            assertThat(arrayIdRange.nextId()).isEqualTo(9);
 
             arrayIdRange.resetToMark();
         }

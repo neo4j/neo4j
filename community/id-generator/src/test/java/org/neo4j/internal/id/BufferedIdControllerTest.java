@@ -20,8 +20,8 @@
 package org.neo4j.internal.id;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -125,7 +125,7 @@ class BufferedIdControllerTest {
     void shouldStopWhenNotStarted() throws IOException {
         setUp(new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER), fs, null);
 
-        assertDoesNotThrow(controller::stop);
+        assertThatCode(controller::stop).doesNotThrowAnyException();
     }
 
     @Test

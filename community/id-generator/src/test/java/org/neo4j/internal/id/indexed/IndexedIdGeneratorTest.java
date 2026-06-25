@@ -23,15 +23,10 @@ import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Comparator.comparingLong;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -113,7 +108,6 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
@@ -229,7 +223,7 @@ class IndexedIdGeneratorTest {
         long nextTimeId = idGenerator.nextId(NULL_CONTEXT);
 
         // then
-        assertEquals(id, nextTimeId);
+        assertThat(id).isEqualTo(nextTimeId);
     }
 
     @Test
@@ -240,7 +234,7 @@ class IndexedIdGeneratorTest {
         long id = idGenerator.nextId(NULL_CONTEXT);
         markDeleted(id);
         long otherId = idGenerator.nextId(NULL_CONTEXT);
-        assertNotEquals(id, otherId);
+        assertThat(id).isNotEqualTo(otherId);
 
         // when
         markFree(id);
@@ -248,7 +242,7 @@ class IndexedIdGeneratorTest {
         // then
         idGenerator.maintenance(NULL_CONTEXT, EMPTY_OLDEST_HORIZON_FACTORY);
         long reusedId = idGenerator.nextId(NULL_CONTEXT);
-        assertEquals(id, reusedId);
+        assertThat(id).isEqualTo(reusedId);
     }
 
     @Test
@@ -377,12 +371,12 @@ class IndexedIdGeneratorTest {
 
         // when
         long oneBelowMaxId = idGenerator.nextId(NULL_CONTEXT);
-        assertEquals(MAX_ID - 1, oneBelowMaxId);
+        assertThat(oneBelowMaxId).isEqualTo(MAX_ID - 1);
         long maxId = idGenerator.nextId(NULL_CONTEXT);
-        assertEquals(MAX_ID, maxId);
+        assertThat(maxId).isEqualTo(MAX_ID);
 
         // then
-        assertThrows(IdCapacityExceededException.class, () -> idGenerator.nextId(NULL_CONTEXT));
+        assertThatThrownBy(() -> idGenerator.nextId(NULL_CONTEXT)).isInstanceOf(IdCapacityExceededException.class);
     }
 
     @Test
@@ -392,12 +386,12 @@ class IndexedIdGeneratorTest {
         idGenerator.start(freeIds(10, 20, 30, IDS_PER_ENTRY + 10, 10 * IDS_PER_ENTRY + 10), NULL_CONTEXT);
         // when/then
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator()) {
-            assertEquals(10L, freeIds.next());
-            assertEquals(20L, freeIds.next());
-            assertEquals(30L, freeIds.next());
-            assertEquals(IDS_PER_ENTRY + 10L, freeIds.next());
-            assertEquals(10 * IDS_PER_ENTRY + 10L, freeIds.next());
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.next()).isEqualTo(10L);
+            assertThat(freeIds.next()).isEqualTo(20L);
+            assertThat(freeIds.next()).isEqualTo(30L);
+            assertThat(freeIds.next()).isEqualTo(IDS_PER_ENTRY + 10L);
+            assertThat(freeIds.next()).isEqualTo(10 * IDS_PER_ENTRY + 10L);
+            assertThat(freeIds.hasNext()).isFalse();
         }
     }
 
@@ -423,7 +417,7 @@ class IndexedIdGeneratorTest {
                         .isTrue();
                 assertThat(usedIds.next()).isEqualTo(nextUsed);
             }
-            assertFalse(usedIds.hasNext());
+            assertThat(usedIds.hasNext()).isFalse();
         }
     }
 
@@ -434,7 +428,7 @@ class IndexedIdGeneratorTest {
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         // when/then
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator()) {
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.hasNext()).isFalse();
         }
     }
 
@@ -446,30 +440,30 @@ class IndexedIdGeneratorTest {
         // when/then
         // simple cases
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(5, 15)) {
-            assertEquals(10L, freeIds.next());
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.next()).isEqualTo(10L);
+            assertThat(freeIds.hasNext()).isFalse();
         }
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(15, 35)) {
-            assertEquals(20L, freeIds.next());
-            assertEquals(30L, freeIds.next());
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.next()).isEqualTo(20L);
+            assertThat(freeIds.next()).isEqualTo(30L);
+            assertThat(freeIds.hasNext()).isFalse();
         }
         // edge cases inclusiveFrom exclusiveTo
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(0, 10)) {
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.hasNext()).isFalse();
         }
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(10, 20)) {
-            assertEquals(10L, freeIds.next());
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.next()).isEqualTo(10L);
+            assertThat(freeIds.hasNext()).isFalse();
         }
         // looking for only one id
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(10, 10)) {
-            assertTrue(freeIds.hasNext());
-            assertEquals(10L, freeIds.next());
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.hasNext()).isTrue();
+            assertThat(freeIds.next()).isEqualTo(10L);
+            assertThat(freeIds.hasNext()).isFalse();
         }
         try (PrimitiveLongResourceIterator freeIds = idGenerator.notUsedIdsIterator(15, 15)) {
-            assertFalse(freeIds.hasNext());
+            assertThat(freeIds.hasNext()).isFalse();
         }
     }
 
@@ -497,9 +491,9 @@ class IndexedIdGeneratorTest {
         idGenerator.start(freeIds(10, 20, 30), NULL_CONTEXT);
 
         // then
-        assertEquals(10L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(20L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(30L, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(10L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(20L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(30L);
     }
 
     @Test
@@ -514,9 +508,9 @@ class IndexedIdGeneratorTest {
         idGenerator.start(freeIds(10, 20, 30), NULL_CONTEXT);
 
         // then
-        assertEquals(10L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(20L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(30L, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(10L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(20L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(30L);
     }
 
     @Test
@@ -530,9 +524,9 @@ class IndexedIdGeneratorTest {
         idGenerator.start(freeIds(10, 20, 30), NULL_CONTEXT);
 
         // then
-        assertEquals(10L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(20L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(30L, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(10L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(20L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(30L);
     }
 
     @Test
@@ -551,9 +545,9 @@ class IndexedIdGeneratorTest {
         assertThat(freeIdsSecondCall.wasCalled).isTrue();
 
         // then
-        assertEquals(11L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(21L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(31L, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(11L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(21L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(31L);
     }
 
     @Test
@@ -573,8 +567,8 @@ class IndexedIdGeneratorTest {
                 NULL_CONTEXT);
 
         // then
-        assertEquals(0L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(1L, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(0L);
+        assertThat(idGenerator.nextId(NULL_CONTEXT)).isEqualTo(1L);
     }
 
     @Test
@@ -613,7 +607,7 @@ class IndexedIdGeneratorTest {
         restart(customization);
 
         // then
-        assertNotEquals(id, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(id).isNotEqualTo(idGenerator.nextId(NULL_CONTEXT));
     }
 
     @Test
@@ -632,7 +626,7 @@ class IndexedIdGeneratorTest {
         restart(customization);
 
         // then
-        assertNotEquals(id, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(id).isNotEqualTo(idGenerator.nextId(NULL_CONTEXT));
     }
 
     @Test
@@ -654,7 +648,7 @@ class IndexedIdGeneratorTest {
         restart(customization);
 
         // then
-        assertNotEquals(id, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(id).isNotEqualTo(idGenerator.nextId(NULL_CONTEXT));
     }
 
     @Test
@@ -675,7 +669,7 @@ class IndexedIdGeneratorTest {
         restart(customization);
 
         // then
-        assertEquals(droppedId, idGenerator.nextId(NULL_CONTEXT));
+        assertThat(droppedId).isEqualTo(idGenerator.nextId(NULL_CONTEXT));
     }
 
     @ParameterizedTest
@@ -710,11 +704,11 @@ class IndexedIdGeneratorTest {
         MutableLongList allIds = new LongArrayList(allocationsPerThread * threads);
         Stream.of(allocatedIds).forEach(allIds::addAll);
         allIds = allIds.sortThis();
-        assertEquals(allocationsPerThread * threads, allIds.size());
+        assertThat(allIds.size()).isEqualTo(allocationsPerThread * threads);
         MutableLongIterator allIdsIterator = allIds.longIterator();
         long nextExpected = startingId;
         while (allIdsIterator.hasNext()) {
-            assertEquals(nextExpected, allIdsIterator.next());
+            assertThat(allIdsIterator.next()).isEqualTo(nextExpected);
             do {
                 nextExpected++;
             } while (caresAboutReservedId && IdValidator.isReservedId(nextExpected));
@@ -749,7 +743,7 @@ class IndexedIdGeneratorTest {
 
         // then
         verify(highIdSupplier).getAsLong();
-        assertEquals(highId, idGenerator.getHighId());
+        assertThat(idGenerator.getHighId()).isEqualTo(highId);
     }
 
     @Test
@@ -786,17 +780,16 @@ class IndexedIdGeneratorTest {
 
         // then
         verifyNoMoreInteractions(highIdSupplier);
-        assertEquals(highId, idGenerator.getHighId());
+        assertThat(idGenerator.getHighId()).isEqualTo(highId);
     }
 
     @Test
     void shouldNotStartWithoutFileIfReadOnly() {
         open();
         Path file = directory.file("non-existing");
-        final IllegalStateException e = assertThrows(
-                IllegalStateException.class,
-                () -> openIdGenerator(customization().with(file).readOnly()));
-        assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
+        assertThatThrownBy(() -> openIdGenerator(customization().with(file).readOnly()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasCauseInstanceOf(TreeFileNotFoundException.class);
     }
 
     @Test
@@ -1088,7 +1081,7 @@ class IndexedIdGeneratorTest {
         Arrays.sort(sortedAllocations, comparingLong(a -> a[0]));
         long prevEndExclusive = 0;
         for (long[] allocation : sortedAllocations) {
-            assertEquals(prevEndExclusive, allocation[0]);
+            assertThat(allocation[0]).isEqualTo(prevEndExclusive);
             prevEndExclusive = allocation[0] + allocation[1];
         }
     }
@@ -1745,7 +1738,7 @@ class IndexedIdGeneratorTest {
         // Start in readOnly mode
         try (var readOnlyGenerator = openIdGenerator(customization().with(file).readOnly())) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-            assertDoesNotThrow(() -> operation.apply(readOnlyGenerator));
+            assertThatCode(() -> operation.apply(readOnlyGenerator)).doesNotThrowAnyException();
         }
     }
 

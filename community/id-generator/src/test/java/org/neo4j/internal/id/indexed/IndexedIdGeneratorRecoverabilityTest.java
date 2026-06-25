@@ -20,8 +20,6 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.count;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -83,14 +81,14 @@ class IndexedIdGeneratorRecoverabilityTest {
         try (IdGenerator freelist = instantiateFreelist()) {
             freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             freelist.nextId(NULL_CONTEXT);
-            assertEquals(1, freelist.getHighId());
+            assertThat(freelist.getHighId()).isEqualTo(1);
             freelist.nextId(NULL_CONTEXT);
-            assertEquals(2, freelist.getHighId());
+            assertThat(freelist.getHighId()).isEqualTo(2);
             freelist.checkpoint(FileFlushEvent.NULL, EMPTY_ASYNC_BLOCK_ACCESSOR, NULL_CONTEXT);
         }
         try (IdGenerator freelist = instantiateFreelist()) {
             freelist.start(NO_FREE_IDS, NULL_CONTEXT);
-            assertEquals(2, freelist.getHighId());
+            assertThat(freelist.getHighId()).isEqualTo(2);
         }
     }
 
@@ -99,13 +97,13 @@ class IndexedIdGeneratorRecoverabilityTest {
         try (IdGenerator freelist = instantiateFreelist()) {
             freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             freelist.nextId(NULL_CONTEXT);
-            assertEquals(1, freelist.getHighId());
+            assertThat(freelist.getHighId()).isEqualTo(1);
             freelist.nextId(NULL_CONTEXT);
-            assertEquals(2, freelist.getHighId());
+            assertThat(freelist.getHighId()).isEqualTo(2);
         }
         try (IdGenerator freelist = instantiateFreelist()) {
             freelist.start(NO_FREE_IDS, NULL_CONTEXT);
-            assertEquals(0, freelist.getHighId());
+            assertThat(freelist.getHighId()).isEqualTo(0);
         }
     }
 
@@ -199,7 +197,7 @@ class IndexedIdGeneratorRecoverabilityTest {
             freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             final ImmutableLongSet reused =
                     LongSets.immutable.of(freelist.nextId(NULL_CONTEXT), freelist.nextId(NULL_CONTEXT));
-            assertEquals(LongSets.immutable.of(id1, id2), reused, "IDs are not reused");
+            assertThat(LongSets.immutable.of(id1, id2)).isEqualTo(reused);
         }
     }
 
@@ -235,7 +233,7 @@ class IndexedIdGeneratorRecoverabilityTest {
 
             final ImmutableLongSet reused =
                     LongSets.immutable.of(freelist.nextId(NULL_CONTEXT), freelist.nextId(NULL_CONTEXT));
-            assertEquals(LongSets.immutable.of(id1, id2), reused, "IDs are not reused");
+            assertThat(LongSets.immutable.of(id1, id2)).isEqualTo(reused);
         }
     }
 
@@ -269,7 +267,7 @@ class IndexedIdGeneratorRecoverabilityTest {
             markFree(freelist, id);
             freelist.maintenance(NULL_CONTEXT, EMPTY_OLDEST_HORIZON_FACTORY);
             long idAfterRecovery = freelist.nextId(NULL_CONTEXT);
-            assertEquals(id, idAfterRecovery);
+            assertThat(id).isEqualTo(idAfterRecovery);
             markUsed(freelist, id);
             // Crash (no checkpoint)
         }
@@ -289,9 +287,9 @@ class IndexedIdGeneratorRecoverabilityTest {
             markFree(freelist, id);
             MutableLongSet expected = LongSets.mutable.with(id, neighbourId);
             freelist.maintenance(NULL_CONTEXT, EMPTY_OLDEST_HORIZON_FACTORY);
-            assertTrue(expected.remove(freelist.nextId(NULL_CONTEXT)));
-            assertTrue(expected.remove(freelist.nextId(NULL_CONTEXT)));
-            assertTrue(expected.isEmpty());
+            assertThat(expected.remove(freelist.nextId(NULL_CONTEXT))).isTrue();
+            assertThat(expected.remove(freelist.nextId(NULL_CONTEXT))).isTrue();
+            assertThat(expected.isEmpty()).isTrue();
             assertThat(freelist.getUnusedIdCount()).isEqualTo(2);
         }
     }

@@ -21,10 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -119,8 +115,8 @@ class IdRangeMarkerTest {
         verify(merger).completed();
         verifyNoMoreInteractions(merger);
         try (Seeker<IdRangeKey, IdRange> seek = tree.seek(new IdRangeKey(0), new IdRangeKey(1), NULL_CONTEXT)) {
-            assertTrue(seek.next());
-            assertEquals(0, seek.key().getIdRangeIdx());
+            assertThat(seek.next()).isTrue();
+            assertThat(seek.key().getIdRangeIdx()).isEqualTo(0);
         }
     }
 
@@ -140,11 +136,11 @@ class IdRangeMarkerTest {
         // then
         verify(merger).merge(any(), any(), any(), any());
         try (Seeker<IdRangeKey, IdRange> seek = tree.seek(new IdRangeKey(0), new IdRangeKey(1), NULL_CONTEXT)) {
-            assertTrue(seek.next());
-            assertEquals(0, seek.key().getIdRangeIdx());
-            assertEquals(IdRange.IdState.DELETED, seek.value().getState(0));
-            assertEquals(IdRange.IdState.DELETED, seek.value().getState(1));
-            assertEquals(IdRange.IdState.USED, seek.value().getState(2));
+            assertThat(seek.next()).isTrue();
+            assertThat(seek.key().getIdRangeIdx()).isEqualTo(0);
+            assertThat(seek.value().getState(0)).isEqualTo(IdRange.IdState.DELETED);
+            assertThat(seek.value().getState(1)).isEqualTo(IdRange.IdState.DELETED);
+            assertThat(seek.value().getState(2)).isEqualTo(IdRange.IdState.USED);
         }
     }
 
@@ -161,7 +157,7 @@ class IdRangeMarkerTest {
         verifyNoMoreInteractions(merger);
         try (Seeker<IdRangeKey, IdRange> seek =
                 tree.seek(new IdRangeKey(0), new IdRangeKey(Long.MAX_VALUE), NULL_CONTEXT)) {
-            assertFalse(seek.next());
+            assertThat(seek.next()).isFalse();
         }
     }
 
@@ -184,7 +180,7 @@ class IdRangeMarkerTest {
                     @Override
                     public void key(IdRangeKey key, boolean isLeaf, long offloadId) {
                         if (isLeaf) {
-                            assertEquals(0, key.getIdRangeIdx());
+                            assertThat(key.getIdRangeIdx()).isEqualTo(0);
                             exists.set(true);
                         }
                     }
@@ -203,7 +199,9 @@ class IdRangeMarkerTest {
                 new GBPTreeVisitor.Adaptor<>() {
                     @Override
                     public void key(IdRangeKey key, boolean isLeaf, long offloadId) {
-                        assertFalse(isLeaf, "Should not have any key still in the tree, but got: " + key);
+                        assertThat(isLeaf)
+                                .as("Should not have any key still in the tree, but got: " + key)
+                                .isFalse();
                     }
                 },
                 NULL_CONTEXT);
@@ -229,7 +227,7 @@ class IdRangeMarkerTest {
         var idRangeMarker = instantiateMarker(null, mock(IdRangeMerger.class));
 
         // then
-        assertDoesNotThrow(idRangeMarker::close);
+        assertThatCode(idRangeMarker::close).doesNotThrowAnyException();
     }
 
     @Test
@@ -289,7 +287,7 @@ class IdRangeMarkerTest {
         }
 
         // then
-        assertEquals(expectedIds, gatherIds(DELETED));
+        assertThat(gatherIds(DELETED)).isEqualTo(expectedIds);
     }
 
     @Test
@@ -321,7 +319,7 @@ class IdRangeMarkerTest {
         }
 
         // then
-        assertEquals(expectedIds, gatherIds(DELETED));
+        assertThat(gatherIds(DELETED)).isEqualTo(expectedIds);
     }
 
     @Test
