@@ -62,7 +62,7 @@ trait NodeHashJoinPipeTestSupport extends InterpretedRuntimeTestSuite {
     }
   }
 
-  protected def newMockedNode(id: Int) = {
+  protected def newMockedNode(id: Long) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
     when(node.getElementId).thenReturn(id.toString)
