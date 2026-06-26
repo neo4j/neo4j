@@ -44,10 +44,10 @@ class InMemoryClosableChannelTest {
             channel.read(buffer);
             buffer.flip();
 
-            assertThat(buffer.get()).isEqualTo(0);
-            assertThat(buffer.get()).isEqualTo(1);
-            assertThat(buffer.get()).isEqualTo(2);
-            assertThat(buffer.get()).isEqualTo(3);
+            assertThat(buffer.get()).isEqualTo((byte) 0);
+            assertThat(buffer.get()).isEqualTo((byte) 1);
+            assertThat(buffer.get()).isEqualTo((byte) 2);
+            assertThat(buffer.get()).isEqualTo((byte) 3);
 
             assertThatExceptionOfType(ReadPastEndException.class).isThrownBy(() -> channel.read(buffer));
         }
