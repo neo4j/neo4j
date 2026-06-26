@@ -463,11 +463,16 @@ sealed trait CreateLookupIndex extends CreateIndex {
     if (isNodeIndex) name.equalsIgnoreCase(Labels.name) else name.equalsIgnoreCase(Type.name)
 
   override def semanticCheck: SemanticCheck = function match {
-    case fi @ FunctionInvocation(FunctionName(_, name), _, _, _, _, _, _) if !(fi.isBuiltIn && allowedFunction(name)) =>
+    case fi: FunctionInvocation if !(fi.isBuiltIn && allowedFunction(fi.name)) =>
       val (validFunction, entityIndexDescription) =
         if (isNodeIndex) (Labels.name, indexType.nodeDescription)
         else (Type.name, indexType.relDescription)
-      SemanticCheck.error(SemanticError.invalidFunctionForIndex(entityIndexDescription, name, validFunction, position))
+      SemanticCheck.error(SemanticError.invalidFunctionForIndex(
+        entityIndexDescription,
+        fi.name,
+        validFunction,
+        position
+      ))
     case _ =>
       options.checkOptionsForSchema(indexType.allDescription) chain
         super.semanticCheck chain

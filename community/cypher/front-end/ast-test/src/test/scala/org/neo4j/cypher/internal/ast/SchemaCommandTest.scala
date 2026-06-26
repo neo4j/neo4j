@@ -323,4 +323,40 @@ class SchemaCommandTest extends CypherFunSuite3 with AstConstructionTestSupport 
     result.errors.head.msg shouldBe
       "Failed to create relationship lookup index: Function 'type' is not allowed, valid function is 'type'."
   }
+
+  test(
+    "Create node lookup index with a namespaced labels() function should fail semantic checking with the full name"
+  ) {
+    val ast = CreateIndex.createLookupIndex(
+      varFor("n"),
+      isNodeIndex = true,
+      function(Seq("foo"), "labels", varFor("n")),
+      None,
+      IfExistsThrowError,
+      NoOptions
+    )(p)
+
+    val result = ast.semanticCheck.run(initialState, semanticContexts.head._2)
+    result.errors.size shouldBe 1
+    result.errors.head.msg shouldBe
+      "Failed to create node lookup index: Function 'foo.labels' is not allowed, valid function is 'labels'."
+  }
+
+  test(
+    "Create relationship lookup index with a namespaced type() function should fail semantic checking with the full name"
+  ) {
+    val ast = CreateIndex.createLookupIndex(
+      varFor("r"),
+      isNodeIndex = false,
+      function(Seq("foo"), "type", varFor("r")),
+      None,
+      IfExistsThrowError,
+      NoOptions
+    )(p)
+
+    val result = ast.semanticCheck.run(initialState, semanticContexts.head._2)
+    result.errors.size shouldBe 1
+    result.errors.head.msg shouldBe
+      "Failed to create relationship lookup index: Function 'foo.type' is not allowed, valid function is 'type'."
+  }
 }
