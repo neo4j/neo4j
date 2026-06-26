@@ -32,7 +32,11 @@ import static org.neo4j.server.queryapi.response.format.Fieldnames._RELATIONSHIP
 import static org.neo4j.server.queryapi.response.format.Fieldnames._START_NODE_ELEMENT_ID;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
@@ -430,5 +434,28 @@ abstract class AbstractQueryResourcedTypedJsonIT {
 
         assertThat(path.get(4).get(CYPHER_TYPE).asText()).isEqualTo("Node");
         assertThat(path.get(4).get(CYPHER_VALUE).get(_LABELS).get(0).asText()).isEqualTo("LabelC");
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryTypes")
+    void shouldReturnQueryType(TransactionType transactionType, String statement, String expectedQueryType)
+            throws IOException, InterruptedException {
+        var response = testClient.executeQuery(
+                transactionType, QueryRequest.newBuilder().statement(statement).build());
+
+        QueryResponseAssertions.assertThat(response).wasSuccessful().hasQueryType(expectedQueryType);
+    }
+
+    static Stream<Arguments> queryTypes() {
+        return Stream.of(TransactionType.values())
+                .flatMap(type -> Stream.of(
+                        Arguments.of(type, "RETURN 1", "r"),
+                        Arguments.of(type, "CREATE ()", "w"),
+                        Arguments.of(type, "CREATE (p:Person{name: 'Vozinha'}) RETURN p", "rw"),
+                        Arguments.of(
+                                type,
+                                "CREATE CONSTRAINT constraint_name_%d FOR (n:Label) REQUIRE n.property_%d IS UNIQUE"
+                                        .formatted(type.ordinal(), type.ordinal()),
+                                "s")));
     }
 }

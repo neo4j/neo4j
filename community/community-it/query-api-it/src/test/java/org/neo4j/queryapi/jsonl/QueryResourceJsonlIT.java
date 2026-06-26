@@ -25,7 +25,11 @@ import static org.neo4j.queryapi.testclient.QueryRequest.returnOne;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.fabric.bolt.QueryRouterBookmark;
 import org.neo4j.fabric.bookmark.BookmarkFormat;
@@ -33,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.queryapi.QueryApiTestUtil;
 import org.neo4j.queryapi.QueryResponseJsonlAssertions;
+import org.neo4j.queryapi.TransactionType;
 import org.neo4j.queryapi.annotation.QueryAPITestExtension;
 import org.neo4j.queryapi.assertions.Capture;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
@@ -325,5 +330,32 @@ class QueryResourceJsonlIT {
                 .receivesNRecords(10000)
                 .receivesError(Status.Statement.ArithmeticError)
                 .hasNoRemainingEvents();
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryTypes")
+    void shouldReturnQueryType(TransactionType transactionType, String statement, String expectedQueryType)
+            throws IOException, InterruptedException {
+        var response = testClient.executeQueryJsonl(
+                transactionType, QueryRequest.newBuilder().statement(statement).build());
+
+        QueryResponseJsonlAssertions.assertThat(response)
+                .wasSuccessful()
+                .receivesNHeaders(1)
+                .receivesNRecords(expectedQueryType.startsWith("r") ? 1 : 0)
+                .receivesSummary(queryAssertions -> queryAssertions.hasQueryTypeEqualTo(expectedQueryType));
+    }
+
+    static Stream<Arguments> queryTypes() {
+        return Stream.of(TransactionType.values())
+                .flatMap(type -> Stream.of(
+                        Arguments.of(type, "RETURN 1", "r"),
+                        Arguments.of(type, "CREATE ()", "w"),
+                        Arguments.of(type, "CREATE (p:Person{name: 'Vozinha'}) RETURN p", "rw"),
+                        Arguments.of(
+                                type,
+                                "CREATE CONSTRAINT constraint_name_%d FOR (n:Label) REQUIRE n.property_%d IS UNIQUE"
+                                        .formatted(type.ordinal(), type.ordinal()),
+                                "s")));
     }
 }

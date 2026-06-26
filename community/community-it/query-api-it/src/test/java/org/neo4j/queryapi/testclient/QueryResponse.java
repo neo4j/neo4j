@@ -34,7 +34,8 @@ public record QueryResponse(
         JsonNode transaction,
         JsonNode counters,
         JsonNode queryPlan,
-        JsonNode profiledQueryPlan) {
+        JsonNode profiledQueryPlan,
+        String queryType) {
 
     public String txId() throws QueryApiTestClientException {
         if (errors != null && !errors.isEmpty()) {

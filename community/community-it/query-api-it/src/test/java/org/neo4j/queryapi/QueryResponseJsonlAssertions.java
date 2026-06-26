@@ -352,6 +352,14 @@ public class QueryResponseJsonlAssertions
             return this;
         }
 
+        public SummaryAssertions hasQueryTypeEqualTo(String queryType) {
+            Assertions.assertThat(this.actual.queryType())
+                    .as("Should have query type")
+                    .isEqualTo(queryType);
+
+            return this;
+        }
+
         public SummaryAssertions hasBookmarksNotEqualTo(List<String> bookmarks) {
             Assertions.assertThat(this.actual.bookmarks())
                     .as("Should have bookmarks")
@@ -527,7 +535,8 @@ public class QueryResponseJsonlAssertions
             JsonNode profiledQueryPlan,
             JsonNode queryPlan,
             List<String> bookmarks,
-            SummaryEventBodyTransaction transaction) {}
+            SummaryEventBodyTransaction transaction,
+            String queryType) {}
 
     private record ErrorEventBody(String code, String message) {}
 

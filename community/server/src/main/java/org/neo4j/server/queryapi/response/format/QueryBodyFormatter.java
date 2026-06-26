@@ -137,6 +137,7 @@ public class QueryBodyFormatter {
                     this.serializer.writeProfile(resultSummary);
                     this.serializer.writeQueryPlan(resultSummary);
                     this.serializer.writeBookmarks(bookmarks);
+                    this.serializer.writeQueryType(resultSummary);
                     this.serializer.writeTxInfo(txId, timeout);
                 });
             });

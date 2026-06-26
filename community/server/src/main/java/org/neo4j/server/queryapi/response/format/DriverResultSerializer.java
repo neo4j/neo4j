@@ -29,6 +29,7 @@ import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.NOTIFICATIONS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.PROFILE_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_PLAN_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.QUERY_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TRANSACTION_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TX_EXPIRY_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.TX_ID_KEY;
@@ -46,6 +47,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.summary.Notification;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.server.queryapi.exception.ExceptionsUnwrapper;
 import org.neo4j.server.queryapi.exception.QueryApiException;
@@ -181,9 +183,23 @@ class DriverResultSerializer {
             writeCounters(resultSummary, requireCounters);
             writeProfile(resultSummary);
             writeQueryPlan(resultSummary);
+            writeQueryType(resultSummary);
         }
         writeBookmarks(bookmarks);
         writeTxInfo(txId, timeout);
+    }
+
+    public void writeQueryType(ResultSummary resultSummary) throws IOException {
+        var queryType =
+                switch (resultSummary.queryType()) {
+                    case QueryType.READ_ONLY -> "r";
+                    case QueryType.READ_WRITE -> "rw";
+                    case QueryType.WRITE_ONLY -> "w";
+                    case QueryType.SCHEMA_WRITE -> "s";
+                };
+
+        jsonGenerator.writeFieldName(QUERY_TYPE);
+        jsonGenerator.writeString(queryType);
     }
 
     public void writeCounters(ResultSummary resultSummary, boolean requireCounters) throws IOException {

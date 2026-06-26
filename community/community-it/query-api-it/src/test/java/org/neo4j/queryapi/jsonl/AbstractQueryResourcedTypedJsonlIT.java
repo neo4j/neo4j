@@ -33,10 +33,14 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.queryapi.QueryResponseJsonlAssertions;
 import org.neo4j.queryapi.QueryResponseJsonlAssertions.CypherValueAssertions;
+import org.neo4j.queryapi.TransactionType;
 import org.neo4j.queryapi.assertions.Capture;
 import org.neo4j.queryapi.testclient.QueryAPITestClient;
 import org.neo4j.queryapi.testclient.QueryContentType;
@@ -451,6 +455,33 @@ abstract class AbstractQueryResourcedTypedJsonlIT {
                 relAssertions.extracting(Fieldnames._PROPERTIES).isEqualTo(Map.of());
             });
         })));
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryTypes")
+    void shouldReturnQueryType(TransactionType transactionType, String statement, String expectedQueryType)
+            throws IOException, InterruptedException {
+        var response = testClient.executeQueryJsonl(
+                transactionType, QueryRequest.newBuilder().statement(statement).build());
+
+        QueryResponseJsonlAssertions.assertThat(response)
+                .wasSuccessful()
+                .receivesNHeaders(1)
+                .receivesNRecords(expectedQueryType.startsWith("r") ? 1 : 0)
+                .receivesSummary(queryAssertions -> queryAssertions.hasQueryTypeEqualTo(expectedQueryType));
+    }
+
+    static Stream<Arguments> queryTypes() {
+        return Stream.of(TransactionType.values())
+                .flatMap(type -> Stream.of(
+                        Arguments.of(type, "RETURN 1", "r"),
+                        Arguments.of(type, "CREATE ()", "w"),
+                        Arguments.of(type, "CREATE (p:Person{name: 'Vozinha'}) RETURN p", "rw"),
+                        Arguments.of(
+                                type,
+                                "CREATE CONSTRAINT constraint_name_%d FOR (n:Label) REQUIRE n.property_%d IS UNIQUE"
+                                        .formatted(type.ordinal(), type.ordinal()),
+                                "s")));
     }
 
     private void assertResponseWithValues(

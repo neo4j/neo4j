@@ -364,6 +364,10 @@ public final class QueryResponseAssertions
         Assertions.assertThat(queryResponse.body().profiledQueryPlan()).isNull();
     }
 
+    public void hasQueryType(String queryType) {
+        Assertions.assertThat(queryResponse.body().queryType()).isEqualTo(queryType);
+    }
+
     private Object unwrapValue(JsonNode responseRecord, Object expectedRecord) {
         Object unwrapped = null;
         switch (responseRecord.getNodeType()) {

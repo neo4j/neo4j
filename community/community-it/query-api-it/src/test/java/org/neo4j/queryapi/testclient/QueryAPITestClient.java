@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.neo4j.queryapi.TransactionType;
 
 public class QueryAPITestClient {
 
@@ -107,6 +108,20 @@ public class QueryAPITestClient {
             QueryRequest request, String database, HttpResponse.BodyHandler<T> responseHandler)
             throws IOException, InterruptedException {
         return sendRequest(request, endpoint.replace("{databaseName}", database), responseHandler);
+    }
+
+    public HttpResponse<QueryResponse> executeQuery(TransactionType transactionType, QueryRequest request)
+            throws IOException, InterruptedException {
+        return sendRequest(
+                request, transactionType.endpoint(endpoint).replace("{databaseName}", "neo4j"), responseHandler());
+    }
+
+    public HttpResponse<Stream<String>> executeQueryJsonl(TransactionType transactionType, QueryRequest request)
+            throws IOException, InterruptedException {
+        return sendRequest(
+                request,
+                transactionType.endpoint(endpoint).replace("{databaseName}", "neo4j"),
+                HttpResponse.BodyHandlers.ofLines());
     }
 
     public HttpResponse<QueryResponse> beginTx(QueryRequest request, String database)
