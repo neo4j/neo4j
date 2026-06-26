@@ -20,9 +20,14 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.frontend.helpers.CNFNormalizerTestUtil
 import org.neo4j.cypher.internal.frontend.helpers.CNFNormalizerTestUtil.SemanticWrapper
+import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollected
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.LocalFunctionsResolved
 import org.neo4j.cypher.internal.frontend.phases.parserTransformers.PreparatoryRewriting.SemanticAnalysisPossible
+import org.neo4j.cypher.internal.frontend.phases.parserTransformers.ShadowedFunctionsUnresolved
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
+import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.rewriters.astRewriters.NormalizePredicates
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
@@ -44,7 +49,12 @@ class TransitiveEqualitiesTest extends CypherFunSuite with AstConstructionTestSu
         CNFNormalizer.steps ++ Set(SemanticWrapper()),
         initialConditions = Set(
           BaseContains[Statement](),
+          ShadowedFunctionsUnresolved,
+          LocalFunctionsResolved,
+          CallInvocationsResolved,
+          FunctionInvocationsResolved,
           SemanticAnalysisPossible,
+          ObfuscationMetadataCollected,
           NormalizePredicates.completed
         )
       )
