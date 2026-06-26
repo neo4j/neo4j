@@ -85,6 +85,7 @@
     <awaitility.version>4.3.0</awaitility.version>
     <awssdk.version>2.46.6</awssdk.version>
     <bouncycastle.version>1.84</bouncycastle.version>
+    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
     <build-resources.version>2026.06.1</build-resources.version>
     <caffeine.version>3.2.4</caffeine.version>
 
@@ -1712,6 +1713,27 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${build-helper-maven-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>sanitze-project-basedir</id>
+              <goals>
+                <goal>regex-property</goal>
+              </goals>
+              <configuration>
+                <name>project_basedir_sanitized</name>
+                <value>${project.basedir}</value>
+                <regex>\\</regex>
+                <replacement>\\\\</replacement>
+                <failIfNoMatch>false</failIfNoMatch>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
         <!-- Enforce naming if packages -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1775,24 +1797,33 @@
                 <rules>
                   <evaluateBeanshell>
                     <message>This module mixes Java and Scala sources (both src/main/java + src/main/scala, or src/test/java + src/test/scala). New mixed-language modules are not allowed - keep Java and Scala in separate modules. If this is an intentional, reviewed exception, set &lt;mixed.language.allowed&gt;true&lt;/mixed.language.allowed&gt; in the module POM.</message>
-                    <condition>import java.io.File;
-                      containsExt(File dir, String ext) {
-                        if (!dir.isDirectory()) return false;
-                        File[] kids = dir.listFiles();
-                        if (kids == null) return false;
-                        for (File f : kids) {
-                          if (f.isDirectory()) { if (containsExt(f, ext)) return true; }
-                          else if (f.getName().endsWith(ext)) return true;
+                    <?SORTPOM IGNORE?>
+                    <condition><![CDATA[
+                      import java.io.File;
+                      try {
+                        containsExt(File dir, String ext) {
+                          if (!dir.isDirectory()) return false;
+                          File[] kids = dir.listFiles();
+                          if (kids == null) return false;
+                          for (File f : kids) {
+                            if (f.isDirectory()) { if (containsExt(f, ext)) return true; }
+                            else if (f.getName().endsWith(ext)) return true;
+                          }
+                          return false;
                         }
+                        if (Boolean.parseBoolean("${mixed.language.allowed}")) { return true; }
+                        File base = new File("${project_basedir_sanitized}");
+                        boolean mainMixed = containsExt(new File(base,"src/main/java"),".java")
+                                  && containsExt(new File(base,"src/main/scala"),".scala");
+                        boolean testMixed = containsExt(new File(base,"src/test/java"),".java")
+                                  && containsExt(new File(base,"src/test/scala"),".scala");
+                        return !(mainMixed || testMixed);
+                      } catch(Exception ex) {
+                        ex.printStackTrace();
                         return false;
                       }
-                      if (Boolean.parseBoolean("${mixed.language.allowed}")) { return true; }
-                      File base = new File("${project.basedir}");
-                      boolean mainMixed = containsExt(new File(base,"src/main/java"),".java")
-                                       &amp;&amp; containsExt(new File(base,"src/main/scala"),".scala");
-                      boolean testMixed = containsExt(new File(base,"src/test/java"),".java")
-                                       &amp;&amp; containsExt(new File(base,"src/test/scala"),".scala");
-                      return !(mainMixed || testMixed);</condition>
+                    ]]></condition>
+                    <?SORTPOM RESUME?>
                   </evaluateBeanshell>
                 </rules>
                 <fail>true</fail>
@@ -2085,6 +2116,17 @@
                 </property>
               </properties>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${build-helper-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>sanitze-project-basedir</id>
           </execution>
         </executions>
       </plugin>
